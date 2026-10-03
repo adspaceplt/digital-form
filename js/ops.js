@@ -445,8 +445,12 @@
       state.templates = (r[2] && r[2].data) || [];
       state.members = ((r[3] && r[3].data) || []).sort(F.byStaff);
       state.clients = (r[4] && r[4].data) || [];
-      then();
-    }, function () { then(); });
+      /* A refused read of the clients is not an empty book: the New sheet
+         names it where the client is picked (audit, 2026-10-03). */
+      state.clientsErr = (r[4] && r[4].error) || null;
+    }).catch(function (e) {
+      state.clientsErr = e || { message: 'The clients could not be read.' };
+    }).then(function () { then(); });
   }
 
   function load() {
@@ -478,7 +482,22 @@
           .order('current_final_due_at', { ascending: true, nullsFirst: false });
       };
       Promise.all([
-        base().is('completed_at', null).is('cancelled_at', null),
+        /* Open work is read whole, a page of a thousand at a time: PostgREST
+           answers at most that many rows a read, so a team queue past it
+           would end without a word (audit, 2026-10-03). The pages run in the
+           id's order, the one no two rows share, and the queue's own order
+           (the final date, undated last) is put back here. */
+        readPages(function () {
+          return db.from('ops_tasks').select('*, clients(name)').is('archived_at', null)
+            .is('completed_at', null).is('cancelled_at', null).order('id');
+        }).then(function (x) {
+          if (x.data) x.data.sort(function (a, b) {
+            var p = a.current_final_due_at, q = b.current_final_due_at;
+            if (!p || !q) return p ? -1 : q ? 1 : 0;
+            return p < q ? -1 : p > q ? 1 : 0;
+          });
+          return x;
+        }),
         base().gte('completed_at', since).limit(500),
         base().gte('cancelled_at', since).limit(500),
         /* SEARCHING COMPLETED WORK asks the database, across every month:
@@ -487,56 +506,112 @@
            about a task that exists. */
         (state.filter === 'done' || state.filter === 'all') && state.find
           ? base().not('completed_at', 'is', null).ilike('title', '%' + state.find.replace(/[%_]/g, '') + '%').limit(200)
-          : Promise.resolve({ data: [] }),
-        /* The foreign key is named, because `ops_task_assignees` points at
-           `team_members` twice (the person assigned and the person who did the
-           assigning) and PostgREST refuses an embed it cannot resolve. Left
-           bare, this read failed outright: every owner in the console was
-           blank, Mine matched nothing, and the record's own owner select fell
-           back to Nobody a moment after a save that had worked. */
-        db.from('ops_task_assignees')
-          .select('task_id, responsibility, team_member_id,' +
-                  ' team_members!ops_task_assignees_team_member_id_fkey(name)')
-          .is('ended_at', null)
+          : Promise.resolve({ data: [] })
       ]).then(function (r) {
-        /* A refused read of who owns what is not an empty owner column: the
-           scope, the grouping and the capacity strip all hang off it, and a
-           queue that quietly says nobody owns anything is worse than one that
-           says it could not be read. */
-        var bad = (r[0] && r[0].error) || (r[4] && r[4].error);
-        if (bad) {
-          state.err = bad;
-          UI.failLine(box, 'Your tasks', bad.message, load);
+        if (r[0] && r[0].error) {
+          state.err = r[0].error;
+          UI.failLine(box, 'Your tasks', r[0].error.message, load);
           return;
         }
         /* One row can only be in one of the three, but a merge that trusted
            that would be a merge nobody had checked. */
         var seen = {};
-        state.tasks = [].concat((r[0] && r[0].data) || [], (r[1] && r[1].data) || [],
-                                (r[2] && r[2].data) || [], (r[3] && r[3].data) || [])
+        var tasks = [].concat((r[0] && r[0].data) || [], (r[1] && r[1].data) || [],
+                              (r[2] && r[2].data) || [], (r[3] && r[3].data) || [])
           .filter(function (t) {
             if (seen[t.id]) return false;
             seen[t.id] = 1;
             return true;
           });
-        state.owners = {};
-        state.ownerIds = {};
-        state.onTask = {};
-        ((r[4] && r[4].data) || []).forEach(function (a) {
-          /* Following is being on the task in any other capacity than owning
-             it: a reviewer or a contributor is somebody the task's changes
-             concern without the task being theirs to carry. */
-          (state.onTask[a.task_id] = state.onTask[a.task_id] || {})[a.team_member_id] = a.responsibility;
-          if (a.responsibility !== 'owner') return;
-          state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
-          state.ownerIds[a.task_id] = a.team_member_id;
+        return Promise.all([readOwners(tasks), nameClients(tasks)]).then(function (q) {
+          /* A refused read of who owns what is not an empty owner column:
+             the scope, the grouping and the capacity strip all hang off it,
+             and a queue that quietly says nobody owns anything is worse than
+             one that says it could not be read. */
+          if (q[0].error) {
+            state.err = q[0].error;
+            UI.failLine(box, 'Your tasks', q[0].error.message, load);
+            return;
+          }
+          state.tasks = tasks;
+          state.owners = {};
+          state.ownerIds = {};
+          state.onTask = {};
+          q[0].data.forEach(function (a) {
+            /* Following is being on the task in any other capacity than
+               owning it: a reviewer or a contributor is somebody the task's
+               changes concern without the task being theirs to carry. */
+            (state.onTask[a.task_id] = state.onTask[a.task_id] || {})[a.team_member_id] = a.responsibility;
+            if (a.responsibility !== 'owner') return;
+            state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
+            state.ownerIds[a.task_id] = a.team_member_id;
+          });
+          paint();
         });
-        paint();
-      }, function (e) {
+      }).catch(function (e) {
         state.err = e;
         UI.failLine(box, 'Your tasks', (e && e.message) || String(e), load);
       });
     });
+  }
+
+  /* Every page of a read: `make` builds the same query each time (a query is
+     spent once sent), ordered to the row so no page repeats or skips one. */
+  function readPages(make) {
+    var out = [];
+    function page(from) {
+      return make().range(from, from + 999).then(function (r) {
+        if (r.error) return r;
+        var got = r.data || [];
+        out = out.concat(got);
+        if (got.length < 1000 || from >= 19000) return { data: out };
+        return page(from + 1000);
+      });
+    }
+    return page(0);
+  }
+
+  /* Who is on the tasks read, and in what capacity: the live assignee rows of
+     those tasks alone, in parts small enough for an address. Read for every
+     task in the company, the rows passed PostgREST's thousand within months
+     and the owners past it went blank without a word (audit, 2026-10-03).
+     The foreign key is named, because `ops_task_assignees` points at
+     `team_members` twice (the person assigned and the person who did the
+     assigning) and PostgREST refuses an embed it cannot resolve. Left bare,
+     this read failed outright: every owner in the console was blank, Mine
+     matched nothing, and the record's own owner select fell back to Nobody a
+     moment after a save that had worked. */
+  function readOwners(tasks) {
+    var ids = tasks.map(function (t) { return t.id; }), parts = [];
+    for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
+    return Promise.all(parts.map(function (part) {
+      return db.from('ops_task_assignees')
+        .select('task_id, responsibility, team_member_id,' +
+                ' team_members!ops_task_assignees_team_member_id_fkey(name)')
+        .in('task_id', part).is('ended_at', null);
+    })).then(function (rs) {
+      var out = { error: null, data: [] };
+      rs.forEach(function (x) {
+        if (x && x.error) out.error = out.error || x.error;
+        else out.data = out.data.concat((x && x.data) || []);
+      });
+      return out;
+    });
+  }
+
+  /* A task the colleague may see can hang off a client they may not (their
+     own task on a client somebody else is in charge of): the client's row
+     never arrives, so the join is empty and the row read No client. Its name
+     alone is asked of the database for those tasks (`ops_task_clients`,
+     tasks the caller may see only). A refusal leaves them as they were. */
+  function nameClients(tasks) {
+    var bare = tasks.filter(function (t) { return t.client_id && !(t.clients && t.clients.name); });
+    if (!bare.length) return Promise.resolve();
+    return db.rpc('ops_task_clients', { p_tasks: bare.map(function (t) { return t.id; }) }).then(function (r) {
+      var by = {};
+      ((r && !r.error && r.data) || []).forEach(function (x) { by[x.task_id] = x.client_name; });
+      bare.forEach(function (t) { if (by[t.id]) t.clients = { name: by[t.id] }; });
+    }).catch(function () {});
   }
 
   /* My own open session, whichever task it is on: one a person, across every
@@ -2010,7 +2085,14 @@
     var ow = el.querySelector('[data-a="owner"]');
     if (ow) ow.addEventListener('click', function () { inlineOwner(t, el, ow, ownerIds[t.id], done); });
     var du = el.querySelector('[data-a="due"]');
-    if (du) du.addEventListener('click', function () { inlineDue(t, el, du, done); });
+    /* A date already promised moves with its reason, in the same sheet the
+       task's own page opens; only a first date is set in place. Moved in
+       place, every reschedule was filed Rescheduled with no reason, which is
+       the one thing the report's replanning reads (audit, 2026-10-03). */
+    if (du) du.addEventListener('click', function () {
+      if (t.current_final_due_at) { openDue('final', { t: t, done: done }); return; }
+      inlineDue(t, el, du, done);
+    });
     wireStage(el.querySelector('.state-select'), t, el, done);
     wireRowMenu(el, t, done);
     return el;
@@ -2229,16 +2311,18 @@
       }, function (why) { inp.disabled = false; put(); rowNote(el, why); });
     });
   }
+  /* A first final date only: a date already set moves through the due sheet,
+     which asks the reason (`openDue`). */
   function saveDue(t, day, ok, bad) {
     db.rpc('ops_request_due_change', {
       p_task: t.id, p_kind: 'final', p_value: day + 'T00:00:00Z',
-      p_reason: t.current_final_due_at ? 'rescheduled' : 'initial', p_note: null, p_version: t.version
+      p_reason: 'initial', p_note: null, p_version: t.version
     }).then(function (r) {
       var d = r.data;
       if (r.error) { bad(r.error.message); return; }
       if (d && d.error) { bad(said(d.error, t)); return; }
       ok(d);
-    }, function (e) { bad((e && e.message) || String(e)); });
+    }).catch(function (e) { bad((e && e.message) || String(e)); });
   }
 
   /* The note an inline change left, on the row the repaint drew. */
@@ -3662,40 +3746,48 @@
         return;
       }
       var t = r[0].data;
-      state.due = (((r[7] && r[7].data) || [])[0]) || null;
-      state.rule = (((r[8] && r[8].data) || [])[0]) || null;
-      t.assignees = ((r[5] && r[5].data) || []).map(function (a) {
-        return { team_member_id: a.team_member_id, responsibility: a.responsibility,
-                 name: (a.team_members && a.team_members.name) || '' };
-      });
-      state.task = t;
-      state.detail = {
-        checklist: (r[1] && r[1].data) || [],
-        links: (r[2] && r[2].data) || [],
-        sessions: (r[3] && r[3].data) || [],
-        events: (r[4] && r[4].data) || [],
-        video: (r[6] && r[6].data && r[6].data[0]) || null
-      };
-      /* The month's engagement, where the task has one: production waits on
-         it, so the rail says where it stands. Read after the task, because
-         the task is what names it; a refused read leaves no block. */
-      var go = function () {
-        freshRefs(state.detail.links, function () { loadSession(function () { paintTask(); if (after) after(); }); });
-      };
-      if (!t.engagement_id) { state.eng = null; state.engChecks = []; state.engCounts = null; go(); return; }
-      Promise.all([
-        db.from('ops_engagements').select('*').eq('id', t.engagement_id),
-        db.from('ops_engagement_checks').select('*').eq('engagement_id', t.engagement_id),
-        db.rpc('ops_engagement_counts', { p_engagements: [t.engagement_id] })
-      ]).then(function (q) {
-        state.eng = (q[0] && !q[0].error && q[0].data && q[0].data[0]) || null;
-        state.engChecks = (q[1] && !q[1].error && q[1].data) || [];
-        state.engCounts = countsOf(q[2]);
-        go();
-      }, function () { state.eng = null; state.engChecks = []; state.engCounts = null; go(); });
-    }, function (e) {
+      /* The client's name where its row is outside the colleague's reach
+         (`nameClients`); the record waits for it, which is one short read. */
+      if (t.client_id && !(t.clients && t.clients.name)) {
+        return nameClients([t]).then(function () { readDone(r, t, after); });
+      }
+      readDone(r, t, after);
+    }).catch(function (e) {
       msg(msgHere('taskMsg'), (e && e.message) || String(e), 'err');
     });
+  }
+  function readDone(r, t, after) {
+    state.due = (((r[7] && r[7].data) || [])[0]) || null;
+    state.rule = (((r[8] && r[8].data) || [])[0]) || null;
+    t.assignees = ((r[5] && r[5].data) || []).map(function (a) {
+      return { team_member_id: a.team_member_id, responsibility: a.responsibility,
+               name: (a.team_members && a.team_members.name) || '' };
+    });
+    state.task = t;
+    state.detail = {
+      checklist: (r[1] && r[1].data) || [],
+      links: (r[2] && r[2].data) || [],
+      sessions: (r[3] && r[3].data) || [],
+      events: (r[4] && r[4].data) || [],
+      video: (r[6] && r[6].data && r[6].data[0]) || null
+    };
+    /* The month's engagement, where the task has one: production waits on
+       it, so the rail says where it stands. Read after the task, because the
+       task is what names it; a refused read leaves no block. */
+    var go = function () {
+      freshRefs(state.detail.links, function () { loadSession(function () { paintTask(); if (after) after(); }); });
+    };
+    if (!t.engagement_id) { state.eng = null; state.engChecks = []; state.engCounts = null; go(); return; }
+    Promise.all([
+      db.from('ops_engagements').select('*').eq('id', t.engagement_id),
+      db.from('ops_engagement_checks').select('*').eq('engagement_id', t.engagement_id),
+      db.rpc('ops_engagement_counts', { p_engagements: [t.engagement_id] })
+    ]).then(function (q) {
+      state.eng = (q[0] && !q[0].error && q[0].data && q[0].data[0]) || null;
+      state.engChecks = (q[1] && !q[1].error && q[1].data) || [];
+      state.engCounts = countsOf(q[2]);
+      go();
+    }, function () { state.eng = null; state.engChecks = []; state.engCounts = null; go(); });
   }
 
   /* A write answers with the task, so the record repaints from that answer and
@@ -5308,9 +5400,12 @@
     $('tdelConfirm').focus();
   }
 
-  var dueKind = 'final';
-  function openDue(kind) {
-    var t = state.task;
+  /* `row` is a list row's task (`{ t, done }`): the sheet moves that task and
+     the row repaints, where from the task's page it moves the open record. */
+  var dueKind = 'final', dueRow = null;
+  function openDue(kind, row) {
+    dueRow = row || null;
+    var t = dueRow ? dueRow.t : state.task;
     if (!t) return;
     dueKind = kind || 'final';
     var draft = dueKind === 'first_draft';
@@ -5368,9 +5463,15 @@
   function clientsFor(scope, past) {
     return state.clients.filter(function (c) {
       if (scope === 'lead') return LEAD_STAGES[c.stage];
-      return CLIENT_STAGES[c.stage] || (past && PAST_STAGES[c.stage]);
+      return CLIENT_STAGES[c.stage] || (past && pastWorkable() && PAST_STAGES[c.stage]);
     }).sort(byClient);
   }
+  /* A band the colleague reads but may not work is not offered: the
+     database refuses a task on it (`client-scope`), so offering it was a
+     choice that failed at Save (audit, 2026-10-03). Each part falls back to
+     Clients where it is not set. */
+  function leadsWorkable() { return may('clients.leads', 'work'); }
+  function pastWorkable() { return may('clients.past', 'work'); }
   function monthKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
@@ -5424,6 +5525,8 @@
     $('ntType').value = 'engagement';
     $('ntFormat').value = '';
     $('ntPaused').checked = false;
+    var leadOpt = $('ntScope').querySelector('option[value="lead"]');
+    if (leadOpt) leadOpt.hidden = !leadsWorkable();
     $('ntPriority').value = '3';
     $('ntComplex').value = 'standard';
     ntResetPieces();
@@ -5433,9 +5536,10 @@
     $('ntEnds').value = '';
     $('ntMax').value = '';
     ntRepeatChanged();
+    msg('ntMsg', '');
     if (ntPrefill) {
       var pc = ntPrefill.client;
-      $('ntScope').value = LEAD_STAGES[pc.stage] ? 'lead' : 'client';
+      $('ntScope').value = LEAD_STAGES[pc.stage] && leadsWorkable() ? 'lead' : 'client';
       if (pc.stage === 'past') $('ntPaused').checked = true;
       if (ntPrefill.period && $('ntPeriod').querySelector('option[value="' + ntPrefill.period + '"]')) {
         $('ntPeriod').value = ntPrefill.period; ntTouched.period = true;
@@ -5446,14 +5550,13 @@
       $('ntClient').value = ntPrefill.client.id;
       ntLoadMonths();
     }
-    msg('ntMsg', '');
     sheet('taskSheet', true, swap);
   }
   function ntScopeChanged() {
     var scope = $('ntScope').value;
     var was = $('ntClient').value;
     $('ntClientField').hidden = scope === 'internal';
-    $('ntPausedWrap').hidden = scope !== 'client';
+    $('ntPausedWrap').hidden = scope !== 'client' || !pastWorkable();
     $('ntClientLabel').textContent = scope === 'lead' ? 'Lead' : 'Client';
     var list = clientsFor(scope, $('ntPaused').checked);
     $('ntClient').innerHTML = '<option value="">' + (scope === 'lead' ? 'Choose a lead' : 'Choose a client') + '</option>' +
@@ -5461,6 +5564,11 @@
         return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(clientName(c)) +
           (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
       }).join('');
+    /* The clients could not be read: said where the client is picked, never
+       an empty list that reads as no clients (audit, 2026-10-03). */
+    if (state.clientsErr && scope !== 'internal') {
+      msg('ntMsg', 'The clients could not be read. ' + (state.clientsErr.message || ''), 'err');
+    }
     /* An internal task carries no code, so the month and the week that build
        one have nothing to say; and engagement work is for a client. */
     $('ntCodeRow').hidden = scope === 'internal';
@@ -6201,32 +6309,35 @@
       db.from('ops_tasks').select('*, clients(name, slug)').eq('client_id', c.id).is('archived_at', null)
         .order('code_period', { ascending: false, nullsFirst: false })
         .order('current_final_due_at', { ascending: true, nullsFirst: false }).limit(600),
-      db.from('ops_engagements').select('*').eq('client_id', c.id).order('period', { ascending: false }),
-      db.from('ops_task_assignees')
-        .select('task_id, responsibility, team_member_id, team_members!ops_task_assignees_team_member_id_fkey(name)')
-        .is('ended_at', null)
+      db.from('ops_engagements').select('*').eq('client_id', c.id).order('period', { ascending: false })
     ]).then(function (r) {
       var bad = (r[0] && r[0].error) || (r[1] && r[1].error);
       if (bad) { UI.failLine(box, 'This client\'s work', bad.message, readClientWork); return; }
-      cw.tasks = (r[0] && r[0].data) || [];
-      cw.engs = (r[1] && r[1].data) || [];
-      cw.owners = {}; cw.ownerIds = {};
-      ((r[2] && r[2].data) || []).forEach(function (a) {
-        if (a.responsibility !== 'owner') return;
-        cw.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
-        cw.ownerIds[a.task_id] = a.team_member_id;
+      var tasks = (r[0] && r[0].data) || [];
+      /* Who owns this client's tasks, read for those tasks alone (see
+         `readOwners`); a refusal fails the view, never draws it unowned. */
+      return readOwners(tasks).then(function (o) {
+        if (o.error) { UI.failLine(box, 'This client\'s work', o.error.message, readClientWork); return; }
+        cw.tasks = tasks;
+        cw.engs = (r[1] && r[1].data) || [];
+        cw.owners = {}; cw.ownerIds = {};
+        o.data.forEach(function (a) {
+          if (a.responsibility !== 'owner') return;
+          cw.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
+          cw.ownerIds[a.task_id] = a.team_member_id;
+        });
+        var ids = cw.engs.map(function (e) { return e.id; });
+        if (!ids.length) { cw.checks = []; cw.counts = {}; paintClientWork(); return; }
+        return Promise.all([
+          db.from('ops_engagement_checks').select('*').in('engagement_id', ids),
+          db.rpc('ops_engagement_counts', { p_engagements: ids })
+        ]).then(function (q) {
+          cw.checks = (q[0] && !q[0].error && q[0].data) || [];
+          cw.counts = countsOf(q[1]);
+          paintClientWork();
+        }).catch(function () { cw.checks = []; cw.counts = null; paintClientWork(); });
       });
-      var ids = cw.engs.map(function (e) { return e.id; });
-      if (!ids.length) { cw.checks = []; cw.counts = {}; paintClientWork(); return; }
-      Promise.all([
-        db.from('ops_engagement_checks').select('*').in('engagement_id', ids),
-        db.rpc('ops_engagement_counts', { p_engagements: ids })
-      ]).then(function (q) {
-        cw.checks = (q[0] && !q[0].error && q[0].data) || [];
-        cw.counts = countsOf(q[1]);
-        paintClientWork();
-      }, function () { cw.checks = []; cw.counts = null; paintClientWork(); });
-    }, function (e) {
+    }).catch(function (e) {
       UI.failLine(box, 'This client\'s work', (e && e.message) || String(e), readClientWork);
     });
   }
@@ -7256,7 +7367,7 @@
     });
     var dg = $('dueGo');
     if (dg) dg.addEventListener('click', function () {
-      var t = state.task;
+      var row = dueRow, t = row ? row.t : state.task;
       if (!t) return;
       if (!$('dueDate').value) { msg('dueMsg', 'A date is required.', 'err'); return; }
       /* One call, and the database decides whether this is a move or an ask:
@@ -7270,10 +7381,18 @@
         p_note: String($('dueNote').value || '').trim() || null,
         p_version: t.version
       }, 'dueMsg', function (out) {
+        var day = $('dueDate').value;
         sheet('dueSheet', false);
-        state.said = out && out.asked
+        var word = out && out.asked
           ? (out.repeat ? 'That extension is already with them.' : 'Extension requested.')
           : '';
+        if (row) {
+          dueRow = null;
+          state.rowSaid = { id: t.id, word: word || 'Due ' + niceDate(day + 'T00:00:00Z') + '.' };
+          row.done();
+          return;
+        }
+        state.said = word;
         readTask(t.id);
       });
     });

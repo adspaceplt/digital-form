@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003k">
+<link rel="stylesheet" href="/css/portal.css?v=20261003l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -66,7 +66,7 @@
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261001a"></script>
-<script src="/js/cmdbar.js?v=20261001b"></script>
+<script src="/js/cmdbar.js?v=20261003l"></script>
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
@@ -1270,7 +1270,7 @@
             <div class="kmenu" id="wsMenu" hidden role="menu">
               <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-need="review.settings:view">Client settings</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-need="review.settings:work">Reset access link</button>
-              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-need="review.sets:manage">Remove from Content Review</button>
+              <button class="kmenu-item" id="deleteClient" type="button" role="menuitem" data-need="review.settings:work">Remove from Content Review</button>
             </div>
           </div>
         </div>
@@ -3392,7 +3392,7 @@
             <span class="cmdbar-count" id="teamCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <span class="kmenu-wrap work-more" id="teamMoreWrap" hidden>
+            <span class="kmenu-wrap work-more" id="teamMoreWrap" data-need="team:manage" hidden>
               <button class="kmenu-btn btn-sm work-more-btn" id="teamMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
               </button>
@@ -3400,7 +3400,7 @@
                 <button class="kmenu-item" data-a="expiry" type="button" role="menuitem">Set access expiry</button>
               </div>
             </span>
-            <button class="btn btn-sm btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+            <button class="btn btn-sm btn-primary" id="teamAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
           </span>
         </span>
       </div>
@@ -3529,7 +3529,7 @@
             <span class="cmdbar-count" id="groupCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-primary" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
           </span>
         </span>
       </div>
@@ -4154,7 +4154,7 @@ raya-2026        https://example.com/raya"></textarea>
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-            <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+            <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </span>
         </span>
       </div>
@@ -4557,20 +4557,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003e"></script>
+<script src="/js/admin.js?v=20261003l"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261003a"></script>
-<script src="/js/team.js?v=20261003g"></script>
+<script src="/js/crm.js?v=20261003l"></script>
+<script src="/js/team.js?v=20261003l"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261003b"></script>
-<script src="/js/ops.js?v=20261003a"></script>
+<script src="/js/ops.js?v=20261003l"></script>
 <script src="/js/perf.js?v=20261003a"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261003a"></script>
+<script src="/js/overview.js?v=20261003l"></script>
 </body>
 </html>

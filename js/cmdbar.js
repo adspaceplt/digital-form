@@ -272,6 +272,12 @@
     menu.className = 'kmenu cmd-more-menu';
     menu.setAttribute('role', 'menu');
     menu.hidden = true;
+    /* Each item follows its button: the button's permission mark rides on
+       the item (`data-need`, hidden by the same body class), and a button the
+       page hides hides its item. The ⋯ itself leaves when nothing in it can
+       be pressed: Documents' Add entry stayed in it for a colleague at View
+       after the page had hidden the button (audit, 2026-10-03). */
+    var pairs = [];
     rest.forEach(function (b) {
       b.classList.add('cmd-secondary');
       var item = document.createElement('button');
@@ -279,14 +285,32 @@
       item.className = 'kmenu-item';
       item.setAttribute('role', 'menuitem');
       item.textContent = (b.textContent || '').trim();
+      if (b.getAttribute('data-need')) item.setAttribute('data-need', b.getAttribute('data-need'));
       item.addEventListener('click', function () { shutMore(); b.click(); });
       menu.appendChild(item);
+      pairs.push([b, item]);
     });
     wrap.appendChild(btn); wrap.appendChild(menu);
     acts.insertBefore(wrap, primary);
+    function syncMore() {
+      var any = false;
+      pairs.forEach(function (pr) {
+        pr[1].hidden = pr[0].hidden;
+        if (!pr[1].hidden && getComputedStyle(pr[1]).display !== 'none') any = true;
+      });
+      wrap.hidden = !any;
+      if (!any) shutMore();
+    }
+    if (window.MutationObserver) {
+      var watch = new MutationObserver(syncMore);
+      pairs.forEach(function (pr) { watch.observe(pr[0], { attributes: true, attributeFilter: ['hidden'] }); });
+      watch.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+    syncMore();
     function shutMore() { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
+      syncMore();
       var on = menu.hidden;
       menu.hidden = !on;
       btn.setAttribute('aria-expanded', String(on));

@@ -601,10 +601,16 @@
     /* The Handbook is every colleague's to read (only an admin changes it),
        so it has no level of its own on the ladder. */
     if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
-    /* The Overview is the start page of a group that manages something: an
-       admin, or Manage on any section or part (2026-09-28). It has no key of
-       its own; each card asks its own. */
-    if (name === 'overview') return managesAny();
+    /* The Overview is the start page of a group that oversees something: an
+       admin, or a group one of whose cards is allowed (2026-09-28). It has no
+       key of its own; each card asks its own, and the Overview asks them all
+       (`ADspaceOverview.any`), so Full Access on a section with no card
+       (Short Links, Services, Team) never lands on an empty page (audit,
+       2026-10-03). */
+    if (name === 'overview') {
+      var ov = window.ADspaceOverview;
+      return ov && ov.any ? ov.any() : managesAny();
+    }
     return may(name, 'view');
   }
   function managesAny() {
@@ -781,11 +787,15 @@
   });
   ADspaceMenu.onScroll(function () { aboutOpen(false); });
 
-  // The first section this person is allowed, for when the one asked for is not.
+  /* The first section this person is allowed, for when the one asked for is
+     not: the Overview, then the rail's own order, My Work first (it was left
+     out, so a colleague whose day is My Work landed on Clients, or on the
+     Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
+     Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
-    return 'clients';
+    return 'handbook';
   }
 
   var enterLater = '';
@@ -1187,7 +1197,7 @@
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
     'client.deleted':        ['Client deleted', 'is-danger', 'clients'],
-    'review.removed':        ['Removed from review', 'is-danger', 'review'],
+    'review.removed':        ['Removed from review', 'is-warn', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
     'client.stage':          ['Stage changed', '', 'clients'],
     'client.billing':        ['Billing updated', '', 'clients'],
@@ -1783,45 +1793,57 @@
      answer along; it never learns whether the answer was right until the
      server says so, and a browser that skipped the question outright would be
      refused all the same. */
-  /* "Delete" here used to delete the company. It now removes what Content
-     Review holds for them, their content sets, and takes them off this list.
-     The company, its contacts and its log stay in Clients, where they belong. */
+  /* Remove takes the client off this list and closes their review link, and
+     nothing else: every set, post and approval is kept (audit, 2026-10-03; it
+     deleted them all, with no way back). Undo puts the client back at once,
+     and Enable Content Review on the client's record does the same later,
+     with the same link. The company, its contacts and its log stay in
+     Clients, where they belong. */
   $('deleteClient').addEventListener('click', function () {
     shutWsMenu();
     var c = state.client;
-    db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
-      var sets = (r.data || []).length;
-      /* Two browser dialogs, one after the other — the question, then a naked
-         prompt for the name — and neither said what the other was for. One
-         sheet states what goes and takes the name in the same breath, which
-         is what Delete client on the record already does. */
-      window.ADspaceConfirm.ask({
-        title: 'Remove from Content Review',
-        body: sets + ' content set' + (sets === 1 ? '' : 's')
-            + ' with every post and approval record in ' + (sets === 1 ? 'it' : 'them')
-            + ' goes. There is no restore. The client record is kept.',
-        go: 'Remove',
-        tone: 'danger',
-        field: {
-          label: 'Type the client name to confirm',
-          placeholder: c.name,
-          match: c.name,
-          need: 'Type the client name to confirm.',
-          mismatch: 'That is not this client\'s name.'
-        }
-      }, function () {
-        db.from('batches').delete().eq('client_id', c.id).then(function (d) {
-          if (d.error) { msg('wsMsg', d.error.message, 'err'); return; }
-          db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
-            if (u.error) { msg('wsMsg', u.error.message, 'err'); return; }
-            logAction('review.removed', c.name,
-              sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
-            showClients();
-          });
-        });
+    window.ADspaceConfirm.ask({
+      title: 'Remove from Content Review',
+      body: c.name + ' leaves this list and its review link stops opening. Every content set is kept.',
+      go: 'Remove',
+      tone: 'warn'
+    }, function () {
+      setReviewHidden(c, true, 'wsMsg', function () {
+        showClients();
+        undoHere(c.name + ' removed from Content Review.', function () {
+          setReviewHidden(c, false, 'clientMsg', loadClients);
+        }, $('clientMsg'));
       });
     });
   });
+  /* One write for both ways, taking the row back: a refused update is a 204
+     with nothing in it, and is named, never filed. */
+  function setReviewHidden(c, hide, msgId, then) {
+    db.from('clients').update({ review_hidden: hide }).eq('id', c.id).select('id').then(function (u) {
+      if (u.error) { msg(msgId, u.error.message, 'err'); return; }
+      if (!u.data || !u.data.length) { msg(msgId, 'Not saved. The database refused the request.', 'err'); return; }
+      c.review_hidden = hide;
+      logAction(hide ? 'review.removed' : 'client.review_on', c.name, '');
+      then();
+    }).catch(function (e) { msg(msgId, (e && e.message) || String(e), 'err'); });
+  }
+  /* The way back, drawn where the act lands: one line and Undo, eight
+     seconds, under `host`. */
+  var undoTimer = null;
+  function undoHere(text, undo, host) {
+    if (!host || !host.parentNode) return;
+    var bar = host.parentNode.querySelector(':scope > .undobar-here');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'undobar undobar-here';
+      host.parentNode.insertBefore(bar, host.nextSibling);
+    }
+    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(shut, 8000);
+  }
 
   $('copyLink').addEventListener('click', function () {
     window.ADspaceCopy.to(this, $('clientLink').value);
@@ -3955,9 +3977,11 @@
         '<span class="link-act">' +
           iconBtn('copy', 'copy', 'Copy short link') +
           iconBtn('qr',   'qr',   'QR codes') +
-          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          /* Every item here changes the link, so the ⋯ is drawn at Work, as
+             each item is (a View group was offered Edit, audit 2026-10-03). */
+          '<button class="kmenu-btn" data-a="menu" data-need="links:work" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item" data-a="edit" data-need="links:work" type="button"><b>Edit</b></button>' +
             /* Live is a lifecycle flag flipped once in the life of a row, so
                it is a chip on the row and an item here, never a field in the
                form and never a select on every line — the shape a rate card

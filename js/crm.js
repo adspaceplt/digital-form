@@ -844,6 +844,14 @@
     /* A lead nobody is in charge of is anybody's to take who may work leads. */
     $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() &&
                             bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
+    /* Edit and Brand's Edit change the record, so they ask its band at Work
+       as the database does; a View group was offered both, and its save was
+       refused as nothing changed (audit, 2026-10-03). The ⋯ leaves when
+       nothing in it can be pressed. */
+    var canWork = bandMay(c.stage || 'lead', 'work');
+    $('crmEdit').hidden = !canWork;
+    $('crmBrandEdit').hidden = !canWork;
+    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1127,6 +1135,12 @@
      which is this portal's section head drawn flat rather than as a card. An
      Edit carries the pen and no chevron; a View all carries the chevron. */
   function ovSection(title, go, goWord, body, isEdit) {
+    /* A colleague who may only read the pane is offered the way to it, never
+       Edit or Manage (audit, 2026-10-03). */
+    if (goWord !== 'View all' && state.client &&
+        !(bandMay(state.client.stage || 'lead', 'work') && mayPart('clients.' + go, 'work'))) {
+      goWord = 'View all'; isEdit = false;
+    }
     return '<section class="ovsec">' +
       '<div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
       '<button class="btn btn-quiet btn-sm ovgo' + (isEdit ? ' is-edit' : '') + '" type="button" data-go="' + esc(go) + '">' +
@@ -1363,6 +1377,9 @@
        who has been a client since April read "Lead, today"). The pen sits
        beside the duration, and the duration is counted from the date as it
        now stands. */
+    /* The dates are corrected at the record's own band at Work, as every
+       write to it is (`client_scope_guard`); a View group reads them. */
+    var pens = bandMay(c.stage || 'lead', 'work');
     var trip = journeyOf(c).map(function (s) {
       var span = s.days === 0 ? (s.now ? 'Today' : 'Same day') : spanWord(s.days);
       var over = s.now && isStale(c);
@@ -1371,7 +1388,7 @@
           '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span></span>' +
         '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
           esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
-          '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' +
+          (pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
 
@@ -1388,7 +1405,7 @@
         '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
           '<span class="tl-when' + (late ? ' is-late' : '') + '"' + (r[2] ? ' id="crmSinceVal"' : '') + '>' +
             esc(niceDate(r[1])) + '</span></span>' +
-        (r[2] ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
+        (r[2] && pens ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
               : '<span class="tl-span"></span>') +
         '</div>';
     }).join('');
@@ -2455,24 +2472,42 @@
     if (c.stage !== 'active') { act.innerHTML = ''; box.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    /* Each way into the work is offered where it can be taken: Enable Content
+       Review writes the client (Clients at Work, or Content Review settings
+       at Work, as `clients_update` asks), New campaign makes one (Campaigns
+       at Work). A View group was offered both (audit, 2026-10-03). */
+    var canReview = c.review_hidden
+      ? (bandMay(c.stage, 'work') || mayPart('review.settings', 'work'))
+      : mayPart('review', 'view');
+    var canCamp = mayPart('campaigns.campaigns', 'work');
     act.innerHTML =
-      (c.review_hidden
+      (!canReview ? ''
+        : c.review_hidden
         ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
         : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + OUT + '</button>') +
-      '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>';
+      (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '');
     var on = $('crmReviewOn');
+    /* The way back from Remove from Content Review: never asks, and a
+       refused write is named rather than taken for done. */
     if (on) on.addEventListener('click', function () {
-      db.from('clients').update({ review_hidden: false }).eq('id', c.id).then(function () {
+      on.disabled = true;
+      db.from('clients').update({ review_hidden: false }).eq('id', c.id).select('id').then(function (r) {
+        if (r.error || !r.data || !r.data.length) {
+          on.disabled = false;
+          msg('crmWorkMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
+          return;
+        }
         c.review_hidden = false;
         log('client.review_on', c.name, '');
         location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
-      });
+      }).catch(function (e) { on.disabled = false; msg('crmWorkMsg', (e && e.message) || String(e), 'err'); });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
       location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
     });
-    $('crmGoCampaign').addEventListener('click', function () {
+    var nc = $('crmGoCampaign');
+    if (nc) nc.addEventListener('click', function () {
       location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
     });
 
