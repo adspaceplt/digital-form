@@ -390,10 +390,27 @@
     return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : '';
   }
   function todayMy() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
+  function nowMyTime() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(11, 16); }
+  /* 18:00 reads 6pm, 18:30 6.30pm, as the campaign schedule writes it. */
+  function timeWord(t) {
+    var m = /^(\d{2}):(\d{2})/.exec(String(t || ''));
+    if (!m) return '';
+    var h = Number(m[1]);
+    return ((h % 12) || 12) + (m[2] === '00' ? '' : '.' + m[2]) + (h < 12 ? 'am' : 'pm');
+  }
+  function untilWord(day, time) { return dayWord(day) + (day && time ? ', ' + timeWord(time) : ''); }
+  /* A moment still ahead in Malaysia: a later day, or today at a later time
+     (no time is the day's end). */
+  function aheadMy(day, time) {
+    var today = todayMy();
+    if (!day || day > today) return true;
+    if (day < today) return false;
+    return !time || String(time).slice(0, 5) > nowMyTime();
+  }
   function whoLine(m) {
     var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
     /* The day access ends, where one is set (TEAM ACCESS EXPIRY). */
-    var until = m.active && m.access_until ? 'Until ' + dayWord(m.access_until) : '';
+    var until = m.active && m.access_until ? 'Until ' + untilWord(m.access_until, m.access_until_time) : '';
     return [m.staff_code, post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
@@ -429,7 +446,7 @@
          Standing somebody down happens once in a job, so it is here rather
          than a select on every row. A person cannot switch themselves off. */
       menuBtn(menuItem('edit', 'Edit') +
-              (m.active && m.card_key ? menuItem('card', 'Open namecard') : '') +
+              (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
               (self ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
@@ -449,10 +466,16 @@
       if (!m.active && m.expired_at) {
         window.ADspaceConfirm.ask({
           title: 'Extend access',
-          body: m.name + '\'s access ended after ' + dayWord(m.access_until) + '. Choose the new last day, or leave it empty for no end.',
+          body: m.name + '\'s access ended ' + (m.access_until_time ? 'at ' : 'after ') + untilWord(m.access_until, m.access_until_time) +
+                '. Choose the new last day and, if it ends sooner, the time. Leave the day empty for no end.',
           go: 'Extend access',
-          field: { label: 'Access until', type: 'date', min: todayMy(), required: false }
-        }, function (v) { saveMember(m, { access_until: v || null }); });
+          fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
+                   { name: 'time', label: 'Time', type: 'time', required: false }]
+        }, function (v) {
+          var day = v.day || null, time = day ? (v.time || null) : null;
+          if (day && !aheadMy(day, time)) { msg('teamMsg', 'Choose a later time.', 'err'); return; }
+          saveMember(m, { access_until: day, access_until_time: time });
+        });
         return;
       }
       if (!m.active) { saveMember(m, { active: true }); return; }
@@ -499,6 +522,7 @@
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
         if (k === 'access_until') return 'Access until: ' + (dayWord(m.access_until) || 'not set') + ' → ' + (dayWord(patch.access_until) || 'not set');
+        if (k === 'access_until_time') return 'Access time: ' + (timeWord(m.access_until_time) || 'day\'s end') + ' → ' + (timeWord(patch.access_until_time) || 'day\'s end');
         return k + ': ' + (m[k] == null ? 'not set' : m[k]) + ' → ' + (patch[k] == null ? 'not set' : patch[k]);
       }).join('; '));
       msg('teamMsg', 'Saved.', 'ok');
@@ -1011,9 +1035,10 @@
     var mine = !!(m && me() && me().id === m.id);
     $('tmUntilRow').hidden = mine;
     $('tmUntil').value = m && m.access_until ? m.access_until : '';
+    $('tmUntilTime').value = m && m.access_until && m.access_until_time ? String(m.access_until_time).slice(0, 5) : '';
     $('tmUntil').min = todayMy();
     $('tmMobile').value = m ? (m.mobile || '') : '';
-    $('tmCardEmail').value = m ? (m.card_email || '') : '';
+    $('tmCardOn').value = m && m.card_on === false ? 'off' : 'on';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1046,12 +1071,15 @@
       var others = state.rows.filter(function (x) { return x.active && !(me() && me().id === x.id); }).length;
       window.ADspaceConfirm.ask({
         title: 'Set access expiry',
-        body: 'Every active colleague but you keeps access up to and including this day, unless it is moved for them. Leave it empty for no end. ' +
+        body: 'Every active colleague but you keeps access up to this day, and the time if one is set (else the day\'s end), unless it is moved for them. Leave the day empty for no end. ' +
               others + (others === 1 ? ' colleague.' : ' colleagues.'),
         go: 'Set for all',
-        field: { label: 'Access until', type: 'date', min: todayMy(), required: false }
+        fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
+                 { name: 'time', label: 'Time', type: 'time', required: false }]
       }, function (v) {
-        db.rpc('team_set_expiry', { p_until: v || null }).then(function (r) {
+        var day = v.day || null, time = day ? (v.time || null) : null;
+        if (day && !aheadMy(day, time)) { msg('teamMsg', 'Choose a later time.', 'err'); return; }
+        db.rpc('team_set_expiry_at', { p_until: day, p_time: time }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'Not allowed.' : d.error), 'err'); return; }
           msg('teamMsg', 'Saved.', 'ok');
@@ -1076,20 +1104,23 @@
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
     if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
     var mobile = ($('tmMobile').value || '').trim();
-    var cardEmail = ($('tmCardEmail').value || '').trim().toLowerCase();
     var mobDigits = mobile.replace(/\D/g, '').length;
     if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
-    if (cardEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cardEmail)) { msg('tmMsg', 'Enter a valid email for the card.', 'err'); $('tmCardEmail').focus(); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
-                   mobile: mobile || null, card_email: cardEmail || null };
+                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off' };
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
-      if (until && until < todayMy() && (!editingMember || until !== editingMember.access_until)) {
-        msg('tmMsg', 'Choose today or a later date.', 'err'); $('tmUntil').focus(); return;
+      var untilTime = until ? ($('tmUntilTime').value || null) : null;
+      var same = editingMember && until === editingMember.access_until &&
+                 (untilTime || null) === (editingMember.access_until_time ? String(editingMember.access_until_time).slice(0, 5) : null);
+      if (until && !same && !aheadMy(until, untilTime)) {
+        msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
+        $(until < todayMy() ? 'tmUntil' : 'tmUntilTime').focus(); return;
       }
       fields.access_until = until;
+      fields.access_until_time = untilTime;
     }
     if (editingMember) {
       var m = editingMember;
@@ -1111,8 +1142,8 @@
             ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
-            ['access_until', 'Access until', dayWord],
-            ['mobile', 'Mobile'], ['card_email', 'Email on card']]);
+            ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
+            ['mobile', 'Mobile'], ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }]]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();
