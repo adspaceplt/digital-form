@@ -9451,11 +9451,12 @@ body.ncpage { background: var(--nc-ground); }
 .nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
+.nc-row-mail .nc-value { overflow-wrap: normal; word-break: normal; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
-  letter-spacing: .01em; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
+  letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
 .nc-pill:active { transform: scale(.97); }
@@ -9482,7 +9483,7 @@ body.ncpage { background: var(--nc-ground); }
 .nc.is-land .nc-name { font-size: 38px; }
 .nc.is-land .nc-post { font-size: 14px; }
 .nc.is-land .nc-acts { grid-column: 1; grid-row: 3; padding-top: 0; }
-.nc.is-land .nc-acts .nc-pill { height: 40px; }
+.nc.is-land .nc-acts .nc-pill { height: 40px; padding: 0 12px; }
 .nc.is-land .nc-rows { grid-column: 2; grid-row: 1 / 4; align-self: center; margin-top: 0; }
 .nc.is-land .nc-row { grid-template-columns: 72px minmax(0, 1fr); }
 .nc.is-land .nc-qr { padding: 40px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 260px;
@@ -9492,6 +9493,8 @@ body.ncpage { background: var(--nc-ground); }
 .nc.is-land .nc-qrname { grid-column: 1; grid-row: 3; margin: 0; font-size: 34px; }
 .nc.is-land .nc-qrlink { grid-column: 1; grid-row: 4; margin: 8px 0 0; text-align: left; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .nc-flip, .nc-lock, .nc-qr { transition: none; } }
+/* The sheet takes the card's full landscape width (720) at a desk. */
+.sheet-card.formsheet.ncsheet { width: min(780px, 100%); }
 /* My namecard in the console: the card as a client sees it, then its
    address with Copy link and Open, then the fields. */
 .ncsheet-card { display: flex; justify-content: center; }

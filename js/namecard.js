@@ -75,12 +75,14 @@
   function row(label, value, href, cls) {
     return '<a class="nc-row' + (cls ? ' ' + cls : '') + '" href="' + esc(href) + '"' +
       (/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '') + '>' +
-      '<span class="nc-label">' + esc(label) + '</span><span class="nc-value">' + esc(value) + '</span></a>';
+      '<span class="nc-label">' + esc(label) + '</span><span class="nc-value">' +
+      /* An address breaks only before its @, never inside a word. */
+      (cls === 'nc-row-mail' ? esc(value).replace('@', '<wbr>@') : esc(value)) + '</span></a>';
   }
   function rows(card) {
     return (card.mobile ? row('Mobile', phone(card.mobile), 'tel:+' + digits(card.mobile)) : '') +
       (ORG.phone ? row('Office', phone(ORG.phone), 'tel:+' + digits(ORG.phone)) : '') +
-      (card.email ? row('Email', card.email, 'mailto:' + card.email) : '') +
+      (card.email ? row('Email', card.email, 'mailto:' + card.email, 'nc-row-mail') : '') +
       (ORG.website ? row('Website', site(), 'https://' + site()) : '') +
       (ORG.address ? row('Address', address(), ORG.map || ('https://maps.google.com/?q=' + encodeURIComponent(address())), 'nc-row-long') : '');
   }
