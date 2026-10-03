@@ -76,10 +76,10 @@ window.ADSPACE_CONFIG = {
 
     // Everything under `content/` (Content Review files, creator drafts)
     // opens only with the CloudFront pass `media-pass` hands a page that has
-    // proved its link, code or sign-in (js/media.js). Turned on once
-    // CloudFront holds the portal's key (docs/S3-STORAGE.md §6); the pass is
-    // set on `mediaCookieDomain` so mycdn.adspace.me receives it.
-    privateMedia: false,
+    // proved its link, code or sign-in (js/media.js). On since 2026-10-03,
+    // once CloudFront held the portal's key (docs/S3-STORAGE.md §6); the pass
+    // is set on `mediaCookieDomain` so mycdn.adspace.me receives it.
+    privateMedia: true,
     mediaCookieDomain: 'adspace.me'
   },
   /* Google Drive import.

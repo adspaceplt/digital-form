@@ -746,3 +746,6 @@ After the invoices, the user asked that Content Review files and creator drafts 
 
 ### 2026-10-03 · Private invoices switched on
 The user added the upload key's `private/*` permission and the bucket policy's Deny (`docs/S3-STORAGE.md` §5a, §5b), so `privateInvoices` was turned on: every invoice PDF uploaded from now on is kept under `private/` and opens only through a five-minute link. Invoices uploaded before keep their public address until they are removed and uploaded again.
+
+### 2026-10-03 · The media pass switched on
+The user created CloudFront's public key and key group (`docs/S3-STORAGE.md` §6a). Its ID was stored as `cf_media_key_id`, the live function was seen signing a twelve-hour policy over `content/*` with it, and `privateMedia` was turned on, so every page carries the pass while CloudFront still answers everyone. Requiring it (§6b) is the user's next step.

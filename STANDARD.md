@@ -603,8 +603,9 @@ section holds only what is true of the project as a whole.
     five minutes, 2026-10-02), on since 2026-10-03
     (`docs/S3-STORAGE.md` §5 done). Letters and reports are never stored (redrawn
     on Download). Content Review media and creator drafts open only with
-    the media pass (`media-pass`, twelve hours, 2026-10-03), switched on
-    once the user has done `docs/S3-STORAGE.md` §6.
+    the media pass (`media-pass`, twelve hours, 2026-10-03), carried by the
+    pages since 2026-10-03; required by CloudFront once the user has done
+    `docs/S3-STORAGE.md` §6b.
   - The ALP checklists as forms.
 - Access: "Own clients only" (a row scope for Sales).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
