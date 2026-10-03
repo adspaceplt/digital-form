@@ -1027,11 +1027,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
-- A card's head is washed in a pastel of its platform's own brand colour
-  with its words in the brand's deep ink (`--plat-ig` magenta, `--plat-tt` a
-  mid grey, `--plat-xhs` pink rose, `--plat-fb` blue; 4.5:1; light only), one line at every width (the title gives way
-  first), and gives the shape as a ratio (`ADspaceMockups.ratio`: the file's
-  size, within 3% of a common ratio reads as it), never pixels.
+- A card's head is the original white head with no platform colour (the
+  user, 2026-10-03), one line at every width (the title gives way first),
+  and gives the shape as a ratio (`ADspaceMockups.ratio`: the file's size,
+  within 3% of a common ratio reads as it), never pixels.
 - A reel and its cover are one card (`.cardpair`): the reel's head, Reel and
   Cover as a view strip with each half's state in its tab, then the half on
   show. The cover names its reel (`posts.cover_for`, no foreign key; sent by
@@ -1041,7 +1040,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Add assets pairs a cover with a video by file name (`launch.mp4`,
   `launch-cover.jpg`), else the nearest video before it, as a Cover for choice
   kept by hand; the set page names a cover's video and its ⋯ Pair with video
-  changes or clears it (`post.edited`).
+  changes or clears it (`post.edited`). A video is named by its number in
+  the set (shown on its row) and its title, else its caption's first words,
+  else its file.
 - The client's page opens on the client portal's name card (`#rvHead`: mark,
   name, handle and post count, `N to review` counted at load); the bar no
   longer names the client. The creator selection page opens on the same card

@@ -48,15 +48,6 @@
   --ok-bg:      #ecf5f0;
   --pub:        #6a3fb5;
   --pub-bg:     #f2edfa;
-  /* The review page's platform tints (2026-10-03): a pastel of each
-     platform's own brand colour on a post card's head (Instagram's magenta,
-     Facebook's blue), its words in the brand's deep ink (4.5:1 and over). Client pages are light only, so these are never redefined below.
-     TikTok is a mid grey (its brand is black; a pastel of black is grey); rednote is a pink rose, never the red that
-     means destroys or refuses. */
-  --plat-ig:    #fce4ef;  --plat-ig-ink:  #a1155a;
-  --plat-tt:    #d4d4d4;  --plat-tt-ink:  #141414;
-  --plat-xhs:   #fde1e8;  --plat-xhs-ink: #b0103a;
-  --plat-fb:    #e3eefe;  --plat-fb-ink:  #0a52c4;
   /* The namecard (js/namecard.js) is the brand's own five tones, light in
      both themes as the post mockups are: never redefined below. */
   --nc-ground:  #ffffff;
@@ -586,22 +577,14 @@ a { color: inherit; }
    this portal. The chip shape comes from `.status`. */
 .badge { margin-left: auto; }
 
-/* The platform's wash on a card's head, and the words in its ink. The head
-   holds one line at every width: the title gives way first (an ellipsis),
-   the ratio and the state never wrap. */
-.card[data-plat] > .card-head, .cardpair > .card-head { border-bottom: 0; flex-wrap: nowrap; min-width: 0; }
+/* A card's head holds one line at every width: the title gives way first
+   (an ellipsis), the ratio and the state never wrap. No platform colour
+   (the user, 2026-10-03: the original style). */
+.card[data-plat] > .card-head, .cardpair > .card-head { flex-wrap: nowrap; min-width: 0; }
 .card[data-plat] > .card-head .card-title, .cardpair > .card-head .card-title {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto;
 }
 .card[data-plat] > .card-head .card-dims, .cardpair > .card-head .card-dims { flex: 0 0 auto; }
-.card[data-plat="instagram"] > .card-head, .cardpair[data-plat="instagram"] > .card-head { background: var(--plat-ig); }
-.card[data-plat="instagram"] > .card-head > :not(.badge), .cardpair[data-plat="instagram"] > .card-head > * { color: var(--plat-ig-ink); }
-.card[data-plat="tiktok"] > .card-head, .cardpair[data-plat="tiktok"] > .card-head { background: var(--plat-tt); }
-.card[data-plat="tiktok"] > .card-head > :not(.badge), .cardpair[data-plat="tiktok"] > .card-head > * { color: var(--plat-tt-ink); }
-.card[data-plat="xhs"] > .card-head, .cardpair[data-plat="xhs"] > .card-head { background: var(--plat-xhs); }
-.card[data-plat="xhs"] > .card-head > :not(.badge), .cardpair[data-plat="xhs"] > .card-head > * { color: var(--plat-xhs-ink); }
-.card[data-plat="facebook"] > .card-head, .cardpair[data-plat="facebook"] > .card-head { background: var(--plat-fb); }
-.card[data-plat="facebook"] > .card-head > :not(.badge), .cardpair[data-plat="facebook"] > .card-head > * { color: var(--plat-fb-ink); }
 
 /* A reel and its cover: one frame, the reel's head, the two halves as the
    view strip with each half's state in its tab, then the half on show. The
@@ -8707,6 +8690,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    width at a desk, where two tabs across the page would be two slabs. */
 .rectabs { width: 100%; }
 .rectabs .tab { flex: 1 0 auto; text-align: center; }
+/* A set's stage strip sits inside its Posts card, so it runs the card's
+   width as a record's strip does (the user, 2026-10-03). */
+.tabrow.poststages { width: 100%; }
+.tabrow.poststages .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {
   .tabrow { width: 100%; }
   .tabrow .tab { flex: 1 0 auto; text-align: center; }
@@ -9484,7 +9471,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    label stands above it, so it carries no head); on a phone it is a sheet of
    the screen's height with its name and close mark, the field at the top. */
 .picker {
-  position: fixed; z-index: 90; display: flex; flex-direction: column;
+  /* Over the question sheet too (#askSheet, 95): a long list asked inside
+     a question opened under its scrim. */
+  position: fixed; z-index: 96; display: flex; flex-direction: column;
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 6px; overflow: hidden;

@@ -3566,7 +3566,13 @@
     v.posts.forEach(function (p) {
       var m0 = (p.media || [])[0];
       if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
-        vn++; videos.push({ id: p.id, label: 'Video ' + vn + ' · ' + MK.label(p) });
+        /* Named by what tells one video from the next: its title, else the
+           first words of its caption, else its file, else its placement
+           (the user, 2026-10-03: thirty reels all read Instagram Reels). */
+        var said = String(p.title || '').trim() ||
+          String(p.caption || '').split(/\n/)[0].trim() || String(m0.name || '').trim();
+        if (said.length > 48) said = said.slice(0, 47).replace(/\s+\S*$/, '') + '…';
+        vn++; videos.push({ id: p.id, n: vn, label: 'Video ' + vn + ' · ' + (said || MK.label(p)) });
       }
     });
     v.posts.forEach(function (p) {
@@ -3820,6 +3826,10 @@
           '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
           '<span class="saved-meta">' +
             (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
+            /* A video's number in the set, the one the cover's choice names. */
+            ((extra.videos || []).filter(function (x) { return x.id === p.id; }).map(function (x) {
+              return '<span>Video ' + x.n + '</span><span class="sep">·</span>';
+            })[0] || '') +
             '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
             (p.platform === 'cover' ? '<span class="sep">·</span><span>' + esc(coverWord(p, extra.videos)) + '</span>' : '') +
             '</span>' +
