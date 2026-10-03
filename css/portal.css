@@ -9428,8 +9428,8 @@ body.ncpage { background: var(--nc-ground); }
 .nc-lock, .nc-qr { position: absolute; inset: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
   transition: opacity var(--t-slow) var(--ease-out); }
 .nc-lock { display: block; }
-/* The lockup's centre on the golden point, 38.2% down the card. */
-.nc-lock-in { position: absolute; left: 0; right: 0; top: 38.2%; transform: translateY(-50%);
+/* The lockup centred on the card, both ways. */
+.nc-lock-in { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; align-items: center; }
 .nc-qr { padding: 34px 28px 30px; opacity: 0; pointer-events: none; }
 .nc.is-qr .nc-lock { opacity: 0; pointer-events: none; }
