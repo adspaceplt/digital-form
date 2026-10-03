@@ -123,7 +123,8 @@
     media.load();
   }
 
-  document.addEventListener('error', function (e) {
+  // Only a page listens: the conversion's own tests load this file without one.
+  if (typeof document !== 'undefined') document.addEventListener('error', function (e) {
     if (!isOn() || !proof) return;
     var el = e.target;
     if (!el || !el.tagName) return;
@@ -146,10 +147,12 @@
     });
   }, true);
 
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') ask(false);
-  });
-  setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') ask(false);
+    });
+    setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
+  }
 
   window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, attach: attach, pass: pass };
 })();
