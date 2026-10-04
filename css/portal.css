@@ -7159,6 +7159,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   will-change: transform;
 }
 .seg.has-thumb::before { border-radius: calc(var(--radius-sm) - 2px); }
+/* A CHOICE IS A PILL (the user, 2026-10-04): a value picked from two to four
+   is round, track, options and thumb alike, so it never reads as one of the
+   rectangular buttons that act beside it. Tab strips and view strips move
+   between screens and keep their corners. A segment wrapped onto two rows
+   rounds its track by one row's half height. */
+.seg, .seg-opt, .seg.has-thumb::before { border-radius: 999px; }
+.seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); }
+/* A round end takes room from the words, so a pill's option keeps 14px
+   either side of them (8 sat the word against the curve). */
+.seg-opt { padding-inline: 14px; }
+/* The small segment: the small control's height and type, beside the small
+   button it belongs with; its options as wide as their words. */
+.seg.is-sm { display: inline-flex; min-height: var(--ctl-h-sm); }
+.seg.is-sm > .seg-opt { flex: 0 0 auto; min-height: var(--ctl-h-sm); font-size: 12.5px; }
 .cmdbar-views.has-thumb.is-snap::before, .seg.has-thumb.is-snap::before,
 .rectabs.has-thumb.is-snap::before, .tabrow.has-thumb.is-snap::before { transition: none; }
 .cmdbar-views.has-thumb > .acttab, .seg.has-thumb > .seg-opt,
@@ -8392,13 +8406,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-actions > .btn { flex: 1 1 0; min-width: 0; }
 .is-narrow .rp-actions > .rp-wait { order: -1; flex: 1 0 100%; }
 .rp-sec { display: grid; gap: 12px; }
-/* The commentary's line and Draft with AI share one row, the button at the right edge. */
-.rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* The commentary's line, then one row: the draft's language, named, at the
+   left; Write draft at the right edge with what is left beside it (the user,
+   2026-10-04: a choice beside an action read as three buttons). On a phone
+   the two take a line each, the action nearest the thumb. */
+.rp-aidraft { display: grid; gap: 12px; }
 .rp-aidraft .rp-hint { margin: 0; }
 .rp-aidraft .btn { flex: 0 0 auto; }
-/* The draft's language beside its button, one group that never splits. */
-.rp-aiacts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.is-tight .rp-aidraft { flex-wrap: wrap; }
+.rp-airow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rp-ailang { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rp-ailang-label { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.rp-aiacts { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 0 0 auto; }
+.is-narrow .rp-airow { flex-direction: column; align-items: stretch; }
+.is-narrow .rp-ailang { justify-content: space-between; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
 .rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -9793,3 +9813,12 @@ body.is-maint { overflow: hidden; }
    the day the month starts on. */
 .engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
 .engreports > legend { padding: 0; margin-bottom: 0; }
+
+/* ONE WEIGHT FOR EVERY CHOICE (the user, 2026-10-04: "not one odd weird 500
+   weight"). Every tab, view and segment option reads at the body's 400,
+   chosen or not: the raised surface and the ink say which is chosen, so the
+   words never change weight under the thumb. A count beside a tab keeps its
+   own pill. */
+.tab, .tab.is-on, .rectabs .tab, .rectabs .tab.is-on, .tabrow .tab, .tabrow .tab.is-on,
+.cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
+.seg-opt, .seg-opt.is-on, .navitem.is-on, .picker-opt.is-on { font-weight: 400; }

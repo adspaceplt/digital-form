@@ -190,7 +190,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Add or edit a record | A sheet: `.sheet` > `.sheet-card.formsheet` (620px; 780 for a picker) with a head and close mark, a scrolling `.sheet-body`, and `.sheet-foot` |
 | A form of more than five fields | `section.fsec` > `h4.fsec-h` (13/600 ink), 2 to 5 fields each, divided by a `--line-soft` hairline and a 24px step |
 | Fields side by side | `.row.fgrid` (two equal) / `.fgrid-3`, `span-all` / `span-2`; one column under `.is-tight` and below 560. Never a pixel width in a style attribute |
-| A choice of two to four | Segment `select[data-seg]` (five or more stays a select) |
+| A choice of two to four | Segment `select[data-seg]`, a pill (five or more stays a select); named by a label beside it where an action shares its row |
 | A choice of ten or more | A select; it opens the finder (`.picker`, `js/form.js` §8): a search field over the options, under the field at a desk, the screen's height on a phone |
 | Usual defaults | `details.fmore` More details, its line naming what it holds |
 | A record pane of facts | Read first (`readGroup`, missing required values in warn); Edit opens the same groups in a sheet |
@@ -295,6 +295,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The rail is one block per question, ordered by need. A block with no data
   leaves. A written next action beats a derived one. A missing date's row is
   left out.
+- A choice and an action never share a row unseparated: the choice carries
+  its label at the left, the action sits at the right edge with its count
+  just before it (the draft's language beside Write draft).
 - A fact is stated once on a screen. A control that changes it answers
   (`Saved.`), and puts itself back on a refusal.
 - A mark holds real artwork (`logo_url`, falling back to initials only while
@@ -391,10 +394,18 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Hover is one step lighter than selected (`--sunk` against `--line-soft`),
   never equal. Every hover lives inside `@media (hover: hover)`. A hover is the
   next step of its ground, never `--fill`.
-- The chosen one of several is a fill, never a shadow:
-  - a nav item: `--line-soft` plus 600;
+- The chosen one of several is a fill, never a shadow and never a weight:
+  every tab, view, segment, nav item and finder option reads at 400, chosen
+  or not (the user, 2026-10-04);
+  - a nav item: `--line-soft`;
   - a tab, a view and a segment alike: one raised thumb that slides on the
     tonal track (`.rectabs`, `.tabrow`, `.cmdbar-views`, `.seg`);
+  - a segment (a value picked) is a pill, track, options and thumb, its
+    options 14px either side of the word; a tab or view strip (a screen
+    moved to) keeps its corners. Round chooses, rectangular acts. A small
+    select (`select-sm`) makes a small segment (`.seg.is-sm`): the small
+    control's height and 12.5px type, options as wide as their words, the
+    height of the small button it sits with;
   - an `.acttab` outside a strip: the ink fill.
 - A ticked row's fill must not cost a control its edge (an untinted select on
   a ticked row takes the mute ink edge).
