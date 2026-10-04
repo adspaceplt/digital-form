@@ -390,8 +390,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The way back (reinstate, set active, restore) never asks.
 - `js/ask.js` asks for one value.
   - `rename(host, btn)` edits in place. The pen becomes the ink tick. Enter
-    saves, Escape restores, an empty value keeps the field open, and blur
-    neither saves nor discards. `type`/`value` are available for a date.
+    saves, Escape restores (before any sheet's Escape), an empty value keeps
+    the field open, and blur neither saves nor discards. `type`/`value` are
+    available for a date.
+  - The field is the value itself: its own type and box height read from the
+    value, one `.input.askfield` rule (tonal, no box line, no glyph, pulled
+    back so the words keep their place; a date a date's width, `.is-date`).
+    No screen sizes its own field. `tests/inplace.js` opens every one at a
+    desk and under a finger.
   - `inline(btn)` grows the field out of the control.
   - `note(after)` is a textarea; `once` removes it with its answer, and the
     handle carries `box`.

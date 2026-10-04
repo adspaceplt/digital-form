@@ -781,10 +781,7 @@ a { color: inherit; }
    weight, so the line does not jump by a pixel when the pen is pressed: a
    rename that reflows the bar around it is a rename you have to find your
    place in again. */
-.askfield {
-  font-size: 19px; font-weight: 600; letter-spacing: -.02em;
-  min-width: 0; flex: 1 1 260px; max-width: 100%;
-}
+.askfield { min-width: 0; flex: 1 1 260px; max-width: 100%; }
 /* A note the console opens under the control that sends it. `.changebox`
    carries the shape; this only says where it sits, because on a card the
    control is in a row of its own and the note belongs under the whole row. */
@@ -4360,7 +4357,6 @@ body > .shell { width: 100%; }
 .rec-name .rec-pen.is-done { color: var(--ok); background: var(--ok-bg); }
 /* The field takes the heading's size; its box is the small control's, so the
    head grows by as little as a field can when the pen is pressed. */
-.rec-name h2 .askfield { font-size: 19px; min-height: var(--ctl-h-sm); padding-block: 2px; }
 /* A hint under its own field sits on the field, not a block step away. */
 .field > .hint { margin: 6px 0 0; }
 /* The New sheet's pieces (2026-09-28): a line each, the description, the
@@ -6402,35 +6398,24 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .tl-end { display: inline-flex; align-items: center; gap: 2px; justify-self: end; min-width: 0; }
 /* The field takes the value's place inside the row's own left cell, so the
    picker grows where the date was rather than in the duration's track. */
-/* The field is the row's own size, not the heading's: `.askfield` is written
-   for a title at 19px and the Client since row is 13px, so the picker stood
-   half again as tall as the rows around it and in the heading's weight. */
-.tl-lead .askfield {
-  min-width: 0; flex: 1 1 auto; font-size: 13px; font-weight: 400; letter-spacing: 0;
-  min-height: var(--ctl-h-sm); padding: 2px 8px;
+/* A value edited where it sits (js/ask.js; the user, 2026-10-04: a box
+   dropped into a line is not how Apple or Aesop edit). The field takes the
+   value's own type (set from the value), sits on a quiet tonal ground with
+   no box line and no glyph, and is padded 6px and pulled back 6px, so the
+   words stay where they were and the line keeps its height. A date is a
+   date's width and opens the system's own picker under a finger. The focus
+   ring stays. No screen sizes its own. */
+.input.askfield {
+  min-height: 0; height: auto; padding: 2px 6px; margin: -2px 0 -2px -6px;
+  border-color: transparent; border-radius: 6px; background-color: var(--tonal);
 }
-/* A date is as wide as a date, not the row (the user, 2026-10-04: on an
-   iPhone it ran across the row, its calendar glyph over the day, and stood
-   twice the row's height). It keeps the small control's height inside the
-   row's own, as the pen does, and leaves the glyph its room. */
-.tl-lead .askfield[type="date"] {
-  flex: 0 1 152px; margin-block: calc((20px - var(--ctl-h-sm)) / 2);
-}
-.tl-lead .askfield[type="date"]::-webkit-date-and-time-value {
-  min-height: calc(var(--ctl-h-sm) - 6px); line-height: calc(var(--ctl-h-sm) - 6px);
-}
-/* Under a finger it is the phone's own compact date: a quiet tonal pill the
-   date's width and a line's height, no box line and no glyph, sitting in the
-   row's text (the user, 2026-10-04: a 44px boxed field in a 20px line read as
-   a form dropped into a sentence). Its focus ring stays. */
+.input.askfield:not(.dmy) { background-image: none; }
+.input.askfield.is-date { flex: 0 0 auto; width: 9.5em; }
+.input.askfield.is-date::-webkit-date-and-time-value { min-height: 0; line-height: inherit; text-align: left; }
+.input.askfield.is-date::-webkit-calendar-picker-indicator { display: none; }
+.input.askfield.dmy { width: 9.5em; padding-right: 26px; background-position: right 6px center; background-size: 14px; }
 @media (pointer: coarse) {
-  .tl-lead .askfield[type="date"] {
-    flex: 0 0 auto; width: 124px; min-height: 32px; height: 32px; padding: 0 10px;
-    margin-block: -6px; border-color: transparent; border-radius: 8px;
-    background-color: var(--tonal); background-image: none; font-size: 15px;
-  }
-  :root[data-theme="dark"] .tl-lead .askfield[type="date"] { background-image: none; }
-  .tl-lead .askfield[type="date"]::-webkit-date-and-time-value { min-height: 30px; line-height: 30px; text-align: center; }
+  .input.askfield, .input.askfield.is-date { padding: 2px 6px; background-image: none; }
 }
 
 .rec {
@@ -8023,7 +8008,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhead-name .rec-pen svg { width: 15px; height: 15px; }
 .qhead-name .rec-pen[hidden] { display: none; }
 @media (hover: hover) { .qhead-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
-.qhead-name .askfield { flex: 1 1 auto; font-size: 17px; font-weight: 600; }
+.qhead-name .askfield { flex: 1 1 auto; }
 .qpri { max-width: var(--state-w); }
 .qcard-count { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 /* The hairline between items is the item row's, so it runs under the ⋯ as

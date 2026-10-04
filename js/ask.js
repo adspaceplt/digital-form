@@ -49,8 +49,23 @@
     var was = typeof opts.value === 'string' ? opts.value : host.textContent;
     var field = document.createElement('input');
     field.type = opts.type || 'text';
-    field.className = 'input askfield';
+    field.className = 'input askfield' + (field.type === 'date' ? ' is-date' : '');
     field.value = was;
+    /* The field speaks in the value's own type, wherever it is: a title at
+       19px, a row's date at 13px. One rule in css/portal.css draws it; no
+       screen sizes its own (the user, 2026-10-04: a box dropped into a line). */
+    var face = window.getComputedStyle ? window.getComputedStyle(host) : null;
+    if (face) {
+      field.style.fontSize = face.fontSize;
+      field.style.fontWeight = face.fontWeight;
+      field.style.letterSpacing = face.letterSpacing;
+      field.style.lineHeight = face.lineHeight;
+    }
+    /* Its box is the value's box and its 2px pads, which the rule pulls
+       back, so the line keeps its height on every engine (a date field's
+       own line box is taller than text in Chrome and on iOS). */
+    var tall = host.getBoundingClientRect().height;
+    if (tall > 0) field.style.height = Math.round(tall + 4) + 'px';
     field.setAttribute('aria-label', opts.label || 'Name');
     if (window.ADspaceForm && window.ADspaceForm.floor) window.ADspaceForm.floor(field);
     if (opts.max) field.maxLength = opts.max;

@@ -7511,6 +7511,9 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (e.target && e.target.closest && e.target.closest('.tinline-pick, .tdate-pick, .towner-pick')) return;
+      /* A value being edited in place answers its own Escape: the value
+         comes back and the sheet stays. */
+      if (e.target && e.target.classList && e.target.classList.contains('askfield')) return;
       /* A question asked over the task answers its own Escape first. */
       var ask = document.getElementById('askSheet');
       if (ask && !ask.hidden) return;
