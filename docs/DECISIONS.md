@@ -854,3 +854,6 @@ On the set page the edit form's body aligned its children to the start, so Cance
 
 ### 2026-10-04 · The client's request: Edit text, a growing box, the line kept
 From the user's iPhone: the pen beside Copywriting went unnoticed, so the caption's edit is now Edit text, a small tonal button with the pen beside Copy text. A long request sat in a two-line box; the note and the caption fields now grow with their words to 60% of the screen, then scroll. Cancel after Edit request cleared the decision line ("Changes requested by … on …") because Cancel and the armed Approve's disarm both wrote an empty line; both now repaint the decision as it stands. While a standing request is edited, its note box steps away, so the words are not shown twice.
+
+### 2026-10-04 · The gate never reads stale
+Twice in one round a result was read from the wrong run: a suite run by hand during a gate tested the gate's frozen snapshot (8899 served it), and `/tmp/gate.txt` still held an earlier commit's result while the next gate ran. `snap.sh` now serves its snapshot on 8898 with the copied suites rewritten to it, keeps 8899 on the repo (restarting it if it was left on a snapshot), and writes `running: <sha>` into the result file at the start; the final file opens `snapshot: <sha>`.

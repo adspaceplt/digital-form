@@ -77,6 +77,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
     frozen copy of HEAD (commit first), so the next change is built while it
     runs. The machine has 4 CPUs and one gate fills them: one gate at a time.
+  - The snapshot is served on 8898 (its suites rewritten to it); 8899 always
+    serves the repo, so a suite run by hand meanwhile tests the live code.
+  - `$OUT` reads `running: <sha>` until the gate ends. A result counts only
+    under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
   - Run only the suites the change touched (the tiers below), before the
