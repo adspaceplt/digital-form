@@ -1864,6 +1864,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     but an admin may confirm their own after a question saying nobody else
     checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
     (Manage).
+  - A report is submitted to a named reviewer (`sm_reports.reviewer_id`,
+    `2026-10-04-report-reviewer.sql`), asked for in Submit's question from
+    `sm_report_reviewers` (Reports Full Access or an admin, never the
+    submitter, the client's last reviewer chosen). Only the reviewer, or an
+    admin after "Confirm in place of {name}?" (filed "in place of"),
+    confirms (`not-reviewer`); the reviewer, an admin or the submitter
+    (Take back) sends it back. Change reviewer in the head's ⋯ (submitter,
+    reviewer or admin; `sm_report_assign`, filed `report.reassigned`). The
+    reviewer is told on Submit and on a change, the submitter on Confirm
+    and Send back, each through the bell and a push opening the report
+    (`ops_notifications.report_id`). The step reads "Waiting for {name} to
+    confirm."; the list row names the reviewer. A report in review from
+    before keeps the earlier rule. Only the functions set the reviewer.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
@@ -1995,7 +2008,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
     one draft and drafting it again is an admin's (`team_members.is_admin`;
-    `redraft`), to 5 a report in 24 hours; 20 a colleague and 60 the team in
+    `redraft`), to 5 a report in 24 hours, both counted by subject (the
+    report, or any of the same client and kind whose period shares a day
+    with it, deleted or not: `ai_drafts` keeps client, kind and period,
+    `2026-10-04-ai-draft-subject.sql`); 20 a colleague and 60 the team in
     24 hours; a failed press is
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)

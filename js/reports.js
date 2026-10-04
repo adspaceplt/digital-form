@@ -14,7 +14,7 @@
  * in the team's words. A report is edited only while it is a draft.
  *
  *   Draft      Submit for review            reports Work
- *   In review  Confirm / Send back          Manage, never the submitter
+ *   In review  Confirm / Send back          the named reviewer, or an admin
  *   Confirmed  Publish to client / Send back Manage
  *   Published  Revise, Unpublish            Work / Manage
  *
@@ -98,6 +98,11 @@
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
     'self-confirm': 'Somebody else confirms a report you submitted.',
+    'no-reviewer': 'Choose who reviews it.',
+    'self-review': 'Somebody else reviews a report you submitted.',
+    'bad-reviewer': 'Choose a colleague at Reports Full Access.',
+    'not-reviewer': 'Only its reviewer, or an admin, does this.',
+    'same-reviewer': 'They already review it.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished yet.',
@@ -383,7 +388,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more).then(function (x) {
+      return Promise.all(more.concat([loadNames()])).then(function (x) {
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
@@ -393,6 +398,16 @@
   }
 
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
+  /* Colleagues' names, read once, for the reviewer a report names. */
+  var namesReady = null;
+  function loadNames() {
+    if (!namesReady) namesReady = db.from('team_members').select('id, name').then(function (r) {
+      st.names = {};
+      ((r && r.data) || []).forEach(function (m) { st.names[m.id] = m.name; });
+    }).catch(function () { st.names = st.names || {}; namesReady = null; });
+    return namesReady;
+  }
+  function nameOf(id) { return (st.names || {})[id] || ''; }
   function myId() { var m = me(); return m && m.id; }
   function isAdmin() { var m = me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
   /* A step read, not edited (a report in review and after): the record's
@@ -581,15 +596,21 @@
     }).join('');
     var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
     var mine = r.submitted_by && r.submitted_by === myId();
+    /* A named reviewer confirms, or an admin in their place; a report
+       submitted before reviewers keeps the earlier rule. */
+    var named = r.status === 'review' && r.reviewer_id;
+    var reviewing = named && r.reviewer_id === myId();
     var acts = [], wait = '';
     if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : '') + '>Submit for review</button>');
-    if (r.status === 'review' && may('manage') && (!mine || isAdmin())) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
+    if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
-    if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
-      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Send back') + '</button>');
+    var mayReturn = named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine);
+    if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
+      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
+    else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
     else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
@@ -605,6 +626,10 @@
 
   function moreMenu(r, live) {
     var items = [];
+    if (r.status === 'review' && r.reviewer_id && may('work') &&
+        (r.submitted_by === myId() || r.reviewer_id === myId() || isAdmin())) {
+      items.push('<button class="kmenu-item" type="button" data-a="reassign">Change reviewer</button>');
+    }
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -633,14 +658,40 @@
     });
   }
 
+  /* Who reviews: the colleagues the database offers (Reports Full Access or
+     an admin, never the submitter), the client's last reviewer first
+     chosen. One question with the reviewer as its field. */
+  function pickReviewer(r, btn, m, ask, then) {
+    if (btn) btn.disabled = true;
+    Promise.all([db.rpc('sm_report_reviewers', { p_id: r.id }), loadNames()]).then(function (got) {
+      if (btn) btn.disabled = false;
+      var res = got[0], d = (res && res.data) || {};
+      if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+      var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
+      if (!pool.length) { say(m, 'No colleague at Reports Full Access can review it.', 'err'); return; }
+      var pick = (pool.filter(function (x) { return x.last; })[0] || pool[0]).id;
+      window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
+        field: { label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick } },
+        function (who) { then(who); });
+    }).catch(function () { if (btn) btn.disabled = false; say(m, said({ message: 'Load failed' }), 'err'); });
+  }
+
   function wireSteps(box) {
     var r = st.open, m = box.querySelector('[data-m="check"]');
     var on = function (a, fn) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('submit', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Submit for review?', body: 'A manager checks it before it is published. It is locked while in review.', go: 'Submit' },
-        function () { stepCall('sm_report_submit', { p_id: r.id }, 'Submitted for review.', b, m); });
+      pickReviewer(r, b, m, { title: 'Submit for review?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' },
+        function (who) { stepCall('sm_report_submit', { p_id: r.id, p_reviewer: who }, 'Submitted to ' + nameOf(who) + '.', b, m); });
     });
     on('confirm', function (b) {
+      /* An admin confirming for the named reviewer says so first; the
+         record files it "in place of" them (2026-10-04). */
+      if (r.reviewer_id && r.reviewer_id !== myId() && r.submitted_by !== myId()) {
+        window.ADspaceConfirm.ask({ title: 'Confirm in place of ' + (nameOf(r.reviewer_id) || 'the reviewer') + '?', body: 'The record notes you confirmed it in their place.', go: 'Confirm' }, function () {
+          stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
+        });
+        return;
+      }
       /* An admin may confirm a report they submitted (the user, 2026-10-02:
          the hierarchy ends with them), after a question saying so. */
       if (r.submitted_by && r.submitted_by === myId()) {
@@ -674,6 +725,11 @@
       var open = menu.hidden;
       menu.hidden = !open; b.setAttribute('aria-expanded', String(open));
       if (open && window.ADspaceMenu) window.ADspaceMenu.place(b, menu);
+    });
+    on('reassign', function (b) {
+      b.closest('.kmenu').hidden = true;
+      pickReviewer(r, null, m, { title: 'Change reviewer?', body: 'The new reviewer is told.', go: 'Change', skip: r.reviewer_id },
+        function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, 'Reviewer changed to ' + nameOf(who) + '.', null, m); });
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
@@ -2810,10 +2866,10 @@
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at').order('period_start', { ascending: false }).then(function (r) {
+    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id').order('period_start', { ascending: false }).then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
-      clientsReady.then(paintHub);
+      Promise.all([clientsReady, loadNames()]).then(paintHub);
     });
   }
   var clientsReady = Promise.resolve();
@@ -2858,7 +2914,8 @@
             var c = hub.byClient[r.client_id] || {};
             var b2 = document.createElement('button');
             b2.type = 'button'; b2.className = 'crm-row rh-row';
-            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc(TYPE_WORD[r.kind] || '') + '</small></span>' +
+            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc((TYPE_WORD[r.kind] || '') +
+                (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '')) + '</small></span>' +
               '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
               '<span class="rp-ver">v' + r.version_no + '</span>' +
               '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +

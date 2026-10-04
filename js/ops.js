@@ -7708,6 +7708,12 @@
       else if (bridge.show) bridge.show('mine');
       return;
     }
+    /* A report's review, confirmation or send back opens the report. */
+    if (!x.task_id && x.report_id) {
+      history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(x.report_id));
+      if (bridge.show) bridge.show('reports');
+      return;
+    }
     if (!x.task_id) return;
     /* On My Work the task opens beside the list; from anywhere else the
        address comes first, because My Work reads it on entry. */
