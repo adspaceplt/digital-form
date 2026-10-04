@@ -14,18 +14,20 @@
 --      client's month before unless it names them, so a change of start day
 --      carries forward from the month it is made on, never backwards.
 --   2. `ops_month_span(period, day)`: the first and last day of a month.
---   3. `ops_engagement_sync_reports(month)`: each report ticked has one live
---      task on the everyday workflow, named Accounts report or Advertising
---      report, its format Report, its owner the month's manager, due at
---      23:59 MYT seven days after the month's last day (`source_type`
---      `report_social` / `report_ads`). A report unticked cancels its task
---      while it is still To do and keeps one already started. A start day
---      moved moves an open task's due date, filed as a date change.
+--   3. `ops_engagement_sync_reports(month, moved)`: each report ticked has
+--      one live task on the everyday workflow, named Accounts report or
+--      Advertising report, its format Report, its owner the month's manager,
+--      its first draft due at 23:59 MYT five days after the month's last day
+--      and its final seven days after (`source_type` `report_social` /
+--      `report_ads`). A report unticked cancels its task while it is still To
+--      do and keeps one already started. Only a start day moved (`moved`)
+--      moves an open task's dates, filed as date changes; any other save
+--      leaves a date somebody moved alone.
 --   4. `ops_engagement_upsert` takes `reports` and `start_day` and syncs.
 --
 -- ROLLBACK
 --   Run the READINESS IS THE FIRST MONTH'S section's ops_engagement_upsert
---   again, remove the functions ops_engagement_sync_reports(uuid) and
+--   again, remove the functions ops_engagement_sync_reports(uuid, boolean) and
 --   ops_month_span(text, integer), then
 --   alter table public.ops_engagements drop column if exists reports,
 --     drop column if exists start_day;
@@ -56,8 +58,9 @@ $$;
 revoke all on function public.ops_month_span(text, integer) from public, anon, authenticated;
 
 -- One live task a report the month asks for; a report no longer asked for
--- cancels its task while it is still To do.
-create or replace function public.ops_engagement_sync_reports(p_engagement uuid)
+-- cancels its task while it is still To do; a start day moved moves the
+-- dates of one still open.
+create or replace function public.ops_engagement_sync_reports(p_engagement uuid, p_moved boolean default false)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -65,6 +68,7 @@ declare
   k text;
   v_ends date;
   v_due timestamptz;
+  v_draft timestamptz;
   t public.ops_tasks;
   v_first text;
   res jsonb;
@@ -77,6 +81,7 @@ begin
   end if;
   select s.ends into v_ends from public.ops_month_span(e.period, e.start_day) s;
   v_due := ((v_ends + 7)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  v_draft := ((v_ends + 5)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
   foreach k in array array['social', 'ads'] loop
     if k = any (e.reports) then
       if not exists (select 1 from public.ops_tasks x
@@ -86,23 +91,34 @@ begin
           'engagement_id', e.id, 'scope', 'client', 'client_id', e.client_id,
           'workflow_key', 'task', 'task_type', 'engagement', 'deliverable_type', 'report',
           'content_desc', case k when 'social' then 'Accounts report' else 'Advertising report' end,
-          'code_period', e.period, 'final_due_at', v_due, 'source_type', 'report_' || k,
+          'code_period', e.period, 'first_draft_due_at', v_draft, 'final_due_at', v_due,
+          'source_type', 'report_' || k,
           'owner_id', e.manager_id, 'manager_id', e.manager_id));
         if res ? 'error' then
           raise exception 'report-task: %', res ->> 'error' using errcode = 'P0001';
         end if;
         made := made + 1;
-      else
+      elsif p_moved then
         for t in select * from public.ops_tasks x
                   where x.engagement_id = e.id and x.source_type = 'report_' || k
-                    and x.cancelled_at is null and x.archived_at is null and x.completed_at is null
-                    and x.current_final_due_at is distinct from v_due loop
-          update public.ops_tasks set current_final_due_at = v_due, updated_at = now(), version = version + 1
+                    and x.cancelled_at is null and x.archived_at is null and x.completed_at is null loop
+          update public.ops_tasks set current_final_due_at = v_due,
+                 current_first_draft_due_at = case when first_draft_submitted_at is null then v_draft
+                                                   else current_first_draft_due_at end,
+                 updated_at = now(), version = version + 1
            where id = t.id;
-          perform public.ops_log(t.id, 'due_changed',
-            jsonb_build_object('kind', 'final', 'value', t.current_final_due_at),
-            jsonb_build_object('kind', 'final', 'value', v_due),
-            jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          if t.current_final_due_at is distinct from v_due then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'final', 'value', t.current_final_due_at),
+              jsonb_build_object('kind', 'final', 'value', v_due),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
+          if t.first_draft_submitted_at is null and t.current_first_draft_due_at is distinct from v_draft then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'first_draft', 'value', t.current_first_draft_due_at),
+              jsonb_build_object('kind', 'first_draft', 'value', v_draft),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
         end loop;
       end if;
     else
@@ -125,7 +141,7 @@ begin
   end loop;
   return jsonb_build_object('made', made, 'cancelled', gone);
 end $$;
-revoke all on function public.ops_engagement_sync_reports(uuid) from public, anon, authenticated;
+revoke all on function public.ops_engagement_sync_reports(uuid, boolean) from public, anon, authenticated;
 
 /* One a client a month. A second call for the same month edits the one row
    rather than making a second. The two checks are onboarding, so they are
@@ -144,6 +160,7 @@ declare
   prev public.ops_engagements;
   v_day integer;
   v_reports text[];
+  v_was_day integer;
 begin
   m := public.ops_me();
   if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
@@ -199,6 +216,7 @@ begin
     if (p_payload - 'client_id' - 'period') = '{}'::jsonb then
       return public.ops_engagement_json(eid) || jsonb_build_object('created', false);
     end if;
+    select o.start_day into v_was_day from public.ops_engagements o where o.id = eid;
     update public.ops_engagements set
       manager_id = coalesce((p_payload ->> 'manager_id')::uuid, manager_id),
       planned_count = coalesce((p_payload ->> 'planned_count')::integer, planned_count),
@@ -209,7 +227,8 @@ begin
     where id = eid;
     perform public.ops_engagement_log(eid, 'edited', p_payload - 'client_id' - 'period');
   end if;
-  perform public.ops_engagement_sync_reports(eid);
+  perform public.ops_engagement_sync_reports(eid,
+    v_was_day is not null and v_was_day is distinct from (select o.start_day from public.ops_engagements o where o.id = eid));
   return public.ops_engagement_json(eid) || jsonb_build_object('created', fresh);
 end $$;
 grant execute on function public.ops_engagement_upsert(jsonb) to authenticated;

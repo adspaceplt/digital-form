@@ -1689,10 +1689,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
     on), a new month taking both from the client's month before. Each
     report ticked is one live task (`ops_engagement_sync_reports`: the
-    everyday workflow, format Report, the month's manager, due 23:59 MYT
-    seven days after the month's last day, `source_type` `report_social` /
-    `report_ads`); unticked, a task still To do is cancelled and a started
-    one kept; a start day moved moves an open one's due date, filed.
+    everyday workflow, format Report, the month's manager, first draft
+    due 23:59 MYT five days after the month's last day and final seven,
+    never from the Report template's offsets; `source_type`
+    `report_social` / `report_ads`); unticked, a task still To do is
+    cancelled and a started one kept; only a start day moved moves an
+    open one's dates (filed), so another save never undoes an extension.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
