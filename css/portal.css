@@ -1756,7 +1756,11 @@ a { color: inherit; }
 .dangerrow { display: flex; gap: 10px; align-items: center; }
 
 .saved.is-editing { align-items: flex-start; background: var(--sunk); }
-.saved.is-editing .saved-body { gap: 10px; }
+/* Every field and the action pair run the body's width, so the captions,
+   the file and Cancel / Save share one right edge (the user, 2026-10-04:
+   the pair sat small at the left and the file ran past the captions). */
+.saved.is-editing .saved-body { gap: 10px; align-items: stretch; }
+.saved.is-editing .saved-body > .changebox-actions { margin-top: 2px; }
 .saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
 
 /* Cover image is an asset, not a post, so it gets a neutral frame. It has no
@@ -9450,7 +9454,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .saved-kept-t { color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .saved-kept-row { grid-template-columns: auto minmax(0, 1fr); }
 .is-narrow .saved-kept-row .plink { grid-column: 1 / -1; justify-self: start; }
-.saved-file { display: grid; gap: 5px; width: 100%; margin-top: 4px; }
+.saved-file { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; width: 100%; margin-top: 4px; }
+.saved-file > .input { width: 100%; min-width: 0; }
 .saved-file > span { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 
 /* On a phone the stage strip is the column's (the card's) width, its four
