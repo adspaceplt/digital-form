@@ -5641,9 +5641,11 @@
         db.rpc('ops_engagement_counts', { p_engagements: ntEngs.map(function (e) { return e.id; }) }).then(function (cr) {
           if ($('ntClient').value !== cid) return;
           var held = countsOf(cr) || {};
-          ntEngs.forEach(function (e) { if (held[e.id]) ntHeld[e.id] = held[e.id].live || 0; });
+          /* Content against the plan: the month's own report tasks are not
+             pieces (2026-10-04). */
+          ntEngs.forEach(function (e) { if (held[e.id]) ntHeld[e.id] = held[e.id].content != null ? held[e.id].content : held[e.id].live; });
           ntPlanLine();
-        }, function () {});
+        }).catch(function () {});
         ntPlanLine();
       });
   }
@@ -6063,7 +6065,10 @@
   function countsOf(r) {
     if (!r || r.error || !Array.isArray(r.data)) return null;
     var out = {};
-    r.data.forEach(function (x) { out[x.engagement_id] = { live: Number(x.live) || 0, open: Number(x.open) || 0, done: Number(x.done) || 0 }; });
+    r.data.forEach(function (x) {
+      out[x.engagement_id] = { live: Number(x.live) || 0, open: Number(x.open) || 0, done: Number(x.done) || 0,
+        content: x.content == null ? null : Number(x.content) || 0 };
+    });
     return out;
   }
   function countFor(e, counts, tasks) {
@@ -6621,6 +6626,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
       body: (n ? (n === 1 ? 'Its task stays and leaves the month.' : 'Its ' + n + ' tasks stay and leave the month.') + ' ' : '') +
+        ((e.reports || []).length ? 'A report task not yet started is cancelled. ' : '') +
         (!checksOf(e, cw.checks).length ? 'The meeting goes with it.'
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })
             ? 'Its readiness ticks move to the next month; the meeting goes with it.'

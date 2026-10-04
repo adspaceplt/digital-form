@@ -311,8 +311,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     printed QR's page) stay up. A client page covers itself under
     its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
     progress / 系统升级中 (`W.maintTitle`; `maintText` We'll be right back! / 我们马上回来！; `maintBack` Expected
-    back by {end}), following the 中文 switch. A page left open covers itself
-    at a start within a day and reloads at the end.
+    back by {end}), following the 中文 switch. Every open page, the console
+    included, asks again every minute while on screen and on every return
+    (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
+    covers itself; switched off, a covered page reloads (to its latest
+    version). A read that fails (`ask(true)` answers null) changes nothing.
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
     The switch is the account menu's Upgrade mode (`role="switch"`, Off /
@@ -1693,8 +1696,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     due 23:59 MYT five days after the month's last day and final seven,
     never from the Report template's offsets; `source_type`
     `report_social` / `report_ads`); unticked, a task still To do is
-    cancelled and a started one kept; only a start day moved moves an
-    open one's dates (filed), so another save never undoes an extension.
+    cancelled and a started one kept (`ops_engagement_cancel_reports`, the
+    one copy); only a start day moved moves an open one's dates (filed), so
+    another save never undoes an extension. Deleting the month cancels its
+    report tasks nobody started first (`2026-10-04-month-delete-reports.sql`),
+    and its question says so. `ops_engagement_counts` adds `content` (live
+    less report tasks, `2026-10-04-month-counts-content.sql`): the New
+    sheet's `n added` reads it; `live` / `open` still count the report, so
+    the month stays in production until its report is done.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
@@ -1763,7 +1772,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_delete_task` (Manage; the number typed back; a reason; an
     `ops.deleted` activity row);
   - `ops_delete_tasks` (bulk; the count typed back);
-  - `ops_delete_engagement` (a reason; its tasks stay).
+  - `ops_delete_engagement` (a reason; its tasks stay, its untouched report
+    tasks cancelled).
 - The task sheets live in `#workSheets`, outside the section.
 
 ### Performance (`js/perf.js`, `?s=team&tab=performance`, `?s=mine`)
@@ -1896,7 +1906,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `not-ticked`, `no-task`, `content`: content tasks fewer than planned,
     report and cancelled tasks not counted) and the due time (the report
     task's). Check and submit shows it as rows under the report's checks
-    (Month in My Work, Report task with Open, Content, Due). Submit is
+    (Month in My Work, Report task with Open where My Work is readable,
+    Content, Due). Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /
@@ -2030,29 +2041,51 @@ Each line is a rule that broke once. Its reason is in the archive.
     audience showed and what we will test next. The ads field `fix` is
     headed Areas to improve.
   - Every press is counted by the database before Claude is asked
-    (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
-    one draft and drafting it again is an admin's (`team_members.is_admin`;
-    `redraft`), to 5 a report in 24 hours, both counted by subject (the
-    report, or any of the same client and kind whose period shares a day
-    with it, deleted or not: `ai_drafts` keeps client, kind and period,
-    `2026-10-04-ai-draft-subject.sql`); 20 a colleague and 60 the team in
-    24 hours unless an admin set otherwise (`ai_draft_limits`: `team`,
-    `person`, or a colleague's id; null is the default, 0 stops it, refused
-    `stopped`; `2026-10-04-ai-draft-allowances.sql`); a failed press is
-    marked failed by the function (`ai_draft_done`) and not counted.
-    `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
-    names the scope and when the next draft is free.
+    (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`), by subject
+    (the report, or any of the same client and kind whose period shares a
+    day with it, deleted or not: `ai_drafts` keeps client, kind and period,
+    `2026-10-04-ai-draft-subject.sql`), a day from 12:00 am MYT and reset
+    each midnight (`ai_draft_day()`, `2026-10-04-ai-draft-daily-reset.sql`).
+    Every limit is a setting in `ai_draft_limits` (null is the standard,
+    0 stops it): `person` a colleague a day (20), a colleague's id their
+    own, `report` the drafts a report has from colleagues (1; past it
+    `redraft`, an admin's), `report_admin` an admin's drafts a report a
+    day (5). There is no team cap: the team's and a group's totals are
+    their colleagues' limits added up (`team` refused `bad-scope`). A
+    failed press is marked failed by the function (`ai_draft_done`) and
+    not counted. `ai_drafts` has RLS on, no policy and no grants. A refusal
+    (`ai-limit`) names the scope, the limit and when the next draft is free.
     Beside the button the count left reads `1 left` (`ai_draft_left`, the
-    least of the report's, the colleague's and the team's, read without
-    writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
-    the line under it says why and when the next is free.
-  - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
-    `ai_draft_usage()`): the team, each colleague's default, and every
-    colleague who may draft or drafted in 30 days, with the last 24 hours,
-    the last 30 days and the allowance a day; Change asks for the
-    allowance (Default, Stopped, or a number a day) through
-    `ai_draft_set_limit`, filed `team.changed` under Draft with AI from and
-    to.
+    lesser of the report's and the colleague's, read without writing); at
+    0 the button rests and the line under it says why and when the next
+    is free.
+  - The figures check (Check and submit, a `.rp-aicheck` card under the
+    checks; `report-draft` with `mode: 'check'`, `2026-10-04-ai-check.sql`):
+    the commentary as it stands, drafted or written by hand, read against
+    the report's figures; it lists only what is wrong (a figure not in the
+    data, a claim the figures contradict, a comparison across result types
+    or platforms, a word against our own work), each as where it is, the
+    words, what the figures show and the words to use (Use). A report in
+    draft or in review, Reports Work, asked first; one of the colleague's
+    AI uses a day (`ai_check_claim`), never one of a report's drafts
+    (`ai_drafts.purpose`, `ai_draft_same` drafts only). Kept with what it
+    read (`ai_check_done`, `result`, `basis`) and read by anyone at Reports
+    View (`ai_check_last`), so the reviewer sees the same check; a
+    commentary changed since says so. Filed as `report.ai_drafted` (AI used)
+    with Figures check and the count.
+  - The words: Write draft (Commentary), Check (Check and submit), AI usage
+    (the bar's ⋯), filed under subject AI; never "Draft with AI".
+  - AI usage (the Reports bar's ⋯, an admin's alone;
+    `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
+    12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
+    when full): Whole team, then each user group with its colleagues, most
+    used first, the totals added up on the page; then Limits (Each
+    colleague `20 a day`, Each report `1 draft`, Admins, each report
+    `5 a day`). The rows only read. Every limit is changed in one place,
+    Edit limits in the foot: one form (the three limits, then each
+    colleague, empty meaning the standard; 0 to 500), one Save sending
+    only what changed through `ai_draft_set_limit`, each filed
+    `team.changed` under Draft with AI from and to. No explanatory lines.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with

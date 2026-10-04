@@ -6409,6 +6409,29 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   min-width: 0; flex: 1 1 auto; font-size: 13px; font-weight: 400; letter-spacing: 0;
   min-height: var(--ctl-h-sm); padding: 2px 8px;
 }
+/* A date is as wide as a date, not the row (the user, 2026-10-04: on an
+   iPhone it ran across the row, its calendar glyph over the day, and stood
+   twice the row's height). It keeps the small control's height inside the
+   row's own, as the pen does, and leaves the glyph its room. */
+.tl-lead .askfield[type="date"] {
+  flex: 0 1 152px; margin-block: calc((20px - var(--ctl-h-sm)) / 2);
+}
+.tl-lead .askfield[type="date"]::-webkit-date-and-time-value {
+  min-height: calc(var(--ctl-h-sm) - 6px); line-height: calc(var(--ctl-h-sm) - 6px);
+}
+/* Under a finger it is the phone's own compact date: a quiet tonal pill the
+   date's width and a line's height, no box line and no glyph, sitting in the
+   row's text (the user, 2026-10-04: a 44px boxed field in a 20px line read as
+   a form dropped into a sentence). Its focus ring stays. */
+@media (pointer: coarse) {
+  .tl-lead .askfield[type="date"] {
+    flex: 0 0 auto; width: 124px; min-height: 32px; height: 32px; padding: 0 10px;
+    margin-block: -6px; border-color: transparent; border-radius: 8px;
+    background-color: var(--tonal); background-image: none; font-size: 15px;
+  }
+  :root[data-theme="dark"] .tl-lead .askfield[type="date"] { background-image: none; }
+  .tl-lead .askfield[type="date"]::-webkit-date-and-time-value { min-height: 30px; line-height: 30px; text-align: center; }
+}
 
 .rec {
   display: grid; align-items: start; gap: 0 24px;
@@ -8507,7 +8530,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-rank .select { width: auto; min-width: 160px; }
 .rp-ctl .btn svg { width: 14px; height: 14px; }
 /* Check and submit: what the report holds, one line a step. */
-.rp-checks { padding: 0; }
+.rp-checks, .rp-aicheck { padding: 0; }
 .rp-check { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 16px; }
 .rp-check + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-check-mark { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
@@ -8518,6 +8541,23 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check-t { display: flex; flex-direction: column; min-width: 0; }
 .rp-check-t b { font-size: 14px; font-weight: 600; }
 .rp-check-t small { font-size: 12.5px; color: var(--ink-mute); }
+/* The figures check (2026-10-04): its head is a check row, its findings the
+   rows under it, each the place, the words, what the figures show and the
+   words to use. */
+.rp-aicheck-acts { display: inline-flex; align-items: center; gap: 8px; }
+.rp-finding {
+  display: grid; gap: 4px; padding: 12px 16px 12px 52px;
+  border-top: 1px solid var(--line-soft);
+}
+.rp-f-where { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.rp-f-quote { font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.rp-f-issue { font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+.rp-f-fix { font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
+.rp-f-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin-right: 6px; }
+.rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--warn); }
+.rp-aicheck > .msg { padding: 0 16px 12px 52px; }
+.rp-aicheck > .msg:empty { display: none; }
+.is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
 .rp-check.is-missing .rp-check-t small { color: var(--warn); }
 .rp-check .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 /* The client record's Reports tab: the finished reports only. */
@@ -9747,21 +9787,22 @@ body.is-maint { overflow: hidden; }
    colleague's drafts and allowance. Desk: who, the last 24 hours, the last
    30 days, the allowance and Change; narrow: who over one mute line of the
    same figures, Change at the right edge. */
-.aiu-row { grid-template-columns: minmax(0, 1fr) 72px 72px 104px 92px; align-items: center; }
+.aiu-reset { margin: 0 0 12px; color: var(--ink-mute); font-size: 13px; }
+.aiu-list { display: grid; }
+.aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.aiu-row:first-child { border-top: 0; padding-top: 0; }
+.aiu-row.is-sum .aiu-name b { font-size: 15px; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
-.aiu-name small { color: var(--ink-mute); font-size: 12px; }
-.aiu-n { font-variant-numeric: tabular-nums; }
-.aiu-meta { display: none; }
-.aiu-act { display: flex; justify-content: flex-end; }
-.is-narrow .aiu-row.crm-head { display: none; }
-.is-narrow .aiu-row {
-  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "meta act";
-  gap: 4px 12px; padding: 12px 15px; align-items: start;
-}
-.is-narrow .aiu-row > .aiu-name { grid-area: name; }
-.is-narrow .aiu-row > .aiu-meta { grid-area: meta; display: block; color: var(--ink-mute); font-size: 12.5px; }
-.is-narrow .aiu-row > .aiu-act { grid-area: act; }
-.is-narrow .aiu-row > .aiu-day, .is-narrow .aiu-row > .aiu-month, .is-narrow .aiu-row > .aiu-cap { display: none; }
+.aiu-name b { font-weight: 600; }
+.aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
+.aiu-cap { white-space: nowrap; color: var(--ink-soft); margin-right: -8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.aiu-cap.is-sum { margin-right: 0; font-weight: 600; color: var(--ink); }
+.aiu-cap.is-own { color: var(--ink); font-weight: 600; }
+.aiu-cap.is-stopped { color: var(--warn); font-weight: 600; }
+.aiu-cap svg { width: 14px; height: 14px; }
+.aiu-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+.aiu-bar > i { display: block; height: 100%; width: var(--p, 0%); background: var(--fill); border-radius: inherit; }
+.aiu-bar.is-full > i { background: var(--warn-solid); }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */

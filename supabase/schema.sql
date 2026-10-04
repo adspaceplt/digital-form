@@ -25914,3 +25914,550 @@ revoke all on function public.sm_report_submit(uuid, uuid, text) from public, an
 grant execute on function public.sm_report_submit(uuid, uuid, text) to authenticated;
 
 -- END OF REPORT MONTH GATE ---------------------------------------------------
+
+-- ===========================================================================
+-- MONTH COUNTS LEAVE REPORTS OUT — the count of what a month holds against
+-- its plan leaves out the report tasks the month makes for itself.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two. Runs after MONTH REPORTS.
+--
+-- WHAT CHANGED
+--   `ops_engagement_counts` adds `content`: the month's live tasks less its
+--   report tasks (`report_social`, `report_ads`), as the report's month gate
+--   counts them. The New sheet reads it as "n added" against the pieces
+--   planned. `live`, `open` and `done` still count every task, so a month
+--   stays in production until its report is done.
+--
+-- ROLLBACK
+--   Run the MONTH STAGES FOLLOW THE WORK section's ops_engagement_counts
+--   again.
+-- ===========================================================================
+
+/* A month's tasks, counted over the whole month whoever asks: live (not
+   cancelled), open (not finished), done (completed), and content (live, less
+   the report tasks the month makes for itself). Only months the caller may
+   see answer. */
+create or replace function public.ops_engagement_counts(p_engagements uuid[])
+returns jsonb
+language sql security definer stable set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'engagement_id', e.id,
+           'live', (select count(*) from public.ops_tasks t
+                     where t.engagement_id = e.id and t.archived_at is null
+                       and t.cancelled_at is null),
+           'open', (select count(*) from public.ops_tasks t
+                     where t.engagement_id = e.id and t.archived_at is null
+                       and t.cancelled_at is null and t.completed_at is null),
+           'done', (select count(*) from public.ops_tasks t
+                     where t.engagement_id = e.id and t.archived_at is null
+                       and t.cancelled_at is null and t.completed_at is not null),
+           'content', (select count(*) from public.ops_tasks t
+                        where t.engagement_id = e.id and t.archived_at is null
+                          and t.cancelled_at is null
+                          and coalesce(t.source_type, '') not in ('report_social', 'report_ads')))), '[]'::jsonb)
+    from public.ops_engagements e
+   where e.id = any (coalesce(p_engagements, '{}'::uuid[]))
+     and public.ops_may_see_engagement(e.id)
+$$;
+revoke all on function public.ops_engagement_counts(uuid[]) from public, anon;
+grant execute on function public.ops_engagement_counts(uuid[]) to authenticated;
+
+-- END OF MONTH COUNTS LEAVE REPORTS OUT ----------------------------------------
+
+-- ===========================================================================
+-- A DELETED MONTH TAKES ITS REPORT TASKS — the report tasks a month made for
+-- itself and nobody has started are cancelled when the month is deleted.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two. Runs after MONTH REPORTS.
+--
+-- WHAT CHANGED
+--   1. `ops_engagement_cancel_reports(month, kinds, note)`: each of the
+--      month's open report tasks of those kinds still at its workflow's first
+--      stage is cancelled, filed with the note; one already started is kept.
+--      One copy, used by the two below.
+--   2. `ops_engagement_sync_reports` cancels a report unticked through it.
+--   3. `ops_delete_engagement` cancels both kinds through it before the month
+--      goes ("The month was deleted."), so a month keyed for the wrong client
+--      or period leaves no report owed behind. Every other task leaves the
+--      month as before, and the record counts the reports cancelled.
+--
+-- ROLLBACK
+--   Run the MONTH REPORTS section's ops_engagement_sync_reports and THE
+--   MONTH IN TWO TICKS section's ops_delete_engagement again, then remove
+--   the function ops_engagement_cancel_reports(uuid, text[], text).
+-- ===========================================================================
+
+-- A month's report tasks nobody has started, cancelled with a note.
+create or replace function public.ops_engagement_cancel_reports(p_engagement uuid, p_kinds text[], p_note text)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  t public.ops_tasks;
+  v_first text;
+  gone integer := 0;
+begin
+  for t in select * from public.ops_tasks x
+            where x.engagement_id = p_engagement
+              and x.source_type in (select 'report_' || k from unnest(coalesce(p_kinds, '{}'::text[])) k)
+              and x.cancelled_at is null and x.archived_at is null and x.completed_at is null loop
+    select s.key into v_first from public.ops_workflow_stages s
+     where s.workflow_id = t.workflow_id order by s.position limit 1;
+    if t.stage_key = v_first then
+      update public.ops_tasks set stage_key = 'cancelled', cancelled_at = now(), updated_at = now(),
+             version = version + 1
+       where id = t.id;
+      perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', t.stage_key),
+        jsonb_build_object('stage_key', 'cancelled'), jsonb_build_object('note', p_note));
+      gone := gone + 1;
+    end if;
+  end loop;
+  return gone;
+end $$;
+revoke all on function public.ops_engagement_cancel_reports(uuid, text[], text) from public, anon, authenticated;
+
+-- One live task a report the month asks for; a report no longer asked for
+-- cancels its task while it is still To do; a start day moved moves the
+-- dates of one still open.
+create or replace function public.ops_engagement_sync_reports(p_engagement uuid, p_moved boolean default false)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  e public.ops_engagements;
+  k text;
+  v_ends date;
+  v_due timestamptz;
+  v_draft timestamptz;
+  t public.ops_tasks;
+  res jsonb;
+  made integer := 0;
+  gone integer := 0;
+begin
+  select * into e from public.ops_engagements where id = p_engagement;
+  if e.id is null or e.status in ('completed', 'cancelled') then
+    return jsonb_build_object('made', 0, 'cancelled', 0);
+  end if;
+  select s.ends into v_ends from public.ops_month_span(e.period, e.start_day) s;
+  v_due := ((v_ends + 7)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  v_draft := ((v_ends + 5)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  foreach k in array array['social', 'ads'] loop
+    if k = any (e.reports) then
+      if not exists (select 1 from public.ops_tasks x
+                      where x.engagement_id = e.id and x.source_type = 'report_' || k
+                        and x.cancelled_at is null and x.archived_at is null) then
+        res := public.ops_create_task(jsonb_build_object(
+          'engagement_id', e.id, 'scope', 'client', 'client_id', e.client_id,
+          'workflow_key', 'task', 'task_type', 'engagement', 'deliverable_type', 'report',
+          'content_desc', case k when 'social' then 'Accounts report' else 'Advertising report' end,
+          'code_period', e.period, 'first_draft_due_at', v_draft, 'final_due_at', v_due,
+          'source_type', 'report_' || k,
+          'owner_id', e.manager_id, 'manager_id', e.manager_id));
+        if res ? 'error' then
+          raise exception 'report-task: %', res ->> 'error' using errcode = 'P0001';
+        end if;
+        made := made + 1;
+      elsif p_moved then
+        for t in select * from public.ops_tasks x
+                  where x.engagement_id = e.id and x.source_type = 'report_' || k
+                    and x.cancelled_at is null and x.archived_at is null and x.completed_at is null loop
+          update public.ops_tasks set current_final_due_at = v_due,
+                 current_first_draft_due_at = case when first_draft_submitted_at is null then v_draft
+                                                   else current_first_draft_due_at end,
+                 updated_at = now(), version = version + 1
+           where id = t.id;
+          if t.current_final_due_at is distinct from v_due then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'final', 'value', t.current_final_due_at),
+              jsonb_build_object('kind', 'final', 'value', v_due),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
+          if t.first_draft_submitted_at is null and t.current_first_draft_due_at is distinct from v_draft then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'first_draft', 'value', t.current_first_draft_due_at),
+              jsonb_build_object('kind', 'first_draft', 'value', v_draft),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
+        end loop;
+      end if;
+    else
+      gone := gone + public.ops_engagement_cancel_reports(e.id, array[k], 'The month no longer asks for this report.');
+    end if;
+  end loop;
+  return jsonb_build_object('made', made, 'cancelled', gone);
+end $$;
+revoke all on function public.ops_engagement_sync_reports(uuid, boolean) from public, anon, authenticated;
+
+/* A month keyed in for the wrong client or the wrong period has to be able
+   to go. ops Manage, a reason, and a row in the activity record, because the
+   month's own history goes with it. Its tasks are not deleted: they stay, with
+   their codes, and simply leave the month; the report tasks it made and
+   nobody has started are cancelled first. */
+create or replace function public.ops_delete_engagement(p_engagement uuid, p_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m  public.team_members;
+  e  public.ops_engagements;
+  cl text;
+  n  integer;
+  v_gone integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  if nullif(btrim(coalesce(p_reason, '')), '') is null then
+    return jsonb_build_object('error', 'reason-required');
+  end if;
+  select * into e from public.ops_engagements where id = p_engagement for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select c.name into cl from public.clients c where c.id = e.client_id;
+  v_gone := public.ops_engagement_cancel_reports(e.id, array['social', 'ads'], 'The month was deleted.');
+  select count(*) into n from public.ops_tasks t where t.engagement_id = e.id;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(m.name, m.email), 'ops.month_deleted', coalesce(cl, 'Client'),
+          to_char(to_date(e.period || '-01', 'YYYY-MM-DD'), 'Mon YYYY') ||
+          case when n = 1 then ' · 1 task left the month'
+               when n > 1 then ' · ' || n || ' tasks left the month' else '' end ||
+          case when v_gone = 1 then ' · 1 report task cancelled'
+               when v_gone > 1 then ' · ' || v_gone || ' report tasks cancelled' else '' end ||
+          ' · ' || btrim(p_reason));
+
+  delete from public.ops_engagements where id = e.id;
+  return jsonb_build_object('deleted', true, 'period', e.period, 'tasks', n, 'cancelled', v_gone);
+end $$;
+grant execute on function public.ops_delete_engagement(uuid, text) to authenticated;
+
+-- END OF A DELETED MONTH TAKES ITS REPORT TASKS -------------------------------
+
+-- ===========================================================================
+-- DRAFT WITH AI RESETS AT MIDNIGHT — a colleague's drafts are counted from
+-- 12:00 am Malaysia time and start again each midnight; the team's and a
+-- group's totals are the sum of their colleagues' limits.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after DRAFT WITH AI ALLOWANCES.
+--
+-- WHAT CHANGED (the user, 2026-10-04: reset at midnight, like a usage page;
+-- set only each person's limit and let the totals add up)
+--   1. `ai_draft_claim` and `ai_draft_left` count a colleague's drafts and a
+--      report's from today's 12:00 am MYT, not the last 24 hours; the next
+--      draft is free at the next midnight. The team's own cap is gone: the
+--      team can draft only what its colleagues' limits add up to.
+--   2. `ai_draft_usage()` answers the reset (`resets_at`) and, for every
+--      colleague who may draft or drafted in 30 days, today's count, the
+--      limit that applies (`cap`, their own else the standard) and their
+--      group; the page adds up the team and each group.
+--   3. The limits a report has are settings too (the user, 2026-10-04:
+--      nothing hard coded): `report`, the drafts a report may have from a
+--      colleague (1 unless set), and `report_admin`, an admin's drafts a
+--      report a day (5 unless set).
+--   4. `ai_draft_set_limit` takes `person` (the standard), a colleague's id,
+--      `report` or `report_admin`; `team` is refused (`bad-scope`).
+--
+-- ROLLBACK
+--   Run the DRAFT WITH AI ALLOWANCES section's ai_draft_claim,
+--   ai_draft_left, ai_draft_usage and ai_draft_set_limit again.
+-- ===========================================================================
+
+-- Today's 12:00 am in Malaysia, the start of every count.
+create or replace function public.ai_draft_day()
+returns timestamptz
+language sql stable set search_path = public as $$
+  select (date_trunc('day', now() at time zone 'Asia/Kuala_Lumpur')) at time zone 'Asia/Kuala_Lumpur'
+$$;
+revoke all on function public.ai_draft_day() from public, anon, authenticated;
+
+create or replace function public.ai_draft_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := public.ai_draft_day();
+  n_report integer;
+  n_member integer;
+  lim_member integer;
+  lim_report integer := public.ai_draft_limit('report', 1);
+  lim_admin integer := public.ai_draft_limit('report_admin', 5);
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  -- One count at a time, so two presses together cannot both take the last draft.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  select * into r from public.sm_reports where id = p_report;
+  lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
+  if lim_member = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
+  end if;
+  -- A report's drafts from a colleague; past them, the rest are an admin's.
+  if not coalesce(m.is_admin, false) and (select count(*) from public.ai_draft_same(p_report)) >= lim_report then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', lim_report);
+  end if;
+  select count(*) into n_report from public.ai_draft_same(p_report) s where s.created_at >= since;
+  if coalesce(m.is_admin, false) and n_report >= lim_admin then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', lim_admin, 'next', since + interval '1 day');
+  end if;
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed';
+  if n_member >= lim_member then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', lim_member, 'next', since + interval '1 day');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim_member - n_member - 1);
+end $$;
+
+create or replace function public.ai_draft_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := public.ai_draft_day();
+  is_adm boolean;
+  n_report integer; n_member integer;
+  l_report integer; l_member integer; l_min integer;
+  lim_member integer;
+  lim_report integer := public.ai_draft_limit('report', 1);
+  lim_admin integer := public.ai_draft_limit('report_admin', 5);
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  is_adm := coalesce(m.is_admin, false);
+  lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
+  select count(*) into n_report from public.ai_draft_same(p_report) s where s.created_at >= since;
+  if is_adm then
+    l_report := greatest(0, lim_admin - n_report);
+  else
+    l_report := greatest(0, lim_report - (select count(*) from public.ai_draft_same(p_report))::integer);
+  end if;
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed';
+  l_member := greatest(0, lim_member - n_member);
+  l_min := least(l_report, l_member);
+  v_scope := case when lim_member = 0 then 'stopped'
+                  when l_min = l_report then case when is_adm then 'report' else 'redraft' end
+                  else 'person' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope,
+    'limit', case v_scope when 'stopped' then 0 when 'redraft' then lim_report when 'report' then lim_admin else lim_member end,
+    'report', l_report, 'person', l_member, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope in ('redraft', 'stopped') then null else since + interval '1 day' end);
+end $$;
+
+revoke all on function public.ai_draft_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_draft_left(uuid) from public, anon, authenticated;
+grant execute on function public.ai_draft_claim(uuid) to authenticated;
+grant execute on function public.ai_draft_left(uuid) to authenticated;
+
+-- Every colleague's use today against their limit, for an admin.
+create or replace function public.ai_draft_usage()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_day timestamptz := public.ai_draft_day();
+  v_month timestamptz := now() - interval '30 days';
+  v_std integer := public.ai_draft_limit('person', 20);
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'person', v_std,
+    'report', public.ai_draft_limit('report', 1),
+    'report_admin', public.ai_draft_limit('report_admin', 5),
+    'resets_at', v_day + interval '1 day',
+    'people', coalesce((select jsonb_agg(s.x order by s.x ->> 'name') from (
+      select jsonb_build_object(
+        'id', t.id, 'name', t.name, 'code', t.staff_code, 'group', g.name, 'group_slug', t.role,
+        'admin', coalesce(t.is_admin, false),
+        'day', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at >= v_day and d.outcome <> 'failed'),
+        'month', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month and d.outcome <> 'failed'),
+        'limit', (select l.daily from public.ai_draft_limits l where l.scope = t.id::text),
+        'cap', coalesce((select l.daily from public.ai_draft_limits l where l.scope = t.id::text), v_std)) as x
+        from public.team_members t
+        left join public.team_roles g on g.slug = t.role
+       where t.active
+         and (coalesce(t.is_admin, false) or t.role = 'admin'
+              or public.level_rank(coalesce(t.access ->> 'reports', 'none')) >= public.level_rank('work')
+              or exists (select 1 from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month))
+    ) s), '[]'::jsonb));
+end $$;
+revoke all on function public.ai_draft_usage() from public, anon, authenticated;
+grant execute on function public.ai_draft_usage() to authenticated;
+
+-- A colleague's limit a day, or the standard for everyone. Null puts the
+-- standard back.
+create or replace function public.ai_draft_set_limit(p_scope text, p_daily integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_who text;
+  v_name text;
+  v_was integer;
+  v_def integer;
+  v_unit text := ' a day';
+  v_scope text := btrim(coalesce(p_scope, ''));
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  if p_daily is not null and (p_daily < 0 or p_daily > 500) then
+    return jsonb_build_object('error', 'bad-limit');
+  end if;
+  if v_scope = 'person' then
+    v_name := 'Each colleague'; v_def := 20;
+  elsif v_scope = 'report' then
+    v_name := 'Drafts per report'; v_def := 1; v_unit := '';
+  elsif v_scope = 'report_admin' then
+    v_name := 'Admin drafts per report'; v_def := 5;
+  elsif v_scope = 'team' then
+    return jsonb_build_object('error', 'bad-scope');
+  else
+    select t.name into v_name from public.team_members t where t.id::text = v_scope;
+    if v_name is null then return jsonb_build_object('error', 'not-found'); end if;
+    v_def := public.ai_draft_limit('person', 20);
+  end if;
+  select l.daily into v_was from public.ai_draft_limits l where l.scope = v_scope;
+  if v_was is not distinct from p_daily then return jsonb_build_object('ok', true, 'same', true); end if;
+  select coalesce(t.name, t.email) into v_who from public.team_members t
+   where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active limit 1;
+  insert into public.ai_draft_limits (scope, daily, set_by, set_at)
+  values (v_scope, p_daily, v_who, now())
+  on conflict (scope) do update set daily = excluded.daily, set_by = excluded.set_by, set_at = excluded.set_at;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_who, 'admin'), 'team.changed', 'AI',
+          v_name || ': ' ||
+          case when v_was is null then 'standard, ' || v_def || v_unit when v_was = 0 then 'stopped' else v_was || v_unit end ||
+          ' → ' ||
+          case when p_daily is null then 'standard, ' || v_def || v_unit when p_daily = 0 then 'stopped' else p_daily || v_unit end);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.ai_draft_set_limit(text, integer) from public, anon, authenticated;
+grant execute on function public.ai_draft_set_limit(text, integer) to authenticated;
+
+-- END OF DRAFT WITH AI RESETS AT MIDNIGHT -------------------------------------
+
+-- ===========================================================================
+-- AI CHECKS A REPORT AGAINST ITS FIGURES — on Check and submit, the
+-- commentary as it stands (drafted or written by hand) is read against the
+-- report's own figures, and what does not hold is listed for the team.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after DRAFT WITH AI RESETS AT MIDNIGHT.
+--
+-- WHAT CHANGED (the user, 2026-10-04: a check on the last step, reading the
+-- draft as it stands, original or edited)
+--   1. `ai_drafts.purpose` tells a draft from a check; `result` keeps a
+--      check's findings and `basis` the commentary it read. A check that
+--      came back is `drafted` (done), as a draft is.
+--   2. `ai_check_claim(p_report)`: Reports Work, a report in draft or in
+--      review the caller may see; it counts toward the colleague's day
+--      (their own limit, else the standard) and never toward a report's
+--      drafts.
+--   3. `ai_check_done(p_id, p_ok, p_result, p_basis)`: the caller's own
+--      pending check, written once.
+--   4. `ai_check_last(p_report)`: Reports View on a report the caller may
+--      see; the last check that came back, who ran it and when.
+--   5. `ai_draft_same` counts drafts only.
+--
+-- ROLLBACK
+--   Run the DRAFT WITH AI COUNTED BY SUBJECT section's ai_draft_same again;
+--   then, in the SQL Editor, drop the three ai_check_ functions. The three
+--   columns may stay.
+-- ===========================================================================
+
+alter table public.ai_drafts add column if not exists purpose text not null default 'draft'
+  constraint ai_drafts_purpose check (purpose in ('draft', 'check'));
+alter table public.ai_drafts add column if not exists result jsonb;
+alter table public.ai_drafts add column if not exists basis jsonb;
+create index if not exists ai_drafts_check_idx on public.ai_drafts (report_id, purpose, created_at);
+
+create or replace function public.ai_draft_same(p_report uuid)
+returns setof public.ai_drafts
+language sql stable security definer set search_path = public as $$
+  select d.* from public.ai_drafts d
+   where d.outcome <> 'failed' and d.purpose = 'draft'
+     and (d.report_id = p_report
+          or exists (select 1 from public.sm_reports r
+                      where r.id = p_report and d.client_id = r.client_id and d.kind = r.kind
+                        and d.period_start <= r.period_end and d.period_end >= r.period_start))
+$$;
+revoke all on function public.ai_draft_same(uuid) from public, anon, authenticated;
+
+create or replace function public.ai_check_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := public.ai_draft_day();
+  n_member integer;
+  lim_member integer;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_report;
+  if r.id is null or not public.client_seen(r.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status not in ('draft', 'review') then return jsonb_build_object('error', 'not-open'); end if;
+  -- One count at a time, with the drafts, so the last use is taken once.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
+  if lim_member = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
+  end if;
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed';
+  if n_member >= lim_member then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', lim_member, 'next', since + interval '1 day');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end, purpose)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end, 'check') returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim_member - n_member - 1);
+end $$;
+
+create or replace function public.ai_check_done(p_id uuid, p_ok boolean, p_result jsonb, p_basis jsonb)
+returns void
+language sql security definer set search_path = public as $$
+  update public.ai_drafts d
+     set outcome = case when p_ok then 'drafted' else 'failed' end,
+         result = case when p_ok then p_result end,
+         basis = case when p_ok then p_basis end
+   where d.id = p_id and d.purpose = 'check' and d.outcome = 'pending'
+     and d.team_member_id = (public.ops_me()).id
+$$;
+
+create or replace function public.ai_check_last(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  r public.sm_reports;
+  c public.ai_drafts;
+begin
+  if not public.allowed('reports', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_report;
+  if r.id is null or not public.client_seen(r.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  select d.* into c from public.ai_drafts d
+   where d.report_id = p_report and d.purpose = 'check' and d.outcome = 'drafted'
+   order by d.created_at desc limit 1;
+  if c.id is null then return jsonb_build_object('none', true); end if;
+  return jsonb_build_object('at', c.created_at, 'result', c.result, 'basis', c.basis,
+    'by', (select t.name from public.team_members t where t.id = c.team_member_id));
+end $$;
+
+revoke all on function public.ai_check_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_check_done(uuid, boolean, jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.ai_check_last(uuid) from public, anon, authenticated;
+grant execute on function public.ai_check_claim(uuid) to authenticated;
+grant execute on function public.ai_check_done(uuid, boolean, jsonb, jsonb) to authenticated;
+grant execute on function public.ai_check_last(uuid) to authenticated;
+
+-- END OF AI CHECKS A REPORT AGAINST ITS FIGURES -----------------------------
