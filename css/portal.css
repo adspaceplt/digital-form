@@ -9068,6 +9068,47 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rw-row > .team-act { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
 .is-narrow .crm-head.rw-row { display: none; }
 /* ---- End of performance rewards ---- */
+
+/* ---- Initiatives and the monthly reflection (2026-10-04) ----
+   A row is the initiative over what it improves and when, its state, then
+   the ⋯; a decision's note and a link go under the name. */
+.init-row { grid-template-columns: minmax(0, 1fr) var(--state-w) var(--ctl-h); padding-top: 10px; padding-bottom: 10px; }
+.crm-head.init-row { padding: 12px 15px 8px; }
+.init-row.is-off > :not(.team-act) { opacity: .55; }
+.init-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.init-name b { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.init-name small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.init-name .init-detail, .init-name .init-note { color: var(--ink-soft); white-space: pre-line; }
+.init-name .init-link { align-self: flex-start; margin-top: 6px; }
+.init-state { min-width: 0; }
+.init-row > .team-act { align-self: start; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.is-narrow .init-row {
+  grid-template-columns: minmax(0, 1fr) auto var(--ctl-h);
+  grid-template-areas: "who state act";
+  gap: 4px 10px;
+}
+.is-narrow .init-row > .init-name { grid-area: who; }
+.is-narrow .init-row > .init-state { grid-area: state; justify-self: end; }
+.is-narrow .init-row > .team-act { grid-area: act; }
+.is-narrow .crm-head.init-row { display: none; }
+
+/* The reflection reads as the card's own section: each question beside its
+   answer, the answer keeping the lines it was written in. */
+.refl-head { justify-content: space-between; }
+.refl-ctl { display: flex; align-items: center; gap: 8px; }
+.refl-line { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; padding: 4px 0; }
+.refl-line + .refl-line { margin-top: 4px; }
+.refl-q { font-size: 13px; color: var(--ink-mute); }
+.refl-a { white-space: pre-line; overflow-wrap: anywhere; }
+.is-narrow .refl-line, .perfcard .refl-line { grid-template-columns: minmax(0, 1fr); }
+.refl-acts { margin-top: 12px; }
+.refl-acts > .btn { flex: 0 0 auto; }
+.ctx-inits { display: flex; flex-direction: column; gap: 8px; }
+.ctx-init { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ctx-init > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ctx-init b { font-weight: 600; overflow-wrap: anywhere; }
+.ctx-init small { font-size: 12px; color: var(--ink-mute); }
+.ctx-none { margin: 0; color: var(--ink-mute); }
 /* The Notify tick sits between the step's line and its actions. */
 .qnext .perf-notify { margin-top: 12px; }
 

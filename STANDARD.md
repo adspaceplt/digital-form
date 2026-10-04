@@ -615,6 +615,14 @@ section holds only what is true of the project as a whole.
   payment itself is made outside it.
 - A flat, edge-to-edge register without a bounded panel would be a
   portal-wide decision. It has not been made.
+- Growth (the user, 2026-10-04): a private My growth page (approved first
+  time, revision rounds, quality check first time, on time, by format,
+  shared only by the member) and a monthly AI read of a colleague's own
+  client change notes are held until about December 2026, once My Work
+  holds two to three months of real work (on 2026-10-04 it held one task).
+  An AI check before AQC review is dropped (AQC review happens on
+  WhatsApp); Wins and client words on an internal board are not wanted;
+  Want to try is kept in view.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261004p">
+<link rel="stylesheet" href="/css/portal.css?v=20261004q">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3626,6 +3626,7 @@
             <button class="acttab btn-sm" data-pv="quarters" type="button" aria-pressed="false">Quarters</button>
             <button class="acttab btn-sm" data-pv="company" type="button" aria-pressed="false">Bonus and trip</button>
             <button class="acttab btn-sm" data-pv="commission" type="button" aria-pressed="false">Commission</button>
+            <button class="acttab btn-sm" data-pv="initiatives" type="button" aria-pressed="false">Initiatives</button>
           </span></div>
           <div id="perfMonths">
           <div class="cmdbar">
@@ -3698,6 +3699,21 @@
             </div>
             <div class="msg" id="rwCMsg"></div>
             <div id="rwCList" data-narrow="780"></div>
+          </div>
+          <!-- What colleagues started, to adopt, put on hold or mark done;
+               the member's own never appear here. -->
+          <div id="perfInits" hidden>
+            <div class="cmdbar">
+              <span class="cmdbar-find">
+                <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                <input class="input input-sm" id="piFind" type="search" placeholder="Search name or initiative" aria-label="Search initiatives">
+              </span>
+              <span class="cmdbar-end">
+                <span class="cmdbar-quiet"><span class="cmdbar-count" id="piCount"></span></span>
+              </span>
+            </div>
+            <div class="msg" id="piMsg"></div>
+            <div id="piList" data-narrow="640"></div>
           </div>
         </div>
       </div>
@@ -3960,10 +3976,110 @@
         <div class="msg" id="mineLockMsg"></div>
       </section>
       <div class="msg" id="mineMsg"></div>
-      <div id="mineList" data-narrow="780"></div>
-      <!-- The member's own rewards: confirmed quarters and periods, flexible
-           hours and commissions, drawn only where there is something. -->
-      <div id="mineRewards" data-narrow="780"></div>
+      <!-- Once unlocked: the member's reviews, what they started, and their
+           own lines on the month, one view each. Initiatives feed Initiative
+           and improvement; a reflection reaches management only once shared. -->
+      <div id="mineOpen" data-swipe="mineViews" hidden>
+        <div class="actstrip perf-views"><span class="cmdbar-views actviews" id="mineViews" role="group" aria-label="View">
+          <button class="acttab btn-sm is-on" data-mv="reviews" type="button" aria-pressed="true">Reviews</button>
+          <button class="acttab btn-sm" data-mv="initiatives" type="button" aria-pressed="false">Initiatives</button>
+          <button class="acttab btn-sm" data-mv="reflection" type="button" aria-pressed="false">Reflection</button>
+        </span></div>
+        <div id="mineReviews">
+          <div id="mineList" data-narrow="780"></div>
+          <!-- The member's own rewards: confirmed quarters and periods, flexible
+               hours and commissions, drawn only where there is something. -->
+          <div id="mineRewards" data-narrow="780"></div>
+        </div>
+        <div id="mineInits" hidden>
+          <div class="cmdbar">
+            <span class="cmdbar-end">
+              <span class="cmdbar-quiet"><span class="cmdbar-count" id="mineInitCount"></span></span>
+              <span class="cmdbar-acts">
+                <button class="btn btn-sm btn-primary" id="mineInitAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log initiative</button>
+              </span>
+            </span>
+          </div>
+          <div class="msg" id="mineInitMsg"></div>
+          <div id="mineInitList" data-narrow="640"></div>
+        </div>
+        <div id="mineRefl" hidden>
+          <div class="cmdbar">
+            <select class="select select-sm" id="mineReflMonth" aria-label="Month" data-nofilter></select>
+          </div>
+          <div class="msg" id="mineReflMsg"></div>
+          <div id="mineReflBox" data-narrow="640"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log or edit an initiative: what it is, what it improves, and where
+         it can be read. -->
+    <div class="sheet" id="initSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="initSheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="initSheetTitle">Log initiative</h3>
+          <button class="iconbtn" id="initClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div class="field">
+            <label class="field-label" for="initTitle">Initiative</label>
+            <input class="input" id="initTitle" type="text" maxlength="140" aria-required="true" autocomplete="off" placeholder="Batch the shoots by location">
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="initImproves">Improves</label>
+            <select class="select" id="initImproves">
+              <option value="client">Client work</option>
+              <option value="process">Process</option>
+              <option value="tool">Tool</option>
+              <option value="sop">SOP</option>
+              <option value="other">Other</option>
+            </select>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="initDetail">Details</label>
+            <textarea class="input" id="initDetail" rows="4" maxlength="2000" placeholder="Optional"></textarea>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="initLink">Link</label>
+            <input class="input" id="initLink" type="url" inputmode="url" autocomplete="off" placeholder="https://adspace.me">
+          </div></div>
+          <div class="msg" id="initMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="initSave" type="button">Log</button>
+          <button class="btn btn-quiet" id="initCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The member's three lines on a month. -->
+    <div class="sheet" id="reflSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="reflSheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="reflSheetTitle">Reflection</h3>
+          <button class="iconbtn" id="reflClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div class="field">
+            <label class="field-label" for="reflProud">Proud of</label>
+            <textarea class="input" id="reflProud" rows="3" maxlength="1000"></textarea>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="reflHard">Found hard</label>
+            <textarea class="input" id="reflHard" rows="3" maxlength="1000"></textarea>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="reflLearn">Want to learn</label>
+            <textarea class="input" id="reflLearn" rows="3" maxlength="1000"></textarea>
+          </div></div>
+          <div class="msg" id="reflMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="reflSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="reflCancel" type="button">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- One month's review, beside the list: the result, the six scores,
@@ -4577,7 +4693,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261004j"></script>
+<script src="/js/admin.js?v=20261004k"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261003p"></script>
@@ -4589,7 +4705,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
 <script src="/js/ops.js?v=20261004m"></script>
-<script src="/js/perf.js?v=20261004d"></script>
+<script src="/js/perf.js?v=20261004e"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261003l"></script>
 </body>

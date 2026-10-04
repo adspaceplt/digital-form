@@ -5,7 +5,16 @@
       "Bash(bash tests/gate.sh:*)",
       "Bash(node tests/:*)",
       "Bash(SHOTS=1 node tests/:*)",
-      "Bash(node --check:*)"
+      "Bash(node --check:*)",
+      "mcp__github__actions_list",
+      "mcp__github__actions_get",
+      "mcp__github__pull_request_read",
+      "mcp__Supabase__get_edge_function",
+      "mcp__github__list_pull_requests",
+      "mcp__Supabase__query_logs",
+      "mcp__Supabase__list_edge_functions",
+      "mcp__Claude_Code_Remote__get_session",
+      "mcp__Supabase__list_migrations"
     ]
   }
 }

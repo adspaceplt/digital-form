@@ -120,6 +120,17 @@
 
   /* What the database said, in the team's words. */
   var SAID = {
+    'title': 'Name the initiative in three letters or more.',
+    'title-long': 'Keep the initiative to 140 characters.',
+    'improves': 'Choose what it improves.',
+    'link': 'A link starts with https://.',
+    'decided': 'It has been decided. Ask for it to be moved back to Proposed first.',
+    'bad-month': 'Only this month and last month can be written.',
+    'final': 'That month is final.',
+    'empty': 'Write at least one line first.',
+    'too-long': 'Keep each line to 1,000 characters.',
+    'own': 'Nobody decides on their own.',
+    'bad-move': 'That step is not open from here.',
     'no-code': 'No master code is set. Set it in the Supabase SQL editor.',
     'code-needed': 'Locked. Enter the master code again.',
     'denied': 'Your group cannot open performance reviews.',
@@ -226,7 +237,7 @@
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
       /* The rewards views (2026-09-28) and the quarter or period they show. */
       var pv = q.get('view'), qq = q.get('q');
-      if (pv === 'quarters' || pv === 'company' || pv === 'commission') st.pv = pv;
+      if (pv === 'quarters' || pv === 'company' || pv === 'commission' || pv === 'initiatives') st.pv = pv;
       if (/^\d{4}-(01|04|07|10)$/.test(qq || '') && qq + '-01' >= FIRST_QUARTER) {
         if (st.pv === 'quarters') st.q = qq + '-01';
         if (st.pv === 'company') st.pf = halfOf(qq + '-01');
@@ -739,10 +750,12 @@
     var html = nextCard(r, res) + resultCard(r, res) +
       (draft ? scoreForm(r, res) : scoreRead(r, res)) +
       (manage() ? (draft ? rateForm(r, res) : rateRead(r)) : '') +
+      (manage() ? ctxCards(r) : '') +
       breachCard(r, draft) + planCard(r) + disputeCard(r, res) +
       (manage() ? historyCard(r) : '');
     $('pvBody').innerHTML = html;
     wireSheet(r);
+    if (manage()) loadCtx(r);
   }
 
   function card(title, inner, act, id) {
@@ -1286,6 +1299,7 @@
   }
   function showMineLock(on, why) {
     $('mineLock').hidden = !on;
+    $('mineOpen').hidden = Boolean(on);
     $('sectionMine').classList.toggle('is-locked', Boolean(on));
     if (!on) return;
     $('mineList').innerHTML = '';
@@ -1377,10 +1391,13 @@
       call('perf_mine', {}, function (d) {
         if (d.error === 'code-needed') { st.mine = null; showMineLock(true); return; }
         showMineLock(false);
+        setMv(st.mv || mvFromUrl(), true);
         if (d.error) { UI.failLine($('mineList'), 'Your reviews', said(d), enterMine); return; }
         st.mine = d.reviews || [];
         paintMine();
         loadMineRewards();
+        if (st.mv === 'initiatives') loadMineInits();
+        if (st.mv === 'reflection') loadRefl();
       });
     });
   }
@@ -1884,7 +1901,7 @@
   }
 
   // The views -------------------------------------------------------------------------
-  var PANE = { months: 'perfMonths', quarters: 'perfQuarters', company: 'perfCompany', commission: 'perfCommission' };
+  var PANE = { months: 'perfMonths', quarters: 'perfQuarters', company: 'perfCompany', commission: 'perfCommission', initiatives: 'perfInits' };
   function setPv(v, quiet) {
     if (!PANE[v]) v = 'months';
     st.pv = v;
@@ -1913,6 +1930,7 @@
     if (st.pv === 'quarters') loadQuarter();
     else if (st.pv === 'company') loadPeriod();
     else if (st.pv === 'commission') loadCommission();
+    else if (st.pv === 'initiatives') loadInits();
     else loadMonth();
   }
 
@@ -2559,6 +2577,383 @@
   }
   // ---- End of performance rewards ------------------------------------------------------
 
+
+  // ---- Initiatives and the monthly reflection (2026-10-04) ------------------------------
+  /* What a colleague started and their own three lines on the month. The
+     initiatives sit beside Initiative and improvement in the review; the
+     reflection reaches management only once its author shares it, and is
+     never scored (2026-10-04-initiatives-reflection.sql). */
+  var IMPROVES = { client: 'Client work', process: 'Process', tool: 'Tool', sop: 'SOP', other: 'Other' };
+  var INIT_STATE = { proposed: ['Proposed', 'is-warn'], adopted: ['Adopted', ''], done: ['Done', 'is-ok'],
+                     not_now: ['Not now', ''], withdrawn: ['Withdrawn', ''] };
+  var INIT_ORDER = ['proposed', 'adopted', 'done', 'not_now', 'withdrawn'];
+  function initChip(s) { var w = INIT_STATE[s] || [s, '']; return chip(w[0], w[1]); }
+  var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  function shutInitMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#mineInitList .kmenu, #piList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#mineInitList .kmenu-btn, #piList .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutInitMenus);
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#mineInitList .team-act, #piList .team-act')) shutInitMenus();
+  });
+  /* One row: the initiative over what it improves and when, its state, and
+     a ⋯ holding only what the reader may press. */
+  function initRow(i, items, who) {
+    var el = document.createElement('div');
+    el.className = 'crm-row init-row' + (i.status === 'withdrawn' || i.status === 'not_now' ? ' is-off' : '');
+    el.setAttribute('data-init', i.id);
+    var meta = [who ? i.name : '', IMPROVES[i.improves], i.month].filter(Boolean);
+    if (i.done_month && i.done_month !== i.month) meta.push('done ' + i.done_month);
+    var note = i.note ? (i.decided_by ? i.decided_by + ': ' : '') + i.note : '';
+    el.innerHTML =
+      '<span class="init-name"><b>' + esc(i.title) + '</b><small>' + esc(meta.join(' · ')) + '</small>' +
+        (i.detail ? '<small class="init-detail">' + esc(i.detail) + '</small>' : '') +
+        (note ? '<small class="init-note">' + esc(note) + '</small>' : '') +
+        (i.link ? '<a class="plink init-link" href="' + esc(i.link) + '" target="_blank" rel="noopener">Open link</a>' : '') +
+      '</span>' +
+      '<span class="init-state">' + initChip(i.status) + '</span>' +
+      '<span class="team-act">' + (items.length
+        ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + MENU_DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' + items.map(function (x) {
+            return '<button class="kmenu-item' + (x[2] ? ' is-danger' : '') + '" data-a="' + x[0] + '" type="button">' + esc(x[1]) + '</button>';
+          }).join('') + '</div>' : '') + '</span>';
+    var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
+    if (btn) btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutInitMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
+    });
+    return el;
+  }
+  function initGroups(box, list, route, rowOf) {
+    var G = window.ADspaceGroup;
+    box.innerHTML = '';
+    INIT_ORDER.forEach(function (k) {
+      var rows = list.filter(function (i) { return i.status === k; });
+      if (!rows.length) return;
+      box.appendChild(G.section({
+        route: route, key: k, name: INIT_STATE[k][0], count: rows.length,
+        shut: G.shut(route, k, k === 'not_now' || k === 'withdrawn'),
+        table: function () {
+          var t = G.table('init-row', ['Initiative', 'Status', '']);
+          G.more(t, rows, 30, '', rowOf);
+          return t;
+        }
+      }));
+    });
+  }
+
+  // The colleague's own --------------------------------------------------------------------
+  function mvFromUrl() {
+    var v = new URLSearchParams(location.search).get('view');
+    return v === 'initiatives' || v === 'reflection' ? v : 'reviews';
+  }
+  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl' };
+  function setMv(v, quiet) {
+    if (!MV[v]) v = 'reviews';
+    st.mv = v;
+    Array.prototype.forEach.call(document.querySelectorAll('#mineViews .acttab'), function (b) {
+      var on = b.getAttribute('data-mv') === v;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    Object.keys(MV).forEach(function (k) { $(MV[k]).hidden = k !== v; });
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
+    if (!quiet && bridge.setUrl) bridge.setUrl();
+  }
+  $('mineViews').addEventListener('click', function (e) {
+    var b = e.target.closest('.acttab');
+    if (!b || b.getAttribute('data-mv') === st.mv) return;
+    setMv(b.getAttribute('data-mv'));
+    if (st.mv === 'initiatives') loadMineInits();
+    if (st.mv === 'reflection') loadRefl();
+  });
+  /* The proof goes stale while the page stays open; a refused read puts the
+     lock back. */
+  function mineCall(fn, args, then) {
+    call(fn, args, function (d) {
+      if (d.error === 'code-needed') { st.mine = null; showMineLock(true); return; }
+      then(d);
+    });
+  }
+  function loadMineInits() {
+    if (!st.inits) UI.skeleton($('mineInitList'), 2);
+    mineCall('perf_initiatives_mine', {}, function (d) {
+      if (d.error) { UI.failLine($('mineInitList'), 'Your initiatives', said(d), loadMineInits); return; }
+      st.inits = d.initiatives || [];
+      paintMineInits();
+    });
+  }
+  function paintMineInits() {
+    var list = st.inits || [], box = $('mineInitList');
+    var live = list.filter(function (i) { return i.status !== 'withdrawn'; }).length;
+    $('mineInitCount').textContent = live ? live + (live === 1 ? ' initiative' : ' initiatives') : '';
+    if (!list.length) { UI.emptyLine(box, 'No initiatives.', 'Log initiative', function () { openInit(null, $('mineInitAdd')); }); return; }
+    initGroups(box, list, 'mine-inits', function (i) {
+      var items = i.status === 'proposed' ? [['edit', 'Edit'], ['withdraw', 'Withdraw', true]]
+                : i.status === 'withdrawn' ? [['restore', 'Restore']] : [];
+      var el = initRow(i, items, false);
+      var on = function (a, f) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutInitMenus(); f(); }); };
+      on('edit', function () { openInit(i, el.querySelector('[data-a="menu"]')); });
+      on('withdraw', function () { withdrawInit(i, false); });
+      on('restore', function () { withdrawInit(i, true); });
+      return el;
+    });
+  }
+  /* Withdraw takes a proposal back and Restore returns it; neither asks. */
+  function withdrawInit(i, back) {
+    mineCall('perf_initiative_withdraw', { p_id: i.id, p_back: back }, function (d) {
+      if (d.error) { msg('mineInitMsg', said(d), 'err'); return; }
+      st.inits = st.inits.map(function (x) { return x.id === i.id ? d.initiative : x; });
+      paintMineInits();
+      msg('mineInitMsg', '');
+      if (!back) initUndo(d.initiative);
+    });
+  }
+  /* The way back, drawn over the list for 8 seconds; Restore in the ⋯
+     stays after. */
+  var initUndoTimer = null;
+  function initUndo(i) {
+    var host = $('mineInitList'), bar = host.parentNode.querySelector(':scope > .undobar-here');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'undobar undobar-here';
+      host.parentNode.insertBefore(bar, host);
+    }
+    bar.hidden = false;
+    bar.innerHTML = '<span>' + esc(i.title + ' withdrawn.') + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.querySelector('button').addEventListener('click', function () { shut(); withdrawInit(i, true); });
+    clearTimeout(initUndoTimer);
+    initUndoTimer = setTimeout(shut, 8000);
+  }
+  function openInit(i, opener) {
+    st.initEdit = i || null;
+    $('initSheetTitle').textContent = i ? 'Edit initiative' : 'Log initiative';
+    $('initSave').textContent = i ? 'Save' : 'Log';
+    $('initTitle').value = i ? i.title : '';
+    $('initImproves').value = i ? i.improves : 'client';
+    $('initDetail').value = i ? (i.detail || '') : '';
+    $('initLink').value = i ? (i.link || '') : '';
+    msg('initMsg', '');
+    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('initImproves'));
+    window.ADspaceSheet.show($('initSheet'), { opener: opener || $('mineInitAdd') });
+  }
+  $('mineInitAdd').addEventListener('click', function () { openInit(null, this); });
+  $('initClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('initCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('initSave').addEventListener('click', function () {
+    var b = this, t = $('initTitle').value.trim(), l = $('initLink').value.trim();
+    if (t.length < 3) { msg('initMsg', SAID.title, 'err'); $('initTitle').focus(); return; }
+    if (l && !/^https:\/\/\S+$/.test(l)) { msg('initMsg', SAID.link, 'err'); $('initLink').focus(); return; }
+    b.disabled = true;
+    var was = st.initEdit;
+    mineCall('perf_initiative_save', { p_id: was ? was.id : null, p_title: t, p_improves: $('initImproves').value,
+                                       p_detail: $('initDetail').value, p_link: l }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('initMsg', said(d), 'err'); return; }
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      st.inits = was ? (st.inits || []).map(function (x) { return x.id === was.id ? d.initiative : x; })
+                     : [d.initiative].concat(st.inits || []);
+      paintMineInits();
+      msg('mineInitMsg', was ? 'Saved.' : 'Logged.', 'ok');
+    });
+  });
+
+  /* This month and last; a month's lines stay open until its review is final. */
+  function reflMonths() {
+    var cur = thisMonth();
+    return [cur, addMonths(cur, -1)];
+  }
+  function fillReflMonths() {
+    var sel = $('mineReflMonth');
+    if (sel.options.length) return;
+    sel.innerHTML = reflMonths().map(function (p) { return '<option value="' + p + '">' + esc(monthWord(p)) + '</option>'; }).join('');
+    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
+  }
+  $('mineReflMonth').addEventListener('change', function () { st.refl = null; loadRefl(); });
+  function loadRefl() {
+    fillReflMonths();
+    if (!st.refl) UI.skeleton($('mineReflBox'), 1);
+    var p = $('mineReflMonth').value;
+    mineCall('perf_reflection_mine', { p_period: p }, function (d) {
+      if (p !== $('mineReflMonth').value) return;
+      if (d.error) { UI.failLine($('mineReflBox'), 'Your reflection', said(d), loadRefl); return; }
+      st.refl = d;
+      paintRefl();
+    });
+  }
+  var REFL = [['proud', 'Proud of'], ['hard', 'Found hard'], ['learn', 'Want to learn']];
+  function paintRefl() {
+    var f = st.refl, box = $('mineReflBox');
+    if (!f) return;
+    var any = f.proud || f.hard || f.learn;
+    if (!any) {
+      if (f.open) UI.emptyLine(box, 'No reflection.', 'Write reflection', function () { openRefl(); });
+      else UI.emptyLine(box, 'No reflection.');
+      return;
+    }
+    var shared = Boolean(f.shared_at);
+    box.innerHTML =
+      '<div class="ovcard refl-card">' +
+        '<div class="ovsec"><div class="ovsec-head refl-head"><h3>' + esc(f.month) + '</h3>' +
+          '<span class="refl-ctl">' + (shared ? chip('Shared', 'is-ok') : '') +
+          (f.open ? '<button class="btn btn-sm" data-a="edit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>' : '') +
+          '</span></div>' +
+        REFL.map(function (q) {
+          return '<div class="refl-line"><span class="refl-q">' + esc(q[1]) + '</span>' +
+            (f[q[0]] ? '<span class="refl-a">' + esc(f[q[0]]) + '</span>' : '<span class="perf-dash">—</span>') + '</div>';
+        }).join('') + '</div>' +
+        (f.open ? '<div class="row acts refl-acts">' +
+          (shared ? '<button class="btn" data-a="unshare" type="button">Stop sharing</button>'
+                  : '<button class="btn btn-go" data-a="share" type="button">Share with management</button>') + '</div>' : '') +
+      '</div>';
+    var on = function (a, f2) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { f2(b); }); };
+    on('edit', function (b) { openRefl(b); });
+    on('share', function (b) { shareRefl(true, b); });
+    on('unshare', function (b) { shareRefl(false, b); });
+  }
+  /* Sharing hands the lines to management, so it asks; stopping never does. */
+  function shareRefl(on, b) {
+    var go = function () {
+      b.disabled = true;
+      mineCall('perf_reflection_share', { p_period: st.refl.period, p_on: on }, function (d) {
+        b.disabled = false;
+        if (d.error) { msg('mineReflMsg', said(d), 'err'); return; }
+        st.refl = d; paintRefl();
+        msg('mineReflMsg', on ? 'Shared.' : 'No longer shared.', 'ok');
+      });
+    };
+    if (!on) { go(); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Share your reflection',
+      body: 'Management reads it beside your ' + st.refl.month + ' review. It is never scored.',
+      go: 'Share'
+    }, go);
+  }
+  function openRefl(opener) {
+    var f = st.refl || {};
+    $('reflSheetTitle').textContent = 'Reflection, ' + (f.month || '');
+    $('reflProud').value = f.proud || '';
+    $('reflHard').value = f.hard || '';
+    $('reflLearn').value = f.learn || '';
+    msg('reflMsg', '');
+    window.ADspaceSheet.show($('reflSheet'), { opener: opener || $('mineReflMonth') });
+  }
+  $('reflClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('reflCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('reflSave').addEventListener('click', function () {
+    var b = this;
+    if (!($('reflProud').value.trim() || $('reflHard').value.trim() || $('reflLearn').value.trim())) {
+      msg('reflMsg', SAID.empty, 'err'); $('reflProud').focus(); return;
+    }
+    b.disabled = true;
+    mineCall('perf_reflection_save', { p_period: st.refl.period, p_proud: $('reflProud').value,
+                                       p_hard: $('reflHard').value, p_learn: $('reflLearn').value }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('reflMsg', said(d), 'err'); return; }
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      st.refl = d; paintRefl();
+      msg('mineReflMsg', 'Saved.', 'ok');
+    });
+  });
+
+  // Management ------------------------------------------------------------------------------
+  function loadInits() {
+    opened();
+    if (!st.pinits) UI.skeleton($('piList'), 3);
+    call('perf_initiatives', { p_token: token }, function (d) {
+      if (d.error === 'code-needed' || d.error === 'no-code') return;
+      if (d.error) { UI.failLine($('piList'), 'Initiatives', said(d), loadInits); return; }
+      st.pinits = d.initiatives || [];
+      paintInits();
+    });
+  }
+  $('piFind').addEventListener('input', function () {
+    var v = this.value.trim().toLowerCase();
+    if (v === st.piFind) return;
+    st.piFind = v; paintInits();
+  });
+  function paintInits() {
+    var all = st.pinits || [], q = st.piFind || '';
+    var rows = !q ? all : all.filter(function (i) { return (i.title + ' ' + (i.name || '')).toLowerCase().indexOf(q) > -1; });
+    $('piCount').textContent = !all.length ? '' : rows.length === all.length
+      ? all.length + (all.length === 1 ? ' initiative' : ' initiatives') : rows.length + ' of ' + all.length;
+    var box = $('piList');
+    if (!all.length) { UI.emptyLine(box, 'No initiatives.'); return; }
+    if (!rows.length) { UI.emptyLine(box, 'No matches.', 'Clear the search', function () { $('piFind').value = ''; st.piFind = ''; paintInits(); }); return; }
+    var work = may('team.performance', 'work');
+    initGroups(box, rows, 'team-inits', function (i) {
+      var items = !work ? [] : i.status === 'proposed' ? [['adopted', 'Adopt'], ['not_now', 'Not now']]
+                : i.status === 'adopted' ? [['done', 'Mark done'], ['proposed', 'Revert']] : [['proposed', 'Revert']];
+      var el = initRow(i, items, true);
+      items.forEach(function (x) {
+        var b = el.querySelector('[data-a="' + x[0] + '"]');
+        b.addEventListener('click', function () { shutInitMenus(); decideInit(i, x[0], el.querySelector('[data-a="menu"]')); });
+      });
+      return el;
+    });
+  }
+  /* Adopt and Not now ask, with a note the colleague reads; Mark done and
+     Revert are steps that are taken back, and ask nothing. */
+  function decideInit(i, to, opener) {
+    var go = function (note) {
+      call('perf_initiative_decide', { p_token: token, p_id: i.id, p_status: to, p_note: note || null }, function (d) {
+        if (d.error) { msg('piMsg', said(d), 'err'); return; }
+        st.pinits = (st.pinits || []).map(function (x) { return x.id === i.id ? d.initiative : x; });
+        if (window.ADspaceGroup && window.ADspaceGroup.keep) window.ADspaceGroup.keep('team-inits', to);
+        paintInits();
+        msg('piMsg', to === 'proposed' ? 'Back to Proposed.' : (INIT_STATE[to][0] + '.'), 'ok');
+        st.ctxKey = null;
+      });
+    };
+    if (to !== 'adopted' && to !== 'not_now') { go(null); return; }
+    if (opener && opener.focus) opener.focus();
+    window.ADspaceConfirm.ask({
+      title: (to === 'adopted' ? 'Adopt ' : 'Put on hold: ') + i.title,
+      body: i.name + ' is told.',
+      go: to === 'adopted' ? 'Adopt' : 'Not now',
+      fields: [{ name: 'note', label: 'Note', required: false }]
+    }, function (v) { go(v && v.note); });
+  }
+
+  /* Beside the scores in the review sheet: the month's initiatives and,
+     once shared, the colleague's reflection. Read once a review. */
+  function loadCtx(r) {
+    var key = r.team_member_id + '|' + r.period;
+    if (st.ctxKey === key) return;
+    st.ctxKey = key; st.ctx = null;
+    call('perf_review_context', { p_token: token, p_member: r.team_member_id, p_period: r.period }, function (d) {
+      if (st.ctxKey !== key) return;
+      st.ctx = d.error ? { error: d } : d;
+      if (st.rec && st.rec.team_member_id + '|' + st.rec.period === key) paintSheet();
+    });
+  }
+  function ctxCards(r) {
+    var c = st.ctx;
+    if (!c || st.ctxKey !== r.team_member_id + '|' + r.period) return '';
+    if (c.error) return card('Initiatives', '<p class="ctx-none">' + esc(said(c.error)) + '</p>');
+    var list = c.initiatives || [];
+    var inits = card('Initiatives', list.length
+      ? '<div class="ctx-inits">' + list.map(function (i) {
+          return '<div class="ctx-init"><span><b>' + esc(i.title) + '</b><small>' +
+            esc([IMPROVES[i.improves], i.status === 'done' && i.done_month ? 'done ' + i.done_month : 'logged ' + i.month].join(' · ')) +
+            '</small></span>' + initChip(i.status) + '</div>';
+        }).join('') + '</div>'
+      : '<p class="ctx-none">None this month.</p>');
+    var f = c.reflection;
+    var refl = f ? card('Reflection', REFL.map(function (q) {
+      return f[q[0]] ? '<div class="refl-line"><span class="refl-q">' + esc(q[1]) + '</span><span class="refl-a">' + esc(f[q[0]]) + '</span></div>' : '';
+    }).join('')) : '';
+    return inits + refl;
+  }
+
   window.ADspacePerf = {
     /* A step's word and tone, for the Overview's review card. */
     status: STATUS,
@@ -2571,8 +2966,11 @@
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
       if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };
       if (st.pv === 'commission') return { tab: 'performance', view: 'commission' };
+      if (st.pv === 'initiatives') return { tab: 'performance', view: 'initiatives' };
       return { tab: 'performance', m: st.period.slice(0, 7) };
     },
+    /* My performance: the view, Reviews left out of the address. */
+    mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); }
   };
