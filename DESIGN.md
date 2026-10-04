@@ -140,7 +140,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 |---|---|
 | Section head `.viewhead` | 24 above, 12 below (22/12 phone) |
 | Blocks stacked in a section | 12 between every pair, whatever the block (`uxaudit` `stack`) |
-| The front door (`body.lp`) | Editorial: one centred column (`--lp-col` 980, 560 at 900 and under; `--lp-gut` 24) for the header's content, the name, the ticks, the hours and the foot alike; the photograph edge to edge; section steps 32 to 56 |
+| The front door (`body.lp`) | Editorial: one centred column (`--lp-col` 980, 560 at 900 and under; `--lp-gut` 24) for the name, the ticks and the hours (the bar and the foot keep every page's edges); the photograph edge to edge; section steps 32 to 56 |
 | Sections in a list `.crm-group` | 24 |
 | Panel padding | 18px 20px (14 phone) |
 | Fold head `.disclosure` | 16px 22px (12px 14px phone) |

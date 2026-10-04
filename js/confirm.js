@@ -28,6 +28,7 @@
  *   ADspaceConfirm.ask({ …, field: { label, placeholder, rows, required } }, onYes)
  *   ADspaceConfirm.ask({ …, field: { …, match: 'HKL LIM' } }, onYes)
  *   ADspaceConfirm.ask({ …, field: { …, choices: [['a','A'], …] } }, onYes)
+ *   ADspaceConfirm.ask({ …, fields: […], check: function (values) { return 'Why not' or '' } }, onYes)
  *
  * `onYes` is called with the field's value where there is one and with `true`
  * where there is not. Cancel calls nothing: walking away is not a decision.
@@ -170,6 +171,13 @@
       arg = {};
       rows.forEach(function (x, n) { arg[x.spec.name || ('f' + n)] = valueOf(x); });
     }
+    /* `check(values)` answers a refusal the fields cannot state alone (an
+       end before its start): said in place, with the sheet and what was
+       typed kept, rather than after it has closed. */
+    if (opts && typeof opts.check === 'function') {
+      var why = opts.check(arg);
+      if (why) { say(why); if (rows[0]) rows[0].input.focus(); return; }
+    }
     shut();
     if (fn) fn(arg);
   }
@@ -216,7 +224,7 @@
     specs.forEach(function (f, n) {
       var id = 'askSheetField' + n;
       /* `half` sets a field beside the next half one (a date and its time). */
-      var wrap = el('div', 'askfield' + (f.half ? ' is-half' : ''));
+      var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
       var lab = el('label', 'field-label', f.label || 'Reason');
       lab.setAttribute('for', id);
       var input;
@@ -243,6 +251,12 @@
       wrap.appendChild(lab);
       wrap.appendChild(input);
       elFields.appendChild(wrap);
+      /* An empty time field says what it wants: Safari otherwise draws the
+         clock's own time in grey, which reads as a value already chosen. */
+      if (f.hint && window.ADspaceForm && ADspaceForm.hint) {
+        input.setAttribute('data-hint', f.hint);
+        ADspaceForm.hint(input);
+      }
       rows.push({ spec: f, input: input });
     });
 

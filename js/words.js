@@ -35,7 +35,7 @@
     // A client's act the database did not take, said without its words.
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     maintTitle: 'Upgrading in progress',
-    maintText: 'The portal is being upgraded. Please check back shortly.',
+    maintText: "We'll be right back!",
     maintBack: 'Expected back by {when}.',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
@@ -101,7 +101,7 @@
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
     maintTitle: '系统升级中',
-    maintText: '门户正在升级，请稍后再来。',
+    maintText: '我们马上回来！',
     maintBack: '预计于 {when} 恢复。',
     closed: '选择已结束',
     closedText: '如需调整，请联系您的 ADspace 客户经理。',

@@ -418,7 +418,15 @@ a { color: inherit; }
 .input[type="month"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
 /* A time field's value is narrower than the box, so its mark followed the
    value into the middle; it keeps to the right edge, as the date's does. */
-@media (pointer: fine) { .input[type="time"] { display: block; } }
+/* As a block its value sat on the top edge in Safari (Chrome centres it
+   itself), so the block is padded to put one line on the field's middle,
+   and Safari's own inset around the value goes, so it starts where every
+   other field's text does. */
+@media (pointer: fine) {
+  .input[type="time"] { display: block; padding-block: calc((var(--ctl-h) - 2px - 1.5em) / 2); }
+  .input[type="time"]::-webkit-datetime-edit { padding: 0; }
+  .input[type="time"]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+}
 /* Under a finger there is no picker mark at all, on iOS or on Android, so
    the field names itself with a glyph on the left: a calendar for a date and
    a clock for a time, the same weight as every other glyph in the console.
@@ -597,7 +605,7 @@ a { color: inherit; }
 .shell-review .cardpair > .card.in-pair { border: 0; border-radius: 0; box-shadow: none; flex: 1 1 auto; align-self: stretch; }
 .cardpair > .card.in-pair[hidden] { display: none; }
 .cardpair > .card.in-pair > .card-head { display: none; }
-.cardpair > .tabrow.pairtabs { margin: 12px 16px 0; display: flex; width: auto; max-width: none; }
+.cardpair > .tabrow.pairtabs { margin: 12px 16px; display: flex; width: auto; max-width: none; }
 .cardpair > .pairtabs .tab { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
 .pair-chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
 .pair-chip:empty { display: none; }
@@ -1556,6 +1564,34 @@ a { color: inherit; }
   border: 0; border-top: 1px solid var(--line-soft); background: none;
 }
 .saved:first-child { border-top: 0; padding-top: 4px; }
+/* A video and its cover, one linked card: a shaded frame (a box inside a
+   card is shaded, never outlined) holding the two rows, a hairline between
+   them and a link drawn from the video's picture down to the cover's, so
+   the pair reads as one thing at a glance. Each row keeps its own state and
+   ⋯. A half outside the chosen stage stays in sight, faded, its ⋯ whole. */
+.saved-pair {
+  /* The frame reaches into the panel's padding, so its pictures and words
+     keep the column every other row's do. */
+  position: relative; margin: 8px -12px; padding: 0 12px;
+  background: var(--sunk); border-radius: var(--radius-sm);
+}
+.saved-pair:first-child { margin-top: 0; }
+.saved-pair:last-child { margin-bottom: 0; }
+.saved-pair + .saved { border-top: 0; }
+.saved-pair > .saved { padding: 12px 0; border-top-color: var(--line); }
+.saved-pair > .saved:first-child { border-top: 0; }
+/* The link: from under one picture to the top of the next, through the
+   row's foot and the hairline, so it meets whatever the rows hold. */
+.saved-pair { --pair-th: 62px; }
+.saved-pair > .saved { position: relative; }
+.saved-pair > .saved:not(:last-child)::after,
+.saved-pair > .saved + .saved::before {
+  content: ""; position: absolute; width: 2px; left: calc(var(--pair-th) / 2 - 1px);
+  background: var(--line-ctl); border-radius: 1px;
+}
+.saved-pair > .saved:not(:last-child)::after { top: calc(12px + var(--pair-th)); bottom: 0; }
+.saved-pair > .saved + .saved::before { top: -1px; height: 13px; }
+.saved-pair > .saved.is-aside > .saved-thumb > *, .saved-pair > .saved.is-aside > .saved-body { opacity: .55; }
 .saved-top { display: flex; align-items: center; gap: 8px; min-width: 0; width: 100%; }
 .saved-top > b { flex: 1 1 auto; min-width: 0; }
 .saved-top > .tone { flex: 0 0 auto; }
@@ -1605,6 +1641,7 @@ a { color: inherit; }
 
 @media (max-width: 640px) {
   .saved { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 0 10px; }
+  .saved-pair { --pair-th: 56px; margin-inline: -8px; padding-inline: 8px; }
   .saved-thumb { width: 56px; height: 56px; }
 }
 
@@ -2511,14 +2548,15 @@ body.is-plain .topbar { background: var(--chrome); }
 .sheet-card.askcard { width: min(440px, 100%); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
-.askfield + .askfield { margin-top: 12px; }
+.askentry + .askentry { margin-top: 12px; }
 /* A date beside its time: two halves on one row, every other field the
    row's width, 16px down as in a sheet. */
 .askfields.has-half { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 12px; }
-.askfields.has-half > .askfield { grid-column: 1 / -1; margin-top: 0; }
-.askfields.has-half > .askfield.is-half { grid-column: auto; }
-.askfield > .input, .askfield > .select, .askfield > textarea.input { width: 100%; }
-.askfield .field-label { display: block; margin-bottom: 6px; }
+.askfields.has-half > .askentry { grid-column: 1 / -1; margin-top: 0; }
+.askfields.has-half > .askentry.is-half { grid-column: auto; }
+.askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
+.askentry .field-label { display: block; margin-bottom: 6px; }
+.askentry > .datefield { display: flex; width: 100%; }
 @media (max-width: 560px) {
   /* Two actions of the same standing are two halves, never a slab and a
      remnant: the rule the sheet foot already carries everywhere else. */
@@ -5023,6 +5061,23 @@ body > .shell { width: 100%; }
   grid-template-columns:
     minmax(0, 1.9fr) 128px minmax(0, .9fr) minmax(0, 1fr) 104px 18px;
 }
+/* The client's logo before the name, the record head's mark at row size:
+   white disc and hairline for a logo (light in both themes, as a logo is),
+   initials on the quiet fill while none is held. */
+.crm-row.client-row .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cl-mark {
+  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--line-soft); color: var(--ink-soft);
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em;
+}
+.cl-mark.has-logo { background: #fff; border: 1px solid var(--line); }
+.cl-mark img { width: 100%; height: 100%; object-fit: contain; }
+.cl-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+/* A part of a line of parts that must stay whole (a date, a name). */
+.crm-c-meta .nb { white-space: nowrap; }
+/* The header's Client label starts where the names do. */
+.crm-head.client-row > :first-child { padding-left: 44px; }
 /* The date over what it was, the way the stage cell carries its clock: one
    cell, two lines, the second in the same small mute face as `.crm-age`. */
 .crm-c-seen {
@@ -5048,6 +5103,11 @@ body > .shell { width: 100%; }
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
   .crm-head.client-row, .crm-row.client-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  /* The mark at 28px beside the name; the meta line under it starts where
+     the name does. */
+  .cl-mark { flex-basis: 28px; width: 28px; height: 28px; font-size: 11px; }
+  .crm-row.client-row .crm-c-name { gap: 10px; align-items: flex-start; }
+  .crm-row.client-row .crm-c-meta { padding-left: 38px; }
   /* Restated, because the two-line rule above is later in the file than the
      phone rule that hides the cell: the date rides the meta line here. */
   .crm-c-seen { display: none; }
@@ -9065,11 +9125,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font-display: swap;
 }
 body.lp { --lp-col: 980px; --lp-gut: 24px; background: var(--card); }
-body.lp .topbar-inner, body.lp .portalfoot-in {
-  max-width: calc(var(--lp-col) + 2 * var(--lp-gut)); margin: 0 auto;
-  padding-left: max(var(--lp-gut), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--lp-gut), env(safe-area-inset-right, 0px));
-}
+/* The bar and the foot keep every page's edge (the user, 2026-10-03: the
+   front door's mark sat in the column while every other page's sat at the
+   left edge); the column holds the page's own content only. */
 /* The header's label says what ADspace is, in the body face at the weight
    of a line of text rather than a section's name, on this page alone. */
 body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--ink-soft); }
@@ -9408,6 +9466,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .is-narrow .poststages .tab { flex: 1 0 auto; padding: 0 8px; }
 .is-narrow .poststages .tab-long { display: none; }
 .is-narrow .poststages .tab-short { display: inline; }
+.is-narrow .saved-top .chip-more { display: none; }
 
 /* Request changes is one column, every step 12px apart: the note, the name
    the full width of the box, then Cancel and Send request (the caption is
@@ -9641,4 +9700,43 @@ body.is-maint { overflow: hidden; }
 .upgradebar .btn { flex: 0 0 auto; }
 @media (max-width: 640px) {
   .upgradebar { margin: 12px 16px 0; }
+}
+
+/* ---- Pair covers (js/admin.js, 2026-10-03) ---------------------------------
+   One card a cover: the cover and the video proposed for it side by side at
+   9:16, large enough to judge the match by eye (the video plays in place),
+   then the video's select and a Pair tick. The foot counts what Pair writes.
+   A desk sets the controls beside the pair; a phone puts them under it, the
+   two pictures sharing the width. */
+.pairlist { display: grid; gap: 12px; }
+/* The line over the posts while covers wait: the count, the way to pair. */
+.pairnote {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 12px; padding: 8px 8px 8px 14px; border-radius: var(--radius-sm);
+  background: var(--sunk); font-size: 13px; color: var(--ink-soft);
+}
+.pairnote[hidden] { display: none; }
+.pairnote .btn { flex: 0 0 auto; }
+.paircard {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center;
+  padding: 12px; background: var(--sunk); border-radius: var(--radius-sm);
+}
+.paircard-media { display: grid; grid-template-columns: 96px 24px 96px; align-items: center; }
+.pairtile { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.pairtile-pic {
+  display: block; aspect-ratio: 9 / 16; overflow: hidden;
+  border-radius: var(--radius-ctl-sm); background: var(--line-soft);
+}
+.pairtile-pic img, .pairtile-pic video { display: block; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.pairtile-pic img { background: none; }
+.pairtile figcaption { font-size: 12px; color: var(--ink-mute); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pairlink { display: grid; place-items: center; color: var(--ink-mute); padding-bottom: 18px; }
+.pairlink svg { width: 15px; height: 15px; }
+.paircard-ctl { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 0; }
+.paircard-ctl .select { width: 100%; min-width: 0; }
+.paircard-ctl .tickline { margin-top: 12px; }
+.sheet-card.is-narrow .paircard, .is-narrow .paircard { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px) {
+  .paircard { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .paircard-media { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); width: 100%; max-width: 264px; justify-self: center; }
 }

@@ -806,7 +806,9 @@
   }
   function showHalf(pair, n, byHand) {
     pair.__half = n;
-    pair.__halves.forEach(function (c, i) { c.hidden = i !== n || c.__filtered === true; });
+    /* The stage strip only chooses which half a pair opens on: both halves
+       stay one press away, since each tab already names its own state. */
+    pair.__halves.forEach(function (c, i) { c.hidden = i !== n; });
     Array.prototype.forEach.call(pair.querySelectorAll('.pairtabs .tab'), function (b, i) {
       b.classList.toggle('is-on', i === n);
       b.setAttribute('aria-selected', String(i === n));

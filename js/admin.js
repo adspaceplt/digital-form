@@ -430,6 +430,16 @@
   }
   function myDay(d) { return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
   function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00+08:00' : null; }
+  /* The window as typed: a time with no date is today's (it was dropped, so
+     "10:00 pm" alone put the cover up at once), an empty start is now, and
+     an empty end waits to be turned off. */
+  function upgradeWindow(v) {
+    var today = myDay(new Date());
+    var starts = myMoment(v.sday || (v.stime ? today : ''), v.stime, '00:00');
+    var ends = myMoment(v.eday || (v.etime ? today : ''), v.etime, '23:59');
+    var bad = ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date());
+    return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
+  }
   if ($('acctUpgrade')) $('acctUpgrade').addEventListener('click', function (e) {
     e.stopPropagation();
     upgradeSay('');
@@ -442,18 +452,14 @@
       go: 'Turn on',
       tone: 'warn',
       fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },
-               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true },
+               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional' },
                { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true },
-               { name: 'etime', label: 'End time', type: 'time', required: false, half: true },
-               { name: 'note', label: 'Note on the cover', placeholder: 'Optional', required: false }]
+               { name: 'etime', label: 'End time', type: 'time', required: false, half: true, hint: 'Optional' },
+               { name: 'note', label: 'Note on the cover', placeholder: 'Optional', required: false }],
+      check: function (v) { return upgradeWindow(v).bad; }
     }, function (v) {
-      var starts = myMoment(v.sday, v.stime, '00:00');
-      var ends = myMoment(v.eday, v.etime, '23:59');
-      if (ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date())) {
-        upgradeSay('Choose an end after the start, and later than now.');
-        return;
-      }
-      setUpgrade({ p_on: true, p_note: v.note || null, p_starts: starts, p_ends: ends }, upgradeSay);
+      var w = upgradeWindow(v);
+      setUpgrade({ p_on: true, p_note: v.note || null, p_starts: w.starts, p_ends: w.ends }, upgradeSay);
     });
   });
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
@@ -2153,6 +2159,143 @@
   });
   $('assetClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
+
+  /* ===== Pair covers (2026-10-03). A set made before covers were paired
+     holds its covers and videos side by side and nothing ties them: the
+     files were stored under random names, and a cover carries no caption.
+     The set's order is the one clue (a cover is uploaded just before its
+     video), so each unpaired cover is proposed the first free video after
+     it, shown side by side, and changed by its select; Save writes only what
+     the sheet holds. Each cover can be paired again later from its ⋯. */
+  function paintPairSheet() {
+    var v = state.postView;
+    var posts = (v && v.posts || []).slice().sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
+    var videos = videosOf(posts);
+    var isVideo = {};
+    videos.forEach(function (x) { isVideo[x.id] = true; });
+    /* A video a paired cover holds is neither proposed nor offered; a cover
+       whose video was deleted waits again. */
+    var held = {};
+    posts.forEach(function (p) { if (p.platform === 'cover' && p.cover_for && isVideo[p.cover_for]) held[p.cover_for] = true; });
+    var free = videos.filter(function (x) { return !held[x.id]; });
+    var taken = {};
+    var covers = posts.filter(function (p) { return p.platform === 'cover' && !(p.cover_for && isVideo[p.cover_for]); });
+    var opts = function (sel) {
+      return '<option value="">No video</option>' + free.map(function (x) {
+        return '<option value="' + esc(x.id) + '"' + (x.id === sel ? ' selected' : '') + '>' + esc(x.label) + '</option>';
+      }).join('');
+    };
+    /* The first free video after the cover (every pair the team has made
+       has its video right after its cover), else the nearest one before it
+       (a cover added after its video). */
+    var propose = function (c) {
+      var pos = c.position || 0, after = null, before = null;
+      free.forEach(function (x) {
+        if (taken[x.id]) return;
+        if ((x.pos || 0) > pos) { if (!after) after = x; }
+        else before = x;
+      });
+      return after || before;
+    };
+    /* The two side by side at 9:16, large enough to judge a match by eye;
+       the video plays in place. */
+    var coverTile = function (m) {
+      return '<figure class="pairtile"><span class="pairtile-pic">' + (m ? thumbOf(m) : '') + '</span>' +
+        '<figcaption>Cover</figcaption></figure>';
+    };
+    var videoTile = function (x) {
+      return '<figure class="pairtile is-video"><span class="pairtile-pic">' +
+        (x ? '<video controls muted playsinline preload="metadata">' +
+          ADspaceMedia.sources(x.media.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>' : '') +
+        '</span><figcaption>' + (x ? 'Video ' + x.n : 'No video') + '</figcaption></figure>';
+    };
+    $('pairList').innerHTML = covers.map(function (c, i) {
+      var next = propose(c);
+      if (next) taken[next.id] = true;
+      var id = 'pairSel' + i;
+      return '<div class="paircard" data-cover="' + esc(c.id) + '">' +
+        '<div class="paircard-media">' + coverTile((c.media || [])[0]) +
+          '<span class="pairlink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>' +
+          videoTile(next) + '</div>' +
+        '<div class="paircard-ctl">' +
+          '<label class="field-label" for="' + id + '">Video</label>' +
+          '<select class="select" id="' + id + '" data-nodraft>' + opts(next ? next.id : '') + '</select>' +
+          '<label class="tickline"><input type="checkbox" data-pair' + (next ? ' checked' : ' disabled') + '> Pair</label>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call($('pairList').querySelectorAll('.paircard'), function (card) {
+      var sel = card.querySelector('select'), tick = card.querySelector('[data-pair]');
+      sel.addEventListener('change', function () {
+        var x = videos.filter(function (y) { return y.id === sel.value; })[0];
+        var tmp = document.createElement('div');
+        tmp.innerHTML = videoTile(x);
+        var old = card.querySelector('.pairtile.is-video');
+        old.parentNode.replaceChild(tmp.firstChild, old);
+        tick.disabled = !x;
+        tick.checked = !!x;
+        pairCount();
+      });
+      tick.addEventListener('change', pairCount);
+    });
+    pairCount();
+    msg('pairMsg', '', '');
+    return covers.length;
+  }
+  /* What Pair will write: the ticked covers that name a video. */
+  function pairPicks() {
+    return Array.prototype.slice.call($('pairList').querySelectorAll('.paircard')).map(function (l) {
+      var t = l.querySelector('[data-pair]');
+      return { cover: l.getAttribute('data-cover'), video: t.checked ? l.querySelector('select').value : '' };
+    }).filter(function (x) { return x.video; });
+  }
+  function pairCount() {
+    var n = pairPicks().length;
+    $('pairSave').textContent = n ? 'Pair ' + n : 'Pair';
+    $('pairSave').disabled = !n;
+  }
+  $('pairCovers').addEventListener('click', function () {
+    if (!paintPairSheet()) return;
+    window.ADspaceSheet.show($('pairSheet'), { opener: this });
+  });
+  $('pairClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('pairCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  function setCovers(picks, then) {
+    return Promise.all(picks.map(function (x) {
+      return db.from('posts').update({ cover_for: x.video || null }).eq('id', x.cover).select('id')
+        .then(function (r) { return !r.error && (r.data || []).length; })
+        .catch(function () { return false; });
+    })).then(then);
+  }
+  $('pairSave').addEventListener('click', function () {
+    var btn = this;
+    var picks = pairPicks();
+    var seen = {}, twice = picks.some(function (x) { if (seen[x.video]) return true; seen[x.video] = true; return false; });
+    if (twice) { msg('pairMsg', 'One video is chosen for two covers. Give each cover its own video.', 'err'); return; }
+    if (!picks.length) { window.ADspaceSheet.close(); return; }
+    btn.disabled = true;
+    msg('pairMsg', 'Saving…', '');
+    setCovers(picks, function (out) {
+      btn.disabled = false;
+      var done = picks.filter(function (x, i) { return out[i]; });
+      var ok = done.length, bad = out.length - ok;
+      var subject = state.client.name + ' — ' + (state.batch.title || '');
+      if (ok) logAction('post.edited', subject, 'Covers paired: ' + ok);
+      if (bad) { msg('pairMsg', bad + (bad === 1 ? ' cover was' : ' covers were') + ' not paired. The database refused the request.', 'err'); loadPosts(); return; }
+      window.ADspaceSheet.close();
+      msg('setMsg', ok + (ok === 1 ? ' cover paired.' : ' covers paired.'), 'ok');
+      loadPosts();
+      /* The way back, over the posts it changed. */
+      undoHere(ok + (ok === 1 ? ' cover paired.' : ' covers paired.'), function () {
+        setCovers(done.map(function (x) { return { cover: x.cover, video: null }; }), function (o2) {
+          var back = o2.filter(Boolean).length;
+          if (back) logAction('post.edited', subject, 'Covers unpaired: ' + back);
+          msg('setMsg', back === done.length ? 'Pairing undone.' : 'Not undone. The database refused the request.', back === done.length ? 'ok' : 'err');
+          loadPosts();
+        });
+      }, $('postStages'));
+    });
+  });
   $('deleteSet').addEventListener('click', function () {
     shutSetMenu();
     var b = state.batch;
@@ -2399,8 +2542,10 @@
 
   /* A cover and its reel go up together and show as one card. A cover finds
      its reel by name first (`launch.mp4` and `launch-cover.jpg`, or
-     `launch_thumb.png`), else it takes the nearest video before it that has
-     no cover yet. A pick by hand is kept. */
+     `launch_thumb.png`), else the first video after it that has no cover yet
+     (the team uploads a cover just before its video: every pair made so far
+     has its video right after its cover), else the nearest one before it. A
+     pick by hand is kept. */
   function isCoverDraft(d) { return d.placement === 'cover:image'; }
   function isReelDraft(d) { return d.media.length === 1 && d.media[0].type === 'video'; }
   function stemOf(name) {
@@ -2415,19 +2560,29 @@
       if (d.coverFor && reels.some(function (r) { return r.key === d.coverFor; })) taken[d.coverFor] = true;
       else d.coverFor = null;
     });
-    state.drafts.forEach(function (d, i) {
-      if (!isCoverDraft(d) || d.coverFor || d.pairedByHand) return;
+    var open = function (d) { return isCoverDraft(d) && !d.coverFor && !d.pairedByHand; };
+    /* Every name first, so a cover named for its reel is never beaten to it
+       by a cover that only sits next to it. */
+    state.drafts.forEach(function (d) {
+      if (!open(d)) return;
       var stem = stemOf(d.name);
-      var byName = stem && reels.filter(function (r) { return !taken[r.key] && stemOf(r.name) === stem; })[0];
-      var before = null;
-      if (!byName) {
-        for (var j = i - 1; j >= 0; j--) {
-          var r = state.drafts[j];
-          if (isReelDraft(r) && !taken[r.key]) { before = r; break; }
-        }
-      }
-      var got = byName || before;
+      var got = stem && reels.filter(function (r) { return !taken[r.key] && stemOf(r.name) === stem; })[0];
       if (got) { d.coverFor = got.key; taken[got.key] = true; }
+    });
+    /* Then the order: the first free video after the cover, else the nearest
+       one before it. */
+    state.drafts.forEach(function (d, i) {
+      if (!open(d)) return;
+      var near = null, j, r;
+      for (j = i + 1; j < state.drafts.length && !near; j++) {
+        r = state.drafts[j];
+        if (isReelDraft(r) && !taken[r.key]) near = r;
+      }
+      for (j = i - 1; j >= 0 && !near; j--) {
+        r = state.drafts[j];
+        if (isReelDraft(r) && !taken[r.key]) near = r;
+      }
+      if (near) { d.coverFor = near.key; taken[near.key] = true; }
     });
   }
 
@@ -3540,6 +3695,24 @@
   function postStageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
   }
+  /* The set's videos, named by their place in it, for a cover to belong to.
+     Named by what tells one video from the next: its title, else the first
+     words of its caption, else its file, else its placement (the user,
+     2026-10-03: thirty reels all read Instagram Reels). */
+  function videosOf(posts) {
+    var vn = 0, videos = [];
+    (posts || []).forEach(function (p) {
+      var m0 = (p.media || [])[0];
+      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
+        var said = String(p.title || '').trim() ||
+          String(p.caption || '').split(/\n/)[0].trim() || String(m0.name || '').trim();
+        if (said.length > 48) said = said.slice(0, 47).replace(/\s+\S*$/, '') + '…';
+        vn++; videos.push({ id: p.id, n: vn, pos: p.position, media: m0, label: 'Video ' + vn + ' · ' + (said || MK.label(p)) });
+      }
+    });
+    return videos;
+  }
+
   function paintPostStages(fresh) {
     var v = state.postView, box = $('postList'), strip = $('postStages');
     if (!v || !state.batch) return;
@@ -3561,24 +3734,46 @@
         ' <span class="tab-n' + (counts[s[0]] && STAGE_TONE[s[0]] ? ' ' + STAGE_TONE[s[0]] : '') + '">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';
-    /* The set's videos, named by their place in it, for a cover to belong to. */
-    var vn = 0, videos = [];
+    var videos = videosOf(v.posts);
+    var isVideo = {}, coversOf = {}, holder = {};
+    videos.forEach(function (x) { isVideo[x.id] = x; });
+    /* A cover is paired while the video it names is still a video in this
+       set; one whose video was deleted waits again, as it reads. */
+    var paired = function (p) { return p.platform === 'cover' && p.cover_for && isVideo[p.cover_for]; };
+    v.posts.forEach(function (p) { if (paired(p) && !holder[p.cover_for]) holder[p.cover_for] = p.id; });
+    /* Covers waiting for a video say so on the page, with the way to pair
+       them beside the count (the user, 2026-10-03: the ⋯ hid it). */
+    var waiting = videos.length ? v.posts.filter(function (p) { return p.platform === 'cover' && !paired(p); }).length : 0;
+    $('pairNote').hidden = !waiting;
+    $('pairNoteText').textContent = waiting + (waiting === 1 ? ' cover has no video' : ' covers have no video');
+    /* A video and the cover paired with it are one linked card: the video,
+       then its cover attached under it in one frame, each still its own row
+       with its own state, ⋯ and notes (the user, 2026-10-03: a line of text
+       naming the video read as complicated). The pair shows while either
+       half is in the chosen stage; the other half stays in sight, faded, so
+       the two are never parted. */
+    var shown = function (p) { return pick === 'all' || postStageOf(v.latest[p.id]) === pick; };
+    var rowOf = function (p, inPair) {
+      return savedRow(p, v.latest[p.id], { asked: v.asked[p.id], kept: v.kept[p.id] || [],
+        earlier: (v.earlier || {})[p.id], videos: videos, inPair: inPair, holder: holder });
+    };
+    v.posts.forEach(function (p) { if (paired(p)) (coversOf[p.cover_for] = coversOf[p.cover_for] || []).push(p); });
     v.posts.forEach(function (p) {
-      var m0 = (p.media || [])[0];
-      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
-        /* Named by what tells one video from the next: its title, else the
-           first words of its caption, else its file, else its placement
-           (the user, 2026-10-03: thirty reels all read Instagram Reels). */
-        var said = String(p.title || '').trim() ||
-          String(p.caption || '').split(/\n/)[0].trim() || String(m0.name || '').trim();
-        if (said.length > 48) said = said.slice(0, 47).replace(/\s+\S*$/, '') + '…';
-        vn++; videos.push({ id: p.id, n: vn, label: 'Video ' + vn + ' · ' + (said || MK.label(p)) });
-      }
-    });
-    v.posts.forEach(function (p) {
-      var review = v.latest[p.id];
-      if (pick !== 'all' && postStageOf(review) !== pick) return;
-      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id], videos: videos }));
+      if (paired(p)) return;
+      var covers = coversOf[p.id];
+      if (!covers) { if (shown(p)) box.appendChild(rowOf(p, false)); return; }
+      var halves = [p].concat(covers);
+      if (!halves.some(shown)) return;
+      var g = document.createElement('div');
+      g.className = 'saved-pair';
+      g.setAttribute('role', 'group');
+      g.setAttribute('aria-label', isVideo[p.id].label + ' with its cover');
+      halves.forEach(function (h) {
+        var r = rowOf(h, true);
+        if (!shown(h)) r.classList.add('is-aside');
+        g.appendChild(r);
+      });
+      box.appendChild(g);
     });
     if (!box.children.length) UI.emptyLine(box, 'No posts.');
   }
@@ -3745,7 +3940,9 @@
     var kind = !review ? 'pending'
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
-             : kind === 'approved' ? 'Approved' : 'Changes requested';
+             /* "requested" gives way on a narrow pane, as the stage strip's
+                tab does, so the placement's name keeps its one line. */
+             : kind === 'approved' ? 'Approved' : 'Changes<span class="chip-more"> requested</span>';
     return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : kind === 'changes' ? 'is-danger' : 'is-warn') + '">' + word + '</span>';
   }
 
@@ -3831,7 +4028,8 @@
               return '<span>Video ' + x.n + '</span><span class="sep">·</span>';
             })[0] || '') +
             '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
-            (p.platform === 'cover' ? '<span class="sep">·</span><span>' + esc(coverWord(p, extra.videos)) + '</span>' : '') +
+            /* Inside its video's card the cover needs no words for whose it is. */
+            (p.platform === 'cover' && !extra.inPair ? '<span class="sep">·</span><span>' + esc(coverWord(p, extra.videos)) + '</span>' : '') +
             '</span>' +
           // A post with no copy yet says nothing rather than saying "No caption".
           ((p.caption || p.caption_zh)
@@ -3892,7 +4090,12 @@
       var pairBtn = row.querySelector('[data-a="pair"]');
       if (pairBtn) pairBtn.addEventListener('click', function () {
         shutPostMenus();
-        var choices = [['', 'No video']].concat((extra.videos || []).map(function (x) { return [x.id, x.label]; }));
+        /* A video another cover already holds is not offered: the client's
+           page shows one cover a reel, so a second would stand alone there. */
+        var holder = extra.holder || {};
+        var choices = [['', 'No video']].concat((extra.videos || []).filter(function (x) {
+          return !holder[x.id] || holder[x.id] === p.id;
+        }).map(function (x) { return [x.id, x.label]; }));
         window.ADspaceConfirm.ask({
           title: 'Pair with video',
           body: 'The client sees the cover and its video as one card, each decided on its own.',
