@@ -124,7 +124,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | File | Suites |
 |---|---|
 | `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly |
-| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
+| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
@@ -1637,6 +1637,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
 - Skipping a step is ops Work with a reason, and never into a revision. Owner
   change and hand-over (`ops_hand_over_task`) are Manage.
+- Open to take (`2026-10-04-open-to-take.sql`, `ops_tasks.open_at` /
+  `open_by`): the Task Owner or an admin offers an open task to the team
+  (Offer to the team / Withdraw offer in the ⋯, never asks;
+  `ops_set_open`, filed `offered` / `offer_withdrawn`); any colleague at My
+  Work Work whose client scope holds its client sees it (`ops_may_see_task`)
+  and takes it (Take, asked first, naming who is told; `ops_take_task`,
+  `not-open`, `already-yours`, `stale`), becoming its one owner, filed
+  `assignment_changed` `taken`, the owner before told (kind `taken`). Any
+  change of hands ends the offer (trigger `ops_assignees_close_offer`). The
+  owner's row carries the Open to take chip; everyone else's own queue
+  heads it under Open to take with Take where the stage would be.
 - Reopen works on every cancelled task, back to the stage it was cancelled
   from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
 - A task read that finds no row (deleted, or out of reach) closes its sheet
@@ -1648,7 +1659,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
   - The ⋯ (row, sheet, record) is Open full record (not on the record),
-    Change Task Owner, Make a copy, Repeat on a schedule, Delete. No timer,
+    Take or Offer to the team / Withdraw offer (where they apply), Change
+    Task Owner, Make a copy, Repeat on a schedule, Delete. No timer,
     Revert, Move to another stage, Mark blocked or Cancel.
   - `factHere()`: a step's fact buttons act on the sheet's row while the sheet
     is open.

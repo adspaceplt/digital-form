@@ -852,18 +852,41 @@
      taken, withdrawn or handed on. */
   function offered(t) { return !!(t && t.open_at) && !isFinished(t); }
   function takeable(t) {
-    return offered(t) && may('ops', 'work') && state.ownerIds[t.id] !== myId();
+    return offered(t) && may('ops', 'work') && (state.ownerIds[t.id] || ownerId(t)) !== myId();
   }
-  function offerTask(t, on, el, done) {
+  /* `say` names a refusal where the act was pressed: under the row, or in
+     the task's sheet or record. */
+  function offerTask(t, on, say, done) {
     db.rpc('ops_set_open', { p_task: t.id, p_on: on }).then(function (r) {
       var d = r.data;
-      if (r.error || (d && d.error)) { rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
+      if (r.error || (d && d.error)) { say(r.error ? r.error.message : said(d.error, t)); return; }
       state.rowSaid = { id: t.id, word: on ? 'Open to take.' : 'Offer withdrawn.' };
       done();
-    }).catch(function (e) { rowNote(el, (e && e.message) || String(e)); });
+    }).catch(function (e) { say((e && e.message) || String(e)); });
   }
-  function takeTask(t, el, done) {
-    var was = state.owners[t.id];
+  /* The task's own ⋯ (its sheet and its record): the items drawn only where
+     they apply, and the task read again after the act. */
+  function offerItems(menu, t) {
+    var fin = isFinished(t);
+    menu.querySelector('[data-a="take"]').hidden = !takeable(t);
+    menu.querySelector('[data-a="offer"]').hidden = fin || offered(t) || !mayMove(t);
+    menu.querySelector('[data-a="unoffer"]').hidden = fin || !offered(t) || !mayMove(t);
+  }
+  function offerAct(a, t, msgId) {
+    if (a !== 'take' && a !== 'offer' && a !== 'unoffer') return;
+    var say = function (x) { msg(msgId, x, 'err'); };
+    var after = function (refused) {
+      if (state.drawer) state.drawerDirty = true;
+      readTask(t.id, function () {
+        if (!refused) msg(msgId, state.rowSaid ? state.rowSaid.word : 'Saved.', 'ok');
+        state.rowSaid = null;
+      });
+    };
+    if (a === 'take') takeTask(t, say, after);
+    else offerTask(t, a === 'offer', say, after);
+  }
+  function takeTask(t, say, done) {
+    var was = state.owners[t.id] || nameOf(ownerId(t));
     ADspaceConfirm.ask({
       title: 'Take ' + (serialOf(t) || 'this task') + '?',
       body: 'You become its Task Owner' + (was ? ' and ' + was + ' is told.' : '.'),
@@ -871,10 +894,10 @@
     }, function () {
       db.rpc('ops_take_task', { p_task: t.id, p_version: t.version }).then(function (r) {
         var d = r.data;
-        if (r.error || (d && d.error)) { rowNote(el, r.error ? r.error.message : said(d.error, t)); if (d && d.error) done(); return; }
+        if (r.error || (d && d.error)) { say(r.error ? r.error.message : said(d.error, t)); if (d && d.error) done(true); return; }
         state.rowSaid = { id: t.id, word: 'Yours.' };
         done();
-      }).catch(function (e) { rowNote(el, (e && e.message) || String(e)); });
+      }).catch(function (e) { say((e && e.message) || String(e)); });
     });
   }
   function matches(t) {
@@ -2137,7 +2160,7 @@
     });
     wireStage(el.querySelector('.state-select'), t, el, done);
     var tk = el.querySelector('[data-a="take"]');
-    if (tk) tk.addEventListener('click', function () { takeTask(t, el, done); });
+    if (tk) tk.addEventListener('click', function () { takeTask(t, function (x) { rowNote(el, x); }, done); });
     wireRowMenu(el, t, done);
     return el;
   }
@@ -2252,8 +2275,9 @@
       var a = it.getAttribute('data-m');
       var from = el.closest('#cwList') ? { from: 'client' } : {};
       if (a === 'full') { openFull(t.id); return; }
-      if (a === 'take') { takeTask(t, el, done); return; }
-      if (a === 'offer' || a === 'unoffer') { offerTask(t, a === 'offer', el, done); return; }
+      var sayRow = function (x) { rowNote(el, x); };
+      if (a === 'take') { takeTask(t, sayRow, done); return; }
+      if (a === 'offer' || a === 'unoffer') { offerTask(t, a === 'offer', sayRow, done); return; }
       /* The rest act on the task as the sheet does, so the sheet opens and
          the act follows once the task is read. */
       from.then = a === 'owner' ? openGive : a === 'copy' ? openDup : a === 'repeat' ? openRec : openDelete;
@@ -2758,6 +2782,7 @@
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
     menu.querySelector('[data-a="handover"]').hidden = fin;
+    offerItems(menu, t);
   }
   // ---- Changing and taking back what was added --------------------------------
   /* A row the reader may change carries a ⋯ at its end, holding the acts for
@@ -5277,6 +5302,7 @@
     /* Archiving is no longer offered; a task archived before keeps its way
        back. */
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at;
+    offerItems(menu, t);
   }
 
   /* A move. `note` goes on the record with it; `o.assignee` hands the task
@@ -7293,6 +7319,7 @@
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
         if (a === 'delete') openDelete();
+        offerAct(a, t, 'dwMsg');
       });
     }
 
@@ -7362,6 +7389,7 @@
           });
         }
         if (a === 'delete') openDelete();
+        offerAct(a, t, 'taskMsg');
       });
     }
 
