@@ -885,7 +885,7 @@
           (k === 'output' ? roleLine(r) : '') +
           (s != null ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + s + '">Suggested ' + esc(num(s)) + ' from the rates</button>' : '') +
         '</span>' +
-        '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.5" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
+        '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
         '<textarea class="input perf-evidence" id="pvN_' + k + '" rows="1" maxlength="2000" placeholder="Evidence" aria-label="' + esc(c[1]) + ' evidence">' + esc((r.notes || {})[k] || '') + '</textarea>' +
       '</div>';
     }).join('');
@@ -1025,7 +1025,7 @@
         ? '<div data-show="partly" hidden><label class="field-label" for="pvVal_' + d.id + '">Lower it to</label><select class="select" id="pvVal_' + d.id + '" data-f="value">' +
             [1, 2, 3].filter(function (k) { return !sev || k < sev; }).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k]) + '</option>'; }).join('') + '</select></div>'
         : '<div data-show="change" hidden><label class="field-label" for="pvVal_' + d.id + '">New score, out of ' + max + '</label>' +
-            '<input class="input perf-num" id="pvVal_' + d.id + '" data-f="value" type="number" inputmode="decimal" min="0" max="' + max + '" step="0.5" value="' + (cur == null ? '' : esc(cur)) + '"></div>') +
+            '<input class="input perf-num" id="pvVal_' + d.id + '" data-f="value" type="number" inputmode="decimal" min="0" max="' + max + '" step="0.1" value="' + (cur == null ? '' : esc(cur)) + '"></div>') +
       '</div>' +
       '<label class="field-label" for="pvResp_' + d.id + '">Answer</label><textarea class="input" id="pvResp_' + d.id + '" data-f="response" rows="2" maxlength="1000"></textarea>' +
       '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Save answer</button></div></form>';
@@ -2107,7 +2107,7 @@
     $('rwDFields').innerHTML = '<div class="row fgrid">' + DEPT_CRIT[dep].map(function (c, i) {
       var v = vals ? vals[i] : null;
       return '<div' + (i === 4 ? ' class="span-all"' : '') + '><label class="field-label is-req" for="rwDC' + i + '">' + esc(c[0]) + ', out of ' + c[1] + '</label>' +
-        '<input class="input rw-crit" id="rwDC' + i + '" type="number" inputmode="decimal" min="0" max="' + c[1] + '" step="0.5" aria-required="true" value="' + (v == null ? '' : esc(v)) + '"></div>';
+        '<input class="input rw-crit" id="rwDC' + i + '" type="number" inputmode="decimal" min="0" max="' + c[1] + '" step="0.1" aria-required="true" value="' + (v == null ? '' : esc(v)) + '"></div>';
     }).join('') + '</div>';
     deptTotal();
   }
