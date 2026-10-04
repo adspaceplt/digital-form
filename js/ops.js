@@ -193,6 +193,9 @@
     'no-such-person': 'Not a team member.',
     'bad-count': 'Add 1 to 60 pieces.',
     'not-owner': 'Only the Task Owner can change the status.',
+    'not-open': 'No longer open to take.',
+    'already-yours': 'Already yours.',
+    'finished': 'This task is finished.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
     'tasks-open': 'Tasks in this month are still open.',
@@ -705,6 +708,7 @@
      on somebody else, and what was finished today. Nobody has to sort a list
      before they can read their day. */
   var BANDS = [
+    { key: 'open',      name: 'Open to take' },
     { key: 'overdue',   name: 'Overdue' },
     { key: 'today',     name: 'Due today' },
     { key: 'doing',     name: 'In progress' },
@@ -717,6 +721,7 @@
   ];
   function bandOf(t) {
     if (isFinished(t)) return doneToday(t) ? 'donetoday' : 'done';
+    if (takeable(t)) return 'open';
     var n = daysAway(dueOf(t)), p = plainOf(t);
     if (n !== null && n < 0) return 'overdue';
     if (n === 0) return 'today';
@@ -838,7 +843,39 @@
        Keyed on the id and not the name: two colleagues can share a first
        name, and a rename would quietly empty somebody's queue. */
     if (state.scope === 'created') return t.created_by === me.id;
-    return state.ownerIds[t.id] === me.id;
+    return state.ownerIds[t.id] === me.id || takeable(t);
+  }
+  /* OPEN TO TAKE (2026-10-04). A Task Owner offers a task to the team, and
+     any colleague at My Work Work takes it and becomes its owner: work
+     pulled, never pushed, and never without an owner. An offered task is
+     in everybody's own queue, in its own band at the top, until it is
+     taken, withdrawn or handed on. */
+  function offered(t) { return !!(t && t.open_at) && !isFinished(t); }
+  function takeable(t) {
+    return offered(t) && may('ops', 'work') && state.ownerIds[t.id] !== myId();
+  }
+  function offerTask(t, on, el, done) {
+    db.rpc('ops_set_open', { p_task: t.id, p_on: on }).then(function (r) {
+      var d = r.data;
+      if (r.error || (d && d.error)) { rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
+      state.rowSaid = { id: t.id, word: on ? 'Open to take.' : 'Offer withdrawn.' };
+      done();
+    }).catch(function (e) { rowNote(el, (e && e.message) || String(e)); });
+  }
+  function takeTask(t, el, done) {
+    var was = state.owners[t.id];
+    ADspaceConfirm.ask({
+      title: 'Take ' + (serialOf(t) || 'this task') + '?',
+      body: 'You become its Task Owner' + (was ? ' and ' + was + ' is told.' : '.'),
+      go: 'Take'
+    }, function () {
+      db.rpc('ops_take_task', { p_task: t.id, p_version: t.version }).then(function (r) {
+        var d = r.data;
+        if (r.error || (d && d.error)) { rowNote(el, r.error ? r.error.message : said(d.error, t)); if (d && d.error) done(); return; }
+        state.rowSaid = { id: t.id, word: 'Yours.' };
+        done();
+      }).catch(function (e) { rowNote(el, (e && e.message) || String(e)); });
+    });
   }
   function matches(t) {
     if (!state.find) return true;
@@ -2060,7 +2097,8 @@
       '<span class="trow-check">' + check + '</span>' +
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
-      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + priorityChip(t) + '</span>' +
+      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + priorityChip(t) +
+        (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
           esc(ctx) + '</small></button>' +
@@ -2073,7 +2111,9 @@
         ? '<button class="tinline" type="button" data-a="due" aria-label="' + esc(dc.label) + '. Change">' + dueHtml + '</button>'
         : '<span aria-label="' + esc(fin ? 'Finished ' + niceDate(t.completed_at || t.cancelled_at) : dc.label) + '">' +
             (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>' +
-      '<span class="task-stage">' + statusCell(t) + '</span>' +
+      '<span class="task-stage">' + (!elsewhere && takeable(t)
+        ? '<button class="btn btn-sm task-take" type="button" data-a="take" aria-label="Take ' + esc(t.title) + '">Take</button>'
+        : statusCell(t)) + '</span>' +
       '</span>' +
       '<span class="team-act">' + (work ? rowMenu(t) : '') + '</span>';
     el.querySelector('.task-open').addEventListener('click', function () {
@@ -2096,6 +2136,8 @@
       inlineDue(t, el, du, done);
     });
     wireStage(el.querySelector('.state-select'), t, el, done);
+    var tk = el.querySelector('[data-a="take"]');
+    if (tk) tk.addEventListener('click', function () { takeTask(t, el, done); });
     wireRowMenu(el, t, done);
     return el;
   }
@@ -2181,6 +2223,8 @@
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
       '<span class="kmenu" hidden role="menu">' +
         item('full', 'Open full record') +
+        (takeable(t) ? item('take', 'Take') : '') +
+        (mayMove(t) && !isFinished(t) ? item(offered(t) ? 'unoffer' : 'offer', offered(t) ? 'Withdraw offer' : 'Offer to the team') : '') +
         (may('ops', 'manage') && !isFinished(t) ? item('owner', 'Change Task Owner') : '') +
         item('copy', 'Make a copy') +
         item('repeat', 'Repeat on a schedule') +
@@ -2208,6 +2252,8 @@
       var a = it.getAttribute('data-m');
       var from = el.closest('#cwList') ? { from: 'client' } : {};
       if (a === 'full') { openFull(t.id); return; }
+      if (a === 'take') { takeTask(t, el, done); return; }
+      if (a === 'offer' || a === 'unoffer') { offerTask(t, a === 'offer', el, done); return; }
       /* The rest act on the task as the sheet does, so the sheet opens and
          the act follows once the task is read. */
       from.then = a === 'owner' ? openGive : a === 'copy' ? openDup : a === 'repeat' ? openRec : openDelete;
@@ -4784,7 +4830,8 @@
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
     task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed',
-    assignment_changed: 'Task Owner changed', handover: 'Handed on', contributor_changed: 'Contributors changed',
+    assignment_changed: 'Task Owner changed', handover: 'Handed on', offered: 'Offered to the team',
+    offer_withdrawn: 'Offer withdrawn', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
     work_started: 'Work started', work_stopped: 'Work stopped', work_corrected: 'Hours corrected',
     revision_requested: 'Revision requested', revision_completed: 'Revision done',
@@ -4860,6 +4907,7 @@
     if (e.event_type === 'assignment_changed') {
       var who = nameOf(to.owner_id) || 'Nobody';
       var prev = nameOf(from.owner_id);
+      if (d.taken) return 'Taken by ' + who + (prev ? ' from ' + prev : '');
       return (d.handover ? (prev ? prev + ' to ' : '') + who + ' at ' + labelForKey(d.stage_key)
                          : (prev ? prev + ' to ' : 'To ') + who) + (d.note ? ' · ' + d.note : '');
     }
