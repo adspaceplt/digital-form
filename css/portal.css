@@ -9747,12 +9747,12 @@ body.is-maint { overflow: hidden; }
    colleague's drafts and allowance. Desk: who, the last 24 hours, the last
    30 days, the allowance and Change; narrow: who over one mute line of the
    same figures, Change at the right edge. */
-.aiu-row { grid-template-columns: minmax(0, 1fr) 96px 96px 128px 116px; align-items: center; }
+.aiu-row { grid-template-columns: minmax(0, 1fr) 72px 72px 104px 92px; align-items: center; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
 .aiu-name small { color: var(--ink-mute); font-size: 12px; }
 .aiu-n { font-variant-numeric: tabular-nums; }
 .aiu-meta { display: none; }
-.aiu-act { justify-self: end; }
+.aiu-act { display: flex; justify-content: flex-end; }
 .is-narrow .aiu-row.crm-head { display: none; }
 .is-narrow .aiu-row {
   grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "meta act";
@@ -9760,5 +9760,10 @@ body.is-maint { overflow: hidden; }
 }
 .is-narrow .aiu-row > .aiu-name { grid-area: name; }
 .is-narrow .aiu-row > .aiu-meta { grid-area: meta; display: block; color: var(--ink-mute); font-size: 12.5px; }
-.is-narrow .aiu-row > .aiu-act { grid-area: act; justify-self: end; }
+.is-narrow .aiu-row > .aiu-act { grid-area: act; }
 .is-narrow .aiu-row > .aiu-day, .is-narrow .aiu-row > .aiu-month, .is-narrow .aiu-row > .aiu-cap { display: none; }
+
+/* ---- A month's reports (2026-10-04): two ticks under one label, beside
+   the day the month starts on. */
+.engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.engreports > legend { padding: 0; margin-bottom: 0; }

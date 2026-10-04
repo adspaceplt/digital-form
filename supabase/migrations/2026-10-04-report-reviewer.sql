@@ -15,7 +15,7 @@
 --      Access, or an admin. `sm_report_reviewers(p_id)` (Reports at Work)
 --      lists them for the report, the submitter never among them, with the
 --      reviewer last named for the client marked `last`.
---   4. `sm_report_submit(p_id, p_reviewer)`: the reviewer is required
+--   4. `sm_report_submit(p_id, p_reviewer, p_reason)`: the reviewer is required
 --      (`no-reviewer`), never the submitter (`self-review`), and must be
 --      able to review (`bad-reviewer`). The reviewer is told; the record
 --      names them.
@@ -39,7 +39,7 @@
 --   REPORT ADMIN CONFIRM section's sm_report_confirm, the guard and the
 --   push trigger from their sections, and the HANDBOOK section's
 --   activity_section again, then
---   drop function if exists public.sm_report_submit(uuid, uuid);
+--   drop function if exists public.sm_report_submit(uuid, uuid, text);
 --   drop function if exists public.sm_report_assign(uuid, uuid);
 --   drop function if exists public.sm_report_reviewers(uuid);
 --   drop function if exists public.sm_report_notify(uuid, uuid, text, text, text);
@@ -159,7 +159,9 @@ grant execute on function public.sm_report_reviewers(uuid) to authenticated;
 
 -- PostgREST cannot choose between overloads, so the one-argument submit goes.
 drop function if exists public.sm_report_submit(uuid);
-create or replace function public.sm_report_submit(p_id uuid, p_reviewer uuid default null)
+/* `p_reason` is the reason a late submit, or one past the month's gate,
+   gives; it is read from MONTH REPORTS (2026-10-04) on. */
+create or replace function public.sm_report_submit(p_id uuid, p_reviewer uuid default null, p_reason text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -197,8 +199,8 @@ begin
     cname || ' · ' || public.sm_period_word(r.period_start, r.period_end));
   return jsonb_build_object('ok', true, 'status', 'review');
 end $$;
-revoke all on function public.sm_report_submit(uuid, uuid) from public, anon, authenticated;
-grant execute on function public.sm_report_submit(uuid, uuid) to authenticated;
+revoke all on function public.sm_report_submit(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.sm_report_submit(uuid, uuid, text) to authenticated;
 
 create or replace function public.sm_report_assign(p_id uuid, p_reviewer uuid)
 returns jsonb

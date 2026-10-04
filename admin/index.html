@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261004d">
+<link rel="stylesheet" href="/css/portal.css?v=20261004e">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2812,6 +2812,20 @@
                 <input class="input" id="engPlanned" type="number" min="0" max="200" inputmode="numeric">
               </div>
             </div>
+            <!-- What the month owes in reports and the day it starts on
+                 (2026-10-04): each report ticked is a task in the month, due
+                 seven days after it ends. -->
+            <div class="row fgrid">
+              <div class="field">
+                <label class="field-label" for="engStart">Starts on</label>
+                <select class="select" id="engStart"></select>
+              </div>
+              <fieldset class="field engreports">
+                <legend class="field-label">Reports</legend>
+                <label class="tickline"><input type="checkbox" id="engRepSocial"> <span>Accounts report</span></label>
+                <label class="tickline"><input type="checkbox" id="engRepAds"> <span>Advertising report</span></label>
+              </fieldset>
+            </div>
             <div class="row">
               <div class="field">
                 <label class="field-label" for="engDrive">Drive folder link</label>
@@ -4613,14 +4627,14 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261003p"></script>
-<script src="/js/reports.js?v=20261004f"></script>
+<script src="/js/reports.js?v=20261004g"></script>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261003r"></script>
 <script src="/js/team.js?v=20261003m"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004d"></script>
 <script src="/js/campaigns.js?v=20261003p"></script>
-<script src="/js/ops.js?v=20261004e"></script>
+<script src="/js/ops.js?v=20261004f"></script>
 <script src="/js/perf.js?v=20261004d"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261003l"></script>

@@ -1683,6 +1683,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     is supplementary: quotations and invoices are issued in Bukku). New
     month, New task and Make a copy offer last month and the next six
     (`fillMonths`).
+  - It owes reports and starts on a day (`2026-10-04-month-reports.sql`):
+    `reports` (`social` Accounts report, `ads` Advertising report, both or
+    none) and `start_day` (1 to 28; the 16th runs to the 15th,
+    `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
+    on), a new month taking both from the client's month before. Each
+    report ticked is one live task (`ops_engagement_sync_reports`: the
+    everyday workflow, format Report, the month's manager, due 23:59 MYT
+    seven days after the month's last day, `source_type` `report_social` /
+    `report_ads`); unticked, a task still To do is cancelled and a started
+    one kept; a start day moved moves an open one's due date, filed.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
@@ -1878,6 +1888,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     confirm."; the list row names the reviewer. A report in review from
     before keeps the earlier rule until Assign reviewer (the same ⋯) names
     one. Only the functions set the reviewer.
+  - The month's gate (`2026-10-04-report-month-gate.sql`, reports from
+    October 2026): `sm_report_gate` finds the client's month whose span
+    holds the report's last day and names what it lacks (`no-month`,
+    `not-ticked`, `no-task`, `content`: content tasks fewer than planned,
+    report and cancelled tasks not counted) and the due time (the report
+    task's). Check and submit shows it as rows under the report's checks
+    (Month in My Work, Report task with Open, Content, Due). Submit is
+    refused `month-gate` unless an admin or Reports Full Access gives a
+    reason, and `late-reason` once past due until one is given; Submit's
+    question asks for it beside the reviewer, kept as `gate_note` /
+    `late_reason` and filed. At Work a month not in order rests Submit.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.

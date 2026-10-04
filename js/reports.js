@@ -103,6 +103,8 @@
     'bad-reviewer': 'Choose a colleague at Reports Full Access.',
     'not-reviewer': 'Only its reviewer, or an admin, does this.',
     'same-reviewer': 'They already review it.',
+    'month-gate': 'Its month in My Work is not in order: see the checks above.',
+    'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished yet.',
@@ -614,6 +616,7 @@
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
     else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
+    var gated = r.status === 'draft' && String(r.period_start || '') >= '2026-10-01';
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
@@ -622,6 +625,69 @@
       b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
     });
     wireSteps(box);
+    if (gated) loadGate(box, r);
+  }
+
+  /* The month's gate (2026-10-04): a report from October 2026 on is
+     submitted once its month in My Work asks for it, holds its report task
+     and its planned content; late, it asks why. Read as rows under the
+     report's own checks; Submit rests where the reader may not go past. */
+  function dueWord(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var my = new Date(d.getTime() + 8 * 3600000);
+    return my.getUTCDate() + ' ' + MON[my.getUTCMonth()] + ' ' + my.getUTCFullYear();
+  }
+  function spanOf(m) {
+    var a = new Date(m.starts + 'T00:00:00'), b = new Date(m.ends + 'T00:00:00');
+    return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()];
+  }
+  function gateWords(g) {
+    var out = [];
+    (g.missing || []).forEach(function (k) {
+      if (k === 'no-month') out.push('No month in My Work covers this period.');
+      else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
+      else if (k === 'no-task') out.push('Its month holds no report task.');
+      else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
+    });
+    return out;
+  }
+  function loadGate(box, r) {
+    db.rpc('sm_report_gate', { p_id: r.id }).then(function (res) {
+      var g = res && res.data;
+      if (!g || res.error || g.error || !g.applies || st.open !== r || !box.isConnected) return;
+      st.gate = { id: r.id, g: g };
+      var miss = g.missing || [];
+      var has = function (k) { return miss.indexOf(k) > -1; };
+      var row = function (ok, title, note, act) {
+        return '<div class="rp-check rp-gate' + (ok ? ' is-done' : ' is-missing') + '">' +
+          '<span class="rp-check-mark" aria-hidden="true">' + (ok ? ICON.tick : '') + '</span>' +
+          '<span class="rp-check-t"><b>' + esc(title) + '</b><small>' + esc(note) + '</small></span>' + (act || '') + '</div>';
+      };
+      var mo = g.month;
+      var html =
+        row(!has('no-month') && !has('not-ticked'), 'Month in My Work',
+          !mo ? 'No month covers this period' : (MON[Number(mo.period.slice(5, 7)) - 1] + ' ' + mo.period.slice(0, 4) + ' · ' + spanOf(mo) + (has('not-ticked') ? ' · Does not ask for this report' : ''))) +
+        (mo && !has('not-ticked') ? row(!has('no-task'), 'Report task',
+          g.task ? '#WT' + String(g.task.task_no).padStart(5, '0') : 'Missing',
+          g.task ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
+        (mo ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
+        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late: Submit asks why' : ''));
+      var card = box.querySelector('.rp-checks');
+      if (card) card.insertAdjacentHTML('beforeend', html);
+      var open = box.querySelector('[data-a="opentask"]');
+      if (open) open.addEventListener('click', function () {
+        history.replaceState(null, '', '/admin/?s=work&open=' + encodeURIComponent(g.task.id));
+        if (bridge.show) bridge.show('work');
+      });
+      if (!g.ok && !g.may_override) {
+        var sub = box.querySelector('[data-a="submit"]');
+        if (sub) sub.disabled = true;
+        var acts = box.querySelector('.rp-actions'), w = acts && acts.querySelector('.rp-wait');
+        if (acts && !w) { w = document.createElement('span'); w.className = 'rp-wait'; acts.appendChild(w); }
+        if (w) w.textContent = 'Put the month in order to submit.';
+      }
+    }).catch(function () { /* an older database: no gate */ });
   }
 
   /* Key dates (the user, 2026-10-04): when the report was started,
@@ -706,9 +772,18 @@
       var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
       if (!pool.length) { say(m, 'No colleague at Reports Full Access can review it.', 'err'); return; }
       var pick = (pool.filter(function (x) { return x.last; })[0] || pool[0]).id;
+      var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
+      /* A late report, or one past its month's gate, says why in the same
+         question (2026-10-04). */
+      if (ask.reason) {
+        window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
+          fields: [who, { name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' }] },
+          function (v) { then(v.who, v.why); });
+        return;
+      }
       window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
-        field: { label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick } },
-        function (who) { then(who); });
+        field: { label: who.label, choices: who.choices, value: who.value } },
+        function (w) { then(w); });
     }).catch(function () { if (btn) btn.disabled = false; say(m, said({ message: 'Load failed' }), 'err'); });
   }
 
@@ -716,8 +791,20 @@
     var r = st.open, m = box.querySelector('[data-m="check"]');
     var on = function (a, fn) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('submit', function (b) {
-      pickReviewer(r, b, m, { title: 'Submit for review?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' },
-        function (who) { stepCall('sm_report_submit', { p_id: r.id, p_reviewer: who }, 'Submitted to ' + nameOf(who) + '.', b, m); });
+      var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
+      var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
+      var ask = { title: 'Submit for review?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
+      if (past || late) {
+        ask.title = past ? 'Submit past the month\'s gate?' : 'Submit late?';
+        ask.body = (past ? gateWords(g).join(' ') + ' ' : '') + (late ? 'It was due ' + dueWord(g.due) + '. ' : '') +
+          'The reason is kept with the report.';
+        ask.reason = past && late ? 'Reason' : past ? 'Why it goes now' : 'Why it is late';
+      }
+      pickReviewer(r, b, m, ask, function (who, why) {
+        var args = { p_id: r.id, p_reviewer: who };
+        if (why) args.p_reason = why;
+        stepCall('sm_report_submit', args, 'Submitted to ' + nameOf(who) + '.', b, m);
+      });
     });
     on('confirm', function (b) {
       /* An admin confirming for the named reviewer says so first; the
@@ -1844,7 +1931,11 @@
       Object.assign(st.open, { intro: out.draft.intro != null ? out.draft.intro : st.open.intro });
       say(m, 'Drafted and saved.', 'ok');
       undoBar('Draft saved.', m, function () {
-        restoreDraft(rid, out.before).then(function () { openReport(rid, true); }).catch(function (e) { say(m, said(e), 'err'); });
+        /* Read the report again: the page's copy still holds the draft. */
+        restoreDraft(rid, out.before).then(function () {
+          if (st.open && st.open.id === rid) st.open = { id: rid };
+          openReport(rid, true);
+        }).catch(function (e) { say(m, said(e), 'err'); });
       });
     };
     /* What is left, beside the button, as `1 left` (the user, 2026-10-01):
@@ -2952,7 +3043,7 @@
     '</div>';
   }
   function aiUseHead(first) {
-    return '<div class="crm-row crm-head aiu-row"><div>' + first + '</div><div>Last 24 hours</div><div>Last 30 days</div><div>Allowance a day</div><div class="aiu-meta"></div><div class="aiu-act"></div></div>';
+    return '<div class="crm-row crm-head aiu-row"><div>' + first + '</div><div>24 hours</div><div>30 days</div><div>A day</div><div class="aiu-meta"></div><div class="aiu-act"></div></div>';
   }
   function aiUseSheet(opener) {
     var box = sheetShell('rpAiUseSheet', 'Draft with AI usage',
