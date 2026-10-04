@@ -7166,6 +7166,13 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    rounds its track by one row's half height. */
 .seg, .seg-opt, .seg.has-thumb::before { border-radius: 999px; }
 .seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); }
+/* A round end takes room from the words, so a pill's option keeps 14px
+   either side of them (8 sat the word against the curve). */
+.seg-opt { padding-inline: 14px; }
+/* The small segment: the small control's height and type, beside the small
+   button it belongs with; its options as wide as their words. */
+.seg.is-sm { display: inline-flex; min-height: var(--ctl-h-sm); }
+.seg.is-sm > .seg-opt { flex: 0 0 auto; min-height: var(--ctl-h-sm); font-size: 12.5px; }
 .cmdbar-views.has-thumb.is-snap::before, .seg.has-thumb.is-snap::before,
 .rectabs.has-thumb.is-snap::before, .tabrow.has-thumb.is-snap::before { transition: none; }
 .cmdbar-views.has-thumb > .acttab, .seg.has-thumb > .seg-opt,
