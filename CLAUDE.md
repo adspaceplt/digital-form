@@ -1501,7 +1501,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `capacity_minutes_week`.
 - The calendar shows every task on its due date (the stage tone) and its
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
-  its publish date shows once.
+  its publish date shows once. On a phone it lists only the days holding
+  work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
   per browser. A month's ⋯ is Add tasks (the New sheet on that client and

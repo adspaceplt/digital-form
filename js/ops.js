@@ -1825,9 +1825,11 @@
     var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
       return '<div class="cal-dow">' + d + '</div>';
     }).join('');
+    var held = 0;
     for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       var k = d.getTime(), list = byDay[k] || [];
       var out = d.getMonth() !== m.getMonth();
+      if (!out && list.length) held++;
       var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
       var chips = list.slice(0, 3).map(function (x) {
@@ -1842,7 +1844,13 @@
           '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' }).replace(/\bSep\b/, 'Sept')) + '</small></span>' +
         chips + '</div>';
     }
-    box.innerHTML = html + '<div class="cal">' + cells + '</div>';
+    /* On a phone the month is a list of the days that hold work, so a month
+       with none said nothing at all under its bar (the user, 2026-10-04:
+       "the entire calendar is missing"). It says so, with the way to the
+       month that has some. */
+    box.innerHTML = html + '<div class="cal' + (held ? '' : ' is-blank') + '">' + cells + '</div>' +
+      (held ? '' : '<div class="cal-none"></div>');
+    if (!held) UI.emptyLine(box.querySelector('.cal-none'), 'No tasks this month.');
     box.querySelector('[data-cal="prev"]').addEventListener('click', function () {
       state.month = new Date(m.getFullYear(), m.getMonth() - 1, 1); paintCalendar(rows);
     });
