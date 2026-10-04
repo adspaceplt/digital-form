@@ -32,6 +32,8 @@
 
   function onKey(e) {
     if (!open) return;
+    /* A value being edited in place answers its own Escape (js/ask.js). */
+    if (e.key === 'Escape' && e.target && e.target.classList && e.target.classList.contains('askfield')) return;
     if (e.key === 'Escape') { e.preventDefault(); shut(); return; }
     if (e.key !== 'Tab') return;
     var f = fields(open.box);

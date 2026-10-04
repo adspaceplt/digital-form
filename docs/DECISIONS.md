@@ -888,3 +888,6 @@ The user kept caption writing on hold (the tone needs more training) and asked f
 ### 2026-10-04 · The Timeline's date field on an iPhone
 The user's iPhone screenshot: the date field ran across the row, its calendar glyph over the day, and stood twice the row's height. `.tl-lead .askfield` padded its left by 8px over the coarse rule's 38px glyph room. Then the user: even fitted, a boxed 38px field in a 20px line did not read as modern. Under a finger it is now the phone's own compact date: a tonal pill 124 × 32, no box line, no glyph, keeping the row's height; at a desk a date's width (152px).
 
+### 2026-10-04 · One way to edit a value in place
+The user: a date field should not be a box dropped into a line; Apple, Aesop and Shopify edit the value where it reads. Every `ADspaceAsk.rename` field now takes the value's own type and box height from the value and is drawn by one rule: a quiet tonal ground, no box line, no glyph, pulled back so the words keep their place; a date is a date's width and opens the system's picker under a finger. The per-screen overrides (the record head, the queue head, the Timeline) are gone. `tests/inplace.js` opens each one at a desk and on a phone and measured two real faults on the way: the task description's field ran under its tick, and Escape in the task sheet closed the sheet instead of the edit.
+
