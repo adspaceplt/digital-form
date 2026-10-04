@@ -1462,7 +1462,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     description or number (`#WT00001`, `WT1`, `1`; `findAny`); the view,
     Whose work and the period do not narrow it.
   - The period draws only while finished work is listed and is named
-    Completed (This week … This year).
+    Completed (This week … This year); This month is its default
+    (`data-default`), so it is counted only once moved.
   - An empty list says what it holds back: No open tasks. (Show completed),
     No completed tasks. (Show this year).
   - Whose work (`#workScope`) is a view, not a filter: Assigned to me,
