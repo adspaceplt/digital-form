@@ -1683,6 +1683,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     is supplementary: quotations and invoices are issued in Bukku). New
     month, New task and Make a copy offer last month and the next six
     (`fillMonths`).
+  - It owes reports and starts on a day (`2026-10-04-month-reports.sql`):
+    `reports` (`social` Accounts report, `ads` Advertising report, both or
+    none) and `start_day` (1 to 28; the 16th runs to the 15th,
+    `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
+    on), a new month taking both from the client's month before. Each
+    report ticked is one live task (`ops_engagement_sync_reports`: the
+    everyday workflow, format Report, the month's manager, first draft
+    due 23:59 MYT five days after the month's last day and final seven,
+    never from the Report template's offsets; `source_type`
+    `report_social` / `report_ads`); unticked, a task still To do is
+    cancelled and a started one kept; only a start day moved moves an
+    open one's dates (filed), so another save never undoes an extension.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
@@ -1864,6 +1876,31 @@ Each line is a rule that broke once. Its reason is in the archive.
     but an admin may confirm their own after a question saying nobody else
     checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
     (Manage).
+  - A report is submitted to a named reviewer (`sm_reports.reviewer_id`,
+    `2026-10-04-report-reviewer.sql`), asked for in Submit's question from
+    `sm_report_reviewers` (Reports Full Access or an admin, never the
+    submitter, the client's last reviewer chosen). Only the reviewer, or an
+    admin after "Confirm in place of {name}?" (filed "in place of"),
+    confirms (`not-reviewer`); the reviewer, an admin or the submitter
+    (Take back) sends it back. Change reviewer in the head's ⋯ (submitter,
+    reviewer or admin; `sm_report_assign`, filed `report.reassigned`). The
+    reviewer is told on Submit and on a change, the submitter on Confirm
+    and Send back, each through the bell and a push opening the report
+    (`ops_notifications.report_id`). The step reads "Waiting for {name} to
+    confirm."; the list row names the reviewer. A report in review from
+    before keeps the earlier rule until Assign reviewer (the same ⋯) names
+    one. Only the functions set the reviewer.
+  - The month's gate (`2026-10-04-report-month-gate.sql`, reports from
+    October 2026): `sm_report_gate` finds the client's month whose span
+    holds the report's last day and names what it lacks (`no-month`,
+    `not-ticked`, `no-task`, `content`: content tasks fewer than planned,
+    report and cancelled tasks not counted) and the due time (the report
+    task's). Check and submit shows it as rows under the report's checks
+    (Month in My Work, Report task with Open, Content, Due). Submit is
+    refused `month-gate` unless an admin or Reports Full Access gives a
+    reason, and `late-reason` once past due until one is given; Submit's
+    question asks for it beside the reviewer, kept as `gate_note` /
+    `late_reason` and filed. At Work a month not in order rests Submit.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
@@ -1995,8 +2032,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
     one draft and drafting it again is an admin's (`team_members.is_admin`;
-    `redraft`), to 5 a report in 24 hours; 20 a colleague and 60 the team in
-    24 hours; a failed press is
+    `redraft`), to 5 a report in 24 hours, both counted by subject (the
+    report, or any of the same client and kind whose period shares a day
+    with it, deleted or not: `ai_drafts` keeps client, kind and period,
+    `2026-10-04-ai-draft-subject.sql`); 20 a colleague and 60 the team in
+    24 hours unless an admin set otherwise (`ai_draft_limits`: `team`,
+    `person`, or a colleague's id; null is the default, 0 stops it, refused
+    `stopped`; `2026-10-04-ai-draft-allowances.sql`); a failed press is
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
@@ -2004,10 +2046,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     least of the report's, the colleague's and the team's, read without
     writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
     the line under it says why and when the next is free.
-  - A draft is paid for once asked: while one runs, closing or reloading
-    the tab asks first (`beforeunload`), and an answer that lands after the
-    person moved to another step or screen is kept (`aiKept`) and put in
-    the fields when that report's Commentary is next shown, once.
+  - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
+    `ai_draft_usage()`): the team, each colleague's default, and every
+    colleague who may draft or drafted in 30 days, with the last 24 hours,
+    the last 30 days and the allowance a day; Change asks for the
+    allowance (Default, Stopped, or a number a day) through
+    `ai_draft_set_limit`, filed `team.changed` under Draft with AI from and
+    to.
+  - A draft is paid for once asked, so it is saved to the report as it
+    arrives (`storeDraft`), with Undo putting the earlier text back
+    (`restoreDraft`); a save that fails puts the draft in the fields with
+    "Save before leaving.". While one runs, closing or reloading the tab
+    asks first (`beforeunload`), and an answer that lands after the person
+    moved to another step or screen is saved all the same and shown when
+    that report's Commentary is next opened, once (`aiKept`).
+  - Check and submit ends in Key dates (`keyDates()`, two marks at least):
+    Started, Submitted (to whom), Confirmed (by whom), Published, each with
+    the time since the step before, and the total (so far).
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective

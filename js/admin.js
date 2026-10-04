@@ -1325,6 +1325,7 @@
     'report.created':        ['Report started', 'is-ok', 'reports'],
     'report.submitted':      ['Report submitted', '', 'reports'],
     'report.returned':       ['Report returned', 'is-warn', 'reports'],
+    'report.reassigned':     ['Reviewer changed', '', 'reports'],
     'report.confirmed':      ['Report confirmed', 'is-ok', 'reports'],
     'report.published':      ['Report published', 'is-ok', 'reports'],
     'report.revised':        ['Report revised', '', 'reports'],

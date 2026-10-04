@@ -198,6 +198,8 @@
     'tasks-open': 'Tasks in this month are still open.',
     'derived-state': 'Set by the month\u2019s readiness, meeting and tasks.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
+    'bad-start-day': 'A month starts on a day from the 1st to the 28th.',
+    'bad-reports': 'Choose the Accounts report, the Advertising report, both or neither.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
     'interval-required': 'Enter the number of days.',
     'bad-state': 'Invalid status.',
@@ -5349,6 +5351,7 @@
      what to do instead. */
   function dbWord(m) {
     m = String(m || '');
+    if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be made (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
       ? 'This needs a database update. Ask an admin to run the latest migration.' : m;
   }
@@ -6666,6 +6669,17 @@
     }).join('');
     $('engPlanned').value = e ? (e.planned_count || '') : '';
     $('engDrive').value = (e && e.drive_url) || '';
+    /* A new month takes the start day and the reports of the client's month
+       before, prefilled and the person's to change. */
+    var before = e ? e : (cw.engs || []).filter(function (x) { return x.client_id === client.id; })
+      .sort(function (a, b) { return String(b.period).localeCompare(String(a.period)); })[0] || {};
+    var day = Number(before.start_day) || 1;
+    $('engStart').innerHTML = Array.apply(null, Array(28)).map(function (x, i) {
+      return '<option value="' + (i + 1) + '"' + (i + 1 === day ? ' selected' : '') + '>' + (i + 1) + ordinal(i + 1) + ' of the month</option>';
+    }).join('');
+    var reps = before.reports || [];
+    $('engRepSocial').checked = reps.indexOf('social') > -1;
+    $('engRepAds').checked = reps.indexOf('ads') > -1;
     msg('engMsg', '');
     sheet('engSheet', true);
   }
@@ -6676,7 +6690,10 @@
       client_id: c.id, period: engEditing ? engEditing.period : $('engPeriod').value,
       manager_id: $('engManager').value || null,
       planned_count: Number($('engPlanned').value) || 0,
-      drive_url: String($('engDrive').value || '').trim()
+      drive_url: String($('engDrive').value || '').trim(),
+      start_day: Number($('engStart').value) || 1,
+      reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
+        .map(function (x) { return x[1]; })
     };
     var btn = $('engGo');
     btn.disabled = true;
@@ -7706,6 +7723,12 @@
     if (!x.task_id && /^perf\./.test(x.kind || '')) {
       if (x.kind === 'perf.disputed' && window.ADspacePerf) window.ADspacePerf.openTeam();
       else if (bridge.show) bridge.show('mine');
+      return;
+    }
+    /* A report's review, confirmation or send back opens the report. */
+    if (!x.task_id && x.report_id) {
+      history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(x.report_id));
+      if (bridge.show) bridge.show('reports');
       return;
     }
     if (!x.task_id) return;

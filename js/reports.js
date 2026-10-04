@@ -14,7 +14,7 @@
  * in the team's words. A report is edited only while it is a draft.
  *
  *   Draft      Submit for review            reports Work
- *   In review  Confirm / Send back          Manage, never the submitter
+ *   In review  Confirm / Send back          the named reviewer, or an admin
  *   Confirmed  Publish to client / Send back Manage
  *   Published  Revise, Unpublish            Work / Manage
  *
@@ -98,6 +98,13 @@
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
     'self-confirm': 'Somebody else confirms a report you submitted.',
+    'no-reviewer': 'Choose who reviews it.',
+    'self-review': 'Somebody else reviews a report you submitted.',
+    'bad-reviewer': 'Choose a colleague at Reports Full Access.',
+    'not-reviewer': 'Only its reviewer, or an admin, does this.',
+    'same-reviewer': 'They already review it.',
+    'month-gate': 'Its month in My Work is not in order: see the checks above.',
+    'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished yet.',
@@ -383,7 +390,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more).then(function (x) {
+      return Promise.all(more.concat([loadNames()])).then(function (x) {
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
@@ -393,6 +400,16 @@
   }
 
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
+  /* Colleagues' names, read once, for the reviewer a report names. */
+  var namesReady = null;
+  function loadNames() {
+    if (!namesReady) namesReady = db.from('team_members').select('id, name').then(function (r) {
+      st.names = {};
+      ((r && r.data) || []).forEach(function (m) { st.names[m.id] = m.name; });
+    }).catch(function () { st.names = st.names || {}; namesReady = null; });
+    return namesReady;
+  }
+  function nameOf(id) { return (st.names || {})[id] || ''; }
   function myId() { var m = me(); return m && m.id; }
   function isAdmin() { var m = me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
   /* A step read, not edited (a report in review and after): the record's
@@ -581,30 +598,140 @@
     }).join('');
     var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
     var mine = r.submitted_by && r.submitted_by === myId();
+    /* A named reviewer confirms, or an admin in their place; a report
+       submitted before reviewers keeps the earlier rule. */
+    var named = r.status === 'review' && r.reviewer_id;
+    var reviewing = named && r.reviewer_id === myId();
     var acts = [], wait = '';
     if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : '') + '>Submit for review</button>');
-    if (r.status === 'review' && may('manage') && (!mine || isAdmin())) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
+    if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
-    if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
-      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Send back') + '</button>');
+    var mayReturn = named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine);
+    if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
+      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
+    else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
     else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
+    var gated = r.status === 'draft' && String(r.period_start || '') >= '2026-10-01';
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
-      '<div class="msg" data-m="check"></div></div>';
+      '<div class="msg" data-m="check"></div>' + keyDates(r) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
       b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
     });
     wireSteps(box);
+    if (gated) loadGate(box, r);
+  }
+
+  /* The month's gate (2026-10-04): a report from October 2026 on is
+     submitted once its month in My Work asks for it, holds its report task
+     and its planned content; late, it asks why. Read as rows under the
+     report's own checks; Submit rests where the reader may not go past. */
+  function dueWord(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var my = new Date(d.getTime() + 8 * 3600000);
+    return my.getUTCDate() + ' ' + MON[my.getUTCMonth()] + ' ' + my.getUTCFullYear();
+  }
+  function spanOf(m) {
+    var a = new Date(m.starts + 'T00:00:00'), b = new Date(m.ends + 'T00:00:00');
+    return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()];
+  }
+  function gateWords(g) {
+    var out = [];
+    (g.missing || []).forEach(function (k) {
+      if (k === 'no-month') out.push('No month in My Work covers this period.');
+      else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
+      else if (k === 'no-task') out.push('Its month holds no report task.');
+      else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
+    });
+    return out;
+  }
+  function loadGate(box, r) {
+    db.rpc('sm_report_gate', { p_id: r.id }).then(function (res) {
+      var g = res && res.data;
+      if (!g || res.error || g.error || !g.applies || st.open !== r || !box.isConnected) return;
+      st.gate = { id: r.id, g: g };
+      var miss = g.missing || [];
+      var has = function (k) { return miss.indexOf(k) > -1; };
+      var row = function (ok, title, note, act) {
+        return '<div class="rp-check rp-gate' + (ok ? ' is-done' : ' is-missing') + '">' +
+          '<span class="rp-check-mark" aria-hidden="true">' + (ok ? ICON.tick : '') + '</span>' +
+          '<span class="rp-check-t"><b>' + esc(title) + '</b><small>' + esc(note) + '</small></span>' + (act || '') + '</div>';
+      };
+      var mo = g.month;
+      var html =
+        row(!has('no-month') && !has('not-ticked'), 'Month in My Work',
+          !mo ? 'No month covers this period' : (MON[Number(mo.period.slice(5, 7)) - 1] + ' ' + mo.period.slice(0, 4) + ' · ' + spanOf(mo) + (has('not-ticked') ? ' · Does not ask for this report' : ''))) +
+        (mo && !has('not-ticked') ? row(!has('no-task'), 'Report task',
+          g.task ? '#WT' + String(g.task.task_no).padStart(5, '0') : 'Missing',
+          g.task ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
+        (mo ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
+        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late: Submit asks why' : ''));
+      var card = box.querySelector('.rp-checks');
+      if (card) card.insertAdjacentHTML('beforeend', html);
+      var open = box.querySelector('[data-a="opentask"]');
+      if (open) open.addEventListener('click', function () {
+        history.replaceState(null, '', '/admin/?s=work&open=' + encodeURIComponent(g.task.id));
+        if (bridge.show) bridge.show('work');
+      });
+      if (!g.ok && !g.may_override) {
+        var sub = box.querySelector('[data-a="submit"]');
+        if (sub) sub.disabled = true;
+        var acts = box.querySelector('.rp-actions'), w = acts && acts.querySelector('.rp-wait');
+        if (acts && !w) { w = document.createElement('span'); w.className = 'rp-wait'; acts.appendChild(w); }
+        if (w) w.textContent = 'Put the month in order to submit.';
+      }
+    }).catch(function () { /* an older database: no gate */ });
+  }
+
+  /* Key dates (the user, 2026-10-04): when the report was started,
+     submitted and to whom, confirmed and by whom, and published, with the
+     time each step took; a step not reached is left out. */
+  function spanWord(ms) {
+    var h = ms / 3600000;
+    if (h < 1) return 'Under 1 h';
+    if (h < 48) return Math.round(h) + ' h';
+    var d = Math.floor(h / 24), rest = Math.round(h - d * 24);
+    if (rest === 24) { d += 1; rest = 0; }
+    return d + ' days' + (rest ? ' ' + rest + ' h' : '');
+  }
+  function keyDates(r) {
+    var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
+    var marks = [
+      ['Started', r.created_at, ''],
+      ['Submitted', r.status !== 'draft' && r.submitted_at, r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''],
+      ['Confirmed', r.confirmed_at, r.confirmed_by && nameOf(r.confirmed_by) ? 'by ' + nameOf(r.confirmed_by) : ''],
+      ['Published', live && r.status === 'published' && live.published_at, '']
+    ].filter(function (x) { return x[1]; });
+    if (marks.length < 2) return '';
+    var rows = marks.map(function (x, i) {
+      var next = marks[i + 1];
+      return '<div class="tl-row tl-stage">' +
+        '<span class="tl-lead"><span class="tl-what">' + esc(x[0]) + '</span>' +
+          '<span class="tl-when">' + esc(stampWord(x[1]) + (x[2] ? ' · ' + x[2] : '')) + '</span></span>' +
+        '<span class="tl-span">' + (next ? esc(spanWord(new Date(next[1]) - new Date(x[1]))) : '') + '</span></div>';
+    });
+    var last = marks[marks.length - 1][1];
+    rows.push('<div class="tl-rule"></div><div class="tl-row tl-date"><span class="tl-lead"><span class="tl-what">' +
+      (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
+      esc(spanWord((r.status === 'published' ? new Date(last) : new Date()) - new Date(marks[0][1]))) + '</span></div>');
+    return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Key dates</h3></div>' +
+      '<div class="ovcard rp-timeline">' + rows.join('') + '</div></div>';
   }
 
   function moreMenu(r, live) {
     var items = [];
+    /* A report in review from before reviewers is given one the same way. */
+    if (r.status === 'review' && may('work') &&
+        (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
+      items.push('<button class="kmenu-item" type="button" data-a="reassign">' + (r.reviewer_id ? 'Change reviewer' : 'Assign reviewer') + '</button>');
+    }
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -633,14 +760,61 @@
     });
   }
 
+  /* Who reviews: the colleagues the database offers (Reports Full Access or
+     an admin, never the submitter), the client's last reviewer first
+     chosen. One question with the reviewer as its field. */
+  function pickReviewer(r, btn, m, ask, then) {
+    if (btn) btn.disabled = true;
+    Promise.all([db.rpc('sm_report_reviewers', { p_id: r.id }), loadNames()]).then(function (got) {
+      if (btn) btn.disabled = false;
+      var res = got[0], d = (res && res.data) || {};
+      if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+      var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
+      if (!pool.length) { say(m, 'No colleague at Reports Full Access can review it.', 'err'); return; }
+      var pick = (pool.filter(function (x) { return x.last; })[0] || pool[0]).id;
+      var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
+      /* A late report, or one past its month's gate, says why in the same
+         question (2026-10-04). */
+      if (ask.reason) {
+        window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
+          fields: [who, { name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' }] },
+          function (v) { then(v.who, v.why); });
+        return;
+      }
+      window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
+        field: { label: who.label, choices: who.choices, value: who.value } },
+        function (w) { then(w); });
+    }).catch(function () { if (btn) btn.disabled = false; say(m, said({ message: 'Load failed' }), 'err'); });
+  }
+
   function wireSteps(box) {
     var r = st.open, m = box.querySelector('[data-m="check"]');
     var on = function (a, fn) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('submit', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Submit for review?', body: 'A manager checks it before it is published. It is locked while in review.', go: 'Submit' },
-        function () { stepCall('sm_report_submit', { p_id: r.id }, 'Submitted for review.', b, m); });
+      var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
+      var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
+      var ask = { title: 'Submit for review?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
+      if (past || late) {
+        ask.title = past ? 'Submit past the month\'s gate?' : 'Submit late?';
+        ask.body = (past ? gateWords(g).join(' ') + ' ' : '') + (late ? 'It was due ' + dueWord(g.due) + '. ' : '') +
+          'The reason is kept with the report.';
+        ask.reason = past && late ? 'Reason' : past ? 'Why it goes now' : 'Why it is late';
+      }
+      pickReviewer(r, b, m, ask, function (who, why) {
+        var args = { p_id: r.id, p_reviewer: who };
+        if (why) args.p_reason = why;
+        stepCall('sm_report_submit', args, 'Submitted to ' + nameOf(who) + '.', b, m);
+      });
     });
     on('confirm', function (b) {
+      /* An admin confirming for the named reviewer says so first; the
+         record files it "in place of" them (2026-10-04). */
+      if (r.reviewer_id && r.reviewer_id !== myId() && r.submitted_by !== myId()) {
+        window.ADspaceConfirm.ask({ title: 'Confirm in place of ' + (nameOf(r.reviewer_id) || 'the reviewer') + '?', body: 'The record notes you confirmed it in their place.', go: 'Confirm' }, function () {
+          stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
+        });
+        return;
+      }
       /* An admin may confirm a report they submitted (the user, 2026-10-02:
          the hierarchy ends with them), after a question saying so. */
       if (r.submitted_by && r.submitted_by === myId()) {
@@ -674,6 +848,12 @@
       var open = menu.hidden;
       menu.hidden = !open; b.setAttribute('aria-expanded', String(open));
       if (open && window.ADspaceMenu) window.ADspaceMenu.place(b, menu);
+    });
+    on('reassign', function (b) {
+      b.closest('.kmenu').hidden = true;
+      var first = !r.reviewer_id;
+      pickReviewer(r, null, m, { title: first ? 'Assign reviewer?' : 'Change reviewer?', body: 'The reviewer is told.', go: first ? 'Assign' : 'Change', skip: r.reviewer_id },
+        function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, (first ? 'Assigned to ' : 'Reviewer changed to ') + nameOf(who) + '.', null, m); });
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
@@ -1725,7 +1905,8 @@
       db.functions.invoke('report-draft', { body: body }).then(function (res) {
         var d = res && res.data;
         if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
-        return { draft: d.draft };
+        return storeDraft(rid, d.draft).then(function (before) { return { draft: d.draft, before: before }; },
+          function (err) { return { draft: d.draft, unsaved: said(err) }; });
       }).catch(function (e) {
         return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
       }).then(function (out) {
@@ -1738,9 +1919,23 @@
            never lost to a change of screen. */
         if (!h) { aiKept[rid] = out; return; }
         h.b.disabled = false; h.b.textContent = 'Draft with AI';
-        if (out.draft) { put(out.draft); say(h.m, 'Drafted. Read it through, then Save.', 'ok'); }
-        else say(h.m, out.said, 'err');
+        if (out.draft) told(out, h.m); else say(h.m, out.said, 'err');
         paintLeft();
+      });
+    };
+    /* Drafted and saved, with Undo; or drafted and refused, kept in the
+       fields to save by hand. */
+    var told = function (out, m) {
+      put(out.draft);
+      if (out.unsaved) { say(m, 'Drafted, but not saved: ' + out.unsaved + ' Save before leaving.', 'err'); return; }
+      Object.assign(st.open, { intro: out.draft.intro != null ? out.draft.intro : st.open.intro });
+      say(m, 'Drafted and saved.', 'ok');
+      undoBar('Draft saved.', m, function () {
+        /* Read the report again: the page's copy still holds the draft. */
+        restoreDraft(rid, out.before).then(function () {
+          if (st.open && st.open.id === rid) st.open = { id: rid };
+          openReport(rid, true);
+        }).catch(function (e) { say(m, said(e), 'err'); });
       });
     };
     /* What is left, beside the button, as `1 left` (the user, 2026-10-01):
@@ -1767,8 +1962,7 @@
     if (aiRun[rid]) { ab.disabled = true; ab.textContent = 'Drafting'; }
     if (aiKept[rid]) {
       var kept = aiKept[rid]; delete aiKept[rid];
-      if (kept.draft) { put(kept.draft); say(am, 'Drafted. Read it through, then Save.', 'ok'); }
-      else say(am, kept.said, 'err');
+      if (kept.draft) told(kept, am); else say(am, kept.said, 'err');
     }
     paintLeft();
     /* Every press asks first (the user, 2026-10-01: a draft is counted, so
@@ -1777,9 +1971,56 @@
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       var uses = 'This uses one draft' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
       window.ADspaceConfirm.ask(written
-        ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }
-        : { title: 'Draft with AI?', body: uses + ' Nothing is saved until Save.', go: 'Draft' }, draft);
+        ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written and is saved as it arrives; Undo puts the earlier text back.', go: 'Replace' }
+        : { title: 'Draft with AI?', body: uses + ' The draft is saved to the report as it arrives.', go: 'Draft' }, draft);
     });
+  }
+  /* A draft is saved to the report the moment it arrives (the user,
+     2026-10-04: a draft left unsaved was lost on Back, and paid for all the
+     same). What it replaces is kept, so Undo puts it back. Written from the
+     report's own rows, not the screen, so it holds wherever the person is. */
+  function storeDraft(rid, dr) {
+    return Promise.all([
+      db.from('sm_reports').select('id, intro, insights').eq('id', rid).maybeSingle(),
+      db.from('sm_report_platforms').select('id, summary, worked, improve, actions').eq('report_id', rid),
+      db.from('sm_report_posts').select('id, notable').eq('report_id', rid)
+    ]).then(function (got) {
+      var bad = got.filter(function (x) { return x.error; })[0];
+      if (bad) throw bad.error;
+      var rep = got[0].data;
+      if (!rep) throw new Error('not-found');
+      var before = { intro: rep.intro, insights: rep.insights || {}, platforms: {}, posts: {} };
+      var ins = Object.assign({}, rep.insights || {}), row = { insights: ins };
+      Object.keys(dr).forEach(function (k) {
+        if (typeof dr[k] !== 'string') return;
+        if (k === 'intro') row.intro = dr[k]; else ins[k] = dr[k];
+      });
+      var ok = function (res) { if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.'); };
+      var jobs = [db.from('sm_reports').update(row).eq('id', rid).select('id').then(ok)];
+      var plats = got[1].data || [], posts = got[2].data || [];
+      (dr.platforms || []).forEach(function (pl) {
+        var was = plats.filter(function (x) { return x.id === pl.ref; })[0];
+        if (!was) return;
+        var patch = {};
+        PLAT_FIELDS.forEach(function (f) { if (typeof pl[f[0]] === 'string') patch[f[0]] = pl[f[0]]; });
+        before.platforms[was.id] = { summary: was.summary, worked: was.worked, improve: was.improve, actions: was.actions };
+        jobs.push(db.from('sm_report_platforms').update(patch).eq('id', was.id).select('id').then(ok));
+      });
+      (dr.posts || []).forEach(function (pp) {
+        var was = posts.filter(function (x) { return x.id === pp.ref; })[0];
+        if (!was || typeof pp.remark !== 'string') return;
+        before.posts[was.id] = was.notable;
+        jobs.push(db.from('sm_report_posts').update({ notable: pp.remark }).eq('id', was.id).select('id').then(ok));
+      });
+      return Promise.all(jobs).then(function () { return before; });
+    });
+  }
+  function restoreDraft(rid, before) {
+    var ok = function (res) { if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.'); };
+    var jobs = [db.from('sm_reports').update({ intro: before.intro, insights: before.insights }).eq('id', rid).select('id').then(ok)];
+    Object.keys(before.platforms).forEach(function (id) { jobs.push(db.from('sm_report_platforms').update(before.platforms[id]).eq('id', id).select('id').then(ok)); });
+    Object.keys(before.posts).forEach(function (id) { jobs.push(db.from('sm_report_posts').update({ notable: before.posts[id] }).eq('id', id).select('id').then(ok)); });
+    return Promise.all(jobs);
   }
   /* A draft is paid for once Claude is asked, whatever happens to the page.
      While one is being written, closing or reloading the tab asks first
@@ -1803,6 +2044,8 @@
         ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
       : '';
     if (d.scope === 'redraft') return 'This report has had its draft. An admin can draft it again.';
+    if (d.scope === 'stopped') return 'Draft with AI is turned off for you. An admin can turn it on.';
+    if (d.scope === 'team' && d.limit === 0) return 'Draft with AI is turned off for the team.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for the day.'
       : d.scope === 'person' ? 'You have used your ' + (d.limit || 20) + ' drafts for the day.'
       : 'The team has used its ' + (d.limit || 60) + ' drafts for the day.';
@@ -2778,6 +3021,96 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
+  // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
+  /* Each colleague who may draft (or drafted in the last 30 days), their
+     drafts in the last 24 hours and 30 days, and the day's allowance, which
+     an admin changes: the team's, each colleague's, or one colleague's;
+     Stopped turns it off. Read again on every open. */
+  var AI_PERSON_STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50];
+  var AI_TEAM_STEPS = [10, 20, 30, 40, 60, 80, 100, 150, 200];
+  function aiCap(own, dflt) {
+    if (own === 0) return '<span class="chip is-warn">Stopped</span>';
+    return own == null ? 'Default, ' + dflt : own + ' a day';
+  }
+  function aiUseRow(o) {
+    return '<div class="crm-row aiu-row" data-scope="' + esc(o.scope) + '">' +
+      '<div class="aiu-name"><b>' + esc(o.name) + '</b>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>' +
+      '<div class="aiu-n aiu-day">' + (o.day == null ? '—' : fmt(o.day)) + '</div>' +
+      '<div class="aiu-n aiu-month">' + (o.month == null ? '—' : fmt(o.month)) + '</div>' +
+      '<div class="aiu-cap">' + o.cap + '</div>' +
+      '<div class="aiu-meta">' + o.meta + '</div>' +
+      '<div class="aiu-act"><button class="btn btn-sm" type="button" data-a="cap" aria-label="Change allowance for ' + esc(o.name) + '">' + PEN_MARK + 'Change</button></div>' +
+    '</div>';
+  }
+  function aiUseHead(first) {
+    return '<div class="crm-row crm-head aiu-row"><div>' + first + '</div><div>24 hours</div><div>30 days</div><div>A day</div><div class="aiu-meta"></div><div class="aiu-act"></div></div>';
+  }
+  function aiUseSheet(opener) {
+    var box = sheetShell('rpAiUseSheet', 'Draft with AI usage',
+      '<div data-m="aiuse"></div>',
+      '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
+    box.querySelector('.sheet-card').setAttribute('data-narrow', '560');
+    var host = box.querySelector('[data-m="aiuse"]'), m = box.querySelector('[data-m="sheet"]');
+    var paint = function () {
+      UI.skeleton(host, 3);
+      db.rpc('ai_draft_usage').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          UI.failLine(host, 'Draft with AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
+          return;
+        }
+        var people = d.people || [];
+        var times = function (n, w) { return fmt(n) + ' ' + w; };
+        host.innerHTML =
+          '<section class="fsec"><h4 class="fsec-h">Team</h4><div class="crm-table softpanel">' + aiUseHead('Applies to') +
+            aiUseRow({ scope: 'team', name: 'Team', day: d.team_day, month: d.team_month, cap: aiCap(d.team === 60 ? null : d.team, 60),
+                       meta: times(d.team_day, 'today') + ' · ' + times(d.team_month, 'in 30 days') + ' · ' + aiCap(d.team === 60 ? null : d.team, 60) }) +
+            aiUseRow({ scope: 'person', name: 'Each colleague', day: null, month: null, cap: aiCap(d.person === 20 ? null : d.person, 20),
+                       meta: aiCap(d.person === 20 ? null : d.person, 20) }) +
+          '</div></section>' +
+          '<section class="fsec"><h4 class="fsec-h">Colleagues</h4>' + (people.length
+            ? '<div class="crm-table softpanel">' + aiUseHead('Colleague') + people.map(function (p) {
+                var sub = [p.code, p.group, p.last ? 'Last ' + stampWord(p.last) : '', p.failed ? plural(p.failed, 'failed') : ''].filter(Boolean).join(' · ');
+                return aiUseRow({ scope: p.id, name: p.name, sub: sub, day: p.day, month: p.month, cap: aiCap(p.limit, d.person),
+                                  meta: times(p.day, 'today') + ' · ' + times(p.month, 'in 30 days') + ' · ' + aiCap(p.limit, d.person) });
+              }).join('') + '</div>'
+            : '<p class="empty">No entries.</p>') + '</section>';
+        if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+        Array.prototype.forEach.call(host.querySelectorAll('[data-a="cap"]'), function (b) {
+          b.addEventListener('click', function () {
+            var scope = b.closest('.aiu-row').getAttribute('data-scope');
+            var who = scope === 'team' ? null : scope === 'person' ? null : people.filter(function (p) { return p.id === scope; })[0];
+            var team = scope === 'team';
+            var dflt = team ? 60 : scope === 'person' ? 20 : d.person;
+            var now = team ? (d.team === 60 ? null : d.team) : scope === 'person' ? (d.person === 20 ? null : d.person) : who.limit;
+            var steps = team ? AI_TEAM_STEPS : AI_PERSON_STEPS;
+            if (now != null && now > 0 && steps.indexOf(now) < 0) steps = steps.concat([now]).sort(function (x, y) { return x - y; });
+            var choices = [['', 'Default, ' + dflt + ' a day'], ['0', 'Stopped']].concat(steps.map(function (n) { return [String(n), n + ' a day']; }));
+            window.ADspaceConfirm.ask({
+              title: team ? 'Team allowance' : scope === 'person' ? 'Each colleague\'s allowance' : 'Allowance for ' + who.name,
+              body: team ? 'Drafts the whole team may take in 24 hours.'
+                : scope === 'person' ? 'Drafts each colleague may take in 24 hours, unless set for them.'
+                : 'Drafts ' + who.name + ' may take in 24 hours.',
+              go: 'Save',
+              field: { label: 'Drafts a day', choices: choices, value: now == null ? '' : String(now) }
+            }, function (v) {
+              var daily = v === '' || v == null ? null : Number(v);
+              db.rpc('ai_draft_set_limit', { p_scope: scope, p_daily: daily }).then(function (res) {
+                var out = res.data || {};
+                if (res.error || out.error) { say(m, res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'An allowance is 0 to 500 a day.' : said(out.error), 'err'); return; }
+                say(m, 'Saved.', 'ok');
+                paint();
+              }).catch(function (e) { say(m, said(e), 'err'); });
+            });
+          });
+        });
+      }).catch(function (e) { UI.failLine(host, 'Draft with AI usage', said(e), paint); });
+    };
+    say(m, '', '');
+    paint();
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
   // ---- The Reports route: every client's reports, by where each stands ------
   var hub = { rows: [], clients: [], byClient: {}, wired: false };
   var HUB_BANDS = [
@@ -2803,17 +3136,38 @@
       $('rhFind').addEventListener('input', paintHub);
       $('rhKind').addEventListener('change', paintHub);
       $('rhNew').addEventListener('click', function () { newSheet($('rhNew')); });
+      /* The bar's ⋯, an admin's: Draft with AI usage. */
+      var mw = $('rhMoreWrap'), mb = $('rhMoreBtn'), mm = $('rhMore');
+      if (mw && mb && mm) {
+        var shutM = function () { mm.hidden = true; mb.setAttribute('aria-expanded', 'false'); };
+        mb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = mm.hidden;
+          mm.hidden = !open;
+          mb.setAttribute('aria-expanded', String(open));
+          if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, mm);
+        });
+        document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#rhMoreWrap')) shutM(); });
+        if (window.ADspaceMenu && window.ADspaceMenu.onScroll) window.ADspaceMenu.onScroll(shutM);
+        mm.addEventListener('click', function (e) {
+          var it = e.target.closest('.kmenu-item');
+          if (!it) return;
+          shutM();
+          if (it.getAttribute('data-a') === 'aiuse') aiUseSheet(mb);
+        });
+      }
     }
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
     $('rhKind').innerHTML = '<option value="">Every type</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at').order('period_start', { ascending: false }).then(function (r) {
+    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id').order('period_start', { ascending: false }).then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
-      clientsReady.then(paintHub);
+      Promise.all([clientsReady, loadNames()]).then(paintHub);
     });
   }
   var clientsReady = Promise.resolve();
@@ -2858,7 +3212,8 @@
             var c = hub.byClient[r.client_id] || {};
             var b2 = document.createElement('button');
             b2.type = 'button'; b2.className = 'crm-row rh-row';
-            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc(TYPE_WORD[r.kind] || '') + '</small></span>' +
+            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc((TYPE_WORD[r.kind] || '') +
+                (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '')) + '</small></span>' +
               '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
               '<span class="rp-ver">v' + r.version_no + '</span>' +
               '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +

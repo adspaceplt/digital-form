@@ -6006,7 +6006,7 @@ language sql immutable parallel safe as $$
                     'service.override') then 'clients'
     when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
                     'report.created', 'report.deleted', 'report.published',
-                    'report.returned', 'report.revised', 'report.saved',
+                    'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
                     'report.submitted', 'report.unpublished') then 'reports'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
@@ -24727,3 +24727,1190 @@ revoke all on function public.maintenance_set(boolean, text, timestamptz, timest
 grant execute on function public.maintenance_set(boolean, text, timestamptz, timestamptz) to authenticated;
 
 -- END OF UPGRADE MODE --------------------------------------------------------
+-- ===========================================================================
+-- DRAFT WITH AI BY SUBJECT — a report's one draft is counted by what the
+-- report is about, so deleting it and starting it again does not free a
+-- second draft.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `ai_drafts` keeps the report's subject on every press: its client,
+--      its kind and its period. A deleted report's link is set to null, so
+--      the count by report alone came back to nothing and a new report for
+--      the same client and month took a fresh draft. The subject stays.
+--      Earlier presses are filled in from their reports; a press whose
+--      report is already gone has none.
+--   2. `ai_draft_claim(p_report)` and `ai_draft_left(p_report)` count, for
+--      the report's one draft and an admin's five a day, every press on the
+--      report or on any report of the same client and kind whose period
+--      shares a day with it, deleted or not. The colleague's twenty and the
+--      team's sixty a day are unchanged, as is a failed press not counting.
+--
+-- ROLLBACK
+--   Run the DRAFT WITH AI LIMITS section's ai_draft_claim and the DRAFT WITH
+--   AI LEFT section's ai_draft_left again, then
+--   drop function if exists public.ai_draft_same(uuid);
+--   alter table public.ai_drafts drop column if exists period_end,
+--     drop column if exists period_start, drop column if exists kind,
+--     drop column if exists client_id;
+-- ===========================================================================
+
+alter table public.ai_drafts add column if not exists client_id uuid;
+alter table public.ai_drafts add column if not exists kind text;
+alter table public.ai_drafts add column if not exists period_start date;
+alter table public.ai_drafts add column if not exists period_end date;
+create index if not exists ai_drafts_subject_idx on public.ai_drafts (client_id, kind, period_start, period_end);
+
+update public.ai_drafts d
+   set client_id = r.client_id, kind = r.kind, period_start = r.period_start, period_end = r.period_end
+  from public.sm_reports r
+ where r.id = d.report_id and d.client_id is null;
+
+-- The presses on a report's subject: the report itself, or any report of the
+-- same client and kind whose period shares a day with it.
+create or replace function public.ai_draft_same(p_report uuid)
+returns setof public.ai_drafts
+language sql stable security definer set search_path = public as $$
+  select d.* from public.ai_drafts d
+   where d.outcome <> 'failed'
+     and (d.report_id = p_report
+          or exists (select 1 from public.sm_reports r
+                      where r.id = p_report and d.client_id = r.client_id and d.kind = r.kind
+                        and d.period_start <= r.period_end and d.period_end >= r.period_start))
+$$;
+revoke all on function public.ai_draft_same(uuid) from public, anon, authenticated;
+
+create or replace function public.ai_draft_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := now() - interval '24 hours';
+  n_report integer;
+  n_member integer;
+  n_team integer;
+  first_at timestamptz;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  -- One count at a time, so two presses together cannot both take the last draft.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  select * into r from public.sm_reports where id = p_report;
+  -- One draft a subject; a second and later is an admin's.
+  if not coalesce(m.is_admin, false) and exists (select 1 from public.ai_draft_same(p_report)) then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', 1);
+  end if;
+  select count(*), min(s.created_at) into n_report, first_at from public.ai_draft_same(p_report) s
+   where s.created_at > since;
+  if n_report >= 5 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', 5, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_member, first_at from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  if n_member >= 20 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', 20, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_team, first_at from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  if n_team >= 60 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'team', 'limit', 60, 'next', first_at + interval '24 hours');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', 20 - n_member - 1);
+end $$;
+
+create or replace function public.ai_draft_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := now() - interval '24 hours';
+  is_adm boolean;
+  n_report integer; n_member integer; n_team integer;
+  at_report timestamptz; at_member timestamptz; at_team timestamptz;
+  l_report integer; l_member integer; l_team integer; l_min integer;
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  is_adm := coalesce(m.is_admin, false);
+  select count(*), min(s.created_at) into n_report, at_report from public.ai_draft_same(p_report) s
+   where s.created_at > since;
+  if is_adm then
+    l_report := greatest(0, 5 - n_report);
+  elsif exists (select 1 from public.ai_draft_same(p_report)) then
+    l_report := 0;
+  else
+    l_report := 1;
+  end if;
+  select count(*), min(d.created_at) into n_member, at_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  l_member := greatest(0, 20 - n_member);
+  select count(*), min(d.created_at) into n_team, at_team from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  l_team := greatest(0, 60 - n_team);
+  l_min := least(l_report, l_member, l_team);
+  v_scope := case when l_min = l_report then case when is_adm then 'report' else 'redraft' end
+                  when l_min = l_member then 'person' else 'team' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope,
+    'limit', case v_scope when 'redraft' then 1 when 'report' then 5 when 'person' then 20 else 60 end,
+    'report', l_report, 'person', l_member, 'team', l_team, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope = 'redraft' then null
+                 when v_scope = 'report' then at_report + interval '24 hours'
+                 when v_scope = 'person' then at_member + interval '24 hours'
+                 else at_team + interval '24 hours' end);
+end $$;
+
+revoke all on function public.ai_draft_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_draft_left(uuid) from public, anon, authenticated;
+grant execute on function public.ai_draft_claim(uuid) to authenticated;
+grant execute on function public.ai_draft_left(uuid) to authenticated;
+
+-- END OF DRAFT WITH AI BY SUBJECT --------------------------------------------
+-- ===========================================================================
+-- REPORT REVIEWER — a report is submitted to a named reviewer, who is told,
+-- and only that reviewer or an admin confirms it.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `sm_reports.reviewer_id`: who checks the report. Set only by the
+--      functions (the guard refuses it from a page). Kept through a send
+--      back and a revision, so the next submit offers the same reviewer.
+--   2. `ops_notifications.report_id`: a notification may open a report. The
+--      push it queues opens `?s=reports&report=`.
+--   3. `sm_report_may_review(p_member)`: an active colleague at Reports Full
+--      Access, or an admin. `sm_report_reviewers(p_id)` (Reports at Work)
+--      lists them for the report, the submitter never among them, with the
+--      reviewer last named for the client marked `last`.
+--   4. `sm_report_submit(p_id, p_reviewer, p_reason)`: the reviewer is required
+--      (`no-reviewer`), never the submitter (`self-review`), and must be
+--      able to review (`bad-reviewer`). The reviewer is told; the record
+--      names them.
+--   5. `sm_report_assign(p_id, p_reviewer)`: while in review, the
+--      submitter, the reviewer or an admin hands the review to another
+--      colleague who may review and is not the submitter; they are told;
+--      filed `report.reassigned` with from and to.
+--   6. `sm_report_confirm(p_id)`: with a reviewer named, only that reviewer
+--      or an admin confirms (`not-reviewer`); an admin confirming for
+--      somebody else is filed "in place of" them. A report submitted before
+--      reviewers keeps the earlier rule (Full Access, never the submitter
+--      unless an admin). The submitter is told.
+--   7. `sm_report_return(p_id, p_note)`: in review with a reviewer named,
+--      the reviewer, an admin or the submitter (taking it back) sends it
+--      back; the submitter is told with the note when somebody else does.
+--   8. `activity_section` files `report.reassigned` under Reports.
+--   Notifications never fail the step that caused them.
+--
+-- ROLLBACK
+--   Run the REPORTS section's sm_report_submit and sm_report_return, the
+--   REPORT ADMIN CONFIRM section's sm_report_confirm, the guard and the
+--   push trigger from their sections, and the HANDBOOK section's
+--   activity_section again, then
+--   drop function if exists public.sm_report_submit(uuid, uuid, text);
+--   drop function if exists public.sm_report_assign(uuid, uuid);
+--   drop function if exists public.sm_report_reviewers(uuid);
+--   drop function if exists public.sm_report_notify(uuid, uuid, text, text, text);
+--   drop function if exists public.sm_report_may_review(uuid);
+--   alter table public.ops_notifications drop column if exists report_id;
+--   alter table public.sm_reports drop column if exists reviewer_id;
+-- ===========================================================================
+
+alter table public.sm_reports add column if not exists reviewer_id uuid
+  references public.team_members(id) on delete set null;
+alter table public.ops_notifications add column if not exists report_id uuid
+  references public.sm_reports(id) on delete cascade;
+
+-- The reviewer is a stamp like the submitter: only the functions move it.
+create or replace function public.sm_report_guard()
+returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if coalesce(current_setting('adspace.sm_fn', true), '') = 'on' then
+    new.updated_at := now();
+    return new;
+  end if;
+  if new.status is distinct from old.status or new.version_no is distinct from old.version_no
+     or new.submitted_by is distinct from old.submitted_by or new.submitted_at is distinct from old.submitted_at
+     or new.confirmed_by is distinct from old.confirmed_by or new.confirmed_at is distinct from old.confirmed_at
+     or new.return_note is distinct from old.return_note or new.client_id is distinct from old.client_id
+     or new.kind is distinct from old.kind or new.reviewer_id is distinct from old.reviewer_id
+     or new.created_by is distinct from old.created_by or new.created_at is distinct from old.created_at then
+    raise exception 'sm-status-by-function' using errcode = 'P0001';
+  end if;
+  if old.status <> 'draft' then
+    raise exception 'sm-not-draft' using errcode = 'P0001';
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+revoke all on function public.sm_report_guard() from public, anon, authenticated;
+
+create or replace function public.ops_notifications_push()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_title text := coalesce(nullif(btrim(new.title), ''), 'My Work');
+  v_body  text := coalesce(new.body, '');
+begin
+  perform public.push_queue('team', new.team_member_id,
+    jsonb_build_object('en', jsonb_build_object('title', v_title, 'body', v_body),
+                       'zh', jsonb_build_object('title', v_title, 'body', v_body)),
+    case when new.task_id is not null then '/admin/?s=work&open=' || new.task_id::text
+         when new.report_id is not null then '/admin/?s=reports&report=' || new.report_id::text
+         else '/admin/' end,
+    case when new.task_id is not null then 'task-' || new.task_id::text
+         when new.report_id is not null then 'report-' || new.report_id::text
+         else null end);
+  return new;
+exception when others then
+  return new;
+end $$;
+drop trigger if exists ops_notifications_push on public.ops_notifications;
+create trigger ops_notifications_push after insert on public.ops_notifications
+  for each row execute function public.ops_notifications_push();
+
+-- Who may check a report: an active colleague at Reports Full Access, or an admin.
+create or replace function public.sm_report_may_review(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.team_members m
+     where m.id = p_member and m.active
+       and (coalesce(m.is_admin, false) or m.role = 'admin'
+            or public.level_rank(coalesce(m.access ->> 'reports', 'none')) >= public.level_rank('manage')))
+$$;
+revoke all on function public.sm_report_may_review(uuid) from public, anon, authenticated;
+
+-- A report's notification to one colleague, never to the one acting, and
+-- never failing the step that sends it.
+create or replace function public.sm_report_notify(p_member uuid, p_report uuid, p_kind text, p_title text, p_body text)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_member is null or p_member = (public.ops_me()).id then return; end if;
+  insert into public.ops_notifications (team_member_id, task_id, report_id, kind, title, body, dedupe_key)
+  values (p_member, null, p_report, p_kind, p_title, p_body,
+          p_kind || ':' || p_report::text || ':' || p_member::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'))
+  on conflict (dedupe_key) do nothing;
+exception when others then
+  return;
+end $$;
+revoke all on function public.sm_report_notify(uuid, uuid, text, text, text) from public, anon, authenticated;
+
+create or replace function public.sm_report_reviewers(p_id uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  author uuid;
+  last_id uuid;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  author := case when r.status = 'review' then r.submitted_by else me.id end;
+  select x.reviewer_id into last_id from public.sm_reports x
+   where x.client_id = r.client_id and x.reviewer_id is not null and x.reviewer_id is distinct from author
+     and public.sm_report_may_review(x.reviewer_id)
+   order by coalesce(x.submitted_at, x.updated_at) desc nulls last limit 1;
+  return jsonb_build_object('reviewers', coalesce((
+    select jsonb_agg(jsonb_build_object('id', m.id, 'name', m.name, 'code', m.staff_code,
+             'last', m.id = coalesce(r.reviewer_id, last_id))
+             order by m.staff_code nulls last, m.name)
+      from public.team_members m
+     where m.id is distinct from author and public.sm_report_may_review(m.id)), '[]'::jsonb));
+end $$;
+revoke all on function public.sm_report_reviewers(uuid) from public, anon, authenticated;
+grant execute on function public.sm_report_reviewers(uuid) to authenticated;
+
+-- PostgREST cannot choose between overloads, so the one-argument submit goes.
+drop function if exists public.sm_report_submit(uuid);
+/* `p_reason` is the reason a late submit, or one past the month's gate,
+   gives; it is read from MONTH REPORTS (2026-10-04) on. */
+create or replace function public.sm_report_submit(p_id uuid, p_reviewer uuid default null, p_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  cname text;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'draft' then return jsonb_build_object('error', 'not-draft', 'status', r.status); end if;
+  if r.kind = 'ads' then
+    if not exists (select 1 from public.sm_report_ads where report_id = p_id) then
+      return jsonb_build_object('error', 'no-ads');
+    end if;
+  else
+    if not exists (select 1 from public.sm_report_platforms where report_id = p_id) then
+      return jsonb_build_object('error', 'no-platforms');
+    end if;
+    if not exists (select 1 from public.sm_report_posts where report_id = p_id) then
+      return jsonb_build_object('error', 'no-posts');
+    end if;
+  end if;
+  if p_reviewer is null then return jsonb_build_object('error', 'no-reviewer'); end if;
+  if p_reviewer = me.id then return jsonb_build_object('error', 'self-review'); end if;
+  if not public.sm_report_may_review(p_reviewer) then return jsonb_build_object('error', 'bad-reviewer'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'review', submitted_by = me.id, submitted_at = now(),
+    reviewer_id = p_reviewer, return_note = null, confirmed_by = null, confirmed_at = null where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.submitted',
+    'Reviewer: ' || (select name from public.team_members where id = p_reviewer));
+  select c.name into cname from public.clients c where c.id = r.client_id;
+  perform public.sm_report_notify(p_reviewer, p_id, 'report.review', 'Report to review',
+    cname || ' · ' || public.sm_period_word(r.period_start, r.period_end));
+  return jsonb_build_object('ok', true, 'status', 'review');
+end $$;
+revoke all on function public.sm_report_submit(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.sm_report_submit(uuid, uuid, text) to authenticated;
+
+create or replace function public.sm_report_assign(p_id uuid, p_reviewer uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  was text;
+  cname text;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'review' then return jsonb_build_object('error', 'not-in-review', 'status', r.status); end if;
+  if not (me.id = r.submitted_by or me.id is not distinct from r.reviewer_id
+          or coalesce(me.is_admin, false) or me.role = 'admin') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if p_reviewer is null then return jsonb_build_object('error', 'no-reviewer'); end if;
+  if p_reviewer = r.submitted_by then return jsonb_build_object('error', 'self-review'); end if;
+  if p_reviewer is not distinct from r.reviewer_id then return jsonb_build_object('error', 'same-reviewer'); end if;
+  if not public.sm_report_may_review(p_reviewer) then return jsonb_build_object('error', 'bad-reviewer'); end if;
+  select name into was from public.team_members where id = r.reviewer_id;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set reviewer_id = p_reviewer where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.reassigned',
+    'Reviewer: ' || coalesce(was, 'not set') || ' → ' || (select name from public.team_members where id = p_reviewer));
+  select c.name into cname from public.clients c where c.id = r.client_id;
+  perform public.sm_report_notify(p_reviewer, p_id, 'report.review', 'Report to review',
+    cname || ' · ' || public.sm_period_word(r.period_start, r.period_end));
+  return jsonb_build_object('ok', true, 'status', 'review');
+end $$;
+revoke all on function public.sm_report_assign(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.sm_report_assign(uuid, uuid) to authenticated;
+
+create or replace function public.sm_report_confirm(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  v_admin boolean;
+  cname text;
+begin
+  if me.id is null or not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'review' then return jsonb_build_object('error', 'not-in-review', 'status', r.status); end if;
+  v_admin := coalesce(me.is_admin, false) or me.role = 'admin';
+  if r.reviewer_id is not null and r.reviewer_id <> me.id and not v_admin then
+    return jsonb_build_object('error', 'not-reviewer');
+  end if;
+  if r.submitted_by = me.id and not v_admin then
+    return jsonb_build_object('error', 'self-confirm');
+  end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'confirmed', confirmed_by = me.id, confirmed_at = now() where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.confirmed',
+    case when r.reviewer_id is not null and r.reviewer_id <> me.id
+         then 'in place of ' || (select name from public.team_members where id = r.reviewer_id) end);
+  select c.name into cname from public.clients c where c.id = r.client_id;
+  perform public.sm_report_notify(r.submitted_by, p_id, 'report.confirmed', 'Report confirmed',
+    cname || ' · ' || public.sm_period_word(r.period_start, r.period_end));
+  return jsonb_build_object('ok', true, 'status', 'confirmed');
+end $$;
+revoke all on function public.sm_report_confirm(uuid) from public, anon, authenticated;
+grant execute on function public.sm_report_confirm(uuid) to authenticated;
+
+create or replace function public.sm_report_return(p_id uuid, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  cname text;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status not in ('review', 'confirmed') then return jsonb_build_object('error', 'not-returnable', 'status', r.status); end if;
+  if r.status = 'review' and r.reviewer_id is not null then
+    -- The reviewer sends it back, an admin may, and the submitter takes it back.
+    if not (me.id = r.reviewer_id or me.id = r.submitted_by
+            or ((coalesce(me.is_admin, false) or me.role = 'admin') and public.allowed('reports', 'manage'))) then
+      return jsonb_build_object('error', 'not-reviewer');
+    end if;
+  elsif not public.allowed('reports', 'manage')
+     and not (r.status = 'review' and r.submitted_by = me.id) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if coalesce(btrim(p_note), '') = '' then return jsonb_build_object('error', 'note-required'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'draft', return_note = btrim(p_note),
+    confirmed_by = null, confirmed_at = null where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.returned', btrim(p_note));
+  select c.name into cname from public.clients c where c.id = r.client_id;
+  perform public.sm_report_notify(r.submitted_by, p_id, 'report.returned', 'Report sent back',
+    cname || ' · ' || public.sm_period_word(r.period_start, r.period_end) || ' · ' || btrim(p_note));
+  return jsonb_build_object('ok', true, 'status', 'draft');
+end $$;
+revoke all on function public.sm_report_return(uuid, text) from public, anon, authenticated;
+grant execute on function public.sm_report_return(uuid, text) to authenticated;
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.stage', 'client.touch',
+                    'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF REPORT REVIEWER -----------------------------------------------------
+
+-- ===========================================================================
+-- DRAFT WITH AI ALLOWANCES — an admin sees every colleague's use of Draft
+-- with AI and sets how many drafts a day each may take, the team's included.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `ai_draft_limits` holds the day's allowances: `team` (60 unless set),
+--      `person` (each colleague's, 20 unless set) and one row a colleague
+--      set apart from it (the colleague's id). A null daily reads the default;
+--      0 stops Draft with AI. RLS on, no policy, no grants.
+--   2. `ai_draft_claim` and `ai_draft_left` read them: a colleague at 0 is
+--      refused `stopped`, a team at 0 `team` with no time the next is free.
+--      A report's one draft and an admin's five a report a day are unchanged.
+--   3. `ai_draft_usage()` (admin): each colleague who may draft or drafted in
+--      the last 30 days, with the last 24 hours, 30 days, failed presses,
+--      the last press and the allowance; the team's figures and defaults.
+--   4. `ai_draft_set_limit(p_scope, p_daily)` (admin): `team`, `person` or a
+--      colleague's id; null puts the default back. Filed `team.changed`
+--      under subject Draft with AI, from and to; a set that changes nothing
+--      files nothing.
+--
+-- ROLLBACK
+--   Run the DRAFT WITH AI BY SUBJECT section's ai_draft_claim and
+--   ai_draft_left again, then remove the functions ai_draft_usage(),
+--   ai_draft_set_limit(text, integer) and ai_draft_limit(text, integer), and
+--   the table ai_draft_limits.
+-- ===========================================================================
+
+create table if not exists public.ai_draft_limits (
+  scope   text primary key,
+  daily   integer check (daily is null or daily between 0 and 500),
+  set_by  text,
+  set_at  timestamptz not null default now()
+);
+alter table public.ai_draft_limits enable row level security;
+revoke all on table public.ai_draft_limits from public, anon, authenticated;
+
+-- A scope's allowance a day, else the default given.
+create or replace function public.ai_draft_limit(p_scope text, p_default integer)
+returns integer
+language sql stable security definer set search_path = public as $$
+  select coalesce((select l.daily from public.ai_draft_limits l where l.scope = p_scope), p_default)
+$$;
+revoke all on function public.ai_draft_limit(text, integer) from public, anon, authenticated;
+
+create or replace function public.ai_draft_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := now() - interval '24 hours';
+  n_report integer;
+  n_member integer;
+  n_team integer;
+  lim_member integer;
+  lim_team integer;
+  first_at timestamptz;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  -- One count at a time, so two presses together cannot both take the last draft.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  select * into r from public.sm_reports where id = p_report;
+  lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
+  lim_team := public.ai_draft_limit('team', 60);
+  if lim_member = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
+  end if;
+  if lim_team = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'team', 'limit', 0);
+  end if;
+  -- One draft a subject; a second and later is an admin's.
+  if not coalesce(m.is_admin, false) and exists (select 1 from public.ai_draft_same(p_report)) then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', 1);
+  end if;
+  select count(*), min(s.created_at) into n_report, first_at from public.ai_draft_same(p_report) s
+   where s.created_at > since;
+  if n_report >= 5 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', 5, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_member, first_at from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  if n_member >= lim_member then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', lim_member, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_team, first_at from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  if n_team >= lim_team then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'team', 'limit', lim_team, 'next', first_at + interval '24 hours');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim_member - n_member - 1);
+end $$;
+
+create or replace function public.ai_draft_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := now() - interval '24 hours';
+  is_adm boolean;
+  n_report integer; n_member integer; n_team integer;
+  at_report timestamptz; at_member timestamptz; at_team timestamptz;
+  l_report integer; l_member integer; l_team integer; l_min integer;
+  lim_member integer; lim_team integer;
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  is_adm := coalesce(m.is_admin, false);
+  lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
+  lim_team := public.ai_draft_limit('team', 60);
+  select count(*), min(s.created_at) into n_report, at_report from public.ai_draft_same(p_report) s
+   where s.created_at > since;
+  if is_adm then
+    l_report := greatest(0, 5 - n_report);
+  elsif exists (select 1 from public.ai_draft_same(p_report)) then
+    l_report := 0;
+  else
+    l_report := 1;
+  end if;
+  select count(*), min(d.created_at) into n_member, at_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  l_member := greatest(0, lim_member - n_member);
+  select count(*), min(d.created_at) into n_team, at_team from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  l_team := greatest(0, lim_team - n_team);
+  l_min := least(l_report, l_member, l_team);
+  v_scope := case when lim_member = 0 then 'stopped'
+                  when lim_team = 0 then 'team'
+                  when l_min = l_report then case when is_adm then 'report' else 'redraft' end
+                  when l_min = l_member then 'person' else 'team' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope,
+    'limit', case v_scope when 'stopped' then 0 when 'redraft' then 1 when 'report' then 5
+                          when 'person' then lim_member else lim_team end,
+    'report', l_report, 'person', l_member, 'team', l_team, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope in ('redraft', 'stopped') or lim_team = 0 then null
+                 when v_scope = 'report' then at_report + interval '24 hours'
+                 when v_scope = 'person' then at_member + interval '24 hours'
+                 else at_team + interval '24 hours' end);
+end $$;
+
+revoke all on function public.ai_draft_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_draft_left(uuid) from public, anon, authenticated;
+grant execute on function public.ai_draft_claim(uuid) to authenticated;
+grant execute on function public.ai_draft_left(uuid) to authenticated;
+
+-- Every colleague's use and allowance, for an admin.
+create or replace function public.ai_draft_usage()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_day timestamptz := now() - interval '24 hours';
+  v_month timestamptz := now() - interval '30 days';
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'person', public.ai_draft_limit('person', 20),
+    'team', public.ai_draft_limit('team', 60),
+    'team_day', (select count(*) from public.ai_drafts d where d.created_at > v_day and d.outcome <> 'failed'),
+    'team_month', (select count(*) from public.ai_drafts d where d.created_at > v_month and d.outcome <> 'failed'),
+    'people', coalesce((select jsonb_agg(s.x order by s.x ->> 'name') from (
+      select jsonb_build_object(
+        'id', t.id, 'name', t.name, 'code', t.staff_code, 'group', g.name,
+        'admin', coalesce(t.is_admin, false),
+        'day', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_day and d.outcome <> 'failed'),
+        'month', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month and d.outcome <> 'failed'),
+        'failed', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month and d.outcome = 'failed'),
+        'last', (select max(d.created_at) from public.ai_drafts d where d.team_member_id = t.id and d.outcome <> 'failed'),
+        'limit', (select l.daily from public.ai_draft_limits l where l.scope = t.id::text)) as x
+        from public.team_members t
+        left join public.team_roles g on g.slug = t.role
+       where t.active
+         and (coalesce(t.is_admin, false) or t.role = 'admin'
+              or public.level_rank(coalesce(t.access ->> 'reports', 'none')) >= public.level_rank('work')
+              or exists (select 1 from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month))
+    ) s), '[]'::jsonb));
+end $$;
+revoke all on function public.ai_draft_usage() from public, anon, authenticated;
+grant execute on function public.ai_draft_usage() to authenticated;
+
+-- An allowance a day: the team's, each colleague's, or one colleague's.
+-- Null puts the default back.
+create or replace function public.ai_draft_set_limit(p_scope text, p_daily integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_who text;
+  v_name text;
+  v_was integer;
+  v_def integer;
+  v_scope text := btrim(coalesce(p_scope, ''));
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  if p_daily is not null and (p_daily < 0 or p_daily > 500) then
+    return jsonb_build_object('error', 'bad-limit');
+  end if;
+  if v_scope = 'team' then
+    v_name := 'Team'; v_def := 60;
+  elsif v_scope = 'person' then
+    v_name := 'Each colleague'; v_def := 20;
+  else
+    select t.name into v_name from public.team_members t where t.id::text = v_scope;
+    if v_name is null then return jsonb_build_object('error', 'not-found'); end if;
+    v_def := public.ai_draft_limit('person', 20);
+  end if;
+  select l.daily into v_was from public.ai_draft_limits l where l.scope = v_scope;
+  if v_was is not distinct from p_daily then return jsonb_build_object('ok', true, 'same', true); end if;
+  select coalesce(t.name, t.email) into v_who from public.team_members t
+   where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active limit 1;
+  insert into public.ai_draft_limits (scope, daily, set_by, set_at)
+  values (v_scope, p_daily, v_who, now())
+  on conflict (scope) do update set daily = excluded.daily, set_by = excluded.set_by, set_at = excluded.set_at;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_who, 'admin'), 'team.changed', 'Draft with AI',
+          v_name || ': ' ||
+          case when v_was is null then 'default, ' || v_def || ' a day' when v_was = 0 then 'stopped' else v_was || ' a day' end ||
+          ' → ' ||
+          case when p_daily is null then 'default, ' || v_def || ' a day' when p_daily = 0 then 'stopped' else p_daily || ' a day' end);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.ai_draft_set_limit(text, integer) from public, anon, authenticated;
+grant execute on function public.ai_draft_set_limit(text, integer) to authenticated;
+
+-- END OF DRAFT WITH AI ALLOWANCES --------------------------------------------
+
+-- ===========================================================================
+-- MONTH REPORTS — a client's month says which reports it owes (Accounts,
+-- Advertising, both or none) and on which day it starts; each report ticked
+-- is a task in the month, due seven days after the month ends.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `ops_engagements.reports` (`social` the Accounts report, `ads` the
+--      Advertising report; empty for a client owed neither) and
+--      `ops_engagements.start_day` (1 to 28; a month starting on the 16th
+--      runs to the 15th of the next). A new month takes both from the
+--      client's month before unless it names them, so a change of start day
+--      carries forward from the month it is made on, never backwards.
+--   2. `ops_month_span(period, day)`: the first and last day of a month.
+--   3. `ops_engagement_sync_reports(month, moved)`: each report ticked has
+--      one live task on the everyday workflow, named Accounts report or
+--      Advertising report, its format Report, its owner the month's manager,
+--      its first draft due at 23:59 MYT five days after the month's last day
+--      and its final seven days after (`source_type` `report_social` /
+--      `report_ads`). A report unticked cancels its task while it is still To
+--      do and keeps one already started. Only a start day moved (`moved`)
+--      moves an open task's dates, filed as date changes; any other save
+--      leaves a date somebody moved alone.
+--   4. `ops_engagement_upsert` takes `reports` and `start_day` and syncs.
+--
+-- ROLLBACK
+--   Run the READINESS IS THE FIRST MONTH'S section's ops_engagement_upsert
+--   again, remove the functions ops_engagement_sync_reports(uuid, boolean) and
+--   ops_month_span(text, integer), then
+--   alter table public.ops_engagements drop column if exists reports,
+--     drop column if exists start_day;
+-- ===========================================================================
+
+alter table public.ops_engagements add column if not exists reports text[] not null default '{}';
+alter table public.ops_engagements add column if not exists start_day smallint not null default 1;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'ops_engagements_reports_check') then
+    alter table public.ops_engagements add constraint ops_engagements_reports_check
+      check (reports <@ array['social', 'ads']::text[]);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'ops_engagements_start_day_check') then
+    alter table public.ops_engagements add constraint ops_engagements_start_day_check
+      check (start_day between 1 and 28);
+  end if;
+end $$;
+
+-- The first and last day of a month that starts on `p_day`.
+create or replace function public.ops_month_span(p_period text, p_day integer)
+returns table (starts date, ends date)
+language sql immutable set search_path = public as $$
+  select d, (d + interval '1 month')::date - 1
+    from (select make_date(split_part(p_period, '-', 1)::integer, split_part(p_period, '-', 2)::integer,
+                           greatest(1, least(28, coalesce(p_day, 1)))) as d) x
+$$;
+revoke all on function public.ops_month_span(text, integer) from public, anon, authenticated;
+
+-- One live task a report the month asks for; a report no longer asked for
+-- cancels its task while it is still To do; a start day moved moves the
+-- dates of one still open.
+create or replace function public.ops_engagement_sync_reports(p_engagement uuid, p_moved boolean default false)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  e public.ops_engagements;
+  k text;
+  v_ends date;
+  v_due timestamptz;
+  v_draft timestamptz;
+  t public.ops_tasks;
+  v_first text;
+  res jsonb;
+  made integer := 0;
+  gone integer := 0;
+begin
+  select * into e from public.ops_engagements where id = p_engagement;
+  if e.id is null or e.status in ('completed', 'cancelled') then
+    return jsonb_build_object('made', 0, 'cancelled', 0);
+  end if;
+  select s.ends into v_ends from public.ops_month_span(e.period, e.start_day) s;
+  v_due := ((v_ends + 7)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  v_draft := ((v_ends + 5)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  foreach k in array array['social', 'ads'] loop
+    if k = any (e.reports) then
+      if not exists (select 1 from public.ops_tasks x
+                      where x.engagement_id = e.id and x.source_type = 'report_' || k
+                        and x.cancelled_at is null and x.archived_at is null) then
+        res := public.ops_create_task(jsonb_build_object(
+          'engagement_id', e.id, 'scope', 'client', 'client_id', e.client_id,
+          'workflow_key', 'task', 'task_type', 'engagement', 'deliverable_type', 'report',
+          'content_desc', case k when 'social' then 'Accounts report' else 'Advertising report' end,
+          'code_period', e.period, 'first_draft_due_at', v_draft, 'final_due_at', v_due,
+          'source_type', 'report_' || k,
+          'owner_id', e.manager_id, 'manager_id', e.manager_id));
+        if res ? 'error' then
+          raise exception 'report-task: %', res ->> 'error' using errcode = 'P0001';
+        end if;
+        made := made + 1;
+      elsif p_moved then
+        for t in select * from public.ops_tasks x
+                  where x.engagement_id = e.id and x.source_type = 'report_' || k
+                    and x.cancelled_at is null and x.archived_at is null and x.completed_at is null loop
+          update public.ops_tasks set current_final_due_at = v_due,
+                 current_first_draft_due_at = case when first_draft_submitted_at is null then v_draft
+                                                   else current_first_draft_due_at end,
+                 updated_at = now(), version = version + 1
+           where id = t.id;
+          if t.current_final_due_at is distinct from v_due then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'final', 'value', t.current_final_due_at),
+              jsonb_build_object('kind', 'final', 'value', v_due),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
+          if t.first_draft_submitted_at is null and t.current_first_draft_due_at is distinct from v_draft then
+            perform public.ops_log(t.id, 'due_changed',
+              jsonb_build_object('kind', 'first_draft', 'value', t.current_first_draft_due_at),
+              jsonb_build_object('kind', 'first_draft', 'value', v_draft),
+              jsonb_build_object('reason', 'scope_change', 'note', 'The month''s start day moved.'));
+          end if;
+        end loop;
+      end if;
+    else
+      for t in select * from public.ops_tasks x
+                where x.engagement_id = e.id and x.source_type = 'report_' || k
+                  and x.cancelled_at is null and x.archived_at is null and x.completed_at is null loop
+        select s.key into v_first from public.ops_workflow_stages s
+         where s.workflow_id = t.workflow_id order by s.position limit 1;
+        if t.stage_key = v_first then
+          update public.ops_tasks set stage_key = 'cancelled', cancelled_at = now(), updated_at = now(),
+                 version = version + 1
+           where id = t.id;
+          perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', t.stage_key),
+            jsonb_build_object('stage_key', 'cancelled'),
+            jsonb_build_object('note', 'The month no longer asks for this report.'));
+          gone := gone + 1;
+        end if;
+      end loop;
+    end if;
+  end loop;
+  return jsonb_build_object('made', made, 'cancelled', gone);
+end $$;
+revoke all on function public.ops_engagement_sync_reports(uuid, boolean) from public, anon, authenticated;
+
+/* One a client a month. A second call for the same month edits the one row
+   rather than making a second. The two checks are onboarding, so they are
+   seeded on the client's first month and on no later one. The reports a
+   month owes and its start day come from the month before unless named. */
+create or replace function public.ops_engagement_upsert(p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  cid uuid;
+  per text;
+  eid uuid;
+  k text;
+  fresh boolean := false;
+  prev public.ops_engagements;
+  v_day integer;
+  v_reports text[];
+  v_was_day integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  cid := (p_payload ->> 'client_id')::uuid;
+  per := p_payload ->> 'period';
+  if cid is null or not exists (select 1 from public.clients where id = cid) then
+    return jsonb_build_object('error', 'client-required');
+  end if;
+  if per is null or per !~ '^\d{4}-\d{2}$' then return jsonb_build_object('error', 'bad-period'); end if;
+  if p_payload ? 'start_day' and (nullif(p_payload ->> 'start_day', '') is null
+     or (p_payload ->> 'start_day') !~ '^\d{1,2}$' or (p_payload ->> 'start_day')::integer not between 1 and 28) then
+    return jsonb_build_object('error', 'bad-start-day');
+  end if;
+  if p_payload ? 'reports' then
+    if jsonb_typeof(p_payload -> 'reports') <> 'array' then return jsonb_build_object('error', 'bad-reports'); end if;
+    select coalesce(array_agg(distinct x), '{}') into v_reports from jsonb_array_elements_text(p_payload -> 'reports') x;
+    if not (v_reports <@ array['social', 'ads']::text[]) then return jsonb_build_object('error', 'bad-reports'); end if;
+  end if;
+
+  select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+  if eid is null then
+    select * into prev from public.ops_engagements o
+     where o.client_id = cid and o.period < per order by o.period desc limit 1;
+    v_day := coalesce((p_payload ->> 'start_day')::integer, prev.start_day, 1);
+    v_reports := coalesce(v_reports, prev.reports, '{}');
+    insert into public.ops_engagements (client_id, period, manager_id, planned_count, drive_url, created_by,
+                                        reports, start_day)
+    values (cid, per, coalesce((p_payload ->> 'manager_id')::uuid, m.id),
+            coalesce((p_payload ->> 'planned_count')::integer, 0),
+            nullif(p_payload ->> 'drive_url', ''), m.id, v_reports, v_day)
+    on conflict (client_id, period) do nothing
+    returning id into eid;
+    /* Somebody else made it between the read and the write: theirs stands. */
+    if eid is null then
+      select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+    else
+      fresh := true;
+    end if;
+  end if;
+  if fresh then
+    if not exists (select 1 from public.ops_engagements o where o.client_id = cid and o.id <> eid) then
+    foreach k in array array['onboarding', 'pre_ads'] loop
+      insert into public.ops_engagement_checks (engagement_id, key) values (eid, k)
+      on conflict do nothing;
+    end loop;
+    end if;
+    perform public.ops_engagement_log(eid, 'created', p_payload - 'client_id');
+  else
+    if not public.ops_may_see_engagement(eid) then return jsonb_build_object('error', 'denied'); end if;
+    /* Asked for with nothing to change, the month is answered as it stands:
+       a task made for a month joins it without editing it. */
+    if (p_payload - 'client_id' - 'period') = '{}'::jsonb then
+      return public.ops_engagement_json(eid) || jsonb_build_object('created', false);
+    end if;
+    select o.start_day into v_was_day from public.ops_engagements o where o.id = eid;
+    update public.ops_engagements set
+      manager_id = coalesce((p_payload ->> 'manager_id')::uuid, manager_id),
+      planned_count = coalesce((p_payload ->> 'planned_count')::integer, planned_count),
+      drive_url = case when p_payload ? 'drive_url' then nullif(p_payload ->> 'drive_url', '') else drive_url end,
+      reports = coalesce(v_reports, reports),
+      start_day = coalesce((p_payload ->> 'start_day')::integer, start_day),
+      updated_at = now(), version = version + 1
+    where id = eid;
+    perform public.ops_engagement_log(eid, 'edited', p_payload - 'client_id' - 'period');
+  end if;
+  perform public.ops_engagement_sync_reports(eid,
+    v_was_day is not null and v_was_day is distinct from (select o.start_day from public.ops_engagements o where o.id = eid));
+  return public.ops_engagement_json(eid) || jsonb_build_object('created', fresh);
+end $$;
+grant execute on function public.ops_engagement_upsert(jsonb) to authenticated;
+
+-- END OF MONTH REPORTS -------------------------------------------------------
+
+-- ===========================================================================
+-- REPORT MONTH GATE — a report is submitted for review only once its month
+-- is in order, and on time or with the reason it is late.
+-- 2026-10-04. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after MONTH REPORTS.
+--
+-- WHAT CHANGED
+--   1. `sm_report_gate(p_id)` (Reports View): for a report whose period starts
+--      on or after 1 Oct 2026, the client's month whose span holds the
+--      report's last day, and what it lacks: `no-month` (no such month),
+--      `not-ticked` (the month does not ask for this report), `no-task` (its
+--      report task is not there), `content` (fewer content tasks than
+--      planned; report tasks and cancelled tasks are not counted). It answers
+--      the due time (the report task's, else 23:59 MYT seven days after the
+--      month's last day, else after the report's), `late`, and
+--      `may_override` (an admin or Reports Full Access). An earlier report is
+--      not gated. A report the caller may not see answers `denied`.
+--   2. `sm_report_submit(p_id, p_reviewer, p_reason)`: after the report's own
+--      contents, a report that fails the gate is refused `month-gate` with
+--      what it lacks, unless an admin or Reports Full Access gives a reason;
+--      a late report is refused `late-reason` until a reason is given. The
+--      reason is kept on the report (`late_reason`, `gate_note`) and filed
+--      with the submission.
+--   3. `sm_report_guard` keeps both columns to the functions.
+--
+-- ROLLBACK
+--   Run the REPORT REVIEWER section's sm_report_guard and sm_report_submit
+--   again, remove the function sm_report_gate(uuid), then
+--   alter table public.sm_reports drop column if exists late_reason,
+--     drop column if exists gate_note;
+-- ===========================================================================
+
+alter table public.sm_reports add column if not exists late_reason text;
+alter table public.sm_reports add column if not exists gate_note text;
+
+create or replace function public.sm_report_guard()
+returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if coalesce(current_setting('adspace.sm_fn', true), '') = 'on' then
+    new.updated_at := now();
+    return new;
+  end if;
+  if new.status is distinct from old.status or new.version_no is distinct from old.version_no
+     or new.submitted_by is distinct from old.submitted_by or new.submitted_at is distinct from old.submitted_at
+     or new.confirmed_by is distinct from old.confirmed_by or new.confirmed_at is distinct from old.confirmed_at
+     or new.return_note is distinct from old.return_note or new.client_id is distinct from old.client_id
+     or new.kind is distinct from old.kind or new.reviewer_id is distinct from old.reviewer_id
+     or new.late_reason is distinct from old.late_reason or new.gate_note is distinct from old.gate_note
+     or new.created_by is distinct from old.created_by or new.created_at is distinct from old.created_at then
+    raise exception 'sm-status-by-function' using errcode = 'P0001';
+  end if;
+  if old.status <> 'draft' then
+    raise exception 'sm-not-draft' using errcode = 'P0001';
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+revoke all on function public.sm_report_guard() from public, anon, authenticated;
+
+-- What a report's month lacks, and when the report is due.
+create or replace function public.sm_report_gate(p_id uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  c public.clients;
+  e public.ops_engagements;
+  task public.ops_tasks;
+  v_starts date;
+  v_ends date;
+  v_due timestamptz;
+  v_made integer := 0;
+  v_missing text[] := '{}';
+begin
+  if me.id is null or not public.allowed('reports', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into c from public.clients where id = r.client_id;
+  if not public.client_row_seen(c.stage, c.owner, 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if r.period_start < date '2026-10-01' then
+    return jsonb_build_object('applies', false, 'ok', true, 'missing', '[]'::jsonb);
+  end if;
+  select x.* into e from public.ops_engagements x
+   cross join lateral public.ops_month_span(x.period, x.start_day) s
+   where x.client_id = r.client_id and x.status <> 'cancelled'
+     and r.period_end between s.starts and s.ends
+   order by x.period desc limit 1;
+  if e.id is null then
+    v_missing := v_missing || 'no-month'::text;
+    v_due := ((r.period_end + 7)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+  else
+    select s.starts, s.ends into v_starts, v_ends from public.ops_month_span(e.period, e.start_day) s;
+    v_due := ((v_ends + 7)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+    if not (r.kind = any (e.reports)) then
+      v_missing := v_missing || 'not-ticked'::text;
+    else
+      select * into task from public.ops_tasks x
+       where x.engagement_id = e.id and x.source_type = 'report_' || r.kind
+         and x.cancelled_at is null and x.archived_at is null
+       order by x.created_at desc limit 1;
+      if task.id is null then
+        v_missing := v_missing || 'no-task'::text;
+      else
+        v_due := coalesce(task.current_final_due_at, v_due);
+      end if;
+    end if;
+    select count(*) into v_made from public.ops_tasks x
+     where x.engagement_id = e.id and x.cancelled_at is null and x.archived_at is null
+       and coalesce(x.source_type, '') not in ('report_social', 'report_ads');
+    if v_made < e.planned_count then v_missing := v_missing || 'content'::text; end if;
+  end if;
+  return jsonb_build_object(
+    'applies', true, 'ok', cardinality(v_missing) = 0, 'missing', to_jsonb(v_missing),
+    'month', case when e.id is null then null else jsonb_build_object(
+               'id', e.id, 'period', e.period, 'start_day', e.start_day, 'starts', v_starts, 'ends', v_ends,
+               'reports', to_jsonb(e.reports)) end,
+    'planned', coalesce(e.planned_count, 0), 'made', v_made,
+    'task', case when task.id is null then null else jsonb_build_object(
+              'id', task.id, 'task_no', task.task_no, 'stage_key', task.stage_key) end,
+    'due', v_due, 'late', now() > v_due,
+    'may_override', coalesce(me.is_admin, false) or me.role = 'admin' or public.allowed('reports', 'manage'));
+end $$;
+revoke all on function public.sm_report_gate(uuid) from public, anon, authenticated;
+grant execute on function public.sm_report_gate(uuid) to authenticated;
+
+/* `p_reason` is the reason a late submit, or one past the month's gate,
+   gives; it is read from MONTH REPORTS (2026-10-04) on. */
+create or replace function public.sm_report_submit(p_id uuid, p_reviewer uuid default null, p_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  cname text;
+  g jsonb;
+  v_reason text := nullif(btrim(coalesce(p_reason, '')), '');
+  v_gate text;
+  v_late text;
+  v_extra text := '';
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'draft' then return jsonb_build_object('error', 'not-draft', 'status', r.status); end if;
+  if r.kind = 'ads' then
+    if not exists (select 1 from public.sm_report_ads where report_id = p_id) then
+      return jsonb_build_object('error', 'no-ads');
+    end if;
+  else
+    if not exists (select 1 from public.sm_report_platforms where report_id = p_id) then
+      return jsonb_build_object('error', 'no-platforms');
+    end if;
+    if not exists (select 1 from public.sm_report_posts where report_id = p_id) then
+      return jsonb_build_object('error', 'no-posts');
+    end if;
+  end if;
+  g := public.sm_report_gate(p_id);
+  if coalesce((g ->> 'applies')::boolean, false) then
+    if not (g ->> 'ok')::boolean then
+      if not (g ->> 'may_override')::boolean or v_reason is null then
+        return jsonb_build_object('error', 'month-gate', 'missing', g -> 'missing', 'planned', g -> 'planned',
+                                  'made', g -> 'made', 'may_override', g -> 'may_override');
+      end if;
+      v_gate := left(v_reason, 500);
+    end if;
+    if (g ->> 'late')::boolean then
+      if v_reason is null then
+        return jsonb_build_object('error', 'late-reason', 'due', g -> 'due');
+      end if;
+      v_late := left(v_reason, 500);
+    end if;
+  end if;
+  if p_reviewer is null then return jsonb_build_object('error', 'no-reviewer'); end if;
+  if p_reviewer = me.id then return jsonb_build_object('error', 'self-review'); end if;
+  if not public.sm_report_may_review(p_reviewer) then return jsonb_build_object('error', 'bad-reviewer'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'review', submitted_by = me.id, submitted_at = now(),
+    reviewer_id = p_reviewer, return_note = null, confirmed_by = null, confirmed_at = null,
+    late_reason = v_late, gate_note = v_gate where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  if v_gate is not null then v_extra := v_extra || ' · Past the month''s gate: ' || v_gate; end if;
+  if v_late is not null and v_gate is distinct from v_late then v_extra := v_extra || ' · Late: ' || v_late;
+  elsif v_late is not null then v_extra := v_extra || ' · Late'; end if;
+  perform public.sm_report_log(p_id, 'report.submitted',
+    'Reviewer: ' || (select name from public.team_members where id = p_reviewer) || v_extra);
+  select c.name into cname from public.clients c where c.id = r.client_id;
+  perform public.sm_report_notify(p_reviewer, p_id, 'report.review', 'Report to review',
+    cname || ' · ' || public.sm_period_word(r.period_start, r.period_end));
+  return jsonb_build_object('ok', true, 'status', 'review');
+end $$;
+revoke all on function public.sm_report_submit(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.sm_report_submit(uuid, uuid, text) to authenticated;
+
+-- END OF REPORT MONTH GATE ---------------------------------------------------
