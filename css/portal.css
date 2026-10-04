@@ -9813,3 +9813,12 @@ body.is-maint { overflow: hidden; }
    the day the month starts on. */
 .engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
 .engreports > legend { padding: 0; margin-bottom: 0; }
+
+/* ONE WEIGHT FOR EVERY CHOICE (the user, 2026-10-04: "not one odd weird 500
+   weight"). Every tab, view and segment option reads at the body's 400,
+   chosen or not: the raised surface and the ink say which is chosen, so the
+   words never change weight under the thumb. A count beside a tab keeps its
+   own pill. */
+.tab, .tab.is-on, .rectabs .tab, .rectabs .tab.is-on, .tabrow .tab, .tabrow .tab.is-on,
+.cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
+.seg-opt, .seg-opt.is-on, .navitem.is-on, .picker-opt.is-on { font-weight: 400; }

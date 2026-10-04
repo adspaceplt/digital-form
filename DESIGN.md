@@ -394,8 +394,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Hover is one step lighter than selected (`--sunk` against `--line-soft`),
   never equal. Every hover lives inside `@media (hover: hover)`. A hover is the
   next step of its ground, never `--fill`.
-- The chosen one of several is a fill, never a shadow:
-  - a nav item: `--line-soft` plus 600;
+- The chosen one of several is a fill, never a shadow and never a weight:
+  every tab, view, segment, nav item and finder option reads at 400, chosen
+  or not (the user, 2026-10-04);
+  - a nav item: `--line-soft`;
   - a tab, a view and a segment alike: one raised thumb that slides on the
     tonal track (`.rectabs`, `.tabrow`, `.cmdbar-views`, `.seg`);
   - a segment (a value picked) is a pill, track, options and thumb, its
