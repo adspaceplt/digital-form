@@ -2058,15 +2058,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
     the line under it says why and when the next is free.
   - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
-    `ai_draft_usage()`), in plain words (the user, 2026-10-04): Used today
-    and Used in 30 days for the team; Daily limits (Whole team, Each
-    colleague); then every colleague who may draft or drafted in 30 days,
-    most used first, reading `Used n in 30 days[, n today]` or `Not used`.
-    The one control a line is the limit itself (`Limit 20 a day`, a
-    `.linkbtn` with the pen; ink where set for that colleague, warn when
-    Stopped), asking Same as everyone / Standard, Stopped or a number
-    through `ai_draft_set_limit`, filed `team.changed` under Draft with AI
-    from and to. Never "Default", never a column of counts.
+    `ai_draft_usage()`), in plain figures (the user, 2026-10-04): Used today,
+    one line each, used over the day's limit (`1/60` Whole team, then every
+    colleague who may draft or drafted in 30 days, `0/20`, most used
+    first); then Standard limit (Each colleague, `20 a day`). The figure is
+    the line's one control (a `.linkbtn` with the pen; ink where set for
+    that colleague, warn when Stopped), asking Same as everyone / Standard,
+    Stopped or a number through `ai_draft_set_limit`, filed `team.changed`
+    under Draft with AI from and to. Never "Default", never a column of
+    counts.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with

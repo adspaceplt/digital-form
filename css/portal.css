@@ -9747,14 +9747,12 @@ body.is-maint { overflow: hidden; }
    colleague's drafts and allowance. Desk: who, the last 24 hours, the last
    30 days, the allowance and Change; narrow: who over one mute line of the
    same figures, Change at the right edge. */
-.aiu-tally { margin-bottom: 12px; }
 .aiu-list { display: grid; }
 .aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .aiu-row:first-child { border-top: 0; padding-top: 0; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
 .aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
-.aiu-meta { color: var(--ink-mute); font-size: 12.5px; }
-.aiu-cap { white-space: nowrap; color: var(--ink-mute); margin-right: -8px; }
+.aiu-cap { white-space: nowrap; color: var(--ink-mute); margin-right: -8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .aiu-cap.is-own { color: var(--ink); font-weight: 600; }
 .aiu-cap.is-stopped { color: var(--warn); font-weight: 600; }
 .aiu-cap svg { width: 14px; height: 14px; }

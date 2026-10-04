@@ -878,3 +878,4 @@ Walked the month-to-report link by role and by month edit. The report task's Ope
 
 ### 2026-10-04 · Draft with AI usage in plain words
 The user, on a phone: "0 today · 10 in 30 days · Default, 60" and a Change button on every row read as noise ("so confusing"; no extra words). The sheet now opens on two figures (Used today, Used in 30 days), then the two daily limits, then each colleague, most used first, with one line each ("Used 3 in 30 days" or "Not used"). The limit is the only control and reads as itself ("Limit 20 a day"); the question offers Same as everyone, Stopped or a number, with no explanation under the title. Group names, last-used dates and failed counts left the rows.
+Then, from the user: "just show xx/xx". Each line is now used today over the day's limit (1/60 for the team, 0/20 a colleague), the figure itself the control; the 30-day counts left the sheet.

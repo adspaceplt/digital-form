@@ -3022,20 +3022,25 @@
   }
 
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
-  /* Plain reading (the user, 2026-10-04: "so confusing"): the team's use at
-     the top, the two daily limits, then each colleague's use, most first.
-     The limit is the one control on a line, written as what it is ("20 a
-     day"); a colleague's own limit reads in ink, the shared one mute.
-     Read again on every open. */
+  /* Used today over the day's limit, one line each (the user, 2026-10-04:
+     "just show xx/xx"): the whole team, then every colleague, most used
+     first, then the standard limit. The figure is the control; a
+     colleague's own limit reads in ink, Stopped in warn. Read again on
+     every open. */
   var AI_PERSON_STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50];
   var AI_TEAM_STEPS = [10, 20, 30, 40, 60, 80, 100, 150, 200];
-  function aiLimitWord(n) { return n === 0 ? 'Stopped' : 'Limit ' + n + ' a day'; }
+  /* What a line shows: used today over the day's limit (1/20), Stopped,
+     or the limit alone where nothing is counted against it. */
+  function aiShown(o) {
+    if (o.limit === 0) return 'Stopped';
+    return o.used == null ? o.limit + ' a day' : fmt(o.used) + '/' + o.limit;
+  }
   function aiUseRow(o) {
+    var said = o.limit === 0 ? 'stopped' : o.used == null ? o.limit + ' a day' : fmt(o.used) + ' of ' + o.limit + ' used today';
     return '<div class="aiu-row" data-scope="' + esc(o.scope) + '">' +
-      '<div class="aiu-name"><b>' + esc(o.name) + (o.code ? ' <span class="aiu-code">' + esc(o.code) + '</span>' : '') + '</b>' +
-        (o.meta ? '<small class="aiu-meta">' + esc(o.meta) + '</small>' : '') + '</div>' +
+      '<div class="aiu-name"><b>' + esc(o.name) + (o.code ? ' <span class="aiu-code">' + esc(o.code) + '</span>' : '') + '</b></div>' +
       '<button class="linkbtn aiu-cap' + (o.own ? ' is-own' : '') + (o.limit === 0 ? ' is-stopped' : '') + '" type="button" data-a="cap"' +
-        ' aria-label="Daily limit for ' + esc(o.name) + ': ' + esc(aiLimitWord(o.limit)) + '">' + esc(aiLimitWord(o.limit)) + PEN_MARK + '</button>' +
+        ' aria-label="' + esc(o.name) + ', ' + esc(said) + '. Change limit">' + esc(aiShown(o)) + PEN_MARK + '</button>' +
     '</div>';
   }
   function aiUseSheet(opener) {
@@ -3053,27 +3058,19 @@
           return;
         }
         var people = (d.people || []).slice().sort(function (x, y) {
-          return (y.month || 0) - (x.month || 0) || String(x.name).localeCompare(String(y.name));
+          return (y.day || 0) - (x.day || 0) || (y.month || 0) - (x.month || 0) || String(x.name).localeCompare(String(y.name));
         });
-        var cell = function (label, value) { return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>'; };
-        var used = function (p) {
-          if (!p.month) return 'Not used';
-          return 'Used ' + fmt(p.month) + ' in 30 days' + (p.day ? ', ' + fmt(p.day) + ' today' : '');
-        };
         host.innerHTML =
-          '<div class="tallies aiu-tally"><div class="tallygroup"><div class="tally">' +
-            cell('Used today', fmt(d.team_day || 0)) + cell('Used in 30 days', fmt(d.team_month || 0)) +
-          '</div></div></div>' +
-          '<section class="fsec"><h4 class="fsec-h">Daily limits</h4><div class="aiu-list">' +
-            aiUseRow({ scope: 'team', name: 'Whole team', limit: d.team, own: d.team !== 60 }) +
-            aiUseRow({ scope: 'person', name: 'Each colleague', limit: d.person, own: d.person !== 20 }) +
+          '<section class="fsec"><h4 class="fsec-h">Used today</h4><div class="aiu-list">' +
+            aiUseRow({ scope: 'team', name: 'Whole team', used: d.team_day || 0, limit: d.team, own: d.team !== 60 }) +
+            people.map(function (p) {
+              return aiUseRow({ scope: p.id, name: p.name, code: p.code, used: p.day || 0,
+                                limit: p.limit == null ? d.person : p.limit, own: p.limit != null });
+            }).join('') +
           '</div></section>' +
-          '<section class="fsec"><h4 class="fsec-h">Colleagues</h4>' + (people.length
-            ? '<div class="aiu-list">' + people.map(function (p) {
-                return aiUseRow({ scope: p.id, name: p.name, code: p.code, meta: used(p),
-                                  limit: p.limit == null ? d.person : p.limit, own: p.limit != null });
-              }).join('') + '</div>'
-            : '<p class="empty">No entries.</p>') + '</section>';
+          '<section class="fsec"><h4 class="fsec-h">Standard limit</h4><div class="aiu-list">' +
+            aiUseRow({ scope: 'person', name: 'Each colleague', limit: d.person, own: d.person !== 20 }) +
+          '</div></section>';
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
         Array.prototype.forEach.call(host.querySelectorAll('[data-a="cap"]'), function (b) {
           b.addEventListener('click', function () {
