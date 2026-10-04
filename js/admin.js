@@ -1120,6 +1120,9 @@
     } else if (section === 'team' && window.ADspacePerf) {
       var pf = window.ADspacePerf.urlState();
       Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });
+    } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
+      var mn = window.ADspacePerf.mineState();
+      Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
     }
     return q;
   }
