@@ -2045,11 +2045,9 @@
       : '';
     if (d.scope === 'redraft') return 'This report has had its draft. An admin can draft it again.';
     if (d.scope === 'stopped') return 'Draft with AI is turned off for you. An admin can turn it on.';
-    if (d.scope === 'team' && d.limit === 0) return 'Draft with AI is turned off for the team.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for the day.'
-      : d.scope === 'person' ? 'You have used your ' + (d.limit || 20) + ' drafts for the day.'
-      : 'The team has used its ' + (d.limit || 60) + ' drafts for the day.';
-    return who + (when ? ' The next is free from ' + when + '.' : '');
+      : 'You have used your ' + (d.limit || 20) + ' drafts for today.';
+    return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
   }
   var AI_SAID = {
     'needs-update': 'This needs a database update.',
@@ -3022,25 +3020,36 @@
   }
 
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
-  /* Used today over the day's limit, one line each (the user, 2026-10-04:
-     "just show xx/xx"): the whole team, then every colleague, most used
-     first, then the standard limit. The figure is the control; a
-     colleague's own limit reads in ink, Stopped in warn. Read again on
-     every open. */
+  /* Like a usage page (the user, 2026-10-04): when it resets, then used
+     today over the limit with a bar, for the whole team, each group and
+     each colleague. Only a colleague's limit is set (theirs, else the
+     standard); a group's and the team's are their colleagues' added up.
+     A colleague's figure is the control; own limit in ink, Stopped in
+     warn. Read again on every open. */
   var AI_PERSON_STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50];
-  var AI_TEAM_STEPS = [10, 20, 30, 40, 60, 80, 100, 150, 200];
-  /* What a line shows: used today over the day's limit (1/20), Stopped,
-     or the limit alone where nothing is counted against it. */
-  function aiShown(o) {
-    if (o.limit === 0) return 'Stopped';
-    return o.used == null ? o.limit + ' a day' : fmt(o.used) + '/' + o.limit;
+  function aiClock(iso) {
+    var at = new Date(iso);
+    if (isNaN(at.getTime())) return '';
+    try {
+      return at.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', hour: 'numeric', minute: '2-digit', hour12: true })
+        .replace(/\s?([ap])\.?m\.?$/i, function (x, c) { return ' ' + c.toLowerCase() + 'm'; });
+    } catch (e) { return ''; }
+  }
+  function aiBar(used, cap) {
+    var pct = cap > 0 ? Math.min(100, Math.round(used / cap * 100)) : 0;
+    return '<div class="aiu-bar' + (cap > 0 && used >= cap ? ' is-full' : '') + '" role="meter" aria-valuemin="0" aria-valuemax="' + cap +
+      '" aria-valuenow="' + Math.min(used, cap) + '" aria-label="' + fmt(used) + ' of ' + cap + ' used today"><i style="--p:' + pct + '%"></i></div>';
   }
   function aiUseRow(o) {
-    var said = o.limit === 0 ? 'stopped' : o.used == null ? o.limit + ' a day' : fmt(o.used) + ' of ' + o.limit + ' used today';
-    return '<div class="aiu-row" data-scope="' + esc(o.scope) + '">' +
+    var shown = o.cap === 0 ? 'Stopped' : fmt(o.used) + '/' + o.cap;
+    var fig = o.scope
+      ? '<button class="linkbtn aiu-cap' + (o.own ? ' is-own' : '') + (o.cap === 0 ? ' is-stopped' : '') + '" type="button" data-a="cap"' +
+          ' aria-label="' + esc(o.name) + ', ' + esc(o.cap === 0 ? 'stopped' : fmt(o.used) + ' of ' + o.cap + ' used today') + '. Change limit">' +
+          esc(shown) + PEN_MARK + '</button>'
+      : '<span class="aiu-cap is-sum">' + esc(shown) + '</span>';
+    return '<div class="aiu-row' + (o.scope ? '' : ' is-sum') + '"' + (o.scope ? ' data-scope="' + esc(o.scope) + '"' : '') + '>' +
       '<div class="aiu-name"><b>' + esc(o.name) + (o.code ? ' <span class="aiu-code">' + esc(o.code) + '</span>' : '') + '</b></div>' +
-      '<button class="linkbtn aiu-cap' + (o.own ? ' is-own' : '') + (o.limit === 0 ? ' is-stopped' : '') + '" type="button" data-a="cap"' +
-        ' aria-label="' + esc(o.name) + ', ' + esc(said) + '. Change limit">' + esc(aiShown(o)) + PEN_MARK + '</button>' +
+      fig + (o.cap === 0 ? '' : aiBar(o.used, o.cap)) +
     '</div>';
   }
   function aiUseSheet(opener) {
@@ -3057,34 +3066,46 @@
           UI.failLine(host, 'Draft with AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
           return;
         }
-        var people = (d.people || []).slice().sort(function (x, y) {
-          return (y.day || 0) - (x.day || 0) || (y.month || 0) - (x.month || 0) || String(x.name).localeCompare(String(y.name));
+        var people = (d.people || []).map(function (p) {
+          var cap = p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person);
+          return { scope: p.id, name: p.name, code: p.code, used: p.day || 0, cap: cap, own: p.limit != null, group: p.group || 'No group' };
         });
+        var sum = function (list) {
+          return { used: list.reduce(function (t, p) { return t + p.used; }, 0), cap: list.reduce(function (t, p) { return t + p.cap; }, 0) };
+        };
+        var groups = {};
+        people.forEach(function (p) { (groups[p.group] = groups[p.group] || []).push(p); });
+        var names = Object.keys(groups).sort(function (x, y) { return x.localeCompare(y); });
+        var all = sum(people);
         host.innerHTML =
-          '<section class="fsec"><h4 class="fsec-h">Used today</h4><div class="aiu-list">' +
-            aiUseRow({ scope: 'team', name: 'Whole team', used: d.team_day || 0, limit: d.team, own: d.team !== 60 }) +
-            people.map(function (p) {
-              return aiUseRow({ scope: p.id, name: p.name, code: p.code, used: p.day || 0,
-                                limit: p.limit == null ? d.person : p.limit, own: p.limit != null });
-            }).join('') +
-          '</div></section>' +
-          '<section class="fsec"><h4 class="fsec-h">Standard limit</h4><div class="aiu-list">' +
-            aiUseRow({ scope: 'person', name: 'Each colleague', limit: d.person, own: d.person !== 20 }) +
+          (d.resets_at ? '<p class="aiu-reset">Resets at ' + esc(aiClock(d.resets_at)) + '</p>' : '') +
+          '<div class="aiu-list">' + aiUseRow({ name: 'Whole team', used: all.used, cap: all.cap }) + '</div>' +
+          names.map(function (g) {
+            var list = groups[g].slice().sort(function (x, y) { return y.used - x.used || String(x.name).localeCompare(String(y.name)); });
+            var t = sum(list);
+            return '<section class="fsec"><div class="aiu-list">' + aiUseRow({ name: g, used: t.used, cap: t.cap }) +
+              list.map(aiUseRow).join('') + '</div></section>';
+          }).join('') +
+          '<section class="fsec"><div class="aiu-list">' +
+            '<div class="aiu-row" data-scope="person"><div class="aiu-name"><b>Standard limit</b></div>' +
+              '<button class="linkbtn aiu-cap' + (d.person !== 20 ? ' is-own' : '') + (d.person === 0 ? ' is-stopped' : '') + '" type="button" data-a="cap"' +
+              ' aria-label="Standard limit, ' + esc(d.person === 0 ? 'stopped' : d.person + ' a day') + '. Change">' +
+              esc(d.person === 0 ? 'Stopped' : d.person + ' a day') + PEN_MARK + '</button></div>' +
           '</div></section>';
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
         Array.prototype.forEach.call(host.querySelectorAll('[data-a="cap"]'), function (b) {
           b.addEventListener('click', function () {
             var scope = b.closest('.aiu-row').getAttribute('data-scope');
-            var who = scope === 'team' || scope === 'person' ? null : people.filter(function (p) { return p.id === scope; })[0];
-            var team = scope === 'team';
-            var std = team ? 60 : scope === 'person' ? 20 : d.person;
-            var now = team ? (d.team === 60 ? null : d.team) : scope === 'person' ? (d.person === 20 ? null : d.person) : who.limit;
-            var steps = team ? AI_TEAM_STEPS : AI_PERSON_STEPS;
+            var std = scope === 'person';
+            var who = std ? null : people.filter(function (p) { return p.scope === scope; })[0];
+            var now = std ? (d.person === 20 ? null : d.person) : (who.own ? who.cap : null);
+            var steps = AI_PERSON_STEPS;
             if (now != null && now > 0 && steps.indexOf(now) < 0) steps = steps.concat([now]).sort(function (x, y) { return x - y; });
-            var first = (who ? 'Same as everyone, ' : 'Standard, ') + std + ' a day';
-            var choices = [['', first], ['0', 'Stopped']].concat(steps.map(function (n) { return [String(n), n + ' a day']; }));
+            var first = std ? '20 a day' : 'Standard, ' + d.person + ' a day';
+            var choices = [['', first], ['0', 'Stopped']].concat(steps.filter(function (n) { return !(std && n === 20); })
+              .map(function (n) { return [String(n), n + ' a day']; }));
             window.ADspaceConfirm.ask({
-              title: team ? 'Daily limit for the whole team' : scope === 'person' ? 'Daily limit for each colleague' : 'Daily limit for ' + who.name,
+              title: std ? 'Standard limit' : 'Limit for ' + who.name,
               go: 'Save',
               field: { label: 'Drafts a day', choices: choices, value: now == null ? '' : String(now) }
             }, function (v) {

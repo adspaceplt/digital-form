@@ -9747,15 +9747,22 @@ body.is-maint { overflow: hidden; }
    colleague's drafts and allowance. Desk: who, the last 24 hours, the last
    30 days, the allowance and Change; narrow: who over one mute line of the
    same figures, Change at the right edge. */
+.aiu-reset { margin: 0 0 12px; color: var(--ink-mute); font-size: 13px; }
 .aiu-list { display: grid; }
-.aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .aiu-row:first-child { border-top: 0; padding-top: 0; }
+.aiu-row.is-sum .aiu-name b { font-size: 15px; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
+.aiu-name b { font-weight: 600; }
 .aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
-.aiu-cap { white-space: nowrap; color: var(--ink-mute); margin-right: -8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.aiu-cap { white-space: nowrap; color: var(--ink-soft); margin-right: -8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.aiu-cap.is-sum { margin-right: 0; font-weight: 600; color: var(--ink); }
 .aiu-cap.is-own { color: var(--ink); font-weight: 600; }
 .aiu-cap.is-stopped { color: var(--warn); font-weight: 600; }
 .aiu-cap svg { width: 14px; height: 14px; }
+.aiu-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+.aiu-bar > i { display: block; height: 100%; width: var(--p, 0%); background: var(--fill); border-radius: inherit; }
+.aiu-bar.is-full > i { background: var(--warn-solid); }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */

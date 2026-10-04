@@ -2043,13 +2043,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
     one draft and drafting it again is an admin's (`team_members.is_admin`;
-    `redraft`), to 5 a report in 24 hours, both counted by subject (the
+    `redraft`), to 5 a report a day, both counted by subject (the
     report, or any of the same client and kind whose period shares a day
     with it, deleted or not: `ai_drafts` keeps client, kind and period,
-    `2026-10-04-ai-draft-subject.sql`); 20 a colleague and 60 the team in
-    24 hours unless an admin set otherwise (`ai_draft_limits`: `team`,
-    `person`, or a colleague's id; null is the default, 0 stops it, refused
-    `stopped`; `2026-10-04-ai-draft-allowances.sql`); a failed press is
+    `2026-10-04-ai-draft-subject.sql`); 20 a colleague a day, a day counted from 12:00 am MYT and reset each midnight
+    (`ai_draft_day()`, `2026-10-04-ai-draft-daily-reset.sql`), unless an
+    admin set otherwise (`ai_draft_limits`: `person`, the standard, or a
+    colleague's id; null is the standard, 0 stops it, refused `stopped`).
+    There is no team cap: the team's and a group's totals are their
+    colleagues' limits added up (`team` refused `bad-scope`); a failed press is
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
@@ -2058,15 +2060,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
     the line under it says why and when the next is free.
   - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
-    `ai_draft_usage()`), in plain figures (the user, 2026-10-04): Used today,
-    one line each, used over the day's limit (`1/60` Whole team, then every
-    colleague who may draft or drafted in 30 days, `0/20`, most used
-    first); then Standard limit (Each colleague, `20 a day`). The figure is
-    the line's one control (a `.linkbtn` with the pen; ink where set for
-    that colleague, warn when Stopped), asking Same as everyone / Standard,
-    Stopped or a number through `ai_draft_set_limit`, filed `team.changed`
-    under Draft with AI from and to. Never "Default", never a column of
-    counts.
+    `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
+    12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
+    when full): Whole team, then each user group with its colleagues, most
+    used first, the totals added up on the page; then Standard limit
+    (`20 a day`). A colleague's figure is the one control (a `.linkbtn`
+    with the pen; ink where set for them, warn when Stopped), asking the
+    standard, Stopped or a number through `ai_draft_set_limit`, filed
+    `team.changed` under Draft with AI from and to. No explanatory lines.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with
