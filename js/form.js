@@ -575,15 +575,22 @@
     pick.tabIndex = -1;
     pick.setAttribute('aria-hidden', 'true');
     pick.setAttribute('data-native', '');
+    /* The day is only read while Safari hands it over; the calendar is put
+       away and the box filled a moment after. Changing the field's type
+       inside Safari's own handing over crashed the page, which Safari then
+       reloaded (the user, 2026-10-04: picking a day for upgrade mode). */
     var take = function () {
       var el = pickFor;
       if (!el) return;
       var iso = VALUE.get.call(pick);
-      shutPick();
-      el.value = iso;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-      el.focus({ preventScroll: true });
+      pickOpen = false;
+      setTimeout(function () {
+        shutPick();
+        el.value = iso;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        el.focus({ preventScroll: true });
+      }, 0);
     };
     pick.addEventListener('change', take);
     document.body.appendChild(pick);

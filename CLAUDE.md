@@ -537,6 +537,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     The calendar is taken down after a day is picked, on a press elsewhere
     and on Escape (`shutPick()`: the hidden field's type cycled), because
     Safari left it over the page once the field it belonged to was gone.
+    A picked day is read in the hidden field's `change` and everything
+    else waits a tick (`setTimeout`): its type changed inside Safari's own
+    change crashed the page, which Safari reloaded.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
     `.pick-room` spacer), and a press that lifted it opens the calendar with
