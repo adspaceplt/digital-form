@@ -1876,7 +1876,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     and Send back, each through the bell and a push opening the report
     (`ops_notifications.report_id`). The step reads "Waiting for {name} to
     confirm."; the list row names the reviewer. A report in review from
-    before keeps the earlier rule. Only the functions set the reviewer.
+    before keeps the earlier rule until Assign reviewer (the same ⋯) names
+    one. Only the functions set the reviewer.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.

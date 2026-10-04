@@ -626,9 +626,10 @@
 
   function moreMenu(r, live) {
     var items = [];
-    if (r.status === 'review' && r.reviewer_id && may('work') &&
-        (r.submitted_by === myId() || r.reviewer_id === myId() || isAdmin())) {
-      items.push('<button class="kmenu-item" type="button" data-a="reassign">Change reviewer</button>');
+    /* A report in review from before reviewers is given one the same way. */
+    if (r.status === 'review' && may('work') &&
+        (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
+      items.push('<button class="kmenu-item" type="button" data-a="reassign">' + (r.reviewer_id ? 'Change reviewer' : 'Assign reviewer') + '</button>');
     }
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
@@ -728,8 +729,9 @@
     });
     on('reassign', function (b) {
       b.closest('.kmenu').hidden = true;
-      pickReviewer(r, null, m, { title: 'Change reviewer?', body: 'The new reviewer is told.', go: 'Change', skip: r.reviewer_id },
-        function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, 'Reviewer changed to ' + nameOf(who) + '.', null, m); });
+      var first = !r.reviewer_id;
+      pickReviewer(r, null, m, { title: first ? 'Assign reviewer?' : 'Change reviewer?', body: 'The reviewer is told.', go: first ? 'Assign' : 'Change', skip: r.reviewer_id },
+        function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, (first ? 'Assigned to ' : 'Reviewer changed to ') + nameOf(who) + '.', null, m); });
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
