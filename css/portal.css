@@ -626,25 +626,19 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
 }
 .copyhead h5 { margin-bottom: 0; flex: 0 1 auto; }
-/* The pen beside Copywriting edits the caption where it is read: the
-   quiet icon button of a record's name, its full target taking a negative
-   block margin so the heading's line keeps the Copy text button's height. */
-.copy-pen {
-  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
-  width: var(--ctl-h); height: var(--ctl-h); padding: 0;
-  margin: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) 0 calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) -10px;
-  border: 0; border-radius: var(--radius-ctl-sm); background: none; color: var(--ink-mute); cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
-}
-.copy-pen svg { width: 15px; height: 15px; }
+/* Edit text and Copy text, one pair of small tonal buttons at the
+   heading's right (the user, 2026-10-04: the pen alone beside the heading
+   was not seen). The pair stays on the heading's line at every width,
+   320 and an iPhone at Display Zoom included (the user, 2026-10-04). */
+.copyhead { gap: 8px; }
+.copyhead h5 { min-width: 0; white-space: nowrap; }
+.copyacts { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 5px; }
 .copy-pen[hidden] { display: none; }
-@media (hover: hover) { .copy-pen:hover { background: var(--line-soft); color: var(--ink); } }
-.copy-pen:active { transform: scale(.97); }
 .copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
 .copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
 .copytext { white-space: pre-wrap; color: var(--ink-soft); font-size: 13.5px; }
 .copytext + h5 { margin-top: 16px; }
-.copy-btn { flex: 0 0 auto; min-width: 0; margin-left: auto; }
 
 /* ---------- Approval ---------- */
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
@@ -799,7 +793,10 @@ a { color: inherit; }
 
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
-.changebox .textarea { min-height: 74px; font-size: 13px; }
+.changebox .textarea { min-height: 74px; font-size: 13px; resize: vertical; overflow-y: auto; }
+/* The note being edited is the request; the standing one steps away until
+   it is sent or the request is left. */
+.approve.is-requesting .approve-note { display: none; }
 /* The name the change request is recorded under. It sits in the box rather
    than growing out of Approve, because by the time this is on screen the box
    is already open and the button is on the row behind it: the same question
@@ -1756,7 +1753,11 @@ a { color: inherit; }
 .dangerrow { display: flex; gap: 10px; align-items: center; }
 
 .saved.is-editing { align-items: flex-start; background: var(--sunk); }
-.saved.is-editing .saved-body { gap: 10px; }
+/* Every field and the action pair run the body's width, so the captions,
+   the file and Cancel / Save share one right edge (the user, 2026-10-04:
+   the pair sat small at the left and the file ran past the captions). */
+.saved.is-editing .saved-body { gap: 10px; align-items: stretch; }
+.saved.is-editing .saved-body > .changebox-actions { margin-top: 2px; }
 .saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
 
 /* Cover image is an asset, not a post, so it gets a neutral frame. It has no
@@ -9450,7 +9451,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .saved-kept-t { color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-narrow .saved-kept-row { grid-template-columns: auto minmax(0, 1fr); }
 .is-narrow .saved-kept-row .plink { grid-column: 1 / -1; justify-self: start; }
-.saved-file { display: grid; gap: 5px; width: 100%; margin-top: 4px; }
+.saved-file { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; width: 100%; margin-top: 4px; }
+.saved-file > .input { width: 100%; min-width: 0; }
 .saved-file > span { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 
 /* On a phone the stage strip is the column's (the card's) width, its four

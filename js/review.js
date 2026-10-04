@@ -293,12 +293,14 @@
       copy.innerHTML =
         '<div class="copyhead">' +
           '<h5>Copywriting</h5>' +
-          /* The pen beside the heading edits the caption where it is read;
-             the edit goes with Request changes as a suggestion the team
-             accepts (the user, 2026-09-30: "why not just build a pen beside
-             the copywriting to edit directly"). */
+          /* Edit text and Copy text are one pair at the heading's right,
+             each a small tonal button with its glyph: the pen alone beside
+             the heading went unnoticed (the user, 2026-10-04). Edit text
+             opens each caption as a field in place, and the edit goes with
+             Request changes as a suggestion the team accepts. */
+          '<div class="copyacts">' +
           ((post.caption || post.caption_zh)
-            ? '<button class="copy-pen" type="button" aria-label="Edit caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>' : '') +
+            ? '<button class="btn btn-sm copy-pen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg><span>Edit text</span></button>' : '') +
           /* The portal's small tonal button with the copy mark: it was
              the one outlined button left, and read "a little huge" at a
              full control's height (the user, 2026-09-30). */
@@ -306,6 +308,7 @@
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
             '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>' +
             '<span>Copy text</span></button>' +
+          '</div>' +
         '</div>' +
         html +
         '<button class="copy-more" type="button" hidden>Show full caption</button>';
@@ -342,6 +345,7 @@
           area.value = mine != null ? mine : (post[f] || '');
           t.hidden = true;
           t.parentNode.insertBefore(area, t.nextSibling);
+          grow(area);
         });
         var pen = copy.querySelector('.copy-pen');
         if (pen) pen.hidden = true;
@@ -536,6 +540,19 @@
     if (e.key === 'ArrowRight') stepCanvas(1);
   });
 
+  /* A request or a caption being written grows with its words, up to most
+     of the screen, then scrolls (the user, 2026-10-04: a long request sat in
+     two lines). Measured only while it is on the page. */
+  function grow(t) {
+    if (!t || !t.offsetParent) return;
+    t.style.height = 'auto';
+    t.style.height = Math.min(t.scrollHeight + 2, Math.round(window.innerHeight * 0.6)) + 'px';
+  }
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.matches && t.matches('.changebox .textarea, .copyfield')) grow(t);
+  });
+
   function approvalBlock(post, badge, copyBlock) {
     var wrap = document.createElement('div');
     wrap.className = 'approve';
@@ -587,7 +604,12 @@
     function openBox(on) {
       box.classList.toggle('is-open', on);
       wrap.classList.toggle('is-requesting', on);
+      if (on) grow(textarea);
     }
+    /* Leaving the request, or a refusal's line, puts back the line that
+       says where the post stands: Cancel after Edit request had blanked
+       "Changes requested by … on …" (the user, 2026-10-04). */
+    function restore() { paintDecision(post.review, badge, wrap); }
     /* Approving over a request still standing withdraws it, so it asks in
        place first: the first press arms (Approve as it is, and the line
        says what goes), the second approves (the user, 2026-10-01). */
@@ -595,7 +617,7 @@
       if (!approveBtn.classList.contains('is-armed')) return;
       approveBtn.classList.remove('is-armed');
       approveBtn.textContent = 'Approve';
-      say('');
+      restore();
     }
     approveBtn.addEventListener('click', function () {
       openBox(false);
@@ -621,6 +643,7 @@
       var standing = post.review && post.review.decision === 'changes' ? post.review : null;
       if (standing && !box.classList.contains('is-open')) {
         textarea.value = standing.note || '';
+        grow(textarea);
         if (!fromPen && copyBlock && (standing.suggested_caption != null || standing.suggested_caption_zh != null)) copyBlock._start();
       }
       openBox(true);
@@ -629,7 +652,7 @@
     wrap.querySelector('.btn-changes').addEventListener('click', function () { wrap._openChanges(false); });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
       openBox(false);
-      say('');
+      restore();
       if (copyBlock) copyBlock._stop();
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {

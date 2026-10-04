@@ -77,6 +77,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
     frozen copy of HEAD (commit first), so the next change is built while it
     runs. The machine has 4 CPUs and one gate fills them: one gate at a time.
+  - The snapshot is served on 8898 (its suites rewritten to it); 8899 always
+    serves the repo, so a suite run by hand meanwhile tests the live code.
+  - `$OUT` reads `running: <sha>` until the gate ends. A result counts only
+    under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
   - Run only the suites the change touched (the tiers below), before the
@@ -1089,8 +1093,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#postStages`, drawn once a decision exists) opens on Changes requested.
   On a phone the strip is the column's width, its tabs sharing it and
   Changes requested reading Changes (`.tab-short`).
-- The caption is edited where it is read: the pen beside Copywriting
-  (`.copy-pen`, hidden once approved) turns each caption into a field in
+- The caption is edited where it is read: Edit text beside Copy text at
+  the heading's right (`.copyacts`, two small tonal buttons with their
+  glyphs; `.copy-pen` hidden once approved) turns each caption into a field in
   place and opens Request changes under it for a note and the name. While
   a request is open Approve and Request changes step away
   (`.approve.is-requesting`), so Cancel and Send request are the only acts;
@@ -1106,7 +1111,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   standing request arms first in place (Approve as it is, "Approving
   withdraws your request for changes."), and the console keeps the request
   it replaced in sight (Earlier request). The decision pair and the
-  request's Cancel / Send request are equal halves.
+  request's Cancel / Send request are equal halves. While the request is
+  edited its standing note steps away; leaving it (Cancel, or the armed
+  Approve disarming) repaints the decision line, never blanks it. The note
+  and the caption fields grow with their words to 60% of the screen.
 - Confirm internally (`2026-10-01-review-confirm-internally.sql`) is the
   team's approval on the client's word, in a post's ⋯ in the console only
   (Content Review sets at Work, a published set, not already approved):
