@@ -189,6 +189,15 @@
       field.appendChild(lab);
       host.appendChild(field);
       open.slots.push(lift(sel, field));
+      /* A control the page shows or hides while the card is open (My Work's
+         period, drawn once All tasks or Completed is chosen) is shown or
+         hidden in the card too: read once at opening, the period stayed out
+         of sight and All tasks quietly meant this week (the user, 2026-10-04). */
+      if (window.MutationObserver) {
+        var mo = new MutationObserver(function () { field.hidden = sel.hidden; });
+        mo.observe(sel, { attributes: true, attributeFilter: ['hidden'] });
+        open.watch = (open.watch || []).concat(mo);
+      }
     });
     rec.btn.setAttribute('aria-expanded', 'true');
     if (desk) {
@@ -207,6 +216,7 @@
   function shut(stay) {
     if (!open) return;
     var o = open; open = null;
+    (o.watch || []).forEach(function (mo) { mo.disconnect(); });
     o.slots.reverse().forEach(function (s) {
       if (s.slot.parentNode) s.slot.parentNode.replaceChild(s.node, s.slot);
     });

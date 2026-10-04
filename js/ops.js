@@ -506,9 +506,7 @@
            history is too long to hold in the browser, and a search that
            looked only at what happened to be loaded would say "no matches"
            about a task that exists. */
-        (state.filter === 'done' || state.filter === 'all') && state.find
-          ? base().not('completed_at', 'is', null).ilike('title', '%' + state.find.replace(/[%_]/g, '') + '%').limit(200)
-          : Promise.resolve({ data: [] })
+        state.find ? findAny(base(), state.find) : Promise.resolve({ data: [] })
       ]).then(function (r) {
         if (r[0] && r[0].error) {
           state.err = r[0].error;
@@ -686,6 +684,20 @@
     if (state.period === 'h') return new Date(d.getFullYear(), d.getMonth() - 5, 1);
     if (state.period === 'year') return new Date(d.getFullYear(), 0, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  /* A SEARCH FINDS ANY TASK (the user, 2026-10-04: a finished task from
+     last month could only be found by setting three controls). Whatever is
+     typed is asked of every task the colleague may see, open or finished,
+     any month: by its title, code or description, and by its number typed
+     as #WT00001, WT1 or 1. The page's own filters and Whose work do not
+     narrow a search. */
+  function findAny(q, text) {
+    var v = String(text || '').replace(/["\\%*,()]/g, '').trim();
+    if (!v) return Promise.resolve({ data: [] });
+    var ors = ['title.ilike."%' + v + '%"', 'code.ilike."%' + v + '%"', 'content_desc.ilike."%' + v + '%"'];
+    var n = /^#?(?:wt)?0*(\d{1,7})$/i.exec(v.replace(/\s+/g, ''));
+    if (n) ors.push('task_no.eq.' + Number(n[1]));
+    return q.or(ors.join(',')).limit(200);
   }
   function periodEnd() {
     var d = new Date();
@@ -914,7 +926,7 @@
        counting it as `5 of 6` would print a fraction on a screen nobody has
        filtered. The search is the narrowing, and it is what puts "of" on. */
     var all = state.tasks.filter(function (t) { return inFilter(t) && inScope(t); });
-    var rows = all.filter(matches);
+    var rows = state.find ? state.tasks.filter(matches) : all;
     /* The board's workflow select is filled from the catalogue whether or not
        there is anything to draw: with no tasks the paint stopped at the empty
        line below and the select stood where Group by had been with nothing in
@@ -922,12 +934,27 @@
     if (state.view === 'board') boardWorkflow(all);
     var count = $('workCount');
     if (count) {
-      count.textContent = !all.length ? ''
-        : rows.length === all.length ? all.length + (all.length === 1 ? ' task' : ' tasks')
-        : rows.length + ' of ' + all.length;
+      count.textContent = state.find ? (rows.length ? rows.length + ' found' : '')
+        : !all.length ? ''
+        : all.length + (all.length === 1 ? ' task' : ' tasks');
     }
-    if (!all.length) {
-      UI.emptyLine(box, state.filter === 'day' ? 'No open tasks on your list.' : 'No tasks.', may('ops', 'work') ? 'Add a task' : '', function () { openQuick(); });
+    if (!all.length && !state.find) {
+      /* An empty list says what it is holding back: finished work outside
+         the view, one press away (the user, 2026-10-04). */
+      var done = state.filter === 'done' || state.filter === 'all';
+      UI.emptyLine(box,
+        done ? 'No completed tasks.' : 'No open tasks.',
+        done ? (state.period === 'year' ? '' : 'Show this year') : 'Show completed',
+        function () {
+          if (!done) {
+            state.filter = 'done';
+            if ($('workStage')) { $('workStage').value = 'done'; if (window.ADspaceForm) window.ADspaceForm.paint($('workStage')); }
+          } else {
+            state.period = 'year';
+          }
+          showPeriod();
+          load();
+        });
       state.shown = [];
       paintUndone();
       paintBulk();
@@ -6972,12 +6999,10 @@
         if (v === state.find) return;
         state.find = v;
         paint();
-        /* Completed work is searched in the database, after a pause, so a
+        /* Every task is searched in the database, after a pause, so a
            search across a year of history does not ask on every keystroke. */
-        if (state.filter === 'done' || state.filter === 'all') {
-          clearTimeout(findWait);
-          findWait = setTimeout(load, 350);
-        }
+        clearTimeout(findWait);
+        findWait = setTimeout(load, 350);
       });
     }
     var st = $('workStage');
@@ -7621,6 +7646,9 @@
     var on = state.view === 'report' || state.filter === 'done' || state.filter === 'all';
     if (pd) {
       pd.hidden = !on;
+      /* Its name says what it bounds: on the queue, finished work by when it
+         was finished (Completed, This month); on the report, the window. */
+      pd.setAttribute('aria-label', state.view === 'report' ? 'Period' : 'Completed');
       /* The select says the window the figures are taken over: it opened on
          its first option while the report read the month. */
       if (pd.value !== (state.period || 'month')) { pd.value = state.period || 'month'; if (window.ADspaceForm) window.ADspaceForm.paint(pd); }

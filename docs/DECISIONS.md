@@ -900,3 +900,6 @@ The user's iPhone: the draft's language segment sat between "5 left" and Write d
 
 ### 2026-10-04 · A phone's empty month
 The user: My Work's Calendar was missing. On a phone the calendar is a list of the days that hold work, and with the test tasks deleted October held none, so nothing drew under the month's bar. A month with no work now says "No tasks this month." on a phone; the desk's grid already showed the empty month.
+
+### 2026-10-04 · Finding a finished task took three controls
+The user could not find #WT00001 (finished 27 Sept) as an admin until they set Whose work, the view and the period, and even All tasks showed nothing. Two faults: the period, which bounds finished work, was drawn only after the Filters card was shut and opened again, so All tasks quietly meant this week; and a search looked only at what the view had loaded. Now a search asks the database for any task the colleague may see, by title, code, description or number; the open card follows a control the page shows or hides; the period is named Completed; and an empty list says what it holds back in a few words (No open tasks. Show completed). The user asked for short copy without interpuncts.

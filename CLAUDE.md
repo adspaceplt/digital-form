@@ -469,6 +469,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     can be pressed.
   - The Filters sheet focuses its card, never a select (a focused select wears
     the ring, and iOS does not open a select that already has focus).
+  - A select the page shows or hides while the card or sheet is open is
+    shown or hidden there at once (a `MutationObserver` on its `hidden`).
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
@@ -1449,7 +1451,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Group by day / stage / status / Task Owner / client / engagement; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).
-  - A search opens every card; a stage filter does not.
+  - A search opens every card; a stage filter does not. A search finds any
+    task the colleague may see, open or finished, any month, by title, code,
+    description or number (`#WT00001`, `WT1`, `1`; `findAny`); the view,
+    Whose work and the period do not narrow it.
+  - The period draws only while finished work is listed and is named
+    Completed (This week … This year).
+  - An empty list says what it holds back: No open tasks. (Show completed),
+    No completed tasks. (Show this year).
   - Whose work (`#workScope`) is a view, not a filter; The whole team only with
     `ops.all`.
   - Mine keys on the owner's id, never their name.
