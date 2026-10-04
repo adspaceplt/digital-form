@@ -9747,21 +9747,17 @@ body.is-maint { overflow: hidden; }
    colleague's drafts and allowance. Desk: who, the last 24 hours, the last
    30 days, the allowance and Change; narrow: who over one mute line of the
    same figures, Change at the right edge. */
-.aiu-row { grid-template-columns: minmax(0, 1fr) 72px 72px 104px 92px; align-items: center; }
+.aiu-tally { margin-bottom: 12px; }
+.aiu-list { display: grid; }
+.aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.aiu-row:first-child { border-top: 0; padding-top: 0; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
-.aiu-name small { color: var(--ink-mute); font-size: 12px; }
-.aiu-n { font-variant-numeric: tabular-nums; }
-.aiu-meta { display: none; }
-.aiu-act { display: flex; justify-content: flex-end; }
-.is-narrow .aiu-row.crm-head { display: none; }
-.is-narrow .aiu-row {
-  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "meta act";
-  gap: 4px 12px; padding: 12px 15px; align-items: start;
-}
-.is-narrow .aiu-row > .aiu-name { grid-area: name; }
-.is-narrow .aiu-row > .aiu-meta { grid-area: meta; display: block; color: var(--ink-mute); font-size: 12.5px; }
-.is-narrow .aiu-row > .aiu-act { grid-area: act; }
-.is-narrow .aiu-row > .aiu-day, .is-narrow .aiu-row > .aiu-month, .is-narrow .aiu-row > .aiu-cap { display: none; }
+.aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
+.aiu-meta { color: var(--ink-mute); font-size: 12.5px; }
+.aiu-cap { white-space: nowrap; color: var(--ink-mute); margin-right: -8px; }
+.aiu-cap.is-own { color: var(--ink); font-weight: 600; }
+.aiu-cap.is-stopped { color: var(--warn); font-weight: 600; }
+.aiu-cap svg { width: 14px; height: 14px; }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */

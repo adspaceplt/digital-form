@@ -3022,28 +3022,21 @@
   }
 
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
-  /* Each colleague who may draft (or drafted in the last 30 days), their
-     drafts in the last 24 hours and 30 days, and the day's allowance, which
-     an admin changes: the team's, each colleague's, or one colleague's;
-     Stopped turns it off. Read again on every open. */
+  /* Plain reading (the user, 2026-10-04: "so confusing"): the team's use at
+     the top, the two daily limits, then each colleague's use, most first.
+     The limit is the one control on a line, written as what it is ("20 a
+     day"); a colleague's own limit reads in ink, the shared one mute.
+     Read again on every open. */
   var AI_PERSON_STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50];
   var AI_TEAM_STEPS = [10, 20, 30, 40, 60, 80, 100, 150, 200];
-  function aiCap(own, dflt) {
-    if (own === 0) return '<span class="chip is-warn">Stopped</span>';
-    return own == null ? 'Default, ' + dflt : own + ' a day';
-  }
+  function aiLimitWord(n) { return n === 0 ? 'Stopped' : 'Limit ' + n + ' a day'; }
   function aiUseRow(o) {
-    return '<div class="crm-row aiu-row" data-scope="' + esc(o.scope) + '">' +
-      '<div class="aiu-name"><b>' + esc(o.name) + '</b>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>' +
-      '<div class="aiu-n aiu-day">' + (o.day == null ? '—' : fmt(o.day)) + '</div>' +
-      '<div class="aiu-n aiu-month">' + (o.month == null ? '—' : fmt(o.month)) + '</div>' +
-      '<div class="aiu-cap">' + o.cap + '</div>' +
-      '<div class="aiu-meta">' + o.meta + '</div>' +
-      '<div class="aiu-act"><button class="btn btn-sm" type="button" data-a="cap" aria-label="Change allowance for ' + esc(o.name) + '">' + PEN_MARK + 'Change</button></div>' +
+    return '<div class="aiu-row" data-scope="' + esc(o.scope) + '">' +
+      '<div class="aiu-name"><b>' + esc(o.name) + (o.code ? ' <span class="aiu-code">' + esc(o.code) + '</span>' : '') + '</b>' +
+        (o.meta ? '<small class="aiu-meta">' + esc(o.meta) + '</small>' : '') + '</div>' +
+      '<button class="linkbtn aiu-cap' + (o.own ? ' is-own' : '') + (o.limit === 0 ? ' is-stopped' : '') + '" type="button" data-a="cap"' +
+        ' aria-label="Daily limit for ' + esc(o.name) + ': ' + esc(aiLimitWord(o.limit)) + '">' + esc(aiLimitWord(o.limit)) + PEN_MARK + '</button>' +
     '</div>';
-  }
-  function aiUseHead(first) {
-    return '<div class="crm-row crm-head aiu-row"><div>' + first + '</div><div>24 hours</div><div>30 days</div><div>A day</div><div class="aiu-meta"></div><div class="aiu-act"></div></div>';
   }
   function aiUseSheet(opener) {
     var box = sheetShell('rpAiUseSheet', 'Draft with AI usage',
@@ -3059,45 +3052,49 @@
           UI.failLine(host, 'Draft with AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
           return;
         }
-        var people = d.people || [];
-        var times = function (n, w) { return fmt(n) + ' ' + w; };
+        var people = (d.people || []).slice().sort(function (x, y) {
+          return (y.month || 0) - (x.month || 0) || String(x.name).localeCompare(String(y.name));
+        });
+        var cell = function (label, value) { return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>'; };
+        var used = function (p) {
+          if (!p.month) return 'Not used';
+          return 'Used ' + fmt(p.month) + ' in 30 days' + (p.day ? ', ' + fmt(p.day) + ' today' : '');
+        };
         host.innerHTML =
-          '<section class="fsec"><h4 class="fsec-h">Team</h4><div class="crm-table softpanel">' + aiUseHead('Applies to') +
-            aiUseRow({ scope: 'team', name: 'Team', day: d.team_day, month: d.team_month, cap: aiCap(d.team === 60 ? null : d.team, 60),
-                       meta: times(d.team_day, 'today') + ' · ' + times(d.team_month, 'in 30 days') + ' · ' + aiCap(d.team === 60 ? null : d.team, 60) }) +
-            aiUseRow({ scope: 'person', name: 'Each colleague', day: null, month: null, cap: aiCap(d.person === 20 ? null : d.person, 20),
-                       meta: aiCap(d.person === 20 ? null : d.person, 20) }) +
+          '<div class="tallies aiu-tally"><div class="tallygroup"><div class="tally">' +
+            cell('Used today', fmt(d.team_day || 0)) + cell('Used in 30 days', fmt(d.team_month || 0)) +
+          '</div></div></div>' +
+          '<section class="fsec"><h4 class="fsec-h">Daily limits</h4><div class="aiu-list">' +
+            aiUseRow({ scope: 'team', name: 'Whole team', limit: d.team, own: d.team !== 60 }) +
+            aiUseRow({ scope: 'person', name: 'Each colleague', limit: d.person, own: d.person !== 20 }) +
           '</div></section>' +
           '<section class="fsec"><h4 class="fsec-h">Colleagues</h4>' + (people.length
-            ? '<div class="crm-table softpanel">' + aiUseHead('Colleague') + people.map(function (p) {
-                var sub = [p.code, p.group, p.last ? 'Last ' + stampWord(p.last) : '', p.failed ? plural(p.failed, 'failed') : ''].filter(Boolean).join(' · ');
-                return aiUseRow({ scope: p.id, name: p.name, sub: sub, day: p.day, month: p.month, cap: aiCap(p.limit, d.person),
-                                  meta: times(p.day, 'today') + ' · ' + times(p.month, 'in 30 days') + ' · ' + aiCap(p.limit, d.person) });
+            ? '<div class="aiu-list">' + people.map(function (p) {
+                return aiUseRow({ scope: p.id, name: p.name, code: p.code, meta: used(p),
+                                  limit: p.limit == null ? d.person : p.limit, own: p.limit != null });
               }).join('') + '</div>'
             : '<p class="empty">No entries.</p>') + '</section>';
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
         Array.prototype.forEach.call(host.querySelectorAll('[data-a="cap"]'), function (b) {
           b.addEventListener('click', function () {
             var scope = b.closest('.aiu-row').getAttribute('data-scope');
-            var who = scope === 'team' ? null : scope === 'person' ? null : people.filter(function (p) { return p.id === scope; })[0];
+            var who = scope === 'team' || scope === 'person' ? null : people.filter(function (p) { return p.id === scope; })[0];
             var team = scope === 'team';
-            var dflt = team ? 60 : scope === 'person' ? 20 : d.person;
+            var std = team ? 60 : scope === 'person' ? 20 : d.person;
             var now = team ? (d.team === 60 ? null : d.team) : scope === 'person' ? (d.person === 20 ? null : d.person) : who.limit;
             var steps = team ? AI_TEAM_STEPS : AI_PERSON_STEPS;
             if (now != null && now > 0 && steps.indexOf(now) < 0) steps = steps.concat([now]).sort(function (x, y) { return x - y; });
-            var choices = [['', 'Default, ' + dflt + ' a day'], ['0', 'Stopped']].concat(steps.map(function (n) { return [String(n), n + ' a day']; }));
+            var first = (who ? 'Same as everyone, ' : 'Standard, ') + std + ' a day';
+            var choices = [['', first], ['0', 'Stopped']].concat(steps.map(function (n) { return [String(n), n + ' a day']; }));
             window.ADspaceConfirm.ask({
-              title: team ? 'Team allowance' : scope === 'person' ? 'Each colleague\'s allowance' : 'Allowance for ' + who.name,
-              body: team ? 'Drafts the whole team may take in 24 hours.'
-                : scope === 'person' ? 'Drafts each colleague may take in 24 hours, unless set for them.'
-                : 'Drafts ' + who.name + ' may take in 24 hours.',
+              title: team ? 'Daily limit for the whole team' : scope === 'person' ? 'Daily limit for each colleague' : 'Daily limit for ' + who.name,
               go: 'Save',
               field: { label: 'Drafts a day', choices: choices, value: now == null ? '' : String(now) }
             }, function (v) {
               var daily = v === '' || v == null ? null : Number(v);
               db.rpc('ai_draft_set_limit', { p_scope: scope, p_daily: daily }).then(function (res) {
                 var out = res.data || {};
-                if (res.error || out.error) { say(m, res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'An allowance is 0 to 500 a day.' : said(out.error), 'err'); return; }
+                if (res.error || out.error) { say(m, res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'A limit is 0 to 500 a day.' : said(out.error), 'err'); return; }
                 say(m, 'Saved.', 'ok');
                 paint();
               }).catch(function (e) { say(m, said(e), 'err'); });
