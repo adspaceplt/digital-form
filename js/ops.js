@@ -506,9 +506,7 @@
            history is too long to hold in the browser, and a search that
            looked only at what happened to be loaded would say "no matches"
            about a task that exists. */
-        (state.filter === 'done' || state.filter === 'all') && state.find
-          ? base().not('completed_at', 'is', null).ilike('title', '%' + state.find.replace(/[%_]/g, '') + '%').limit(200)
-          : Promise.resolve({ data: [] })
+        state.find ? findAny(base(), state.find) : Promise.resolve({ data: [] })
       ]).then(function (r) {
         if (r[0] && r[0].error) {
           state.err = r[0].error;
@@ -538,12 +536,7 @@
           state.tasks = tasks;
           state.owners = {};
           state.ownerIds = {};
-          state.onTask = {};
           q[0].data.forEach(function (a) {
-            /* Following is being on the task in any other capacity than
-               owning it: a reviewer or a contributor is somebody the task's
-               changes concern without the task being theirs to carry. */
-            (state.onTask[a.task_id] = state.onTask[a.task_id] || {})[a.team_member_id] = a.responsibility;
             if (a.responsibility !== 'owner') return;
             state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
             state.ownerIds[a.task_id] = a.team_member_id;
@@ -687,6 +680,20 @@
     if (state.period === 'year') return new Date(d.getFullYear(), 0, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
   }
+  /* A SEARCH FINDS ANY TASK (the user, 2026-10-04: a finished task from
+     last month could only be found by setting three controls). Whatever is
+     typed is asked of every task the colleague may see, open or finished,
+     any month: by its title, code or description, and by its number typed
+     as #WT00001, WT1 or 1. The page's own filters and Whose work do not
+     narrow a search. */
+  function findAny(q, text) {
+    var v = String(text || '').replace(/["\\%*,()]/g, '').trim();
+    if (!v) return Promise.resolve({ data: [] });
+    var ors = ['title.ilike."%' + v + '%"', 'code.ilike."%' + v + '%"', 'content_desc.ilike."%' + v + '%"'];
+    var n = /^#?(?:wt)?0*(\d{1,7})$/i.exec(v.replace(/\s+/g, ''));
+    if (n) ors.push('task_no.eq.' + Number(n[1]));
+    return q.or(ors.join(',')).limit(200);
+  }
   function periodEnd() {
     var d = new Date();
     if (state.period === 'lastmonth') return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -811,39 +818,16 @@
     return late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '';
   }
 
-  /* THE VIEW: the question a person is asking of their work. My day is the
-     whole of it in the order above; the day views narrow it by date, and the
-     stage views are the ones My Work was published with, keyed on the stage
-     group the workflow carries, because two workflows name the same stage
-     differently. */
+  /* WHAT IS SHOWN: open work, finished work, or both. Open is the day's
+     queue (finished today stays in its shut band). Where a task has got to
+     is the grouping's question (By stage, By status), never a second filter
+     saying it again (the user, 2026-10-04). */
   function inFilter(t) {
     var f = state.filter || 'day';
-    var fin = isFinished(t), n = daysAway(dueOf(t)), p = plainOf(t);
-    var s = stageOf(t), g = s ? s.stage_group : '';
     if (f === 'all') return true;
+    var fin = isFinished(t);
     if (f === 'done') return fin;
-    if (f === 'day') return fin ? doneToday(t) : true;
-    if (fin) return false;
-    if (f === 'today') return n !== null && n <= 0;
-    if (f === 'overdue') return n !== null && n < 0;
-    /* Owed within the week and not already over: overdue is its own answer. */
-    if (f === 'soon') return n !== null && n >= 0 && n <= 7;
-    if (f === 'upcoming') return n === null || n > 0;
-    /* The work in hand, on either word a workflow uses for it: the stage's
-       own flag, or its group. */
-    if (f === 'active') return Boolean(s && (s.is_active_work || isWork(g)));
-    if (f === 'internal_review') return g === 'internal_review';
-    if (f === 'client_review') return g === 'client_review';
-    /* With the client for a decision, or held because they have not
-       answered. */
-    if (f === 'waiting_client') return g === 'client_review' || (t.stage_key === 'blocked' && t.blocked_category === 'client');
-    /* Everything after the client said yes: approved, scheduled, live and
-       under review for how it performed. */
-    if (f === 'after') return g === 'approved' || g === 'scheduled' || g === 'live' || g === 'performance';
-    if (f === 'waiting') return g === 'waiting' || g === 'kiv' || t.stage_key === 'blocked';
-    if (f === 'review') return p === 'review';
-    if (f === 'late') return isLate(t);
-    return true;
+    return fin ? doneToday(t) : true;
   }
   function inScope(t) {
     if (state.scope === 'all') return true;
@@ -854,12 +838,6 @@
        Keyed on the id and not the name: two colleagues can share a first
        name, and a rename would quietly empty somebody's queue. */
     if (state.scope === 'created') return t.created_by === me.id;
-    /* Following is being on the task as its reviewer or a contributor: the
-       work is not yours to carry, and its changes still concern you. */
-    if (state.scope === 'following') {
-      var role = state.onTask && state.onTask[t.id] && state.onTask[t.id][me.id];
-      return Boolean(role && role !== 'owner');
-    }
     return state.ownerIds[t.id] === me.id;
   }
   function matches(t) {
@@ -914,7 +892,7 @@
        counting it as `5 of 6` would print a fraction on a screen nobody has
        filtered. The search is the narrowing, and it is what puts "of" on. */
     var all = state.tasks.filter(function (t) { return inFilter(t) && inScope(t); });
-    var rows = all.filter(matches);
+    var rows = state.find ? state.tasks.filter(matches) : all;
     /* The board's workflow select is filled from the catalogue whether or not
        there is anything to draw: with no tasks the paint stopped at the empty
        line below and the select stood where Group by had been with nothing in
@@ -922,28 +900,42 @@
     if (state.view === 'board') boardWorkflow(all);
     var count = $('workCount');
     if (count) {
-      count.textContent = !all.length ? ''
-        : rows.length === all.length ? all.length + (all.length === 1 ? ' task' : ' tasks')
-        : rows.length + ' of ' + all.length;
+      count.textContent = state.find ? (rows.length ? rows.length + ' found' : '')
+        : !all.length ? ''
+        : all.length + (all.length === 1 ? ' task' : ' tasks');
     }
-    if (!all.length) {
-      UI.emptyLine(box, state.filter === 'day' ? 'No open tasks on your list.' : 'No tasks.', may('ops', 'work') ? 'Add a task' : '', function () { openQuick(); });
+    if (!all.length && !state.find) {
+      /* An empty list says what it is holding back: finished work outside
+         the view, one press away (the user, 2026-10-04). */
+      var done = state.filter === 'done' || state.filter === 'all';
+      UI.emptyLine(box,
+        state.filter === 'all' ? 'No tasks.' : done ? 'No completed tasks.' : 'No open tasks.',
+        done ? (state.period === 'year' ? '' : 'Show this year') : 'Show completed',
+        function () {
+          if (!done) {
+            state.filter = 'done';
+            if ($('workStage')) { $('workStage').value = 'done'; if (window.ADspaceForm) window.ADspaceForm.paint($('workStage')); }
+          } else {
+            state.period = 'year';
+          }
+          showPeriod();
+          load();
+        });
       state.shown = [];
       paintUndone();
       paintBulk();
       return;
     }
     if (!rows.length) {
-      /* Back to the view this route opens on, and no further: whose queue you
-         are looking at is not a filter, so clearing the filters does not put
-         somebody back on their own work without being asked. */
+      /* Back to open work, and no further: whose queue you are looking at
+         and how it is grouped are views, not filters. */
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        state.find = ''; state.filter = 'day'; state.group = 'due';
+        var was = state.filter !== 'day';
+        state.find = ''; state.filter = 'day';
         if ($('workFind')) $('workFind').value = '';
-        if ($('workStage')) $('workStage').value = 'day';
-        if ($('workGroup')) $('workGroup').value = 'due';
+        if ($('workStage')) { $('workStage').value = 'day'; if (window.ADspaceForm) window.ADspaceForm.paint($('workStage')); }
         showPeriod();
-        paint();
+        if (was) load(); else paint();
       });
       state.shown = [];
       state.picked = {};
@@ -1825,9 +1817,11 @@
     var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
       return '<div class="cal-dow">' + d + '</div>';
     }).join('');
+    var held = 0;
     for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       var k = d.getTime(), list = byDay[k] || [];
       var out = d.getMonth() !== m.getMonth();
+      if (!out && list.length) held++;
       var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
       var chips = list.slice(0, 3).map(function (x) {
@@ -1842,7 +1836,13 @@
           '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' }).replace(/\bSep\b/, 'Sept')) + '</small></span>' +
         chips + '</div>';
     }
-    box.innerHTML = html + '<div class="cal">' + cells + '</div>';
+    /* On a phone the month is a list of the days that hold work, so a month
+       with none said nothing at all under its bar (the user, 2026-10-04:
+       "the entire calendar is missing"). It says so, with the way to the
+       month that has some. */
+    box.innerHTML = html + '<div class="cal' + (held ? '' : ' is-blank') + '">' + cells + '</div>' +
+      (held ? '' : '<div class="cal-none"></div>');
+    if (!held) UI.emptyLine(box.querySelector('.cal-none'), 'No tasks this month.');
     box.querySelector('[data-cal="prev"]').addEventListener('click', function () {
       state.month = new Date(m.getFullYear(), m.getMonth() - 1, 1); paintCalendar(rows);
     });
@@ -6964,12 +6964,10 @@
         if (v === state.find) return;
         state.find = v;
         paint();
-        /* Completed work is searched in the database, after a pause, so a
+        /* Every task is searched in the database, after a pause, so a
            search across a year of history does not ask on every keystroke. */
-        if (state.filter === 'done' || state.filter === 'all') {
-          clearTimeout(findWait);
-          findWait = setTimeout(load, 350);
-        }
+        clearTimeout(findWait);
+        findWait = setTimeout(load, 350);
       });
     }
     var st = $('workStage');
@@ -7613,6 +7611,9 @@
     var on = state.view === 'report' || state.filter === 'done' || state.filter === 'all';
     if (pd) {
       pd.hidden = !on;
+      /* Its name says what it bounds: on the queue, finished work by when it
+         was finished (Completed, This month); on the report, the window. */
+      pd.setAttribute('aria-label', state.view === 'report' ? 'Period' : 'Completed');
       /* The select says the window the figures are taken over: it opened on
          its first option while the report read the month. */
       if (pd.value !== (state.period || 'month')) { pd.value = state.period || 'month'; if (window.ADspaceForm) window.ADspaceForm.paint(pd); }
@@ -7635,7 +7636,7 @@
       var b = document.querySelector('#workViews [data-view="' + k + '"]');
       if (b) b.hidden = !may('ops.' + k, 'view');
     });
-    /* Assigned, created and following are everybody's views. The whole
+    /* Assigned and created are everybody's views. The whole
        team's queue is offered only where it can arrive: showing it where it
        cannot would offer a view that comes back empty and say nothing. */
     var all = $('workScopeAll');

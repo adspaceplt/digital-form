@@ -350,7 +350,7 @@
     db.from('team_members').select('*').eq('active', true).order('name').then(function (r) {
       state.team = (r.data) || [];
       peopleSelect($('crmOwnerPick'), state.team);
-      fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'Everyone');
+      fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'All people');
       if (then) then();
     }, function () { if (then) then(); });
   }
@@ -3476,7 +3476,7 @@
   function maySvc() { return Boolean(bridge.may && bridge.may('services', 'manage')); }
   /* What is typed in the command bar. Kept out of the URL: a search is what
      somebody is doing this minute, not where they are. */
-  var svcFind = '', svcCat = '';
+  var svcFind = '';
 
   function enterServices() {
     catalog = null;
@@ -3484,7 +3484,7 @@
     shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
-    loadCatalog(function () { fillSvcFilter(); paintCatalog(); });
+    loadCatalog(paintCatalog);
   }
 
   /* Loading is the shape of what is coming, not the word for it: a line of
@@ -3506,27 +3506,9 @@
     ];
   }
 
-  function fillSvcFilter() {
-    var sel = $('svcFilter');
-    if (!sel) return;
-    var rows = catalog || [];
-    var seen = [];
-    svcTiers(rows).forEach(function (t) {
-      t[1].forEach(function (k) {
-        if (seen.indexOf(k) < 0 && rows.some(function (s) { return s.category === k; })) seen.push(k);
-      });
-    });
-    sel.innerHTML = '<option value="">All categories</option>' + seen.map(function (k) {
-      return '<option value="' + esc(k) + '">' + esc(k) + '</option>';
-    }).join('');
-    sel.value = svcCat;
-  }
-
   /* Name, what it includes and the unit: a search on the card is somebody
      looking for a line to quote, and they rarely remember its exact title. */
   function svcMatch(s) {
-    if (!svcCat && !svcFind) return true;
-    if (svcCat && s.category !== svcCat) return false;
     if (!svcFind) return true;
     var hay = [s.name, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
     return hay.indexOf(svcFind) > -1;
@@ -3597,18 +3579,13 @@
   }
 
   function clearSvcFilters() {
-    svcFind = ''; svcCat = '';
+    svcFind = '';
     if ($('svcFind')) $('svcFind').value = '';
-    if ($('svcFilter')) $('svcFilter').value = '';
     paintCatalog();
   }
 
   if ($('svcFind')) $('svcFind').addEventListener('input', function () {
     svcFind = this.value.trim().toLowerCase();
-    paintCatalog();
-  });
-  if ($('svcFilter')) $('svcFilter').addEventListener('change', function () {
-    svcCat = this.value;
     paintCatalog();
   });
   function catalogRow(s) {
@@ -3734,7 +3711,7 @@
   });
 
   // ---- Entry --------------------------------------------------------------
-  fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'Every stage');
+  fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'All stages');
   /* The lead's industry is a stored value, so its unset choice is empty and
      saves as null: the filter idiom's `all` here showed a blank select on a
      new lead and saved "all" as the industry when Not set was picked. */

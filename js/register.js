@@ -100,7 +100,7 @@
   });
 
   // ---- The list ------------------------------------------------------------
-  var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', fam: '', sort: 'newest', err: null };
+  var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', sort: 'newest', err: null };
   var FAMILIES = ['quote_cover', 'offer', 'client', 'hr', 'other'];
   var BAND = {
     quote_cover: 'Quotation Covers', offer: 'Letters of Offer',
@@ -205,7 +205,6 @@
   }
 
   function matches(d) {
-    if (state.fam && d.family !== state.fam) return false;
     if (!state.find) return true;
     var hay = [d.serial, d.kind, brandOf(d), recipientOf(d), (d.recipient || {}).name, d.issued_by].join(' ').toLowerCase();
     return hay.indexOf(state.find) > -1;
@@ -227,9 +226,8 @@
     }
     if (!rows.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        state.find = ''; state.fam = '';
+        state.find = '';
         if ($('regFind')) $('regFind').value = '';
-        if ($('regFam')) $('regFam').value = '';
         paint();
       });
       return;
@@ -392,10 +390,6 @@
     var v = this.value.trim().toLowerCase();
     if (v === state.find) return;
     state.find = v; paint();
-  });
-  if ($('regFam')) $('regFam').addEventListener('change', function () {
-    if (this.value === state.fam) return;
-    state.fam = this.value; paint();
   });
   if ($('regSort')) $('regSort').addEventListener('change', function () {
     if (this.value === state.sort) return;

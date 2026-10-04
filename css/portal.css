@@ -7405,6 +7405,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .cal { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .cal-dow, .is-narrow .cal-day.is-out, .is-narrow .cal-day.is-empty { display: none; }
 .is-narrow .cal-day { min-height: 0; }
+/* A month with no work: the grid says it at a desk; on a phone, where only
+   days with work are listed, the line does. */
+.cal-none { display: none; }
+.is-narrow .cal.is-blank { display: none; }
+.is-narrow .cal-none { display: block; }
 .is-narrow .cal-num small { display: inline; }
 
 /* CAPACITY. The week's recorded hours against each person's capacity: a bar

@@ -463,12 +463,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
     Clear sets `data-default` (else the first option) and fires `change`.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
-    `#workScope`).
+    `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
+    `#regSort`): never counted by the badge, never reset by Clear.
   - A second action goes behind `.cmd-more`; each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed.
   - The Filters sheet focuses its card, never a select (a focused select wears
     the ring, and iOS does not open a select that already has focus).
+  - A select the page shows or hides while the card or sheet is open is
+    shown or hidden there at once (a `MutationObserver` on its `hidden`).
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
@@ -708,6 +711,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Team by user group;
   - the Handbook by category (Archived shut, an admin's alone);
   - My Work by its axis.
+- A filter never repeats the cards' own grouping: no state, kind, group or
+  category filter on a route whose cards are those groups (Creator Campaigns,
+  Documents, Team, Services, Handbook, Short Links). An option for all reads
+  All stages, All people, All platforms, never Every … or Everyone.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
@@ -1439,9 +1446,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     box (`setView` draws a frame after the press).
   - A view without its permission falls back to the list.
 - The list:
-  - My day by default, banded Overdue, Due today, In progress, Ready for
-    review, Upcoming, No due date, Waiting, Completed today (shut).
-  - Views by `stage_group`, never by one workflow's key.
+  - Show (`#workStage`): Open (`day`, the default: banded Overdue, Due
+    today, In progress, Ready for review, Upcoming, No due date, Waiting,
+    Completed today shut), Completed (`done`), All (`all`). Where the work
+    has got to is Group by's question (stage, status), never a Show option.
   - The period select (`#workPeriod`): This week, This month, Last month,
     Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
     now but Last month, which ends where this month begins (`periodEnd()`,
@@ -1449,9 +1457,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Group by day / stage / status / Task Owner / client / engagement; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).
-  - A search opens every card; a stage filter does not.
-  - Whose work (`#workScope`) is a view, not a filter; The whole team only with
-    `ops.all`.
+  - A search opens every card; a stage filter does not. A search finds any
+    task the colleague may see, open or finished, any month, by title, code,
+    description or number (`#WT00001`, `WT1`, `1`; `findAny`); the view,
+    Whose work and the period do not narrow it.
+  - The period draws only while finished work is listed and is named
+    Completed (This week … This year); This month is its default
+    (`data-default`), so it is counted only once moved.
+  - An empty list says what it holds back: No open tasks. (Show completed),
+    No completed tasks. (Show this year).
+  - Whose work (`#workScope`) is a view, not a filter: Assigned to me,
+    Created by me, The whole team (only with `ops.all`). No Following.
+  - Clear the filters returns the search and Show to Open; Whose work and
+    Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
 - The read is bounded, and open work is not part of the bound. Open work is
@@ -1501,7 +1519,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `capacity_minutes_week`.
 - The calendar shows every task on its due date (the stage tone) and its
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
-  its publish date shows once.
+  its publish date shows once. On a phone it lists only the days holding
+  work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
   per browser. A month's ⋯ is Add tasks (the New sheet on that client and

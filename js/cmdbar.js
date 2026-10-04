@@ -63,8 +63,10 @@
     if (sel.hasAttribute('data-default')) return sel.getAttribute('data-default');
     return sel.options.length ? sel.options[0].value : '';
   }
+  /* A view (`data-view`: Group by, Sort) rides in the card beside the
+     filters but narrows nothing, so it is never counted and Clear leaves it. */
   function isOff(sel) {
-    if (sel.hidden || sel.hasAttribute('data-nofilter')) return false;
+    if (sel.hidden || sel.hasAttribute('data-nofilter') || sel.hasAttribute('data-view')) return false;
     return sel.value !== defaultOf(sel);
   }
   function labelOf(sel) {
@@ -189,6 +191,15 @@
       field.appendChild(lab);
       host.appendChild(field);
       open.slots.push(lift(sel, field));
+      /* A control the page shows or hides while the card is open (My Work's
+         period, drawn once All tasks or Completed is chosen) is shown or
+         hidden in the card too: read once at opening, the period stayed out
+         of sight and All tasks quietly meant this week (the user, 2026-10-04). */
+      if (window.MutationObserver) {
+        var mo = new MutationObserver(function () { field.hidden = sel.hidden; });
+        mo.observe(sel, { attributes: true, attributeFilter: ['hidden'] });
+        open.watch = (open.watch || []).concat(mo);
+      }
     });
     rec.btn.setAttribute('aria-expanded', 'true');
     if (desk) {
@@ -207,6 +218,7 @@
   function shut(stay) {
     if (!open) return;
     var o = open; open = null;
+    (o.watch || []).forEach(function (mo) { mo.disconnect(); });
     o.slots.reverse().forEach(function (s) {
       if (s.slot.parentNode) s.slot.parentNode.replaceChild(s.node, s.slot);
     });
@@ -219,7 +231,7 @@
   function clear() {
     if (!open) return;
     liveSelects(open.rec).forEach(function (sel) {
-      if (sel.hidden || sel.hasAttribute('data-nofilter')) return;
+      if (sel.hidden || sel.hasAttribute('data-nofilter') || sel.hasAttribute('data-view')) return;
       var d = defaultOf(sel);
       if (sel.value === d) return;
       sel.value = d;
