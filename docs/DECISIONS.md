@@ -851,3 +851,6 @@ Read through the day's features and checked them against the live data. The upgr
 
 ### 2026-10-04 · A post's edit form runs one width
 On the set page the edit form's body aligned its children to the start, so Cancel and Save sat small at the left (Cancel first, against the action-row law) and the captions kept their intrinsic width while the file field ran the body's width past them (the user's iPhone screenshot). The editing body now stretches every child: the captions, the file and the pair share one right edge, the pair as equal halves with Cancel on the left, as the re-approval note under a post already reads. `tests/revise.js` measures the edges.
+
+### 2026-10-04 · The client's request: Edit text, a growing box, the line kept
+From the user's iPhone: the pen beside Copywriting went unnoticed, so the caption's edit is now Edit text, a small tonal button with the pen beside Copy text. A long request sat in a two-line box; the note and the caption fields now grow with their words to 60% of the screen, then scroll. Cancel after Edit request cleared the decision line ("Changes requested by … on …") because Cancel and the armed Approve's disarm both wrote an empty line; both now repaint the decision as it stands. While a standing request is edited, its note box steps away, so the words are not shown twice.

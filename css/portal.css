@@ -626,25 +626,18 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
 }
 .copyhead h5 { margin-bottom: 0; flex: 0 1 auto; }
-/* The pen beside Copywriting edits the caption where it is read: the
-   quiet icon button of a record's name, its full target taking a negative
-   block margin so the heading's line keeps the Copy text button's height. */
-.copy-pen {
-  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
-  width: var(--ctl-h); height: var(--ctl-h); padding: 0;
-  margin: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) 0 calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) -10px;
-  border: 0; border-radius: var(--radius-ctl-sm); background: none; color: var(--ink-mute); cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
-}
-.copy-pen svg { width: 15px; height: 15px; }
+/* Edit text and Copy text, one pair of small tonal buttons at the
+   heading's right (the user, 2026-10-04: the pen alone beside the heading
+   was not seen). Under a narrow card the pair takes its own line, still at
+   the right edge, rather than squeezing the heading. */
+.copyhead { flex-wrap: wrap; row-gap: 8px; }
+.copyacts { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+.copyacts > .btn { min-width: 0; }
 .copy-pen[hidden] { display: none; }
-@media (hover: hover) { .copy-pen:hover { background: var(--line-soft); color: var(--ink); } }
-.copy-pen:active { transform: scale(.97); }
 .copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
 .copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
 .copytext { white-space: pre-wrap; color: var(--ink-soft); font-size: 13.5px; }
 .copytext + h5 { margin-top: 16px; }
-.copy-btn { flex: 0 0 auto; min-width: 0; margin-left: auto; }
 
 /* ---------- Approval ---------- */
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
@@ -799,7 +792,10 @@ a { color: inherit; }
 
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
-.changebox .textarea { min-height: 74px; font-size: 13px; }
+.changebox .textarea { min-height: 74px; font-size: 13px; resize: vertical; overflow-y: auto; }
+/* The note being edited is the request; the standing one steps away until
+   it is sent or the request is left. */
+.approve.is-requesting .approve-note { display: none; }
 /* The name the change request is recorded under. It sits in the box rather
    than growing out of Approve, because by the time this is on screen the box
    is already open and the button is on the row behind it: the same question
