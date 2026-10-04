@@ -337,7 +337,8 @@
     var cat = $('hbCatPick').value;
     var summary = $('hbSummary').value.trim();
     var isLink = $('hbKind').value === 'link';
-    var link = isLink ? $('hbLink').value.trim() : '';
+    /* The database holds the scheme in lower case (`handbook_docs_link`). */
+    var link = isLink ? $('hbLink').value.trim().replace(/^https:\/\//i, 'https://') : '';
     if (isLink && !/^https:\/\//i.test(link)) { say(m, SAID['bad-link']); $('hbLink').focus(); return; }
     var f = (!d && !isLink) ? $('hbFile').files[0] : null;
     if (!d && !isLink && !fileOk(f, m)) { $('hbFile').focus(); return; }

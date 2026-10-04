@@ -54,6 +54,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - It must never be more generous than PostgREST. It refuses an ambiguous
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, and treats a refused delete as 204 with no error.
+  - It refuses, as PostgREST does, a table, column, function or argument the
+    live database does not hold (PGRST205, PGRST204, PGRST202), from its
+    LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
+    a column or an argument adds it to the map.
   - It can refuse or delay on request: `window.__failRead`, `__slowRead`,
     `__refuseDelete`, `__refuseUpdate`, `__refuseRpc`, `__meet`.
 - Harness facts:
