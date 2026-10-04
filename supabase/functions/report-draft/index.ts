@@ -1,7 +1,7 @@
 /*
  * report-draft — drafts a report's commentary from the report's own figures.
  *
- * Draft with AI on a report's Commentary step (js/reports.js) posts the
+ * Write draft on a report's Commentary step (js/reports.js) posts the
  * report's id here. The function reads the report as the caller, under the
  * caller's own access (a colleague with Reports at Work, the report still a
  * draft), builds a summary of its figures and sends only that to the Claude
@@ -12,6 +12,14 @@
  * billing detail leaves the database. The answer is four fields of text,
  * which the page puts in the fields for the team to edit; nothing is saved
  * here and nothing is published.
+ *
+ * With `mode: 'check'` (Check and submit, 2026-10-04) it reads the
+ * commentary as it stands, drafted or written by hand, against the same
+ * figures, and answers what does not hold: a figure that is not in the
+ * data, a claim the figures contradict, a comparison across result types or
+ * platforms, a word against our own work. The findings and the text read
+ * are kept (`ai_check_done`), so the reviewer sees the same check. A report
+ * in draft or in review may be checked; nothing in it is changed.
  *
  * Secrets: ANTHROPIC_API_KEY and REPORT_DRAFT_MODEL (the model id), set in
  *          the Supabase dashboard (docs/REPORT-DRAFT-SETUP.md), plus the
@@ -129,12 +137,128 @@ posts (one entry for each ref given): remark: one sentence on why the post stood
 FORM
 Posts are named by their title or date as in the data. Numbers with thousands separators. Dates as 12 Sept 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters. When last month's commentary is given, follow up on what it promised.`;
 
+/* The check (the user, 2026-10-04): the commentary read against the
+   figures before it goes for review. Only what is wrong is listed; style is
+   the writer's. */
+const CHECK = `You check the commentary of a monthly social media report that ADspace, a digital marketing agency in Johor Bahru and Singapore, is about to send its client. A colleague wrote it, by hand or from a draft, and reads your findings before submitting it. You are given the report's figures as JSON and the commentary as parts, each with a ref and the place it sits.
+
+LIST ONLY WHAT IS WRONG
+1. A figure that is not in the data or does not match it: a count, an amount, a percentage, a change against the previous period, a currency, a date or period, an ad or post name.
+2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform.
+3. A comparison the figures do not allow: cost per result compared between different result types; platforms ranked against each other or their figures added into one judgement; a post compared with a post on another platform.
+4. A word against our own work: the creatives, copy, content plan and targeting are ours, so calling any of them weak, poor, unclear, ineffective, a mistake or a problem, or blaming them for a result, is a finding.
+Nothing else: never comment on style, tone, length, order or word choice, never on a reason, plan or budget the figures cannot show (the writer may know it), and never on a figure the data does not hold one way or the other. When every part holds, return no findings.
+
+EACH FINDING
+ref: the part it is in. quote: the exact words that are wrong, copied from the part, at most 30 words. issue: one sentence in plain British English naming what the figures show, with the figure. fix: the corrected words, ready to paste in place of the quote, in the part's own language and voice; empty where the words should simply go.
+At most 10 findings, the most serious first. No dashes as punctuation, no emoji.`;
+
 function num(v: unknown): number | null {
   const n = typeof v === 'number' ? v : v == null || v === '' ? NaN : Number(v);
   return Number.isFinite(n) ? n : null;
 }
 /* The team's creator code ending a name (_222) is the team's, never the client's. */
 function adName(s: unknown): string { return String(s ?? '').trim().replace(/[\s_-]+(\d)\1\1$/, ''); }
+
+/* The parts of the commentary as they stand, each with the place a reader
+   finds it: the report's own fields, each platform's block and each top
+   post's remark. The same map is kept with the findings (`basis`), so the
+   page can tell when the commentary has changed since. */
+const LABEL: Record<string, string> = {
+  intro: 'Summary', worked: 'What worked', fix: 'Areas to improve', focus: 'Focus for next month',
+  performed_well: 'Key findings', underperformed: 'Areas to improve', next_actions: 'Next steps'
+};
+const PLAT: [string, string][] = [['summary', 'Summary line'], ['worked', 'What worked'], ['improve', 'Areas to improve'], ['actions', 'Focus for next month']];
+const PLAT_WORD: Record<string, string> = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', rednote: 'rednote' };
+
+// deno-lint-ignore no-explicit-any
+async function runCheck(db: any, id: string, kind: string, r: Record<string, unknown>, data: Record<string, unknown>,
+  mask: (s: string) => string, origin: string | null) {
+  const parts: { ref: string; where: string; text: string }[] = [];
+  const add = (ref: string, where: string, v: unknown) => {
+    const t = String(v ?? '').replace(/\r/g, '').trim();
+    if (t) parts.push({ ref, where, text: t.slice(0, 4000) });
+  };
+  const ins = (r.insights || {}) as Record<string, unknown>;
+  add('intro', 'Summary', r.intro);
+  (kind === 'ads' ? ['worked', 'fix', 'focus'] : ['performed_well', 'underperformed', 'next_actions'])
+    .forEach((k) => add(k, LABEL[k], ins[k]));
+  if (kind !== 'ads') {
+    const pf = await db.from('sm_report_platforms').select('id, platform, group_label, summary, worked, improve, actions').eq('report_id', id).order('position', { ascending: true });
+    const ps = await db.from('sm_report_posts').select('id, title, posted_on, platform_id, notable').eq('report_id', id).not('notable', 'is', null).order('position', { ascending: true });
+    if (pf.error || ps.error) return json({ error: 'not-found' }, 200, origin);
+    const platName: Record<string, string> = {};
+    (pf.data as Record<string, unknown>[]).forEach((p) => {
+      const name = String(p.group_label || PLAT_WORD[String(p.platform)] || p.platform || 'Platform');
+      platName[String(p.id)] = name;
+      PLAT.forEach(([k, w]) => add('p:' + p.id + ':' + k, name + ' · ' + w, p[k]));
+    });
+    (ps.data as Record<string, unknown>[]).forEach((p) => {
+      add('n:' + p.id, (platName[String(p.platform_id)] ? platName[String(p.platform_id)] + ' · ' : '') + 'Top post' +
+        (p.title ? ': ' + String(p.title).slice(0, 60) : p.posted_on ? ', ' + p.posted_on : ''), p.notable);
+    });
+  }
+  if (!parts.length) return json({ error: 'no-text' }, 200, origin);
+  const basis: Record<string, string> = {};
+  parts.forEach((p) => { basis[p.ref] = p.text; });
+
+  const refs = parts.map((p) => p.ref);
+  const str = (d: string) => ({ type: 'string', description: d });
+  const schema = { type: 'object', additionalProperties: false, required: ['findings'], properties: {
+    findings: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['ref', 'quote', 'issue', 'fix'],
+      properties: { ref: { type: 'string', enum: refs }, quote: str('The exact words that are wrong'),
+        issue: str('What the figures show, one sentence'), fix: str('The corrected words, or empty') } } } } };
+
+  const claim = await db.rpc('ai_check_claim', { p_report: id });
+  if (claim.error) return json({ error: 'needs-update' }, 200, origin);
+  const got = (claim.data || {}) as Record<string, unknown>;
+  if (got.error) return json(got, 200, origin);
+  const pressId = String(got.id || '');
+  const done = (ok: boolean, result: unknown) => db.rpc('ai_check_done', { p_id: pressId, p_ok: ok, p_result: result, p_basis: ok ? basis : null })
+    .then(() => null, () => null);
+
+  try {
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const res = await client.messages.create({
+      model: secret('REPORT_DRAFT_MODEL'),
+      max_tokens: 16000,
+      system: CHECK,
+      output_config: { format: { type: 'json_schema', schema } },
+      messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
+        '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
+    } as Anthropic.MessageCreateParamsNonStreaming);
+    if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
+      console.error('report-draft check: answer stopped short', res.stop_reason);
+      await done(false, null);
+      return json({ error: 'ai-incomplete' }, 200, origin);
+    }
+    const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+    let got2: Record<string, unknown> | null = null;
+    try { got2 = JSON.parse(text); } catch { got2 = null; }
+    if (!got2 || !Array.isArray(got2.findings)) { await done(false, null); return json({ error: 'ai-incomplete' }, 200, origin); }
+    const clean = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
+    const findings = (got2.findings as Record<string, unknown>[]).filter((f) => refs.includes(String(f.ref))).slice(0, 10)
+      .map((f) => ({ ref: String(f.ref), where: parts.find((p) => p.ref === String(f.ref))!.where,
+        quote: clean(f.quote, 400), issue: clean(f.issue, 600), fix: clean(f.fix, 1200) }))
+      .filter((f) => f.issue);
+    const result = { findings };
+    await done(true, result);
+    return json({ check: result, basis, left: got.left }, 200, origin);
+  } catch (e) {
+    const err = e as { status?: number; message?: string; error?: { error?: { type?: string; message?: string } } };
+    const status = err.status;
+    const type = err.error?.error?.type || '';
+    const said = err.error?.error?.message || err.message || '';
+    console.error('report-draft check: Claude API refused', status, type, said);
+    await done(false, null);
+    const code = status === 401 || status === 403 ? 'ai-key'
+      : status === 429 || status === 529 ? 'ai-busy'
+      : /credit balance/i.test(said) ? 'ai-credit'
+      : status === 404 || type === 'not_found_error' ? 'ai-model'
+      : 'ai-failed';
+    return json({ error: code }, 200, origin);
+  }
+}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
@@ -146,6 +270,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const id = String(body && body.report_id || '');
+  const check = body && body.mode === 'check';
   /* What the team knows and the figures cannot show: reasons, changes made,
      the goal, next month's budget. Typed on the page, never stored. */
   /* The language the client reads: English, or Chinese written as Chinese. */
@@ -165,11 +290,13 @@ Deno.serve(async (req) => {
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
 
   const rep = await db.from('sm_reports')
-    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id')
+    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id, intro, insights')
     .eq('id', id).maybeSingle();
   if (rep.error || !rep.data) return json({ error: 'not-found' }, 200, origin);
   const r = rep.data as Record<string, unknown>;
-  if (r.status !== 'draft') return json({ error: 'not-draft' }, 200, origin);
+  if (check ? r.status !== 'draft' && r.status !== 'review' : r.status !== 'draft') {
+    return json({ error: check ? 'not-open' : 'not-draft' }, 200, origin);
+  }
   const kind = r.kind === 'ads' ? 'ads' : 'social';
 
 
@@ -189,7 +316,7 @@ Deno.serve(async (req) => {
 
   /* Last period's commentary, so this month follows up on what was said. */
   const keys = FIELDS[kind].map(([k]) => k);
-  const prev = await db.from('sm_reports')
+  const prev = check ? { error: null, data: null } : await db.from('sm_reports')
     .select('period_start, period_end, intro, insights')
     .eq('client_id', r.client_id as string).eq('kind', r.kind as string)
     .neq('status', 'draft').lt('period_end', r.period_start as string)
@@ -261,6 +388,8 @@ Deno.serve(async (req) => {
     data.platforms_to_write = targets.platforms;
     data.posts_to_remark = targets.posts;
   }
+
+  if (check) return runCheck(db, id, kind, r, data, mask, origin);
 
   const fields = kind === 'ads' ? FIELDS.ads : [FIELDS.social[0]];
   const str = (d: string) => ({ type: 'string', description: d });

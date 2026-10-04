@@ -2059,7 +2059,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     lesser of the report's and the colleague's, read without writing); at
     0 the button rests and the line under it says why and when the next
     is free.
-  - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
+  - The figures check (Check and submit, a `.rp-aicheck` card under the
+    checks; `report-draft` with `mode: 'check'`, `2026-10-04-ai-check.sql`):
+    the commentary as it stands, drafted or written by hand, read against
+    the report's figures; it lists only what is wrong (a figure not in the
+    data, a claim the figures contradict, a comparison across result types
+    or platforms, a word against our own work), each as where it is, the
+    words, what the figures show and the words to use (Use). A report in
+    draft or in review, Reports Work, asked first; one of the colleague's
+    AI uses a day (`ai_check_claim`), never one of a report's drafts
+    (`ai_drafts.purpose`, `ai_draft_same` drafts only). Kept with what it
+    read (`ai_check_done`, `result`, `basis`) and read by anyone at Reports
+    View (`ai_check_last`), so the reviewer sees the same check; a
+    commentary changed since says so. Filed as `report.ai_drafted` (AI used)
+    with Figures check and the count.
+  - The words: Write draft (Commentary), Check (Check and submit), AI usage
+    (the bar's ⋯), filed under subject AI; never "Draft with AI".
+  - AI usage (the Reports bar's ⋯, an admin's alone;
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most

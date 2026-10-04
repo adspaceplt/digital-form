@@ -619,6 +619,7 @@
     var gated = r.status === 'draft' && String(r.period_start || '') >= '2026-10-01';
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
+      '<div class="ovcard rp-aicheck" data-m="aicheck" hidden></div>' +
       (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
       '<div class="msg" data-m="check"></div>' + keyDates(r) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
@@ -626,7 +627,123 @@
     });
     wireSteps(box);
     if (gated) loadGate(box, r);
+    loadCheck(box, r);
   }
+
+  /* The figures check (the user, 2026-10-04): on the last step, the
+     commentary as it stands, drafted or written by hand, is read against
+     the report's own figures, and what does not hold is listed: where it
+     is, the words, what the figures show, and the words to use. Kept with
+     the report, so the reviewer reads the same check; a commentary changed
+     since says so. A report in draft or in review may be checked; it uses
+     one of the colleague's AI uses a day. */
+  function commentaryNow(r) {
+    var out = {}, add = function (k, v) { v = String(v == null ? '' : v).replace(/\r/g, '').trim(); if (v) out[k] = v; };
+    var ins = r.insights || {};
+    add('intro', r.intro);
+    ((r.kind || 'social') === 'ads' ? ['worked', 'fix', 'focus'] : ['performed_well', 'underperformed', 'next_actions']).forEach(function (k) { add(k, ins[k]); });
+    if ((r.kind || 'social') !== 'ads') {
+      (st.platforms || []).forEach(function (p) { PLAT_FIELDS.forEach(function (f) { add('p:' + p.id + ':' + f[0], p[f[0]]); }); });
+      (st.posts || []).forEach(function (p) { add('n:' + p.id, p.notable); });
+    }
+    return out;
+  }
+  function sameText(a, b) {
+    var ka = Object.keys(a || {}).sort(), kb = Object.keys(b || {}).sort();
+    return ka.join('|') === kb.join('|') && ka.every(function (k) { return String(a[k]).slice(0, 4000) === String(b[k]).slice(0, 4000); });
+  }
+  var checkRun = {};
+  function loadCheck(box, r) {
+    var host = box.querySelector('[data-m="aicheck"]');
+    if (!host) return;
+    var can = (r.status === 'draft' || r.status === 'review') && may('work');
+    db.rpc('ai_check_last', { p_report: r.id }).then(function (res) {
+      var d = res && res.data;
+      if (st.open !== r || !host.isConnected) return;
+      if (res.error || !d || d.error) { if (!can) return; d = { none: true }; }
+      paintAiCheck(host, r, d.none ? null : d, can);
+    }).catch(function () { if (can && st.open === r && host.isConnected) paintAiCheck(host, r, null, can); });
+  }
+  function paintAiCheck(host, r, last, can, said0) {
+    if (!last && !can) { host.hidden = true; return; }
+    var found = last && last.result && last.result.findings || [];
+    var stale = last && !sameText(last.basis, commentaryNow(r));
+    var mark = !last ? '' : stale ? ' is-missing' : found.length ? ' is-missing' : ' is-done';
+    var meta = !last ? 'Not checked' :
+      'Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '') + ' · ' +
+      (found.length ? found.length + (found.length === 1 ? ' point' : ' points') + ' to correct' : 'Matches the figures');
+    host.hidden = false;
+    host.innerHTML = '<div class="rp-check' + mark + '">' +
+        '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
+        '<span class="rp-check-t"><b>Figures check</b><small>' + esc(meta) + '</small></span>' +
+        (can ? '<span class="rp-aicheck-acts"><span class="rp-aileft" data-m="cleft" hidden></span>' +
+          '<button class="btn btn-sm" type="button" data-a="aicheck">' + (checkRun[r.id] ? 'Checking' : last ? 'Check again' : 'Check') + '</button></span>' : '') +
+      '</div>' +
+      (stale ? '<p class="rp-f-note">The commentary has changed since this check.</p>' : '') +
+      found.map(function (f) {
+        return '<div class="rp-finding"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
+          (f.quote ? '<span class="rp-f-quote">\u201c' + esc(f.quote) + '\u201d</span>' : '') +
+          '<span class="rp-f-issue">' + esc(f.issue || '') + '</span>' +
+          (f.fix ? '<span class="rp-f-fix"><span class="rp-f-label">Use</span>' + esc(f.fix) + '</span>' : '') + '</div>';
+      }).join('') +
+      '<div class="msg" data-m="cmsg"></div>';
+    var m = host.querySelector('[data-m="cmsg"]');
+    if (said0) say(m, said0, 'err');
+    var b = host.querySelector('[data-a="aicheck"]');
+    if (!b) return;
+    if (checkRun[r.id]) b.disabled = true;
+    var left = null, line = host.querySelector('[data-m="cleft"]');
+    db.rpc('ai_draft_left', { p_report: r.id }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || d.person == null || !host.isConnected) return;
+      left = d.person;
+      line.hidden = false; line.textContent = left + ' left';
+      line.classList.toggle('is-out', !left);
+      if (!left && !checkRun[r.id]) { b.disabled = true; say(m, d.scope === 'stopped' ? aiLimit(d) : 'You have used your AI uses for today. Resets at 12:00 am.', 'warn'); }
+    }).catch(function () { /* an older database: no line */ });
+    b.addEventListener('click', function () {
+      window.ADspaceConfirm.ask({ title: 'Check against the figures?',
+        body: 'This uses one of your AI uses for today' + (left != null ? ' (' + left + ' left).' : '.'), go: 'Check' }, function () { runCheck(host, r); });
+    });
+  }
+  function runCheck(host, r) {
+    var rid = r.id;
+    checkRun[rid] = true;
+    var b = host.querySelector('[data-a="aicheck"]');
+    if (b) { b.disabled = true; b.textContent = 'Checking'; }
+    say(host.querySelector('[data-m="cmsg"]'), '');
+    var asked = { r: st.open, c: st.client };
+    db.functions.invoke('report-draft', { body: { report_id: rid, mode: 'check' } }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.check) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
+      return { last: { result: d.check } };
+    }).catch(function (e) {
+      return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (CHECK_SAID[e && e.message] || AI_SAID[e && e.message] || said(e)) };
+    }).then(function (out) {
+      delete checkRun[rid];
+      var n = out.last ? (out.last.result.findings || []).length : 0;
+      fileReport(out.last ? 'report.ai_drafted' : 'report.ai_failed',
+        out.last ? 'Figures check · ' + (n ? n + (n === 1 ? ' point' : ' points') + ' to correct' : 'matches the figures') : 'Figures check · ' + out.said,
+        asked.r, asked.c);
+      var box = st.open && st.open.id === rid && st.host && st.host.querySelector('[data-m="aicheck"]');
+      if (!box) return;
+      if (out.last) { loadCheck(st.host, st.open); return; }
+      loadCheckWith(box, out.said);
+    });
+  }
+  function loadCheckWith(host, said0) {
+    var r = st.open;
+    db.rpc('ai_check_last', { p_report: r.id }).then(function (res) {
+      var d = res && res.data;
+      paintAiCheck(host, r, d && !d.error && !d.none ? d : null, true, said0);
+    }).catch(function () { paintAiCheck(host, r, null, true, said0); });
+  }
+  var CHECK_SAID = {
+    'no-text': 'Write the commentary before checking it.',
+    'not-open': 'Only a report in draft or in review can be checked.',
+    'ai-failed': 'No check came back. Try again.',
+    'ai-incomplete': 'No check came back. Try again.'
+  };
 
   /* The month's gate (2026-10-04): a report from October 2026 on is
      submitted once its month in My Work asks for it, holds its report task
@@ -1751,7 +1868,7 @@
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span><select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select>' +
-        '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div></div>' +
+        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div>' +
       '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
         '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
         '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +
@@ -1911,14 +2028,14 @@
         return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
       }).then(function (out) {
         delete aiRun[rid];
-        if (out.draft) fileReport('report.ai_drafted', asked.lang, asked.r, asked.c);
-        else fileReport('report.ai_failed', out.said, asked.r, asked.c);
+        if (out.draft) fileReport('report.ai_drafted', 'Draft · ' + asked.lang, asked.r, asked.c);
+        else fileReport('report.ai_failed', 'Draft · ' + out.said, asked.r, asked.c);
         var h = here();
         /* Away from the step: the answer waits for this report and is put
            in the fields when the step is painted again, so a paid draft is
            never lost to a change of screen. */
         if (!h) { aiKept[rid] = out; return; }
-        h.b.disabled = false; h.b.textContent = 'Draft with AI';
+        h.b.disabled = false; h.b.textContent = 'Write draft';
         if (out.draft) told(out, h.m); else say(h.m, out.said, 'err');
         paintLeft();
       });
@@ -1972,7 +2089,7 @@
       var uses = 'This uses one draft' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
       window.ADspaceConfirm.ask(written
         ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written and is saved as it arrives; Undo puts the earlier text back.', go: 'Replace' }
-        : { title: 'Draft with AI?', body: uses + ' The draft is saved to the report as it arrives.', go: 'Draft' }, draft);
+        : { title: 'Write a draft?', body: uses + ' The draft is saved to the report as it arrives.', go: 'Draft' }, draft);
     });
   }
   /* A draft is saved to the report the moment it arrives (the user,
@@ -2044,14 +2161,14 @@
         ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
       : '';
     if (d.scope === 'redraft') return 'This report has had ' + ((d.limit || 1) === 1 ? 'its draft' : 'its ' + d.limit + ' drafts') + '. An admin can draft it again.';
-    if (d.scope === 'stopped') return 'Draft with AI is turned off for you. An admin can turn it on.';
+    if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for today.'
-      : 'You have used your ' + (d.limit || 20) + ' drafts for today.';
+      : 'You have used your ' + (d.limit || 20) + ' AI uses for today.';
     return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
   }
   var AI_SAID = {
     'needs-update': 'This needs a database update.',
-    'ai-not-set-up': 'Draft with AI needs its key in Supabase.',
+    'ai-not-set-up': 'AI needs its key in Supabase.',
     'ai-key': 'The AI key was refused. Check it in Supabase.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
     'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
@@ -3050,7 +3167,7 @@
     '</div>';
   }
   function aiUseSheet(opener) {
-    var box = sheetShell('rpAiUseSheet', 'Draft with AI usage',
+    var box = sheetShell('rpAiUseSheet', 'AI usage',
       '<div data-m="aiuse"></div>',
       '<button class="btn" type="button" data-a="limits">' + PEN_MARK + 'Edit limits</button>' +
       '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
@@ -3064,7 +3181,7 @@
       db.rpc('ai_draft_usage').then(function (r) {
         d = r.data || {};
         if (r.error || d.error) {
-          UI.failLine(host, 'Draft with AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
+          UI.failLine(host, 'AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
           return;
         }
         edit.disabled = false;
@@ -3095,7 +3212,7 @@
             aiUseRow({ name: 'Admins, each report', text: adm === 0 ? 'Stopped' : adm + ' a day', own: adm !== AI_STD.report_admin, cap: adm }) +
           '</div></section>';
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
-      }).catch(function (e) { UI.failLine(host, 'Draft with AI usage', said(e), paint); });
+      }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
     };
     /* One place for every limit: one form, one Save. */
     edit.onclick = function () {

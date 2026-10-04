@@ -194,7 +194,7 @@ begin
   values (v_scope, p_daily, v_who, now())
   on conflict (scope) do update set daily = excluded.daily, set_by = excluded.set_by, set_at = excluded.set_at;
   insert into public.activity_log (actor, action, subject, detail)
-  values (coalesce(v_who, 'admin'), 'team.changed', 'Draft with AI',
+  values (coalesce(v_who, 'admin'), 'team.changed', 'AI',
           v_name || ': ' ||
           case when v_was is null then 'standard, ' || v_def || v_unit when v_was = 0 then 'stopped' else v_was || v_unit end ||
           ' → ' ||
