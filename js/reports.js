@@ -839,7 +839,7 @@
       (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
       esc(spanWord((r.status === 'published' ? new Date(last) : new Date()) - new Date(marks[0][1]))) + '</span></div>');
     return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Key dates</h3></div>' +
-      '<div class="ovcard rp-timeline">' + rows.join('') + '</div></div>';
+      '<div class="ovcard rp-timeline"><div class="ovsec tline">' + rows.join('') + '</div></div></div>';
   }
 
   function moreMenu(r, live) {
@@ -1867,8 +1867,10 @@
     }).join('');
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
-        '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span><select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select>' +
-        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div>' +
+        '<div class="rp-airow"><div class="rp-ailang"><span class="rp-ailang-label" aria-hidden="true">Draft language</span>' +
+          '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
+        '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
+        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div></div>' +
       '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
         '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
         '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +

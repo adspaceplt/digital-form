@@ -53,7 +53,9 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   refusal to it, under the same names.
   - It must never be more generous than PostgREST. It refuses an ambiguous
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
-    lists, and treats a refused delete as 204 with no error.
+    lists, treats a refused delete as 204 with no error, and refuses
+    `.single()` on anything but one row (PGRST116; `.maybeSingle()` on more
+    than one).
   - It refuses, as PostgREST does, a table, column, function or argument the
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
     LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
@@ -1616,6 +1618,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   change and hand-over (`ops_hand_over_task`) are Manage.
 - Reopen works on every cancelled task, back to the stage it was cancelled
   from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
+- A task read that finds no row (deleted, or out of reach) closes its sheet
+  or record and lands on the list with "That task is no longer available."
+  (`taskGone`, `.maybeSingle()`); never the database's words.
 - `derive(t)` is the one source for the head status, the next step and the
   stepper.
   - Blue only for a hand-off; the ink fill for your own progress.
@@ -2082,6 +2087,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     View (`ai_check_last`), so the reviewer sees the same check; a
     commentary changed since says so. Filed as `report.ai_drafted` (AI used)
     with Figures check and the count.
+  - The commentary's draft row: the hint, then Draft language (the pill) at
+    the left and Write draft at the right edge with what is left before it
+    (`.rp-airow`); on a phone a line each.
   - The words: Write draft (Commentary), Check (Check and submit), AI usage
     (the bar's ⋯), filed under subject AI; never "Draft with AI".
   - AI usage (the Reports bar's ⋯, an admin's alone;
@@ -2104,7 +2112,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     that report's Commentary is next opened, once (`aiKept`).
   - Check and submit ends in Key dates (`keyDates()`, two marks at least):
     Started, Submitted (to whom), Confirmed (by whom), Published, each with
-    the time since the step before, and the total (so far).
+    the time since the step before, and the total (so far); the rows sit in
+    the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective

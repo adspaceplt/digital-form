@@ -3718,7 +3718,7 @@
      disagree with it. */
   function readTask(id, after) {
     Promise.all([
-      db.from('ops_tasks').select('*, clients(name, slug)').eq('id', id).single(),
+      db.from('ops_tasks').select('*, clients(name, slug)').eq('id', id).maybeSingle(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
       db.from('ops_task_links').select('*').eq('task_id', id).order('created_at'),
       db.from('ops_work_sessions')
@@ -3743,10 +3743,15 @@
       /* Who owns it is part of the record, so a refused read of the
          assignments is named rather than drawn as an unowned task. */
       var bad = r[0].error || (r[5] && r[5].error);
-      if (bad || !r[0].data) {
-        msg(msgHere('taskMsg'), (bad && bad.message) || 'That task could not be read.', 'err');
+      if (bad) {
+        msg(msgHere('taskMsg'), bad.message || 'That task could not be read.', 'err');
         return;
       }
+      /* No row: the task was deleted (here, in another tab, by somebody
+         else) or is no longer the colleague's to see. Its sheet or record
+         goes and the list says so, never a database message over a task
+         that is not there (the user, 2026-10-04). */
+      if (!r[0].data) { taskGone(id); return; }
       var t = r[0].data;
       /* The client's name where its row is outside the colleague's reach
          (`nameClients`); the record waits for it, which is one short read. */
@@ -3757,6 +3762,13 @@
     }).catch(function (e) {
       msg(msgHere('taskMsg'), (e && e.message) || String(e), 'err');
     });
+  }
+  function taskGone(id) {
+    var from = state.drawer === id ? state.drawerFrom : null;
+    if (state.drawer === id) closeDrawer(true);
+    if (from === 'client') { readClientWork(); return; }
+    if (state.openId === id || !$('workRec').hidden) showList(); else load();
+    msg('workMsg', 'That task is no longer available.', 'warn');
   }
   function readDone(r, t, after) {
     state.due = (((r[7] && r[7].data) || [])[0]) || null;

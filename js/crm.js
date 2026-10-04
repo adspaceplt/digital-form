@@ -2501,7 +2501,7 @@
       if (out.sets === null || out.camps === null) return;
       paintWork(out.sets, out.camps);
     };
-    db.from('batches').select('id, title, state, created_at').eq('client_id', c.id)
+    db.from('batches').select('id, title, published, created_at').eq('client_id', c.id)
       .order('created_at', { ascending: false }).limit(20)
       .then(function (r) { out.sets = r.data || []; done(); }, function () { out.sets = []; done(); });
     db.from('campaigns').select('id, title, state, slots, created_at').eq('client_id', c.id)
