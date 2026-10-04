@@ -398,16 +398,18 @@
       return;
     }
     if (upgradeTimer) { clearTimeout(upgradeTimer); upgradeTimer = null; }
-    if (M) M.watch(upgrade, function () { M.ask().then(paintUpgrade); });
+    if (M) upgradeTimer = M.watch(upgrade, readUpgrade);
   }
+  /* Asked again every minute while on screen and on every return
+     (2026-10-04); a read that fails changes nothing. */
   function readUpgrade() {
     var M = window.ADspaceMaintenance;
     if (!M || !me) return;
-    M.ask().then(paintUpgrade);
+    M.ask(true).then(function (d) { if (d) paintUpgrade(d); });
   }
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && meLoaded) readUpgrade();
-  });
+  if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) {
+    window.ADspaceMaintenance.often(function () { if (meLoaded) readUpgrade(); });
+  }
   function setUpgrade(args, done) {
     db.rpc('maintenance_set', args).then(function (r) {
       var d = r.data || {};

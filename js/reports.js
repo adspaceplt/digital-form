@@ -670,7 +670,7 @@
           !mo ? 'No month covers this period' : (MON[Number(mo.period.slice(5, 7)) - 1] + ' ' + mo.period.slice(0, 4) + ' · ' + spanOf(mo) + (has('not-ticked') ? ' · Does not ask for this report' : ''))) +
         (mo && !has('not-ticked') ? row(!has('no-task'), 'Report task',
           g.task ? '#WT' + String(g.task.task_no).padStart(5, '0') : 'Missing',
-          g.task ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
+          g.task && bridge.may && bridge.may('ops', 'view') ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
         (mo ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
         row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late: Submit asks why' : ''));
       var card = box.querySelector('.rp-checks');

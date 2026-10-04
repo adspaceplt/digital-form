@@ -6,17 +6,23 @@
  * this is the page's cover, not a lock.
  *
  * Set for later, a page already open covers itself when the start arrives;
- * with an end, a covered page lifts itself when it passes.
+ * with an end, a covered page lifts itself when it passes. An open page also
+ * asks again every minute while it is on screen and on every return to it
+ * (2026-10-04), so switching on covers it and switching off reloads it,
+ * which brings the page's latest version. A read that fails changes nothing.
  *
  *   ADspaceMaintenance.ready        — a promise of { on, set, note, starts_at, ends_at }
  *   ADspaceMaintenance.cover(d)     — draws the cover for that state
  *   ADspaceMaintenance.when(iso)    — a moment in Malaysia time, in the page's language
- *   ADspaceMaintenance.watch(d, fn) — calls fn at the state's next change (within a day)
+ *   ADspaceMaintenance.watch(d, fn) — calls fn at the state's next change (within a day);
+ *                                    answers its timer
+ *   ADspaceMaintenance.ask(strict)  — the state now; strict answers null for a failed read
  */
 (function () {
   var API = window.ADspaceAPI;
   var off = { on: false, set: false };
   var DAY = 864e5;
+  var EVERY = 60000;
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
 
@@ -106,29 +112,46 @@
      again on its next load anyway. */
   function watch(d, fn) {
     var at = d.set && !d.on && d.starts_at ? d.starts_at : (d.on && d.ends_at ? d.ends_at : null);
-    if (!at) return;
+    if (!at) return null;
     var ms = new Date(at).getTime() - Date.now();
-    if (ms > 0 && ms < DAY) setTimeout(fn, ms + 1000);
+    return ms > 0 && ms < DAY ? setTimeout(fn, ms + 1000) : null;
   }
 
-  function ask() {
+  function ask(strict) {
+    var failed = strict ? null : off;
     return (API && API.client && API.client.rpc)
       ? Promise.resolve(API.client.rpc('maintenance_state')).then(function (r) {
-          var d = r && !r.error && r.data;
+          if (!r || r.error) return failed;
+          var d = r.data;
           return d && (d.on || d.set) ? d : off;
-        }).catch(function () { return off; })
-      : Promise.resolve(off);
+        }).catch(function () { return failed; })
+      : Promise.resolve(failed);
+  }
+
+  /* Every minute while on screen, and on every return to it. */
+  function often(fn) {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') fn();
+    });
+    setInterval(function () { if (document.visibilityState === 'visible') fn(); }, EVERY);
   }
 
   var ready = ask();
 
   var inConsole = /^\/admin(\/|$)/.test(location.pathname);
   if (!inConsole) {
-    ready.then(function (d) {
+    var timer = null;
+    var settle = function (d) {
+      if (!d) return;
+      if (document.getElementById('maintCover') && !d.on) { location.reload(); return; }
       if (d.on) cover(d);
-      watch(d, function () { location.reload(); });
-    });
+      if (timer) clearTimeout(timer);
+      timer = watch(d, again);
+    };
+    var again = function () { ask(true).then(settle); };
+    ready.then(settle);
+    often(again);
   }
 
-  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch };
+  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch, often: often };
 })();

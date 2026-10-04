@@ -311,8 +311,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     printed QR's page) stay up. A client page covers itself under
     its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
     progress / 系统升级中 (`W.maintTitle`; `maintText` We'll be right back! / 我们马上回来！; `maintBack` Expected
-    back by {end}), following the 中文 switch. A page left open covers itself
-    at a start within a day and reloads at the end.
+    back by {end}), following the 中文 switch. Every open page, the console
+    included, asks again every minute while on screen and on every return
+    (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
+    covers itself; switched off, a covered page reloads (to its latest
+    version). A read that fails (`ask(true)` answers null) changes nothing.
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
     The switch is the account menu's Upgrade mode (`role="switch"`, Off /
@@ -1693,8 +1696,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     due 23:59 MYT five days after the month's last day and final seven,
     never from the Report template's offsets; `source_type`
     `report_social` / `report_ads`); unticked, a task still To do is
-    cancelled and a started one kept; only a start day moved moves an
-    open one's dates (filed), so another save never undoes an extension.
+    cancelled and a started one kept (`ops_engagement_cancel_reports`, the
+    one copy); only a start day moved moves an open one's dates (filed), so
+    another save never undoes an extension. Deleting the month cancels its
+    report tasks nobody started first (`2026-10-04-month-delete-reports.sql`),
+    and its question says so. `ops_engagement_counts` adds `content` (live
+    less report tasks, `2026-10-04-month-counts-content.sql`): the New
+    sheet's `n added` reads it; `live` / `open` still count the report, so
+    the month stays in production until its report is done.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
@@ -1763,7 +1772,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_delete_task` (Manage; the number typed back; a reason; an
     `ops.deleted` activity row);
   - `ops_delete_tasks` (bulk; the count typed back);
-  - `ops_delete_engagement` (a reason; its tasks stay).
+  - `ops_delete_engagement` (a reason; its tasks stay, its untouched report
+    tasks cancelled).
 - The task sheets live in `#workSheets`, outside the section.
 
 ### Performance (`js/perf.js`, `?s=team&tab=performance`, `?s=mine`)
@@ -1896,7 +1906,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `not-ticked`, `no-task`, `content`: content tasks fewer than planned,
     report and cancelled tasks not counted) and the due time (the report
     task's). Check and submit shows it as rows under the report's checks
-    (Month in My Work, Report task with Open, Content, Due). Submit is
+    (Month in My Work, Report task with Open where My Work is readable,
+    Content, Due). Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /
