@@ -16,8 +16,12 @@
 --      colleague who may draft or drafted in 30 days, today's count, the
 --      limit that applies (`cap`, their own else the standard) and their
 --      group; the page adds up the team and each group.
---   3. `ai_draft_set_limit` takes `person` (the standard) or a colleague's
---      id; `team` is refused (`bad-scope`).
+--   3. The limits a report has are settings too (the user, 2026-10-04:
+--      nothing hard coded): `report`, the drafts a report may have from a
+--      colleague (1 unless set), and `report_admin`, an admin's drafts a
+--      report a day (5 unless set).
+--   4. `ai_draft_set_limit` takes `person` (the standard), a colleague's id,
+--      `report` or `report_admin`; `team` is refused (`bad-scope`).
 --
 -- ROLLBACK
 --   Run the DRAFT WITH AI ALLOWANCES section's ai_draft_claim,
@@ -42,6 +46,8 @@ declare
   n_report integer;
   n_member integer;
   lim_member integer;
+  lim_report integer := public.ai_draft_limit('report', 1);
+  lim_admin integer := public.ai_draft_limit('report_admin', 5);
   new_id uuid;
 begin
   if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
@@ -54,13 +60,13 @@ begin
   if lim_member = 0 then
     return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
   end if;
-  -- One draft a subject; a second and later is an admin's.
-  if not coalesce(m.is_admin, false) and exists (select 1 from public.ai_draft_same(p_report)) then
-    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', 1);
+  -- A report's drafts from a colleague; past them, the rest are an admin's.
+  if not coalesce(m.is_admin, false) and (select count(*) from public.ai_draft_same(p_report)) >= lim_report then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', lim_report);
   end if;
   select count(*) into n_report from public.ai_draft_same(p_report) s where s.created_at >= since;
-  if n_report >= 5 then
-    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', 5, 'next', since + interval '1 day');
+  if coalesce(m.is_admin, false) and n_report >= lim_admin then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', lim_admin, 'next', since + interval '1 day');
   end if;
   select count(*) into n_member from public.ai_drafts d
    where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed';
@@ -82,6 +88,8 @@ declare
   n_report integer; n_member integer;
   l_report integer; l_member integer; l_min integer;
   lim_member integer;
+  lim_report integer := public.ai_draft_limit('report', 1);
+  lim_admin integer := public.ai_draft_limit('report_admin', 5);
   v_scope text;
 begin
   if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
@@ -91,11 +99,9 @@ begin
   lim_member := public.ai_draft_limit(m.id::text, public.ai_draft_limit('person', 20));
   select count(*) into n_report from public.ai_draft_same(p_report) s where s.created_at >= since;
   if is_adm then
-    l_report := greatest(0, 5 - n_report);
-  elsif exists (select 1 from public.ai_draft_same(p_report)) then
-    l_report := 0;
+    l_report := greatest(0, lim_admin - n_report);
   else
-    l_report := 1;
+    l_report := greatest(0, lim_report - (select count(*) from public.ai_draft_same(p_report))::integer);
   end if;
   select count(*) into n_member from public.ai_drafts d
    where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed';
@@ -106,7 +112,7 @@ begin
                   else 'person' end;
   return jsonb_build_object(
     'left', l_min, 'scope', v_scope,
-    'limit', case v_scope when 'stopped' then 0 when 'redraft' then 1 when 'report' then 5 else lim_member end,
+    'limit', case v_scope when 'stopped' then 0 when 'redraft' then lim_report when 'report' then lim_admin else lim_member end,
     'report', l_report, 'person', l_member, 'admin', is_adm,
     'next', case when l_min > 0 or v_scope in ('redraft', 'stopped') then null else since + interval '1 day' end);
 end $$;
@@ -128,6 +134,8 @@ begin
   if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
   return jsonb_build_object(
     'person', v_std,
+    'report', public.ai_draft_limit('report', 1),
+    'report_admin', public.ai_draft_limit('report_admin', 5),
     'resets_at', v_day + interval '1 day',
     'people', coalesce((select jsonb_agg(s.x order by s.x ->> 'name') from (
       select jsonb_build_object(
@@ -158,6 +166,7 @@ declare
   v_name text;
   v_was integer;
   v_def integer;
+  v_unit text := ' a day';
   v_scope text := btrim(coalesce(p_scope, ''));
 begin
   if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
@@ -166,6 +175,10 @@ begin
   end if;
   if v_scope = 'person' then
     v_name := 'Each colleague'; v_def := 20;
+  elsif v_scope = 'report' then
+    v_name := 'Drafts per report'; v_def := 1; v_unit := '';
+  elsif v_scope = 'report_admin' then
+    v_name := 'Admin drafts per report'; v_def := 5;
   elsif v_scope = 'team' then
     return jsonb_build_object('error', 'bad-scope');
   else
@@ -183,9 +196,9 @@ begin
   insert into public.activity_log (actor, action, subject, detail)
   values (coalesce(v_who, 'admin'), 'team.changed', 'Draft with AI',
           v_name || ': ' ||
-          case when v_was is null then 'standard, ' || v_def || ' a day' when v_was = 0 then 'stopped' else v_was || ' a day' end ||
+          case when v_was is null then 'standard, ' || v_def || v_unit when v_was = 0 then 'stopped' else v_was || v_unit end ||
           ' → ' ||
-          case when p_daily is null then 'standard, ' || v_def || ' a day' when p_daily = 0 then 'stopped' else p_daily || ' a day' end);
+          case when p_daily is null then 'standard, ' || v_def || v_unit when p_daily = 0 then 'stopped' else p_daily || v_unit end);
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.ai_draft_set_limit(text, integer) from public, anon, authenticated;
