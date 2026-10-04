@@ -2013,7 +2013,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     report, or any of the same client and kind whose period shares a day
     with it, deleted or not: `ai_drafts` keeps client, kind and period,
     `2026-10-04-ai-draft-subject.sql`); 20 a colleague and 60 the team in
-    24 hours; a failed press is
+    24 hours unless an admin set otherwise (`ai_draft_limits`: `team`,
+    `person`, or a colleague's id; null is the default, 0 stops it, refused
+    `stopped`; `2026-10-04-ai-draft-allowances.sql`); a failed press is
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
@@ -2021,10 +2023,23 @@ Each line is a rule that broke once. Its reason is in the archive.
     least of the report's, the colleague's and the team's, read without
     writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
     the line under it says why and when the next is free.
-  - A draft is paid for once asked: while one runs, closing or reloading
-    the tab asks first (`beforeunload`), and an answer that lands after the
-    person moved to another step or screen is kept (`aiKept`) and put in
-    the fields when that report's Commentary is next shown, once.
+  - Draft with AI usage (the Reports bar's ⋯, an admin's alone;
+    `ai_draft_usage()`): the team, each colleague's default, and every
+    colleague who may draft or drafted in 30 days, with the last 24 hours,
+    the last 30 days and the allowance a day; Change asks for the
+    allowance (Default, Stopped, or a number a day) through
+    `ai_draft_set_limit`, filed `team.changed` under Draft with AI from and
+    to.
+  - A draft is paid for once asked, so it is saved to the report as it
+    arrives (`storeDraft`), with Undo putting the earlier text back
+    (`restoreDraft`); a save that fails puts the draft in the fields with
+    "Save before leaving.". While one runs, closing or reloading the tab
+    asks first (`beforeunload`), and an answer that lands after the person
+    moved to another step or screen is saved all the same and shown when
+    that report's Commentary is next opened, once (`aiKept`).
+  - Check and submit ends in Key dates (`keyDates()`, two marks at least):
+    Started, Submitted (to whom), Confirmed (by whom), Published, each with
+    the time since the step before, and the total (so far).
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective

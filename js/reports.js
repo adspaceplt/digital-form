@@ -617,11 +617,46 @@
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
-      '<div class="msg" data-m="check"></div></div>';
+      '<div class="msg" data-m="check"></div>' + keyDates(r) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
       b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
     });
     wireSteps(box);
+  }
+
+  /* Key dates (the user, 2026-10-04): when the report was started,
+     submitted and to whom, confirmed and by whom, and published, with the
+     time each step took; a step not reached is left out. */
+  function spanWord(ms) {
+    var h = ms / 3600000;
+    if (h < 1) return 'Under 1 h';
+    if (h < 48) return Math.round(h) + ' h';
+    var d = Math.floor(h / 24), rest = Math.round(h - d * 24);
+    if (rest === 24) { d += 1; rest = 0; }
+    return d + ' days' + (rest ? ' ' + rest + ' h' : '');
+  }
+  function keyDates(r) {
+    var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
+    var marks = [
+      ['Started', r.created_at, ''],
+      ['Submitted', r.status !== 'draft' && r.submitted_at, r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''],
+      ['Confirmed', r.confirmed_at, r.confirmed_by && nameOf(r.confirmed_by) ? 'by ' + nameOf(r.confirmed_by) : ''],
+      ['Published', live && r.status === 'published' && live.published_at, '']
+    ].filter(function (x) { return x[1]; });
+    if (marks.length < 2) return '';
+    var rows = marks.map(function (x, i) {
+      var next = marks[i + 1];
+      return '<div class="tl-row tl-stage">' +
+        '<span class="tl-lead"><span class="tl-what">' + esc(x[0]) + '</span>' +
+          '<span class="tl-when">' + esc(stampWord(x[1]) + (x[2] ? ' · ' + x[2] : '')) + '</span></span>' +
+        '<span class="tl-span">' + (next ? esc(spanWord(new Date(next[1]) - new Date(x[1]))) : '') + '</span></div>';
+    });
+    var last = marks[marks.length - 1][1];
+    rows.push('<div class="tl-rule"></div><div class="tl-row tl-date"><span class="tl-lead"><span class="tl-what">' +
+      (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
+      esc(spanWord((r.status === 'published' ? new Date(last) : new Date()) - new Date(marks[0][1]))) + '</span></div>');
+    return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Key dates</h3></div>' +
+      '<div class="ovcard rp-timeline">' + rows.join('') + '</div></div>';
   }
 
   function moreMenu(r, live) {
@@ -1783,7 +1818,8 @@
       db.functions.invoke('report-draft', { body: body }).then(function (res) {
         var d = res && res.data;
         if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
-        return { draft: d.draft };
+        return storeDraft(rid, d.draft).then(function (before) { return { draft: d.draft, before: before }; },
+          function (err) { return { draft: d.draft, unsaved: said(err) }; });
       }).catch(function (e) {
         return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
       }).then(function (out) {
@@ -1796,9 +1832,19 @@
            never lost to a change of screen. */
         if (!h) { aiKept[rid] = out; return; }
         h.b.disabled = false; h.b.textContent = 'Draft with AI';
-        if (out.draft) { put(out.draft); say(h.m, 'Drafted. Read it through, then Save.', 'ok'); }
-        else say(h.m, out.said, 'err');
+        if (out.draft) told(out, h.m); else say(h.m, out.said, 'err');
         paintLeft();
+      });
+    };
+    /* Drafted and saved, with Undo; or drafted and refused, kept in the
+       fields to save by hand. */
+    var told = function (out, m) {
+      put(out.draft);
+      if (out.unsaved) { say(m, 'Drafted, but not saved: ' + out.unsaved + ' Save before leaving.', 'err'); return; }
+      Object.assign(st.open, { intro: out.draft.intro != null ? out.draft.intro : st.open.intro });
+      say(m, 'Drafted and saved.', 'ok');
+      undoBar('Draft saved.', m, function () {
+        restoreDraft(rid, out.before).then(function () { openReport(rid, true); }).catch(function (e) { say(m, said(e), 'err'); });
       });
     };
     /* What is left, beside the button, as `1 left` (the user, 2026-10-01):
@@ -1825,8 +1871,7 @@
     if (aiRun[rid]) { ab.disabled = true; ab.textContent = 'Drafting'; }
     if (aiKept[rid]) {
       var kept = aiKept[rid]; delete aiKept[rid];
-      if (kept.draft) { put(kept.draft); say(am, 'Drafted. Read it through, then Save.', 'ok'); }
-      else say(am, kept.said, 'err');
+      if (kept.draft) told(kept, am); else say(am, kept.said, 'err');
     }
     paintLeft();
     /* Every press asks first (the user, 2026-10-01: a draft is counted, so
@@ -1835,9 +1880,56 @@
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       var uses = 'This uses one draft' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
       window.ADspaceConfirm.ask(written
-        ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }
-        : { title: 'Draft with AI?', body: uses + ' Nothing is saved until Save.', go: 'Draft' }, draft);
+        ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written and is saved as it arrives; Undo puts the earlier text back.', go: 'Replace' }
+        : { title: 'Draft with AI?', body: uses + ' The draft is saved to the report as it arrives.', go: 'Draft' }, draft);
     });
+  }
+  /* A draft is saved to the report the moment it arrives (the user,
+     2026-10-04: a draft left unsaved was lost on Back, and paid for all the
+     same). What it replaces is kept, so Undo puts it back. Written from the
+     report's own rows, not the screen, so it holds wherever the person is. */
+  function storeDraft(rid, dr) {
+    return Promise.all([
+      db.from('sm_reports').select('id, intro, insights').eq('id', rid).maybeSingle(),
+      db.from('sm_report_platforms').select('id, summary, worked, improve, actions').eq('report_id', rid),
+      db.from('sm_report_posts').select('id, notable').eq('report_id', rid)
+    ]).then(function (got) {
+      var bad = got.filter(function (x) { return x.error; })[0];
+      if (bad) throw bad.error;
+      var rep = got[0].data;
+      if (!rep) throw new Error('not-found');
+      var before = { intro: rep.intro, insights: rep.insights || {}, platforms: {}, posts: {} };
+      var ins = Object.assign({}, rep.insights || {}), row = { insights: ins };
+      Object.keys(dr).forEach(function (k) {
+        if (typeof dr[k] !== 'string') return;
+        if (k === 'intro') row.intro = dr[k]; else ins[k] = dr[k];
+      });
+      var ok = function (res) { if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.'); };
+      var jobs = [db.from('sm_reports').update(row).eq('id', rid).select('id').then(ok)];
+      var plats = got[1].data || [], posts = got[2].data || [];
+      (dr.platforms || []).forEach(function (pl) {
+        var was = plats.filter(function (x) { return x.id === pl.ref; })[0];
+        if (!was) return;
+        var patch = {};
+        PLAT_FIELDS.forEach(function (f) { if (typeof pl[f[0]] === 'string') patch[f[0]] = pl[f[0]]; });
+        before.platforms[was.id] = { summary: was.summary, worked: was.worked, improve: was.improve, actions: was.actions };
+        jobs.push(db.from('sm_report_platforms').update(patch).eq('id', was.id).select('id').then(ok));
+      });
+      (dr.posts || []).forEach(function (pp) {
+        var was = posts.filter(function (x) { return x.id === pp.ref; })[0];
+        if (!was || typeof pp.remark !== 'string') return;
+        before.posts[was.id] = was.notable;
+        jobs.push(db.from('sm_report_posts').update({ notable: pp.remark }).eq('id', was.id).select('id').then(ok));
+      });
+      return Promise.all(jobs).then(function () { return before; });
+    });
+  }
+  function restoreDraft(rid, before) {
+    var ok = function (res) { if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.'); };
+    var jobs = [db.from('sm_reports').update({ intro: before.intro, insights: before.insights }).eq('id', rid).select('id').then(ok)];
+    Object.keys(before.platforms).forEach(function (id) { jobs.push(db.from('sm_report_platforms').update(before.platforms[id]).eq('id', id).select('id').then(ok)); });
+    Object.keys(before.posts).forEach(function (id) { jobs.push(db.from('sm_report_posts').update({ notable: before.posts[id] }).eq('id', id).select('id').then(ok)); });
+    return Promise.all(jobs);
   }
   /* A draft is paid for once Claude is asked, whatever happens to the page.
      While one is being written, closing or reloading the tab asks first
@@ -1861,6 +1953,8 @@
         ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
       : '';
     if (d.scope === 'redraft') return 'This report has had its draft. An admin can draft it again.';
+    if (d.scope === 'stopped') return 'Draft with AI is turned off for you. An admin can turn it on.';
+    if (d.scope === 'team' && d.limit === 0) return 'Draft with AI is turned off for the team.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for the day.'
       : d.scope === 'person' ? 'You have used your ' + (d.limit || 20) + ' drafts for the day.'
       : 'The team has used its ' + (d.limit || 60) + ' drafts for the day.';
@@ -2836,6 +2930,96 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
+  // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
+  /* Each colleague who may draft (or drafted in the last 30 days), their
+     drafts in the last 24 hours and 30 days, and the day's allowance, which
+     an admin changes: the team's, each colleague's, or one colleague's;
+     Stopped turns it off. Read again on every open. */
+  var AI_PERSON_STEPS = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50];
+  var AI_TEAM_STEPS = [10, 20, 30, 40, 60, 80, 100, 150, 200];
+  function aiCap(own, dflt) {
+    if (own === 0) return '<span class="chip is-warn">Stopped</span>';
+    return own == null ? 'Default, ' + dflt : own + ' a day';
+  }
+  function aiUseRow(o) {
+    return '<div class="crm-row aiu-row" data-scope="' + esc(o.scope) + '">' +
+      '<div class="aiu-name"><b>' + esc(o.name) + '</b>' + (o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</div>' +
+      '<div class="aiu-n aiu-day">' + (o.day == null ? '—' : fmt(o.day)) + '</div>' +
+      '<div class="aiu-n aiu-month">' + (o.month == null ? '—' : fmt(o.month)) + '</div>' +
+      '<div class="aiu-cap">' + o.cap + '</div>' +
+      '<div class="aiu-meta">' + o.meta + '</div>' +
+      '<div class="aiu-act"><button class="btn btn-sm" type="button" data-a="cap" aria-label="Change allowance for ' + esc(o.name) + '">' + PEN_MARK + 'Change</button></div>' +
+    '</div>';
+  }
+  function aiUseHead(first) {
+    return '<div class="crm-row crm-head aiu-row"><div>' + first + '</div><div>Last 24 hours</div><div>Last 30 days</div><div>Allowance a day</div><div class="aiu-meta"></div><div class="aiu-act"></div></div>';
+  }
+  function aiUseSheet(opener) {
+    var box = sheetShell('rpAiUseSheet', 'Draft with AI usage',
+      '<div data-m="aiuse"></div>',
+      '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
+    box.querySelector('.sheet-card').setAttribute('data-narrow', '560');
+    var host = box.querySelector('[data-m="aiuse"]'), m = box.querySelector('[data-m="sheet"]');
+    var paint = function () {
+      UI.skeleton(host, 3);
+      db.rpc('ai_draft_usage').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          UI.failLine(host, 'Draft with AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
+          return;
+        }
+        var people = d.people || [];
+        var times = function (n, w) { return fmt(n) + ' ' + w; };
+        host.innerHTML =
+          '<section class="fsec"><h4 class="fsec-h">Team</h4><div class="crm-table softpanel">' + aiUseHead('Applies to') +
+            aiUseRow({ scope: 'team', name: 'Team', day: d.team_day, month: d.team_month, cap: aiCap(d.team === 60 ? null : d.team, 60),
+                       meta: times(d.team_day, 'today') + ' · ' + times(d.team_month, 'in 30 days') + ' · ' + aiCap(d.team === 60 ? null : d.team, 60) }) +
+            aiUseRow({ scope: 'person', name: 'Each colleague', day: null, month: null, cap: aiCap(d.person === 20 ? null : d.person, 20),
+                       meta: aiCap(d.person === 20 ? null : d.person, 20) }) +
+          '</div></section>' +
+          '<section class="fsec"><h4 class="fsec-h">Colleagues</h4>' + (people.length
+            ? '<div class="crm-table softpanel">' + aiUseHead('Colleague') + people.map(function (p) {
+                var sub = [p.code, p.group, p.last ? 'Last ' + stampWord(p.last) : '', p.failed ? plural(p.failed, 'failed') : ''].filter(Boolean).join(' · ');
+                return aiUseRow({ scope: p.id, name: p.name, sub: sub, day: p.day, month: p.month, cap: aiCap(p.limit, d.person),
+                                  meta: times(p.day, 'today') + ' · ' + times(p.month, 'in 30 days') + ' · ' + aiCap(p.limit, d.person) });
+              }).join('') + '</div>'
+            : '<p class="empty">No entries.</p>') + '</section>';
+        if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+        Array.prototype.forEach.call(host.querySelectorAll('[data-a="cap"]'), function (b) {
+          b.addEventListener('click', function () {
+            var scope = b.closest('.aiu-row').getAttribute('data-scope');
+            var who = scope === 'team' ? null : scope === 'person' ? null : people.filter(function (p) { return p.id === scope; })[0];
+            var team = scope === 'team';
+            var dflt = team ? 60 : scope === 'person' ? 20 : d.person;
+            var now = team ? (d.team === 60 ? null : d.team) : scope === 'person' ? (d.person === 20 ? null : d.person) : who.limit;
+            var steps = team ? AI_TEAM_STEPS : AI_PERSON_STEPS;
+            if (now != null && now > 0 && steps.indexOf(now) < 0) steps = steps.concat([now]).sort(function (x, y) { return x - y; });
+            var choices = [['', 'Default, ' + dflt + ' a day'], ['0', 'Stopped']].concat(steps.map(function (n) { return [String(n), n + ' a day']; }));
+            window.ADspaceConfirm.ask({
+              title: team ? 'Team allowance' : scope === 'person' ? 'Each colleague\'s allowance' : 'Allowance for ' + who.name,
+              body: team ? 'Drafts the whole team may take in 24 hours.'
+                : scope === 'person' ? 'Drafts each colleague may take in 24 hours, unless set for them.'
+                : 'Drafts ' + who.name + ' may take in 24 hours.',
+              go: 'Save',
+              field: { label: 'Drafts a day', choices: choices, value: now == null ? '' : String(now) }
+            }, function (v) {
+              var daily = v === '' || v == null ? null : Number(v);
+              db.rpc('ai_draft_set_limit', { p_scope: scope, p_daily: daily }).then(function (res) {
+                var out = res.data || {};
+                if (res.error || out.error) { say(m, res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'An allowance is 0 to 500 a day.' : said(out.error), 'err'); return; }
+                say(m, 'Saved.', 'ok');
+                paint();
+              }).catch(function (e) { say(m, said(e), 'err'); });
+            });
+          });
+        });
+      }).catch(function (e) { UI.failLine(host, 'Draft with AI usage', said(e), paint); });
+    };
+    say(m, '', '');
+    paint();
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
   // ---- The Reports route: every client's reports, by where each stands ------
   var hub = { rows: [], clients: [], byClient: {}, wired: false };
   var HUB_BANDS = [
@@ -2861,7 +3045,28 @@
       $('rhFind').addEventListener('input', paintHub);
       $('rhKind').addEventListener('change', paintHub);
       $('rhNew').addEventListener('click', function () { newSheet($('rhNew')); });
+      /* The bar's ⋯, an admin's: Draft with AI usage. */
+      var mw = $('rhMoreWrap'), mb = $('rhMoreBtn'), mm = $('rhMore');
+      if (mw && mb && mm) {
+        var shutM = function () { mm.hidden = true; mb.setAttribute('aria-expanded', 'false'); };
+        mb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = mm.hidden;
+          mm.hidden = !open;
+          mb.setAttribute('aria-expanded', String(open));
+          if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, mm);
+        });
+        document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#rhMoreWrap')) shutM(); });
+        if (window.ADspaceMenu && window.ADspaceMenu.onScroll) window.ADspaceMenu.onScroll(shutM);
+        mm.addEventListener('click', function (e) {
+          var it = e.target.closest('.kmenu-item');
+          if (!it) return;
+          shutM();
+          if (it.getAttribute('data-a') === 'aiuse') aiUseSheet(mb);
+        });
+      }
     }
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
     $('rhKind').innerHTML = '<option value="">Every type</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();
