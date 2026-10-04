@@ -964,11 +964,10 @@
       });
   }
 
-  var campFind = '', campStateFilter = 'all', campSums = {};
+  var campFind = '', campSums = {};
 
   function loadCampaigns() {
     var box = $('campCards');
-    fillCampStates();
     if (!state.campaigns) UI.skeleton(box, 3);
     db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').order('created_at', { ascending: false })
       .then(function (r) {
@@ -992,7 +991,6 @@
   }
 
   function campMatch(c) {
-    if (campStateFilter !== 'all' && c.state !== campStateFilter) return false;
     if (!campFind) return true;
     var hay = (campName(c) + ' ' + ((c.clients || {}).name || '')).toLowerCase();
     return hay.indexOf(campFind) >= 0;
@@ -1012,9 +1010,8 @@
     if (!all.length) { box.innerHTML = '<div class="empty">No campaigns.</div>'; return; }
     if (!rows.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        campFind = ''; campStateFilter = 'all';
+        campFind = '';
         if ($('campFind')) $('campFind').value = '';
-        if ($('campStatePick')) $('campStatePick').value = 'all';
         paintCampaigns();
       });
       return;
@@ -1091,20 +1088,6 @@
   if ($('campFind')) $('campFind').addEventListener('input', function () {
     campFind = this.value.trim().toLowerCase(); paintCampaigns();
   });
-  /* Filled from the one vocabulary, on the first load rather than at parse
-     time: `STATE_WORD` is assigned further down this file. */
-  function fillCampStates() {
-    var pick = $('campStatePick');
-    if (!pick || pick.dataset.filled) return;
-    pick.dataset.filled = '1';
-    Object.keys(STATE_WORD).forEach(function (k) {
-      var o = document.createElement('option');
-      o.value = k; o.textContent = STATE_WORD[k];
-      pick.appendChild(o);
-    });
-    pick.addEventListener('change', function () { campStateFilter = this.value; paintCampaigns(); });
-  }
-
   // The states whose rate the client pays for.
   var CHARGED = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft',
                  'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];

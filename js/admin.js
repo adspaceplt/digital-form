@@ -4417,11 +4417,7 @@
      one. */
   function linkShown() {
     var q = $('linkSearch').value.trim().toLowerCase();
-    var st = $('linkState') ? $('linkState').value : '';
     return links.filter(function (l) {
-      var live = l.active !== false;
-      if (st === 'live' && !live) return false;
-      if (st === 'paused' && live) return false;
       if (!q) return true;
       return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || ''))
         .toLowerCase().indexOf(q) > -1;
@@ -4452,7 +4448,6 @@
         '</div></div>';
       box.querySelector('[data-a="clear"]').addEventListener('click', function () {
         $('linkSearch').value = '';
-        if ($('linkState')) $('linkState').value = '';
         paintLinks();
       });
       return;
@@ -4552,8 +4547,6 @@
   });
   window.ADspaceMenu.onScroll(shutLinkMenus);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutLinkMenus(); });
-
-  if ($('linkState')) $('linkState').addEventListener('change', paintLinks);
 
   function openLinkForm(link, opener) {
     editingSlug = link ? link.slug : null;

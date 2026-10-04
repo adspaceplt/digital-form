@@ -125,9 +125,7 @@
 
   function shown() {
     var q = ($('hbFind').value || '').trim().toLowerCase();
-    var cat = $('hbCat').value || '';
     return st.docs.filter(function (d) {
-      if (cat && d.category !== cat) return false;
       if (!q) return true;
       var v = (st.vers[d.id] || [])[0];
       return (d.title + ' ' + (d.summary || '') + ' ' + (v ? v.file_name : '')).toLowerCase().indexOf(q) > -1;
@@ -152,8 +150,7 @@
     }
     if (!list.length) {
       window.ADspaceState.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        $('hbFind').value = ''; $('hbCat').value = '';
-        $('hbCat').dispatchEvent(new Event('change', { bubbles: true }));
+        $('hbFind').value = '';
         paint();
       });
       return;
@@ -313,7 +310,7 @@
     $('hbSheetTitle').textContent = d ? 'Edit file' : 'Add file';
     $('hbSave').textContent = d ? 'Save' : 'Add';
     $('hbTitle').value = d ? d.title : '';
-    $('hbCatPick').value = d ? d.category : ($('hbCat').value || 'handbook');
+    $('hbCatPick').value = d ? d.category : 'handbook';
     $('hbSummary').value = d ? (d.summary || '') : '';
     $('hbFile').value = '';
     $('hbLink').value = d ? (d.link_url || '') : '';
@@ -436,16 +433,15 @@
   }
 
   /* ---- Filters ------------------------------------------------------------- */
-  var lastFind = '', lastCat = '';
+  var lastFind = '';
   function filtered() {
-    var f = $('hbFind').value, c = $('hbCat').value;
-    if (f === lastFind && c === lastCat) return;
-    lastFind = f; lastCat = c;
+    var f = $('hbFind').value;
+    if (f === lastFind) return;
+    lastFind = f;
     if (st.loaded) paint();
   }
   ['input', 'change'].forEach(function (ev) {
     $('hbFind').addEventListener(ev, filtered);
-    $('hbCat').addEventListener(ev, filtered);
   });
 
   function enter() {

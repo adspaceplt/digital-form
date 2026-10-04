@@ -66,7 +66,7 @@
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261001a"></script>
-<script src="/js/cmdbar.js?v=20261004a"></script>
+<script src="/js/cmdbar.js?v=20261004b"></script>
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
@@ -483,10 +483,10 @@
             <input class="input input-sm" id="crmSearch" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
           </span>
           <select class="select select-sm" id="crmStage" aria-label="Filter by stage">
-            <option value="all">Every stage</option>
+            <option value="all">All stages</option>
           </select>
           <select class="select select-sm" id="crmOwner" aria-label="Filter by person in charge">
-            <option value="all">Everyone</option>
+            <option value="all">All people</option>
           </select>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet">
@@ -1648,9 +1648,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
             <input class="input input-sm" id="campFind" type="search" placeholder="Search campaign or client" aria-label="Search campaigns">
           </span>
-          <select class="select select-sm" id="campStatePick" aria-label="Filter by state">
-            <option value="all">Every state</option>
-          </select>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet">
               <span class="cmdbar-count" id="campCount"></span>
@@ -2047,7 +2044,7 @@
             <input class="input input-sm" id="rosterSearch" type="search" placeholder="Search name or handle" aria-label="Search creators" autocomplete="off">
           </span>
           <select class="select select-sm" id="rosterPlatform" aria-label="Filter by platform">
-            <option value="all">Every platform</option>
+            <option value="all">All platforms</option>
             <option value="xhs">rednote</option>
             <option value="instagram">Instagram</option>
             <option value="tiktok">TikTok</option>
@@ -2110,42 +2107,22 @@
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
             <input class="input input-sm" id="workFind" type="search" placeholder="Search task or client" aria-label="Search tasks" autocomplete="off">
           </span>
-          <!-- Whose work is a view, not a filter. Assigned, created and
-               following are everybody's; the whole team's queue is offered
-               only where `ops.all` is granted, because that is the only place
-               it can arrive. -->
+          <!-- Whose work is a view, not a filter. Assigned and created are
+               everybody's; the whole team's queue is offered only where
+               `ops.all` is granted, because that is the only place it can
+               arrive. -->
           <select class="select select-sm" id="workScope" aria-label="Whose work" data-nofilter>
             <option value="mine">Assigned to me</option>
             <option value="created">Created by me</option>
-            <option value="following">Following</option>
             <option value="all" id="workScopeAll" hidden>The whole team</option>
           </select>
-          <!-- What a person looks at first: their day, then where the work
-               has got to, then its history. Each is a view over the same rows,
-               so the count and the grouping follow it. The stage views are the
-               ones My Work was published with, keyed on the stage group the
-               workflow carries and never on a stage key. -->
-          <select class="select select-sm" id="workStage" aria-label="View">
-            <optgroup label="Your day">
-              <option value="day">My day</option>
-              <option value="today">Due today</option>
-              <option value="overdue">Overdue</option>
-              <option value="soon">Due soon</option>
-              <option value="upcoming">Upcoming</option>
-            </optgroup>
-            <optgroup label="Where the work is">
-              <option value="active">In progress</option>
-              <option value="internal_review">AQC review</option>
-              <option value="client_review">Client review</option>
-              <option value="waiting_client">Waiting on client</option>
-              <option value="after">Scheduled and live</option>
-              <option value="waiting">On hold or blocked</option>
-              <option value="late">Late</option>
-            </optgroup>
-            <optgroup label="History">
-              <option value="done">Completed</option>
-              <option value="all">All tasks</option>
-            </optgroup>
+          <!-- What is shown: open work, finished work, or both. Where the work
+               has got to is the grouping's question (By stage, By status),
+               never a second filter saying it again. -->
+          <select class="select select-sm" id="workStage" aria-label="Show">
+            <option value="day">Open</option>
+            <option value="done">Completed</option>
+            <option value="all">All</option>
           </select>
           <!-- The axis. Banding by when work is owed answers "what do I do
                today" and cannot answer "how is October going" or "what is
@@ -2156,7 +2133,7 @@
                work-in-progress guidance on them are the workflow's own; it
                draws in place of Group by, whose axis the board has fixed. -->
           <select class="select select-sm" id="workWf" aria-label="Workflow" data-nofilter hidden></select>
-          <select class="select select-sm" id="workGroup" aria-label="Group by">
+          <select class="select select-sm" id="workGroup" aria-label="Group by" data-view>
             <option value="due">By day</option>
             <option value="stage">By stage</option>
             <option value="status">By status</option>
@@ -2168,7 +2145,7 @@
                by it, so nothing overdue can fall out of the queue however old
                it is. It draws only while finished work is being asked for,
                because that is the only time it governs anything. -->
-          <select class="select select-sm" id="workPeriod" aria-label="How far back to read finished work" hidden>
+          <select class="select select-sm" id="workPeriod" aria-label="Completed" hidden>
             <option value="week">This week</option>
             <option value="month">This month</option>
             <option value="lastmonth">Last month</option>
@@ -3386,15 +3363,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="regFind" type="search" placeholder="Search reference or name" aria-label="Search documents" autocomplete="off">
         </span>
-        <select class="select select-sm" id="regFam" aria-label="Filter by kind">
-          <option value="">Every kind</option>
-          <option value="quote_cover">Quotation Covers</option>
-          <option value="offer">Letters of Offer</option>
-          <option value="client">Client Letters</option>
-          <option value="hr">HR Letters</option>
-          <option value="other">Other documents</option>
-        </select>
-        <select class="select select-sm" id="regSort" aria-label="Sort">
+        <select class="select select-sm" id="regSort" aria-label="Sort" data-view>
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
           <option value="reference">By reference</option>
@@ -3443,7 +3412,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="teamFind" type="search" placeholder="Search name or sign-in email" aria-label="Search members">
         </span>
-        <select class="select select-sm" id="teamGroupPick" aria-label="Group"></select>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet">
             <span class="cmdbar-count" id="teamCount"></span>
@@ -3890,14 +3858,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="hbFind" type="search" placeholder="Search files" aria-label="Search the Handbook" autocomplete="off">
         </span>
-        <select class="select select-sm" id="hbCat" aria-label="Filter by category" data-default="">
-          <option value="">Every category</option>
-          <option value="handbook">Employee Handbook</option>
-          <option value="sop">SOPs</option>
-          <option value="policy">Policies</option>
-          <option value="template">Templates and forms</option>
-          <option value="other">Other</option>
-        </select>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet"><span class="cmdbar-count" id="hbCount"></span></span>
           <span class="cmdbar-acts">
@@ -4051,7 +4011,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="svcFind" type="search" placeholder="Search the rate card" aria-label="Search the rate card">
         </span>
-        <select class="select select-sm" id="svcFilter" aria-label="Category"></select>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet">
             <span class="cmdbar-count" id="svcCount"></span>
@@ -4208,11 +4167,6 @@ raya-2026        https://example.com/raya"></textarea>
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="linkSearch" type="search" placeholder="Search slug, destination or label" aria-label="Search links">
         </span>
-        <select class="select select-sm" id="linkState" aria-label="State">
-          <option value="">Live and paused</option>
-          <option value="live">Live</option>
-          <option value="paused">Paused</option>
-        </select>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet">
             <span class="cmdbar-count" id="linkCount"></span>
@@ -4623,18 +4577,18 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261004i"></script>
+<script src="/js/admin.js?v=20261004j"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261003p"></script>
 <script src="/js/reports.js?v=20261004m"></script>
-<script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261004a"></script>
-<script src="/js/team.js?v=20261003m"></script>
+<script src="/js/register.js?v=20261004a"></script>
+<script src="/js/crm.js?v=20261004b"></script>
+<script src="/js/team.js?v=20261004a"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
-<script src="/js/handbook.js?v=20261004d"></script>
-<script src="/js/campaigns.js?v=20261003p"></script>
-<script src="/js/ops.js?v=20261004l"></script>
+<script src="/js/handbook.js?v=20261004e"></script>
+<script src="/js/campaigns.js?v=20261004a"></script>
+<script src="/js/ops.js?v=20261004m"></script>
 <script src="/js/perf.js?v=20261004d"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261003l"></script>

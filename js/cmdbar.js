@@ -63,8 +63,10 @@
     if (sel.hasAttribute('data-default')) return sel.getAttribute('data-default');
     return sel.options.length ? sel.options[0].value : '';
   }
+  /* A view (`data-view`: Group by, Sort) rides in the card beside the
+     filters but narrows nothing, so it is never counted and Clear leaves it. */
   function isOff(sel) {
-    if (sel.hidden || sel.hasAttribute('data-nofilter')) return false;
+    if (sel.hidden || sel.hasAttribute('data-nofilter') || sel.hasAttribute('data-view')) return false;
     return sel.value !== defaultOf(sel);
   }
   function labelOf(sel) {
@@ -229,7 +231,7 @@
   function clear() {
     if (!open) return;
     liveSelects(open.rec).forEach(function (sel) {
-      if (sel.hidden || sel.hasAttribute('data-nofilter')) return;
+      if (sel.hidden || sel.hasAttribute('data-nofilter') || sel.hasAttribute('data-view')) return;
       var d = defaultOf(sel);
       if (sel.value === d) return;
       sel.value = d;

@@ -274,7 +274,6 @@
       state.roles = r.data || [];
       paintGroups();
       fillRolePick();
-      fillGroupPick();
       db.from('team_members').select('*').order('active', { ascending: false })
         .order('role').order('name').then(function (q) {
           if (q.error) {
@@ -312,18 +311,9 @@
      the same thing the groups table below already says, three times over, and
      answered "who is in Sales" only by reading every row. The heading answers
      it, and moving somebody is Edit in the ⋯, where a rare action belongs. */
-  var teamFind = '', teamGroup = '';
+  var teamFind = '';
 
-  function fillGroupPick() {
-    var sel = $('teamGroupPick');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Every group</option>' + state.roles.map(function (r) {
-      return '<option value="' + esc(r.slug) + '">' + esc(r.name) + '</option>';
-    }).join('');
-    sel.value = teamGroup;
-  }
   function teamMatch(m) {
-    if (teamGroup && m.role !== teamGroup) return false;
     if (!teamFind) return true;
     return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + String(m.staff_code || '') + ' ' + whoLine(m))
       .toLowerCase().indexOf(teamFind) > -1;
@@ -351,9 +341,8 @@
       box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
         '<button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button></div></div>';
       box.querySelector('[data-a="clear"]').addEventListener('click', function () {
-        teamFind = ''; teamGroup = '';
+        teamFind = '';
         if ($('teamFind')) $('teamFind').value = '';
-        if ($('teamGroupPick')) $('teamGroupPick').value = '';
         paintMembers();
       });
       return;
@@ -390,9 +379,6 @@
 
   if ($('teamFind')) $('teamFind').addEventListener('input', function () {
     teamFind = this.value.trim().toLowerCase(); paintMembers();
-  });
-  if ($('teamGroupPick')) $('teamGroupPick').addEventListener('change', function () {
-    teamGroup = this.value; paintMembers();
   });
   function byName(a) {
     return a.slice().sort(function (x, y) {

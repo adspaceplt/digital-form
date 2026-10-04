@@ -536,12 +536,7 @@
           state.tasks = tasks;
           state.owners = {};
           state.ownerIds = {};
-          state.onTask = {};
           q[0].data.forEach(function (a) {
-            /* Following is being on the task in any other capacity than
-               owning it: a reviewer or a contributor is somebody the task's
-               changes concern without the task being theirs to carry. */
-            (state.onTask[a.task_id] = state.onTask[a.task_id] || {})[a.team_member_id] = a.responsibility;
             if (a.responsibility !== 'owner') return;
             state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
             state.ownerIds[a.task_id] = a.team_member_id;
@@ -823,39 +818,16 @@
     return late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '';
   }
 
-  /* THE VIEW: the question a person is asking of their work. My day is the
-     whole of it in the order above; the day views narrow it by date, and the
-     stage views are the ones My Work was published with, keyed on the stage
-     group the workflow carries, because two workflows name the same stage
-     differently. */
+  /* WHAT IS SHOWN: open work, finished work, or both. Open is the day's
+     queue (finished today stays in its shut band). Where a task has got to
+     is the grouping's question (By stage, By status), never a second filter
+     saying it again (the user, 2026-10-04). */
   function inFilter(t) {
     var f = state.filter || 'day';
-    var fin = isFinished(t), n = daysAway(dueOf(t)), p = plainOf(t);
-    var s = stageOf(t), g = s ? s.stage_group : '';
     if (f === 'all') return true;
+    var fin = isFinished(t);
     if (f === 'done') return fin;
-    if (f === 'day') return fin ? doneToday(t) : true;
-    if (fin) return false;
-    if (f === 'today') return n !== null && n <= 0;
-    if (f === 'overdue') return n !== null && n < 0;
-    /* Owed within the week and not already over: overdue is its own answer. */
-    if (f === 'soon') return n !== null && n >= 0 && n <= 7;
-    if (f === 'upcoming') return n === null || n > 0;
-    /* The work in hand, on either word a workflow uses for it: the stage's
-       own flag, or its group. */
-    if (f === 'active') return Boolean(s && (s.is_active_work || isWork(g)));
-    if (f === 'internal_review') return g === 'internal_review';
-    if (f === 'client_review') return g === 'client_review';
-    /* With the client for a decision, or held because they have not
-       answered. */
-    if (f === 'waiting_client') return g === 'client_review' || (t.stage_key === 'blocked' && t.blocked_category === 'client');
-    /* Everything after the client said yes: approved, scheduled, live and
-       under review for how it performed. */
-    if (f === 'after') return g === 'approved' || g === 'scheduled' || g === 'live' || g === 'performance';
-    if (f === 'waiting') return g === 'waiting' || g === 'kiv' || t.stage_key === 'blocked';
-    if (f === 'review') return p === 'review';
-    if (f === 'late') return isLate(t);
-    return true;
+    return fin ? doneToday(t) : true;
   }
   function inScope(t) {
     if (state.scope === 'all') return true;
@@ -866,12 +838,6 @@
        Keyed on the id and not the name: two colleagues can share a first
        name, and a rename would quietly empty somebody's queue. */
     if (state.scope === 'created') return t.created_by === me.id;
-    /* Following is being on the task as its reviewer or a contributor: the
-       work is not yours to carry, and its changes still concern you. */
-    if (state.scope === 'following') {
-      var role = state.onTask && state.onTask[t.id] && state.onTask[t.id][me.id];
-      return Boolean(role && role !== 'owner');
-    }
     return state.ownerIds[t.id] === me.id;
   }
   function matches(t) {
@@ -943,7 +909,7 @@
          the view, one press away (the user, 2026-10-04). */
       var done = state.filter === 'done' || state.filter === 'all';
       UI.emptyLine(box,
-        done ? 'No completed tasks.' : 'No open tasks.',
+        state.filter === 'all' ? 'No tasks.' : done ? 'No completed tasks.' : 'No open tasks.',
         done ? (state.period === 'year' ? '' : 'Show this year') : 'Show completed',
         function () {
           if (!done) {
@@ -961,16 +927,15 @@
       return;
     }
     if (!rows.length) {
-      /* Back to the view this route opens on, and no further: whose queue you
-         are looking at is not a filter, so clearing the filters does not put
-         somebody back on their own work without being asked. */
+      /* Back to open work, and no further: whose queue you are looking at
+         and how it is grouped are views, not filters. */
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        state.find = ''; state.filter = 'day'; state.group = 'due';
+        var was = state.filter !== 'day';
+        state.find = ''; state.filter = 'day';
         if ($('workFind')) $('workFind').value = '';
-        if ($('workStage')) $('workStage').value = 'day';
-        if ($('workGroup')) $('workGroup').value = 'due';
+        if ($('workStage')) { $('workStage').value = 'day'; if (window.ADspaceForm) window.ADspaceForm.paint($('workStage')); }
         showPeriod();
-        paint();
+        if (was) load(); else paint();
       });
       state.shown = [];
       state.picked = {};
@@ -7671,7 +7636,7 @@
       var b = document.querySelector('#workViews [data-view="' + k + '"]');
       if (b) b.hidden = !may('ops.' + k, 'view');
     });
-    /* Assigned, created and following are everybody's views. The whole
+    /* Assigned and created are everybody's views. The whole
        team's queue is offered only where it can arrive: showing it where it
        cannot would offer a view that comes back empty and say nothing. */
     var all = $('workScopeAll');

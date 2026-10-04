@@ -463,7 +463,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
     Clear sets `data-default` (else the first option) and fires `change`.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
-    `#workScope`).
+    `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
+    `#regSort`): never counted by the badge, never reset by Clear.
   - A second action goes behind `.cmd-more`; each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed.
@@ -710,6 +711,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Team by user group;
   - the Handbook by category (Archived shut, an admin's alone);
   - My Work by its axis.
+- A filter never repeats the cards' own grouping: no state, kind, group or
+  category filter on a route whose cards are those groups (Creator Campaigns,
+  Documents, Team, Services, Handbook, Short Links). An option for all reads
+  All stages, All people, All platforms, never Every … or Everyone.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
@@ -1441,9 +1446,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     box (`setView` draws a frame after the press).
   - A view without its permission falls back to the list.
 - The list:
-  - My day by default, banded Overdue, Due today, In progress, Ready for
-    review, Upcoming, No due date, Waiting, Completed today (shut).
-  - Views by `stage_group`, never by one workflow's key.
+  - Show (`#workStage`): Open (`day`, the default: banded Overdue, Due
+    today, In progress, Ready for review, Upcoming, No due date, Waiting,
+    Completed today shut), Completed (`done`), All (`all`). Where the work
+    has got to is Group by's question (stage, status), never a Show option.
   - The period select (`#workPeriod`): This week, This month, Last month,
     Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
     now but Last month, which ends where this month begins (`periodEnd()`,
@@ -1459,8 +1465,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     Completed (This week … This year).
   - An empty list says what it holds back: No open tasks. (Show completed),
     No completed tasks. (Show this year).
-  - Whose work (`#workScope`) is a view, not a filter; The whole team only with
-    `ops.all`.
+  - Whose work (`#workScope`) is a view, not a filter: Assigned to me,
+    Created by me, The whole team (only with `ops.all`). No Following.
+  - Clear the filters returns the search and Show to Open; Whose work and
+    Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
 - The read is bounded, and open work is not part of the bound. Open work is
