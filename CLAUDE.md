@@ -298,8 +298,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     refuses an end not after the start and now (`bad-window`), and files
     `team.changed` under subject Portal ("Upgrade mode: off → on · from … ·
     until … · note", Malaysia time).
-  - Every portal page loads it after `api.js` but `/` and the 404, so the
-    front door and short links stay up. A client page covers itself under
+  - Every portal page loads it after `api.js` but `/`, the 404 and `/card/`,
+    so the front door, short links and every colleague's namecard (a
+    printed QR's page) stay up. A client page covers itself under
     its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
     progress / 系统升级中 (`W.maintTitle`; `maintText` We'll be right back! / 我们马上回来！; `maintBack` Expected
     back by {end}), following the 中文 switch. A page left open covers itself
@@ -308,7 +309,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
     The switch is the account menu's Upgrade mode (`role="switch"`, Off /
     On / Set, an admin's alone): on asks for Starts, Ends (each a date beside
-    its time, MYT; empty start is now, empty end waits) and a note; off never
+    its time, MYT; empty start is now, empty end waits, a time with no date
+    is today's) and a note, refusing in the sheet a window that does not end
+    after its start and now; off never
     asks.
 
 ### One copy of each mechanism
@@ -368,6 +371,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
   - A field marked `half` sits beside the next one (a date and its time).
+  - `check(values)` refuses in place what the fields cannot state alone (an
+    end before its start): the sheet and what was typed stay.
   - A destructive question opens on Cancel.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
     above any sheet.
@@ -1044,18 +1049,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   their half (`showHalf`; the user, 2026-10-03: a reel with changes
   requested opened on nothing). A pairing is not a revision.
   Add assets pairs a cover with a video by file name (`launch.mp4`,
-  `launch-cover.jpg`), else the nearest video before it, as a Cover for choice
-  kept by hand. On the set page a video and its covers are one linked card
-  (`.saved-pair`: a shaded frame, the video's row then the cover's, a line
-  drawn from picture to picture; each row keeps its own state, ⋯ and notes;
-  shown while either half is in the chosen stage, the other faded); a
-  cover's ⋯ Pair with video changes or clears it (`post.edited`). A video is
-  named by its number in the set (shown on its row) and its title, else its
-  caption's first words, else its file. While a cover waits, a line over the
-  posts counts them with Pair covers (`#pairNote`, Work) opening
-  `#pairSheet`: one card a cover, the cover and the proposed video (the
-  first free video after it in the set, the only clue an older set holds)
-  side by side at 9:16, the video playable, its select and a Pair tick;
+  `launch-cover.jpg`), every name first, else the first free video after it
+  (every pair the team has made has its video right after its cover), else
+  the nearest before it, as a Cover for choice kept by hand. On the set page
+  a video and its covers are one linked card (`.saved-pair`: a shaded frame,
+  the video's row then the cover's, a line drawn from picture to picture;
+  each row keeps its own state, ⋯ and notes; shown while either half is in
+  the chosen stage, the other faded); a cover's ⋯ Pair with video changes
+  or clears it (`post.edited`), offering only videos no other cover holds.
+  A cover waits while it names no video the set holds (one whose video was
+  deleted waits again). A video is named by its number in the set (shown on
+  its row) and its title, else its caption's first words, else its file.
+  While a cover waits, a line over the posts counts them with Pair covers
+  (`#pairNote`, Work) opening `#pairSheet`: one card a cover, the cover and
+  the proposed video (the same order rule; a video a paired cover holds is
+  neither proposed nor offered) side by side at 9:16, the video playable,
+  its select and a Pair tick;
   the foot reads Pair n, writes only ticked cards naming a video, refuses
   one video for two covers, files `Covers paired: n`, and draws Undo over
   the posts (`Covers unpaired: n`).

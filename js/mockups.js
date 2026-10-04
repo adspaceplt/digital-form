@@ -700,15 +700,22 @@
         if (!p) return '';
         w = Number(p[1]); h = Number(p[2]);
       }
-      const known = [[9, 16], [4, 5], [1, 1], [3, 4], [2, 3], [16, 9], [4, 3], [5, 4], [3, 2], [191, 100]];
+      const known = [[9, 16], [4, 5], [1, 1], [3, 4], [2, 3], [16, 9], [4, 3], [5, 4], [3, 2], [191, 100], [9, 19.5]];
       const r = w / h;
       for (let i = 0; i < known.length; i++) {
         const k = known[i][0] / known[i][1];
         if (Math.abs(r - k) / k < 0.03) return known[i][0] === 191 ? '1.91:1' : known[i][0] + ':' + known[i][1];
       }
-      const g = function (a, b) { return b ? g(b, a % b) : a; };
-      const d = g(Math.round(w), Math.round(h)) || 1;
-      return Math.round(w / d) + ':' + Math.round(h / d);
+      /* Any other size reads as the nearest ratio of small whole numbers
+         (a 1234 x 987 export is 5:4, never 1234:987), else as a decimal. */
+      let best = null;
+      for (let b = 1; b <= 16; b++) {
+        const a = Math.round(r * b);
+        const err = a ? Math.abs(a / b - r) / r : 1;
+        if (!best || err < best.err - 1e-9) best = { a: a, b: b, err: err };
+      }
+      if (best && best.err < 0.02) return best.a + ':' + best.b;
+      return r >= 1 ? r.toFixed(2) + ':1' : '1:' + (1 / r).toFixed(2);
     },
     /* The platform a card's head is tinted for: a cover belongs to the
        account its reel posts on, which is Instagram's here. */
