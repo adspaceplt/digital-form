@@ -628,11 +628,12 @@ a { color: inherit; }
 .copyhead h5 { margin-bottom: 0; flex: 0 1 auto; }
 /* Edit text and Copy text, one pair of small tonal buttons at the
    heading's right (the user, 2026-10-04: the pen alone beside the heading
-   was not seen). Under a narrow card the pair takes its own line, still at
-   the right edge, rather than squeezing the heading. */
-.copyhead { flex-wrap: wrap; row-gap: 8px; }
-.copyacts { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
-.copyacts > .btn { min-width: 0; }
+   was not seen). The pair stays on the heading's line at every width,
+   320 and an iPhone at Display Zoom included (the user, 2026-10-04). */
+.copyhead { gap: 8px; }
+.copyhead h5 { min-width: 0; white-space: nowrap; }
+.copyacts { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 5px; }
 .copy-pen[hidden] { display: none; }
 .copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
 .copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
