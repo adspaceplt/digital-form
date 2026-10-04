@@ -1880,6 +1880,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Record deleted), and `perf_deleted` keeps a printed reference so
   `/verify/` answers it Void. There is no restore.
 <!-- Performance rewards (2026-09-28) -->
+- Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
+  `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
+  - My performance is three views (`#mineViews`, `view=` in the address,
+    Reviews left out): Reviews, Initiatives, Reflection, all behind the
+    fresh proof (`perf_mine_gate()`).
+  - An initiative (title 3 to 140, Improves: Client work, Process, Tool, SOP,
+    Other; details; an https link) is logged in this month as Proposed and
+    edited while Proposed; Withdraw (Undo in place, Restore in the ⋯) is its
+    author's way out. Management (`team.performance` Work, a live unlock)
+    moves it Proposed → Adopted / Not now (each asks, with an optional note
+    the author reads, and tells the author, `perf.initiative`) → Done (the
+    month it is done); Revert back to Proposed never asks. Performance's
+    Initiatives view (`view=initiatives`) lists everyone's but the caller's,
+    by state (Not now and Withdrawn shut). Nobody decides their own (`own`).
+  - The review sheet shows beside the scores the colleague's initiatives
+    logged or done in that month and, once they share it, their reflection
+    (`perf_review_context`); nothing scores itself: the reviewer still
+    scores Initiative and improvement.
+  - A reflection is Proud of, Found hard, Want to learn, for this month or
+    last, until that month is final (`bad-month`, `final`); Share with
+    management asks first, Stop sharing never asks; management reads it
+    only while shared, and it is never scored.
+  - Every step is filed in the review trail (`initiative.*`,
+    `reflection.shared` / `unshared`); `perf_activity` does not list them.
 - Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
   Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
   the period's first quarter).

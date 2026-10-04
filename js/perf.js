@@ -2866,6 +2866,7 @@
 
   // Management ------------------------------------------------------------------------------
   function loadInits() {
+    opened();
     if (!st.pinits) UI.skeleton($('piList'), 3);
     call('perf_initiatives', { p_token: token }, function (d) {
       if (d.error === 'code-needed' || d.error === 'no-code') return;
@@ -2969,7 +2970,7 @@
       return { tab: 'performance', m: st.period.slice(0, 7) };
     },
     /* My performance: the view, Reviews left out of the address. */
-    mineState: function () { return st.mv && st.mv !== 'reviews' ? { view: st.mv } : {}; },
+    mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); }
   };
