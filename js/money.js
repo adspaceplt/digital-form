@@ -18,8 +18,52 @@
     SG: { code: 'SGD', sign: 'S$', locale: 'en-SG' }
   };
 
+  /* THE FIGURES ARE SETTINGS (2026-10-05). SST and the term percentages are
+     an admin's to change from a day on (`app_settings`, read through
+     `app_settings_read()`), each kept with the day it took effect, so a
+     letter redrawn later is priced by the figures of its own day. `load()`
+     reads them once per page; `FIRST` is what each held before the setting
+     existed (the migration's seed), used only where the read fails. */
+  var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_24: -10,
+    lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7 };
+  var ROWS = [];
+  var loading = null;
+  function today() {
+    try { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+    catch (e) { return new Date().toISOString().slice(0, 10); }
+  }
+  /* A day is read in Malaysia: a timestamp (an issued letter's) becomes its
+     MYT date, so a change from a day applies from that day's midnight here. */
+  function dayOf(at) {
+    if (!at) return today();
+    var s = String(at);
+    if (s.length <= 10) return s;
+    try { return new Date(s).toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+    catch (e) { return s.slice(0, 10); }
+  }
+  function setting(key, at) {
+    var day = dayOf(at);
+    var rows = ROWS.filter(function (r) { return r.key === key; })
+      .sort(function (a, b) { return a.from < b.from ? -1 : 1; });
+    var on = rows.filter(function (r) { return r.from <= day; });
+    var r = on.length ? on[on.length - 1] : rows[0];
+    return r ? Number(r.value) : FIRST[key];
+  }
+  function load(force) {
+    if (loading && !force) return loading;
+    var api = window.ADspaceAPI, db = api && api.client;
+    if (!db) return (loading = Promise.resolve(null));
+    loading = db.rpc('app_settings_read').then(function (r) {
+      if (r.error || !r.data) return null;
+      ROWS = (r.data.settings || []).map(function (x) { return { key: x.key, from: String(x.from).slice(0, 10), value: x.value, by: x.by, at: x.at }; });
+      TAX.rate = setting('sst_pct') / 100; TAX.label = taxLabel();
+      return r.data;
+    }).catch(function () { return null; });
+    return loading;
+  }
+
   // Malaysian service tax. One rate, because we are one entity.
-  var TAX = { label: 'SST 8%', rate: 0.08 };
+  var TAX = { label: 'SST ' + FIRST.sst_pct + '%', rate: FIRST.sst_pct / 100 };
 
   function market(m) { return MARKETS[String(m || 'MY').toUpperCase()] || MARKETS.MY; }
 
@@ -36,9 +80,9 @@
 
   // Rounded to the cent at the point it is charged, not at the point it is
   // displayed, so a total and the sum of its lines cannot disagree.
-  function taxOf(subtotal, m, applies) {
+  function taxOf(subtotal, m, applies, at) {
     if (applies === false) return 0;
-    return Math.round(Number(subtotal || 0) * TAX.rate * 100) / 100;
+    return Math.round(Number(subtotal || 0) * setting('sst_pct', at)) / 100;
   }
 
   /* Term. Six months is the minimum a monthly service is sold on, so it is the
@@ -84,13 +128,14 @@
      stored value can take are therefore all meaningful — a number, `0` for a
      term the person chose to leave unadjusted, and `null` for a line from
      before — and none of them is a default. */
+  /* The ranges are the card's; the percentage for each is a setting. */
   var TERM_PCT = [
-    [1, 3, 25], [4, 5, 15], [6, 11, 0], [12, 23, -5], [24, 999, -10]
+    [1, 3, 'term_1_3'], [4, 5, 'term_4_5'], [6, 11, 'term_6_11'], [12, 23, 'term_12_23'], [24, 999, 'term_24']
   ];
-  function termPct(months) {
+  function termPct(months, at) {
     var n = Math.max(1, Math.floor(Number(months || 1)));
     for (var i = 0; i < TERM_PCT.length; i++) {
-      if (n >= TERM_PCT[i][0] && n <= TERM_PCT[i][1]) return TERM_PCT[i][2];
+      if (n >= TERM_PCT[i][0] && n <= TERM_PCT[i][1]) return setting(TERM_PCT[i][2], at);
     }
     return 0;
   }
@@ -142,7 +187,10 @@
   }
 
   // Named the same wherever it is charged, because it is the same tax.
-  function taxLabel() { return TAX.label; }
+  function taxLabel(m, at) {
+    var p = setting('sst_pct', at);
+    return 'SST ' + (Math.round(p * 100) / 100) + '%';
+  }
   function signOf(m) { return market(m).sign; }
 
   window.ADspaceMoney = {
@@ -161,6 +209,9 @@
     sign: signOf,
     market: market,
     MARKETS: MARKETS,
-    TAX: TAX
+    TAX: TAX,
+    load: load,
+    setting: setting,
+    rows: function () { return ROWS.slice(); }
   };
 })();

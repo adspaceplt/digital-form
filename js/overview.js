@@ -101,7 +101,7 @@
      url, section }], count, warn }`. A chart card: `load()` answers a spec for
      ADspaceChart.draw, or `{ empty }`. Sections run in the rail's order. */
   /* How long a stage may run, from the Clients list's own rule. */
-  function staleH() { return (window.ADspaceCRM && window.ADspaceCRM.staleH) || { lead: 48, proposal: 21 * 24 }; }
+  function staleH() { return window.ADspaceCRM.staleH(); }
   var LETTERS = ['offer', 'intent', 'cover'];
 
   var SECTIONS = [

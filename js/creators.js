@@ -100,7 +100,6 @@
       confirmed: 'Selection confirmed. Shoot dates will follow.',
       summary: function (n, v) { return n + ' chosen · ' + v; },
       subtotal: 'Subtotal',
-      sst: 'SST 8%',
       total: 'Total',
       totalShort: function (v, tax) { return 'Total ' + v + (tax ? ' incl. ' + tax : ''); },
       invoice: 'Invoice',
@@ -202,7 +201,6 @@
       confirmed: '已确认。拍摄日期将随后通知。',
       summary: function (n, v) { return '已选 ' + n + ' 位 · ' + v; },
       subtotal: '小计',
-      sst: 'SST 8%',
       total: '总计',
       totalShort: function (v, tax) { return '总计 ' + v + (tax ? '（含 ' + tax + '）' : ''); },
       invoice: '发票',
@@ -326,7 +324,10 @@
     if (!db) { showState('Not connected', 'This portal has not been configured yet.', false); return; }
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
-    db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode }).then(function (r) {
+    /* SST is a setting (js/money.js): read beside the campaign, never after it. */
+    var rates = MON.load ? MON.load() : Promise.resolve();
+    db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode })
+      .then(function (r) { return rates.then(function () { return r; }); }).then(function (r) {
       /* A client page never shows a database message (audit, 2026-10-03). */
       if (r.error) { showState(t().failTitle, t().failText, false); return; }
       var d = r.data || {};

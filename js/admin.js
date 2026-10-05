@@ -624,6 +624,10 @@
   var me = null;
   var meLoaded = false;
   function loadMe(then) {
+    /* The business figures the team may change (SST, terms, follow-up
+       limits; js/money.js) are read beside me(), so no screen draws first. */
+    var MON = window.ADspaceMoney, rates = MON && MON.load ? MON.load() : Promise.resolve();
+    var go = function () { rates.then(then, then); };
     db.rpc('me').then(function (r) {
       if (r.error) {
         me = { role: 'admin', is_admin: true, legacy: true };
@@ -631,8 +635,8 @@
         me = r.data && r.data.id ? r.data : null;
       }
       meLoaded = true;
-      then();
-    }, function () { me = null; meLoaded = true; then(); });
+      go();
+    }, function () { me = null; meLoaded = true; go(); });
   }
 
   /* Access is a level per section, the same four the database ranks.
@@ -3848,11 +3852,63 @@
       'stroke-linejoin="round" aria-hidden="true">' + ICON[name] + '</svg></button>';
   }
 
+  /* THE BUSINESS FIGURES (2026-10-05): follow-up limits, SST, the term
+     percentages and the report deadline are settings an admin changes from a
+     day on (`app_settings_set`, today or later, so an issued letter keeps
+     the figures of its day). One sheet for every group of them: From, then
+     each figure as it stands today; only what changed is sent; the page
+     reads the figures again and repaints. `spec`: { title, keys: [[key,
+     label, kind]], msg (an element id), done }. Kinds: hours, days, pct
+     (0 to 100), adj (-100 to 100). */
+  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false] };
+  function editSettings(spec, opener) {
+    var MON = window.ADspaceMoney;
+    if (!isAdminMe() || !MON) return;
+    var day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k, i) {
+      return { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
+        half: spec.keys.length > 1 && !(spec.keys.length % 2 && i === spec.keys.length - 1) };
+    }));
+    window.ADspaceConfirm.ask({
+      title: spec.title, go: 'Save', fields: fields,
+      check: function (v) {
+        if (!v.from || v.from < day) return 'From is today or a later day.';
+        for (var i = 0; i < spec.keys.length; i++) {
+          var k = spec.keys[i], b = SET_BOUND[k[2]], x = String(v[k[0]] == null ? '' : v[k[0]]).trim(), n = Number(x);
+          if (x === '' || isNaN(n) || n < b[0] || n > b[1] || (b[2] && n % 1) || Math.round(n * 100) !== n * 100) {
+            return k[1] + ': ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + '.';
+          }
+        }
+        return '';
+      }
+    }, function (v) {
+      var vals = {};
+      spec.keys.forEach(function (k) { var n = Number(v[k[0]]); if (n !== MON.setting(k[0], v.from)) vals[k[0]] = n; });
+      if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'ok'); return; }
+      db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          if (spec.msg) msg(spec.msg, r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'Only an admin changes this.'
+            : d.error === 'bad-value' ? 'A figure is out of range.' : d.error, 'err');
+          return;
+        }
+        return MON.load(true).then(function () {
+          var word = new Date(v.from + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+          if (spec.msg) msg(spec.msg, 'Saved. From ' + word + '.', 'ok');
+          if (spec.done) spec.done();
+        });
+      }).catch(function (e) { if (spec.msg) msg(spec.msg, String((e && e.message) || e), 'err'); });
+    });
+  }
+
   /* Creator Campaigns lives in its own file, because this one is long enough.
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
     wireLogoUpload: wireLogoUpload,
+    editSettings: editSettings,
+    isAdmin: isAdminMe,
     ICON: ICON,
     hold: hold,
     iconBtn: iconBtn,

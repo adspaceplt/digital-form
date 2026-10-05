@@ -143,7 +143,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
-| `money.js` | crm, letter, sgd |
+| `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `workers/links/` | links |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
@@ -337,9 +337,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
   - RM for MY, S$ for SG.
-  - SST 8% unless `sst_applies` is false.
+  - SST at the rate in force on the document's own day (`taxOf(sub, m,
+    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`)
+    unless `sst_applies` is false.
   - Two decimals on every total.
   - `TERMS` holds the older factor table (used when `term_pct` is null).
+  - `ADspaceMoney.load()` reads the business figures once a page
+    (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
+    the console waits for it beside `me()`, the client portal beside
+    `get_portal`, the selection page beside `get_campaign`. `FIRST` is used
+    only where the read fails.
 - `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
   a popover card opens.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
@@ -616,8 +623,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A business figure the team may change (an amount, a threshold, a rate, a
   limit) is a setting an admin edits, effective from a date or period, read
   by the function that applies it; never a number typed into code (the user,
-  2026-10-05: "what if i need changes the next quarter"). Older fixed
-  figures are listed in `STANDARD.md` until moved.
+  2026-10-05: "what if i need changes the next quarter"). Outside
+  Performance they are `app_settings` (`2026-10-05-app-settings.sql`, key,
+  from_date, value; RLS on, no policy, no grant): `app_setting(key, at)` for
+  functions, `app_settings_read()` for pages, `app_settings_set(p_from,
+  p_values)` an admin's, from today (MYT) or later (`past`), filed
+  `team.changed` under Settings. One sheet edits a group of them
+  (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
+  is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
+  bar), Report deadline (My Work's ⋯), an admin's alone.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -837,9 +851,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Every count opens its clients (`#salesPop`, a `.popcard`), each opening
   the record, whose Back returns to Sales. A refused read of the lines is
   said under Committed monthly value.
-- `STALE_H`:
-  - Lead 48 hours;
-  - Proposal sent 21 days (calendar days);
+- The follow-up limits (`staleH()`, settings `lead_followup_hours` 48 and
+  `proposal_followup_days` 21, calendar days):
+  - Lead and Proposal sent read Overdue past theirs;
   - Contacted has no limit.
   - An over-run stage reads "N days · Overdue" in warn, and the group head
     counts them.
@@ -942,8 +956,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `detail` and `min_months` are seeded from the rate card and stay editable.
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
-  - Prefilled from `termPct(months)`: 1–3 months +25%, 4–5 +15%, 6–11 quoted,
-    12+ −5%, 24+ −10%.
+  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–23
+    and 24+ months, each percentage a setting (`term_1_3` 25, `term_4_5`
+    15, `term_6_11` 0, `term_12_23` −5, `term_24` −10).
   - The field follows the card only while it still holds the card's figure
     (`svPctCard`).
   - `rateFor(rate, months, adjust, pct)`: a percentage bills the rate × pct;
@@ -1794,9 +1809,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
     on), a new month taking both from the client's month before. Each
     report ticked is one live task (`ops_engagement_sync_reports`: the
-    everyday workflow, format Report, the month's manager, first draft
-    due 23:59 MYT five days after the month's last day and final seven,
-    never from the Report template's offsets; `source_type`
+    everyday workflow, format Report, the month's manager, one date: due
+    23:59 MYT `report_due_days` (7) after the month's last day, no first
+    draft date (the user, 2026-10-05), never from the Report template's
+    offsets; `sm_report_gate` reads the same day; `source_type`
     `report_social` / `report_ads`); unticked, a task still To do is
     cancelled and a started one kept (`ops_engagement_cancel_reports`, the
     one copy); only a start day moved moves an open one's dates (filed), so
@@ -1883,11 +1899,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   - C is reward eligible unless the month before was also C.
   - An L3 or L4 breach makes the month not eligible.
   - Pacing counts only for people who run ads.
-  - Deductions are capped at 35.
+  - Grade bands, breach points (by level, a repeat, lateness) and their
+    cap are settings from a quarter on (`2026-10-05-performance-rule-settings.sql`:
+    `grade_a`…`grade_d` 90/80/70/60, `ded_l1`…`ded_l4` 3/7/15/30,
+    `ded_repeat` 5, `ded_late` 5, `ded_cap` 35; `perf_grade_at`,
+    `perf_deduction_at`), a month graded by its own quarter's; `perf_calc`
+    returns the `cap` and `points` it used, and the page names them from
+    there, never a figure of its own.
   - L3 caps at B; L4 caps at D.
 - A member sees nothing of a month, breaches included, until it is released.
-  - A dispute window of 7 days from release (3 before 2026-10-01; a month
-    keeps the window it was given), item by item.
+  - A dispute window from release of the month's `dispute_days` setting
+    (7; 3 before 2026-10-01; a month keeps the window it was given), item
+    by item. Every Performance figure is edited in Performance settings
+    (the Months, Quarters and Bonus bars), an admin's.
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
     the day the numbers were reported to the member. Release fills it where
     empty; management corrects it until final (in or after the month, never
