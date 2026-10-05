@@ -483,7 +483,7 @@
          Done this week and the undo after a completion all need it. */
       var since = new Date(Math.min(periodStart().getTime(), weekStart().getTime())).toISOString();
       var base = function () {
-        return db.from('ops_tasks').select('*, clients(name)').is('archived_at', null)
+        return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
           .order('current_final_due_at', { ascending: true, nullsFirst: false });
       };
       Promise.all([
@@ -493,7 +493,7 @@
            id's order, the one no two rows share, and the queue's own order
            (the final date, undated last) is put back here. */
         readPages(function () {
-          return db.from('ops_tasks').select('*, clients(name)').is('archived_at', null)
+          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
             .is('completed_at', null).is('cancelled_at', null).order('id');
         }).then(function (x) {
           if (x.data) x.data.sort(function (a, b) {
@@ -605,10 +605,22 @@
   function nameClients(tasks) {
     var bare = tasks.filter(function (t) { return t.client_id && !(t.clients && t.clients.name); });
     if (!bare.length) return Promise.resolve();
-    return db.rpc('ops_task_clients', { p_tasks: bare.map(function (t) { return t.id; }) }).then(function (r) {
+    var ids = bare.map(function (t) { return t.id; });
+    var put = function (r, stageToo) {
       var by = {};
-      ((r && !r.error && r.data) || []).forEach(function (x) { by[x.task_id] = x.client_name; });
-      bare.forEach(function (t) { if (by[t.id]) t.clients = { name: by[t.id] }; });
+      ((r && !r.error && r.data) || []).forEach(function (x) { by[x.task_id] = x; });
+      bare.forEach(function (t) {
+        var x = by[t.id];
+        if (x) t.clients = { name: x.client_name, stage: stageToo ? x.client_stage : null };
+      });
+    };
+    /* The client's stage rides with its name, so a paused or past client's
+       open work reads as urgent delivery even where the client itself is out
+       of the colleague's reach. The name alone answers until the database
+       holds the newer function. */
+    return db.rpc('ops_task_client_facts', { p_tasks: ids }).then(function (r) {
+      if (r && !r.error) { put(r, true); return; }
+      return db.rpc('ops_task_clients', { p_tasks: ids }).then(function (q) { put(q, false); });
     }).catch(function () {});
   }
 
@@ -708,6 +720,7 @@
      on somebody else, and what was finished today. Nobody has to sort a list
      before they can read their day. */
   var BANDS = [
+    { key: 'urgent',    name: 'Urgent delivery' },
     { key: 'open',      name: 'Open to take' },
     { key: 'overdue',   name: 'Overdue' },
     { key: 'today',     name: 'Due today' },
@@ -721,6 +734,7 @@
   ];
   function bandOf(t) {
     if (isFinished(t)) return doneToday(t) ? 'donetoday' : 'done';
+    if (urgentDelivery(t)) return 'urgent';
     if (takeable(t)) return 'open';
     var n = daysAway(dueOf(t)), p = plainOf(t);
     if (n !== null && n < 0) return 'overdue';
@@ -851,6 +865,15 @@
      in everybody's own queue, in its own band at the top, until it is
      taken, withdrawn or handed on. */
   function offered(t) { return !!(t && t.open_at) && !isFinished(t); }
+  /* URGENT DELIVERY (2026-10-04). A client paused or ended at its invoice
+     period may still be owed revisions and reviews; every unfinished task of
+     theirs reads as urgent delivery, worked out from the client's stage on
+     each load and never written to the task, so the client moving back to
+     Active clears it and nobody's own priority is touched. */
+  function urgentDelivery(t) {
+    var st = t && t.clients && t.clients.stage;
+    return (st === 'paused' || st === 'past') && !isFinished(t);
+  }
   function takeable(t) {
     return offered(t) && may('ops', 'work') && (state.ownerIds[t.id] || ownerId(t)) !== myId();
   }
@@ -2120,7 +2143,8 @@
       '<span class="trow-check">' + check + '</span>' +
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
-      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + priorityChip(t) +
+      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' +
+        (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : priorityChip(t)) +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
@@ -7827,6 +7851,13 @@
     if (!x.task_id && x.report_id) {
       history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(x.report_id));
       if (bridge.show) bridge.show('reports');
+      return;
+    }
+    /* A client paused or ended opens the list, where its open work heads
+       the queue as urgent delivery. */
+    if (!x.task_id && x.kind === 'client_left') {
+      history.replaceState(null, '', '/admin/?s=work');
+      if (bridge.show) bridge.show('work');
       return;
     }
     if (!x.task_id) return;

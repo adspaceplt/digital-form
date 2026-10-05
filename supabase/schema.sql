@@ -26966,11 +26966,16 @@ grant execute on function public.ops_take_task(uuid, integer) to authenticated;
 --   3. `client_open_tasks(p_client)`: the count of the client's open tasks,
 --      for the question that asks the reason (Clients View).
 --   4. `ops_notifications_push` opens My Work for a client_left notice.
+--   5. `ops_task_client_facts(p_tasks)`: a task's client name and stage for
+--      the tasks the colleague may see, where the client itself is out of
+--      their reach (their own task on another's client), so its urgent
+--      delivery shows too. `ops_task_clients` stays for the page before it.
 --
 -- ROLLBACK
 --   Run the CLIENTS STAGE CLOCK section's clients_stage_clock and the PUSH
 --   section's ops_notifications_push again; then, in the SQL Editor, drop
---   the trigger clients_stage_notice, its function and client_open_tasks.
+--   the trigger clients_stage_notice, its function, client_open_tasks and
+--   ops_task_client_facts.
 --   The two columns may stay.
 -- ===========================================================================
 
@@ -27081,5 +27086,20 @@ begin
 exception when others then
   return new;
 end $$;
+
+/* A task's client, named and staged, for the colleague's own tasks on a
+   client outside their reach: the name alone was not enough once a paused
+   or past client's open work reads as urgent delivery. */
+create or replace function public.ops_task_client_facts(p_tasks uuid[])
+returns table (task_id uuid, client_name text, client_stage text)
+language sql security definer stable set search_path = public as $$
+  select t.id, c.name, c.stage
+    from public.ops_tasks t
+    join public.clients c on c.id = t.client_id
+   where t.id = any (p_tasks[1:500])
+     and public.ops_may_see_task(t.id)
+$$;
+revoke all on function public.ops_task_client_facts(uuid[]) from public, anon;
+grant execute on function public.ops_task_client_facts(uuid[]) to authenticated;
 
 -- END OF A CLIENT PAUSED OR PAST SAYS WHY ------------------------------------

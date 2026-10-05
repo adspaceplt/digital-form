@@ -123,8 +123,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly |
-| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave |
+| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
@@ -138,7 +138,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
-| `overview.js` | overview, then `ui` |
+| `overview.js` | overview, leave, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
@@ -790,6 +790,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Stage clock: `stage_since` and `stage_log` are stamped by
   `clients_stage_clock`, and only a real move restarts it. After a move the row
   is re-read (`refreshClient`). The move is tagged `client.stage`.
+- Paused and Past say why (`2026-10-04-client-leave-reason.sql`): the stage
+  select asks first (`askLeave`: Reason, required, of Budget, Results, Moved
+  in-house, Business closed, No reply, Other; an optional note; the client's
+  open tasks counted by `client_open_tasks`, "3 tasks are still open. They
+  show as urgent delivery in My Work."), the select holding its stage until
+  the answer. `clients.stage_reason` / `stage_note` ride the update and the
+  clock keeps them on that move's `stage_log` entry; a move into Paused or
+  Past without one is refused (`stage-reason`), and a move anywhere else
+  clears both. The Timeline names the reason under the move; the activity
+  row carries it. `clients_stage_notice` tells each owner of the client's
+  open work once (`client_left`, "{client} moved to Paused · 3 open tasks to
+  deliver", opening My Work).
 - `STALE_H`:
   - Lead 48 hours;
   - Proposal sent 21 days (calendar days);
@@ -1420,7 +1432,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   on its section or part (Manage below it shows nothing); the granted parts
   (`ops.reports`, `ops.all`, `team.performance`) at their grant. A card not
   allowed is not drawn, and a section with no cards takes its tab. Sections in the
-  rail's order: My Work (Late tasks, `ops.reports`; Open work by person,
+  rail's order: My Work (Late tasks, `ops.reports`; Open work for paused
+  and past clients, My Work Full Access with `ops.all`; Open work by person,
   `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
   (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
   requests, `clients.requests`), Content Review (Sets waiting on the client,
@@ -1648,6 +1661,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   change of hands ends the offer (trigger `ops_assignees_close_offer`). The
   owner's row carries the Open to take chip; everyone else's own queue
   heads it under Open to take with Take where the stage would be.
+- Urgent delivery: every unfinished task of a Paused or Past client reads
+  Urgent delivery (`urgentDelivery(t)`, the red chip in place of the
+  priority's; the first band on the day axis, above Open to take), worked
+  out from the client's stage on each load (the list embeds
+  `clients(name, stage)`; a client out of reach answers through
+  `ops_task_client_facts`, else `ops_task_clients`), never written to the
+  task, so the client back at Active clears it.
 - Reopen works on every cancelled task, back to the stage it was cancelled
   from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
 - A task read that finds no row (deleted, or out of reach) closes its sheet

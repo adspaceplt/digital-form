@@ -119,6 +119,32 @@
             }) };
           });
         } },
+      /* A client paused or ended still owed revisions and reviews: its open
+         work, read whole (the team's tasks, so `ops.all`). */
+      { key: 'urgent', title: 'Open work for paused and past clients',
+        can: function () { return may('ops', 'manage') && may('ops.all'); },
+        all: ['/admin/?s=work', 'work'], warn: true, empty: 'No open work for paused or past clients.',
+        load: function () {
+          return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
+            .is('completed_at', null).is('cancelled_at', null).is('archived_at', null)
+            .then(rows).then(function (list) {
+              var due = (list || []).filter(function (t) {
+                var st = t.clients && t.clients.stage;
+                return st === 'paused' || st === 'past';
+              }).sort(function (a, b) {
+                var p = a.current_final_due_at || '9999', q = b.current_final_due_at || '9999';
+                return p < q ? -1 : p > q ? 1 : 0;
+              });
+              return { count: due.length, rows: due.map(function (t) {
+                var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
+                return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
+                         meta: [t.clients.name, (W.stage || {})[t.clients.stage] || t.clients.stage].filter(Boolean).join(' · '),
+                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: 'warn',
+                         age: 'Urgent delivery',
+                         url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
+              }) };
+            });
+        } },
       { key: 'load', title: 'Open work by person', chart: true, can: function () { return may('ops.all') && may('ops.reports'); },
         load: function () {
           return report().then(function (d) {
