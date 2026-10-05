@@ -123,7 +123,7 @@
       newLeads: [], won: [], lost: [], churned: [], paused: [], resumed: [], winback: [],
       pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: []
     };
-    var STALE = (window.ADspaceCRM && window.ADspaceCRM.staleH) || { lead: 48, proposal: 21 * 24 };
+    var STALE = window.ADspaceCRM.staleH();
     var now = Date.now();
     var person = function (c) {
       var k = c.owner || 'No person in charge';

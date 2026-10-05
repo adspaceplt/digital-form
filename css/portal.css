@@ -498,6 +498,11 @@ a { color: inherit; }
 }
 @media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
+/* A typed box grows downwards only: a sideways drag widened the card past
+   the screen (the report's Notes for the draft, 2026-10-05). In a field row
+   it runs the row's width, as every other field does. */
+textarea.input { resize: vertical; max-width: 100%; }
+.row > div > textarea.input { width: 100%; }
 .input:focus, .select:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
@@ -8419,8 +8424,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    left; Write draft at the right edge with what is left beside it (the user,
    2026-10-04: a choice beside an action read as three buttons). On a phone
    the two take a line each, the action nearest the thumb. */
-.rp-aidraft { display: grid; gap: 12px; }
-.rp-aidraft .rp-hint { margin: 0; }
+.rp-aidraft { display: grid; gap: 12px; padding: 12px 16px; background: var(--sunk); border-radius: var(--radius-sm); }
+/* The notes fold inside the shaded block: a hairline on the block's own
+   ground, no extra step above it. */
+.rp-aidraft > .fmore { margin-top: 0; border-top-color: var(--line); }
+.rp-form > .rp-hint { margin: 16px 0 0; }
+.rp-form > .rp-aidraft + .msg:empty + .rp-hint { margin-top: 16px; }
 .rp-aidraft .btn { flex: 0 0 auto; }
 .rp-airow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rp-ailang { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -8488,20 +8497,43 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* A report is entered in four steps. The strip is the report's own tab row:
    each step names what it holds, and a step that holds something carries a
    tick, so where the report stands reads before anything is opened. */
-.rp-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 6px; background: var(--card); border-radius: var(--radius); }
-.rp-step { display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h); padding: 8px 10px; border: 0; border-radius: var(--radius-sm);
-  background: transparent; text-align: left; font: inherit; color: var(--ink); cursor: pointer; transition: background var(--t-fast); min-width: 0; }
-@media (hover: hover) { .rp-step:hover { background: var(--sunk); } }
-.rp-step.is-on { background: var(--line-soft); }
+.rp-steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; padding: 0;
+  background: var(--tonal); border-radius: var(--radius-ctl); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; }
+.rp-steps::-webkit-scrollbar { display: none; }
+/* The step strip is the view strip (the user, 2026-10-05): the tonal track,
+   one raised surface sliding under the chosen step (`ADspaceForm.thumb`);
+   on a narrow pane it scrolls sideways with the edge that has more faded. */
+.rp-step { display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h); padding: 8px 12px; min-width: 0;
+  border: 2px solid transparent; background-color: transparent; background-clip: padding-box; border-radius: var(--radius-ctl);
+  text-align: left; font: inherit; color: var(--ink-soft); cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
+@media (hover: hover) { .rp-step:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); } }
+.rp-step.is-on { background-color: var(--seg-on); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.rp-steps.has-thumb { position: relative; isolation: isolate; }
+.rp-steps.has-thumb::before {
+  content: ""; position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  width: var(--thumb-w, 0); height: var(--thumb-h, 0);
+  transform: translate3d(var(--thumb-x, 0), var(--thumb-y, 0), 0);
+  border-radius: calc(var(--radius-ctl) - 2px); background: var(--seg-on); box-shadow: inset 0 0 0 1px var(--line);
+  opacity: var(--thumb-o, 0);
+  transition: transform var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
+              height var(--t-slow) var(--ease), opacity var(--t-fast) var(--ease-out);
+}
+.rp-steps.has-thumb.is-snap::before { transition: none; }
+.rp-steps.has-thumb > .rp-step { position: relative; z-index: 1; }
+.rp-steps.has-thumb > .rp-step.is-on { background-color: transparent; box-shadow: none; }
 .rp-step-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
-  background: var(--sunk); color: var(--ink-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  background: var(--card); color: var(--ink-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .rp-step.is-on .rp-step-n { background: var(--fill); color: var(--on-fill); }
 .rp-step.is-done .rp-step-n { background: var(--ok-solid); color: var(--on-ok); }
 .rp-step-n svg { width: 13px; height: 13px; }
 .rp-step-t { display: flex; flex-direction: column; min-width: 0; }
-.rp-step-t b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-step-t b { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-step-t small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.is-narrow .rp-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-narrow .rp-steps { grid-auto-columns: minmax(168px, 1fr); }
+.rp-steps.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.rp-steps.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+.rp-steps.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 /* A form inside a step steps its fields 16px apart, as a sheet does. */
 .rp-form :where(.row) { margin-top: 16px; row-gap: 16px; }
 .rp-form :where(.row .row) { margin-top: 0; }
@@ -9851,11 +9883,18 @@ body.is-maint { overflow: hidden; }
 .aiu-list { display: grid; }
 .aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .aiu-row:first-child { border-top: 0; padding-top: 0; }
+/* A colleague's row sets their own limit: the whole row is the button, its
+   hover the next step of the sheet's ground, bled to the card's edge. */
+button.aiu-row { position: relative; width: calc(100% + 24px); margin: 0 -12px; padding-left: 12px; padding-right: 12px; font: inherit; color: inherit; text-align: left;
+  background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+button.aiu-row::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; border-top: 1px solid var(--line-soft); }
+button.aiu-row:first-child::before { content: none; }
+@media (hover: hover) { button.aiu-row:hover { background: var(--sunk); } }
 .aiu-row.is-sum .aiu-name b { font-size: 15px; }
 .aiu-name { display: grid; gap: 2px; min-width: 0; }
 .aiu-name b { font-weight: 600; }
 .aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
-.aiu-cap { white-space: nowrap; color: var(--ink-soft); margin-right: -8px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.aiu-cap { white-space: nowrap; color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .aiu-cap.is-sum { margin-right: 0; font-weight: 600; color: var(--ink); }
 .aiu-cap.is-own { color: var(--ink); font-weight: 600; }
 .aiu-cap.is-stopped { color: var(--warn); font-weight: 600; }

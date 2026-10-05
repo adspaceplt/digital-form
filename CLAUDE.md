@@ -143,7 +143,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
-| `money.js` | crm, letter, sgd |
+| `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `workers/links/` | links |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
@@ -337,9 +337,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
   - RM for MY, S$ for SG.
-  - SST 8% unless `sst_applies` is false.
+  - SST at the rate in force on the document's own day (`taxOf(sub, m,
+    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`)
+    unless `sst_applies` is false.
   - Two decimals on every total.
   - `TERMS` holds the older factor table (used when `term_pct` is null).
+  - `ADspaceMoney.load()` reads the business figures once a page
+    (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
+    the console waits for it beside `me()`, the client portal beside
+    `get_portal`, the selection page beside `get_campaign`. `FIRST` is used
+    only where the read fails.
 - `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
   a popover card opens.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
@@ -468,7 +475,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
     `#regSort`): never counted by the badge, never reset by Clear.
-  - A second action goes behind `.cmd-more`; each item carries its button's
+  - A second action goes behind `.cmd-more` beside a primary; a bar of plain
+    actions keeps its first and puts the rest there once it has three (the
+    Performance Months bar); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed.
   - The Filters sheet focuses its card, never a select (a focused select wears
@@ -616,8 +625,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A business figure the team may change (an amount, a threshold, a rate, a
   limit) is a setting an admin edits, effective from a date or period, read
   by the function that applies it; never a number typed into code (the user,
-  2026-10-05: "what if i need changes the next quarter"). Older fixed
-  figures are listed in `STANDARD.md` until moved.
+  2026-10-05: "what if i need changes the next quarter"). Outside
+  Performance they are `app_settings` (`2026-10-05-app-settings.sql`, key,
+  from_date, value; RLS on, no policy, no grant): `app_setting(key, at)` for
+  functions, `app_settings_read()` for pages, `app_settings_set(p_from,
+  p_values)` an admin's, from today (MYT) or later (`past`), filed
+  `team.changed` under Settings. One sheet edits a group of them
+  (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
+  is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
+  bar), Report deadline (My Work's ⋯), an admin's alone.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -837,9 +853,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Every count opens its clients (`#salesPop`, a `.popcard`), each opening
   the record, whose Back returns to Sales. A refused read of the lines is
   said under Committed monthly value.
-- `STALE_H`:
-  - Lead 48 hours;
-  - Proposal sent 21 days (calendar days);
+- The follow-up limits (`staleH()`, settings `lead_followup_hours` 48 and
+  `proposal_followup_days` 21, calendar days):
+  - Lead and Proposal sent read Overdue past theirs;
   - Contacted has no limit.
   - An over-run stage reads "N days · Overdue" in warn, and the group head
     counts them.
@@ -942,8 +958,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `detail` and `min_months` are seeded from the rate card and stay editable.
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
-  - Prefilled from `termPct(months)`: 1–3 months +25%, 4–5 +15%, 6–11 quoted,
-    12+ −5%, 24+ −10%.
+  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–23
+    and 24+ months, each percentage a setting (`term_1_3` 25, `term_4_5`
+    15, `term_6_11` 0, `term_12_23` −5, `term_24` −10).
   - The field follows the card only while it still holds the card's figure
     (`svPctCard`).
   - `rateFor(rate, months, adjust, pct)`: a percentage bills the rate × pct;
@@ -1794,9 +1811,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
     on), a new month taking both from the client's month before. Each
     report ticked is one live task (`ops_engagement_sync_reports`: the
-    everyday workflow, format Report, the month's manager, first draft
-    due 23:59 MYT five days after the month's last day and final seven,
-    never from the Report template's offsets; `source_type`
+    everyday workflow, format Report, the month's manager, one date: due
+    23:59 MYT `report_due_days` (7) after the month's last day, no first
+    draft date (the user, 2026-10-05), never from the Report template's
+    offsets; `sm_report_gate` reads the same day; `source_type`
     `report_social` / `report_ads`); unticked, a task still To do is
     cancelled and a started one kept (`ops_engagement_cancel_reports`, the
     one copy); only a start day moved moves an open one's dates (filed), so
@@ -1883,11 +1901,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   - C is reward eligible unless the month before was also C.
   - An L3 or L4 breach makes the month not eligible.
   - Pacing counts only for people who run ads.
-  - Deductions are capped at 35.
+  - Grade bands, breach points (by level, a repeat, lateness) and their
+    cap are settings from a quarter on (`2026-10-05-performance-rule-settings.sql`:
+    `grade_a`…`grade_d` 90/80/70/60, `ded_l1`…`ded_l4` 3/7/15/30,
+    `ded_repeat` 5, `ded_late` 5, `ded_cap` 35; `perf_grade_at`,
+    `perf_deduction_at`), a month graded by its own quarter's; `perf_calc`
+    returns the `cap` and `points` it used, and the page names them from
+    there, never a figure of its own.
   - L3 caps at B; L4 caps at D.
 - A member sees nothing of a month, breaches included, until it is released.
-  - A dispute window of 7 days from release (3 before 2026-10-01; a month
-    keeps the window it was given), item by item.
+  - A dispute window from release of the month's `dispute_days` setting
+    (7; 3 before 2026-10-01; a month keeps the window it was given), item
+    by item. Every Performance figure is edited in Performance settings
+    (the Months, Quarters and Bonus bars), an admin's.
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
     the day the numbers were reported to the member. Release fills it where
     empty; management corrects it until final (in or after the month, never
@@ -1974,8 +2000,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
   Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
   the period's first quarter).
-  - Worked out on every read from finalised months only (`perf_quarter_calc`,
-    `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
+  - Worked out on every read (`perf_quarter_calc`, `perf_flex_calc`,
+    `perf_period_calc`, `perf_commission_json`) from finalised months, but
+    the quarter's ranking, which reads every month released to its member
+    (any state but draft; `2026-10-05-performance-quarter-live.sql`), so
+    management sees the order as it stands: `provisional` while the quarter
+    runs or a month is not final or not entered, each row's `finals` said
+    under its average (`2 of 3 · Not final`), and whoever is ahead reads
+    Leading (the user, 2026-10-05). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. Quarters begin with Q3 2026.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
@@ -2061,9 +2093,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   Advertising Report). Only Active clients.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
-  - The head is the record head: the name, then the state, PDF and the ⋯ at
-    the right edge; the meta under them. On a narrow pane the button reads
-    PDF (`.rp-pdf-short`).
+  - The head is the record head: the name, then the state, Preview PDF and
+    the ⋯ at the right edge; the meta under them. On a narrow pane the
+    button reads PDF (`.rp-pdf-short`). Preview PDF opens a tab at the
+    press (`openTab()`, "Drawing the PDF…") and puts the drawn file in it
+    (a `blob:` address), so the browser previews it; where the tab is
+    blocked the file downloads (the user, 2026-10-05).
   - The step foot is an action row, the primary at the right edge.
   - Check and submit ends in one too (`.rp-actions`): Send back, then the
     step forward at the right edge, each at its own width (the base `.btn`
@@ -2188,12 +2223,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     Every limit is a setting in `ai_draft_limits` (null is the standard,
     0 stops it; `2026-10-05-ai-limits-per-version.sql`): `person` a
     colleague's AI uses a day, drafts and checks together (10), `admin` an
-    admin's (20), a colleague's id their own (`ai_day_cap`), `report` the
-    drafts a report has from colleagues (1, its revisions inside it; past
-    it `redraft`, an admin's), `report_admin` an admin's drafts a report a
-    day (5), `check` the figures checks a version of a report has from
-    colleagues (1; past it `recheck`, until a revision), `check_admin` an
-    admin's checks a report a day (5, `report_check`). There is no team cap: the team's and a group's totals are
+    admin's (20), a colleague's id their own (`ai_day_cap`); then by who
+    asks, on that report, today (`2026-10-05-ai-limits-per-person-day.sql`,
+    the user: a report left to the last minute waits for the next day):
+    `report` a colleague's drafts (1; the same period of the same client is
+    the same report, `ai_draft_same`), `report_admin` an admin's (5), both
+    refused `report`; `check` a colleague's figures checks (1; a revision
+    brings none the same day), `check_admin` an admin's (5), both refused
+    `report_check`; every refusal names the reset time. There is no team cap: the team's and a group's totals are
     their colleagues' limits added up (`team` refused `bad-scope`). A
     failed press is marked failed by the function (`ai_draft_done`) and
     not counted. `ai_drafts` has RLS on, no policy and no grants. A refusal
@@ -2209,8 +2246,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     data, a claim the figures contradict, a comparison across result types
     or platforms, a word against our own work), each as where it is, the
     words, what the figures show and the words to use (Use). A report in
-    draft or in review, Reports Work, asked first; the version's one check
-    (`ai_drafts.version_no`; an admin's within `check_admin`) and one of the
+    draft or in review, Reports Work, asked first; the colleague's check on
+    the report for the day (`check`, an admin's `check_admin`) and one of the
     colleague's AI uses a day (`ai_check_claim`; what is left read by
     `ai_check_left`, the button resting with the reason at 0), never one of
     a report's drafts
@@ -2219,9 +2256,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     View (`ai_check_last`), so the reviewer sees the same check; a
     commentary changed since says so. Filed as `report.ai_drafted` (AI used)
     with Figures check and the count.
-  - The commentary's draft row: the hint, then Draft language (the pill) at
-    the left and Write draft at the right edge with what is left before it
-    (`.rp-airow`); on a phone a line each.
+  - What the AI is told sits apart from the report's own words: one shaded
+    block (`.rp-aidraft`, `--sunk`) holds Draft language (the pill) at the
+    left and Write draft at the right edge with what is left before it
+    (`.rp-airow`; on a phone a line each), then Notes for the draft under a
+    hairline; the hint and the fields follow it (the user, 2026-10-05).
   - The words: Write draft (Commentary), Check (Check and submit), AI usage
     (the bar's ⋯), filed under subject AI; never "Draft with AI".
   - AI usage (the Reports bar's ⋯, an admin's alone;
@@ -2229,13 +2268,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
     used first, the totals added up on the page; then Limits (Each
-    colleague `10 a day`, Each admin `20 a day`, Each report `1 draft`,
-    Each version `1 figures check`, Admins, each report `5 drafts and 5
-    checks a day`). The rows only read. Every limit is changed in one place,
-    Edit limits in the foot: one form (the six limits, then each
-    colleague, empty meaning the standard; 0 to 500), one Save sending
-    only what changed through `ai_draft_set_limit`, each filed
-    `team.changed` under Draft with AI from and to. No explanatory lines.
+    colleague `10 a day`, Each admin `20 a day`, Each colleague, each
+    report `1 draft and 1 check a day`, Each admin, each report `5 drafts
+    and 5 checks a day`). Edit limits in the foot (Limits a day) is the
+    six standards in three pairs, one Save; a colleague's own limit is set
+    by pressing their row (`button.aiu-row`, one field, empty meaning the
+    standard); the totals and Limits rows only read. 0 to 500; only what
+    changed goes through `ai_draft_set_limit`, each filed `team.changed`
+    under AI from and to. No list of colleagues in a form (the user,
+    2026-10-05). No explanatory lines.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with

@@ -396,7 +396,10 @@
   var feed = null;
   var wanted = null;   // the client chosen from the select, when there are several
   function load() {
-    db.rpc('get_portal', { p_client: wanted }).then(function (r) {
+    /* SST and the term percentages are settings (js/money.js): read beside the portal. */
+    var rates = MON && MON.load ? MON.load() : Promise.resolve();
+    db.rpc('get_portal', { p_client: wanted })
+      .then(function (r) { return rates.then(function () { return r; }); }).then(function (r) {
       if (r.error) { showState('fail', r.error.message); return; }
       var d = r.data || {};
       if (d.error === 'no-access' || d.error === 'not-signed-in') { showState('none'); return; }

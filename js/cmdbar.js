@@ -28,7 +28,8 @@
  * word stays as its accessible name); a second action goes into a ⋯ beside
  * it, placed by `ADspaceMenu` like every other menu. A bar with no selects
  * (Content Review) draws no Filters button, and a lone action that is not the
- * primary (Manage clients) keeps its word, because it fits.
+ * primary (Manage clients) keeps its word, because it fits; a bar of three
+ * plain actions keeps its first and puts the rest behind the ⋯.
  *
  * At a desk the same button holds the same selects (the user, 2026-10-01:
  * the filters behind one button on every bar), in a card that hangs from it
@@ -247,7 +248,12 @@
     var buttons = Array.prototype.filter.call(acts.children, function (el) { return el.tagName === 'BUTTON'; });
     if (!buttons.length) return;
     var primary = buttons.filter(function (b) { return b.classList.contains('btn-primary'); })[0];
-    if (!primary) return;
+    /* A bar of plain actions keeps its first on a phone and puts the rest
+       behind the ⋯ once there are three (Performance's Months bar: three
+       words do not fit 390px; 2026-10-05). Two still fit side by side. */
+    var lead = primary || (buttons.length > 2 ? buttons[0] : null);
+    if (!lead) return;
+    if (primary) {
     /* The word stays for a screen reader; on a phone only the glyph draws. */
     var word = '';
     Array.prototype.forEach.call(primary.childNodes, function (n) {
@@ -266,7 +272,8 @@
     if (!primary.querySelector('svg')) primary.insertAdjacentHTML('afterbegin', GLYPH_PLUS);
     if (word && !primary.getAttribute('aria-label')) primary.setAttribute('aria-label', word);
     primary.classList.add('cmd-primary');
-    var rest = buttons.filter(function (b) { return b !== primary; });
+    }
+    var rest = buttons.filter(function (b) { return b !== lead; });
     if (!rest.length) return;
     /* A second action goes behind a ⋯ on a phone, the way a rare action does
        on every row; each item presses the real button, so the page's own
@@ -303,7 +310,7 @@
       pairs.push([b, item]);
     });
     wrap.appendChild(btn); wrap.appendChild(menu);
-    acts.insertBefore(wrap, primary);
+    acts.insertBefore(wrap, lead);
     function syncMore() {
       var any = false;
       pairs.forEach(function (pr) {

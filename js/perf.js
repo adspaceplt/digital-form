@@ -65,7 +65,6 @@
   var BREACH_CAT = { client: 'Client and account risk', delivery: 'Delivery and execution risk',
                      compliance: 'Compliance and platform risk', asset: 'Asset and financial risk' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
-  var SEV_POINTS = { 1: -3, 2: -7, 3: -15, 4: -30 };
   var STATUS = { none: ['Not started', ''], draft: ['Draft', ''], released: ['Released', 'is-warn'],
                  disputed: ['Disputed', 'is-warn'], resolved: ['Resolved', 'is-warn'],
                  acknowledged: ['Acknowledged', ''], final: ['Final', 'is-ok'] };
@@ -866,7 +865,7 @@
       '</div>' +
       '<dl class="tfacts perf-facts perf-sums">' +
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
-        '<div><dt>Breaches</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at 35 from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
+        '<div><dt>Breaches</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at ' + esc(num(Math.abs(res.cap != null ? res.cap : res.deduction))) + ' from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
         '<div><dt>What it asks</dt><dd>' + esc(ACTION[res.grade] || '') + '</dd></div>' +
         (path ? '<div><dt>If it repeats</dt><dd>' + esc(path[0]) + '<small>' + esc(path[1]) + '</small></dd></div>' : '') +
@@ -959,15 +958,19 @@
     var day = today < last ? today : last;
     var iso = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
     var opt = function (o) { return Object.keys(o).map(function (k) { return '<option value="' + k + '">' + esc(o[k]) + '</option>'; }).join(''); };
+    /* The points are the month's own settings (`points`, 2026-10-05); a
+       result from before them names the level alone. */
+    var pts = (r.result || {}).points || {};
+    var less = function (k) { return pts[k] == null ? '' : ' (−' + num(pts[k]) + ')'; };
     return '<form class="qform" id="pvBreachForm" autocomplete="off">' +
       '<div class="row"><div><label class="field-label" for="pvBDate">Date</label><input class="input" id="pvBDate" type="date" value="' + iso + '" min="' + r.period + '" max="' + iso + '"></div>' +
       '<div><label class="field-label" for="pvBSev">Severity</label><select class="select" id="pvBSev">' +
-        Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + ' (' + SEV_POINTS[k] + ')') + '</option>'; }).join('') + '</select></div></div>' +
+        Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + less(k)) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
-      '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes (−5)</option><option value="no">No</option></select></div></div>' +
+      '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
       '<label class="field-label" for="pvBWhat">Breach description</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
       '<label class="field-label" for="pvBEv">Evidence</label><input class="input" id="pvBEv" maxlength="500" placeholder="Link or reference">' +
-      '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Hidden or reported late (−5)</span></label>' +
+      '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Hidden or reported late' + less('late') + '</span></label>' +
       '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Log breach</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
   }
@@ -1752,7 +1755,7 @@
   };
   /* Every figure a reason names is the one the rules used (`rules` on the
      quarter, the period and each deal; 2026-10-05), never one typed here. */
-  var WHY = { 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
+  var WHY = { 'no-month': 'No month released', 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
     'critical-breach': 'Level 4 breach', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
     'few-b-months': 'Under {months_b} months at B' };
   var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
@@ -2035,8 +2038,11 @@
       line.textContent = 'Confirmed ' + timeWord(d.confirmed_at) + (d.confirmed_by ? ' by ' + d.confirmed_by : '') + '.';
       box.appendChild(line);
     }
+    /* The quarter is ranked live from the months released (2026-10-05):
+       until every month is final, whoever is ahead reads Leading. */
+    var live = !d.confirmed && d.provisional;
     var won = ind.winners
-      ? (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
+      ? (live ? 'Leading · ' : '') + (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
         (Number(ind.remainder) > 0 ? ' · ' + rm(ind.remainder) + ' left' : '')
       : 'No payout · ' + ruled(NOPAY[ind.reason], d.rules);
     /* What still stands between the quarter and its confirmation: months
@@ -2058,18 +2064,21 @@
           if (p.own) return youRow('rwq-row', p, 4, 1);
           var elig = p.eligible ? 'Eligible' : ruled(WHY[(p.reasons || [])[0]], d.rules) || 'Not eligible';
           var months = Number(p.months || 0), open = Number(p.open || 0);
+          var finals = p.finals == null ? months : Number(p.finals);
           /* The months sit under the average they make, and only when the
              quarter is not whole for them; the name keeps its department. */
           var sub = DEPT_WORD[p.department] || '';
-          var short = p.average != null && months < 3 ? months + ' of 3' : '';
+          var short = p.average != null ? [months < 3 ? months + ' of 3' : '', finals < months ? (finals ? finals + ' final' : 'Not final') : '']
+            .filter(Boolean).join(' · ') : '';
           return row('rwq-row', [
             cell(p.rank == null ? dash() : esc(String(p.rank))),
             whoCell(p, sub),
             cell(p.average == null ? dash() : esc(num(p.average)) + (short ? '<small class="rw-why">' + esc(short) + '</small>' : '')),
             cell(gradeCell(p.grade)),
             cell(esc(elig)),
-            cell(money0(p.prize), true)
-          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average) + (short ? ' over ' + months + ' of 3 months' : ''),
+            cell(money0(p.prize) + (live && Number(p.prize) > 0 ? '<small class="rw-why">Leading</small>' : ''), true)
+          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average) + (months < 3 ? ' over ' + months + ' of 3 months' : '') +
+              (finals < months ? ', ' + (finals ? finals + ' final' : 'not final') : ''),
               open ? open + ' not final' : '', p.grade ? gradeWord(p.grade) : '', elig]);
         });
         return t;
@@ -2149,7 +2158,10 @@
     var dep = $('rwDDept').value, sum = 0, all = true;
     DEPT_CRIT[dep].forEach(function (c, i) { var v = $('rwDC' + i).value; if (v === '') all = false; else sum += Number(v); });
     sum = Math.round(sum * 10) / 10;
-    $('rwDTotal').textContent = all ? 'Total ' + num(sum) + ' of 100 · ' + gradeWord(sum >= 90 ? 'A' : sum >= 80 ? 'B' : sum >= 70 ? 'C' : sum >= 60 ? 'D' : 'E') : 'Total ' + num(sum) + ' of 100 so far';
+    /* Graded by the quarter's own bands (`rules.grades`, 2026-10-05). */
+    var b = (st.quarter && st.quarter.rules && st.quarter.rules.grades) || null;
+    var g = b ? (sum >= b.A ? 'A' : sum >= b.B ? 'B' : sum >= b.C ? 'C' : sum >= b.D ? 'D' : 'E') : '';
+    $('rwDTotal').textContent = all ? 'Total ' + num(sum) + ' of 100' + (g ? ' · ' + gradeWord(g) : '') : 'Total ' + num(sum) + ' of 100 so far';
   }
   function deptOf(dep) { return ((st.quarter && st.quarter.departments) || []).filter(function (x) { return x.department === dep; })[0] || {}; }
   function openDept(dep, opener) {
@@ -2316,7 +2328,15 @@
     ['Bonus pool and trip', [['bonus_pool_revenue', 'Bonus pool opens at revenue (RM)', 'money'], ['bonus_pool_profit_pct', 'Bonus pool, at most of profit (%)', 'pct'],
       ['trip_revenue', 'Trip opens at revenue (RM)', 'money'], ['bonus_months_b', 'Months at B or better, of six', 'count']]],
     ['Units by grade', [['units_a', 'Units for A', 'units'], ['units_b', 'Units for B', 'units'], ['units_c', 'Units for C', 'units']], 'fgrid-3'],
-    ['Commission', [['commission_min', 'Payable where the month is at least', 'score']]]
+    ['Commission', [['commission_min', 'Payable where the month is at least', 'score']]],
+    /* The month's own rules (2026-10-05): the least score for each grade,
+       the points a breach takes, and the days a member has to dispute. */
+    ['Grades', [['grade_a', 'A from', 'score'], ['grade_b', 'B from', 'score'], ['grade_c', 'C from', 'score'], ['grade_d', 'D from', 'score']]],
+    ['Breaches', [['ded_l1', 'Level 1 (points)', 'points'], ['ded_l2', 'Level 2 (points)', 'points'],
+      ['ded_l3', 'Level 3 (points)', 'points'], ['ded_l4', 'Level 4 (points)', 'points']]],
+    ['Repeats, lateness and the cap', [['ded_repeat', 'A repeat adds (points)', 'points'], ['ded_late', 'Late adds (points)', 'points'],
+      ['ded_cap', 'Most a month loses (points)', 'points']], 'fgrid-3'],
+    ['Disputes', [['dispute_days', 'Days to dispute after release', 'days']]]
   ];
   var RW_LABEL = {};
   RW_SET.forEach(function (g) { g[1].forEach(function (f) { RW_LABEL[f[0]] = f; }); });
@@ -2325,6 +2345,7 @@
     if (v == null) return '—';
     if (kind === 'money') return rm(v);
     if (kind === 'pct') return Number(v) + '%';
+    if (kind === 'days') return Number(v) + (Number(v) === 1 ? ' day' : ' days');
     return String(Number(v));
   }
   function setAt(key, from) {
@@ -2355,7 +2376,7 @@
               (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
           }).join('') + '</div>'
         : '<dl class="ovfacts">' + g[1].map(function (f) {
-            return '<dt>' + esc(f[1].replace(/ \((RM|%)\)$/, '')) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';
+            return '<dt>' + esc(f[1].replace(/ \((RM|%|points)\)$/, '')) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';
           }).join('') + '</dl>') + '</section>';
     }).join('');
     $('rwSSave').hidden = !admin;
@@ -2366,7 +2387,7 @@
       var x = e.detail || {};
       return '<p class="rw-setlog"><b>' + esc(x.word || '') + '</b> ' + esc((x.changed || []).map(function (c) {
           var f = RW_LABEL[c.key] || [c.key, c.key, ''];
-          return f[1].replace(/ \((RM|%)\)$/, '') + ': ' + setValue(c.key, f[2], c.from) + ' → ' + setValue(c.key, f[2], c.to);
+          return f[1].replace(/ \((RM|%|points)\)$/, '') + ': ' + setValue(c.key, f[2], c.from) + ' → ' + setValue(c.key, f[2], c.to);
         }).join(' · ')) + '<small>' + esc((e.by || '') + (e.at ? ' · ' + timeWord(e.at) : '')) + '</small></p>';
     }).join('');
   }
@@ -2377,7 +2398,7 @@
     $('rwSSave').hidden = true;
     window.ADspaceSheet.show($('rwSetSheet'), { opener: opener });
     call('perf_settings_read', { p_token: token }, function (d) {
-      if (d.error) { UI.failLine($('rwSFields'), 'Reward settings', rwSaid(d), function () { openSettings(opener); }); return; }
+      if (d.error) { UI.failLine($('rwSFields'), 'Performance settings', rwSaid(d), function () { openSettings(opener); }); return; }
       rwSet.data = d;
       var qs = setQuarters();
       var want = st.q && qs.indexOf(st.q) > -1 ? st.q : qs[0];
@@ -2389,6 +2410,7 @@
   }
   $('rwQSet').addEventListener('click', function () { openSettings(this); });
   $('rwPSet').addEventListener('click', function () { openSettings(this); });
+  $('perfSetBtn').addEventListener('click', function () { openSettings(this); });
   $('rwSFrom').addEventListener('change', function () { rwSet.from = this.value; msg('rwSMsg', ''); paintSettings(); });
   $('rwSClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('rwSCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
@@ -2399,13 +2421,15 @@
       var k = el.getAttribute('data-key'), kind = RW_LABEL[k][2];
       var raw = String(el.value || '').replace(/[,\s]/g, '').replace(/^RM/i, '').replace(/%$/, '');
       var v = /^\d+(\.\d{1,2})?$/.test(raw) ? Number(raw) : NaN;
-      if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct') && v > 100) || (kind === 'units' && v > 10)) { bad = el; return; }
+      if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct' || kind === 'points') && v > 100) ||
+          (kind === 'units' && v > 10) || (kind === 'days' && (v < 1 || v > 30 || v % 1))) { bad = el; return; }
       if (String(v) !== String(Number(el.getAttribute('data-was')))) vals[k] = v;
     });
     if (bad) {
       var f = RW_LABEL[bad.getAttribute('data-key')];
-      msg('rwSMsg', f[1].replace(/ \((RM|%)\)$/, '') + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
-        pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.' }[f[2]]), 'err');
+      msg('rwSMsg', f[1].replace(/ \((RM|%|points)\)$/, '') + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
+        pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.',
+        points: 'points from 0 to 100.', days: 'a whole number of days from 1 to 30.' }[f[2]]), 'err');
       bad.focus(); return;
     }
     if (!Object.keys(vals).length) { msg('rwSMsg', 'No change.', 'ok'); return; }
@@ -2414,7 +2438,8 @@
       b.disabled = false;
       if (d.error) {
         msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or pick a later quarter.'
-          : d.error === 'bad-value' && RW_LABEL[d.key] ? RW_LABEL[d.key][1].replace(/ \((RM|%)\)$/, '') + ' is out of range.' : rwSaid(d), 'err');
+          : d.error === 'bad-value' && RW_LABEL[d.key] ? RW_LABEL[d.key][1].replace(/ \((RM|%|points)\)$/, '') + ' is out of range.'
+          : d.error === 'bad-order' ? 'Each grade starts above the next: A above B above C above D, D above 0.' : rwSaid(d), 'err');
         return;
       }
       rwSet.data = d;

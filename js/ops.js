@@ -7124,6 +7124,9 @@
         if (a === 'template') openTpl();
         if (a === 'select') setSelecting(!state.selecting);
         if (a === 'numbering') openNumbering();
+        /* When a month's report is due, an admin's setting (2026-10-05). */
+        if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Report deadline', msg: 'workMsg',
+          keys: [['report_due_days', 'Days after the month ends', 'due']] }, $('workMoreBtn'));
       });
     }
     // Several at once
@@ -7731,6 +7734,8 @@
     if (more) more.hidden = !(may('ops.workflows', 'work') || may('ops', 'manage') || isAdmin());
     var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
     if (num) num.hidden = !isAdmin();
+    var due = $('workMore') && $('workMore').querySelector('[data-a="reportdue"]');
+    if (due) due.hidden = !isAdmin();
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     ['list', 'board', 'calendar'].forEach(function (k) {
       var b = document.querySelector('#workViews [data-view="' + k + '"]');

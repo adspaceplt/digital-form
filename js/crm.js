@@ -239,9 +239,14 @@
      Contacted carries no limit until somebody sets one: a number nobody has
      chosen is not one to invent at scanning time, and a wrong one trains the
      team to ignore the mark. */
-  var STALE_H = { lead: 48, proposal: 21 * 24 };
+  /* The two limits are settings an admin changes (the Clients bar's ⋯,
+     Follow-up limits; `app_settings`, 2026-10-05), read in hours. */
+  function staleH() {
+    var S = window.ADspaceMoney.setting;
+    return { lead: S('lead_followup_hours'), proposal: S('proposal_followup_days') * 24 };
+  }
   function isStale(c) {
-    var limit = STALE_H[(c && c.stage) || 'lead'];
+    var limit = staleH()[(c && c.stage) || 'lead'];
     if (!limit || !c || !c.stage_since) return false;
     var t = Date.parse(c.stage_since);
     return !isNaN(t) && (Date.now() - t) / 3600000 >= limit;
@@ -3533,6 +3538,7 @@
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !maySvc();
+    $('svcTax').hidden = !window.ADspaceAdmin.isAdmin();
     shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
@@ -3737,6 +3743,19 @@
     openSheet('svcBox');
   }
   $('svcAdd').addEventListener('click', function () { openSvc(null); });
+  /* The business figures, an admin's, from a day on (2026-10-05): how long a
+     lead and a proposal wait before they read Overdue, and SST with the
+     term percentages a quote is prefilled from. */
+  $('crmLimits').addEventListener('click', function () {
+    window.ADspaceAdmin.editSettings({ title: 'Follow-up limits', msg: 'crmListMsg',
+      keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours'], ['proposal_followup_days', 'A proposal waits (days)', 'days']],
+      done: function () { if (!state.client && state.view !== 'sales') paintList(); } }, this);
+  });
+  $('svcTax').addEventListener('click', function () {
+    window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
+      keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
+        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj']] }, this);
+  });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {
     var name = val('svcName');
@@ -3802,6 +3821,7 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');
+      $('crmLimits').hidden = !window.ADspaceAdmin.isAdmin();
       state.view = params.get('view') === 'sales' ? 'sales' : 'list';
       var sp = params.get('sp');
       state.salesPeriod = /^(month|last|3m|6m|12m)$/.test(sp || '') ? sp : 'month';
@@ -3830,7 +3850,7 @@
     },
     billingMissing: billingMissing,
     // How long a stage may run before it reads Overdue (the Overview asks).
-    staleH: STALE_H,
+    staleH: staleH,
     // The rate card lives in this module because it is what a client's lines
     // are made of.
     enterServices: enterServices

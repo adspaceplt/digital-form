@@ -60,13 +60,13 @@
      that is how it is invoiced and how the client thinks about it. `each` is
      then one month's invoice and the commitment is that month times the term.
      Mixed or one off lines have no monthly figure, so `each` is the amount. */
-  function priceOf(lines, market, taxOn) {
+  function priceOf(lines, market, taxOn, at) {
     var ns = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
     var term = (ns.length && ns[0] > 1 && ns.every(function (x) { return x === ns[0]; })) ? ns[0] : 0;
     var each = lines.reduce(function (s, l) {
       return s + Number(l.qty || 0) * rateOf(l) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
     }, 0);
-    var eachTax = MON.taxOf(each, market, taxOn);
+    var eachTax = MON.taxOf(each, market, taxOn, at);
     var eachTotal = Math.round((each + eachTax) * 100) / 100;
     var n = term || 1;
     return {
@@ -530,7 +530,7 @@
          with. Older rows carry no per line tax flag; the stored tax says. */
       var lineTax = (doc.lines && doc.lines.length && 'tax' in doc.lines[0])
         ? Boolean(doc.lines[0].tax) : Number(doc.tax) > 0;
-      var price = priceOf(doc.lines || [], doc.market, lineTax);
+      var price = priceOf(doc.lines || [], doc.market, lineTax, doc.issued_at);
       text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
 
       // Our Ref / Date / To / Attn, the colons in one column.
@@ -631,7 +631,7 @@
         y -= 15;
       };
       trow('Subtotal', MON.money2(price.each, doc.market));
-      trow(Number(price.eachTax) ? 'SST 8%' : 'SST not applicable', MON.money2(price.eachTax, doc.market));
+      trow(Number(price.eachTax) ? MON.taxLabel(doc.market, doc.issued_at) : 'SST not applicable', MON.money2(price.eachTax, doc.market));
       y += 4; rule(y, lx, R, true); y -= 14;
       trow(price.term ? 'Payable monthly' : 'Total', MON.money2(price.eachTotal, doc.market), 'strong');
       y -= 12;
