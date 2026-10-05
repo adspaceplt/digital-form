@@ -1063,12 +1063,12 @@
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
   }
 
-  var EVENT_WORD = { started: 'Started', scored: 'Scores saved', released: 'Released', returned: 'Reverted to draft',
+  var EVENT_WORD = { started: 'Started', scored: 'Saved', released: 'Released', returned: 'Reverted to draft',
     disputed: 'Disputed', decided: 'Dispute answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
     reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Downloaded', profile: 'Profile changed' };
   /* What a save changed, named (the user, 2026-09-26: "scores saved should
      show which score"): each scorecard and rate from and to, then the notes
-     or the plan. An older save named nothing and still reads Scores saved. */
+     or the plan. An older save named nothing and still reads Saved. */
   var RATE_WORD = {};
   RATES.forEach(function (x) { RATE_WORD[x[0]] = x[1]; });
   /* One figure in a history line (the user, 2026-10-05: "these are so
@@ -1093,7 +1093,11 @@
   /* A save that only fills empty figures is the first entry. */
   function firstSave(d) {
     var ch = (d && d.changed) || [];
-    return ch.length && ch.every(function (c) { return c.key === 'notes' || c.key === 'plan' || c.from == null || c.from === ''; });
+    var blank = function (c) { return c.from == null || c.from === ''; };
+    var words = function (c) { return c.key === 'notes' || c.key === 'plan' || c.key === 'evaluated_on'; };
+    /* A save that only wrote notes, the plan or the date entered no scores. */
+    return ch.some(function (c) { return !words(c) && blank(c); }) &&
+      ch.every(function (c) { return words(c) || blank(c); });
   }
   /* Started is written in the same moment as the first save, so it is kept
      below it, where it happened. */
