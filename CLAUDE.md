@@ -1957,6 +1957,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The print is drawn in the browser on the letterhead and never stored. It
   carries no version and no signature lines: a member acknowledges in the
   portal.
+  - Under the letterhead it is the Social Media Report's design
+    (`drawRecord`): sizes and spaces on `S(k) = 10·φ^(k/2)`, headings in
+    title case, tables of white cells under a #f2f2f2 title row and grid,
+    the month's grade shaded in one row of the five, the final score the
+    one bold figure; page one the result (who, Result, Scores, What This
+    Grade Means), page two the follow-up (Issues, If This Result Repeats,
+    Improvement and Follow-up, Queries, Record of This Document); a
+    heading keeps its block, a short paragraph never splits; the foot
+    PRIVATE & CONFIDENTIAL beside the page count, the reference and who
+    downloaded it above.
   - The download is filed first (`perf_printed` answers the server's time,
     who, their address and the released / acknowledged / finalised steps); a
     refused filing makes no file.

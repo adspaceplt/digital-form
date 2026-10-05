@@ -62,8 +62,8 @@
     account: 'Client servicing, posting accuracy, budget pacing, escalation. Proactively manages every account.'
   };
   var DEPT_WORD = window.ADspaceWords.dept;
-  var BREACH_CAT = { client: 'Client and account risk', delivery: 'Delivery and execution risk',
-                     compliance: 'Compliance and platform risk', asset: 'Asset and financial risk' };
+  var BREACH_CAT = { client: 'Client and account', delivery: 'Delivery and execution',
+                     compliance: 'Compliance and platform', asset: 'Assets and finance' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
   var STATUS = { none: ['Not started', ''], draft: ['Draft', ''], released: ['Shared', 'is-warn'],
                  disputed: ['Query raised', 'is-warn'], resolved: ['Query answered', 'is-warn'],
@@ -1586,186 +1586,233 @@
     return day + ', ' + at + ' MYT';
   }
 
+  /* The Monthly Performance Record (2026-10-05, the user: "not very golden
+     ratio arranged; doesn't follow the report's beauty and design system").
+     It keeps the letterhead (it is an HR letter, listed and verified as
+     one), and everything under it is drawn as the Social Media Report is:
+     one scale, 10pt times √φ step by step (S), so two steps apart is φ;
+     headings in title case, never capitals; tables of white cells under a
+     shaded title row, the title row and the grid in one grey (#f2f2f2);
+     one bold figure (the final score). Page one is the result, page two
+     the follow-up and the record of this copy, by design rather than by
+     spill. The foot is PRIVATE & CONFIDENTIAL and the page count on one
+     line, with the reference and who downloaded it above. */
+  var RPHI = 1.6180339887;
+  var RS = function (k) { return 10 * Math.pow(RPHI, k / 2); };
   function drawRecord(pdf, p, r) {
     var res = r.result || {}, m = r.member || {};
     var f = p.fonts, M = p.M, R = p.R, W = R - M;
-    var y;
+    var book = f.font, reg = f.bold, med = f.med || f.bold;
+    var g = function (v) { return window.PDFLib.rgb(v, v, v); };
+    var INK = p.ink, SOFT = p.mute, FILL = g(0.949), MARK = g(0.851), PAPER = g(1);
+    var TY = { title: RS(2), head: RS(1), body: RS(0), cell: RS(0), small: RS(-1), figure: RS(2) };
+    var SP = { tight: RS(-2), line: RS(-1), under: RS(1), block: RS(4) };
+    var LH = RS(1);                          // a line of body or cell text
+    var PADX = RS(-2), ROW = RS(3);          // a cell's side padding, a row's least height
+    var FOOT = 30;                           // the letterhead's foot line (the page count)
+    var FLOOR = FOOT + RS(1) + RS(4);        // nothing draws below this
+    var y, pageNo = 0;
     var page = function (first) {
       p.page = pdf.addPage([p.W, p.H]);
-      y = first ? p.head() : p.H - 60;
-      /* Every page names the record it belongs to, so a page lifted out still
-         says whose month it was. */
-      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month, M, 42, 7.5, f.font, p.mute);
+      pageNo++;
+      y = first ? p.head() - SP.under : p.H - M - SP.block;
       var st0 = r.__stamp;
-      p.text('Confidential, internal use' + (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
-        M, 32, 7.5, f.font, p.mute);
+      p.text('PRIVATE & CONFIDENTIAL', M, FOOT, TY.small, reg, INK);
+      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
+        (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
+        M, FOOT + RS(1), TY.small, book, SOFT);
     };
-    var need = function (h) { if (y - h < 78) page(false); };
-    /* A heading never ends a page: it takes its first lines with it. */
-    var heading = function (s) {
-      need(76);
-      y -= 18;
-      p.text(s.toUpperCase(), M, y, 9, f.bold, p.mute);
-      y -= 6;
-      p.rule(y);
-      y -= 14;
+    var need = function (h) { if (y - h < FLOOR) page(false); };
+    var rect = function (x, yy, w, h, fill) {
+      p.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: fill, borderColor: FILL, borderWidth: 0.75 });
     };
-    var para = function (s, size, font, color, x, max) {
-      (p.wrap(s || '', max || W, size || 10, font || f.font)).forEach(function (ln) {
-        need(14); p.text(ln, x || M, y, size || 10, font || f.font, color || p.ink); y -= (size || 10) + 4;
+    /* A line break written into a cell is kept; each part wraps on its own. */
+    var lines = function (s, max, size, font) {
+      return String(s == null ? '' : s).split('\n').reduce(function (out, part) { return out.concat(p.wrap(part, max, size, font)); }, []);
+    };
+    /* A section's head keeps its first lines with it. */
+    var heading = function (s, keep) {
+      need(SP.block + TY.head + SP.under + (keep || ROW * 2));
+      y -= SP.block;
+      p.text(s, M, y, TY.head, med, INK);
+      y -= SP.under;
+    };
+    /* A short paragraph is never split from itself across a page. */
+    var para = function (s, size, font, color) {
+      var ls = lines(s, W, size || TY.body, font || book);
+      if (ls.length <= 4) need(ls.length * LH);
+      ls.forEach(function (ln) {
+        need(LH); y -= (size || TY.body); p.text(ln, M, y, size || TY.body, font || book, color || INK); y -= LH - (size || TY.body);
       });
     };
-    page(true);
-    p.text('PRIVATE & CONFIDENTIAL', M, y, 9, f.bold);
-    y -= 22;
-    p.text('MONTHLY PERFORMANCE RECORD', M, y, 13, f.med || f.bold);
-    if (r.serial) p.right('Ref ' + r.serial, R, y, 9.5, f.font, p.mute);
-    y -= 22;
+    /* One table: cols are widths in points with an alignment; the head is
+       shaded, every cell framed in the same grey, text wrapped inside its
+       cell, the row as tall as its tallest cell; a row that will not fit
+       starts the next page under the head again. */
+    var table = function (cols, head, rows) {
+      var xs = []; cols.reduce(function (x, c, i) { xs[i] = x; return x + c.w; }, M);
+      var cellOf = function (c, i) {
+        c = typeof c === 'object' && c ? c : { t: c };
+        var font = c.f || book, size = c.size || TY.cell;
+        return { ls: lines(c.t, cols[i].w - PADX * 2, size, font), f: font, size: size, fill: c.fill, color: c.color, align: c.align || cols[i].align || 'left' };
+      };
+      var hOf = function (cells) { return Math.max(ROW, Math.max.apply(null, cells.map(function (c) { return c.ls.length * LH; })) + (ROW - LH)); };
+      var draw = function (cells, h, fillAll) {
+        cells.forEach(function (c, i) {
+          rect(xs[i], y - h, cols[i].w, h, c.fill || fillAll || PAPER);
+          c.ls.forEach(function (ln, k) {
+            var by = y - (ROW - LH) / 2 - k * LH - (LH + c.size * 0.72) / 2;
+            var lw = p.width(ln, c.size, c.f);
+            var lx = c.align === 'right' ? xs[i] + cols[i].w - PADX - lw : c.align === 'center' ? xs[i] + (cols[i].w - lw) / 2 : xs[i] + PADX;
+            p.text(ln, lx, by, c.size, c.f, c.color || INK);
+          });
+        });
+        y -= h;
+      };
+      var hc = head ? head.map(function (t, i) { return cellOf({ t: t, f: reg }, i); }) : null;
+      var hh = hc ? hOf(hc) : 0;
+      rows.forEach(function (row, ri) {
+        var cells = row.map(cellOf), h = hOf(cells);
+        if (ri === 0 || y - h < FLOOR) {
+          if (ri > 0 || y - hh - h < FLOOR) need(hh + h);
+          if (hc) draw(hc, hh, FILL);
+        }
+        draw(cells, h);
+      });
+    };
     var none = 'Not set';
     var pnum = function (v) { return v == null || v === '' ? none : num(v); };
-    var facts = [['Team member', m.name], ['Employee ID', m.staff_code], ['Department', DEPT_WORD[m.department]],
-                 ['Role', ROLE_WORD[m.role_family] || m.designation], ['Review month', r.month],
-                 ['Date of evaluation', r.evaluated_on ? dateWord(r.evaluated_on) : ''],
-                 ['Queries until', r.dispute_until ? timeWord(r.dispute_until) : ''], ['Reviewed by', r.reviewer]];
-    var colW = W / 4;
-    [facts.slice(0, 4), facts.slice(4)].forEach(function (row) {
-      var most = 1;
-      row.forEach(function (fc, i) {
-        var cx = M + i * colW;
-        var lines = p.wrap(fc[1] || none, colW - 12, 10, f.bold).slice(0, 2);
-        most = Math.max(most, lines.length);
-        p.text(fc[0], cx, y, 8, f.font, p.mute);
-        lines.forEach(function (ln, k) { p.text(ln, cx, y - 12 - k * 12, 10, f.bold); });
-      });
-      y -= 18 + most * 12;
-    });
-    y += 4;
+    var stop = function (x) { x = String(x || '').trim(); return /[.!?]$/.test(x) ? x : x + '.'; };
 
-    heading('1 · Result this month');
-    var gw = W / 5, gy = y;
-    need(56);
-    var RANGE = { A: '90 to 100', B: '80 to 89', C: '70 to 79', D: '60 to 69', E: 'under 60' };
-    GRADES.forEach(function (g, i) {
-      var gx = M + i * gw, on = g[0] === res.grade;
-      p.page.drawRectangle({ x: gx + 2, y: gy - 40, width: gw - 4, height: 46,
-        color: on ? p.ink : undefined, borderColor: on ? p.ink : p.line, borderWidth: on ? 1 : 0.8 });
-      var tc = on ? window.PDFLib.rgb(1, 1, 1) : p.ink;
-      p.text(g[0], gx + 10, gy - 16, 16, f.bold, tc);
-      p.text(RANGE[g[0]], gx + 30, gy - 14, 8, f.font, on ? tc : p.mute);
-      p.text(g[2], gx + 10, gy - 32, 8.5, f.font, on ? tc : p.mute);
-    });
-    y = gy - 58;
-    var cells = [['Base score', pnum(res.base) + ' / 100'], ['Deductions', res.deduction ? num(res.deduction) : '0'],
-                 ['Final score', pnum(res.final) + ' / 100'], ['Grade', res.grade ? res.grade + ' · ' + res.grade_word : none],
-                 ['Reward eligible', res.complete ? (res.eligible ? 'Yes' : 'No') : none]];
-    cells.forEach(function (c, i) {
-      var cx = M + i * gw;
-      p.text(c[0], cx + 2, y, 8, f.font, p.mute);
-      p.text(c[1], cx + 2, y - 13, 10.5, f.bold);
-    });
-    y -= 34;
+    /* ---- Page one: the result ---- */
+    page(true);
+    p.text('Monthly Performance Record', M, y, TY.title, med, INK);
+    if (r.serial) p.right('Ref ' + r.serial, R, y, TY.small, book, SOFT);
+    y -= SP.under;
+    /* Who and which month: labels shaded, each label to its value as 1 to φ. */
+    var lw = W / (2 * (1 + RPHI)), vw = W / 2 - lw;
+    var lab = function (t) { return { t: t, f: reg, fill: FILL }; };
+    table([{ w: lw }, { w: vw }, { w: lw }, { w: vw }], null, [
+      [lab('Team member'), m.name || none, lab('Review month'), r.month],
+      [lab('Employee ID'), m.staff_code || none, lab('Date of evaluation'), r.evaluated_on ? dateWord(r.evaluated_on) : none],
+      [lab('Department'), DEPT_WORD[m.department] || none, lab('Queries until'), r.dispute_until ? timeWord(r.dispute_until) : none],
+      [lab('Role'), ROLE_WORD[m.role_family] || m.designation || none, lab('Reviewed by'), r.reviewer || none]
+    ]);
+
+    heading('Result', ROW * 4);
+    /* The grade scale as one row, the month's grade shaded; nothing black. */
+    var RANGE = { A: '90 to 100', B: '80 to 89', C: '70 to 79', D: '60 to 69', E: 'Under 60' };
+    var gw = W / GRADES.length;
+    table(GRADES.map(function () { return { w: gw, align: 'center' }; }), null, [
+      GRADES.map(function (gr) { var on = gr[0] === res.grade; return { t: gr[0] + ' · ' + RANGE[gr[0]], f: on ? med : book, fill: on ? MARK : null, color: on ? INK : SOFT }; }),
+      GRADES.map(function (gr) { var on = gr[0] === res.grade; return { t: gr[2], f: on ? med : book, fill: on ? MARK : null, color: on ? INK : SOFT, size: TY.small }; })
+    ]);
+    y -= SP.line;
+    var q = W / 4;
+    table([{ w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }],
+      ['Base score', 'Deductions', 'Final score', 'Reward eligible'],
+      [[pnum(res.base) + ' / 100', res.deduction ? num(res.deduction) : '0',
+        { t: pnum(res.final) + ' / 100', f: med, size: TY.figure },
+        res.complete ? (res.eligible ? 'Yes' : 'No') : none]]);
     var notes = [];
     if (res.capped) notes.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
     if (res.review) notes.push('Management will follow up.');
     if (res.grade === 'C' && res.previous_grade === 'C') notes.push('Baseline after a Baseline month, so not reward eligible.');
-    if (notes.length) { para(notes.join(' '), 9, f.font, p.mute); y -= 4; }
+    if (notes.length) { y -= SP.line; para(notes.join(' '), TY.small, book, SOFT); }
 
-    need(20);
-    p.text('Category', M, y, 8, f.bold, p.mute);
-    p.right('Score', M + 190, y, 8, f.bold, p.mute);
-    p.text('Notes', M + 206, y, 8, f.bold, p.mute);
-    y -= 6; p.rule(y); y -= 13;
-    CATS.forEach(function (c) {
-      var note = (r.notes || {})[c[0]] || '';
-      var lines = note ? p.wrap(note, W - 206, 9, f.font) : [];
-      need(Math.max(1, lines.length) * 12 + 6);
-      p.text(c[1], M, y, 9.5, f.font);
-      p.right(pnum((r.scores || {})[c[0]]) + ' / ' + c[2], M + 190, y, 9.5, f.bold);
-      if (lines.length) lines.forEach(function (ln, i) { p.text(ln, M + 206, y - i * 12, 9, f.font, p.mute); });
-      y -= Math.max(1, lines.length) * 12 + 5;
-    });
+    heading('Scores', ROW * 3);
+    /* The category and score columns as wide as their widest entry, the
+       notes the rest. */
+    var catW = Math.max.apply(null, CATS.map(function (c) { return p.width(c[1], TY.cell, book); })) + PADX * 2 + 2;
+    var scW = Math.max(p.width('Score', TY.cell, reg), p.width('25 / 25', TY.cell, book)) + PADX * 4;
+    table([{ w: catW }, { w: scW, align: 'center' }, { w: W - catW - scW }], ['Category', 'Score', 'Notes'],
+      CATS.map(function (c) {
+        return [c[1], pnum((r.scores || {})[c[0]]) + ' / ' + c[2], { t: (r.notes || {})[c[0]] || '', color: SOFT }];
+      }));
 
-    heading('2 · What this grade means');
-    para(res.grade ? ACTION[res.grade] : 'Not graded.', 10);
-    para('Reward eligible: ' + (res.eligible ? 'Yes.' : 'No.'), 10);
+    heading('What This Grade Means', ROW);
+    para(res.grade ? ACTION[res.grade] : 'Not graded.');
 
-    heading('3 · Issues this month');
+    /* ---- Page two: the follow-up and the record of this copy ---- */
+    if (pageNo === 1) page(false); else y -= SP.block;
+    y += SP.block;                           // the page's first heading sits on its top line
+
+    heading('Issues This Month', ROW * 2);
     var br = r.breaches || [];
-    if (!br.length) para('None recorded.', 10, f.font, p.mute);
-    br.forEach(function (b) {
-      var flags = [];
-      /* The points are the month's own settings, never a figure typed here. */
-      var bp = res.points || {};
-      var less = function (k) { return bp[k] == null ? '' : ' (−' + num(bp[k]) + ')'; };
-      if (b.repeated) flags.push('repeated in the quarter' + less('repeat'));
-      if (b.late) flags.push('reported late' + less('late'));
-      need(40);
-      p.text(SEV_WORD[b.severity] + ' · ' + BREACH_CAT[b.category], M, y, 9.5, f.bold);
-      p.right(num(b.deduction), R, y, 9.5, f.bold);
-      y -= 13;
-      para(dateWord(b.occurred_on) + (flags.length ? ' · ' + flags.join(', ') : '') , 8.5, f.font, p.mute);
-      para(b.what, 9.5);
-      y -= 3;
-    });
-    if (br.length) para('Each issue is recorded once, under the category it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.', 8.5, f.font, p.mute);
+    var bp = res.points || {};
+    var less = function (k) { return bp[k] == null ? '' : ' (−' + num(bp[k]) + ')'; };
+    if (!br.length) para('None recorded.', TY.body, book, SOFT);
+    else {
+      /* The date, the level over its area and the points as wide as their
+         widest entry; what happened takes the rest. */
+      var fit = function (ws, font) { return Math.max.apply(null, ws.map(function (s) { return p.width(s, TY.cell, font || book); })) + PADX * 2 + 2; };
+      var dW = fit(['30 Sept 2026']), ptW = fit(['Points'], reg) + PADX * 2;
+      var lvW = fit(Object.keys(SEV_WORD).map(function (k) { return SEV_WORD[k]; }).concat(Object.keys(BREACH_CAT).map(function (k) { return BREACH_CAT[k]; })));
+      table([{ w: dW }, { w: lvW }, { w: W - dW - lvW - ptW }, { w: ptW, align: 'center' }],
+        ['Date', 'Level', 'What happened', 'Points'],
+        br.map(function (b) {
+          var flags = [];
+          if (b.repeated) flags.push('Repeated in the quarter' + less('repeat'));
+          if (b.late) flags.push('Reported late' + less('late'));
+          return [dateWord(b.occurred_on), SEV_WORD[b.severity] + '\n' + BREACH_CAT[b.category],
+                  b.what + (flags.length ? ' ' + flags.join('. ') + '.' : ''), num(b.deduction)];
+        }));
+      y -= SP.line;
+      para('Each issue is recorded once, under the area it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.', TY.small, book, SOFT);
+    }
 
-    heading('4 · If this result repeats');
+    heading('If This Result Repeats', ROW);
     var path = res.path && PATH[res.path];
-    if (path) { need(14); p.text(path[0], M, y, 10, f.bold); y -= 14; para(path[1], 9.5); }
-    else para('No development or recovery path applies this month.', 9.5, f.font, p.mute);
-    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', 8.5, f.font, p.mute);
+    if (path) { para(path[0], TY.body, med); para(path[1]); }
+    else para('No development or recovery path applies this month.', TY.body, book, SOFT);
+    y -= SP.tight;
+    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', TY.small, book, SOFT);
 
-    heading('5 · Required improvement and follow-up');
-    para(r.improvement || 'None set.', 10, f.font, r.improvement ? p.ink : p.mute);
-    var stop = function (x) { x = String(x || '').trim(); return /[.!?]$/.test(x) ? x : x + '.'; };
-    para('Follow-up date: ' + stop(r.review_by ? dateWord(r.review_by) : none) + '  Step or reward to apply: ' + stop(r.reward_step || none), 9.5);
+    heading('Improvement and Follow-up', ROW * 3);
+    var lw2 = W / (1 + RPHI) / RPHI;
+    table([{ w: lw2 }, { w: W - lw2 }], null, [
+      [lab('Improvement'), r.improvement || none],
+      [lab('Follow-up date'), r.review_by ? dateWord(r.review_by) : none],
+      [lab('Step or reward'), r.reward_step ? stop(r.reward_step).replace(/\.$/, '') : none]
+    ]);
 
-    heading('6 · Queries');
+    heading('Queries', ROW);
     var ds = r.disputes || [];
-    if (!ds.length) para(r.dispute_until ? 'No query was raised by ' + timeWord(r.dispute_until) + '.' : 'No query raised.', 9.5, f.font, p.mute);
-    ds.forEach(function (d) {
-      need(44);
-      p.text(itemWord(d), M, y, 9.5, f.bold);
-      if (d.decision) p.right(DECISION[d.decision], R, y, 9.5, f.bold);
-      y -= 13;
-      para('Raised: ' + d.reason, 9);
-      if (d.decision) {
-        var change = d.decision === 'not_upheld' ? '' : d.item === 'breach'
-          ? (d.decision === 'upheld' ? ' Issue removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
-          : ' Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
-        para('Answer (' + (d.decided_by || '') + ', ' + dateWord(d.decided_at) + '): ' + d.response + change, 9);
-      }
-      y -= 3;
-    });
+    if (!ds.length) para(r.dispute_until ? 'No query was raised by ' + timeWord(r.dispute_until) + '.' : 'No query raised.', TY.body, book, SOFT);
+    else {
+      var decW = p.width('Partly agreed', TY.cell, book) + PADX * 2 + 2, itW = (W - decW) / RPHI / RPHI;
+      table([{ w: itW }, { w: (W - decW - itW) / 2 }, { w: (W - decW - itW) / 2 }, { w: decW, align: 'center' }],
+        ['Item', 'Raised', 'Answer', 'Decision'],
+        ds.map(function (d) {
+          var change = !d.decision || d.decision === 'not_upheld' ? '' : d.item === 'breach'
+            ? (d.decision === 'upheld' ? ' Issue removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
+            : ' Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
+          return [itemWord(d), d.reason,
+                  d.decision ? (d.response || '') + change + ' (' + (d.decided_by || '') + ', ' + dateWord(d.decided_at) + ')' : 'Waiting',
+                  d.decision ? DECISION[d.decision] : ''];
+        }));
+    }
 
     /* The record of this copy: every step the portal's server stamped, by
        name, address and time, the download included. Acknowledgement is
        given in the portal and stated here, never signed on paper. */
     var stamp = r.__stamp;
     if (!stamp) return;
-    heading('7 · Record of this document');
     var STEP = { released: 'Shared', acknowledged: 'Acknowledged', finalised: 'Finalised' };
     var rows = (stamp.trail || []).filter(function (t) { return STEP[t.kind]; }).map(function (t) {
       return [STEP[t.kind], t.by || '', t.email || '', stampTime(t.at)];
     });
     rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
-    var cols = [M, M + 84, M + 84 + 118, M + 84 + 118 + 168];
-    var head = ['Step', 'Name', 'Email', 'Date and time'];
-    need(22 + rows.length * 16);
-    head.forEach(function (h, i) { p.text(h, cols[i], y, 8.5, f.bold, p.mute); });
-    y -= 6; p.rule(y); y -= 12;
-    rows.forEach(function (row) {
-      need(16);
-      row.forEach(function (c, i) {
-        var max = (i < 3 ? cols[i + 1] : R) - cols[i] - 8;
-        var txt = p.wrap(c, max, 8.5, i === 0 ? f.bold : f.font)[0] || '';
-        p.text(txt, cols[i], y, 8.5, i === 0 ? f.bold : f.font);
-      });
-      y -= 16;
-    });
-    y -= 2;
+    /* The record is one block: its table and its Document ID line together. */
+    heading('Record of This Document', ROW * (rows.length + 1) + SP.line + LH * 2);
+    var stW = p.width('Acknowledged', TY.cell, book) + PADX * 2 + 2;
+    var tmW = p.width('30 Sept 2026, 23:59:59 MYT', TY.cell, book) + PADX * 2 + 2;
+    var rest = W - stW - tmW;
+    table([{ w: stW }, { w: rest / (1 + RPHI) }, { w: rest - rest / (1 + RPHI) }, { w: tmW }],
+      ['Step', 'Name', 'Email', 'Date and time'], rows);
+    y -= SP.line;
     para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
-      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), 8, f.font, p.mute);
+      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), TY.small, book, SOFT);
   }
 
   // ---- Performance rewards (2026-09-28) ------------------------------------------------
@@ -2020,7 +2067,7 @@
           if (p.own) return youRow('rwf-row', p, 3);
           var has = p.final != null;
           var el = row('rwf-row', [
-            whoCell(p, p.breach ? 'Level 3 or 4 breach' : ''),
+            whoCell(p, p.breach ? 'Level 3 or 4 issue' : ''),
             cell(has ? esc(num(p.final)) : dash()),
             cell(gradeCell(p.grade)),
             cell(has ? chip(p.eligible ? 'Eligible' : 'Not eligible', p.eligible ? 'is-ok' : '') : dash(), true)
