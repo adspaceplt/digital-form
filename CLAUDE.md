@@ -613,6 +613,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or
   `edited in the console, left alone`.
+- A business figure the team may change (an amount, a threshold, a rate, a
+  limit) is a setting an admin edits, effective from a date or period, read
+  by the function that applies it; never a number typed into code (the user,
+  2026-10-05: "what if i need changes the next quarter"). Older fixed
+  figures are listed in `STANDARD.md` until moved.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -1976,7 +1981,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
     rewards: best to worst by average, `rank` shared by equal averages, a
     short quarter's months under its average (`2 of 3`), and the individual
-    prize from the average of the final months (a weak month can be made up).
+    prize from the average of the final months (a weak month can be made up),
+    whole to the highest eligible average with no minimum (a tie shares it;
+    the user, 2026-10-05).
     Confirm is drawn only once every review in the quarter is final
     (`months-open` refuses otherwise) and asks first where an ended month
     has no review (`missing_months`). The member's own quarter never carries
@@ -1992,6 +1999,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.
+  - Every figure the rewards are worked out with is a setting
+    (`2026-10-05-performance-reward-settings.sql`, `perf_settings`: both
+    prizes, the department total, flexible hours' share and month, the pool
+    and trip gates, the pool's share of profit, months at B, units by grade,
+    the commission floor), each from a quarter on and read as at the
+    quarter, month, half or deal month (`perf_setting`). Reward settings
+    (the Quarters and Bonus bars, `#rwSetSheet`): management reads, an admin
+    changes them from a quarter on (`perf_settings_set`), never into a
+    quarter or half already confirmed (`confirmed`); each change is filed
+    from and to (`settings_set`), and every calculation says the rules it
+    used (`rules`), kept in the snapshot on Confirm.
   - Commission is pending until its month is final; the member sees it once
     decided. Nobody enters their own.
   - The caller's own row arrives with its name alone (`perf_hide_own`); the

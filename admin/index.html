@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261005e">
+<link rel="stylesheet" href="/css/portal.css?v=20261005f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3683,6 +3683,7 @@
               <span class="cmdbar-end">
                 <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwQCount"></span></span>
                 <span class="cmdbar-acts">
+                  <button class="btn btn-sm" id="rwQSet" type="button" data-need="team.performance:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Reward settings</button>
                   <button class="btn btn-sm" id="rwQReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
                   <button class="btn btn-sm btn-primary" id="rwQConfirm" type="button" data-need="team.performance:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Confirm quarter</button>
                 </span>
@@ -3697,6 +3698,7 @@
               <span class="cmdbar-end">
                 <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwPCount"></span></span>
                 <span class="cmdbar-acts">
+                  <button class="btn btn-sm" id="rwPSet" type="button" data-need="team.performance:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Reward settings</button>
                   <button class="btn btn-sm" id="rwPReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
                   <button class="btn btn-sm btn-primary" id="rwPConfirm" type="button" data-need="team.performance:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Confirm period</button>
                 </span>
@@ -3847,6 +3849,30 @@
         <div class="sheet-foot">
           <button class="btn btn-primary" id="rwFSave" type="button">Save</button>
           <button class="btn btn-quiet" id="rwFCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Every figure the rewards are worked out with, from a quarter on
+         (2026-10-05): an admin's to change, management's to read. -->
+    <div class="sheet" id="rwSetSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rwSTitle">
+        <div class="sheet-head">
+          <h3 id="rwSTitle">Reward settings</h3>
+          <button class="iconbtn" id="rwSClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="row">
+            <div><label class="field-label" for="rwSFrom">Applies from</label><select class="select" id="rwSFrom"></select></div>
+          </div>
+          <div id="rwSFields"></div>
+          <details class="fmore" id="rwSLog" hidden><summary>Changes</summary><div id="rwSLogList"></div></details>
+          <div class="msg" id="rwSMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="rwSSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="rwSCancel" type="button">Cancel</button>
         </div>
       </div>
     </div>
@@ -4727,7 +4753,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
 <script src="/js/ops.js?v=20261005a"></script>
-<script src="/js/perf.js?v=20261004e"></script>
+<script src="/js/perf.js?v=20261005a"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261005a"></script>
 </body>
