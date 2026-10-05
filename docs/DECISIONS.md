@@ -921,3 +921,7 @@ The user asked for a sales view for admins and Clients Full Access, with money f
 
 ### 2026-10-05 · Sales reads as a summary, not a report
 Asked whether the first Sales view was the best summary, the honest answer was no: the figures a director looks for sat as rows in a nine-row table, nothing said whether a figure was better or worse than before, the clients needing a call were counts rather than names, and the desk's width was spent on one long column. The user chose to ship it and rework next. The view now opens on four headline figures with their change on the period before (the same days of last month for a month in progress, so the comparison is fair early in a month), then the period's leads step by step beside a named Needs attention list, the two month charts side by side, and the breakdowns two across. The money stays an admin's, stated once.
+
+### 2026-10-05 · One draft a report, one figures check a version
+The user found the figures check could run twenty times a day on one report: it counted only against the colleague's day. The rule is now the report's own: one draft a report from colleagues, its revisions drafted inside that one, and one figures check a version, so each revision earns one more check. A colleague has ten AI uses a day, drafts and checks together, so five reports set up with a draft and a check each; an admin twenty, with five drafts and five checks a report a day. Every number is a setting under AI usage, as before.
+
