@@ -7923,6 +7923,8 @@
   wire();
   showPane('overview', false);
   window.ADspaceOps = {
+    /* A Meet answer in the team's words, for the client's Calls and visits too. */
+    meetSaid: function (d) { return meetSaid(d); },
     enter: enter, urlState: urlState, signedIn: signedIn,
     /* Which task is open, and a re-read of it. The record is otherwise only
        reachable through a press, so a change made to the row underneath it

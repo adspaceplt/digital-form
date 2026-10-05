@@ -973,7 +973,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     `null` uses the older factor table; only an explicit `false` turns it off.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
-- Calls and visits carry next actions and an Undo.
+- Calls and visits carry next actions and an Undo. A Meeting entry
+  (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
+  (15 to 240) and a Meet, Zoom or Teams link; while ahead with no link it
+  offers Create Google Meet (`meet-create` with `touchId`, Clients: Calls
+  Work), a moved time moves the event and an entry no longer a meeting
+  takes it off; the client's Meetings lists it as Meeting (time, length,
+  link while ahead), never its summary.
 - Requests (Request · Fee · State · ⋯):
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
@@ -1897,7 +1903,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     the same rule on every piece, and what already falls due made at once.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
-  - It asks `ops_engagement_meet_prepare` as the caller.
+  - It asks `ops_engagement_meet_prepare` (a month) or
+    `client_touch_meet_prepare` (a Calls and visits meeting) as the caller.
   - It refuses a slot only where another online meeting overlaps it (a Meet
     link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
     other events on the shared calendar do not count.

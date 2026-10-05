@@ -4952,6 +4952,9 @@ body > .shell { width: 100%; }
 .touch-meta { font-size: 12.5px; color: var(--ink-mute); margin-top: 4px; }
 .touch-next { font-size: 13px; margin-top: 8px; color: var(--ink-soft); font-weight: 500; }
 .touch-next.is-due { color: var(--warn); }
+.touch-meet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
+.touch-meet > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
+.touch-meetmsg { margin-top: 8px; }
 .touch-del { grid-area: del; }
 @media (max-width: 640px) {
   .touch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when del" "body body"; }

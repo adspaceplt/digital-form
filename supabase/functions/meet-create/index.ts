@@ -84,11 +84,19 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { engagementId?: string; action?: string };
+  let body: { engagementId?: string; touchId?: string; action?: string };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
-  const eid = String(body.engagementId ?? '');
+  /* A month's content meeting (engagementId), or a meeting a colleague
+     logged in a client's Calls and visits outside any month (touchId,
+     2026-10-05). Each has its own pair of database functions; the booking
+     is the same. */
+  const touch = body.touchId != null;
+  const eid = String((touch ? body.touchId : body.engagementId) ?? '');
   const action = String(body.action ?? 'create');
-  if (!/^[0-9a-f-]{36}$/.test(eid)) return json({ error: 'bad_engagement' }, 400, origin);
+  if (!/^[0-9a-f-]{36}$/.test(eid)) return json({ error: touch ? 'bad_touch' : 'bad_engagement' }, 400, origin);
+  const PREP = touch ? 'client_touch_meet_prepare' : 'ops_engagement_meet_prepare';
+  const SET = touch ? 'client_touch_set_meet' : 'ops_engagement_set_meet';
+  const KEY = touch ? 'p_touch' : 'p_engagement';
   if (!['create', 'update', 'delete'].includes(action)) return json({ error: 'bad_action' }, 400, origin);
 
   const auth = req.headers.get('Authorization') ?? '';
@@ -98,7 +106,7 @@ Deno.serve(async (req) => {
      other write on it. */
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: auth } } });
-  const prep = await db.rpc('ops_engagement_meet_prepare', { p_engagement: eid });
+  const prep = await db.rpc(PREP, { [KEY]: eid });
   if (prep.error) return json({ error: 'denied', detail: prep.error.message }, 200, origin);
   const m = prep.data as Record<string, string | number | null>;
   if (!m || m.error) return json({ error: (m && m.error) || 'denied' }, 200, origin);
@@ -113,7 +121,7 @@ Deno.serve(async (req) => {
       const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
       if (!r.ok && r.status !== 404 && r.status !== 410) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
     }
-    await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: null, p_event: null });
+    await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: null });
     return json({ deleted: true }, 200, origin);
   }
 
@@ -141,10 +149,10 @@ Deno.serve(async (req) => {
       end: (clash.end as Record<string, string>)?.dateTime || null }, 200, origin);
   }
 
-  const summary = `${m.client_name} · ${m.month_word} Content Discussion`;
+  const summary = touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
   const event: Record<string, unknown> = {
     summary,
-    description: `${m.month_word} Content Discussion\nBooked from the ADspace Digital Portal.`,
+    description: (touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ADspace Digital Portal.',
     start: { dateTime: start.toISOString(), timeZone: TZ },
     end: { dateTime: end.toISOString(), timeZone: TZ }
   };
@@ -177,12 +185,12 @@ Deno.serve(async (req) => {
   if (!link) {
     /* The event is recorded without a link, so the next press asks Google
        for the Meet on this event rather than booking a second one. */
-    await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: null, p_event: made.id });
+    await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: made.id });
     return json({ error: 'meet-pending', event: made.id }, 200, origin);
   }
-  const saved = await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: link, p_event: made.id });
+  const saved = await db.rpc(SET, { [KEY]: eid, p_link: link, p_event: made.id });
   if (saved.error || (saved.data && saved.data.error)) {
     return json({ error: 'not-saved', link, event: made.id }, 200, origin);
   }
-  return json({ link, event: made.id, engagement: saved.data }, 200, origin);
+  return json({ link, event: made.id, [touch ? 'touch' : 'engagement']: saved.data }, 200, origin);
 });

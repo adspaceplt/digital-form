@@ -2434,6 +2434,7 @@
            tc.updated_at ? 'edited' : '']
             .filter(Boolean).map(esc).join(' · ') +
         '</p>' +
+        meetLine(tc, removed) +
         (tc.next_action ? '<p class="touch-next' + (due ? ' is-due' : '') + (tc.done_at ? ' is-done' : '') + '">' +
           (tc.done_at ? 'Done: ' : 'Next: ') + esc(tc.next_action) +
           (tc.next_at ? ' · by ' + esc(niceDate(tc.next_at)) : '') +
@@ -2453,7 +2454,65 @@
     on('undone',  function () { markDone(tc, false); });
     on('del',     function () { archiveTouch(tc, true); });
     on('restore', function () { archiveTouch(tc, false); });
+    on('meet',    function (ev) { bookMeet(tc, 'create', ev.currentTarget); });
     return row;
+  }
+
+  /* A meeting booked outside a month (2026-10-05): its time and length, the
+     link to join while it is still ahead, and Create Google Meet where it has
+     a time ahead and no link yet, through the same meet-create the month's
+     content meeting uses. */
+  var MEET_LINK = /^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
+  /* Hours and minutes in Malaysia, wherever the browser is. */
+  function myt(d) { var x = new Date(d.getTime() + 8 * 3600000); return { h: x.getUTCHours(), m: x.getUTCMinutes() }; }
+  function clockOf(d) {
+    var t = myt(d), h = t.h, m = t.m;
+    return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? 'am' : 'pm');
+  }
+  function lengthWord(n) {
+    n = Number(n) || 30;
+    return n < 60 ? n + ' min' : (n % 60 ? (n / 60) + ' hours' : (n === 60 ? '1 hour' : (n / 60) + ' hours'));
+  }
+  function meetLine(tc, removed) {
+    if (tc.kind !== 'meeting' || (!tc.meet_at && !tc.meet_link)) return '';
+    var at = tc.meet_at ? new Date(tc.meet_at) : null;
+    var ahead = at && at.getTime() + (Number(tc.meet_minutes) || 30) * 60000 > Date.now();
+    var parts = at ? [clockOf(at), lengthWord(tc.meet_minutes)] : [];
+    var acts = '';
+    if (!removed && ahead && tc.meet_link) {
+      acts += '<a class="plink" href="' + esc(tc.meet_link) + '" target="_blank" rel="noopener">Join</a>';
+    }
+    if (!removed && ahead && !tc.meet_link) {
+      acts += '<button class="btn btn-sm" data-a="meet" data-need="clients.calls:work" type="button">Create Google Meet</button>';
+    }
+    return '<div class="touch-meet"><span>' + esc(parts.join(' · ')) + '</span>' + acts + '</div>' +
+      '<p class="msg touch-meetmsg" hidden></p>';
+  }
+  function meetAsk(tc, action, done) {
+    if (!db.functions || !db.functions.invoke) { done({ error: 'meet-not-set-up' }); return; }
+    db.functions.invoke('meet-create', { body: { touchId: tc.id, action: action } })
+      .then(function (r) { done(r.error ? { error: 'unreachable' } : (r.data || {})); })
+      .catch(function () { done({ error: 'unreachable' }); });
+  }
+  function meetWords(d) {
+    var ops = window.ADspaceOps;
+    if (ops && ops.meetSaid) return ops.meetSaid(d);
+    return 'Google Meet could not be reached. Paste a link instead.';
+  }
+  function bookMeet(tc, action, btn) {
+    var row = btn && btn.closest('.touch');
+    var line = row && row.querySelector('.touch-meetmsg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+    meetAsk(tc, action, function (d) {
+      if (d.link || d.deleted) {
+        log('client.touch_edited', state.client.name, 'Meeting · ' + (d.link ? 'Google Meet created' : 'Google Meet removed'));
+        loadTouches();
+        return;
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Google Meet'; }
+      if (line) { line.hidden = false; line.className = 'msg err touch-meetmsg'; line.textContent = meetWords(d); }
+      else msg('crmWorkMsg', meetWords(d), 'err');
+    });
   }
 
   function markDone(tc, done) {
@@ -2488,6 +2547,12 @@
     $('tcSummary').value = tc ? (tc.summary || '') : '';
     $('tcNext').value = tc ? (tc.next_action || '') : '';
     $('tcNextAt').value = tc ? (tc.next_at || '') : '';
+    var at = tc && tc.meet_at ? new Date(tc.meet_at) : null;
+    var hm = at ? myt(at) : null;
+    $('tcTime').value = hm ? (hm.h < 10 ? '0' : '') + hm.h + ':' + (hm.m < 10 ? '0' : '') + hm.m : '';
+    $('tcMins').value = String(tc && tc.meet_minutes || 30);
+    $('tcLink').value = tc ? (tc.meet_link || '') : '';
+    meetFields();
     if (!tc) {
       var main = state.contacts.filter(function (c) { return c.is_primary; })[0];
       if (main) $('tcWith').value = main.name;
@@ -2497,6 +2562,9 @@
        focus raises the keyboard and zooms the page past the rest of the form,
        and the first field is rarely the one somebody came to change. */
   }
+  /* Time, length and link belong to a meeting alone. */
+  function meetFields() { $('tcMeetRow').hidden = $('tcKind').value !== 'meeting'; }
+  $('tcKind').addEventListener('change', meetFields);
   function shutTouch() { shutSheet('crmTouchBox'); editingTouch = null; }
   $('crmAddTouch').addEventListener('click', function () { openTouch(null); });
   $('tcCancel').addEventListener('click', shutTouch);
@@ -2510,11 +2578,33 @@
       contact_name: val('tcWith') || null,
       summary: summary,
       next_action: val('tcNext') || null,
-      next_at: $('tcNextAt').value || null
+      next_at: $('tcNextAt').value || null,
+      meet_at: null, meet_minutes: null, meet_link: null
     };
+    if (row.kind === 'meeting') {
+      var link = val('tcLink');
+      if (link && !MEET_LINK.test(link)) {
+        msg('tcMsg', 'Enter a Google Meet, Zoom or Teams link.', 'err'); $('tcLink').focus(); return;
+      }
+      var time = $('tcTime').value;
+      /* The time is Malaysia's, wherever the colleague is. */
+      row.meet_at = time ? new Date(row.happened_at + 'T' + time + ':00+08:00').toISOString() : null;
+      row.meet_minutes = Number($('tcMins').value) || 30;
+      row.meet_link = link || null;
+    }
+    var was = editingTouch;
     var after = function (r) {
       if (r.error) { msg('tcMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('tcMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      /* A Google Meet already booked follows the entry: moved with its time,
+         taken off the calendar when the entry is no longer a meeting at a
+         time. */
+      if (was && was.meet_event_id) {
+        var gone = row.kind !== 'meeting' || !row.meet_at;
+        var before = was.meet_at ? new Date(was.meet_at).getTime() : 0;
+        var moved = !gone && (new Date(row.meet_at).getTime() !== before || row.meet_minutes !== was.meet_minutes);
+        if (gone || moved) meetAsk({ id: was.id }, gone ? 'delete' : 'create', function () { loadTouches(); });
+      }
       log(editingTouch ? 'client.touch_edited' : 'client.touch', state.client.name,
           KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
       shutTouch();
