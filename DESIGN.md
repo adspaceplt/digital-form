@@ -245,7 +245,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Every table states its own tracks. A template hung off `:not(...)` claims the
   wrong header.
 - Every tab strip is the view strip: the tonal track, never a rule across the
-  column, never bleeding past the page's margins. A record's strip
+  column, never bleeding past the page's margins. A report's step strip
+  (`.rp-steps`, each step's summary under its name) is one too. A record's strip
   (`.rectabs`, the client portal's too) and a strip inside a card (a set's
   `.poststages`) run the width of that card at every width; a section's switch (`.tabrow`) is its own width at a desk
   and the column's on a phone. Tabs in a full strip share what is spare
@@ -349,6 +350,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Controls in a row share a width and a height. `.row` aligns to the top, and
   `.row > .btn` to the bottom. A field standing alone fills its container.
 - A required field carries a red asterisk from `aria-required`.
+- A typed box (`textarea`) runs its row's width and stretches downwards only
+  (`resize: vertical`): a sideways drag never widens the page.
 - A native field is reskinned to our box:
   - `::file-selector-button` shaded (`--line-soft`), concentric, 13px;
   - a date or time field with `appearance: none`, the value left aligned,
