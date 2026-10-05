@@ -2127,7 +2127,7 @@
             esc((p === 'done' ? 'Reopen ' : 'Mark complete: ') + (t.title || 'task')) + '"></button>'
         : wfRing(t, fin);
     var who = owners[t.id] || '';
-    var canOwn = may('ops', 'manage') && !fin;
+    var canOwn = mayReassign(t) && !fin;
     var dc = dueCell(t);
     /* The final due is the one a row edits; a publish or review date is the
        step's, and is changed where the step is. */
@@ -2640,7 +2640,7 @@
 
     // The facts a day's work turns on.
     var who = ownerName(t);
-    var canOwn = may('ops', 'manage') && !fin;
+    var canOwn = mayReassign(t) && !fin;
     var dueTxt = t.current_final_due_at ? niceDate(t.current_final_due_at) : 'Not set';
     var over = isLate(t);
     var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
@@ -2801,7 +2801,7 @@
     var menu = $('dwMenu');
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = fin;
+    menu.querySelector('[data-a="handover"]').hidden = fin || !mayReassign(t);
     offerItems(menu, t);
   }
   // ---- Changing and taking back what was added --------------------------------
@@ -4535,6 +4535,15 @@
   /* The stage is the Task Owner's to move, and an admin's; everybody else
      reads it. The database refuses the rest (`not-owner`); the page does not
      offer it. */
+  /* Who may reassign (the user, 2026-10-05): the person it is assigned to,
+     and any group above them (My Work at Manage or an admin). The database
+     holds the same rule (`ops_assign_task`, `ops_hand_over_task`). */
+  function mayReassign(t) {
+    if (!t || !may('ops', 'work')) return false;
+    if (may('ops', 'manage')) return true;
+    var o = (state.ownerIds && state.ownerIds[t.id]) || ownerId(t);
+    return Boolean(o) && o === myId();
+  }
   function mayMove(t) {
     if (!t || !may('ops', 'work')) return false;
     if (isAdmin()) return true;
@@ -5051,7 +5060,7 @@
     var who = ownerName(t);
     var made = nameOf(t.created_by);
     var client = t.clients && t.clients.name;
-    var canOwn = may('ops', 'manage');
+    var canOwn = mayReassign(t);
     var rows = frow('Assigned to',
       '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
       '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>',
@@ -5073,7 +5082,7 @@
 
   function editOwner() {
     var t = state.task;
-    if (!t || !may('ops', 'manage')) return;
+    if (!t || !mayReassign(t)) return;
     var name = $('taskOwnerName'), sel = $('taskOwner'), ch = $('taskOwnerChange');
     if (!sel) return;
     var was = ownerId(t);
@@ -5321,7 +5330,7 @@
     var work = may('ops', 'work');
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = isFinished(t);
+    menu.querySelector('[data-a="handover"]').hidden = isFinished(t) || !mayReassign(t);
     /* Archiving is no longer offered; a task archived before keeps its way
        back. */
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at;
@@ -6703,7 +6712,7 @@
       if (k === 'cancel') {
         window.ADspaceConfirm.ask({
           title: 'Cancel ' + monthWord(e.period),
-          body: 'The month takes no new tasks. Its tasks stay.',
+          body: 'The month takes no new tasks. Its tasks stay; a report task nobody has started is cancelled, and comes back if the month is reopened.',
           go: 'Cancel month', tone: 'warn', cancel: 'Keep month'
         }, function () { setStatus(e, 'cancelled', el); });
       }
@@ -7017,7 +7026,7 @@
      what is left on the checklist and when it is owed. */
   function openGive() {
     var t = state.task;
-    if (!t || !may('ops', 'manage')) return;
+    if (!t || !mayReassign(t)) return;
     var owner = ownerId(t);
     $('giveTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return m.id !== owner;

@@ -1710,8 +1710,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A hand-off shows the person, with Keep it assigned to me unticked.
   - The owner's own steps have it ticked.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
-- Skipping a step is ops Work with a reason, and never into a revision. Owner
-  change and hand-over (`ops_hand_over_task`) are Manage.
+- Skipping a step is ops Work with a reason, and never into a revision.
+- Reassign (`ops_assign_task`, `ops_hand_over_task`;
+  `2026-10-05-assignee-reassigns.sql`): the person a task is assigned to
+  (My Work at Work, their own task) and any group above them (Manage, an
+  admin); helpers and the reviewer stay a manager's, and both functions ask
+  `ops_may_see_task`. `mayReassign(t)` draws the controls.
 - Open to take (`2026-10-04-open-to-take.sql`, `ops_tasks.open_at` /
   `open_by`): the assignee or an admin offers an open task to the team
   (Offer to the team / Withdraw offer in the ⋯, never asks;
@@ -1850,7 +1854,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     back on the tasks the page holds).
   - Only Completed (refused while a task is open, `tasks-open` with the
     count), Cancelled (the ⋯, asks, `Keep month`) and Reopen (back to
-    Planning, never asks) are stored. `ops_engagement_set_status` refuses
+    Planning, never asks) are stored. Cancelled cancels the report tasks
+    nobody started (`ops_engagement_cancel_reports`), Reopen asks for them
+    again, and a report task nobody started follows the month's manager
+    (`2026-10-05-month-edits-reach-reports.sql`). `ops_engagement_set_status` refuses
     Ready and In production (`derived-state`); a stored one from before reads
     as open. A task moves into production on the ticks and the meeting, never
     on the stored word.
