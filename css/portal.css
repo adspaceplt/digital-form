@@ -9891,11 +9891,18 @@ body.is-maint { overflow: hidden; }
 #crmSales .ovsec-title { margin-bottom: 12px; }
 #crmSales .crm-table + .ovsec-title, #crmSales .repempty + .ovsec-title,
 #crmSales .chartcard + .ovsec-title { margin-top: 32px; }
+/* The figure keeps the control's floor (38, 44 under a finger) as its
+   target, the number at the column's edge in the figure column and centred
+   on its own place in the middle one, so the line reads as plain figures. */
 .sl-row .rep-num .sl-drill, .sl-row .rep-mid .sl-drill {
-  margin-right: -8px; font-size: 13.5px; font-weight: 600; color: var(--ink);
+  min-width: var(--ctl-h); justify-content: flex-end; margin-right: -8px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.sl-row .rep-mid .sl-drill { margin-inline: -8px; font-size: 13px; }
+.sl-row .rep-mid .sl-drill {
+  justify-content: center; font-size: 13px;
+  margin-inline: calc((1.2em - var(--ctl-h)) / 2);
+}
 /* The middle figure names itself at every width: its column holds a rate,
    a change and a pair of counts, so one heading cannot. */
 .sl-row .rep-lab { display: inline; }
