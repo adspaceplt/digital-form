@@ -2162,7 +2162,7 @@
         ? '<button class="btn btn-sm task-take" type="button" data-a="take" aria-label="Take ' + esc(t.title) + '">Take</button>'
         : statusCell(t)) + '</span>' +
       '</span>' +
-      '<span class="team-act">' + (work ? rowMenu(t) : '') + '</span>';
+      '<span class="team-act">' + (work ? rowMenu(t, !elsewhere && takeable(t)) : '') + '</span>';
     el.querySelector('.task-open').addEventListener('click', function () {
       if (elsewhere) openDrawer(t.id, { from: 'client' }); else openDrawer(t.id);
     });
@@ -2259,24 +2259,24 @@
     return s.key === 'meeting_scheduled' && inMonth ? 'Content meeting' : s.label;
   }
 
-  /* The row's ⋯ is the task's: the full record first, the rare acts after
-     it, Delete last. Everything that moves the stage is the stage select. */
-  function rowMenu(t) {
+  /* The row's ⋯ holds only what the row cannot already do (the user,
+     2026-10-05: "so many options"): offering the task, and Delete. The name
+     opens the task (the full record, a copy and a repeat are there), the
+     owner cell changes the owner, the stage select moves it. Nothing to
+     hold, no ⋯. */
+  function rowMenu(t, takeShown) {
     var item = function (a, word, cls) {
       return '<button class="kmenu-item' + (cls ? ' ' + cls : '') + '" data-m="' + a + '" type="button" role="menuitem">' + word + '</button>';
     };
+    var items =
+      (takeable(t) && !takeShown ? item('take', 'Take') : '') +
+      (mayMove(t) && !isFinished(t) ? item(offered(t) ? 'unoffer' : 'offer', offered(t) ? 'Withdraw offer' : 'Offer to the team') : '') +
+      (may('ops', 'manage') ? item('delete', 'Delete', 'is-danger') : '');
+    if (!items) return '';
     return '<span class="kmenu-wrap">' +
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(t.title) + '">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
-      '<span class="kmenu" hidden role="menu">' +
-        item('full', 'Open full record') +
-        (takeable(t) ? item('take', 'Take') : '') +
-        (mayMove(t) && !isFinished(t) ? item(offered(t) ? 'unoffer' : 'offer', offered(t) ? 'Withdraw offer' : 'Offer to the team') : '') +
-        (may('ops', 'manage') && !isFinished(t) ? item('owner', 'Change Task Owner') : '') +
-        item('copy', 'Make a copy') +
-        item('repeat', 'Repeat on a schedule') +
-        (may('ops', 'manage') ? item('delete', 'Delete', 'is-danger') : '') +
-      '</span></span>';
+      '<span class="kmenu" hidden role="menu">' + items + '</span></span>';
   }
   function wireRowMenu(el, t, done) {
     var btn = el.querySelector('.team-act .kmenu-btn'), menu = el.querySelector('.team-act .kmenu');
@@ -2298,13 +2298,12 @@
       btn.setAttribute('aria-expanded', 'false');
       var a = it.getAttribute('data-m');
       var from = el.closest('#cwList') ? { from: 'client' } : {};
-      if (a === 'full') { openFull(t.id); return; }
       var sayRow = function (x) { rowNote(el, x); };
       if (a === 'take') { takeTask(t, sayRow, done); return; }
       if (a === 'offer' || a === 'unoffer') { offerTask(t, a === 'offer', sayRow, done); return; }
-      /* The rest act on the task as the sheet does, so the sheet opens and
-         the act follows once the task is read. */
-      from.then = a === 'owner' ? openGive : a === 'copy' ? openDup : a === 'repeat' ? openRec : openDelete;
+      /* Delete acts on the task as the sheet does, so the sheet opens and
+         the question follows once the task is read. */
+      from.then = openDelete;
       openDrawer(t.id, from);
     });
   }
@@ -7341,7 +7340,6 @@
         dmb.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
-        if (a === 'full') openFull(t.id);
         if (a === 'handover') openGive();
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
