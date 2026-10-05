@@ -91,6 +91,7 @@ Every figure comes from the data given. Never invent a number, a cause, an audie
 
 READING THE FIGURES
 Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means the opening needs work. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
+Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
 Summary (intro): one paragraph of two or three sentences. Total spend for the period and its change against the previous period in percent, with the reason when the notes give one; how reach and impressions moved; which objective took most of the budget and why; the strongest ad with its result count, cost per result and CTR. Lead with the client's goal when the notes name one.
@@ -333,7 +334,7 @@ Deno.serve(async (req) => {
   }
   if (kind === 'ads') {
     const ads = await db.from('sm_report_ads')
-      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention')
+      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform')
       .eq('report_id', id).order('position', { ascending: true });
     if (ads.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ads.data || []).length) return json({ error: 'no-ads' }, 200, origin);
@@ -344,8 +345,18 @@ Deno.serve(async (req) => {
       data.previous = { start: t.prev_start, end: t.prev_end, reach: num(t.prev_reach),
         impressions: num(t.prev_impressions), spend: num(t.prev_spend), by_objective: t.prev_groups || null };
     }
+    // Meta and TikTok in one report (2026-10-05): each platform's figures
+    // apart, since reach is never added across platforms.
+    const tk = (t.tiktok || {}) as Record<string, unknown>;
+    if ((ads.data as Record<string, unknown>[]).some((a) => a.platform === 'tiktok')) {
+      data.account = { meta: data.account, tiktok: { reach: num(tk.reach), impressions: num(tk.impressions), spend: num(tk.spend) } };
+      if (data.previous) {
+        data.previous = { ...data.previous as Record<string, unknown>,
+          tiktok: { reach: num(tk.prev_reach), impressions: num(tk.prev_impressions), spend: num(tk.prev_spend) } };
+      }
+    }
     data.ads = (ads.data as Record<string, unknown>[]).map((a) => ({
-      ad: mask(adName(a.name)), objective: a.objective, result: a.result_label, audience: a.audience,
+      ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label, audience: a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),
       ctr_pct: num(a.ctr), cost_per_result: num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? Math.round(num(a.spend)! / num(a.results)! * 100) / 100 : null),

@@ -2220,6 +2220,13 @@
                     ['awareness', 'Awareness', 'Reach'], ['app', 'App promotion', 'App installs']];
   var OBJ_WORD = {};
   OBJECTIVES.forEach(function (o) { OBJ_WORD[o[0]] = o[1]; });
+  /* Platforms (2026-10-05): one Advertising Report holds Meta's ads and
+     TikTok's. A row names its platform; a row that names none is Meta's. */
+  var AD_PLATS = [['meta', 'Meta'], ['tiktok', 'TikTok']];
+  function adPlat(a) { return a && a.platform === 'tiktok' ? 'tiktok' : 'meta'; }
+  function adPlatWord(k) { return k === 'tiktok' ? 'TikTok' : 'Meta'; }
+  function adPlatsHeld() { return AD_PLATS.filter(function (p) { return st.ads.some(function (a) { return adPlat(a) === p[0]; }); }).map(function (p) { return p[0]; }); }
+  function hasTikTok() { return st.ads.some(function (a) { return adPlat(a) === 'tiktok'; }) || !!((st.open || {}).ads_totals || {}).tiktok; }
   var RESULT_TYPES = ['Leads', 'Messaging conversations', 'Purchases', 'Link clicks', 'Landing page views', 'Engagements',
                       'Engagement', 'ThruPlays', 'Ad recall lift', 'Reach', 'Impressions', 'App installs'];
   var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
@@ -2270,7 +2277,7 @@
   function sortAds() {
     var ord = {}; OBJECTIVES.forEach(function (o, i) { ord[o[0]] = i; });
     st.ads.sort(function (a, b) {
-      var d = ord[a.objective] - ord[b.objective];
+      var d = (adPlat(a) === 'tiktok') - (adPlat(b) === 'tiktok') || ord[a.objective] - ord[b.objective];
       if (d) return d;
       var ca = adCpr(a), cb = adCpr(b);
       if (ca === null && cb !== null) return 1;
@@ -2288,9 +2295,17 @@
     var box = st.host.querySelector('.rp-totals');
     if (!box) return;
     var r = st.open, t = r.ads_totals || {};
-    var sumSpend = st.ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
-    var sumImpr = st.ads.reduce(function (s0, a) { return s0 + (Number(a.impressions) || 0); }, 0);
-    var objs = OBJECTIVES.filter(function (o) { return st.ads.some(function (a) { return a.objective === o[0]; }); });
+    /* TikTok's figures are its own (`ads_totals.tiktok`): reach is never
+       added across platforms, so Step 1 asks each platform for its own. The
+       figures at the top level, the objectives' and the previous period's
+       are Meta's, as every report before TikTok holds them. */
+    var tk = hasTikTok(), tt = t.tiktok || {};
+    var metaAds = st.ads.filter(function (a) { return adPlat(a) === 'meta'; });
+    var tkAds = st.ads.filter(function (a) { return adPlat(a) === 'tiktok'; });
+    var sumOf = function (list, f) { return list.reduce(function (s0, a) { return s0 + (Number(a[f]) || 0); }, 0); };
+    var sumSpend = sumOf(metaAds, 'spend'), sumImpr = sumOf(metaAds, 'impressions');
+    var objs = OBJECTIVES.filter(function (o) { return metaAds.some(function (a) { return a.objective === o[0]; }); });
+    var on = function (w) { return tk ? w + ' · Meta' : w; };
     /* An objective's results as the PDF adds them from its ads, shown in its
        fields until a figure is typed (the user, 2026-10-02: Step 1 filled
        reach, impressions and spend and left these blank). Read live, so an
@@ -2299,7 +2314,7 @@
     var SR = window.ADspaceSmReport;
     var objSum = function (k) {
       var by = {}, order = [], spent = 0;
-      st.ads.forEach(function (a) {
+      metaAds.forEach(function (a) {
         if (a.objective !== k) return;
         spent += Number(a.spend) || 0;
         var w = a.result_label && SR && SR.shortResult ? SR.shortResult(a.result_label) : 'Results';
@@ -2325,22 +2340,39 @@
       var before = r.first_month ? [['Comparison', 'First month of ads, with the reading guidance']] :
         [['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
           ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];
-      box.innerHTML = factsCard([{ title: 'This period', rows: now }, { title: 'Results by objective', rows: byObj }, { title: 'Previous period', rows: before }]);
+      var cards = [{ title: on('This period'), rows: now }, { title: on('Results by objective'), rows: byObj }, { title: on('Previous period'), rows: before }];
+      if (tk) {
+        cards.push({ title: 'This period · TikTok', rows: [['Total reach', fmt(tt.reach)],
+          ['Total impressions', tt.impressions != null ? fmt(tt.impressions) : fmt(sumOf(tkAds, 'impressions')) + ' (from the ads)'],
+          ['Amount spent', tt.spend != null ? money2(tt.spend) : money2(sumOf(tkAds, 'spend')) + ' (from the ads)']] });
+        if (!r.first_month) cards.push({ title: 'Previous period · TikTok', rows: [['Reach', fmt(tt.prev_reach)], ['Impressions', fmt(tt.prev_impressions)], ['Amount spent', money2(tt.prev_spend)]] });
+      }
+      box.innerHTML = factsCard(cards);
       return;
     }
     box.innerHTML = '<section class="panel rp-form">' +
       '<label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads, with no comparison</label>' +
-      '<section class="fsec"><h4 class="fsec-h">This period</h4>' +
+      '<section class="fsec"><h4 class="fsec-h">' + on('This period') + '</h4>' +
         '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
         '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
+      (tk ? '<section class="fsec" id="rpTkSec"><h4 class="fsec-h">This period · TikTok</h4>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpKReach">Total reach</label><input class="input" id="rpKReach" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpKImpr">Total impressions</label><input class="input" id="rpKImpr" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumOf(tkAds, 'impressions'))) + ' from the ads"></div>' +
+        '<div><label class="field-label" for="rpKSpend">Amount spent</label><input class="input" id="rpKSpend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(sumOf(tkAds, 'spend'))) + ' from the ads"></div></div></section>' : '') +
       '<section class="fsec" id="rpPrevSec"><h4 class="fsec-h">Previous period</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPStart">Start</label><input class="input" id="rpPStart" type="date"></div>' +
         '<div><label class="field-label" for="rpPEnd">End</label><input class="input" id="rpPEnd" type="date"></div></div>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpPReach">Reach</label><input class="input" id="rpPReach" data-num="int" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpPImpr">Impressions</label><input class="input" id="rpPImpr" data-num="int" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpPSpend">Amount spent</label><input class="input" id="rpPSpend" data-num="money" type="text" inputmode="decimal"></div></div></section>' +
-      (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>Results by objective</summary>' +
+        /* With TikTok held each field names its platform, so the rows keep
+           the form's own rhythm. */
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpPReach">' + (tk ? 'Meta reach' : 'Reach') + '</label><input class="input" id="rpPReach" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPImpr">' + (tk ? 'Meta impressions' : 'Impressions') + '</label><input class="input" id="rpPImpr" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPSpend">' + (tk ? 'Meta amount spent' : 'Amount spent') + '</label><input class="input" id="rpPSpend" data-num="money" type="text" inputmode="decimal"></div></div>' +
+        (tk ? '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpKPReach">TikTok reach</label><input class="input" id="rpKPReach" data-num="int" type="text" inputmode="numeric"></div>' +
+          '<div><label class="field-label" for="rpKPImpr">TikTok impressions</label><input class="input" id="rpKPImpr" data-num="int" type="text" inputmode="numeric"></div>' +
+          '<div><label class="field-label" for="rpKPSpend">TikTok amount spent</label><input class="input" id="rpKPSpend" data-num="money" type="text" inputmode="decimal"></div></div>' : '') +
+      '</section>' +
+      (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>' + on('Results by objective') + '</summary>' +
         objs.map(function (o) {
           var sm = objSum(o[0]);
           return '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
@@ -2357,6 +2389,7 @@
     $('rpFirst').checked = !!r.first_month;
     v('rpTReach', t.reach); v('rpTImpr', t.impressions); v('rpTSpend', t.spend);
     v('rpPStart', t.prev_start); v('rpPEnd', t.prev_end); v('rpPReach', t.prev_reach); v('rpPImpr', t.prev_impressions); v('rpPSpend', t.prev_spend);
+    if (tk) { v('rpKReach', tt.reach); v('rpKImpr', tt.impressions); v('rpKSpend', tt.spend); v('rpKPReach', tt.prev_reach); v('rpKPImpr', tt.prev_impressions); v('rpKPSpend', tt.prev_spend); }
     objs.forEach(function (o) {
       var gg = (t.groups || {})[o[0]] || {};
       v('rpGR_' + o[0], gg.results); v('rpGL_' + o[0], gg.label);
@@ -2375,7 +2408,16 @@
         if (n === null || n < 0) { bad = bad || $(f[1]); return; }
         out[f[0]] = n;
       });
+      var kt = {};
+      if (tk) [['reach', 'rpKReach'], ['impressions', 'rpKImpr'], ['spend', 'rpKSpend'], ['prev_reach', 'rpKPReach'], ['prev_impressions', 'rpKPImpr'], ['prev_spend', 'rpKPSpend']].forEach(function (f) {
+        var raw = $(f[1]).value.trim();
+        if (!raw) return;
+        var n = numIn(raw);
+        if (n === null || n < 0) { bad = bad || $(f[1]); return; }
+        kt[f[0]] = n;
+      });
       if (bad) { say(m, 'A figure is a number.', 'err'); bad.focus(); return; }
+      if (Object.keys(kt).length) out.tiktok = kt;
       if ($('rpPStart').value) out.prev_start = $('rpPStart').value;
       if ($('rpPEnd').value) out.prev_end = $('rpPEnd').value;
       if (out.prev_start && out.prev_end && out.prev_end < out.prev_start) { say(m, 'The previous period must end on or after the day it starts.', 'err'); return; }
@@ -2429,11 +2471,14 @@
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
       '<button class="btn btn-sm btn-danger" id="rpAdRemove" type="button">Remove</button></span>' +
       '<button class="btn btn-sm btn-quiet bulkbar-done" id="rpAdDone" type="button">Done</button></div>' : '';
-    box.innerHTML = bar + OBJECTIVES.map(function (o) {
-      var ads = st.ads.filter(function (a) { return a.objective === o[0]; });
+    /* A table an objective; with both platforms, an objective a platform
+       (Traffic · TikTok), as the PDF heads them. */
+    var held = adPlatsHeld(), multi = held.length > 1;
+    box.innerHTML = bar + (held.length ? held : ['meta']).map(function (pk) { return OBJECTIVES.map(function (o) {
+      var ads = st.ads.filter(function (a) { return a.objective === o[0] && adPlat(a) === pk; });
       if (!ads.length) return '';
       var spend = ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
-      return '<div class="rp-postgroup"><p class="rp-group">' + esc(o[1]) +
+      return '<div class="rp-postgroup"><p class="rp-group">' + esc(o[1] + (multi ? ' · ' + adPlatWord(pk) : '')) +
         ' <span class="mute">' + ads.length + ' ad' + (ads.length === 1 ? '' : 's') + ' · ' + esc(money2(spend)) + '</span></p>' +
         '<div class="crm-table softpanel rp-ad-table' + (pick ? ' is-picking' : '') + '" data-obj="' + o[0] + '">' +
         '<div class="crm-head rp-ad-row">' + (pick ? tick(null, 'Select every ' + o[1] + ' ad', ads.every(function (a) { return pick[a.id]; })) : '') +
@@ -2450,9 +2495,9 @@
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
-            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate'] : []).concat((a.ad_ids || []).length ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
+            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
-    }).join('');
+    }).join(''); }).join('');
     if (pick) { wirePick(box); return; }
     /* A row names how many Ad IDs it holds; the IDs open over it. */
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="adids"]'), function (c) {
@@ -2518,14 +2563,15 @@
       }).join('') + '</ul>' +
       '<div class="rp-idspop-acts">' +
         (ids.length > 1 ? '<button class="btn btn-sm" type="button" data-a="all">Copy all</button>' : '') +
-        '<button class="btn btn-sm btn-icon" type="button" data-a="open">Open in Ads Manager ' + ICON.out + '</button></div>';
+        (adPlat(a) === 'meta' ? '<button class="btn btn-sm btn-icon" type="button" data-a="open">Open in Ads Manager ' + ICON.out + '</button>' : '') + '</div>';
     var copy = function (el, text) { if (window.ADspaceCopy) window.ADspaceCopy.to(el, text); };
     Array.prototype.forEach.call(idsPop.querySelectorAll('.serial-copy'), function (c) {
       c.onclick = function () { copy(c, c.getAttribute('data-id')); };
     });
     var all = idsPop.querySelector('[data-a="all"]');
     if (all) all.onclick = function () { copy(all, ids.join(',')); };
-    idsPop.querySelector('[data-a="open"]').onclick = function () { window.open(adsManagerUrl(a), '_blank', 'noopener'); idsShut(); };
+    var openBtn = idsPop.querySelector('[data-a="open"]');
+    if (openBtn) openBtn.onclick = function () { window.open(adsManagerUrl(a), '_blank', 'noopener'); idsShut(); };
     idsPop.querySelector('[data-a="x"]').onclick = function () { idsShut(true); };
     idsPop.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
@@ -2642,6 +2688,8 @@
   function adSheet(a, opener, copy) {
     var box = sheetShell('rpAdSheet', 'Ad',
       '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
+        '<div class="row"><div><label class="field-label" for="rpAdPlat">Platform</label><select class="select" id="rpAdPlat" data-seg>' +
+          AD_PLATS.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" aria-required="true" type="text" placeholder="As in Ads Manager"></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
           OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
@@ -2678,6 +2726,7 @@
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
     a = a || {};
     v('rpAdName', a.name); $('rpAdObj').value = a.objective || st.lastObj || 'leads';
+    $('rpAdPlat').value = a.platform || st.lastPlat || 'meta';
     v('rpAdResult', resultWord(a.result_label)); v('rpAdAud', a.audience);
     v('rpAdStart', a.starts_on || (a.id || copy ? null : st.open.period_start)); v('rpAdEnd', a.ends_on || (a.id || copy ? null : st.open.period_end));
     v('rpAdSpend', a.spend); v('rpAdResults', a.results); v('rpAdCtr', a.ctr); v('rpAdReach', a.reach); v('rpAdImpr', a.impressions);
@@ -2729,6 +2778,7 @@
     if (window.ADspaceForm) {
       box.querySelectorAll('details.fmore').forEach(function (d) { window.ADspaceForm.refresh(d); });
       window.ADspaceForm.paint($('rpAdBasis'));
+      window.ADspaceForm.paint($('rpAdPlat'));
     }
     var go = box.querySelector('[data-a="go"]');
     go.onclick = function () {
@@ -2742,7 +2792,7 @@
         return x;
       };
       var row = {
-        name: name, objective: $('rpAdObj').value, result_label: $('rpAdResult').value.trim() || null,
+        name: name, platform: $('rpAdPlat').value === 'tiktok' ? 'tiktok' : 'meta', objective: $('rpAdObj').value, result_label: $('rpAdResult').value.trim() || null,
         audience: $('rpAdAud').value.trim() || null, starts_on: $('rpAdStart').value || null, ends_on: $('rpAdEnd').value || null,
         spend: n('rpAdSpend'), results: n('rpAdResults', true), ctr: n('rpAdCtr'), reach: n('rpAdReach', true), impressions: n('rpAdImpr', true),
         cpr: n('rpAdCpr'), cpr_basis: $('rpAdBasis').value || null,
@@ -2772,7 +2822,7 @@
         if (editing) st.ads = st.ads.map(function (x) { return x.id === a.id ? saved : x; });
         else st.ads.push(saved);
         fileReport('report.saved', (editing ? 'Ad edited: ' : 'Ad added: ') + (SM() && SM().adName ? SM().adName(saved.name || '') : (saved.name || '')));
-        st.lastObj = row.objective;
+        st.lastObj = row.objective; st.lastPlat = row.platform;
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals();
@@ -2806,19 +2856,26 @@
      the ad's own Starts and Ends, held inside the report's period; an ad
      still running reads to the period's last day. Reporting starts and ends
      only repeat the range that was exported, so they are the last resort. */
+  /* TikTok Ads Manager's own words sit beside Meta's (2026-10-05, provisional
+     until the team's first TikTok export is read): an ad group is the ad set,
+     Cost the amount spent, 2-second views the opening that stopped a viewer
+     (the hook, over impressions) and 6-second views the ones that stayed
+     (the hold, over 2-second views). */
   var AD_HEAD = [
-    [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|audience)$/, 'audience'], [/^objective$/, 'objective'],
-    [/^(account name|ad account name|ad account)$/, 'account'], [/^ad id$/, 'ad_id'], [/^(account id|ad account id)$/, 'account_id'],
-    [/^(result type|result indicator|results? type)$/, 'result_label'], [/^results$/, 'results'],
-    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^amount spent/, 'spend'],
-    [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'],
-    [/^reporting starts$/, 'rep_start'], [/^reporting ends$/, 'rep_end'], [/^(day|week|month)$/, 'day'],
+    [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|ad group name|ad group|audience)$/, 'audience'], [/^(objective|campaign objective|advertising objective)$/, 'objective'],
+    [/^(account name|ad account name|ad account|advertiser name)$/, 'account'], [/^ad id$/, 'ad_id'], [/^(account id|ad account id|advertiser id)$/, 'account_id'],
+    [/^(result type|result indicator|results? type|optimi[sz]ation event)$/, 'result_label'], [/^(results?|conversions)$/, 'results'],
+    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^(amount spent|cost$|total cost$)/, 'spend'],
+    [/^ctr/, 'ctr'], [/^cost per (results?|conversion)/, 'cpr'],
+    [/^reporting starts$/, 'rep_start'], [/^reporting ends$/, 'rep_end'], [/^(day|week|month|date|by day)$/, 'day'],
     [/^(starts?|start date|start time)$/, 'starts_on'], [/^(ends?|end date|end time|stop time)$/, 'ends_on'],
     [/^age$/, 'age'],
-    [/^(3-second video plays|video plays at 3 ?s(econds)?|3-second plays)$/, 'plays3'], [/^thruplays$/, 'thruplays'], [/^video plays$/, 'plays'],
-    [/^video plays at 25%/, 'v25'], [/^video plays at 50%/, 'v50'], [/^video plays at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video plays at 100%/, 'v100'],
-    [/^video average play time/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
+    [/^(3-second video plays|video plays at 3 ?s(econds)?|3-second plays|2-second video views)$/, 'plays3'], [/^(thruplays|6-second video views)$/, 'thruplays'], [/^video (plays|views)$/, 'plays'],
+    [/^video (plays|views) at 25%/, 'v25'], [/^video (plays|views) at 50%/, 'v50'], [/^video (plays|views) at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video (plays|views) at 100%/, 'v100'],
+    [/^(video average play time|average play time per video view)/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
   ];
+  /* Headers only TikTok's export carries, so a paste names its platform. */
+  var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%)$/;
   function objectiveOf(v) {
     var x = String(v || '').toLowerCase().replace(/^outcome_/, '').replace(/_/g, ' ').trim();
     if (!x) return null;
@@ -2827,7 +2884,7 @@
     if (/sale|conversion|purchase|catalog/.test(x)) return 'sales';
     if (/traffic|link click/.test(x)) return 'traffic';
     if (/app/.test(x)) return 'app';
-    if (/engage|video view|page like/.test(x)) return 'engagement';
+    if (/engage|video view|page like|communit|follow|profile visit/.test(x)) return 'engagement';
     if (/aware|reach|brand/.test(x)) return 'awareness';
     return null;
   }
@@ -3035,17 +3092,26 @@
       }
       return out;
     });
-    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary };
+    var tiktok = lines[0].split(sep).some(function (h) { return TIKTOK_HEAD.test(h.trim().toLowerCase().replace(/^"|"$/g, '').replace(/\s+/g, ' ')); });
+    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary, tiktok: tiktok };
   }
 
   function pasteAdsSheet(opener) {
     var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
-      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAObj">Objective if the rows do not say</label><select class="select" id="rpPAObj">' +
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg>' +
+        AD_PLATS.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="row"><div><label class="field-label" for="rpPAObj">Objective if the rows do not say</label><select class="select" id="rpPAObj">' +
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPAText">Export from Ads Manager, copy the rows with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
     $('rpPAText').value = '';
+    /* The platform follows the paste (TikTok's own headers) until the
+       person picks one. */
+    var platTouched = false;
+    $('rpPAPlat').value = 'meta';
+    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpPAPlat'));
+    var plat = function () { return $('rpPAPlat').value === 'tiktok' ? 'tiktok' : 'meta'; };
     var sum = $('rpPASum'), sm = box.querySelector('[data-m="sheet"]');
     sum.textContent = ''; say(sm, '');
     var year = Number(String(st.open.period_start).slice(0, 4));
@@ -3056,19 +3122,22 @@
        neither the figures, reach included, exactly as Ads Manager counts
        them per ad (reach added up from age rows counts a person once per
        age group, not once per ad). */
+    /* A paste matches only ads of its own platform. */
+    var mine = function () { var pk = plat(); return st.ads.filter(function (a) { return adPlat(a) === pk; }); };
     var already = function (r0) {
+      var list = mine();
       /* An ad named by its Ad ID is that row, whatever its name reads. */
       if (r0.ad_ids) {
-        var byId = st.ads.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
+        var byId = list.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
         if (byId.length === 1) return byId[0];
       }
-      var same = st.ads.filter(function (a) { return adName(a.name) === r0.name; });
+      var same = list.filter(function (a) { return adName(a.name) === r0.name; });
       if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
       if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
       if (same.length > 1 && r0.result_label) same = same.filter(function (a) { return resultWord(a.result_label) === r0.result_label; });
       return same.length === 1 ? same[0] : null;
     };
-    var named = function (r0) { return st.ads.some(function (a) { return adName(a.name) === r0.name; }); };
+    var named = function (r0) { return mine().some(function (a) { return adName(a.name) === r0.name; }); };
     var FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
     var patchOf = function (r0, out) {
       if (r0._daily) return { starts_on: r0.starts_on, ends_on: r0.ends_on };
@@ -3080,6 +3149,12 @@
     var read = function () {
       var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
+      if (!platTouched && (out.tiktok ? 'tiktok' : 'meta') !== plat()) {
+        $('rpPAPlat').value = out.tiktok ? 'tiktok' : 'meta';
+        if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpPAPlat'));
+      }
+      out.platform = plat();
+      out.rows.forEach(function (r0) { r0.platform = out.platform; });
       out.updates = []; out.unclear = []; out.fresh = [];
       out.rows.forEach(function (r0) {
         var a = already(r0);
@@ -3108,7 +3183,7 @@
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
       /* The account's figures fill Step 1 where it is empty; a figure the
          team typed is kept. */
-      var t0 = st.open.ads_totals || {};
+      var t0 = out.platform === 'tiktok' ? (st.open.ads_totals || {}).tiktok || {} : st.open.ads_totals || {};
       out.fill = {}; out.kept = [];
       if (out.summary) Object.keys(out.summary).forEach(function (k) {
         if (t0[k] == null || t0[k] === '') out.fill[k] = out.summary[k];
@@ -3124,6 +3199,7 @@
       return out;
     };
     $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
+    $('rpPAPlat').onchange = function () { platTouched = true; read(); };
     go.disabled = true;
     go.onclick = function () {
       var out = read();
@@ -3143,7 +3219,9 @@
         if (res.error) throw res.error;
         st.ads = st.ads.concat(res.data || []);
       }) : Promise.resolve();
-      var tot = Object.keys(fill).length ? db.from('sm_reports').update({ ads_totals: Object.assign({}, st.open.ads_totals || {}, fill) })
+      var t1 = Object.assign({}, st.open.ads_totals || {});
+      if (out.platform === 'tiktok') t1.tiktok = Object.assign({}, t1.tiktok || {}, fill); else Object.assign(t1, fill);
+      var tot = Object.keys(fill).length ? db.from('sm_reports').update({ ads_totals: t1 })
         .eq('id', st.open.id).select('*').then(function (res) {
           if (res.error) throw res.error;
           if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
