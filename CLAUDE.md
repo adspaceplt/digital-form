@@ -295,6 +295,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
+- The rail's foot names the build under the Activity record (`#appVersion`,
+  `.appver`, 11px mute): `v{YYYY.MM.DD} · {commit}`, the deploy's day in
+  Malaysia and its commit's first seven characters, read from
+  `/version.json`, which the Pages build writes through Jekyll
+  (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
+  (no build) or missing, the line is hidden (`tests/appver.js`).
 - Refresh app (account menu):
   - it unregisters the worker and empties Cache Storage;
   - it never touches localStorage, IndexedDB or the sign-in;

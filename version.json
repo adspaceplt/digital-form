@@ -1,0 +1,7 @@
+---
+# The build the console shows at its rail's foot (2026-10-05). GitHub Pages
+# runs this file through Jekyll on every deploy, so the commit and the time
+# are written by the build itself; nothing is typed by hand. Served raw
+# (a local server), it still holds the braces and the console shows nothing.
+---
+{"commit":"{{ site.github.build_revision }}","built":"{{ site.time | date: '%Y-%m-%dT%H:%M:%SZ' }}"}

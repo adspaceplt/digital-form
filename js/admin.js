@@ -1510,6 +1510,26 @@
     $('activityOpen').hidden = !maySeeActivity;
   }
 
+  /* The build this console is running, under the Activity record, as IT
+     names a web app deployed many times a day: the calendar version of the
+     deploy in Malaysia (v2026.10.05) and the commit it was built from
+     (2026-10-05). /version.json is written by the Pages build itself; read
+     raw (no build ran) or not at all, the line stays hidden. */
+  function showVersion() {
+    var box = $('appVersion');
+    if (!box || !window.fetch) return;
+    fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      if (!v || /[{}%]/.test(v.commit + v.built)) return;
+      var at = new Date(v.built);
+      if (isNaN(at)) return;
+      var my = new Date(at.getTime() + 8 * 3600000).toISOString().slice(0, 10).replace(/-/g, '.');
+      var sha = String(v.commit || '').slice(0, 7);
+      box.textContent = 'v' + my + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : '');
+      box.hidden = false;
+    }).catch(function () {});
+  }
+  showVersion();
+
   function shutActivity() { $('activitySheet').hidden = true; }
 
   $('activityOpen').addEventListener('click', function () {

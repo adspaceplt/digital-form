@@ -2218,6 +2218,13 @@ body.is-plain .topbar { background: var(--chrome); }
   flex: 0 0 auto; margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--line);
 }
+/* The build the console runs (`v2026.10.05 · 1a2b3c4`), at the type floor in
+   the mute ink, under the rail's last row and on its text's left edge. */
+.appver {
+  margin: 4px 0 0; padding: 0 10px;
+  font-size: 11px; line-height: 1.4; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums; letter-spacing: 0;
+}
 /* `.railrow` is the box a row of the rail draws in and `.navitem` is a
    *section* of the console: the first is a shape, the second is a meaning
    with wiring behind it (`navItems()` reads every `.navitem` and asks the
