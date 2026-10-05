@@ -613,6 +613,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or
   `edited in the console, left alone`.
+- A business figure the team may change (an amount, a threshold, a rate, a
+  limit) is a setting an admin edits, effective from a date or period, read
+  by the function that applies it; never a number typed into code (the user,
+  2026-10-05: "what if i need changes the next quarter"). Older fixed
+  figures are listed in `STANDARD.md` until moved.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -1976,7 +1981,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
     rewards: best to worst by average, `rank` shared by equal averages, a
     short quarter's months under its average (`2 of 3`), and the individual
-    prize from the average of the final months (a weak month can be made up).
+    prize from the average of the final months (a weak month can be made up),
+    whole to the highest eligible average with no minimum (a tie shares it;
+    the user, 2026-10-05).
     Confirm is drawn only once every review in the quarter is final
     (`months-open` refuses otherwise) and asks first where an ended month
     has no review (`missing_months`). The member's own quarter never carries
@@ -1992,6 +1999,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.
+  - Every figure the rewards are worked out with is a setting
+    (`2026-10-05-performance-reward-settings.sql`, `perf_settings`: both
+    prizes, the department total, flexible hours' share and month, the pool
+    and trip gates, the pool's share of profit, months at B, units by grade,
+    the commission floor), each from a quarter on and read as at the
+    quarter, month, half or deal month (`perf_setting`). Reward settings
+    (the Quarters and Bonus bars, `#rwSetSheet`): management reads, an admin
+    changes them from a quarter on (`perf_settings_set`), never into a
+    quarter or half already confirmed (`confirmed`); each change is filed
+    from and to (`settings_set`), and every calculation says the rules it
+    used (`rules`), kept in the snapshot on Confirm.
   - Commission is pending until its month is final; the member sees it once
     decided. Nobody enters their own.
   - The caller's own row arrives with its name alone (`perf_hide_own`); the
@@ -2168,10 +2186,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-04-ai-draft-subject.sql`), a day from 12:00 am MYT and reset
     each midnight (`ai_draft_day()`, `2026-10-04-ai-draft-daily-reset.sql`).
     Every limit is a setting in `ai_draft_limits` (null is the standard,
-    0 stops it): `person` a colleague a day (20), a colleague's id their
-    own, `report` the drafts a report has from colleagues (1; past it
-    `redraft`, an admin's), `report_admin` an admin's drafts a report a
-    day (5). There is no team cap: the team's and a group's totals are
+    0 stops it; `2026-10-05-ai-limits-per-version.sql`): `person` a
+    colleague's AI uses a day, drafts and checks together (10), `admin` an
+    admin's (20), a colleague's id their own (`ai_day_cap`), `report` the
+    drafts a report has from colleagues (1, its revisions inside it; past
+    it `redraft`, an admin's), `report_admin` an admin's drafts a report a
+    day (5), `check` the figures checks a version of a report has from
+    colleagues (1; past it `recheck`, until a revision), `check_admin` an
+    admin's checks a report a day (5, `report_check`). There is no team cap: the team's and a group's totals are
     their colleagues' limits added up (`team` refused `bad-scope`). A
     failed press is marked failed by the function (`ai_draft_done`) and
     not counted. `ai_drafts` has RLS on, no policy and no grants. A refusal
@@ -2187,8 +2209,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     data, a claim the figures contradict, a comparison across result types
     or platforms, a word against our own work), each as where it is, the
     words, what the figures show and the words to use (Use). A report in
-    draft or in review, Reports Work, asked first; one of the colleague's
-    AI uses a day (`ai_check_claim`), never one of a report's drafts
+    draft or in review, Reports Work, asked first; the version's one check
+    (`ai_drafts.version_no`; an admin's within `check_admin`) and one of the
+    colleague's AI uses a day (`ai_check_claim`; what is left read by
+    `ai_check_left`, the button resting with the reason at 0), never one of
+    a report's drafts
     (`ai_drafts.purpose`, `ai_draft_same` drafts only). Kept with what it
     read (`ai_check_done`, `result`, `basis`) and read by anyone at Reports
     View (`ai_check_last`), so the reviewer sees the same check; a
@@ -2204,9 +2229,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
     used first, the totals added up on the page; then Limits (Each
-    colleague `20 a day`, Each report `1 draft`, Admins, each report
-    `5 a day`). The rows only read. Every limit is changed in one place,
-    Edit limits in the foot: one form (the three limits, then each
+    colleague `10 a day`, Each admin `20 a day`, Each report `1 draft`,
+    Each version `1 figures check`, Admins, each report `5 drafts and 5
+    checks a day`). The rows only read. Every limit is changed in one place,
+    Edit limits in the foot: one form (the six limits, then each
     colleague, empty meaning the standard; 0 to 500), one Save sending
     only what changed through `ai_draft_set_limit`, each filed
     `team.changed` under Draft with AI from and to. No explanatory lines.

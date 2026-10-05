@@ -1750,14 +1750,29 @@
     marketing: [['Client account health', 25], ['Campaign planning and execution', 25], ['Posting and servicing accuracy', 20],
                 ['Reporting and proactive improvement', 15], ['Brief and handover quality', 15]]
   };
-  var WHY = { 'no-final-month': 'No final month', 'below-c': 'Average under 70', 'e-month': 'An E month',
+  /* Every figure a reason names is the one the rules used (`rules` on the
+     quarter, the period and each deal; 2026-10-05), never one typed here. */
+  var WHY = { 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
     'critical-breach': 'Level 4 breach', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
-    'few-b-months': 'Under 3 months at B' };
-  var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under 80',
+    'few-b-months': 'Under {months_b} months at B' };
+  var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
     'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
     'no-pool': 'No pool set', 'no-budget': 'No budget set' };
   var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', ''], pending: ['Pending', 'is-warn'] };
-  var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under 70', breach: 'Level 3 or 4 breach' };
+  var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under {min}', breach: 'Level 3 or 4 breach' };
+  /* A quarter or half confirmed before its rules were kept says the reason
+     without a figure rather than an empty one. */
+  var WHY_PLAIN = { 'Average under {min_average}': 'Average under the minimum', 'Under {months_b} months at B': 'Too few months at B',
+    'Under {min_total}': 'Under the minimum total', 'Month under {min}': 'Month under the minimum' };
+  function ruled(word, rules) {
+    var miss = false;
+    var out = String(word || '').replace(/\{(\w+)\}/g, function (m, k) {
+      var v = rules && rules[k];
+      if (v == null) { miss = true; return ''; }
+      return String(Number(v));
+    });
+    return miss ? (WHY_PLAIN[word] || out.trim()) : out;
+  }
   var RW_SAID = {
     'before-first': 'Quarters begin with Q3 2026.',
     'quarter-open': 'The quarter has not ended.',
@@ -1766,8 +1781,7 @@
     'confirmed': 'Confirmed. Reopen it to change it.',
     'not-confirmed': 'Not confirmed.',
     'admin-only': 'Revenue and profit are for an admin only.',
-    'pool-closed': 'The bonus pool opens at RM 500,000 revenue.',
-    'trip-closed': 'The trip opens at RM 1,000,000 revenue.',
+
     'bad-amount': 'Enter each amount in RM, to the cent.',
     'bad-pct': 'The rate is above 0 and at most 100, to two decimals.',
     'bad-month': 'Pick a month from June 2026 to this month.',
@@ -1779,7 +1793,9 @@
   };
   function monthsWord(n) { return n + (n === 1 ? ' month' : ' months'); }
   function rwSaid(d) {
-    if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', 10% of profit.';
+    if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', ' + Number(d.pct) + '% of profit.';
+    if (d && d.error === 'pool-closed') return 'The bonus pool opens at ' + rm(d.at) + ' revenue.';
+    if (d && d.error === 'trip-closed') return 'The trip opens at ' + rm(d.at) + ' revenue.';
     if (d && d.error === 'months-open') return monthsWord(d.count) + ' in the quarter ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
     if (d && RW_SAID[d.error]) return RW_SAID[d.error];
     return said(d);
@@ -2022,7 +2038,7 @@
     var won = ind.winners
       ? (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
         (Number(ind.remainder) > 0 ? ' · ' + rm(ind.remainder) + ' left' : '')
-      : 'No payout · ' + (NOPAY[ind.reason] || '');
+      : 'No payout · ' + ruled(NOPAY[ind.reason], d.rules);
     /* What still stands between the quarter and its confirmation: months
        not final refuse it; months nobody entered are asked about. */
     var waits = d.confirmed ? '' :
@@ -2040,7 +2056,7 @@
         if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
         G.more(t, ppl, 30, '', function (p) {
           if (p.own) return youRow('rwq-row', p, 4, 1);
-          var elig = p.eligible ? 'Eligible' : WHY[(p.reasons || [])[0]] || 'Not eligible';
+          var elig = p.eligible ? 'Eligible' : ruled(WHY[(p.reasons || [])[0]], d.rules) || 'Not eligible';
           var months = Number(p.months || 0), open = Number(p.open || 0);
           /* The months sit under the average they make, and only when the
              quarter is not whole for them; the name keeps its department. */
@@ -2062,7 +2078,7 @@
     var dwon = (d.departments || []).filter(function (x) { return x.won; });
     var dmark = dwon.length
       ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' won · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
-      : 'No payout · ' + (NOPAY[dp.reason] || '');
+      : 'No payout · ' + ruled(NOPAY[dp.reason], d.rules);
     var edit = may('team.performance', 'work') && !d.confirmed;
     box.appendChild(G.section({
       route: 'team-rw', key: 'department', name: 'Department prize', count: (d.departments || []).length,
@@ -2227,7 +2243,7 @@
     t.className = 'crm-table softpanel rw-facts';
     var outcome = function (x, amount, open) {
       if (!open) return 'Not open';
-      if (x.reason) return rm(amount) + ' · No payout, ' + (NOPAY[x.reason] || '').toLowerCase();
+      if (x.reason) return rm(amount) + ' · No payout, ' + ruled(NOPAY[x.reason], d.rules).toLowerCase();
       return rm(amount) + (Number(x.remainder) > 0 ? ' · ' + rm(x.remainder) + ' left' : '');
     };
     if (!d.figures) {
@@ -2253,7 +2269,7 @@
         if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
         G.more(t, ppl, 30, '', function (p) {
           if (p.own) return youRow('rwp-row', p, 6);
-          var elig = p.eligible ? '' : WHY[(p.reasons || [])[0]] || 'Not eligible';
+          var elig = p.eligible ? '' : ruled(WHY[(p.reasons || [])[0]], d.rules) || 'Not eligible';
           return row('rwp-row', [
             whoCell(p, elig),
             cell(esc(String(p.months_b || 0)) + '<small> of ' + esc(String(p.months || 0)) + '</small>'),
@@ -2287,6 +2303,129 @@
     });
   });
 
+  /* ---- Reward settings (2026-10-05) --------------------------------------
+     Every figure the rewards are worked out with, each from a quarter on;
+     a quarter or half already confirmed keeps its own. An admin changes
+     them; the rest of management reads them. Only the fields changed are
+     sent, so a value set for a later quarter is never put back by one left
+     as it was. */
+  var RW_SET = [
+    ['Quarterly prizes', [['prize_individual', 'Individual prize (RM)', 'money'],
+      ['prize_department', 'Department prize (RM)', 'money'], ['prize_department_min_total', 'Department total at least', 'score']], 'fgrid-3'],
+    ['Flexible hours', [['flex_member_min', 'A month at least', 'score'], ['flex_team_share', 'Share of the team at it (%)', 'pct']]],
+    ['Bonus pool and trip', [['bonus_pool_revenue', 'Bonus pool opens at revenue (RM)', 'money'], ['bonus_pool_profit_pct', 'Bonus pool, at most of profit (%)', 'pct'],
+      ['trip_revenue', 'Trip opens at revenue (RM)', 'money'], ['bonus_months_b', 'Months at B or better, of six', 'count']]],
+    ['Units by grade', [['units_a', 'Units for A', 'units'], ['units_b', 'Units for B', 'units'], ['units_c', 'Units for C', 'units']], 'fgrid-3'],
+    ['Commission', [['commission_min', 'Payable where the month is at least', 'score']]]
+  ];
+  var RW_LABEL = {};
+  RW_SET.forEach(function (g) { g[1].forEach(function (f) { RW_LABEL[f[0]] = f; }); });
+  var rwSet = { data: null, from: null };
+  function setValue(key, kind, v) {
+    if (v == null) return '—';
+    if (kind === 'money') return rm(v);
+    if (kind === 'pct') return Number(v) + '%';
+    return String(Number(v));
+  }
+  function setAt(key, from) {
+    var rows = ((rwSet.data && rwSet.data.settings) || []).filter(function (r) { return r.key === key; });
+    var on = rows.filter(function (r) { return r.from <= from; });
+    var r = on.length ? on[on.length - 1] : rows[0];
+    return r ? Number(r.value) : null;
+  }
+  function setQuarters() {
+    var d = rwSet.data || {}, c = d.confirmed || {};
+    var first = FIRST_QUARTER;
+    if (c.quarter && addMonths(c.quarter, 3) > first) first = addMonths(c.quarter, 3);
+    if (c.period && addMonths(c.period, 6) > first) first = addMonths(c.period, 6);
+    var now = new Date(), cur = now.getFullYear() + '-' + String(Math.floor(now.getMonth() / 3) * 3 + 1).padStart(2, '0') + '-01';
+    var last = addMonths(cur > first ? cur : first, 12), out = [];
+    for (var q = first; q <= last; q = addMonths(q, 3)) out.push(q);
+    return out;
+  }
+  function paintSettings() {
+    var d = rwSet.data || {}, admin = !!d.admin, from = rwSet.from;
+    var box = $('rwSFields');
+    box.innerHTML = RW_SET.map(function (g) {
+      return '<section class="fsec"><h4 class="fsec-h">' + esc(g[0]) + '</h4>' + (admin
+        ? '<div class="row' + (g[1].length > 1 ? ' ' + (g[2] || 'fgrid') : '') + '">' + g[1].map(function (f) {
+            var v = setAt(f[0], from);
+            return '<div><label class="field-label" for="rwS_' + f[0] + '">' + esc(f[1]) + '</label>' +
+              '<input class="input" id="rwS_' + f[0] + '" data-key="' + f[0] + '" data-was="' + (v == null ? '' : v) + '" type="text" inputmode="decimal" autocomplete="off" value="' +
+              (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
+          }).join('') + '</div>'
+        : '<dl class="ovfacts">' + g[1].map(function (f) {
+            return '<dt>' + esc(f[1].replace(/ \((RM|%)\)$/, '')) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';
+          }).join('') + '</dl>') + '</section>';
+    }).join('');
+    $('rwSSave').hidden = !admin;
+    var ev = d.events || [];
+    $('rwSLog').hidden = !ev.length;
+    $('rwSLog').querySelector('summary').textContent = 'Changes (' + ev.length + ')';
+    $('rwSLogList').innerHTML = ev.map(function (e) {
+      var x = e.detail || {};
+      return '<p class="rw-setlog"><b>' + esc(x.word || '') + '</b> ' + esc((x.changed || []).map(function (c) {
+          var f = RW_LABEL[c.key] || [c.key, c.key, ''];
+          return f[1].replace(/ \((RM|%)\)$/, '') + ': ' + setValue(c.key, f[2], c.from) + ' → ' + setValue(c.key, f[2], c.to);
+        }).join(' · ')) + '<small>' + esc((e.by || '') + (e.at ? ' · ' + timeWord(e.at) : '')) + '</small></p>';
+    }).join('');
+  }
+  function openSettings(opener) {
+    msg('rwSMsg', '');
+    $('rwSFields').innerHTML = '';
+    UI.skeleton($('rwSFields'), 3);
+    $('rwSSave').hidden = true;
+    window.ADspaceSheet.show($('rwSetSheet'), { opener: opener });
+    call('perf_settings_read', { p_token: token }, function (d) {
+      if (d.error) { UI.failLine($('rwSFields'), 'Reward settings', rwSaid(d), function () { openSettings(opener); }); return; }
+      rwSet.data = d;
+      var qs = setQuarters();
+      var want = st.q && qs.indexOf(st.q) > -1 ? st.q : qs[0];
+      $('rwSFrom').innerHTML = qs.map(function (q) { return '<option value="' + q + '">' + esc(qWord(q)) + '</option>'; }).join('');
+      $('rwSFrom').value = want;
+      rwSet.from = want;
+      paintSettings();
+    });
+  }
+  $('rwQSet').addEventListener('click', function () { openSettings(this); });
+  $('rwPSet').addEventListener('click', function () { openSettings(this); });
+  $('rwSFrom').addEventListener('change', function () { rwSet.from = this.value; msg('rwSMsg', ''); paintSettings(); });
+  $('rwSClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwSCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwSSave').addEventListener('click', function () {
+    var vals = {}, bad = null;
+    Array.prototype.forEach.call($('rwSFields').querySelectorAll('input[data-key]'), function (el) {
+      if (bad) return;
+      var k = el.getAttribute('data-key'), kind = RW_LABEL[k][2];
+      var raw = String(el.value || '').replace(/[,\s]/g, '').replace(/^RM/i, '').replace(/%$/, '');
+      var v = /^\d+(\.\d{1,2})?$/.test(raw) ? Number(raw) : NaN;
+      if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct') && v > 100) || (kind === 'units' && v > 10)) { bad = el; return; }
+      if (String(v) !== String(Number(el.getAttribute('data-was')))) vals[k] = v;
+    });
+    if (bad) {
+      var f = RW_LABEL[bad.getAttribute('data-key')];
+      msg('rwSMsg', f[1].replace(/ \((RM|%)\)$/, '') + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
+        pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.' }[f[2]]), 'err');
+      bad.focus(); return;
+    }
+    if (!Object.keys(vals).length) { msg('rwSMsg', 'No change.', 'ok'); return; }
+    var b = this; b.disabled = true;
+    call('perf_settings_set', { p_token: token, p_from: rwSet.from, p_values: vals }, function (d) {
+      b.disabled = false;
+      if (d.error) {
+        msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or pick a later quarter.'
+          : d.error === 'bad-value' && RW_LABEL[d.key] ? RW_LABEL[d.key][1].replace(/ \((RM|%)\)$/, '') + ' is out of range.' : rwSaid(d), 'err');
+        return;
+      }
+      rwSet.data = d;
+      paintSettings();
+      window.ADspaceSheet.clean();
+      msg('rwSMsg', 'Saved. From ' + qWord(rwSet.from) + ' on.', 'ok');
+      st.quarter = null; st.periodData = null;
+      if (st.pv === 'quarters') loadQuarter(); else if (st.pv === 'company') loadPeriod();
+    });
+  });
+
   /* Amounts are typed as RM with or without separators, and read back to
      the cent; anything else is not a number. */
   function amountIn(el) {
@@ -2296,7 +2435,8 @@
   }
   function figuresMax() {
     var p = amountIn($('rwFPro'));
-    $('rwFMax').textContent = p != null && !isNaN(p) ? 'At most ' + rm(Math.max(0, Math.floor(p * 10 + 1e-7) / 100)) : '';
+    var pct = st.periodData && st.periodData.rules && st.periodData.rules.pool_pct;
+    $('rwFMax').textContent = p != null && !isNaN(p) && pct != null ? 'At most ' + rm(Math.max(0, Math.floor(p * Number(pct) + 1e-7) / 100)) : '';
   }
   function openFigures(opener) {
     var co = (st.periodData && st.periodData.company) || {};
@@ -2393,7 +2533,7 @@
       cell(esc(rm(c.net_profit))),
       cell(esc(num(c.pct)) + '%'),
       cell(esc(rm(c.amount))),
-      cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(COM_WHY[c.reason] || '') + '</small>' : ''), true)
+      cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(ruled(COM_WHY[c.reason], c)) + '</small>' : ''), true)
     ], [dateWord(c.month).replace(/^\d+ /, ''), rm(c.amount)]);
     if (may('team.performance', 'work')) {
       el.insertAdjacentHTML('beforeend', '<span class="team-act">' +
@@ -2533,7 +2673,7 @@
     };
     add('quarters', 'Quarters', d.quarters, ['Quarter', 'Average', 'Grade', 'Individual prize', 'Department prize'], 'rwmq-row', function (x) {
       var me = x.me || {}, dp = x.department;
-      var ind = Number(me.prize) > 0 ? rm(me.prize) : me.eligible ? 'Not the highest' : WHY[(me.reasons || [])[0]] || 'Not eligible';
+      var ind = Number(me.prize) > 0 ? rm(me.prize) : me.eligible ? 'Not the highest' : ruled(WHY[(me.reasons || [])[0]], x.rules) || 'Not eligible';
       /* The department prize is the department's; its team leader shares it. */
       var dshare = dp ? (dp.share != null ? dp.share : dp.each) : null;
       var dep = dp ? (dp.won ? (DEPT_WORD[dp.department] || '') + ' won' + (Number(dshare) > 0 ? ' · ' + rm(dshare) : '') : (DEPT_WORD[dp.department] || '') + ' did not win') : '—';
@@ -2547,7 +2687,7 @@
     });
     add('periods', 'Bonus and trip', d.periods, ['Period', 'Months at B', 'Units', 'Bonus', 'Trip'], 'rwmp-row', function (x) {
       var me = x.me || {};
-      var elig = me.eligible ? '' : WHY[(me.reasons || [])[0]] || 'Not eligible';
+      var elig = me.eligible ? '' : ruled(WHY[(me.reasons || [])[0]], x.rules) || 'Not eligible';
       return row('rwmp-row', [
         whoCell({ name: x.word }, elig),
         cell(esc(String(me.months_b || 0)) + '<small> of ' + esc(String(me.months || 0)) + '</small>'),
@@ -2571,7 +2711,7 @@
         cell(esc(rm(c.net_profit))),
         cell(esc(num(c.pct)) + '%'),
         cell(esc(rm(c.amount))),
-        cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(COM_WHY[c.reason] || '') + '</small>' : ''), true)
+        cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(ruled(COM_WHY[c.reason], c)) + '</small>' : ''), true)
       ], [rm(c.amount)]);
     });
   }

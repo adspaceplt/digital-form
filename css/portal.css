@@ -9033,6 +9033,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rw-c { min-width: 0; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rw-c small { color: var(--ink-mute); font-size: 12px; }
 .rw-c .rw-why { display: block; margin-top: 2px; }
+/* Reward settings: each change filed, the quarter, from and to, then who. */
+#rwSLogList { display: grid; gap: 8px; padding-top: 8px; }
+.rw-setlog { margin: 0; font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.rw-setlog b { color: var(--ink); font-weight: 600; }
+.rw-setlog small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
 .rw-row .rw-c:has(.rw-why) { white-space: normal; }
 .rw-sum { display: none; }
 .rw-row > .team-act { align-self: center; }

@@ -692,18 +692,23 @@
     var b = host.querySelector('[data-a="aicheck"]');
     if (!b) return;
     if (checkRun[r.id]) b.disabled = true;
-    var left = null, line = host.querySelector('[data-m="cleft"]');
-    db.rpc('ai_draft_left', { p_report: r.id }).then(function (res) {
+    /* One check a version of the report (an admin's five a report a day),
+       within the colleague's AI uses for the day (2026-10-05). */
+    var left = null, room = null, line = host.querySelector('[data-m="cleft"]');
+    db.rpc('ai_check_left', { p_report: r.id }).then(function (res) {
       var d = res && res.data;
-      if (res.error || !d || d.error || d.person == null || !host.isConnected) return;
-      left = d.person;
+      if (res.error || !d || d.error || d.left == null || !host.isConnected) return;
+      room = d; left = d.left;
       line.hidden = false; line.textContent = left + ' left';
       line.classList.toggle('is-out', !left);
-      if (!left && !checkRun[r.id]) { b.disabled = true; say(m, d.scope === 'stopped' ? aiLimit(d) : 'You have used your AI uses for today. Resets at 12:00 am.', 'warn'); }
+      if (!left && !checkRun[r.id]) { b.disabled = true; say(m, aiLimit(d), 'warn'); }
     }).catch(function () { /* an older database: no line */ });
     b.addEventListener('click', function () {
-      window.ADspaceConfirm.ask({ title: 'Check against the figures?',
-        body: 'This uses one of your AI uses for today' + (left != null ? ' (' + left + ' left).' : '.'), go: 'Check' }, function () { runCheck(host, r); });
+      var body = room && room.admin
+        ? 'This uses one of the report\'s figures checks for today and one of your AI uses (' + room.person + ' left).'
+        : 'Each version of a report has one figures check. This uses it, and one of your AI uses for today' +
+          (room ? ' (' + room.person + ' left).' : '.');
+      window.ADspaceConfirm.ask({ title: 'Check against the figures?', body: body, go: 'Check' }, function () { runCheck(host, r); });
     });
   }
   function runCheck(host, r) {
@@ -2152,9 +2157,11 @@
     e.preventDefault();
     e.returnValue = '';
   });
-  /* The database counts every press: a report has one draft and drafting
-     it again is an admin's (5 a report in 24 hours); 20 a colleague and 60
-     the team in 24 hours. A refusal says which and when the next is free. */
+  /* The database counts every press (2026-10-05): a report has one draft
+     (its revisions inside it), each version one figures check; an admin
+     drafts and checks a report again, five of each a day; a colleague has
+     ten AI uses a day, an admin twenty. A refusal says which and when the
+     next is free. */
   function aiLimit(d) {
     d = d || {};
     var at = d.next ? new Date(d.next) : null;
@@ -2163,9 +2170,11 @@
         ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
       : '';
     if (d.scope === 'redraft') return 'This report has had ' + ((d.limit || 1) === 1 ? 'its draft' : 'its ' + d.limit + ' drafts') + '. An admin can draft it again.';
+    if (d.scope === 'recheck') return 'This version has had its figures check. A revision brings another; an admin can check it again.';
     if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for today.'
-      : 'You have used your ' + (d.limit || 20) + ' AI uses for today.';
+      : d.scope === 'report_check' ? 'This report has had ' + ((d.limit || 5) === 1 ? 'its figures check' : 'its ' + (d.limit || 5) + ' figures checks') + ' for today.'
+      : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
     return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
   }
   var AI_SAID = {
@@ -3146,7 +3155,7 @@
      limits: the standard a day, the drafts a report may have, an admin's
      drafts a report a day, and each colleague's own (empty is the
      standard, 0 stops it). Read again on every open. */
-  var AI_STD = { person: 20, report: 1, report_admin: 5 };
+  var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5 };
   function aiClock(iso) {
     var at = new Date(iso);
     if (isNaN(at.getTime())) return '';
@@ -3198,7 +3207,9 @@
         people.forEach(function (p) { (groups[p.group] = groups[p.group] || []).push(p); });
         var names = Object.keys(groups).sort(function (x, y) { return x.localeCompare(y); });
         var all = sum(people);
-        var rep = d.report != null ? d.report : AI_STD.report, adm = d.report_admin != null ? d.report_admin : AI_STD.report_admin;
+        var setting = function (k) { return d[k] != null ? d[k] : AI_STD[k]; };
+        var rep = setting('report'), adm = setting('report_admin'), chk = setting('check'), chkA = setting('check_admin'), admDay = setting('admin');
+        var dayWord = function (v) { return v === 0 ? 'Stopped' : v + ' a day'; };
         host.innerHTML =
           (d.resets_at ? '<p class="aiu-reset">Resets at ' + esc(aiClock(d.resets_at)) + '</p>' : '') +
           '<div class="aiu-list">' + aiUseRow({ name: 'Whole team', used: all.used, cap: all.cap, sum: true }) + '</div>' +
@@ -3209,9 +3220,12 @@
               list.map(aiUseRow).join('') + '</div></section>';
           }).join('') +
           '<section class="fsec"><h4 class="fsec-h">Limits</h4><div class="aiu-list">' +
-            aiUseRow({ name: 'Each colleague', text: d.person === 0 ? 'Stopped' : d.person + ' a day', own: d.person !== AI_STD.person, cap: d.person }) +
+            aiUseRow({ name: 'Each colleague', text: dayWord(d.person), own: d.person !== AI_STD.person, cap: d.person }) +
+            aiUseRow({ name: 'Each admin', text: dayWord(admDay), own: admDay !== AI_STD.admin, cap: admDay }) +
             aiUseRow({ name: 'Each report', text: rep === 0 ? 'Stopped' : rep === 1 ? '1 draft' : rep + ' drafts', own: rep !== AI_STD.report, cap: rep }) +
-            aiUseRow({ name: 'Admins, each report', text: adm === 0 ? 'Stopped' : adm + ' a day', own: adm !== AI_STD.report_admin, cap: adm }) +
+            aiUseRow({ name: 'Each version', text: chk === 0 ? 'Stopped' : chk === 1 ? '1 figures check' : chk + ' figures checks', own: chk !== AI_STD.check, cap: chk }) +
+            aiUseRow({ name: 'Admins, each report', text: adm === 0 && chkA === 0 ? 'Stopped' : adm + (adm === 1 ? ' draft' : ' drafts') + ' and ' + chkA + (chkA === 1 ? ' check' : ' checks') + ' a day',
+              own: adm !== AI_STD.report_admin || chkA !== AI_STD.check_admin, cap: adm }) +
           '</div></section>';
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
       }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
@@ -3221,9 +3235,12 @@
       if (!d) return;
       var num = function (v) { return v == null ? '' : String(v); };
       var fields = [
-        { name: 'person', label: 'Each colleague, a day', type: 'number', min: '0', required: false, value: num(d.person), placeholder: String(AI_STD.person) },
-        { name: 'report', label: 'Each report', type: 'number', min: '0', required: false, value: num(d.report != null ? d.report : AI_STD.report), placeholder: String(AI_STD.report) },
-        { name: 'report_admin', label: 'Admins, each report, a day', type: 'number', min: '0', required: false, value: num(d.report_admin != null ? d.report_admin : AI_STD.report_admin), placeholder: String(AI_STD.report_admin) }
+        { name: 'person', label: 'Each colleague, a day', type: 'number', min: '0', required: false, value: num(d.person), placeholder: String(AI_STD.person), half: true },
+        { name: 'admin', label: 'Each admin, a day', type: 'number', min: '0', required: false, value: num(d.admin != null ? d.admin : AI_STD.admin), placeholder: String(AI_STD.admin) },
+        { name: 'report', label: 'Drafts, each report', type: 'number', min: '0', required: false, value: num(d.report != null ? d.report : AI_STD.report), placeholder: String(AI_STD.report), half: true },
+        { name: 'check', label: 'Figures checks, each version', type: 'number', min: '0', required: false, value: num(d.check != null ? d.check : AI_STD.check), placeholder: String(AI_STD.check) },
+        { name: 'report_admin', label: 'Admin drafts, each report a day', type: 'number', min: '0', required: false, value: num(d.report_admin != null ? d.report_admin : AI_STD.report_admin), placeholder: String(AI_STD.report_admin), half: true },
+        { name: 'check_admin', label: 'Admin checks, each report a day', type: 'number', min: '0', required: false, value: num(d.check_admin != null ? d.check_admin : AI_STD.check_admin), placeholder: String(AI_STD.check_admin) }
       ].concat(people.slice().sort(function (x, y) { return String(x.name).localeCompare(String(y.name)); }).map(function (p) {
         return { name: p.id, label: p.name + (p.code ? ' · ' + p.code : ''), type: 'number', min: '0', required: false, value: num(p.limit), placeholder: 'Standard' };
       }));
@@ -3234,9 +3251,10 @@
           return bad.length ? 'A limit is a whole number from 0 to 500.' : '';
         }
       }, function (v) {
-        var was = { person: d.person, report: d.report != null ? d.report : AI_STD.report, report_admin: d.report_admin != null ? d.report_admin : AI_STD.report_admin };
+        var was = {};
+        ['person', 'admin', 'report', 'report_admin', 'check', 'check_admin'].forEach(function (k) { was[k] = d[k] != null ? d[k] : AI_STD[k]; });
         people.forEach(function (p) { was[p.id] = p.limit; });
-        var std = { person: 1, report: 1, report_admin: 1 };
+        var std = { person: 1, admin: 1, report: 1, report_admin: 1, check: 1, check_admin: 1 };
         var jobs = Object.keys(v).map(function (k) {
           var x = String(v[k] == null ? '' : v[k]).trim();
           var want = x === '' ? null : Number(x);

@@ -623,6 +623,8 @@ section holds only what is true of the project as a whole.
   An AI check before AQC review is dropped (AQC review happens on
   WhatsApp); Wins and client words on an internal board are not wanted;
   Want to try is kept in view.
+- Business figures still fixed in code (2026-10-05), to be moved into
+  settings: the sweep is pending and its list goes to the user first.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
