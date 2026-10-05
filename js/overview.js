@@ -113,7 +113,7 @@
             var list = (d.late || []).slice().sort(function (a, b) { return (b.days_over || 0) - (a.days_over || 0); });
             return { count: list.length, rows: list.map(function (t) {
               return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
-                       meta: [t.owner || 'No task owner', t.client].filter(Boolean).join(' · '),
+                       meta: [t.owner || 'Unassigned', t.client].filter(Boolean).join(' · '),
                        fig: daysWord(Number(t.days_over) || 0) + ' over', figTone: 'warn', age: t.stage || '',
                        url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
             }) };
@@ -158,7 +158,7 @@
                          note: late ? late + ' late' : '', noteTone: late ? 'warn' : '' };
               }),
               fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
-              table: { heads: ['Task Owner', 'Open', 'Late'],
+              table: { heads: ['Assigned to', 'Open', 'Late'],
                        rows: list.map(function (r) { return [r.name, String(r.open), String(r.late || 0)]; }) } };
           });
         } },

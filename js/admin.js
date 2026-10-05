@@ -1476,7 +1476,7 @@
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */
-  var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
+  var PERF_STEP = { released: 'Review shared', disputed: 'Query raised', decided: 'Query answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
                     returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
 

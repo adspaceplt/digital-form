@@ -1521,7 +1521,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
     now but Last month, which ends where this month begins (`periodEnd()`,
     and the report states its last day).
-  - Group by day / stage / status / Task Owner / client / engagement; every
+  - Group by day / stage / status / assignee / client / month; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).
   - A search opens every card; a stage filter does not. A search finds any
@@ -1664,7 +1664,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     access (`request.jwt.claims`). A rule neither can make waits.
   - Neither function, nor the trigger's, is callable from a browser.
 - The bar's ⋯ holds Templates (`ops.workflows` Work: edits families and makes
-  no task), Select tasks (Manage: a sticky bar with Assign task owner and
+  no task), Select tasks (Manage: a sticky bar with Reassign and
   Delete) and Task numbering (admin); it is drawn only where one applies.
 - A template is a family (`ops_template_variants`): one checklist and the rate
   card formats it serves, each with its own hours; a format belongs to one
@@ -1696,18 +1696,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
 - Every colleague picker on a create form starts on the person creating it
-  (Task Owner, a new month's Manager or one with none, a new lead's and a new
+  (Assigned to, a new month's Manager or one with none, a new lead's and a new
   campaign's Person in charge); they change it where someone else takes it.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
-  - A hand-off shows the person, with Keep me as the Task Owner unticked.
+  - A hand-off shows the person, with Keep it assigned to me unticked.
   - The owner's own steps have it ticked.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
 - Skipping a step is ops Work with a reason, and never into a revision. Owner
   change and hand-over (`ops_hand_over_task`) are Manage.
 - Open to take (`2026-10-04-open-to-take.sql`, `ops_tasks.open_at` /
-  `open_by`): the Task Owner or an admin offers an open task to the team
+  `open_by`): the assignee or an admin offers an open task to the team
   (Offer to the team / Withdraw offer in the ⋯, never asks;
   `ops_set_open`, filed `offered` / `offer_withdrawn`); any colleague at My
   Work Work whose client scope holds its client sees it (`ops_may_see_task`)
@@ -1735,7 +1735,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
   - The sheet's and the record's ⋯ are Take or Offer to the team /
-    Withdraw offer (where they apply), Change Task Owner, Make a copy,
+    Withdraw offer (where they apply), Reassign, Make a copy,
     Repeat on a schedule, Delete; Open full record is the sheet's last
     line. The row's ⋯ holds only what the row cannot do (Take where the
     row shows none, the offer, Delete) and is not drawn when empty. No
@@ -1866,9 +1866,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
   - A content deliverable is pieces: a line each (description, format, week),
-    Add piece drawing the next with the format above and the week after
+    Add another drawing the next with the format above and the week after
     (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
-    month, type, Task Owner, priority and complexity. Content month reads
+    month, type, assignee, priority and complexity. Month reads
     `{n} planned · {n} added` (`ops_engagement_counts`).
   - `ops_create_pieces(p_payload, p_idem)` makes them through
     `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
@@ -1906,7 +1906,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The task sheets live in `#workSheets`, outside the section.
 
 ### Performance (`js/perf.js`, `?s=team&tab=performance`, `?s=mine`)
-- Grades: Distinction, Strong, Baseline, Needs Guidance, Performance Review.
+- Grades: Distinction, Strong, Baseline, Needs support, Improvement plan
+  (keys A to E never move).
   - C is reward eligible unless the month before was also C.
   - An L3 or L4 breach makes the month not eligible.
   - Pacing counts only for people who run ads.
