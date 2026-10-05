@@ -8520,7 +8520,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   border: 2px solid transparent; background-color: transparent; background-clip: padding-box; border-radius: var(--radius-ctl);
   text-align: left; font: inherit; color: var(--ink-soft); cursor: pointer;
   transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
-@media (hover: hover) { .rp-step:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); } }
+@media (hover: hover) { .rp-step:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); }
+  /* The hover's fill over the track takes the mute summary under 4.5:1. */
+  .rp-step:not(.is-on):hover .rp-step-t small { color: var(--ink-soft); } }
 .rp-step.is-on { background-color: var(--seg-on); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .rp-steps.has-thumb { position: relative; isolation: isolate; }
 .rp-steps.has-thumb::before {

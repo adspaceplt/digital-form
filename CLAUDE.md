@@ -1644,7 +1644,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Scope change, Internal capacity, Pending assets, Pending confirmation,
   Incorrect date listed.
 - Task fields:
-  - Type: Engagement, Ad hoc, Goodwill, Special.
+  - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Special.
   - Format: the rate card's formats, optional.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
