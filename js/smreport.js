@@ -488,13 +488,25 @@
   };
   var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
   var RETENTION = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];
+  /* Platforms (2026-10-05): one report holds Meta's ads and TikTok's. A
+     row names its platform (`platform`, Meta where it says none); the
+     account's figures are each platform's own (Step 1's top-level figures
+     are Meta's, TikTok's sit under `ads_totals.tiktok`), because reach is
+     never added across platforms and their results are not the same kind. */
+  var AD_PLATS = [['meta', 'Meta'], ['tiktok', 'TikTok']];
+  function adPlat(a) { return a && a.platform === 'tiktok' ? 'tiktok' : 'meta'; }
+  function adPlatWord(k) { return k === 'tiktok' ? 'TikTok' : 'Meta'; }
   function adsModel(snap) {
     var rep = snap.report || {};
     var T0 = rep.ads_totals || {};
+    var platOrder = function (a) { return adPlat(a) === 'tiktok' ? 1 : 0; };
     var ads = (snap.ads || []).slice().sort(function (a, b) {
       var oa = (OBJECTIVES[a.objective] || { order: 9 }).order, ob = (OBJECTIVES[b.objective] || { order: 9 }).order;
-      return oa - ob || (Number(a.position) || 0) - (Number(b.position) || 0);
+      return platOrder(a) - platOrder(b) || oa - ob || (Number(a.position) || 0) - (Number(b.position) || 0);
     });
+    var plats = AD_PLATS.filter(function (p) { return ads.some(function (a) { return adPlat(a) === p[0]; }); }).map(function (p) { return p[0]; });
+    if (!plats.length) plats = ['meta'];
+    var multi = plats.length > 1;
     ads.forEach(function (a) {
       var sp = num(a.spend), rs = num(a.results), rc = num(a.reach), im = num(a.impressions);
       /* The cost per result as Ads Manager prints it, where it was typed;
@@ -514,36 +526,52 @@
     });
     var spendAll = sumOf(ads, function (a) { return num(a.spend); });
     var groups = [];
-    Object.keys(OBJECTIVES).sort(function (x, y) { return OBJECTIVES[x].order - OBJECTIVES[y].order; }).forEach(function (k) {
-      var list = ads.filter(function (a) { return a.objective === k; });
+    /* An objective a platform: on a report holding both, each table is
+       one platform's (Traffic · TikTok), and Step 1's typed results by
+       objective are Meta's. */
+    plats.forEach(function (pk) { Object.keys(OBJECTIVES).sort(function (x, y) { return OBJECTIVES[x].order - OBJECTIVES[y].order; }).forEach(function (k) {
+      var list = ads.filter(function (a) { return a.objective === k && adPlat(a) === pk; });
       if (!list.length) return;
-      var over = (T0.groups || {})[k] || {};
+      var over = pk === 'meta' ? (T0.groups || {})[k] || {} : {};
       var labels = uniq(list.map(function (a) { return a._label; }));
-      var g = { key: k, name: OBJECTIVES[k].name, ads: list, adLabel: labels.length === 1 ? labels[0] : 'Results',
+      var g = { key: multi ? pk + ':' + k : k, objective: k, platform: pk, name: OBJECTIVES[k].name + (multi ? ' · ' + adPlatWord(pk) : ''), ads: list, adLabel: labels.length === 1 ? labels[0] : 'Results',
         label: words(over.label).trim() || (labels.length === 1 ? labels[0] : 'Results'),
         spend: sumOf(list, function (a) { return num(a.spend); }),
         results: num(over.results) !== null ? num(over.results) : sumOf(list, function (a) { return num(a.results); }) };
       g.per1000 = /reach/i.test(g.label);
       g.cpr = g.spend !== null && g.results ? g.spend / g.results * (g.per1000 ? 1000 : 1) : null;
       g.share = spendAll ? (g.spend || 0) / spendAll : null;
-      var pg = (T0.prev_groups || {})[k];
+      var pg = pk === 'meta' ? (T0.prev_groups || {})[k] : null;
       if (pg) {
         g.prevSpend = num(pg.spend); g.prevResults = num(pg.results);
         g.prevCpr = g.prevSpend !== null && g.prevResults ? g.prevSpend / g.prevResults * (g.per1000 ? 1000 : 1) : null;
       }
       groups.push(g);
+    }); });
+    /* Each platform's account figures: typed in Step 1, else the ads' own
+       impressions and spend added up; reach is never added up. */
+    var byPlat = plats.map(function (pk) {
+      var src = pk === 'meta' ? T0 : (T0.tiktok || {}), mine = ads.filter(function (a) { return adPlat(a) === pk; });
+      var o = { key: pk, name: adPlatWord(pk), reach: num(src.reach),
+        impressions: num(src.impressions) !== null ? num(src.impressions) : sumOf(mine, function (a) { return num(a.impressions); }),
+        spend: num(src.spend) !== null ? num(src.spend) : sumOf(mine, function (a) { return num(a.spend); }),
+        prevReach: num(src.prev_reach), prevImpressions: num(src.prev_impressions), prevSpend: num(src.prev_spend) };
+      o.freq = o.reach && o.impressions !== null ? o.impressions / o.reach : null;
+      o.share = spendAll ? (o.spend || 0) / spendAll : null;
+      return o;
     });
+    var mt = byPlat[0];
     var t = {
-      reach: num(T0.reach),
-      impressions: num(T0.impressions) !== null ? num(T0.impressions) : sumOf(ads, function (a) { return num(a.impressions); }),
-      spend: num(T0.spend) !== null ? num(T0.spend) : spendAll,
+      reach: multi ? null : mt.reach,
+      impressions: multi ? sumOf(byPlat, function (o) { return o.impressions; }) : mt.impressions,
+      spend: multi ? sumOf(byPlat, function (o) { return o.spend; }) : mt.spend,
       prevStart: T0.prev_start || null, prevEnd: T0.prev_end || null,
       prevReach: num(T0.prev_reach), prevImpressions: num(T0.prev_impressions), prevSpend: num(T0.prev_spend)
     };
     t.freq = t.reach && t.impressions !== null ? t.impressions / t.reach : null;
     t.prevFreq = t.prevReach && t.prevImpressions !== null ? t.prevImpressions / t.prevReach : null;
     t.hasPrev = !rep.first_month && [t.prevReach, t.prevImpressions, t.prevSpend].some(function (v) { return v !== null; });
-    return { ads: ads, groups: groups, totals: t, first: !!rep.first_month };
+    return { ads: ads, groups: groups, totals: t, first: !!rep.first_month, platforms: byPlat, multi: multi };
   }
   /* A point a line; a line indented, or opening with a dash or a letter and
      a stop, belongs to the point above it, so the team's own lettered
@@ -1676,6 +1704,10 @@
         if (da.getMonth() === db2.getMonth()) return da.getDate() + ' to ' + dayWord(b);
         return shortD(a) + ' to ' + dayWord(b);
       };
+      /* The taxes on the amount spent are Meta's (WHT and SST on a Malaysian
+         ad account, DCC and GST on a Singapore one); TikTok's wording waits
+         on the user (2026-10-05), so a TikTok figure carries no note. */
+      var hasMeta = am.platforms.some(function (o) { return o.key === 'meta'; });
       var TAX = mk === 'SG'
         ? 'Amount spent is the full amount spent on ads. It excludes the 5% DCC and 9% GST, charged separately.'
         : mk === 'MY'
@@ -1719,7 +1751,24 @@
         if (first) leadLine('The headline figures for the period, before the detail.');
         var head = words(rep.headline).trim();
         if (head) proseBlock(sh.linesOf(head, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
-        if (at.hasPrev) {
+        if (am.multi) {
+          /* Both platforms: one row a platform, each with its own reach,
+             and the total of what adds up (impressions and spend). */
+          var prevOf = function (cur, prev, f) { return prev === null || prev === undefined ? f(cur) : f(cur) + '\nPrevious ' + f(prev); };
+          var anyPrev = !first && am.platforms.some(function (o) { return [o.prevReach, o.prevImpressions, o.prevSpend].some(function (v) { return v !== null; }); });
+          var tax = hasMeta ? ' *' : '';
+          table([{ w: 0.2, align: 'left' }, { w: 0.18 }, { w: 0.18 }, { w: 0.13 }, { w: 0.18 }, { w: 0.13 }],
+            [{ t: 'Platform', align: 'left' }, 'Reach', 'Impressions', 'Frequency', 'Amount spent' + tax, 'Share of spend'],
+            am.platforms.map(function (o) {
+              return { minH: anyPrev ? S(4) + S(1) : S(4), cells: [{ t: o.name, f: reg },
+                anyPrev ? prevOf(o.reach, o.prevReach, fmt) : fmt(o.reach),
+                anyPrev ? prevOf(o.impressions, o.prevImpressions, fmt) : fmt(o.impressions),
+                ratio(o.freq),
+                anyPrev ? prevOf(o.spend, o.prevSpend, money) : money(o.spend),
+                o.share === null ? '' : (o.share * 100).toFixed(1) + '%'] };
+            }).concat([{ cells: [{ t: 'Total', f: reg }, '', fmt(at.impressions), '', money(at.spend), ''] }]),
+            { labelCol: true, roomy: true, band: 'By platform' });
+        } else if (at.hasPrev) {
           var thisW = 'This period\n' + range(rep.period_start, rep.period_end);
           var prevW = 'Previous period' + (at.prevStart ? '\n' + range(at.prevStart, at.prevEnd) : '');
           table([{ w: 0.3, align: 'left' }, { w: 0.25 }, { w: 0.25 }, { w: 0.2 }],
@@ -1728,14 +1777,14 @@
               { cells: [{ t: 'Total reach', f: reg }, fmt(at.reach), fmt(at.prevReach), change(at.reach, at.prevReach)] },
               { cells: [{ t: 'Total impressions', f: reg }, fmt(at.impressions), fmt(at.prevImpressions), change(at.impressions, at.prevImpressions)] },
               { cells: [{ t: 'Frequency', f: reg }, ratio(at.freq), ratio(at.prevFreq), change(at.freq, at.prevFreq)] },
-              { cells: [{ t: 'Amount spent *', f: reg }, money(at.spend), money(at.prevSpend), change(at.spend, at.prevSpend)] }
+              { cells: [{ t: 'Amount spent' + (hasMeta ? ' *' : ''), f: reg }, money(at.spend), money(at.prevSpend), change(at.spend, at.prevSpend)] }
             ], { labelCol: true, roomy: true });
         } else {
           figures([
             { label: 'Total reach', value: fmt(at.reach) },
             { label: 'Total impressions', value: fmt(at.impressions) },
             { label: 'Frequency', value: ratio(at.freq) },
-            { label: 'Amount spent *', value: money(at.spend) }
+            { label: 'Amount spent' + (hasMeta ? ' *' : ''), value: money(at.spend) }
           ]);
         }
         gap(BLOCK);
@@ -1746,7 +1795,7 @@
              read lighter: no bars, no bold, no second heading). */
           need(S(4) * (am.groups.length + 2) + S(2));
           table([{ w: 0.22, align: 'left' }, { w: 0.2 }, { w: 0.2 }, { w: 0.2 }, { w: 0.18 }],
-            [{ t: 'Objective', align: 'left' }, 'Results', 'Amount spent *', 'Cost per result', 'Share of spend'],
+            [{ t: 'Objective', align: 'left' }, 'Results', 'Amount spent' + (hasMeta ? ' *' : ''), 'Cost per result', 'Share of spend'],
             am.groups.map(function (g) {
               return { minH: withPrev ? S(4) + S(1) : S(4), cells: [
                 { t: g.name, f: reg },
@@ -1758,12 +1807,15 @@
             }), { labelCol: true, roomy: true, band: 'Results by objective' });
         }
         // The note the asterisks point at, under the tables it qualifies.
-        y -= TY.small * 0.72 + S(-1);
-        sh.linesOf('* ' + TAX, CW, TY.small, book).forEach(function (ln, i) {
-          if (i) y -= S(0);
-          sh.draw(pg.page, ln, M, y, TY.small, MUTE);
-        });
-        y -= TY.small * 0.28 + BLOCK;
+        if (hasMeta) {
+          y -= TY.small * 0.72 + S(-1);
+          sh.linesOf('* ' + (am.multi ? 'On Meta: ' + TAX.charAt(0).toLowerCase() + TAX.slice(1) : TAX), CW, TY.small, book).forEach(function (ln, i) {
+            if (i) y -= S(0);
+            sh.draw(pg.page, ln, M, y, TY.small, MUTE);
+          });
+          y -= TY.small * 0.28;
+        }
+        y -= BLOCK;
         var paras = paragraphsOf(rep.intro).filter(function (s) { return s.trim(); });
         if (paras.length) {
           blockTitle('Summary', S(1) * 3);
@@ -1843,7 +1895,7 @@
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
-          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', got(a.spend, money), count(a.results),
+          var cells = [((OBJECTIVES[a.objective] || {}).name || 'Other') + (am.multi ? ' · ' + adPlatWord(adPlat(a)) : ''), got(a.spend, money), count(a.results),
             a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
@@ -2112,6 +2164,7 @@
 
   window.ADspaceSmReport = {
     render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, shortResult: shortResult, adName: adName,
-    engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
+    engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
+    AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord
   };
 })();

@@ -2146,6 +2146,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Select (`data-a="pickposts"`) ticks posts: Move to account (two accounts
     or more) and Remove (asks, naming how many), each with Undo.
 - Ads reports (`kind = 'ads'`):
+  - Meta and TikTok in one report (`2026-10-05-ads-platforms.sql`): each ad
+    names its platform (`sm_report_ads.platform`, `meta` default or
+    `tiktok`); Meta's figures stay at the top of `ads_totals`, TikTok's under
+    `ads_totals.tiktok`, and reach is never added across platforms. The
+    import and the ad sheet ask the platform (a segment, Meta first; a paste
+    with TikTok's own headers picks TikTok until the person picks), a paste
+    matches only its own platform's ads, and TikTok's hook is 2-second views
+    over impressions, its hold 6-second over 2-second. Only where both are
+    held: the ads list and the PDF head each objective with its platform
+    (Leads · Meta, Traffic · TikTok), Step 1 asks TikTok's figures apart,
+    the summary is a By platform table (impressions and spend totalled,
+    reach not), the tax note reads On Meta, and Open in Ads Manager is
+    Meta's alone. TikTok's export columns are provisional until the team's
+    first TikTok export is read.
   - `first_month` carries the reading guidance; a later month compares against
     the previous period, which is carried forward. A new report is never a
     first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
