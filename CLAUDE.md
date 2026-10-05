@@ -1730,10 +1730,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Blue only for a hand-off; the ink fill for your own progress.
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
-  - The ⋯ (row, sheet, record) is Open full record (not on the record),
-    Take or Offer to the team / Withdraw offer (where they apply), Change
-    Task Owner, Make a copy, Repeat on a schedule, Delete. No timer,
-    Revert, Move to another stage, Mark blocked or Cancel.
+  - The sheet's and the record's ⋯ are Take or Offer to the team /
+    Withdraw offer (where they apply), Change Task Owner, Make a copy,
+    Repeat on a schedule, Delete; Open full record is the sheet's last
+    line. The row's ⋯ holds only what the row cannot do (Take where the
+    row shows none, the offer, Delete) and is not drawn when empty. No
+    timer, Revert, Move to another stage, Mark blocked or Cancel.
   - `factHere()`: a step's fact buttons act on the sheet's row while the sheet
     is open.
 - The SOP workflow, numbered in this order: Ready to start, In progress, AQC
@@ -1915,8 +1917,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     by item. Every Performance figure is edited in Performance settings
     (the Months, Quarters and Bonus bars), an admin's.
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
-    the day the numbers were reported to the member. Release fills it where
-    empty; management corrects it until final (in or after the month, never
+    the day the numbers were reported to the member. The sheet prefills
+    today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
     after today in MYT, `bad-eval-date`). The sheet, the member's page and
     the printed record's head show it beside Dispute until.
   - Management answers, then it is acknowledged and finalised.
