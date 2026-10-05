@@ -2061,9 +2061,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   Advertising Report). Only Active clients.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
-  - The head is the record head: the name, then the state, PDF and the ⋯ at
-    the right edge; the meta under them. On a narrow pane the button reads
-    PDF (`.rp-pdf-short`).
+  - The head is the record head: the name, then the state, Preview PDF and
+    the ⋯ at the right edge; the meta under them. On a narrow pane the
+    button reads PDF (`.rp-pdf-short`). Preview PDF opens a tab at the
+    press (`openTab()`, "Drawing the PDF…") and puts the drawn file in it
+    (a `blob:` address), so the browser previews it; where the tab is
+    blocked the file downloads (the user, 2026-10-05).
   - The step foot is an action row, the primary at the right edge.
   - Check and submit ends in one too (`.rp-actions`): Send back, then the
     step forward at the right edge, each at its own width (the base `.btn`
@@ -2221,9 +2224,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     View (`ai_check_last`), so the reviewer sees the same check; a
     commentary changed since says so. Filed as `report.ai_drafted` (AI used)
     with Figures check and the count.
-  - The commentary's draft row: the hint, then Draft language (the pill) at
-    the left and Write draft at the right edge with what is left before it
-    (`.rp-airow`); on a phone a line each.
+  - What the AI is told sits apart from the report's own words: one shaded
+    block (`.rp-aidraft`, `--sunk`) holds Draft language (the pill) at the
+    left and Write draft at the right edge with what is left before it
+    (`.rp-airow`; on a phone a line each), then Notes for the draft under a
+    hairline; the hint and the fields follow it (the user, 2026-10-05).
   - The words: Write draft (Commentary), Check (Check and submit), AI usage
     (the bar's ⋯), filed under subject AI; never "Draft with AI".
   - AI usage (the Reports bar's ⋯, an admin's alone;
@@ -2233,11 +2238,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     used first, the totals added up on the page; then Limits (Each
     colleague `10 a day`, Each admin `20 a day`, Each colleague, each
     report `1 draft and 1 check a day`, Each admin, each report `5 drafts
-    and 5 checks a day`). The rows only read. Every limit is changed in one place,
-    Edit limits in the foot: one form (the six limits, then each
-    colleague, empty meaning the standard; 0 to 500), one Save sending
-    only what changed through `ai_draft_set_limit`, each filed
-    `team.changed` under Draft with AI from and to. No explanatory lines.
+    and 5 checks a day`). Edit limits in the foot (Limits a day) is the
+    six standards in three pairs, one Save; a colleague's own limit is set
+    by pressing their row (`button.aiu-row`, one field, empty meaning the
+    standard); the totals and Limits rows only read. 0 to 500; only what
+    changed goes through `ai_draft_set_limit`, each filed `team.changed`
+    under AI from and to. No list of colleagues in a form (the user,
+    2026-10-05). No explanatory lines.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with

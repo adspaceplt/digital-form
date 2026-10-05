@@ -216,17 +216,29 @@
 
   /* Draw a snapshot and hand the browser the file. Resolves with any warning
      the engine raised (a logo it could not load), else nothing. */
-  function saveFile(snap) {
+  /* A tab opened at the press (2026-10-05: the user previews before saving)
+     shows the file in the browser's own viewer; without one (a blocked
+     pop-up) the file downloads. */
+  function saveFile(snap, tab) {
     if (!SM()) return Promise.reject(new Error('The report engine did not load. Refresh the page.'));
     return SM().render(snap).then(function (out) {
       var blob = new Blob([out.bytes], { type: 'application/pdf' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = SM().fileName(snap);
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
+      var url = URL.createObjectURL(blob);
+      if (tab && !tab.closed) tab.location.href = url;
+      else {
+        var a = document.createElement('a');
+        a.href = url; a.download = SM().fileName(snap);
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
       return out.warnings && out.warnings.length ? out.warnings.join(' ') : '';
     });
+  }
+  function openTab() {
+    var tab = null;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    return tab;
   }
 
   /* Open a report in the Reports section from anywhere: the address first,
@@ -483,8 +495,8 @@
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so
            the state, the file and the ⋯ sit beside the name on one line. */
-        '<button class="btn btn-sm rp-pdf" type="button" data-a="pdf" aria-label="' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '">' + ICON.file +
-          '<span class="rp-pdf-long">' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</span><span class="rp-pdf-short">PDF</span></button>' +
+        '<button class="btn btn-sm btn-icon rp-pdf" type="button" data-a="pdf" aria-label="Preview PDF">' +
+          '<span class="rp-pdf-long">Preview PDF</span><span class="rp-pdf-short">PDF</span> ' + ICON.out + '</button>' +
         moreMenu(r, live) + '</div></div>' +
       (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Sent back:</b> ' + esc(r.return_note) + '</p>' : '') +
       '<div class="msg" data-m="head"></div></section>' +
@@ -1005,6 +1017,7 @@
   function downloadPdf(btn, m) {
     var r = st.open;
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
+    var tab = openTab();
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
     var get = r.status === 'published' && live
@@ -1016,11 +1029,12 @@
           if (x.error || (x.data && x.data.error)) throw new Error(x.error ? x.error.message : x.data.error);
           return x.data;
         });
-    get.then(saveFile).then(function (warn) {
+    get.then(function (snap) { return saveFile(snap, tab); }).then(function (warn) {
       btn.disabled = false;
-      say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
+      say(m, warn ? (tab && !tab.closed ? 'Opened. ' : 'Downloaded. ') + warn : (tab && !tab.closed ? '' : 'Downloaded.'), warn ? 'warn' : 'ok');
     }).catch(function (e) {
       btn.disabled = false;
+      if (tab && !tab.closed) tab.close();
       say(m, said(e), 'err');
     });
   }
@@ -1871,16 +1885,20 @@
           return area('rpN_' + p.id, (i + 1) + '. ' + postName(p), 'Why it stood out', 2);
         }).join('') : '') + '</section>';
     }).join('');
+    /* What the AI is told (the language, the notes) sits with Write draft in
+       one shaded block, apart from the report's own words below it (the
+       user, 2026-10-05). */
     box.innerHTML = '<section class="panel rp-form">' +
-      '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
+      '<div class="rp-aidraft">' +
         '<div class="rp-airow"><div class="rp-ailang"><span class="rp-ailang-label" aria-hidden="true">Draft language</span>' +
           '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
-        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div></div>' +
-      '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
-        '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
-        '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +
+        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div>' +
+        '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
+          '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
+          '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details></div>' +
       '<div class="msg" data-m="ai"></div>' +
+      '<p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
       fields.map(function (x) { return area('rpT_' + x[0], x[1], x[2], x[3]); }).join('') +
       platHtml +
       /* What older reports wrote across all platforms stays editable there;
@@ -3150,10 +3168,10 @@
   /* Like a usage page (the user, 2026-10-04): when it resets, then used
      today over the limit with a bar, for the whole team, each group and
      each colleague (a group's and the team's are their colleagues' added
-     up), then the limits. Every limit is changed in one place, Edit
-     limits: the standard a day, the drafts a report may have, an admin's
-     drafts a report a day, and each colleague's own (empty is the
-     standard, 0 stops it). Read again on every open. */
+     up), then the limits. Edit limits holds the six standards in three
+     pairs; a colleague's own limit is set from their row (empty is the
+     standard, 0 stops it; the user, 2026-10-05: no long list). Read
+     again on every open. */
   var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5 };
   function aiClock(iso) {
     var at = new Date(iso);
@@ -3168,13 +3186,17 @@
     return '<div class="aiu-bar' + (cap > 0 && used >= cap ? ' is-full' : '') + '" role="meter" aria-valuemin="0" aria-valuemax="' + cap +
       '" aria-valuenow="' + Math.min(used, cap) + '" aria-label="' + fmt(used) + ' of ' + cap + ' used today"><i style="--p:' + pct + '%"></i></div>';
   }
+  /* A colleague's row is the one control for their own limit: pressed, it
+     asks for that one value. Every other row only reads. */
   function aiUseRow(o) {
     var shown = o.text != null ? o.text : o.cap === 0 ? 'Stopped' : fmt(o.used) + '/' + o.cap;
-    return '<div class="aiu-row' + (o.sum ? ' is-sum' : '') + '"' + (o.id ? ' data-scope="' + esc(o.id) + '"' : '') + '>' +
+    var tag = o.id ? 'button' : 'div';
+    return '<' + tag + ' class="aiu-row' + (o.sum ? ' is-sum' : '') + (o.id ? ' is-set' : '') + '"' +
+      (o.id ? ' type="button" data-scope="' + esc(o.id) + '" aria-label="' + esc(o.name + ', ' + shown + '. Set limit') + '"' : '') + '>' +
       '<div class="aiu-name"><b>' + esc(o.name) + (o.code ? ' <span class="aiu-code">' + esc(o.code) + '</span>' : '') + '</b></div>' +
       '<span class="aiu-cap' + (o.own ? ' is-own' : '') + (o.cap === 0 ? ' is-stopped' : '') + '">' + esc(shown) + '</span>' +
       (o.text != null || o.cap === 0 ? '' : aiBar(o.used, o.cap)) +
-    '</div>';
+    '</' + tag + '>';
   }
   function aiUseSheet(opener) {
     var box = sheetShell('rpAiUseSheet', 'AI usage',
@@ -3229,53 +3251,63 @@
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
       }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
     };
-    /* One place for every limit: one form, one Save. */
+    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin'];
+    var setLimit = function (jobs) {
+      var fails = [];
+      return jobs.reduce(function (chain, j) {
+        return chain.then(function () {
+          return db.rpc('ai_draft_set_limit', { p_scope: j.scope, p_daily: j.daily }).then(function (res) {
+            var out = res.data || {};
+            if (res.error || out.error) fails.push(res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'A limit is 0 to 500.' : said(out.error));
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        say(m, fails.length ? fails[0] : 'Saved.', fails.length ? 'err' : 'ok');
+        paint();
+      }).catch(function (e) { say(m, said(e), 'err'); paint(); });
+    };
+    var limitOk = function (v) {
+      var bad = Object.keys(v).filter(function (k) { var x = String(v[k] == null ? '' : v[k]).trim(); return x !== '' && !/^\d{1,3}$/.test(x) || Number(x) > 500; });
+      return bad.length ? 'A limit is a whole number from 0 to 500.' : '';
+    };
+    var num = function (v) { return v == null ? '' : String(v); };
+    /* The six standards, a day each, in three pairs: one form, one Save. */
     edit.onclick = function () {
       if (!d) return;
-      var num = function (v) { return v == null ? '' : String(v); };
-      var fields = [
-        { name: 'person', label: 'Each colleague, a day', type: 'number', min: '0', required: false, value: num(d.person), placeholder: String(AI_STD.person), half: true },
-        { name: 'admin', label: 'Each admin, a day', type: 'number', min: '0', required: false, value: num(d.admin != null ? d.admin : AI_STD.admin), placeholder: String(AI_STD.admin) },
-        { name: 'report', label: 'Drafts, each report a day', type: 'number', min: '0', required: false, value: num(d.report != null ? d.report : AI_STD.report), placeholder: String(AI_STD.report), half: true },
-        { name: 'check', label: 'Checks, each report a day', type: 'number', min: '0', required: false, value: num(d.check != null ? d.check : AI_STD.check), placeholder: String(AI_STD.check) },
-        { name: 'report_admin', label: 'Admin drafts, each report a day', type: 'number', min: '0', required: false, value: num(d.report_admin != null ? d.report_admin : AI_STD.report_admin), placeholder: String(AI_STD.report_admin), half: true },
-        { name: 'check_admin', label: 'Admin checks, each report a day', type: 'number', min: '0', required: false, value: num(d.check_admin != null ? d.check_admin : AI_STD.check_admin), placeholder: String(AI_STD.check_admin) }
-      ].concat(people.slice().sort(function (x, y) { return String(x.name).localeCompare(String(y.name)); }).map(function (p) {
-        return { name: p.id, label: p.name + (p.code ? ' · ' + p.code : ''), type: 'number', min: '0', required: false, value: num(p.limit), placeholder: 'Standard' };
-      }));
-      window.ADspaceConfirm.ask({
-        title: 'Edit limits', go: 'Save', fields: fields,
-        check: function (v) {
-          var bad = Object.keys(v).filter(function (k) { var x = String(v[k] == null ? '' : v[k]).trim(); return x !== '' && !/^\d{1,3}$/.test(x) || Number(x) > 500; });
-          return bad.length ? 'A limit is a whole number from 0 to 500.' : '';
-        }
-      }, function (v) {
-        var was = {};
-        ['person', 'admin', 'report', 'report_admin', 'check', 'check_admin'].forEach(function (k) { was[k] = d[k] != null ? d[k] : AI_STD[k]; });
-        people.forEach(function (p) { was[p.id] = p.limit; });
-        var std = { person: 1, admin: 1, report: 1, report_admin: 1, check: 1, check_admin: 1 };
-        var jobs = Object.keys(v).map(function (k) {
+      var LBL = { person: 'Each colleague', admin: 'Each admin', report: 'Drafts a report', check: 'Checks a report',
+        report_admin: 'Admin drafts a report', check_admin: 'Admin checks a report' };
+      var fields = STD_KEYS.map(function (k) {
+        return { name: k, label: LBL[k], type: 'number', min: '0', required: false, value: num(d[k] != null ? d[k] : AI_STD[k]), placeholder: String(AI_STD[k]), half: true };
+      });
+      window.ADspaceConfirm.ask({ title: 'Limits a day', go: 'Save', fields: fields, check: limitOk }, function (v) {
+        var jobs = STD_KEYS.map(function (k) {
           var x = String(v[k] == null ? '' : v[k]).trim();
-          var want = x === '' ? null : Number(x);
-          if (std[k] && want === AI_STD[k]) want = null;
-          var now = std[k] && was[k] === AI_STD[k] ? null : was[k];
-          return want === (now == null ? null : now) ? null : { scope: k, daily: want };
+          var want = x === '' || Number(x) === AI_STD[k] ? null : Number(x);
+          var was = d[k] != null ? d[k] : AI_STD[k];
+          var now = was === AI_STD[k] ? null : was;
+          return want === now ? null : { scope: k, daily: want };
         }).filter(Boolean);
         if (!jobs.length) { say(m, 'No change.', 'ok'); return; }
-        var fails = [];
-        jobs.reduce(function (chain, j) {
-          return chain.then(function () {
-            return db.rpc('ai_draft_set_limit', { p_scope: j.scope, p_daily: j.daily }).then(function (res) {
-              var out = res.data || {};
-              if (res.error || out.error) fails.push(res.error ? said(res.error) : out.error === 'denied' ? 'Only an admin sets this.' : out.error === 'bad-limit' ? 'A limit is 0 to 500.' : said(out.error));
-            });
-          });
-        }, Promise.resolve()).then(function () {
-          say(m, fails.length ? fails[0] : 'Saved.', fails.length ? 'err' : 'ok');
-          paint();
-        }).catch(function (e) { say(m, said(e), 'err'); paint(); });
+        setLimit(jobs);
       });
     };
+    /* A colleague's own limit, from their row: one value, empty for the standard. */
+    host.addEventListener('click', function (e) {
+      var row = e.target.closest('.aiu-row[data-scope]');
+      if (!row || !d) return;
+      var p = people.filter(function (x) { return x.id === row.getAttribute('data-scope'); })[0];
+      if (!p) return;
+      var std = d.person != null ? d.person : AI_STD.person;
+      window.ADspaceConfirm.ask({
+        title: p.name, go: 'Save', check: limitOk,
+        fields: [{ name: 'limit', label: 'Limit a day', type: 'number', min: '0', required: false, value: num(p.limit), placeholder: 'Standard, ' + std }]
+      }, function (v) {
+        var x = String(v.limit == null ? '' : v.limit).trim();
+        var want = x === '' ? null : Number(x);
+        if (want === (p.limit == null ? null : p.limit)) { say(m, 'No change.', 'ok'); return; }
+        setLimit([{ scope: p.id, daily: want }]);
+      });
+    });
     say(m, '', '');
     paint();
     window.ADspaceSheet.show(box, { opener: opener });
