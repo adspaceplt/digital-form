@@ -475,7 +475,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
     `#regSort`): never counted by the badge, never reset by Clear.
-  - A second action goes behind `.cmd-more`; each item carries its button's
+  - A second action goes behind `.cmd-more` beside a primary; a bar of plain
+    actions keeps its first and puts the rest there once it has three (the
+    Performance Months bar); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed.
   - The Filters sheet focuses its card, never a select (a focused select wears
