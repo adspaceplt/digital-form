@@ -992,8 +992,11 @@
     /* The day of the 1-1: in or after the month reviewed, never ahead of
        today in Malaysia, so a month keyed in later keeps its real date. */
     var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    /* Prefilled with today while none is set (the user, 2026-10-05): the 1-1
+       is usually the day the sheet is open; it stays editable. */
+    var evalOn = r.evaluated_on || (String(r.period) <= today ? today : '');
     return card('Evaluation and follow-up',
-      '<div class="perf-plan"><div class="row fgrid"><div><label class="field-label" for="pvEval">Date of evaluation</label><input class="input" id="pvEval" type="date" min="' + esc(r.period) + '" max="' + today + '" value="' + esc(r.evaluated_on || '') + '"></div>' +
+      '<div class="perf-plan"><div class="row fgrid"><div><label class="field-label" for="pvEval">Date of evaluation</label><input class="input" id="pvEval" type="date" min="' + esc(r.period) + '" max="' + today + '" value="' + esc(evalOn) + '"></div>' +
       '<div><label class="field-label" for="pvBy">Follow-up date</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div></div>' +
       '<div><label class="field-label" for="pvImp">Improvement</label>' +
       '<textarea class="input" id="pvImp" rows="3" maxlength="4000">' + esc(r.improvement || '') + '</textarea></div>' +
@@ -1068,24 +1071,46 @@
      or the plan. An older save named nothing and still reads Scores saved. */
   var RATE_WORD = {};
   RATES.forEach(function (x) { RATE_WORD[x[0]] = x[1]; });
+  /* One figure in a history line (the user, 2026-10-05: "these are so
+     complicated"): a first entry is the value alone, a change reads
+     19 → 22, and an emptied value reads removed. */
+  function moved(name, from, to, fmt) {
+    if (from == null || from === '') return name + ' ' + fmt(to);
+    if (to == null || to === '') return name + ' removed';
+    return name + ' ' + fmt(from) + ' → ' + fmt(to);
+  }
   function savedWord(d) {
     var ch = d && d.changed;
     if (!ch || !ch.length) return '';
     return ': ' + ch.map(function (c) {
-      if (c.key === 'notes') return 'notes';
-      if (c.key === 'plan') return 'improvement and follow-up';
-      if (c.key === 'evaluated_on') return 'date of evaluation ' + (c.from ? dateWord(c.from) : 'not set') + ' to ' + (c.to ? dateWord(c.to) : 'not set');
+      if (c.key === 'notes') return 'Notes';
+      if (c.key === 'plan') return 'Improvement and follow-up';
+      if (c.key === 'evaluated_on') return moved('Date of evaluation', c.from, c.to, dateWord);
       var rate = RATE_WORD[c.key], name = CAT_WORD[c.key] || rate || c.key;
-      var v = function (x) { return x == null ? 'not set' : num(x) + (rate ? '%' : ''); };
-      return name + ' ' + v(c.from) + ' to ' + v(c.to);
+      return moved(name, c.from, c.to, function (x) { return num(x) + (rate ? '%' : ''); });
     }).join(', ');
+  }
+  /* A save that only fills empty figures is the first entry. */
+  function firstSave(d) {
+    var ch = (d && d.changed) || [];
+    return ch.length && ch.every(function (c) { return c.key === 'notes' || c.key === 'plan' || c.from == null || c.from === ''; });
+  }
+  /* Started is written in the same moment as the first save, so it is kept
+     below it, where it happened. */
+  function inOrder(ev) {
+    return ev.map(function (e, i) { return [e, i]; }).sort(function (a, b) {
+      var ta = String(a[0].at || ''), tb = String(b[0].at || '');
+      if (ta !== tb) return a[1] - b[1];
+      return (a[0].kind === 'started') - (b[0].kind === 'started') || a[1] - b[1];
+    }).map(function (x) { return x[0]; });
   }
   function historyCard(r) {
     var ev = r.events || [];
     if (!ev.length) return '';
-    return card('History', '<ul class="perf-history">' + ev.slice(0, 20).map(function (e) {
+    return card('History', '<ul class="perf-history">' + inOrder(ev).slice(0, 20).map(function (e) {
       var why = e.kind === 'scored' ? savedWord(e.detail) : e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
-      return '<li><b>' + esc((EVENT_WORD[e.kind] || e.kind) + why) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
+      var word = e.kind === 'scored' && firstSave(e.detail) ? 'Scores entered' : EVENT_WORD[e.kind] || e.kind;
+      return '<li><b>' + esc(word + why) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
     }).join('') + '</ul>');
   }
 
@@ -1888,16 +1913,20 @@
     var d = e.detail || {}, w = RW_EVENT[e.kind] || e.kind;
     if (e.kind === 'dept_scored') {
       var crit = DEPT_CRIT[d.department] || [];
-      return w + ': ' + (DEPT_WORD[d.department] || '') + ', ' + (d.changed || []).map(function (c) {
-        if (c.key === 'critical') return 'critical issue ' + (c.to ? 'ticked' : 'cleared');
+      /* A critical issue is named only when it changes: ticked, or cleared
+         after it was ticked. */
+      var parts = (d.changed || []).filter(function (c) { return c.key !== 'critical' || !!c.to !== !!c.from; }).map(function (c) {
+        if (c.key === 'critical') return c.to ? 'Critical issue ticked' : 'Critical issue cleared';
         var i = Number(String(c.key).slice(1)) - 1;
-        return ((crit[i] || [c.key])[0]).toLowerCase() + ' ' + (c.from == null ? 'not set' : num(c.from)) + ' to ' + num(c.to);
-      }).join(', ');
+        return moved((crit[i] || [c.key])[0], c.from, c.to, num);
+      });
+      var first = (d.changed || []).every(function (c) { return c.key === 'critical' || c.from == null; });
+      return (DEPT_WORD[d.department] || 'Department') + ' scores ' + (first ? 'entered' : 'changed') + (parts.length ? ': ' + parts.join(', ') : '');
     }
     if (e.kind === 'company_set') {
-      var NAME = { revenue: 'revenue', profit: 'profit', pool: 'bonus pool', trip_budget: 'trip budget' };
+      var NAME = { revenue: 'Revenue', profit: 'Profit', pool: 'Bonus pool', trip_budget: 'Trip budget' };
       return w + ': ' + (d.changed || []).map(function (c) {
-        return NAME[c.key] + (c.key === 'pool' || c.key === 'trip_budget' ? ' ' + (c.from == null ? 'not set' : rm(c.from)) + ' to ' + rm(c.to) : '');
+        return c.key === 'pool' || c.key === 'trip_budget' ? moved(NAME[c.key], c.from, c.to, rm) : NAME[c.key];
       }).join(', ');
     }
     return w;

@@ -1915,8 +1915,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     by item. Every Performance figure is edited in Performance settings
     (the Months, Quarters and Bonus bars), an admin's.
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
-    the day the numbers were reported to the member. Release fills it where
-    empty; management corrects it until final (in or after the month, never
+    the day the numbers were reported to the member. The sheet prefills
+    today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
     after today in MYT, `bad-eval-date`). The sheet, the member's page and
     the printed record's head show it beside Dispute until.
   - Management answers, then it is acknowledged and finalised.
