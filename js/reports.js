@@ -3415,6 +3415,21 @@
       hub.wired = true;
       $('rhFind').addEventListener('input', paintHub);
       $('rhKind').addEventListener('change', paintHub);
+      $('rhPeriod').addEventListener('change', paintHub);
+      var strip = $('rhTabs');
+      strip.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('.tab');
+        if (b) { hub.tab = b.getAttribute('data-tab'); paintHub(); if (bridge.setUrl) bridge.setUrl(); }
+      });
+      strip.addEventListener('keydown', function (e) {
+        var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab:not([hidden])'));
+        var i = tabs.indexOf(document.activeElement);
+        if (i < 0) return;
+        var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+        if (to === null || !tabs[to]) return;
+        e.preventDefault();
+        tabs[to].click(); tabs[to].focus();
+      });
       $('rhNew').addEventListener('click', function () { newSheet($('rhNew')); });
       /* The bar's ⋯, an admin's: Draft with AI usage. */
       var mw = $('rhMoreWrap'), mb = $('rhMoreBtn'), mm = $('rhMore');
@@ -3438,9 +3453,11 @@
       }
     }
     if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
-    $('rhKind').innerHTML = '<option value="">Every type</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
+    $('rhKind').innerHTML = '<option value="">All types</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();
+    var wantTab = new URLSearchParams(location.search).get('tab');
+    if (HUB_BANDS.some(function (bd) { return bd[0] === wantTab; })) hub.tab = wantTab;
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
@@ -3460,35 +3477,90 @@
       hub.clients = all.filter(function (x) { return x.stage === 'active'; }).sort(F.byClient);
     });
   }
+  /* The list (the user, 2026-10-05: "still missing the sliding tab", and
+     after 35 months of 10 clients a run of 350 reports): one tab a stage,
+     each with its count, the list under it in cards by the month a report
+     covers, newest first. Published is held to a period (the last three
+     months unless chosen), so it never grows into one long list; a search
+     looks through every report, whatever the tab and the period. */
+  var PERIOD_MONTHS = { '3m': 3, '12m': 12, year: 0, all: -1 };
+  function monthKey(r) { return String(r.period_start || '').slice(0, 7); }
+  function monthName(k) {
+    if (!k) return 'No period';
+    var d = new Date(k + '-01T00:00:00');
+    return isNaN(d) ? k : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+  function inPeriod(r, p) {
+    var n = PERIOD_MONTHS[p];
+    if (n === -1 || n == null) return true;
+    var now = new Date(Date.now() + 8 * 3600000), y = now.getUTCFullYear(), m = now.getUTCMonth();
+    var from = n === 0 ? new Date(Date.UTC(y, 0, 1)) : new Date(Date.UTC(y, m - n, 1));
+    return monthKey(r) >= from.toISOString().slice(0, 7);
+  }
   function paintHub() {
-    var list = $('rhList');
-    if (!list) return;
+    var list = $('rhList'), strip = $('rhTabs');
+    if (!list || !strip) return;
     var q = ($('rhFind').value || '').trim().toLowerCase();
     var kind = $('rhKind').value;
+    var period = $('rhPeriod').value || '3m';
     var rows = hub.rows.filter(function (r) {
       if (kind && r.kind !== kind) return false;
       if (!q) return true;
       var c = hub.byClient[r.client_id] || {};
-      return (String(c.name || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
+      return (String(c.name || '') + ' ' + String(c.client_code || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
     });
-    $('rhCount').textContent = rows.length === hub.rows.length ? plural(rows.length, 'report') : rows.length + ' of ' + hub.rows.length;
+    var byTab = {};
+    HUB_BANDS.forEach(function (bd) {
+      byTab[bd[0]] = rows.filter(function (r) {
+        return r.status === bd[0] && (bd[0] !== 'published' || q || inPeriod(r, period));
+      });
+    });
+    /* The tab chosen stays; opened first on the stage with the most to do
+       next (Drafts, then In review, Confirmed, Published), and a search
+       that finds nothing here moves to the first stage where it does. */
+    if (!hub.tab || (q && !byTab[hub.tab].length)) {
+      hub.tab = (HUB_BANDS.filter(function (bd) { return byTab[bd[0]].length; })[0] || HUB_BANDS[0])[0];
+    }
+    strip.hidden = !hub.rows.length;
+    strip.innerHTML = HUB_BANDS.map(function (bd) {
+      var on = bd[0] === hub.tab, n = byTab[bd[0]].length;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-tab="' + bd[0] + '" id="rhTab-' + bd[0] + '"' +
+        ' aria-selected="' + on + '" aria-controls="rhList" tabindex="' + (on ? 0 : -1) + '">' +
+        '<span>' + esc(bd[1]) + '</span><span class="tab-n"' + (n ? '' : ' hidden') + '>' + n + '</span></button>';
+    }).join('');
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
+    /* The period is a question only Published asks, and a search sets it aside. */
+    $('rhPeriod').hidden = hub.tab !== 'published' || Boolean(q);
+    list.setAttribute('aria-labelledby', 'rhTab-' + hub.tab);
+    var mine = byTab[hub.tab];
+    var shown = HUB_BANDS.reduce(function (t, bd) { return t + byTab[bd[0]].length; }, 0);
+    $('rhCount').textContent = !q && !kind && shown === hub.rows.length ? plural(hub.rows.length, 'report') : shown + ' of ' + hub.rows.length;
     list.innerHTML = '';
     if (!hub.rows.length) {
       UI.emptyLine(list, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet($('rhNew')); } : null);
       return;
     }
     if (!rows.length) { UI.emptyLine(list, 'No matches.', 'Clear the search', function () { $('rhFind').value = ''; $('rhKind').value = ''; paintHub(); }); return; }
+    if (!mine.length) {
+      if (hub.tab === 'published' && period !== 'all') {
+        UI.emptyLine(list, 'None published in this period.', 'Show all', function () { $('rhPeriod').value = 'all'; paintHub(); });
+      } else UI.emptyLine(list, 'No reports.');
+      return;
+    }
     var GRP = window.ADspaceGroup;
-    var bands = HUB_BANDS.filter(function (bd) { return rows.some(function (r) { return r.status === bd[0]; }); });
-    bands.forEach(function (bd) {
-      var mine = rows.filter(function (r) { return r.status === bd[0]; });
-      var lone = bands.length === 1;
+    var months = [];
+    mine.forEach(function (r) { var k = monthKey(r); if (months.indexOf(k) < 0) months.push(k); });
+    months.sort().reverse();
+    months.forEach(function (k, i) {
+      var inMonth = mine.filter(function (r) { return monthKey(r) === k; });
       list.appendChild(GRP.section({
-        route: 'reports', key: bd[0], name: bd[1], count: mine.length,
-        shut: q ? false : GRP.shut('reports', bd[0], bd[0] === 'published', lone),
+        route: 'reports', key: hub.tab + ':' + k, name: monthName(k), count: inMonth.length,
+        /* Published keeps its newest month open and the rest shut; the
+           working stages are short and open. A search opens every card. */
+        shut: q ? false : GRP.shut('reports', hub.tab + ':' + k, hub.tab === 'published' && i > 0, months.length === 1),
         table: function () {
           var t = GRP.table('rh-row', ['Client', 'Period', 'Version', 'Updated', '']);
-          GRP.more(t, mine, 30, 'reports', function (r) {
+          GRP.more(t, inMonth, 30, 'reports', function (r) {
             var c = hub.byClient[r.client_id] || {};
             var b2 = document.createElement('button');
             b2.type = 'button'; b2.className = 'crm-row rh-row';
@@ -3513,7 +3585,7 @@
     /* The address while the section is open: the report, and the step where
        it is not the one the report would open on anyway. */
     urlState: function () {
-      if (!st.open || !st.open.id) return {};
+      if (!st.open || !st.open.id) return { tab: hub.tab && hub.tab !== 'draft' ? hub.tab : '' };
       return { report: st.open.id, step: st.open.client_id ? st.step : '' };
     },
     enterHub: enterHub

@@ -2121,9 +2121,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
   - A report a client has seen is never deleted.
-- The list groups reports by stage (Drafts, In review, Confirmed, Published
-  shut). New report opens on the type as a segment (Accounts Report /
-  Advertising Report). Only Active clients.
+- The list is one tab a stage (`#rhTabs`, the view strip, swipe and the
+  arrows; `tab=` in the address, Drafts left out): Drafts, In review,
+  Confirmed, Published, each with its count, opening on the first that
+  holds any. Under the tab, a card a report month (`period_start`), newest
+  first. Published is held to a period (`#rhPeriod`, Last 3 months by
+  default, Last 12 months, This year, All months; drawn only on that tab),
+  only its newest month open; a search (client, code, month, type) looks
+  through every report, whatever the tab and the period. New report opens
+  on the type as a segment (Accounts Report / Advertising Report). Only
+  Active clients.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
   - The head is the record head: the name, then the state, Preview PDF and
