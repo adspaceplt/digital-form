@@ -806,22 +806,32 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Sales (`js/sales.js`, `view=sales&sp=`): the list's second view, List /
   Sales in the bar (`#crmViews`), for an admin or Clients Full Access
   (`ADspaceSales.allowed()`); anyone else's address falls back to the list.
-  Read from each client's `stage_log`, `source` and `owner`; nothing typed or
-  stored. A period (`#crmSalesPeriod`, This month to Last 12 months, Last
-  month ending where this one begins) sets every figure; the search, the
-  filters, the count and Add lead step away. Pipeline now; This period (New
-  leads; Won, a lead's first move to Active or a client keyed in Active, with
-  conversion over won and lost; Lost leads, to Past never Active; days from
-  lead to won, the median; Paused, at risk; Resumed, Paused to Active;
-  Churned, to Past after Active, with the rate over the clients active at the
-  start; Win-backs, Past to Active; Active clients with the net change);
-  active clients by month (a line) and new leads, won and churned by month
-  (columns); new leads by source; why clients paused or left (the move's
-  reason); by person in charge, counts only. Every figure opens its clients
-  (`#salesPop`, a `.popcard`), each opening the record, whose Back returns to
-  Sales. Committed monthly value (confirmed lines, a month each, by market,
-  never added across currencies) is an admin's alone and read only for one;
-  a refused read of the lines is said under its heading.
+  Read from each client's `stage_log`, `stage_reason`, `source` and `owner`;
+  nothing typed or stored. A period (`#crmSalesPeriod`, This month to Last
+  12 months, Last month ending where this one begins) sets every figure; the
+  search, the filters, the count and Add lead step away. Top down:
+  - the headline (`.tally.sl-heads`, white cells): New leads, Won (a lead's
+    first move to Active, or a client keyed in Active), Churned (to Past
+    after Active), Active clients at the period's end, each with its change
+    on the period before (`prevRange`: the same days of last month for this
+    month so far; "the year before" for twelve months) and opening its
+    clients; an admin's Committed monthly value (confirmed lines, a month
+    each, by market, never added across currencies) opens nothing;
+  - at a desk on the record's 1.618 : 1, the period's leads step by step
+    (bars: New leads, Contacted, Proposal sent, Became clients, each with
+    its share of the step before) beside Needs attention (`.ovw-card` rows:
+    leads over `STALE_H` and paused clients with their reason, longest
+    waiting first, each opening the record); on a phone Needs attention
+    first;
+  - active clients by month (a line) beside leads, won and churned by month
+    (columns);
+  - two across: Pipeline now, Other moves (Lost leads, Paused, Resumed,
+    Win-backs, lead to won as a median, conversion, churn rate), New leads
+    by source, Why clients paused or left, By person in charge (counts
+    only), and an admin's Monthly value moved (won, lost to churn).
+  Every count opens its clients (`#salesPop`, a `.popcard`), each opening
+  the record, whose Back returns to Sales. A refused read of the lines is
+  said under Committed monthly value.
 - `STALE_H`:
   - Lead 48 hours;
   - Proposal sent 21 days (calendar days);
