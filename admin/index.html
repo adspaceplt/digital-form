@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261005h">
+<link rel="stylesheet" href="/css/portal.css?v=20261005i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2661,6 +2661,10 @@
                     <option value="5">Week 5</option>
                   </select>
                   </div>
+                  <div class="field piece-due">
+                    <label class="field-label" for="ntDue">Due date</label>
+                    <input class="input" id="ntDue" type="date">
+                  </div>
                   <button class="iconbtn piece-x" type="button" aria-label="Remove piece 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                   </button>
@@ -2671,20 +2675,15 @@
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
             </section>
-            <!-- A lone piece's own dates: publish is tentative until the
-                 content meeting, the first draft is the team's own, the final
-                 date is the promise. Several pieces take a day inside their
-                 week from the database instead, and set their dates later. -->
+            <!-- Every piece's due date is on its own line, typed by whoever
+                 plans it (the user, 2026-10-05: nothing worked out). A lone
+                 piece may also name its first draft and its publish date. -->
             <section class="fsec" id="ntDates">
               <h4 class="fsec-h">Schedule</h4>
-              <div class="row fgrid-3">
+              <div class="row fgrid">
                 <div class="field">
                   <label class="field-label" for="ntDraft">First draft</label>
                   <input class="input" id="ntDraft" type="date">
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntFinal">Final due</label>
-                  <input class="input" id="ntFinal" type="date">
                 </div>
                 <div class="field">
                   <label class="field-label" for="ntPublish">Scheduled publish</label>
@@ -4756,7 +4755,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
-<script src="/js/ops.js?v=20261005d"></script>
+<script src="/js/ops.js?v=20261005e"></script>
 <script src="/js/perf.js?v=20261005e"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261005b"></script>

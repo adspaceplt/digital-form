@@ -404,7 +404,7 @@
      goes out, and once it is live, the day its performance is reviewed —
      three days on. A post live since Monday is not "overdue" because its
      client review date has passed; it is due for review on Thursday. */
-  var REVIEW_AFTER_DAYS = 3;
+  var REVIEW_AFTER_DAYS = 7;
   function dueOf(t) {
     var s = stageOf(t), g = s ? s.stage_group : '';
     if (!isFinished(t) && (g === 'approved' || g === 'scheduled') && t.publish_at) return t.publish_at;
@@ -1941,37 +1941,31 @@
   }
 
   // ---- Capacity ------------------------------------------------------------
-  /* The week's recorded hours against each person's capacity. A planning
-     figure beside the record of what was pressed: nothing here measures
-     attention, and a week with no sessions is a week nobody pressed Start.
-     Own week alone without `ops.all`; the team's with it. */
+  /* Each person's planned load this week against their weekly capacity: the
+     estimate of every open task they own that is due by the week's end,
+     overdue work included. Nobody logs hours (the user, 2026-10-05: the bars
+     sat empty beside open tasks), and every task carries its format's
+     estimate. Own week alone without `ops.all`; the team's with it. */
   function weekStart() {
     var d = todayStart();
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
     return d;
   }
-  function loadCapacity() {
-    db.from('ops_work_sessions').select('team_member_id, minutes, started_at, ended_at')
-      .gte('started_at', weekStart().toISOString())
-      .then(function (r) {
-        state.week = (r && r.data) || [];
-        paintCapacity();
-      }, function () { state.week = []; paintCapacity(); });
-  }
+  function loadCapacity() { paintCapacity(); }
   function paintCapacity() {
     var box = $('workCap');
     if (!box || state.view !== 'board') return;
     var me = bridge.me && bridge.me();
     var team = may('ops.all', 'view');
-    var mins = {};
-    state.week.forEach(function (s) {
-      var n = Number(s.minutes) || (s.started_at && !s.ended_at ? Math.max(0, (Date.now() - new Date(s.started_at)) / 60000) : 0);
-      mins[s.team_member_id] = (mins[s.team_member_id] || 0) + n;
-    });
-    var open = {};
+    var end = weekStart(); end.setDate(end.getDate() + 7);
+    var mins = {}, open = {};
     (state.tasks || []).forEach(function (t) {
-      if (isFinished(t) || !state.ownerIds[t.id]) return;
-      open[state.ownerIds[t.id]] = (open[state.ownerIds[t.id]] || 0) + 1;
+      var who = state.ownerIds[t.id];
+      if (isFinished(t) || !who) return;
+      open[who] = (open[who] || 0) + 1;
+      if (t.current_final_due_at && new Date(t.current_final_due_at) < end) {
+        mins[who] = (mins[who] || 0) + (Number(t.estimate_minutes) || 0);
+      }
     });
     var people = state.members.filter(function (m) {
       if (!team) return me && m.id === me.id;
@@ -1984,7 +1978,7 @@
       var pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
       return '<div class="caprow' + (cap && used > cap ? ' is-over' : '') + '">' +
         '<span class="caprow-name">' + esc(m.name) + '</span>' +
-        '<span class="caprow-fig">' + hours(used) + (cap ? ' of ' + hours(cap) : ' · no capacity set') +
+        '<span class="caprow-fig">' + hours(used) + (cap ? ' planned of ' + hours(cap) : ' planned · no capacity set') +
           (open[m.id] ? ' · ' + open[m.id] + ' open' : '') + '</span>' +
         '<span class="capbar"><i style="width:' + pct + '%"></i></span></div>';
     }).join('') + '</div>';
@@ -2452,7 +2446,10 @@
       askWhy(t, el, next, how, after);
       return;
     }
-    if (needsSay(t, next)) { openStep(t, next, { el: el, after: after }); return; }
+    /* A move that gives the work to a colleague asks who, wherever it is
+       made: the list, a board card and the task's own button give the same
+       result (the user, 2026-10-05). */
+    if (needsSay(t, next) || handsToColleague(next, t)) { openStep(t, next, { el: el, after: after }); return; }
     moveTo(t, el, next, null, after);
   }
   /* WHY, ASKED WHERE THE PICK WAS MADE: one line under the row, the card or
@@ -3375,7 +3372,10 @@
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
     }).join('');
-    $('stepHandTo').value = o.assignee || (perf ? t.created_by || '' : '');
+    /* The same default as the task's own step: a review goes to whoever
+       created the task, where that is somebody else. */
+    var def = o.assignee || (perf ? t.created_by : (handsToColleague(key, t) && t.created_by !== cur ? t.created_by : '')) || '';
+    $('stepHandTo').value = def && $('stepHandTo').querySelector('option[value="' + def + '"]') ? def : '';
     $('stepHand').hidden = !may('ops', 'work');
     var go = $('stepGo');
     go.textContent = verb;
@@ -5632,7 +5632,7 @@
     $('ntBrief').value = '';
     $('ntPublish').value = '';
     $('ntDraft').value = '';
-    $('ntFinal').value = '';
+    $('ntDue').value = '';
     $('ntScope').value = 'client';
     $('ntType').value = 'engagement';
     $('ntFormat').value = '';
@@ -5802,9 +5802,9 @@
   /* A line a piece (2026-09-28, Bulk add folded in): the first is the form's
      own description, format and week; Add piece draws the next under it, the
      format carried and the week the one after, so eight presses spread two a
-     week. With more than one piece the lone piece's dates and brief leave
-     (the database gives each a day inside its week) and Create names the
-     count. */
+     week. Every line carries its own due date, typed and never worked out;
+     with more than one piece the lone piece's draft and publish dates and its
+     brief leave, and Create names the count. */
   var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   /* An add carries its plus wherever it is drawn (the bar's New task, a
      month's Add task). */
@@ -5816,13 +5816,15 @@
     return {
       desc: row.querySelector('.piece-desc input').value,
       fmt: row.querySelector('.piece-fmt select').value,
-      week: row.querySelector('.piece-week select').value
+      week: row.querySelector('.piece-week select').value,
+      due: row.querySelector('.piece-due input').value
     };
   }
   function ntRowSet(row, v) {
     row.querySelector('.piece-desc input').value = v.desc || '';
     row.querySelector('.piece-fmt select').value = v.fmt || '';
     row.querySelector('.piece-week select').value = v.week || '1';
+    row.querySelector('.piece-due input').value = v.due || '';
   }
   function ntAddPiece() {
     var rows = ntRows();
@@ -5834,6 +5836,7 @@
       '<div class="field piece-desc"><input class="input" placeholder="Content Post" autocomplete="off"></div>' +
       '<div class="field piece-fmt"><select class="select">' + $('ntFormat').innerHTML + '</select></div>' +
       '<div class="field piece-week"><select class="select">' + $('ntWeek').innerHTML + '</select></div>' +
+      '<div class="field piece-due"><input class="input" type="date"></div>' +
       '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
@@ -5862,6 +5865,7 @@
       r.querySelector('.piece-desc input').setAttribute('aria-label', 'Content description, piece ' + k);
       r.querySelector('.piece-fmt select').setAttribute('aria-label', 'Deliverable format, piece ' + k);
       r.querySelector('.piece-week select').setAttribute('aria-label', 'Week, piece ' + k);
+      r.querySelector('.piece-due input').setAttribute('aria-label', 'Due date, piece ' + k);
     });
     $('ntDates').hidden = n > 1;
     $('ntBriefRow').hidden = n > 1;
@@ -5889,7 +5893,10 @@
     var rows = ntRows();
     var pieces = rows.map(function (row) {
       var v = ntRowVals(row);
-      var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null };
+      /* Each piece's due date is the one typed on its line, and a line left
+         blank stays without one (the user, 2026-10-05). */
+      var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null,
+                final_due_at: v.due ? v.due + 'T00:00:00Z' : null };
       if (scope !== 'internal') p.code_week = Number(v.week) || 1;
       return p;
     });
@@ -5907,7 +5914,14 @@
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
     var one = pieces.length === 1;
-    var draft = one ? $('ntDraft').value : '', fin = one ? $('ntFinal').value : '';
+    /* A due date already passed is a slip of the finger, caught on its line. */
+    var todayMyt = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var past = rows.map(function (r) { return ntRowVals(r).due; }).map(function (d, i) { return d && d < todayMyt ? i : -1; })
+      .filter(function (i) { return i > -1; })[0];
+    if (past != null) {
+      msg('ntMsg', 'That due date has already passed.', 'err'); rows[past].querySelector('.piece-due input').focus(); return;
+    }
+    var draft = one ? $('ntDraft').value : '', fin = one ? ntRowVals(rows[0]).due : '';
     if (draft && fin && draft >= fin) {
       msg('ntMsg', said('draft-not-before-final'), 'err'); $('ntDraft').focus(); return;
     }
@@ -5927,7 +5941,6 @@
     if (one) {
       pieces[0].publish_at = $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null;
       pieces[0].first_draft_due_at = draft ? draft + 'T00:00:00Z' : null;
-      pieces[0].final_due_at = fin ? fin + 'T00:00:00Z' : null;
     }
     var payload = {
       scope: scope,

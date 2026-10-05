@@ -1559,6 +1559,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Going back, skipping ahead, Cancelled and leaving a finished content task
     ask Why? under the control (`askWhy`, `ADspaceAsk.note` once); the reason
     rides the move (`p_note`, or `p_skip_reason` for a skip).
+  - A move into AQC review asks who takes it (`openStep`, the creator first
+    where that is somebody else) from the row, a board card and the task's
+    own button alike; the same move never gives two results.
   - The outcome or refusal is named under the row (`.task-note`).
   - The stage track is 160px. A narrow row ends with the stage at a stated
     width; `is-tight` gives it its own line.
@@ -1582,8 +1585,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; in a gap the nearest column does. A card held at the board's edge
     scrolls it. A card never starts the browser's own drag, and a press on
     it selects no text (a stray selection cancelled the next drag).
-  - The capacity strip counts this week's sessions against
-    `capacity_minutes_week`.
+  - The capacity strip fills each person's bar from the `estimate_minutes`
+    of their open tasks due by the week's end, overdue included, against
+    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
 - The calendar shows every task on its due date (the stage tone) and its
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
   its publish date shows once. On a phone it lists only the days holding
@@ -1741,7 +1745,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The SOP workflow, numbered in this order: Ready to start, In progress, AQC
   review, Revision (Internal), Client review, Revision (Client), Approved,
   Scheduled, Live (`ops_mark_live`; a reason where the date differs),
-  Performance review (+3 days, back to the creator), Completed, then On hold,
+  Performance review (+7 days, back to the creator), Completed, then On hold,
   Blocked, Cancelled, Taken down; rated 1–5 (`ops_rate_task`). Planning,
   Content meeting scheduled, Changes requested and Published are retired
   (`ops_workflow_stages.retired`): the month holds planning and the meeting.
@@ -1869,10 +1873,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_create_pieces(p_payload, p_idem)` makes them through
     `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
     twice the same act.
-  - One piece keeps its own dates and brief. With several, Schedule and the
-    brief leave, the button reads Create N tasks, and each piece takes a
-    tentative publish day inside its week, the week's pieces spread across
-    its seven days (a lone piece with a repeat too).
+  - Every piece's line carries its own due date, typed by whoever plans it
+    and never worked out (`2026-10-05-piece-dates-as-typed.sql`,
+    `dates_as_given`: no template offsets, no tentative day); a blank line
+    reads Not set, and a date already passed is refused on its line. One
+    piece also keeps its first draft, publish date and brief. With several,
+    those leave and the button reads Create N tasks. Only a repeat takes a
+    tentative publish day inside its week, to count from.
   - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
     the same rule on every piece, and what already falls due made at once.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
