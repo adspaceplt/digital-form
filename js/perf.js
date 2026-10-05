@@ -1752,7 +1752,7 @@
   };
   /* Every figure a reason names is the one the rules used (`rules` on the
      quarter, the period and each deal; 2026-10-05), never one typed here. */
-  var WHY = { 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
+  var WHY = { 'no-month': 'No month released', 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
     'critical-breach': 'Level 4 breach', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
     'few-b-months': 'Under {months_b} months at B' };
   var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
@@ -2035,8 +2035,11 @@
       line.textContent = 'Confirmed ' + timeWord(d.confirmed_at) + (d.confirmed_by ? ' by ' + d.confirmed_by : '') + '.';
       box.appendChild(line);
     }
+    /* The quarter is ranked live from the months released (2026-10-05):
+       until every month is final, whoever is ahead reads Leading. */
+    var live = !d.confirmed && d.provisional;
     var won = ind.winners
-      ? (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
+      ? (live ? 'Leading · ' : '') + (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
         (Number(ind.remainder) > 0 ? ' · ' + rm(ind.remainder) + ' left' : '')
       : 'No payout · ' + ruled(NOPAY[ind.reason], d.rules);
     /* What still stands between the quarter and its confirmation: months
@@ -2058,18 +2061,21 @@
           if (p.own) return youRow('rwq-row', p, 4, 1);
           var elig = p.eligible ? 'Eligible' : ruled(WHY[(p.reasons || [])[0]], d.rules) || 'Not eligible';
           var months = Number(p.months || 0), open = Number(p.open || 0);
+          var finals = p.finals == null ? months : Number(p.finals);
           /* The months sit under the average they make, and only when the
              quarter is not whole for them; the name keeps its department. */
           var sub = DEPT_WORD[p.department] || '';
-          var short = p.average != null && months < 3 ? months + ' of 3' : '';
+          var short = p.average != null ? [months < 3 ? months + ' of 3' : '', finals < months ? (finals ? finals + ' final' : 'Not final') : '']
+            .filter(Boolean).join(' · ') : '';
           return row('rwq-row', [
             cell(p.rank == null ? dash() : esc(String(p.rank))),
             whoCell(p, sub),
             cell(p.average == null ? dash() : esc(num(p.average)) + (short ? '<small class="rw-why">' + esc(short) + '</small>' : '')),
             cell(gradeCell(p.grade)),
             cell(esc(elig)),
-            cell(money0(p.prize), true)
-          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average) + (short ? ' over ' + months + ' of 3 months' : ''),
+            cell(money0(p.prize) + (live && Number(p.prize) > 0 ? '<small class="rw-why">Leading</small>' : ''), true)
+          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average) + (months < 3 ? ' over ' + months + ' of 3 months' : '') +
+              (finals < months ? ', ' + (finals ? finals + ' final' : 'not final') : ''),
               open ? open + ' not final' : '', p.grade ? gradeWord(p.grade) : '', elig]);
         });
         return t;

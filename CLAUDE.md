@@ -1974,8 +1974,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
   Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
   the period's first quarter).
-  - Worked out on every read from finalised months only (`perf_quarter_calc`,
-    `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
+  - Worked out on every read (`perf_quarter_calc`, `perf_flex_calc`,
+    `perf_period_calc`, `perf_commission_json`) from finalised months, but
+    the quarter's ranking, which reads every month released to its member
+    (any state but draft; `2026-10-05-performance-quarter-live.sql`), so
+    management sees the order as it stands: `provisional` while the quarter
+    runs or a month is not final or not entered, each row's `finals` said
+    under its average (`2 of 3 · Not final`), and whoever is ahead reads
+    Leading (the user, 2026-10-05). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. Quarters begin with Q3 2026.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
