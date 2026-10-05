@@ -328,7 +328,8 @@
 
   var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {},
+                view: 'list', salesPeriod: 'month' };
 
   // ---- List ---------------------------------------------------------------
   /* The people on a record come from the team list, not from typing: a name
@@ -3780,6 +3781,12 @@
   window.ADspaceCRM = {
     urlState: function () {
       var o = { client: keyOf(state.client) };
+      /* The Sales view rides in the address on the list alone, with its
+         period where it is not This month. */
+      if (!o.client && state.view === 'sales') {
+        o.view = 'sales';
+        if (state.salesPeriod !== 'month') o.sp = state.salesPeriod;
+      }
       /* Overview is the default, so it stays out of the address: a link to a
          client is the client, not the client on its first pane. */
       if (o.client && pane && pane !== 'overview') o.tab = pane;
@@ -3795,6 +3802,9 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');
+      state.view = params.get('view') === 'sales' ? 'sales' : 'list';
+      var sp = params.get('sp');
+      state.salesPeriod = /^(month|last|3m|6m|12m)$/.test(sp || '') ? sp : 'month';
       loadTeam();
       if (key && !(state.client && (state.client.slug === key || state.client.id === key))) {
         clientByKey(key, function (c) {
@@ -3829,9 +3839,57 @@
   function showList() {
     $('crmWork').hidden = true;
     $('crmListView').hidden = false;
+    applyView();
     setUrl();
-    loadClients(function () { loadDue(); restoreScroll(); });
+    loadClients(function () { loadDue(); if (state.view !== 'sales') restoreScroll(); });
   }
+
+  /* LIST AND SALES (2026-10-05). The same clients, read as the list or as
+     the figures their stage history makes; Sales is for admins and Clients
+     Full Access (`ADspaceSales.allowed()`), and the address keeps it. The
+     list's own search, filters, count and Add lead step away while the
+     figures are on screen, and the period takes their place. */
+  function applyView() {
+    var S = window.ADspaceSales;
+    var ok = Boolean(S && S.allowed());
+    if (!ok) state.view = 'list';
+    var sales = state.view === 'sales';
+    $('crmViews').hidden = !ok;
+    Array.prototype.forEach.call($('crmViews').querySelectorAll('[data-cview]'), function (b) {
+      var on = b.getAttribute('data-cview') === state.view;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    $('crmListView').classList.toggle('is-sales', sales);
+    $('crmStage').hidden = sales;
+    $('crmOwner').hidden = sales;
+    $('crmSalesPeriod').hidden = !sales;
+    $('crmSalesPeriod').value = state.salesPeriod;
+    $('crmSales').hidden = !sales;
+    if (sales) {
+      S.show($('crmSales'), state.salesPeriod, function (c) {
+        var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+        if (mine) { openClient(mine); return; }
+        clientByKey(c.id, function (row) { if (row) openClient(row); });
+      });
+    }
+  }
+  Array.prototype.forEach.call($('crmViews').querySelectorAll('[data-cview]'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-cview');
+      if (v === state.view) return;
+      state.view = v;
+      applyView();
+      setUrl();
+    });
+  });
+  $('crmSalesPeriod').addEventListener('change', function () {
+    var v = this.value || 'month';
+    if (v === state.salesPeriod) return;
+    state.salesPeriod = v;
+    if (window.ADspaceSales) window.ADspaceSales.period(v);
+    setUrl();
+  });
 
   /* Every open next action, across every client, soonest first. Overdue ones
      lead. Each line opens its client, and Done clears it from here without

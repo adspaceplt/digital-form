@@ -123,7 +123,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales |
+| `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
@@ -802,6 +803,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   row carries it. `clients_stage_notice` tells each owner of the client's
   open work once (`client_left`, "{client} moved to Paused · 3 open tasks to
   deliver", opening My Work).
+- Sales (`js/sales.js`, `view=sales&sp=`): the list's second view, List /
+  Sales in the bar (`#crmViews`), for an admin or Clients Full Access
+  (`ADspaceSales.allowed()`); anyone else's address falls back to the list.
+  Read from each client's `stage_log`, `source` and `owner`; nothing typed or
+  stored. A period (`#crmSalesPeriod`, This month to Last 12 months, Last
+  month ending where this one begins) sets every figure; the search, the
+  filters, the count and Add lead step away. Pipeline now; This period (New
+  leads; Won, a lead's first move to Active or a client keyed in Active, with
+  conversion over won and lost; Lost leads, to Past never Active; days from
+  lead to won, the median; Paused, at risk; Resumed, Paused to Active;
+  Churned, to Past after Active, with the rate over the clients active at the
+  start; Win-backs, Past to Active; Active clients with the net change);
+  active clients by month (a line) and new leads, won and churned by month
+  (columns); new leads by source; why clients paused or left (the move's
+  reason); by person in charge, counts only. Every figure opens its clients
+  (`#salesPop`, a `.popcard`), each opening the record, whose Back returns to
+  Sales. Committed monthly value (confirmed lines, a month each, by market,
+  never added across currencies) is an admin's alone and read only for one;
+  a refused read of the lines is said under its heading.
 - `STALE_H`:
   - Lead 48 hours;
   - Proposal sent 21 days (calendar days);
