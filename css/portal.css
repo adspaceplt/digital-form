@@ -9888,9 +9888,33 @@ body.is-maint { overflow: hidden; }
 #crmListView.is-sales #crmListMsg,
 #crmListView.is-sales #crmDue,
 #crmListView.is-sales #crmList { display: none; }
-#crmSales .ovsec-title { margin-bottom: 12px; }
-#crmSales .crm-table + .ovsec-title, #crmSales .repempty + .ovsec-title,
-#crmSales .chartcard + .ovsec-title { margin-top: 32px; }
+/* The view reads top down: the period, the headline figures, the period's
+   leads beside who needs a call (the record's 1.618 : 1), the months side by
+   side, then the breakdowns two across; one column on a narrow pane. Every
+   block one step (12) from the next. */
+#crmSales { display: grid; gap: 12px; }
+#crmSales > .routenote.repwin { margin: 0; }
+/* Four figures across, two on a narrow pane; an admin's value takes its own
+   full row under them at every width, so no cell is left alone on a row. */
+.sl-heads { margin-top: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-narrow .sl-heads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sl-heads > .is-total { grid-column: 1 / -1; }
+/* A headline cell stands on the page as a card does (white on the ground);
+   one that opens its clients steps to the inset shade on hover. */
+.sl-head { background: var(--card); padding: 12px 16px; text-align: left; font: inherit; color: inherit; cursor: default; }
+button.sl-head { cursor: pointer; border: 0; transition: background-color var(--t-fast); }
+@media (hover: hover) { button.sl-head:hover { background: var(--sunk); } }
+button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+.sl-head b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sl-head small { font-size: 12px; color: var(--ink-soft); }
+.sl-split { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
+.is-narrow .sl-split { grid-template-columns: minmax(0, 1fr); }
+/* On a phone who needs a call comes before the step-by-step. */
+.is-narrow .sl-attention { order: -1; }
+.sl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.is-narrow .sl-grid { grid-template-columns: minmax(0, 1fr); }
+.sl-cell { min-width: 0; }
+.sl-cell > .ovsec-title { margin: 0 0 12px; }
 /* The figure keeps the control's floor (38, 44 under a finger) as its
    target, the number at the column's edge in the figure column and centred
    on its own place in the middle one, so the line reads as plain figures. */
