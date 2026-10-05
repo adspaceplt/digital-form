@@ -2480,7 +2480,8 @@
     var parts = at ? [clockOf(at), lengthWord(tc.meet_minutes)] : [];
     var acts = '';
     if (!removed && ahead && tc.meet_link) {
-      acts += '<a class="plink" href="' + esc(tc.meet_link) + '" target="_blank" rel="noopener">Join</a>';
+      acts += '<a class="plink" href="' + esc(tc.meet_link) + '" target="_blank" rel="noopener">' +
+        '<span class="plink-text">' + esc(tc.meet_link.replace(/^https:\/\//, '')) + '</span></a>';
     }
     if (!removed && ahead && !tc.meet_link) {
       acts += '<button class="btn btn-sm" data-a="meet" data-need="clients.calls:work" type="button">Create Google Meet</button>';

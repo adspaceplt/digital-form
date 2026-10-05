@@ -979,7 +979,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   offers Create Google Meet (`meet-create` with `touchId`, Clients: Calls
   Work), a moved time moves the event and an entry no longer a meeting
   takes it off; the client's Meetings lists it as Meeting (time, length,
-  link while ahead), never its summary.
+  link while ahead), never its summary. The link is the `.plink` address.
 - Requests (Request · Fee · State · ⋯):
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
