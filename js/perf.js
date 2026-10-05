@@ -1712,7 +1712,7 @@
     heading('4 · If this result repeats');
     var path = res.path && PATH[res.path];
     if (path) { need(14); p.text(path[0], M, y, 10, f.bold); y -= 14; para(path[1], 9.5); }
-    else para('No development or accountability path applies this month.', 9.5, f.font, p.mute);
+    else para('No development or recovery path applies this month.', 9.5, f.font, p.mute);
     para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', 8.5, f.font, p.mute);
 
     heading('5 · Required improvement and follow-up');
@@ -1720,9 +1720,9 @@
     var stop = function (x) { x = String(x || '').trim(); return /[.!?]$/.test(x) ? x : x + '.'; };
     para('Follow-up date: ' + stop(r.review_by ? dateWord(r.review_by) : none) + '  Step or reward to apply: ' + stop(r.reward_step || none), 9.5);
 
-    heading('6 · Dispute');
+    heading('6 · Queries');
     var ds = r.disputes || [];
-    if (!ds.length) para(r.dispute_until ? 'No dispute was raised by ' + timeWord(r.dispute_until) + '.' : 'No dispute raised.', 9.5, f.font, p.mute);
+    if (!ds.length) para(r.dispute_until ? 'No query was raised by ' + timeWord(r.dispute_until) + '.' : 'No query raised.', 9.5, f.font, p.mute);
     ds.forEach(function (d) {
       need(44);
       p.text(itemWord(d), M, y, 9.5, f.bold);
@@ -1731,7 +1731,7 @@
       para('Raised: ' + d.reason, 9);
       if (d.decision) {
         var change = d.decision === 'not_upheld' ? '' : d.item === 'breach'
-          ? (d.decision === 'upheld' ? ' Breach removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
+          ? (d.decision === 'upheld' ? ' Issue removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
           : ' Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
         para('Answer (' + (d.decided_by || '') + ', ' + dateWord(d.decided_at) + '): ' + d.response + change, 9);
       }
