@@ -3866,6 +3866,9 @@
     $('crmSalesPeriod').hidden = !sales;
     $('crmSalesPeriod').value = state.salesPeriod;
     $('crmSales').hidden = !sales;
+    /* The bar's Filters mark follows the selects it holds: with the stage and
+       person filters away, Sales has none at a desk. */
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
     if (sales) {
       S.show($('crmSales'), state.salesPeriod, function (c) {
         var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];

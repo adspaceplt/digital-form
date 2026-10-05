@@ -9894,7 +9894,11 @@ body.is-maint { overflow: hidden; }
    block one step (12) from the next. */
 #crmSales { display: grid; gap: 12px; }
 #crmSales > .routenote.repwin { margin: 0; }
-.sl-heads { margin-top: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+/* Four figures across, two on a narrow pane; an admin's value takes its own
+   full row under them at every width, so no cell is left alone on a row. */
+.sl-heads { margin-top: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-narrow .sl-heads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sl-heads > .is-total { grid-column: 1 / -1; }
 /* A headline cell stands on the page as a card does (white on the ground);
    one that opens its clients steps to the inset shade on hover. */
 .sl-head { background: var(--card); padding: 12px 16px; text-align: left; font: inherit; color: inherit; cursor: default; }
