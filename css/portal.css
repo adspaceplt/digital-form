@@ -4231,6 +4231,8 @@ body > .shell { width: 100%; }
    later in the file sets 124px and a one-class rule here lost to it: the
    track widened and the select inside it did not. */
 .task-stage .state-select, .task-stage .select-sm.state-select { width: 100%; }
+/* Take (Open to take) stands where the stage would, at the stage's width. */
+.task-stage > .task-take { width: 100%; min-width: 0; }
 /* The refusal a stage move met, under the row it was made on. */
 .task-note { margin: 0; padding: 0 15px 10px; }
 .task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4831,6 +4833,8 @@ body > .shell { width: 100%; }
 /* Under a finger the stage is 13.5px, and `Performance review` needs 176px
    with its chevron at that size. */
 @media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 180px; } }
+.is-narrow .trow-meta .task-take { width: 160px; max-width: 100%; }
+@media (pointer: coarse) { .is-narrow .trow-meta .task-take { width: 180px; } }
 .is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
 .is-narrow .task-row > .team-act { grid-area: act; align-self: start; }

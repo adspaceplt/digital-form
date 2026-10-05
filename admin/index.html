@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261004q">
+<link rel="stylesheet" href="/css/portal.css?v=20261004r">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2224,6 +2224,9 @@
                 <!-- The rare acts, Delete last. Every stage move, going back
                      and cancelling included, is the stage select. -->
                 <div class="kmenu" id="taskMenu" hidden role="menu">
+                  <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
+                  <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
+                  <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
                   <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
                   <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
                   <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
@@ -3003,6 +3006,9 @@
                        stage move is the stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
                     <button class="kmenu-item" data-a="full" type="button" role="menuitem">Open full record</button>
+                    <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
+                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
+                    <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
                     <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
                     <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
                     <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
@@ -4704,7 +4710,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
-<script src="/js/ops.js?v=20261004m"></script>
+<script src="/js/ops.js?v=20261004n"></script>
 <script src="/js/perf.js?v=20261004e"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261003l"></script>
