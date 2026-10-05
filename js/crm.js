@@ -154,6 +154,15 @@
   var STAGES = [['lead', 'leads'], ['contacted', 'leads'], ['proposal', 'leads'],
                 ['active', 'clients'], ['paused', 'clients'], ['past', 'past']]
     .map(function (g) { return [g[0], W.en.stage[g[0]], W.tone(g[0]), g[1]]; });
+  /* Why a client was paused or ended (the user, 2026-10-04: required, so
+     the Sales view says why clients leave as well as how many). Stored
+     keys; the words are these. */
+  var LEAVE = [['budget', 'Budget'], ['results', 'Results'], ['in_house', 'Moved in-house'],
+               ['closed', 'Business closed'], ['no_reply', 'No reply'], ['other', 'Other']];
+  function leaveWord(k) {
+    for (var i = 0; i < LEAVE.length; i++) if (LEAVE[i][0] === k) return LEAVE[i][1];
+    return '';
+  }
   /* Three bands, in the order somebody works them.
      **Leads first**, because speed to first contact is the number that moves
      conversion and a lead under a hundred and eighty clients is a lead nobody
@@ -266,6 +275,7 @@
         stage: log[i].stage,
         word: stageWord(log[i].stage)[1],
         at: log[i].at,
+        reason: log[i].reason || '',
         days: Math.max(0, Math.floor((next - at) / 86400000)),
         now: last
       });
@@ -318,7 +328,8 @@
 
   var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {},
+                view: 'list', salesPeriod: 'month' };
 
   // ---- List ---------------------------------------------------------------
   /* The people on a record come from the team list, not from typing: a name
@@ -1416,7 +1427,8 @@
       var over = s.now && isStale(c);
       return '<div class="tl-row tl-stage' + (s.now ? ' is-now' : '') + '">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(s.word) + '</span>' +
-          '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span></span>' +
+          '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span>' +
+          (s.reason && leaveWord(s.reason) ? '<span class="tl-when tl-why">' + esc(leaveWord(s.reason)) + '</span>' : '') + '</span>' +
         '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
           esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
           (pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
@@ -1453,7 +1465,13 @@
   function logOf(c) {
     var log = (c.stage_log || []).slice();
     if (!log.length && c.stage_since) log = [{ stage: c.stage || 'lead', at: c.stage_since }];
-    return log.map(function (x) { return { stage: x.stage, at: x.at }; });
+    /* A move's reason and note ride with it through a date's correction. */
+    return log.map(function (x) {
+      var o = { stage: x.stage, at: x.at };
+      if (x.reason) o.reason = x.reason;
+      if (x.note) o.note = x.note;
+      return o;
+    });
   }
   function dayOf(at) { return at ? String(new Date(at).toISOString()).slice(0, 10) : ''; }
 
@@ -1750,8 +1768,41 @@
         return;
       }
     }
-    db.from('clients').update({ stage: to }).eq('id', c.id).select('id').then(function (r) {
-      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); openClient(c); return; }
+    /* Paused and Past say why, and say what work is still open for the
+       client: it shows as urgent delivery in My Work from the move on. The
+       select holds the stage it had until the answer comes. */
+    if (to === 'paused' || to === 'past') {
+      this.value = was;
+      askLeave(c, to, function (why) { moveStage(c, to, why); });
+      return;
+    }
+    moveStage(c, to, null);
+  });
+  function askLeave(c, to, then) {
+    var word = stageWord(to)[1];
+    var ask = function (n) {
+      window.ADspaceConfirm.ask({
+        title: 'Move to ' + word + '?',
+        body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It shows' : 'They show') + ' as urgent delivery in My Work.' : '',
+        go: 'Move',
+        fields: [
+          { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(LEAVE), need: 'Choose a reason.' },
+          { name: 'note', label: 'Note', required: false, placeholder: 'Optional' }
+        ]
+      }, function (v) { then({ reason: v.reason, note: v.note || null }); });
+    };
+    db.rpc('client_open_tasks', { p_client: c.id }).then(function (r) {
+      ask(r && !r.error && typeof r.data === 'number' ? r.data : 0);
+    }).catch(function () { ask(0); });
+  }
+  function moveStage(c, to, why) {
+    var row = { stage: to };
+    if (why) { row.stage_reason = why.reason; row.stage_note = why.note; }
+    db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) {
+        msg('crmWorkMsg', /stage-reason/.test(r.error.message || '') ? 'Choose a reason to move to ' + stageWord(to)[1] + '.' : r.error.message, 'err');
+        openClient(c); return;
+      }
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
@@ -1759,12 +1810,13 @@
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
-      log('client.stage', c.name, stageWord(to)[1] + ' after ' + spent);
+      log('client.stage', c.name, stageWord(to)[1] + ' after ' + spent +
+        (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
       refreshClient(c, function () { openClient(c); });
-    });
-  });
+    }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); openClient(c); });
+  }
 
   // ---- Billing and notes --------------------------------------------------
   /* The gate, stated once, with what is missing; the fold's ring; the
@@ -3729,6 +3781,12 @@
   window.ADspaceCRM = {
     urlState: function () {
       var o = { client: keyOf(state.client) };
+      /* The Sales view rides in the address on the list alone, with its
+         period where it is not This month. */
+      if (!o.client && state.view === 'sales') {
+        o.view = 'sales';
+        if (state.salesPeriod !== 'month') o.sp = state.salesPeriod;
+      }
       /* Overview is the default, so it stays out of the address: a link to a
          client is the client, not the client on its first pane. */
       if (o.client && pane && pane !== 'overview') o.tab = pane;
@@ -3744,6 +3802,9 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');
+      state.view = params.get('view') === 'sales' ? 'sales' : 'list';
+      var sp = params.get('sp');
+      state.salesPeriod = /^(month|last|3m|6m|12m)$/.test(sp || '') ? sp : 'month';
       loadTeam();
       if (key && !(state.client && (state.client.slug === key || state.client.id === key))) {
         clientByKey(key, function (c) {
@@ -3778,9 +3839,57 @@
   function showList() {
     $('crmWork').hidden = true;
     $('crmListView').hidden = false;
+    applyView();
     setUrl();
-    loadClients(function () { loadDue(); restoreScroll(); });
+    loadClients(function () { loadDue(); if (state.view !== 'sales') restoreScroll(); });
   }
+
+  /* LIST AND SALES (2026-10-05). The same clients, read as the list or as
+     the figures their stage history makes; Sales is for admins and Clients
+     Full Access (`ADspaceSales.allowed()`), and the address keeps it. The
+     list's own search, filters, count and Add lead step away while the
+     figures are on screen, and the period takes their place. */
+  function applyView() {
+    var S = window.ADspaceSales;
+    var ok = Boolean(S && S.allowed());
+    if (!ok) state.view = 'list';
+    var sales = state.view === 'sales';
+    $('crmViews').hidden = !ok;
+    Array.prototype.forEach.call($('crmViews').querySelectorAll('[data-cview]'), function (b) {
+      var on = b.getAttribute('data-cview') === state.view;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    $('crmListView').classList.toggle('is-sales', sales);
+    $('crmStage').hidden = sales;
+    $('crmOwner').hidden = sales;
+    $('crmSalesPeriod').hidden = !sales;
+    $('crmSalesPeriod').value = state.salesPeriod;
+    $('crmSales').hidden = !sales;
+    if (sales) {
+      S.show($('crmSales'), state.salesPeriod, function (c) {
+        var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+        if (mine) { openClient(mine); return; }
+        clientByKey(c.id, function (row) { if (row) openClient(row); });
+      });
+    }
+  }
+  Array.prototype.forEach.call($('crmViews').querySelectorAll('[data-cview]'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-cview');
+      if (v === state.view) return;
+      state.view = v;
+      applyView();
+      setUrl();
+    });
+  });
+  $('crmSalesPeriod').addEventListener('change', function () {
+    var v = this.value || 'month';
+    if (v === state.salesPeriod) return;
+    state.salesPeriod = v;
+    if (window.ADspaceSales) window.ADspaceSales.period(v);
+    setUrl();
+  });
 
   /* Every open next action, across every client, soonest first. Overdue ones
      lead. Each line opens its client, and Done clears it from here without

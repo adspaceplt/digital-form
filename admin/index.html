@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261004r">
+<link rel="stylesheet" href="/css/portal.css?v=20261005c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -477,7 +477,21 @@
              controls rather than repeating the word. Search, filters and the
              one action sit together: everything that changes what is on the
              list is in one place. -->
-        <div class="cmdbar">
+        <div class="cmdbar" id="crmBar">
+          <!-- List and Sales: the same clients, read as a list or as the
+               figures their stage history makes (2026-10-05); drawn only
+               where Sales is allowed. -->
+          <span class="cmdbar-views" id="crmViews" role="group" aria-label="View" hidden>
+            <button class="acttab btn-sm is-on" data-cview="list" type="button" aria-pressed="true">List</button>
+            <button class="acttab btn-sm" data-cview="sales" type="button" aria-pressed="false">Sales</button>
+          </span>
+          <select class="select select-sm" id="crmSalesPeriod" aria-label="Period" data-nofilter hidden>
+            <option value="month">This month</option>
+            <option value="last">Last month</option>
+            <option value="3m">Last 3 months</option>
+            <option value="6m">Last 6 months</option>
+            <option value="12m">Last 12 months</option>
+          </select>
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
             <input class="input input-sm" id="crmSearch" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
@@ -583,6 +597,7 @@
         </section>
 
         <div id="crmList"></div>
+        <div id="crmSales" hidden></div>
       </section>
 
       <!-- ---- One client ----
@@ -4705,14 +4720,15 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/smreport.js?v=20261003p"></script>
 <script src="/js/reports.js?v=20261004m"></script>
 <script src="/js/register.js?v=20261004a"></script>
-<script src="/js/crm.js?v=20261004b"></script>
+<script src="/js/crm.js?v=20261005a"></script>
+<script src="/js/sales.js?v=20261005b"></script>
 <script src="/js/team.js?v=20261004a"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
-<script src="/js/ops.js?v=20261004n"></script>
+<script src="/js/ops.js?v=20261005a"></script>
 <script src="/js/perf.js?v=20261004e"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261003l"></script>
+<script src="/js/overview.js?v=20261005a"></script>
 </body>
 </html>

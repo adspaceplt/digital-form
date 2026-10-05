@@ -9872,3 +9872,46 @@ body.is-maint { overflow: hidden; }
 .tab, .tab.is-on, .rectabs .tab, .rectabs .tab.is-on, .tabrow .tab, .tabrow .tab.is-on,
 .cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
 .seg-opt, .seg-opt.is-on, .navitem.is-on, .picker-opt.is-on { font-weight: 400; }
+
+/* =========================================================================
+   SALES (js/sales.js, ?s=clients&view=sales, 2026-10-05)
+   The Clients list's second view: the report's rows (`.rep-row`) and charts
+   under the period line, read as #workReport reads. The list's search,
+   filters, count and Add lead step away while it is on screen; the period
+   select takes their place. A figure is a quiet button opening the clients
+   behind it, its number on the column's right edge like a bare count.
+   ========================================================================= */
+#crmListView.is-sales .cmdbar-find,
+#crmListView.is-sales .cmdbar-search,
+#crmListView.is-sales .cmdbar-quiet,
+#crmListView.is-sales #crmNew,
+#crmListView.is-sales #crmListMsg,
+#crmListView.is-sales #crmDue,
+#crmListView.is-sales #crmList { display: none; }
+#crmSales .ovsec-title { margin-bottom: 12px; }
+#crmSales .crm-table + .ovsec-title, #crmSales .repempty + .ovsec-title,
+#crmSales .chartcard + .ovsec-title { margin-top: 32px; }
+/* The figure keeps the control's floor (38, 44 under a finger) as its
+   target, the number at the column's edge in the figure column and centred
+   on its own place in the middle one, so the line reads as plain figures. */
+.sl-row .rep-num .sl-drill, .sl-row .rep-mid .sl-drill {
+  min-width: var(--ctl-h); justify-content: flex-end; margin-right: -8px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.sl-row .rep-mid .sl-drill {
+  justify-content: center; font-size: 13px;
+  margin-inline: calc((1.2em - var(--ctl-h)) / 2);
+}
+/* The middle figure names itself at every width: its column holds a rate,
+   a change and a pair of counts, so one heading cannot. */
+.sl-row .rep-lab { display: inline; }
+/* Twelve months under a phone's chart: every other month named, the rest
+   still in the tip and the folded figures. */
+.is-narrow #crmSales .chartcard:has(.cc-col:nth-child(7)) .cc-col:nth-child(even) .cc-label { visibility: hidden; }
+.sl-n { font-variant-numeric: tabular-nums; }
+.kmenu.sl-pop { z-index: 93; width: min(320px, calc(100vw - 32px)); padding: 16px; gap: 8px; }
+.sl-pop:focus { outline: none; }
+.sl-pop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.sl-poplist { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; }
+.sl-poplist .kmenu-item { width: 100%; }
