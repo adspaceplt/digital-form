@@ -9907,5 +9907,4 @@ body.is-maint { overflow: hidden; }
 .sl-pop:focus { outline: none; }
 .sl-pop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .sl-poplist { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; }
-.sl-poplist .kmenu-item { width: 100%; justify-content: space-between; gap: 12px; }
-.sl-pop-stage { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+.sl-poplist .kmenu-item { width: 100%; }

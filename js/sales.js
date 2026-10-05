@@ -289,8 +289,8 @@
     pop.innerHTML = '<div class="popcard-head"><p class="sl-pop-title" id="salesPopTitle">' + esc(title) + '</p>' +
       '<button class="iconbtn popcard-x" type="button" data-a="x" aria-label="Close">' + CLOSE + '</button></div>' +
       '<ul class="sl-poplist">' + uniq.map(function (c) {
-        return '<li><button class="kmenu-item" type="button" data-id="' + esc(c.id) + '">' + esc(c.name) +
-          '<span class="sl-pop-stage">' + esc(stageWord(c.stage)) + '</span></button></li>';
+        return '<li><button class="kmenu-item" type="button" data-id="' + esc(c.id) + '"><b>' + esc(c.name) + '</b>' +
+          '<span>' + esc(stageWord(c.stage)) + '</span></button></li>';
       }).join('') + '</ul>';
     Array.prototype.forEach.call(pop.querySelectorAll('[data-id]'), function (b) {
       b.addEventListener('click', function () {
