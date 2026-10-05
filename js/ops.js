@@ -164,10 +164,10 @@
     /* The team's own milestone has to land before the commitment it feeds,
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
-    'draft-not-before-final': 'Draft due must be before the final due date.',
+    'draft-not-before-final': 'Draft due must be before the due date.',
     'bad-transition': 'Move not allowed from this stage.',
     'no-such-stage': 'Stage not in this workflow.',
-    'ready-needs-owner-and-due': 'Ready needs an owner and a final due date.',
+    'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
     'footage-not-ready': 'Footage not ready for editing.',
     'needs-draft': 'Add the draft link, or say how it was sent.',
     'needs-final-link': 'Delivered needs a final link.',
@@ -187,19 +187,19 @@
     'skip-reason-required': 'Skipping a step needs a reason.',
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',
-    'planning-incomplete': 'Readiness checklists not done for this month.',
+    'planning-incomplete': 'This month\u2019s checklists are not done yet.',
     'meeting-required': 'Content meeting not held or marked N/A.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'Not a team member.',
-    'bad-count': 'Add 1 to 60 pieces.',
-    'not-owner': 'Only the Task Owner can change the status.',
+    'bad-count': 'Add 1 to 60 posts.',
+    'not-owner': 'Only the person it is assigned to, or an admin, can move it.',
     'not-open': 'No longer open to take.',
     'already-yours': 'Already yours.',
     'finished': 'This task is finished.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
     'tasks-open': 'Tasks in this month are still open.',
-    'derived-state': 'Set by the month\u2019s readiness, meeting and tasks.',
+    'derived-state': 'Set by the month\u2019s checklists, meeting and tasks.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
     'bad-start-day': 'A month starts on a day from the 1st to the 28th.',
     'bad-reports': 'Choose the Accounts report, the Advertising report, both or neither.',
@@ -247,7 +247,7 @@
       /* A queue row carries no assignees; the queue's own read of the owner
          is what it knows. */
       if (!ownerId(t) && !(state.ownerIds && state.ownerIds[t.id])) need.push('an owner');
-      if (!t.current_final_due_at) need.push('a final due date');
+      if (!t.current_final_due_at) need.push('a due date');
       if (need.length) return 'Ready needs ' + need.join(' and ') + '.';
     }
     return SAID[err] || ('Refused: ' + err + '.');
@@ -351,7 +351,7 @@
   /* What a task is for: engagement work is what a contract pays for, ad hoc
      is asked for outside it, goodwill is given, special is anything else the
      team names. */
-  var TASK_TYPE_WORD = { engagement: 'Engagement', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Special' };
+  var TASK_TYPE_WORD = { engagement: 'Retainer', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Special' };
   /* `simple` is the stored key and Light is the word the team uses for it. */
   var COMPLEX_WORD = { simple: 'Light', standard: 'Standard', complex: 'Complex' };
   /* Priority is how soon, on four words; the fifth level a row written before
@@ -404,7 +404,7 @@
      goes out, and once it is live, the day its performance is reviewed —
      three days on. A post live since Monday is not "overdue" because its
      client review date has passed; it is due for review on Thursday. */
-  var REVIEW_AFTER_DAYS = 3;
+  var REVIEW_AFTER_DAYS = 7;
   function dueOf(t) {
     var s = stageOf(t), g = s ? s.stage_group : '';
     if (!isFinished(t) && (g === 'approved' || g === 'scheduled') && t.publish_at) return t.publish_at;
@@ -797,10 +797,10 @@
         g.rows.push(t);
       } else if (mode === 'owner') {
         var o = state.owners[t.id] || '';
-        put('o-' + (o || 'none'), o || 'No task owner', o ? '1' + o : '2').rows.push(t);
+        put('o-' + (o || 'none'), o || 'Unassigned', o ? '1' + o : '2').rows.push(t);
       } else if (mode === 'engagement') {
-        var e = t.engagement_id ? engName(t) || 'Engagement' : '';
-        put('e-' + (t.engagement_id || 'none'), e || 'No engagement', e ? '1' + e : '2').rows.push(t);
+        var e = t.engagement_id ? engName(t) || 'Month' : '';
+        put('e-' + (t.engagement_id || 'none'), e || 'No month', e ? '1' + e : '2').rows.push(t);
       } else {
         var b = bandOf(t);
         put(b, (BANDS.filter(function (x) { return x.key === b; })[0] || {}).name || b,
@@ -912,7 +912,7 @@
     var was = state.owners[t.id] || nameOf(ownerId(t));
     ADspaceConfirm.ask({
       title: 'Take ' + (serialOf(t) || 'this task') + '?',
-      body: 'You become its Task Owner' + (was ? ' and ' + was + ' is told.' : '.'),
+      body: 'It is assigned to you' + (was ? ' and ' + was + ' is told.' : '.'),
       go: 'Take'
     }, function () {
       db.rpc('ops_take_task', { p_task: t.id, p_version: t.version }).then(function (r) {
@@ -1058,7 +1058,7 @@
         shut: !filtered && GRP.shut('work', state.group + ':' + g.key,
                                     shutByDefault(g), g.rows.length === rows.length),
         table: function () {
-          var table = GRP.table('svc-row task-row', ['', 'Task', 'Task Owner', 'Due', 'Stage', '']);
+          var table = GRP.table('svc-row task-row', ['', 'Task', 'Assigned to', 'Due', 'Stage', '']);
           GRP.more(table, g.rows.slice().sort(byPriority), 30, 'tasks', function (t) { return rowOf(t); });
           return table;
         }
@@ -1134,10 +1134,10 @@
     var ids = pickedIds();
     if (!ids.length) return;
     ADspaceConfirm.ask({
-      title: 'Assign task owner',
+      title: 'Reassign',
       body: 'The ' + (ids.length === 1 ? 'task goes' : ids.length + ' tasks go') + ' to one person, with the change on each task\'s record.',
       go: 'Assign',
-      field: { label: 'Task Owner', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, person(m)]; })),
+      field: { label: 'Assign to', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, person(m)]; })),
                need: 'Choose a person.' }
     }, function (who) {
       var done = 0, bad = null, i = 0;
@@ -1547,7 +1547,7 @@
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
           (who ? '<span class="bcard-name">' + esc(who) + '</span>'
-               : '<span class="bcard-name mute">No task owner</span>') + '</span>' +
+               : '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
         (dueOf(t)
           ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
               esc((dueLead(t) ? dueLead(t) + ' ' : '') + shortDate(dueOf(t))) + '</span>'
@@ -1941,37 +1941,31 @@
   }
 
   // ---- Capacity ------------------------------------------------------------
-  /* The week's recorded hours against each person's capacity. A planning
-     figure beside the record of what was pressed: nothing here measures
-     attention, and a week with no sessions is a week nobody pressed Start.
-     Own week alone without `ops.all`; the team's with it. */
+  /* Each person's planned load this week against their weekly capacity: the
+     estimate of every open task they own that is due by the week's end,
+     overdue work included. Nobody logs hours (the user, 2026-10-05: the bars
+     sat empty beside open tasks), and every task carries its format's
+     estimate. Own week alone without `ops.all`; the team's with it. */
   function weekStart() {
     var d = todayStart();
     d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
     return d;
   }
-  function loadCapacity() {
-    db.from('ops_work_sessions').select('team_member_id, minutes, started_at, ended_at')
-      .gte('started_at', weekStart().toISOString())
-      .then(function (r) {
-        state.week = (r && r.data) || [];
-        paintCapacity();
-      }, function () { state.week = []; paintCapacity(); });
-  }
+  function loadCapacity() { paintCapacity(); }
   function paintCapacity() {
     var box = $('workCap');
     if (!box || state.view !== 'board') return;
     var me = bridge.me && bridge.me();
     var team = may('ops.all', 'view');
-    var mins = {};
-    state.week.forEach(function (s) {
-      var n = Number(s.minutes) || (s.started_at && !s.ended_at ? Math.max(0, (Date.now() - new Date(s.started_at)) / 60000) : 0);
-      mins[s.team_member_id] = (mins[s.team_member_id] || 0) + n;
-    });
-    var open = {};
+    var end = weekStart(); end.setDate(end.getDate() + 7);
+    var mins = {}, open = {};
     (state.tasks || []).forEach(function (t) {
-      if (isFinished(t) || !state.ownerIds[t.id]) return;
-      open[state.ownerIds[t.id]] = (open[state.ownerIds[t.id]] || 0) + 1;
+      var who = state.ownerIds[t.id];
+      if (isFinished(t) || !who) return;
+      open[who] = (open[who] || 0) + 1;
+      if (t.current_final_due_at && new Date(t.current_final_due_at) < end) {
+        mins[who] = (mins[who] || 0) + (Number(t.estimate_minutes) || 0);
+      }
     });
     var people = state.members.filter(function (m) {
       if (!team) return me && m.id === me.id;
@@ -1984,7 +1978,7 @@
       var pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
       return '<div class="caprow' + (cap && used > cap ? ' is-over' : '') + '">' +
         '<span class="caprow-name">' + esc(m.name) + '</span>' +
-        '<span class="caprow-fig">' + hours(used) + (cap ? ' of ' + hours(cap) : ' · no capacity set') +
+        '<span class="caprow-fig">' + hours(used) + (cap ? ' planned of ' + hours(cap) : ' planned · no capacity set') +
           (open[m.id] ? ' · ' + open[m.id] + ' open' : '') + '</span>' +
         '<span class="capbar"><i style="width:' + pct + '%"></i></span></div>';
     }).join('') + '</div>';
@@ -2133,7 +2127,7 @@
             esc((p === 'done' ? 'Reopen ' : 'Mark complete: ') + (t.title || 'task')) + '"></button>'
         : wfRing(t, fin);
     var who = owners[t.id] || '';
-    var canOwn = may('ops', 'manage') && !fin;
+    var canOwn = mayReassign(t) && !fin;
     var dc = dueCell(t);
     /* The final due is the one a row edits; a publish or review date is the
        step's, and is changed where the step is. */
@@ -2151,7 +2145,7 @@
           esc(ctx) + '</small></button>' +
       '<span class="trow-meta">' +
       '<span class="task-owner">' + (canOwn
-        ? '<button class="tinline" type="button" data-a="owner" aria-label="Task Owner of ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
+        ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
             (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
         : (who ? esc(who) : '<span class="mute">—</span>')) + '</span>' +
       '<span class="task-due' + (over ? ' is-over' : '') + '">' + (dueEdit
@@ -2353,7 +2347,7 @@
   function inlineOwner(t, el, btn, was, done) {
     var sel = document.createElement('select');
     sel.className = 'select select-sm tinline-pick';
-    sel.setAttribute('aria-label', 'Task Owner of ' + (t.title || 'task'));
+    sel.setAttribute('aria-label', 'Assigned to, ' + (t.title || 'task'));
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
@@ -2371,7 +2365,7 @@
         var d = r.data;
         if (r.error || (d && d.error)) { sel.disabled = false; put(); rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
         state.owners[t.id] = nameOf(pick); state.ownerIds[t.id] = pick;
-        state.rowSaid = { id: t.id, word: 'Task Owner changed to ' + nameOf(pick) + '.' };
+        state.rowSaid = { id: t.id, word: 'Reassigned to ' + nameOf(pick) + '.' };
         done();
       }, function (e) { sel.disabled = false; put(); rowNote(el, (e && e.message) || String(e)); });
     });
@@ -2452,7 +2446,10 @@
       askWhy(t, el, next, how, after);
       return;
     }
-    if (needsSay(t, next)) { openStep(t, next, { el: el, after: after }); return; }
+    /* A move that gives the work to a colleague asks who, wherever it is
+       made: the list, a board card and the task's own button give the same
+       result (the user, 2026-10-05). */
+    if (needsSay(t, next) || handsToColleague(next, t)) { openStep(t, next, { el: el, after: after }); return; }
     moveTo(t, el, next, null, after);
   }
   /* WHY, ASKED WHERE THE PICK WAS MADE: one line under the row, the card or
@@ -2643,12 +2640,12 @@
 
     // The facts a day's work turns on.
     var who = ownerName(t);
-    var canOwn = may('ops', 'manage') && !fin;
+    var canOwn = mayReassign(t) && !fin;
     var dueTxt = t.current_final_due_at ? niceDate(t.current_final_due_at) : 'Not set';
     var over = isLate(t);
     var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
     var facts =
-      frow('Task Owner', '<span id="dwOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>',
+      frow('Assigned to', '<span id="dwOwnerName">' + (who ? esc(who) : '<span class="mute">Unassigned</span>') + '</span>',
         canOwn ? '<button class="linkbtn" id="dwOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '') +
       frow('Due', work && !fin
         ? '<button class="tdate' + (over ? ' is-over' : '') + '" id="dwDue" type="button" aria-label="Due ' + esc(dueTxt) + '. Change">' + esc(dueTxt) + pen + '</button>'
@@ -2659,8 +2656,8 @@
     var after = sg === 'approved' || sg === 'scheduled' || sg === 'live' || sg === 'performance' || sg === 'taken_down' || t.stage_key === 'completed';
     if (!every && (t.publish_at || after)) {
       var pubTxt = t.publish_at ? niceDate(t.publish_at) : 'Not set';
-      facts += frow('Publish', work && !fin && (sg === 'approved' || sg === 'scheduled' || !after)
-        ? '<button class="tdate" id="dwPublish" type="button" aria-label="Scheduled publish ' + esc(pubTxt) + '. Change">' + esc(pubTxt) + pen + '</button>'
+      facts += frow('Post date', work && !fin && (sg === 'approved' || sg === 'scheduled' || !after)
+        ? '<button class="tdate" id="dwPublish" type="button" aria-label="Post date ' + esc(pubTxt) + '. Change">' + esc(pubTxt) + pen + '</button>'
         : '<span class="tdate-read">' + esc(pubTxt) + '</span>');
     }
     if (t.live_at) facts += frow('Live', esc(niceDate(t.live_at)));
@@ -2677,7 +2674,7 @@
     if (oc) oc.addEventListener('click', function () {
       inlineOwner(t, $('dwFacts'), oc, ownerId(t), function () {
         state.drawerDirty = true;
-        readTask(t.id, function () { msg('dwMsg', 'Task Owner changed.', 'ok'); });
+        readTask(t.id, function () { msg('dwMsg', 'Reassigned.', 'ok'); });
       });
     });
     var dd = $('dwDue');
@@ -2804,7 +2801,7 @@
     var menu = $('dwMenu');
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = fin;
+    menu.querySelector('[data-a="handover"]').hidden = fin || !mayReassign(t);
     offerItems(menu, t);
   }
   // ---- Changing and taking back what was added --------------------------------
@@ -3148,8 +3145,8 @@
     }).catch(function () { then(null); });
   }
   function recordTaskRows(rows) {
-    return '<div class="ovtable"><div class="ovhead ovrow-task"><span>Task</span><span>Task Owner</span>' +
-      '<span>Stage</span><span class="ovamt">Final due</span></div>' +
+    return '<div class="ovtable"><div class="ovhead ovrow-task"><span>Task</span><span>Assigned to</span>' +
+      '<span>Stage</span><span class="ovamt">Due</span></div>' +
       rows.map(function (x) {
         var tone = STAGE_TONE[x.stage_group] || '';
         var done = x.completed_at || x.cancelled_at;
@@ -3202,14 +3199,14 @@
     var over = daysAway(t.current_final_due_at);
     b.late.hidden = !isLate(t);
     b.late.textContent = isLate(t)
-      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past final due, not yet at client review.'
+      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past due, not yet at client review.'
       : '';
     b.acts.innerHTML = '';
     /* Somebody who is not the Task Owner reads the step and cannot take it. */
     if ((n.go || n.alt) && !mayMove(t)) {
       if (b.hand) b.hand.hidden = true;
-      var ow = nameOf((state.ownerIds && state.ownerIds[t.id]) || ownerId(t)) || 'the Task Owner';
-      b.acts.innerHTML = '<p class="qnext-owner">With ' + esc(ow) + '. Only the Task Owner moves this task.</p>';
+      var ow = nameOf((state.ownerIds && state.ownerIds[t.id]) || ownerId(t)) || 'someone else';
+      b.acts.innerHTML = '<p class="qnext-owner">Assigned to ' + esc(ow) + '. Ask them or an admin to move it.</p>';
       b.acts.hidden = false;
       paintRate(b, t, n);
       return;
@@ -3247,7 +3244,7 @@
        records the owner's own progress keeps it with them unless unticked. */
     b.tick.checked = !perf && !handsToColleague(mv, t);
     b.tickWrap.hidden = perf;
-    b.lab.textContent = perf ? 'Performance review by' : 'Next Task Owner';
+    b.lab.textContent = perf ? 'Performance review by' : 'Assign to';
     b.lab.hidden = b.tick.checked;
     b.to.hidden = b.tick.checked;
   }
@@ -3292,7 +3289,7 @@
        with it, so it stays the browser's own box (form.js §7). */
     inp.setAttribute('data-native', '');
     inp.className = 'input input-sm tinline-pick';
-    inp.setAttribute('aria-label', 'Scheduled publish date');
+    inp.setAttribute('aria-label', 'Post date');
     inp.value = dateValue(t.publish_at);
     btn.hidden = true;
     btn.parentNode.appendChild(inp);
@@ -3369,13 +3366,16 @@
     $('stepHandTickWrap').hidden = perf;
     $('stepHandTick').checked = !perf && !o.assignee && !handsToColleague(key, t);
     $('stepHandRow').hidden = $('stepHandTick').checked;
-    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Next Task Owner';
+    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
     $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
     }).join('');
-    $('stepHandTo').value = o.assignee || (perf ? t.created_by || '' : '');
+    /* The same default as the task's own step: a review goes to whoever
+       created the task, where that is somebody else. */
+    var def = o.assignee || (perf ? t.created_by : (handsToColleague(key, t) && t.created_by !== cur ? t.created_by : '')) || '';
+    $('stepHandTo').value = def && $('stepHandTo').querySelector('option[value="' + def + '"]') ? def : '';
     $('stepHand').hidden = !may('ops', 'work');
     var go = $('stepGo');
     go.textContent = verb;
@@ -3411,7 +3411,7 @@
     var who = null;
     if (key === 'performance_review' || !$('stepHandTick').checked) {
       who = $('stepHandTo').value || null;
-      if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose the new Task Owner.', 'err'); $('stepHandTo').focus(); return; }
+      if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose who it goes to.', 'err'); $('stepHandTo').focus(); return; }
     }
     var btn = $('stepGo');
     btn.disabled = true;
@@ -3531,7 +3531,7 @@
     if (!title) { msg('qkMsg', 'Say what the task is.', 'err'); $('qkTitle').focus(); return; }
     if (!$('qkDue').value) { msg('qkMsg', 'A due date is required.', 'err'); $('qkDue').focus(); return; }
     if (!$('qkLink').value) { msg('qkMsg', 'Choose a client, or Internal.', 'err'); $('qkLink').focus(); return; }
-    if (!$('qkOwner').value) { msg('qkMsg', 'Choose the Task Owner.', 'err'); $('qkOwner').focus(); return; }
+    if (!$('qkOwner').value) { msg('qkMsg', 'Choose who it is assigned to.', 'err'); $('qkOwner').focus(); return; }
     var link = $('qkLink').value === 'i:' ? '' : $('qkLink').value;
     var payload = {
       title: title, workflow_key: 'task',
@@ -3730,7 +3730,7 @@
     var by = {}, order = [];
     (state.tasks || []).forEach(function (t) {
       var id = state.ownerIds[t.id] || '';
-      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'No task owner', open: 0, overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
+      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'Unassigned', open: 0, overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
       var r = by[id], n = daysAway(dueOf(t)), p = plainOf(t);
       if (isFinished(t)) {
         var at = new Date(t.completed_at || t.cancelled_at).getTime();
@@ -3771,7 +3771,7 @@
       fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
       empty: 'No open tasks.',
       table: {
-        heads: ['Task Owner', 'Open', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week'],
+        heads: ['Assigned to', 'Open', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week'],
         rows: order.map(function (id) {
           var r = by[id];
           return [r.name, r.open, r.overdue, r.today, r.doing, r.waiting, r.review, r.done].map(String);
@@ -4163,7 +4163,7 @@
       return n;
     }
     var owner = ownerId(t);
-    var assign = { label: 'Assign task owner', run: function () { factHere('dwOwnerChange', editOwner); } };
+    var assign = { label: 'Assign', run: function () { factHere('dwOwnerChange', editOwner); } };
     var setDue = { label: 'Set due date', run: function () { factHere('dwDue', function () { editDate('final'); }); } };
 
     if (t.stage_key === 'blocked') {
@@ -4190,20 +4190,20 @@
       if (need.length) {
         n.blocked = true;
         n.title = 'Not ready to start';
-        var words = { owner: 'Assign a task owner', due: 'Add a final due date' };
+        var words = { owner: 'Assign someone', due: 'Set a due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
-        n.line = need.length > 1 ? 'A task owner and a final due date are required before work can begin.'
-          : (need[0] === 'owner' ? 'Assign a task owner to continue.' : 'Add a final due date to continue.');
+        n.line = need.length > 1 ? 'Assign someone and set a due date before work can begin.'
+          : (need[0] === 'owner' ? 'Assign someone to continue.' : 'Set a due date to continue.');
         if (need[0] === 'owner') {
           if (manage) n.go = assign;
-          else { n.line = 'Ask a manager to assign a task owner.'; if (need.length > 1 && work) n.go = setDue; }
+          else { n.line = 'Ask a manager to assign someone.'; if (need.length > 1 && work) n.go = setDue; }
         } else if (work) n.go = setDue;
         return n;
       }
     }
     if (!owner && work) {
-      n.title = 'No task owner assigned';
-      n.line = manage ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
+      n.title = 'Unassigned';
+      n.line = manage ? 'Assign someone to continue.' : 'Ask a manager to assign someone.';
       if (manage) n.go = assign;
       return n;
     }
@@ -4211,7 +4211,7 @@
     /* The step itself. */
     if (g === 'intake' && target === 'ready') {
       n.title = 'Mark ready to start';
-      n.line = 'Task owner and final due date set.';
+      n.line = 'Assigned, with a due date.';
       if (work) n.go = stepAct(t, 'ready');
       if (state.eng && mt === 'none' && work) {
         n.alt = { label: 'Schedule meeting', run: function () { openMeetFor(); } };
@@ -4231,11 +4231,11 @@
         var open = ck.length - checksDone(ck);
         n.blocked = true;
         n.month = true;
-        n.title = 'Not ready to start';
-        n.line = open ? 'Tick ' + monthWord(eng.period) + '\u2019s readiness, then hold the content meeting.'
+        n.title = 'Waiting for the month';
+        n.line = open ? 'Waiting for ' + monthWord(eng.period) + '\u2019s checklists and content meeting.'
           : mt === 'none' ? 'Schedule the content meeting.'
           : mt === 'set' ? 'The work opens once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
-          : 'Readiness done and the meeting held.';
+          : 'Checklists done and the meeting held.';
         return n;
       }
       n.title = 'Start the work';
@@ -4303,7 +4303,7 @@
        out, then three days on, how it performed. */
     if (g === 'approved' && hasNext(t, 'scheduled')) {
       n.title = 'Approved';
-      n.line = t.publish_at ? 'Scheduled publish date ' + niceDate(t.publish_at) + '.' : 'Set the publish date to schedule it.';
+      n.line = t.publish_at ? 'Post date ' + niceDate(t.publish_at) + '.' : 'Set the post date to schedule it.';
       if (work) n.go = stepAct(t, 'scheduled');
       return n;
     }
@@ -4390,8 +4390,8 @@
     if (p === 'done') { n.title = 'Done'; n.line = 'Completed on ' + niceDate(t.completed_at) + '.'; n.rate = true;
       if (work) n.alt = { label: 'Reopen', run: function () { move('todo'); } }; return n; }
     if (!ownerId(t)) {
-      n.title = 'No task owner assigned';
-      n.line = may('ops', 'manage') ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
+      n.title = 'Unassigned';
+      n.line = may('ops', 'manage') ? 'Assign someone to continue.' : 'Ask a manager to assign someone.';
     }
     if (!work) return n;
     if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Move to In progress', 'doing'); }
@@ -4484,7 +4484,7 @@
       el.type = 'button';
       el.addEventListener('click', function () {
         var hand = handOf(b);
-        if (hand.missing) { msg(b ? b.msg : msgHere(), 'Choose the new Task Owner.', 'err'); if (b && b.to) b.to.focus(); return; }
+        if (hand.missing) { msg(b ? b.msg : msgHere(), 'Choose who it goes to.', 'err'); if (b && b.to) b.to.focus(); return; }
         a.run(hand);
       });
     }
@@ -4535,6 +4535,15 @@
   /* The stage is the Task Owner's to move, and an admin's; everybody else
      reads it. The database refuses the rest (`not-owner`); the page does not
      offer it. */
+  /* Who may reassign (the user, 2026-10-05): the person it is assigned to,
+     and any group above them (My Work at Manage or an admin). The database
+     holds the same rule (`ops_assign_task`, `ops_hand_over_task`). */
+  function mayReassign(t) {
+    if (!t || !may('ops', 'work')) return false;
+    if (may('ops', 'manage')) return true;
+    var o = (state.ownerIds && state.ownerIds[t.id]) || ownerId(t);
+    return Boolean(o) && o === myId();
+  }
   function mayMove(t) {
     if (!t || !may('ops', 'work')) return false;
     if (isAdmin()) return true;
@@ -4878,7 +4887,7 @@
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
     task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed',
-    assignment_changed: 'Task Owner changed', handover: 'Handed on', offered: 'Offered to the team',
+    assignment_changed: 'Reassigned', handover: 'Handed on', offered: 'Offered to the team',
     offer_withdrawn: 'Offer withdrawn', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
     work_started: 'Work started', work_stopped: 'Work stopped', work_corrected: 'Hours corrected',
@@ -4922,7 +4931,7 @@
        vocabularies. */
     if (e.event_type === 'due_requested' || e.event_type === 'due_approved' ||
         e.event_type === 'due_declined') {
-      return (to.kind === 'final' ? 'Final due' : 'First draft due') + ' ' +
+      return (to.kind === 'final' ? 'Due date' : 'Draft due') + ' ' +
         (from.value ? niceDate(from.value) + ' to ' : '') + niceDate(to.value) +
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
@@ -4960,7 +4969,7 @@
                          : (prev ? prev + ' to ' : 'To ') + who) + (d.note ? ' · ' + d.note : '');
     }
     if (e.event_type === 'due_changed') {
-      return (to.kind === 'final' ? 'Final due' : 'First draft due') + ' ' +
+      return (to.kind === 'final' ? 'Due date' : 'Draft due') + ' ' +
         (from.value ? niceDate(from.value) + ' to ' : '') + niceDate(to.value) +
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
@@ -5019,7 +5028,7 @@
       var detail = eventDetail(e);
       if (e === made && first) {
         var owner = nameOf(first.to_value && first.to_value.owner_id);
-        if (owner) detail = (detail ? detail + '; ' : '') + 'Task Owner ' + owner;
+        if (owner) detail = (detail ? detail + '; ' : '') + 'Assigned to ' + owner;
       }
       return { at: e.created_at, who: whoName(e) || 'System', key: 'task',
                what: EVENT_WORD[e.event_type] || sentence(e.event_type), detail: detail };
@@ -5051,10 +5060,10 @@
     var who = ownerName(t);
     var made = nameOf(t.created_by);
     var client = t.clients && t.clients.name;
-    var canOwn = may('ops', 'manage');
-    var rows = frow('Task Owner',
+    var canOwn = mayReassign(t);
+    var rows = frow('Assigned to',
       '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
-      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Task Owner" hidden></select>',
+      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>',
       canOwn ? '<button class="linkbtn" id="taskOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '');
     if (made) rows += frow('Created by', esc(made));
     if (client) {
@@ -5073,7 +5082,7 @@
 
   function editOwner() {
     var t = state.task;
-    if (!t || !may('ops', 'manage')) return;
+    if (!t || !mayReassign(t)) return;
     var name = $('taskOwnerName'), sel = $('taskOwner'), ch = $('taskOwnerChange');
     if (!sel) return;
     var was = ownerId(t);
@@ -5117,8 +5126,8 @@
     var work = may('ops', 'work');
     var rows = [
       { k: 'first_draft', label: 'Draft due', v: t.current_first_draft_due_at, from: t.original_first_draft_due_at },
-      { k: 'final', label: 'Final due', v: t.current_final_due_at, from: t.original_final_due_at },
-      { k: 'publish', label: 'Scheduled publish', v: t.publish_at }
+      { k: 'final', label: 'Due date', v: t.current_final_due_at, from: t.original_final_due_at },
+      { k: 'publish', label: 'Post date', v: t.publish_at }
     ];
     var html = rows.map(function (r) {
       var over = r.k === 'final' && isLate(t);
@@ -5167,7 +5176,7 @@
     if (!row) return;
     var keep = row.innerHTML;
     row.innerHTML = '<input class="input input-sm tdate-pick" type="date" data-native aria-label="' +
-      (kind === 'final' ? 'Final due' : kind === 'first_draft' ? 'Draft due' : 'Scheduled publish') + '">';
+      (kind === 'final' ? 'Due date' : kind === 'first_draft' ? 'Draft due' : 'Post date') + '">';
     var inp = row.querySelector('input');
     inp.value = dateValue(cur);
     if (kind === 'first_draft' && t.current_final_due_at) inp.setAttribute('max', dayBefore(t.current_final_due_at));
@@ -5205,9 +5214,9 @@
      task, then everything they might look up. */
   function paintDetails(t) {
     $('taskFacts').innerHTML = [
-      ['Scope', t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client'],
+      ['For', t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client'],
       ['Format', formatWord(t)],
-      ['Content month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
+      ['Month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
       ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level || '')],
       ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
     ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
@@ -5223,7 +5232,7 @@
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
     if (e) {
-      more += frow('Engagement', esc(monthWord(e.period)) + ' · ' +
+      more += frow('Month', esc(monthWord(e.period)) + ' · ' +
         esc(wordOf(ENG_STATE, engPhase(e, checksOf(e, state.engChecks), countFor(e, state.engCounts, [t])))) +
         (ml ? '<i class="tbreak"></i><a class="linkbtn tlink-own" href="' + esc(ml.href) + '">Open the month' + CHEV_S + '</a>' : ''));
       more += frow('Content meeting', esc(meetingWord(e)));
@@ -5289,11 +5298,11 @@
     var mine = myId() && q.asked_by === myId();
     var yours = myId() && q.decider_id === myId();
     var who = nameOf(q.asked_by) || 'Somebody';
-    var to = nameOf(q.decider_id) || 'the task owner';
+    var to = nameOf(q.decider_id) || 'the person who decides';
     box.hidden = false;
     box.innerHTML =
       '<p class="dueask-line">' +
-        esc((q.kind === 'final' ? 'Due date' : 'First draft date') + ' to ' + niceDate(q.wants_at)) +
+        esc((q.kind === 'final' ? 'Due date' : 'Draft due') + ' to ' + niceDate(q.wants_at)) +
         '<small>' + esc(mine ? 'Waiting on ' + to : who + ' asked') +
         (q.note ? ' · ' + esc(q.note) : '') + '</small></p>' +
       '<div class="dueask-acts">' +
@@ -5321,7 +5330,7 @@
     var work = may('ops', 'work');
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = isFinished(t);
+    menu.querySelector('[data-a="handover"]').hidden = isFinished(t) || !mayReassign(t);
     /* Archiving is no longer offered; a task archived before keeps its way
        back. */
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at;
@@ -5526,11 +5535,11 @@
        original-promise line, because that is the fact a replan report reads;
        the team's own milestone says instead where its ceiling is, which is
        the only thing that can refuse it. */
-    $('dueWhat').textContent = (draft ? 'First draft due date' : 'Final due date') +
+    $('dueWhat').textContent = (draft ? 'Draft due' : 'Due date') +
       (was ? ', now ' + niceDate(was) + '.' : ', not set.') +
       (draft
         ? (t.current_final_due_at
-            ? ' The latest it may fall is one day before the final due date, ' +
+            ? ' The latest it may fall is one day before the due date, ' +
               niceDate(t.current_final_due_at) + '.'
             : '')
         : ' The promise first made is kept either way.');
@@ -5632,7 +5641,7 @@
     $('ntBrief').value = '';
     $('ntPublish').value = '';
     $('ntDraft').value = '';
-    $('ntFinal').value = '';
+    $('ntDue').value = '';
     $('ntScope').value = 'client';
     $('ntType').value = 'engagement';
     $('ntFormat').value = '';
@@ -5802,9 +5811,9 @@
   /* A line a piece (2026-09-28, Bulk add folded in): the first is the form's
      own description, format and week; Add piece draws the next under it, the
      format carried and the week the one after, so eight presses spread two a
-     week. With more than one piece the lone piece's dates and brief leave
-     (the database gives each a day inside its week) and Create names the
-     count. */
+     week. Every line carries its own due date, typed and never worked out;
+     with more than one piece the lone piece's draft and publish dates and its
+     brief leave, and Create names the count. */
   var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   /* An add carries its plus wherever it is drawn (the bar's New task, a
      month's Add task). */
@@ -5816,13 +5825,15 @@
     return {
       desc: row.querySelector('.piece-desc input').value,
       fmt: row.querySelector('.piece-fmt select').value,
-      week: row.querySelector('.piece-week select').value
+      week: row.querySelector('.piece-week select').value,
+      due: row.querySelector('.piece-due input').value
     };
   }
   function ntRowSet(row, v) {
     row.querySelector('.piece-desc input').value = v.desc || '';
     row.querySelector('.piece-fmt select').value = v.fmt || '';
     row.querySelector('.piece-week select').value = v.week || '1';
+    row.querySelector('.piece-due input').value = v.due || '';
   }
   function ntAddPiece() {
     var rows = ntRows();
@@ -5834,6 +5845,7 @@
       '<div class="field piece-desc"><input class="input" placeholder="Content Post" autocomplete="off"></div>' +
       '<div class="field piece-fmt"><select class="select">' + $('ntFormat').innerHTML + '</select></div>' +
       '<div class="field piece-week"><select class="select">' + $('ntWeek').innerHTML + '</select></div>' +
+      '<div class="field piece-due"><input class="input" type="date"></div>' +
       '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
@@ -5857,11 +5869,12 @@
     $('ntPieces').classList.toggle('is-many', n > 1);
     rows.forEach(function (r, i) {
       var k = i + 1;
-      r.querySelector('.piece-x').setAttribute('aria-label', 'Remove piece ' + k);
+      r.querySelector('.piece-x').setAttribute('aria-label', 'Remove post ' + k);
       if (!i) return;
-      r.querySelector('.piece-desc input').setAttribute('aria-label', 'Content description, piece ' + k);
-      r.querySelector('.piece-fmt select').setAttribute('aria-label', 'Deliverable format, piece ' + k);
-      r.querySelector('.piece-week select').setAttribute('aria-label', 'Week, piece ' + k);
+      r.querySelector('.piece-desc input').setAttribute('aria-label', 'Description, post ' + k);
+      r.querySelector('.piece-fmt select').setAttribute('aria-label', 'Format, post ' + k);
+      r.querySelector('.piece-week select').setAttribute('aria-label', 'Week, post ' + k);
+      r.querySelector('.piece-due input').setAttribute('aria-label', 'Due date, post ' + k);
     });
     $('ntDates').hidden = n > 1;
     $('ntBriefRow').hidden = n > 1;
@@ -5889,7 +5902,10 @@
     var rows = ntRows();
     var pieces = rows.map(function (row) {
       var v = ntRowVals(row);
-      var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null };
+      /* Each piece's due date is the one typed on its line, and a line left
+         blank stays without one (the user, 2026-10-05). */
+      var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null,
+                final_due_at: v.due ? v.due + 'T00:00:00Z' : null };
       if (scope !== 'internal') p.code_week = Number(v.week) || 1;
       return p;
     });
@@ -5907,7 +5923,14 @@
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
     var one = pieces.length === 1;
-    var draft = one ? $('ntDraft').value : '', fin = one ? $('ntFinal').value : '';
+    /* A due date already passed is a slip of the finger, caught on its line. */
+    var todayMyt = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var past = rows.map(function (r) { return ntRowVals(r).due; }).map(function (d, i) { return d && d < todayMyt ? i : -1; })
+      .filter(function (i) { return i > -1; })[0];
+    if (past != null) {
+      msg('ntMsg', 'That due date has already passed.', 'err'); rows[past].querySelector('.piece-due input').focus(); return;
+    }
+    var draft = one ? $('ntDraft').value : '', fin = one ? ntRowVals(rows[0]).due : '';
     if (draft && fin && draft >= fin) {
       msg('ntMsg', said('draft-not-before-final'), 'err'); $('ntDraft').focus(); return;
     }
@@ -5927,7 +5950,6 @@
     if (one) {
       pieces[0].publish_at = $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null;
       pieces[0].first_draft_due_at = draft ? draft + 'T00:00:00Z' : null;
-      pieces[0].final_due_at = fin ? fin + 'T00:00:00Z' : null;
     }
     var payload = {
       scope: scope,
@@ -6215,7 +6237,7 @@
        month carries no checks and draws nothing here. */
     if (!list || !list.length) return '';
     return '<div class="eng-checks">' +
-      '<div class="eng-checkhead"><span>Readiness</span><span class="eng-checkcount">' +
+      '<div class="eng-checkhead"><span>Checklists</span><span class="eng-checkcount">' +
         checksDone(list) + ' of ' + list.length + ' done</span></div>' +
       list.map(function (x) {
         var done = x.state === 'ready', na = x.state === 'na';
@@ -6499,7 +6521,7 @@
        search and selects read as the pre-revamp bar): a search mark, Filters,
        the count and the actions, with New month behind the ⋯ on a phone. */
     box.innerHTML =
-      '<div class="viewhead"><span class="headmark"><h2>Content months</h2></span></div>' +
+      '<div class="viewhead"><span class="headmark"><h2>Months</h2></span></div>' +
       '<div class="cmdbar cwbar">' +
         '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
           '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
@@ -6598,7 +6620,7 @@
           var wrap = document.createElement('div');
           if (eng) wrap.appendChild(engCard(eng));
           if (trs.length) {
-            var table = GRP.table('svc-row task-row', ['', 'Task', 'Task Owner', 'Due', 'Stage', '']);
+            var table = GRP.table('svc-row task-row', ['', 'Task', 'Assigned to', 'Due', 'Stage', '']);
             GRP.more(table, trs, 30, 'tasks', function (t) { return rowOf(t, true); });
             wrap.appendChild(table);
           } else if (eng) {
@@ -6634,7 +6656,7 @@
     var checks = checksOf(e, cw.checks);
     var facts = [
       ['Manager', nameOf(e.manager_id)],
-      ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' piece' : ' pieces') : ''],
+      ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' post' : ' posts') : ''],
       ['Files', e.drive_url ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var n = countFor(e, cw.counts, cw.tasks);
@@ -6690,7 +6712,7 @@
       if (k === 'cancel') {
         window.ADspaceConfirm.ask({
           title: 'Cancel ' + monthWord(e.period),
-          body: 'The month takes no new tasks. Its tasks stay.',
+          body: 'The month takes no new tasks. Its tasks stay; a report task nobody has started is cancelled, and comes back if the month is reopened.',
           go: 'Cancel month', tone: 'warn', cancel: 'Keep month'
         }, function () { setStatus(e, 'cancelled', el); });
       }
@@ -6738,8 +6760,8 @@
         ((e.reports || []).length ? 'A report task not yet started is cancelled. ' : '') +
         (!checksOf(e, cw.checks).length ? 'The meeting goes with it.'
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })
-            ? 'Its readiness ticks move to the next month; the meeting goes with it.'
-            : 'The readiness ticks and the meeting go with it.') +
+            ? 'Its checklist ticks move to the next month; the meeting goes with it.'
+            : 'The checklist ticks and the meeting go with it.') +
         ' There is no restore.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
@@ -7004,7 +7026,7 @@
      what is left on the checklist and when it is owed. */
   function openGive() {
     var t = state.task;
-    if (!t || !may('ops', 'manage')) return;
+    if (!t || !mayReassign(t)) return;
     var owner = ownerId(t);
     $('giveTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return m.id !== owner;
@@ -7014,9 +7036,9 @@
     $('giveNote').value = '';
     var open = state.detail.checklist.filter(function (c) { return !c.completed_at; });
     $('giveFacts').innerHTML =
-      frow('Owner now', esc(ownerName(t) || 'Nobody')) +
+      frow('Assigned now', esc(ownerName(t) || 'Unassigned')) +
       frow('Stage', esc(stageLabel(t)) + ' <span class="mute">stays as it is</span>') +
-      frow('Final due', t.current_final_due_at ? esc(niceDate(t.current_final_due_at)) : '<span class="mute">Not set</span>') +
+      frow('Due date', t.current_final_due_at ? esc(niceDate(t.current_final_due_at)) : '<span class="mute">Not set</span>') +
       (open.length ? frow('Still to do', '<ul class="givelist">' + open.map(function (c) {
         return '<li>' + esc(c.label) + '</li>'; }).join('') + '</ul>') : '');
     msg('giveMsg', '');
@@ -7901,6 +7923,8 @@
   wire();
   showPane('overview', false);
   window.ADspaceOps = {
+    /* A Meet answer in the team's words, for the client's Calls and visits too. */
+    meetSaid: function (d) { return meetSaid(d); },
     enter: enter, urlState: urlState, signedIn: signedIn,
     /* Which task is open, and a re-read of it. The record is otherwise only
        reachable through a press, so a change made to the row underneath it

@@ -232,7 +232,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (a record head, a month, a booking, a task's priority, a set, a post); the
   facts and the amount go on the lines under the name, on a phone as at a
   desk. In a desk table row a chip follows the name, never the far edge of
-  a wide cell (a task's Urgent read as the Task Owner's).
+  a wide cell (a task's Urgent read as the assignee's).
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
@@ -473,6 +473,15 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Requests: Requested, Reviewing, Approved, Declined, Applied, Withdrawn;
     kinds Upgrade, Downgrade, Cancel, Change of details.
   - On/off: Active / Inactive.
+  - Performance: Draft, Shared, Query raised, Query answered, Acknowledged,
+    Final; an issue (never breach), notes and a reference (never evidence),
+    a query (never dispute) answered Agreed, Partly agreed or Not agreed;
+    grades Needs support and Improvement plan; the recovery path.
+  - My Work: Assigned to, Content task, Posts, For, Month, Format, Due date,
+    Draft due, Post date, Checklists.
+- Words are the ones people already use at work, never a legal, police or
+  system word (the user, 2026-10-05: "why use evidence. Sounds like some
+  criminals"). Only the words change; stored keys never move.
 - A state is named for what is true when it is set. A field about a person
   records what we do ("Prefers English", Preferred language). A cover title
   names the outcome (Access denied). A section is named for what it tells you
@@ -482,10 +491,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Add creator.
   - Request extension, when it will only ask.
   - Creators List (never "roster").
-  - Task Owner and Created by (never Owner or Manager).
-  - Add piece; Create 3 tasks.
+  - Assigned to and Created by (never Task Owner, Owner or Manager);
+    Reassign; Unassigned.
+  - Add another; Create 3 tasks.
   - Import from spreadsheet.
-- Headings name their content: Task details, Pieces, Schedule, Repeat,
+- Headings name their content: Task details, Posts, Schedule, Repeat,
   Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
   details, Contact details, Task settings, Inclusions, Time records, Team
   member.

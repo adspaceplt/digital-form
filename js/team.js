@@ -741,7 +741,7 @@
      what the database's own checks open at that level. */
   var DESC = {
     ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
-           work: 'Also create tasks and bulk add a month.', manage: 'Also assign task owners and delete tasks.' },
+           work: 'Also create tasks and bulk add a month.', manage: 'Also reassign and delete tasks.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
                work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',

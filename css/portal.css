@@ -2218,6 +2218,13 @@ body.is-plain .topbar { background: var(--chrome); }
   flex: 0 0 auto; margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--line);
 }
+/* The build the console runs (`v2026.10.05 · 1a2b3c4`), at the type floor in
+   the mute ink, under the rail's last row and on its text's left edge. */
+.appver {
+  margin: 4px 0 0; padding: 0 10px;
+  font-size: 11px; line-height: 1.4; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums; letter-spacing: 0;
+}
 /* `.railrow` is the box a row of the rail draws in and `.navitem` is a
    *section* of the console: the first is a shape, the second is a meaning
    with wiring behind it (`navItems()` reads every `.navitem` and asks the
@@ -4372,28 +4379,31 @@ body > .shell { width: 100%; }
    On a narrow card a piece is two lines, what over which format and week,
    the pieces a hairline apart. */
 .pieces { display: grid; gap: 12px; }
+/* Two lines a piece: what it is, then its format, week and due date (the
+   user, 2026-10-05: every line carries its own date, typed). */
 .piece {
   display: grid; gap: 12px; align-items: end;
-  grid-template-columns: minmax(0, 1fr) 188px 104px;
-  grid-template-areas: "desc fmt week";
+  grid-template-columns: minmax(0, 1fr) 104px 160px;
+  grid-template-areas: "desc desc desc" "fmt week due";
 }
 .piece-desc { grid-area: desc; }
 .piece-fmt { grid-area: fmt; }
 .piece-week { grid-area: week; }
+.piece-due { grid-area: due; }
 .piece-x { grid-area: x; }
-.pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px 104px var(--ctl-h); grid-template-areas: "desc fmt week x"; }
-.pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) 188px; grid-template-areas: "desc fmt"; }
-.pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px var(--ctl-h); grid-template-areas: "desc fmt x"; }
+.pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 104px 160px var(--ctl-h); grid-template-areas: "desc desc desc x" "fmt week due ."; }
+.pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) 160px; grid-template-areas: "desc desc" "fmt due"; }
+.pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) 160px var(--ctl-h); grid-template-areas: "desc desc x" "fmt due ."; }
 .pieces.no-week .piece-week, .pieces:not(.is-many) .piece-x { display: none; }
 .pieces-foot { display: flex; margin-top: 12px; }
 /* A piece's fields fill their tracks: a select's own 180px floor would
    push the week over the remove mark. */
 .piece .input, .piece .select { width: 100%; min-width: 0; }
 #ntCodeHint { margin: 8px 0 0; }
-.is-narrow .piece { grid-template-columns: minmax(0, 1fr) 104px; grid-template-areas: "desc desc" "fmt week"; }
-.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 104px var(--ctl-h); grid-template-areas: "desc desc desc" "fmt week x"; }
-.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desc" "fmt"; }
-.is-narrow .pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc" "fmt x"; }
+.is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt fmt" "week due"; }
+.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt fmt fmt" "week due due"; }
+.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desc" "fmt" "due"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc x" "fmt fmt" "due due"; }
 .is-narrow .piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
@@ -4942,6 +4952,9 @@ body > .shell { width: 100%; }
 .touch-meta { font-size: 12.5px; color: var(--ink-mute); margin-top: 4px; }
 .touch-next { font-size: 13px; margin-top: 8px; color: var(--ink-soft); font-weight: 500; }
 .touch-next.is-due { color: var(--warn); }
+.touch-meet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
+.touch-meet > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
+.touch-meetmsg { margin-top: 8px; }
 .touch-del { grid-area: del; }
 @media (max-width: 640px) {
   .touch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when del" "body body"; }
@@ -8507,7 +8520,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   border: 2px solid transparent; background-color: transparent; background-clip: padding-box; border-radius: var(--radius-ctl);
   text-align: left; font: inherit; color: var(--ink-soft); cursor: pointer;
   transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
-@media (hover: hover) { .rp-step:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); } }
+@media (hover: hover) { .rp-step:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); }
+  /* The hover's fill over the track takes the mute summary under 4.5:1. */
+  .rp-step:not(.is-on):hover .rp-step-t small { color: var(--ink-soft); } }
 .rp-step.is-on { background-color: var(--seg-on); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .rp-steps.has-thumb { position: relative; isolation: isolate; }
 .rp-steps.has-thumb::before {

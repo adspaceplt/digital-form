@@ -295,6 +295,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
+- The rail's foot names the build under the Activity record (`#appVersion`,
+  `.appver`, 11px mute): `v{YYYY.MM.DD} · {commit}`, the deploy's day in
+  Malaysia and its commit's first seven characters, read from
+  `/version.json`, which the Pages build writes through Jekyll
+  (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
+  (no build) or missing, the line is hidden (`tests/appver.js`).
 - Refresh app (account menu):
   - it unregisters the worker and empties Cache Storage;
   - it never touches localStorage, IndexedDB or the sign-in;
@@ -967,7 +973,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     `null` uses the older factor table; only an explicit `false` turns it off.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
-- Calls and visits carry next actions and an Undo.
+- Calls and visits carry next actions and an Undo. A Meeting entry
+  (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
+  (15 to 240) and a Meet, Zoom or Teams link; while ahead with no link it
+  offers Create Google Meet (`meet-create` with `touchId`, Clients: Calls
+  Work), a moved time moves the event and an entry no longer a meeting
+  takes it off; the client's Meetings lists it as Meeting (time, length,
+  link while ahead), never its summary. The link is the `.plink` address.
 - Requests (Request · Fee · State · ⋯):
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
@@ -1521,7 +1533,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
     now but Last month, which ends where this month begins (`periodEnd()`,
     and the report states its last day).
-  - Group by day / stage / status / Task Owner / client / engagement; every
+  - Group by day / stage / status / assignee / client / month; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).
   - A search opens every card; a stage filter does not. A search finds any
@@ -1559,6 +1571,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Going back, skipping ahead, Cancelled and leaving a finished content task
     ask Why? under the control (`askWhy`, `ADspaceAsk.note` once); the reason
     rides the move (`p_note`, or `p_skip_reason` for a skip).
+  - A move into AQC review asks who takes it (`openStep`, the creator first
+    where that is somebody else) from the row, a board card and the task's
+    own button alike; the same move never gives two results.
   - The outcome or refusal is named under the row (`.task-note`).
   - The stage track is 160px. A narrow row ends with the stage at a stated
     width; `is-tight` gives it its own line.
@@ -1582,8 +1597,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; in a gap the nearest column does. A card held at the board's edge
     scrolls it. A card never starts the browser's own drag, and a press on
     it selects no text (a stray selection cancelled the next drag).
-  - The capacity strip counts this week's sessions against
-    `capacity_minutes_week`.
+  - The capacity strip fills each person's bar from the `estimate_minutes`
+    of their open tasks due by the week's end, overdue included, against
+    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
 - The calendar shows every task on its due date (the stage tone) and its
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
   its publish date shows once. On a phone it lists only the days holding
@@ -1628,7 +1644,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Scope change, Internal capacity, Pending assets, Pending confirmation,
   Incorrect date listed.
 - Task fields:
-  - Type: Engagement, Ad hoc, Goodwill, Special.
+  - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Special.
   - Format: the rate card's formats, optional.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
@@ -1660,7 +1676,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     access (`request.jwt.claims`). A rule neither can make waits.
   - Neither function, nor the trigger's, is callable from a browser.
 - The bar's ⋯ holds Templates (`ops.workflows` Work: edits families and makes
-  no task), Select tasks (Manage: a sticky bar with Assign task owner and
+  no task), Select tasks (Manage: a sticky bar with Reassign and
   Delete) and Task numbering (admin); it is drawn only where one applies.
 - A template is a family (`ops_template_variants`): one checklist and the rate
   card formats it serves, each with its own hours; a format belongs to one
@@ -1692,18 +1708,22 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
 - Every colleague picker on a create form starts on the person creating it
-  (Task Owner, a new month's Manager or one with none, a new lead's and a new
+  (Assigned to, a new month's Manager or one with none, a new lead's and a new
   campaign's Person in charge); they change it where someone else takes it.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
-  - A hand-off shows the person, with Keep me as the Task Owner unticked.
+  - A hand-off shows the person, with Keep it assigned to me unticked.
   - The owner's own steps have it ticked.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
-- Skipping a step is ops Work with a reason, and never into a revision. Owner
-  change and hand-over (`ops_hand_over_task`) are Manage.
+- Skipping a step is ops Work with a reason, and never into a revision.
+- Reassign (`ops_assign_task`, `ops_hand_over_task`;
+  `2026-10-05-assignee-reassigns.sql`): the person a task is assigned to
+  (My Work at Work, their own task) and any group above them (Manage, an
+  admin); helpers and the reviewer stay a manager's, and both functions ask
+  `ops_may_see_task`. `mayReassign(t)` draws the controls.
 - Open to take (`2026-10-04-open-to-take.sql`, `ops_tasks.open_at` /
-  `open_by`): the Task Owner or an admin offers an open task to the team
+  `open_by`): the assignee or an admin offers an open task to the team
   (Offer to the team / Withdraw offer in the ⋯, never asks;
   `ops_set_open`, filed `offered` / `offer_withdrawn`); any colleague at My
   Work Work whose client scope holds its client sees it (`ops_may_see_task`)
@@ -1731,7 +1751,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
   - The sheet's and the record's ⋯ are Take or Offer to the team /
-    Withdraw offer (where they apply), Change Task Owner, Make a copy,
+    Withdraw offer (where they apply), Reassign, Make a copy,
     Repeat on a schedule, Delete; Open full record is the sheet's last
     line. The row's ⋯ holds only what the row cannot do (Take where the
     row shows none, the offer, Delete) and is not drawn when empty. No
@@ -1741,7 +1761,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The SOP workflow, numbered in this order: Ready to start, In progress, AQC
   review, Revision (Internal), Client review, Revision (Client), Approved,
   Scheduled, Live (`ops_mark_live`; a reason where the date differs),
-  Performance review (+3 days, back to the creator), Completed, then On hold,
+  Performance review (+7 days, back to the creator), Completed, then On hold,
   Blocked, Cancelled, Taken down; rated 1–5 (`ops_rate_task`). Planning,
   Content meeting scheduled, Changes requested and Published are retired
   (`ops_workflow_stages.retired`): the month holds planning and the meeting.
@@ -1840,7 +1860,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     back on the tasks the page holds).
   - Only Completed (refused while a task is open, `tasks-open` with the
     count), Cancelled (the ⋯, asks, `Keep month`) and Reopen (back to
-    Planning, never asks) are stored. `ops_engagement_set_status` refuses
+    Planning, never asks) are stored. Cancelled cancels the report tasks
+    nobody started (`ops_engagement_cancel_reports`), Reopen asks for them
+    again, and a report task nobody started follows the month's manager
+    (`2026-10-05-month-edits-reach-reports.sql`). `ops_engagement_set_status` refuses
     Ready and In production (`derived-state`); a stored one from before reads
     as open. A task moves into production on the ticks and the meeting, never
     on the stored word.
@@ -1862,22 +1885,26 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
   - A content deliverable is pieces: a line each (description, format, week),
-    Add piece drawing the next with the format above and the week after
+    Add another drawing the next with the format above and the week after
     (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
-    month, type, Task Owner, priority and complexity. Content month reads
+    month, type, assignee, priority and complexity. Month reads
     `{n} planned · {n} added` (`ops_engagement_counts`).
   - `ops_create_pieces(p_payload, p_idem)` makes them through
     `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
     twice the same act.
-  - One piece keeps its own dates and brief. With several, Schedule and the
-    brief leave, the button reads Create N tasks, and each piece takes a
-    tentative publish day inside its week, the week's pieces spread across
-    its seven days (a lone piece with a repeat too).
+  - Every piece's line carries its own due date, typed by whoever plans it
+    and never worked out (`2026-10-05-piece-dates-as-typed.sql`,
+    `dates_as_given`: no template offsets, no tentative day); a blank line
+    reads Not set, and a date already passed is refused on its line. One
+    piece also keeps its first draft, publish date and brief. With several,
+    those leave and the button reads Create N tasks. Only a repeat takes a
+    tentative publish day inside its week, to count from.
   - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
     the same rule on every piece, and what already falls due made at once.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
-  - It asks `ops_engagement_meet_prepare` as the caller.
+  - It asks `ops_engagement_meet_prepare` (a month) or
+    `client_touch_meet_prepare` (a Calls and visits meeting) as the caller.
   - It refuses a slot only where another online meeting overlaps it (a Meet
     link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
     other events on the shared calendar do not count.
@@ -1899,7 +1926,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The task sheets live in `#workSheets`, outside the section.
 
 ### Performance (`js/perf.js`, `?s=team&tab=performance`, `?s=mine`)
-- Grades: Distinction, Strong, Baseline, Needs Guidance, Performance Review.
+- Grades: Distinction, Strong, Baseline, Needs support, Improvement plan
+  (keys A to E never move).
   - C is reward eligible unless the month before was also C.
   - An L3 or L4 breach makes the month not eligible.
   - Pacing counts only for people who run ads.
@@ -1949,6 +1977,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The print is drawn in the browser on the letterhead and never stored. It
   carries no version and no signature lines: a member acknowledges in the
   portal.
+  - Under the letterhead it is the Social Media Report's design
+    (`drawRecord`): sizes and spaces on `S(k) = 10·φ^(k/2)`, headings in
+    title case, tables of white cells under a #f2f2f2 title row and grid,
+    the month's grade shaded in one row of the five, the final score the
+    one bold figure; page one the result (who, Result, Scores, What This
+    Grade Means), page two the follow-up (Issues, If This Result Repeats,
+    Improvement and Follow-up, Queries, Record of This Document); a
+    heading keeps its block, a short paragraph never splits; the foot
+    PRIVATE & CONFIDENTIAL beside the page count, the reference and who
+    downloaded it above.
   - The download is filed first (`perf_printed` answers the server's time,
     who, their address and the released / acknowledged / finalised steps); a
     refused filing makes no file.
@@ -2090,9 +2128,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
   - A report a client has seen is never deleted.
-- The list groups reports by stage (Drafts, In review, Confirmed, Published
-  shut). New report opens on the type as a segment (Accounts Report /
-  Advertising Report). Only Active clients.
+- The list is one tab a stage (`#rhTabs`, the view strip, swipe and the
+  arrows; `tab=` in the address, Drafts left out): Drafts, In review,
+  Confirmed, Published, each with its count, opening on the first that
+  holds any. Under the tab, a card a report month (`period_start`), newest
+  first. Published is held to a period (`#rhPeriod`, Last 3 months by
+  default, Last 12 months, This year, All months; drawn only on that tab),
+  only its newest month open; a search (client, code, month, type) looks
+  through every report, whatever the tab and the period. New report opens
+  on the type as a segment (Accounts Report / Advertising Report). Only
+  Active clients.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
   - The head is the record head: the name, then the state, Preview PDF and

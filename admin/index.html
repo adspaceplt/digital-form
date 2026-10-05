@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261005h">
+<link rel="stylesheet" href="/css/portal.css?v=20261005l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -231,6 +231,8 @@
       <button class="railrow railfoot" id="activityOpen" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
       </button>
+      <!-- The build this console is running, from /version.json. -->
+      <p class="appver" id="appVersion" hidden></p>
     </div>
 
   </aside>
@@ -1155,6 +1157,21 @@
               <div><label class="field-label" for="tcWith">With</label>
                 <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
                 <datalist id="crmContactNames"></datalist></div>
+            </div>
+            <div class="row fgrid-3" id="tcMeetRow" hidden>
+              <div><label class="field-label" for="tcTime">Time</label>
+                <input class="input" id="tcTime" type="time" step="300"></div>
+              <div><label class="field-label" for="tcMins">Length</label>
+                <select class="select" id="tcMins">
+                  <option value="15">15 min</option>
+                  <option value="30" selected>30 min</option>
+                  <option value="45">45 min</option>
+                  <option value="60">1 hour</option>
+                  <option value="90">1.5 hours</option>
+                  <option value="120">2 hours</option>
+                </select></div>
+              <div><label class="field-label" for="tcLink">Link</label>
+                <input class="input" id="tcLink" type="url" inputmode="url" placeholder="Optional"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="tcSummary">Summary</label>
@@ -2153,9 +2170,9 @@
             <option value="due">By day</option>
             <option value="stage">By stage</option>
             <option value="status">By status</option>
-            <option value="owner">By task owner</option>
+            <option value="owner">By assignee</option>
             <option value="client">By client</option>
-            <option value="engagement">By engagement</option>
+            <option value="engagement">By month</option>
           </select>
           <!-- How far back finished work is read. Open work is never bounded
                by it, so nothing overdue can fall out of the queue however old
@@ -2202,7 +2219,7 @@
         <div class="bulkbar" id="workBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="workBulkAll"> <span id="workBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Assign task owner</button>
+            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Reassign</button>
             <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" disabled>Delete</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="workBulkDone" type="button">Done</button>
@@ -2244,7 +2261,7 @@
                   <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
                   <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
                   <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
+                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:work">Reassign</button>
                   <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
                   <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
                   <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
@@ -2278,9 +2295,9 @@
             <ul class="tnext-list" id="taskNextList" hidden></ul>
             <p class="tnext-late" id="taskNextLate" hidden></p>
             <div class="qhand" id="taskHand" hidden>
-              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Keep me as the Task Owner</span></label>
+              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Keep it assigned to me</span></label>
               <label class="qhand-lab" id="taskHandLab" for="taskHandTo" hidden>Performance review by</label>
-              <select class="select select-sm" id="taskHandTo" aria-label="New Task Owner" hidden></select>
+              <select class="select select-sm" id="taskHandTo" aria-label="Assign to" hidden></select>
             </div>
             <div class="tnext-acts" id="taskNextActs"></div>
             <div class="qrate" id="taskRate" hidden></div>
@@ -2474,7 +2491,7 @@
             </div>
             <div class="row fgrid" id="dupCodeRow">
               <div class="field">
-                <label class="field-label" for="dupPeriod">Content month</label>
+                <label class="field-label" for="dupPeriod">Month</label>
                 <select class="select" id="dupPeriod"></select>
               </div>
               <div class="field">
@@ -2586,7 +2603,7 @@
           <div class="sheet-body">
             <div class="cmdbar-views kindseg" id="ntKind" role="group" aria-label="Kind of task">
               <button class="acttab" id="ntQuick" type="button" aria-pressed="false">Task</button>
-              <button class="acttab is-on" type="button" aria-pressed="true">Content deliverable</button>
+              <button class="acttab is-on" type="button" aria-pressed="true">Content task</button>
             </div>
             <!-- In the order the decision is made: whose it is and for which
                  month, then the pieces (a line each: what, which format,
@@ -2599,7 +2616,7 @@
               <h4 class="fsec-h">Task details</h4>
               <div class="row fgrid">
                 <div class="field span-all">
-                  <label class="field-label" for="ntScope">Scope</label>
+                  <label class="field-label" for="ntScope">For</label>
                   <select class="select" id="ntScope" data-seg>
                     <option value="client">Client</option>
                     <option value="lead">Lead</option>
@@ -2611,7 +2628,7 @@
                   <select class="select" id="ntClient" aria-required="true"></select>
                 </div>
                 <div class="field" id="ntCodeRow">
-                  <label class="field-label" for="ntPeriod">Content month</label>
+                  <label class="field-label" for="ntPeriod">Month</label>
                   <select class="select" id="ntPeriod"></select>
                 </div>
               </div>
@@ -2626,7 +2643,7 @@
                  the next under it, its format and the week after carried
                  over. The code is the database's, given on save. -->
             <section class="fsec">
-              <h4 class="fsec-h">Pieces</h4>
+              <h4 class="fsec-h">Posts</h4>
               <div class="pieces" id="ntPieces">
                 <div class="piece">
                   <div class="field piece-desc">
@@ -2634,7 +2651,7 @@
                     <input class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off">
                   </div>
                   <div class="field piece-fmt">
-                    <label class="field-label" for="ntFormat">Deliverable format</label>
+                    <label class="field-label" for="ntFormat">Format</label>
                     <select class="select" id="ntFormat">
                     <option value="">Not set</option>
                     <option value="ad_campaign">Ad Campaign</option>
@@ -2661,33 +2678,32 @@
                     <option value="5">Week 5</option>
                   </select>
                   </div>
+                  <div class="field piece-due">
+                    <label class="field-label" for="ntDue">Due date</label>
+                    <input class="input" id="ntDue" type="date">
+                  </div>
                   <button class="iconbtn piece-x" type="button" aria-label="Remove piece 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                   </button>
                 </div>
               </div>
               <div class="pieces-foot">
-                <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add piece</button>
+                <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another</button>
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
             </section>
-            <!-- A lone piece's own dates: publish is tentative until the
-                 content meeting, the first draft is the team's own, the final
-                 date is the promise. Several pieces take a day inside their
-                 week from the database instead, and set their dates later. -->
+            <!-- Every piece's due date is on its own line, typed by whoever
+                 plans it (the user, 2026-10-05: nothing worked out). A lone
+                 piece may also name its first draft and its publish date. -->
             <section class="fsec" id="ntDates">
               <h4 class="fsec-h">Schedule</h4>
-              <div class="row fgrid-3">
+              <div class="row fgrid">
                 <div class="field">
-                  <label class="field-label" for="ntDraft">First draft</label>
+                  <label class="field-label" for="ntDraft">Draft due</label>
                   <input class="input" id="ntDraft" type="date">
                 </div>
                 <div class="field">
-                  <label class="field-label" for="ntFinal">Final due</label>
-                  <input class="input" id="ntFinal" type="date">
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntPublish">Scheduled publish</label>
+                  <label class="field-label" for="ntPublish">Post date</label>
                   <input class="input" id="ntPublish" type="date">
                 </div>
               </div>
@@ -2730,7 +2746,7 @@
               <h4 class="fsec-h">Assignment</h4>
               <div class="row">
                 <div class="field">
-                  <label class="field-label" for="ntOwner">Task Owner</label>
+                  <label class="field-label" for="ntOwner">Assigned to</label>
                   <select class="select" id="ntOwner"></select>
                 </div>
               </div>
@@ -2741,7 +2757,7 @@
                 <div class="field">
                   <label class="field-label" for="ntType">Task type</label>
                   <select class="select" id="ntType" data-seg>
-                    <option value="engagement">Engagement</option>
+                    <option value="engagement">Retainer</option>
                     <option value="adhoc">Ad hoc</option>
                     <option value="goodwill">Goodwill</option>
                     <option value="special">Special</option>
@@ -2789,7 +2805,7 @@
       <div class="sheet" id="engSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="engTitle">
           <div class="sheet-head">
-            <h3 id="engTitle">Engagement</h3>
+            <h3 id="engTitle">Month</h3>
             <button class="iconbtn" id="engClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2797,7 +2813,7 @@
           <div class="sheet-body">
             <div class="row fgrid-3">
               <div class="field">
-                <label class="field-label" for="engPeriod">Content month</label>
+                <label class="field-label" for="engPeriod">Month</label>
                 <select class="select" id="engPeriod"></select>
               </div>
               <div class="field">
@@ -2941,13 +2957,13 @@
                  at the foot of a fold. -->
             <div class="cmdbar-views kindseg" role="group" aria-label="Kind of task">
               <button class="acttab is-on" type="button" aria-pressed="true">Task</button>
-              <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content deliverable</button>
+              <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content task</button>
             </div>
             <label class="field-label" for="qkTitle">Task</label>
             <input class="input" id="qkTitle" placeholder="Write September caption" maxlength="200">
             <div class="row">
               <div class="field">
-                <label class="field-label" for="qkOwner">Task Owner</label>
+                <label class="field-label" for="qkOwner">Assigned to</label>
                 <select class="select" id="qkOwner"></select>
               </div>
               <div class="field">
@@ -3026,7 +3042,7 @@
                     <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
                     <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
                     <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
+                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:work">Reassign</button>
                     <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
                     <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
@@ -3054,9 +3070,9 @@
               <ul class="tnext-list" id="dwNextList" hidden></ul>
               <p class="tnext-late" id="dwNextLate" hidden></p>
               <div class="qhand" id="dwHand" hidden>
-                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Keep me as the Task Owner</span></label>
+                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Keep it assigned to me</span></label>
                 <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Performance review by</label>
-                <select class="select select-sm" id="dwHandTo" aria-label="New Task Owner" hidden></select>
+                <select class="select select-sm" id="dwHandTo" aria-label="Assign to" hidden></select>
               </div>
               <div class="qnext-acts" id="dwActs"></div>
               <div class="qrate" id="dwRate" hidden></div>
@@ -3215,10 +3231,10 @@
               </div>
             </div>
             <div class="stephand" id="stepHand">
-              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Keep me as the Task Owner</span></label>
+              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Keep it assigned to me</span></label>
               <div class="row" id="stepHandRow" hidden>
                 <div class="field">
-                  <label class="field-label" for="stepHandTo" id="stepHandLabel">Next Task Owner</label>
+                  <label class="field-label" for="stepHandTo" id="stepHandLabel">Assign to</label>
                   <select class="select" id="stepHandTo"></select>
                 </div>
               </div>
@@ -3290,7 +3306,7 @@
                   <label class="field-label" for="teKind">Workflow</label>
                   <select class="select" id="teKind" data-seg>
                     <option value="task">Everyday task</option>
-                    <option value="content">Content deliverable</option>
+                    <option value="content">Content task</option>
                   </select>
                 </div>
               </div>
@@ -3300,7 +3316,7 @@
               <h4 class="fsec-h">Task settings</h4>
               <div class="row fgrid-3">
                 <div class="field">
-                  <label class="field-label" for="teOwner">Task Owner</label>
+                  <label class="field-label" for="teOwner">Assigned to</label>
                   <select class="select" id="teOwner"></select>
                 </div>
                 <div class="field">
@@ -3347,7 +3363,7 @@
       <div class="sheet" id="giveSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="giveTitle">
           <div class="sheet-head">
-            <h3 id="giveTitle">Change Task Owner</h3>
+            <h3 id="giveTitle">Reassign</h3>
             <button class="iconbtn" id="giveClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -3355,13 +3371,13 @@
           <div class="sheet-body">
             <div class="row">
               <div class="field">
-                <label class="field-label" for="giveTo">New Task Owner</label>
+                <label class="field-label" for="giveTo">Assign to</label>
                 <select class="select" id="giveTo"></select>
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label class="field-label" for="giveNote">Note for the new Task Owner</label>
+                <label class="field-label" for="giveNote">Note for them</label>
                 <textarea class="input" id="giveNote" rows="3" placeholder="Optional"></textarea>
               </div>
             </div>
@@ -3662,9 +3678,9 @@
               <option value="">All statuses</option>
               <option value="none">Not started</option>
               <option value="draft">Draft</option>
-              <option value="released">Released</option>
-              <option value="disputed">Disputed</option>
-              <option value="resolved">Resolved</option>
+              <option value="released">Shared</option>
+              <option value="disputed">Query raised</option>
+              <option value="resolved">Query answered</option>
               <option value="acknowledged">Acknowledged</option>
               <option value="final">Final</option>
             </select>
@@ -4245,6 +4261,12 @@
             <input class="input input-sm" id="rhFind" type="search" placeholder="Search client or month" aria-label="Search reports" autocomplete="off">
           </span>
           <select class="select select-sm" id="rhKind" aria-label="Report type"></select>
+          <select class="select select-sm" id="rhPeriod" aria-label="Published in" data-default="3m" hidden>
+            <option value="3m">Last 3 months</option>
+            <option value="12m">Last 12 months</option>
+            <option value="year">This year</option>
+            <option value="all">All months</option>
+          </select>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="rhCount"></span></span>
             <span class="cmdbar-acts">
@@ -4260,7 +4282,8 @@
             </span>
           </span>
         </div>
-        <div id="rhList"></div>
+        <nav class="tabrow rhtabs" id="rhTabs" role="tablist" aria-label="Report stages" hidden></nav>
+        <div id="rhList" role="tabpanel" data-swipe="rhTabs"></div>
       </div>
       <div id="rhEdit" hidden></div>
     </div>
@@ -4744,21 +4767,21 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261005a"></script>
+<script src="/js/admin.js?v=20261005g"></script>
 <script src="/js/documents.js?v=20261005a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261005a"></script>
-<script src="/js/reports.js?v=20261005d"></script>
+<script src="/js/reports.js?v=20261005h"></script>
 <script src="/js/register.js?v=20261004a"></script>
-<script src="/js/crm.js?v=20261005c"></script>
+<script src="/js/crm.js?v=20261005e"></script>
 <script src="/js/sales.js?v=20261005d"></script>
-<script src="/js/team.js?v=20261004a"></script>
+<script src="/js/team.js?v=20261005f"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
-<script src="/js/ops.js?v=20261005d"></script>
-<script src="/js/perf.js?v=20261005e"></script>
+<script src="/js/ops.js?v=20261005h"></script>
+<script src="/js/perf.js?v=20261005g"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261005b"></script>
+<script src="/js/overview.js?v=20261005f"></script>
 </body>
 </html>

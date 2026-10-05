@@ -68,7 +68,7 @@
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
-      meetings: 'Content meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
+      meetings: 'Meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
       join: 'Join meeting', discussion: 'Content Discussion',
       channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
@@ -77,7 +77,7 @@
       reqTitle: function (k) { return T.en[k]; }, line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
       send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
       tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
-      viewAll: 'View all', nextMeeting: 'Next content meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
+      viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
       lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
     },
     zh: {
@@ -105,7 +105,7 @@
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
-      meetings: '内容会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
+      meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
       review: '内容审阅', open: '打开', campaign: '博主推广',
@@ -114,7 +114,7 @@
       reqTitle: function (k) { return T.zh[k]; }, line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
       tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
-      viewAll: '查看全部', nextMeeting: '下次内容会议', latestReport: '最新报告', yourManager: '您的客户经理',
+      viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
       lines: function (n) { return n + ' 项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
     }
   });
@@ -500,7 +500,9 @@
       : a.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept').replace(',', '');
     return day + ', ' + clock(a) + ' – ' + clock(b);
   }
-  function meetAgenda(w, per) {
+  function meetAgenda(w, per, kind) {
+    /* A meeting booked outside a month is simply a meeting. */
+    if (kind === 'meeting') return w.meeting;
     var m = /^(\d{4})-(\d{2})$/.exec(per || '');
     if (!m) return w.discussion;
     if (lang === 'zh') return m[1] + '年' + Number(m[2]) + '月' + w.discussion;
@@ -523,7 +525,7 @@
         row.className = 'svc-row doc-row meet-row';
         var items = ahead && v.link ? [['join', w.join]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
+          '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
           '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
           '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held)) + '</span>' +
           menuCell(items);
@@ -549,7 +551,7 @@
     card.hidden = !v;
     if (!v) { box.innerHTML = ''; return; }
     box.innerHTML = '<p class="cp-line"><b>' + esc(meetWhen(v)) + '</b></p>' +
-      '<p class="cp-sub">' + esc(meetAgenda(w, v.period) + ' · ' + (w.channel[v.channel] || w.channel.other)) + '</p>' +
+      '<p class="cp-sub">' + esc(meetAgenda(w, v.period, v.kind) + ' · ' + (w.channel[v.channel] || w.channel.other)) + '</p>' +
       (v.link ? '<div class="cp-card-acts"><a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + '</a></div>' : '');
   }
 

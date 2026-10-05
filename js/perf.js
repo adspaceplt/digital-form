@@ -62,27 +62,27 @@
     account: 'Client servicing, posting accuracy, budget pacing, escalation. Proactively manages every account.'
   };
   var DEPT_WORD = window.ADspaceWords.dept;
-  var BREACH_CAT = { client: 'Client and account risk', delivery: 'Delivery and execution risk',
-                     compliance: 'Compliance and platform risk', asset: 'Asset and financial risk' };
+  var BREACH_CAT = { client: 'Client and account', delivery: 'Delivery and execution',
+                     compliance: 'Compliance and platform', asset: 'Assets and finance' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
-  var STATUS = { none: ['Not started', ''], draft: ['Draft', ''], released: ['Released', 'is-warn'],
-                 disputed: ['Disputed', 'is-warn'], resolved: ['Resolved', 'is-warn'],
+  var STATUS = { none: ['Not started', ''], draft: ['Draft', ''], released: ['Shared', 'is-warn'],
+                 disputed: ['Query raised', 'is-warn'], resolved: ['Query answered', 'is-warn'],
                  acknowledged: ['Acknowledged', ''], final: ['Final', 'is-ok'] };
   var GRADES = [['A', '90–100', 'Distinction'], ['B', '80–89', 'Strong'], ['C', '70–79', 'Baseline'],
-                ['D', '60–69', 'Needs Guidance'], ['E', 'Under 60', 'Performance Review']];
+                ['D', '60–69', 'Needs support'], ['E', 'Under 60', 'Improvement plan']];
   var GRADE_TONE = { A: 'is-ok', B: 'is-ok', C: '', D: 'is-warn', E: 'is-danger' };
   var ACTION = {
     A: 'Maintain standard and mentor where needed.',
     B: 'Maintain consistency.',
     C: 'Written improvement report or action plan for the next review cycle.',
     D: 'Intensive training, close guidance and a formal improvement plan.',
-    E: 'Formal performance review is triggered.'
+    E: 'A formal improvement plan, agreed with management.'
   };
   var PATH = {
     development: ['Development path', 'A work or skills shortfall with no client harmed. Repeated months move through a documented, staged improvement process.'],
-    accountability: ['Accountability path', 'A breach occurred, or performance is critical. Forfeits this month\'s bonus, commission eligibility, trip and reward-linked benefits.']
+    accountability: ['Recovery path', 'A serious issue this month, or the month fell well short. This month\'s bonus, commission eligibility, trip and reward-linked benefits do not apply.']
   };
-  var DECISION = { upheld: 'Upheld', partly: 'Partly upheld', not_upheld: 'Not upheld' };
+  var DECISION = { upheld: 'Agreed', partly: 'Partly agreed', not_upheld: 'Not agreed' };
 
   function dateWord(s) {
     if (!s) return '';
@@ -135,7 +135,7 @@
     'denied': 'Your group cannot open performance reviews.',
     'not-team': 'Only a team member can open this.',
     'own-review': 'Your own review is not yours to change.',
-    'not-draft': 'A released month keeps its scores. Revert it to draft to change them.',
+    'not-draft': 'A shared month keeps its scores. Revert it to draft to change them.',
     'incomplete': 'Score all six categories first.',
     'no-staff-code': 'Set their Employee ID on the Team page first. The reference is built from it.',
     'stale': 'Somebody else changed this review. It has been reloaded.',
@@ -145,18 +145,18 @@
     'bad-eval-date': 'The date of evaluation falls on or after the first day of the month reviewed, and not after today.',
     'bad-payload': 'That could not be saved.',
     'bad-category': 'Pick a category.',
-    'bad-severity': 'Pick a lower level than the breach has now.',
+    'bad-severity': 'Pick a lower level than the issue has now.',
     'what-needed': 'Say what happened.',
     'reason-needed': 'A reason is needed.',
-    'cannot-return': 'Only a released month with no dispute can go back to draft.',
-    'open-dispute': 'Answer the dispute first.',
-    'not-released': 'Release it first.',
+    'cannot-return': 'Only a shared month with no query can go back to draft.',
+    'open-dispute': 'Answer the query first.',
+    'not-released': 'Share it first.',
     'already-decided': 'Already answered.',
     'bad-decision': 'Pick a decision.',
-    'dispute-closed': 'This month can no longer be disputed.',
-    'window-closed': 'The time to dispute has passed.',
+    'dispute-closed': 'This month can no longer be queried.',
+    'window-closed': 'The time to raise a query has passed.',
     'nothing-disputed': 'Tick at least one item.',
-    'bad-item': 'That item cannot be disputed.',
+    'bad-item': 'That item cannot be queried.',
     'not-final': 'Only a final record can be reopened.',
     'confirm-mismatch': 'The name and month typed do not match.',
     'admin-only': 'Only an admin can delete a record.',
@@ -168,8 +168,8 @@
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
         ? 'This needs a database update. Ask an admin to run the latest migration.' : (d.message || 'Not saved.');
     }
-    if (d.error === 'window-open') return 'The dispute window is open until ' + timeWord(d.until) + '.';
-    if (d.error === 'month-released') return (d.month || 'That month') + ' is released. Return it to draft to change its breaches.';
+    if (d.error === 'window-open') return 'Queries are open until ' + timeWord(d.until) + '.';
+    if (d.error === 'month-released') return (d.month || 'That month') + ' is shared. Revert it to draft to change its issues.';
     if (d.error === 'wrong-code') return 'Wrong code. ' + d.left + (d.left === 1 ? ' try' : ' tries') + ' left.';
     if (d.error === 'locked') return 'Too many wrong tries. Try again after ' + timeWord(d.until) + '.';
     if (d.error === 'bad-score' && d.max) return 'A score is 0 to ' + d.max + ', in steps of 0.1.';
@@ -429,7 +429,7 @@
     var disputed = reviewed.filter(function (p) { return stateOf(p) === 'disputed'; }).length;
     box.appendChild(G.section({
       route: 'team-perf', key: 'reviewed', name: monthWord(st.period), count: reviewed.length,
-      marks: disputed ? '<span class="chip is-warn">' + disputed + ' disputed</span>' : '',
+      marks: disputed ? '<span class="chip is-warn">' + disputed + (disputed === 1 ? ' query' : ' queries') + '</span>' : '',
       shut: false,
       table: function () { return perfTable(reviewed); }
     }));
@@ -460,7 +460,7 @@
     el.className = 'crm-row perf-row';
     el.setAttribute('data-member', p.team_member_id);
     var meta = [DEPT_WORD[p.department], ROLE_WORD[p.role_family]].filter(Boolean);
-    if (p.breaches) meta.push(p.breaches + (p.breaches === 1 ? ' breach' : ' breaches'));
+    if (p.breaches) meta.push(p.breaches + (p.breaches === 1 ? ' issue' : ' issues'));
     var sum = res && res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '';
     el.innerHTML =
       '<button class="perf-open" type="button"><b>' + esc(p.name) + '</b>' +
@@ -501,19 +501,19 @@
      are typed back and a reason given; the sheet says what the member has
      already seen, and that a downloaded copy then reads Void on the verify
      page. There is no restore. */
-  var SEEN = { released: 'released to them', disputed: 'disputed by them', resolved: 'answered',
+  var SEEN = { released: 'shared with them', disputed: 'queried by them', resolved: 'answered',
                acknowledged: 'acknowledged by them', 'final': 'final' };
   function askDelete(rec, opener) {
     if (!rec.id || !window.ADspaceConfirm) return;
     var typed = (rec.name + ' ' + (rec.month || '')).trim();
     var seen = rec.status && rec.status !== 'draft'
-      ? 'This month has been ' + (SEEN[rec.status] || 'released') + '. A downloaded copy will read Void on the verify page. '
+      ? 'This month has been ' + (SEEN[rec.status] || 'shared') + '. A downloaded copy will read Void on the verify page. '
       : '';
     /* The ⋯ has shut, so its button holds the focus the sheet hands back. */
     if (opener && opener.focus) opener.focus();
     window.ADspaceConfirm.ask({
       title: 'Delete ' + rec.name + '\u2019s ' + (rec.month || 'month'),
-      body: seen + 'The review, its scores and any dispute go, and there is no restore. The history keeps who deleted it and why.',
+      body: seen + 'The review, its scores and any query go, and there is no restore. The history keeps who deleted it and why.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'who', label: 'Type ' + typed + ' to confirm', match: typed, mismatch: 'Type ' + typed + ' to confirm.' },
@@ -773,7 +773,7 @@
       return '<section class="qcard qnext">' +
         '<h3 class="qnext-title">' + (ret ? 'Revert to draft' : 'Reopen') + '</h3>' +
         '<p class="qnext-line">' + esc(ret
-          ? (r.member.name || 'They') + ' stops seeing this month until it is released again.'
+          ? (r.member.name || 'They') + ' stops seeing this month until it is shared again.'
           : 'A new version is opened in draft with the same reference. The final version is kept on the record.') + '</p>' +
         '<form class="qform" id="pvReasonForm" autocomplete="off">' +
           '<label class="field-label" for="pvReason">Reason</label>' +
@@ -786,24 +786,24 @@
       var name = (r.member && r.member.name) || 'They';
       if (!r.id || r.status === 'draft') {
         title = r.id ? 'Draft' : 'Not started';
-        line = name + ' sees nothing of this month, breaches included, until it is released.';
+        line = name + ' sees nothing of this month, issues included, until it is shared.';
         if (canWork()) {
           /* Whether the release tells them: ticked unless management says
              otherwise, on every month (2026-09-27). */
           tick = '<label class="tickline perf-notify"><input type="checkbox" id="pvNotify" checked> <span>Notify ' + esc(name) + '</span></label>';
           acts = '<button class="btn btn-sm btn-primary" id="pvSave" type="button">Save</button>' +
-                 '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Release to ' + esc(name) + '</button>';
+                 '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>';
         }
       } else if (r.status === 'released') {
-        title = 'Released';
-        line = open ? name + ' may dispute it until ' + dUntil + '.' : 'The dispute window has closed. Waiting for acknowledgement.';
+        title = 'Shared';
+        line = open ? name + ' may raise a query until ' + dUntil + '.' : 'Queries have closed. Waiting for acknowledgement.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'disputed') {
         var n = (r.disputes || []).filter(function (x) { return !x.decision; }).length;
-        title = 'Disputed';
+        title = 'Query raised';
         line = n + (n === 1 ? ' item is' : ' items are') + ' waiting for your answer below.';
       } else if (r.status === 'resolved') {
-        title = 'Dispute answered';
+        title = 'Query answered';
         line = open ? 'Waiting for acknowledgement.' : 'Waiting for acknowledgement. It may be finalised now.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'acknowledged') {
@@ -818,18 +818,18 @@
     } else {
       if (r.status === 'released' && open) {
         title = 'Your review is ready';
-        line = 'Acknowledge it, or dispute any part of it by ' + dUntil + '.';
+        line = 'Acknowledge it, or raise a query on any part of it by ' + dUntil + '.';
         acts = '<button class="btn btn-sm btn-go" id="pvAck" type="button">Acknowledge</button>' +
-               '<button class="btn btn-sm" id="pvDisputeGo" type="button">Dispute</button>';
+               '<button class="btn btn-sm" id="pvDisputeGo" type="button">Raise a query</button>';
       } else if (r.status === 'released') {
         title = 'Your review is ready';
-        line = 'The time to dispute has passed.';
+        line = 'The time to raise a query has passed.';
         acts = '<button class="btn btn-sm btn-go" id="pvAck" type="button">Acknowledge</button>';
       } else if (r.status === 'disputed') {
-        title = 'Dispute sent';
+        title = 'Query sent';
         line = 'Waiting for an answer.';
       } else if (r.status === 'resolved') {
-        title = 'Your dispute has been answered';
+        title = 'Your query has been answered';
         line = 'Read the answer below, then acknowledge.';
         acts = '<button class="btn btn-sm btn-go" id="pvAck" type="button">Acknowledge</button>';
       } else if (r.status === 'acknowledged') {
@@ -854,8 +854,8 @@
       return card('Result', '<p class="perf-quiet">Scored ' + num(res.base) + ' of 100 so far. The grade is worked out once all six categories are scored.</p>');
     }
     var lines = [];
-    if (res.capped) lines.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' breach.');
-    if (res.review) lines.push('Management review is triggered.');
+    if (res.capped) lines.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
+    if (res.review) lines.push('Management will follow up.');
     if (res.grade === 'C' && res.previous_grade === 'C') lines.push('Baseline again after a Baseline month, so not reward eligible.');
     var path = res.path && PATH[res.path];
     return card('Result',
@@ -865,7 +865,7 @@
       '</div>' +
       '<dl class="tfacts perf-facts perf-sums">' +
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
-        '<div><dt>Breaches</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at ' + esc(num(Math.abs(res.cap != null ? res.cap : res.deduction))) + ' from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
+        '<div><dt>Issues</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at ' + esc(num(Math.abs(res.cap != null ? res.cap : res.deduction))) + ' from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
         '<div><dt>What it asks</dt><dd>' + esc(ACTION[res.grade] || '') + '</dd></div>' +
         (path ? '<div><dt>If it repeats</dt><dd>' + esc(path[0]) + '<small>' + esc(path[1]) + '</small></dd></div>' : '') +
@@ -898,7 +898,7 @@
           (s != null ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + s + '">Suggested ' + esc(num(s)) + ' from the rates</button>' : '') +
         '</span>' +
         '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
-        '<textarea class="input perf-evidence" id="pvN_' + k + '" rows="1" maxlength="2000" placeholder="Evidence" aria-label="' + esc(c[1]) + ' evidence">' + esc((r.notes || {})[k] || '') + '</textarea>' +
+        '<textarea class="input perf-evidence" id="pvN_' + k + '" rows="1" maxlength="2000" placeholder="Notes" aria-label="' + esc(c[1]) + ' notes">' + esc((r.notes || {})[k] || '') + '</textarea>' +
       '</div>';
     }).join('');
     return card('Scores', '<div class="perf-cats">' + rows + '</div>');
@@ -933,24 +933,24 @@
     var rows = list.map(function (b) {
       var flags = [];
       if (b.repeated) flags.push('Repeated in the quarter');
-      if (b.late) flags.push('Late disclosure');
+      if (b.late) flags.push('Reported late');
       var voiding = st.editing === 'void:' + b.id;
       return '<div class="perf-breach" data-breach="' + esc(b.id) + '">' +
         '<div class="perf-breach-top"><b>' + esc(SEV_WORD[b.severity]) + '</b><span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span></div>' +
         '<p class="perf-breach-what">' + esc(b.what) + '</p>' +
         '<small>' + esc([dateWord(b.occurred_on), BREACH_CAT[b.category]].concat(flags).join(' · ')) + '</small>' +
         (b.evidence && manage() ? '<small class="perf-breach-ev">' + esc(b.evidence) + '</small>' : '') +
-        (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Void</button>' : '') +
-        (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Why is it void?</label>' +
+        (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Withdraw</button>' : '') +
+        (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Why is it withdrawn?</label>' +
           '<input class="input" id="pvVoidWhy" maxlength="300"><div class="qform-acts">' +
-          '<button class="btn btn-sm btn-warn" type="submit">Void</button><button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>' : '') +
+          '<button class="btn btn-sm btn-warn" type="submit">Withdraw</button><button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>' : '') +
       '</div>';
     }).join('');
     var empty = list.length ? '' : '<p class="perf-quiet">None recorded.</p>';
     var act = draft && r.id !== undefined && st.editing !== 'breach'
-      ? '<button class="btn btn-quiet btn-sm qcard-act" id="pvBreachAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log breach</button>' : '';
+      ? '<button class="btn btn-quiet btn-sm qcard-act" id="pvBreachAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add issue</button>' : '';
     var form = draft && st.editing === 'breach' ? breachForm(r) : '';
-    return card('Breaches this month', empty + rows + form, act, 'pvBreaches');
+    return card('Issues this month', empty + rows + form, act, 'pvBreaches');
   }
   function breachForm(r) {
     var today = new Date(), p = new Date(r.period + 'T00:00:00');
@@ -968,10 +968,10 @@
         Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + less(k)) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
       '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
-      '<label class="field-label" for="pvBWhat">Breach description</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
-      '<label class="field-label" for="pvBEv">Evidence</label><input class="input" id="pvBEv" maxlength="500" placeholder="Link or reference">' +
-      '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Hidden or reported late' + less('late') + '</span></label>' +
-      '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Log breach</button>' +
+      '<label class="field-label" for="pvBWhat">What happened</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
+      '<label class="field-label" for="pvBEv">Reference</label><input class="input" id="pvBEv" maxlength="500" placeholder="Optional">' +
+      '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Reported late' + less('late') + '</span></label>' +
+      '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Add issue</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
   }
 
@@ -1006,7 +1006,7 @@
   }
 
   function itemWord(d) {
-    if (d.item === 'breach') return 'Breach' + (d.breach_what ? ': ' + d.breach_what : '');
+    if (d.item === 'breach') return 'Issue' + (d.breach_what ? ': ' + d.breach_what : '');
     return CAT_WORD[d.item] || d.item;
   }
   function disputeCard(r, res) {
@@ -1019,7 +1019,7 @@
       var change = '';
       if (dec && dec !== 'not_upheld') {
         change = d.item === 'breach'
-          ? (dec === 'upheld' ? 'Breach removed.' : 'Lowered to ' + SEV_WORD[d.after_value] + '.')
+          ? (dec === 'upheld' ? 'Issue removed.' : 'Lowered to ' + SEV_WORD[d.after_value] + '.')
           : 'Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
       }
       return '<div class="perf-dispute">' +
@@ -1030,7 +1030,7 @@
         (decide ? decideForm(d, r) : '') +
       '</div>';
     }).join('');
-    return card('Dispute', rows + (mineForm ? disputeForm(r) : ''), '', 'pvDispute');
+    return card('Query', rows + (mineForm ? disputeForm(r) : ''), '', 'pvDispute');
   }
   function decideForm(d, r) {
     var max = (CATS.filter(function (c) { return c[0] === d.item; })[0] || [0, 0, 0])[2];
@@ -1039,7 +1039,7 @@
     return '<form class="qform perf-decide" data-dispute="' + esc(d.id) + '" autocomplete="off">' +
       '<div class="row"><div><label class="field-label" for="pvDec_' + d.id + '">Decision</label>' +
         '<select class="select" id="pvDec_' + d.id + '" data-f="decision"><option value="">Choose</option>' +
-        '<option value="upheld">Upheld</option><option value="partly">Partly upheld</option><option value="not_upheld">Not upheld</option></select></div>' +
+        '<option value="upheld">Agreed</option><option value="partly">Partly agreed</option><option value="not_upheld">Not agreed</option></select></div>' +
       (d.item === 'breach'
         ? '<div data-show="partly" hidden><label class="field-label" for="pvVal_' + d.id + '">Lower it to</label><select class="select" id="pvVal_' + d.id + '" data-f="value">' +
             [1, 2, 3].filter(function (k) { return !sev || k < sev; }).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k]) + '</option>'; }).join('') + '</select></div>'
@@ -1051,21 +1051,21 @@
   }
   function disputeForm(r) {
     var opts = CATS.map(function (c) { return { key: c[0], label: c[1], breach: null }; })
-      .concat((r.breaches || []).map(function (b) { return { key: 'breach', label: 'Breach: ' + b.what, breach: b.id }; }));
+      .concat((r.breaches || []).map(function (b) { return { key: 'breach', label: 'Issue: ' + b.what, breach: b.id }; }));
     return '<form class="qform" id="pvDisputeForm" autocomplete="off">' +
-      '<p class="perf-quiet">Tick what you dispute and say why. You can send one dispute for this month, until ' + esc(timeWord(r.dispute_until)) + '.</p>' +
+      '<p class="perf-quiet">Tick what you would like looked at again and say why. One query a month, until ' + esc(timeWord(r.dispute_until)) + '.</p>' +
       opts.map(function (o, i) {
         return '<div class="perf-dpick"><label class="tickline"><input type="checkbox" data-i="' + i + '" data-item="' + o.key + '"' +
           (o.breach ? ' data-breach="' + esc(o.breach) + '"' : '') + '> <span>' + esc(o.label) + '</span></label>' +
           '<textarea class="input" rows="2" maxlength="1000" data-why="' + i + '" aria-label="Why, ' + esc(o.label) + '" hidden></textarea></div>';
       }).join('') +
-      '<div class="qform-acts"><button class="btn btn-sm btn-go" type="submit">Send dispute</button>' +
+      '<div class="qform-acts"><button class="btn btn-sm btn-go" type="submit">Send query</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
   }
 
-  var EVENT_WORD = { started: 'Started', scored: 'Saved', released: 'Released', returned: 'Reverted to draft',
-    disputed: 'Disputed', decided: 'Dispute answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
-    reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Downloaded', profile: 'Profile changed' };
+  var EVENT_WORD = { started: 'Started', scored: 'Saved', released: 'Shared', returned: 'Reverted to draft',
+    disputed: 'Query raised', decided: 'Query answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
+    reopened: 'Reopened', breach_logged: 'Issue added', breach_voided: 'Issue withdrawn', printed: 'Downloaded', profile: 'Profile changed' };
   /* What a save changed, named (the user, 2026-09-26: "scores saved should
      show which score"): each scorecard and rate from and to, then the notes
      or the plan. An older save named nothing and still reads Saved. */
@@ -1178,7 +1178,7 @@
         if (!d.result || !d.result.complete) { paintSheet(); msg('pvMsg', said({ error: 'incomplete' }), 'err'); return; }
         call('perf_release', { p_token: token, p_review: d.id, p_rev: d.rev, p_notify: tell }, function (x) {
           var who = (x.member && x.member.name) || 'They';
-          if (after(x, tell ? 'Released. ' + who + ' has been told.' : 'Released. ' + who + ' was not notified.')) sheetDirty = true;
+          if (after(x, tell ? 'Shared. ' + who + ' has been told.' : 'Shared. ' + who + ' was not notified.')) sheetDirty = true;
         });
       });
     });
@@ -1237,7 +1237,7 @@
       if (!why) { msg('pvMsg', said({ error: 'reason-needed' }), 'err'); return; }
       call('perf_breach_void', { p_token: token, p_breach: id, p_reason: why }, function (d) {
         if (d.error) { msg('pvMsg', said(d), 'err'); return; }
-        st.editing = null; sheetDirty = true; reread(function () { msg('pvMsg', 'Voided.', 'ok'); });
+        st.editing = null; sheetDirty = true; reread(function () { msg('pvMsg', 'Withdrawn.', 'ok'); });
       });
     });
     var bf = $('pvBreachForm');
@@ -1252,7 +1252,7 @@
         call('perf_breach_log', { p_token: token, p_member: r.team_member_id, p_payload: pay }, function (d) {
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
           st.editing = null; sheetDirty = true;
-          reread(function () { msg('pvMsg', 'Logged. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + '.', 'ok'); });
+          reread(function () { msg('pvMsg', 'Added. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + '.', 'ok'); });
         });
       };
       /* A breach against a month nobody has started starts it, so the
@@ -1299,7 +1299,7 @@
           items.push(it);
         });
         if (!items.length) { msg('pvMsg', said({ error: 'nothing-disputed' }), 'err'); return; }
-        if (missing) { msg('pvMsg', 'Say why for every item you dispute.', 'err'); missing.focus(); return; }
+        if (missing) { msg('pvMsg', 'Say why for every item ticked.', 'err'); missing.focus(); return; }
         call('perf_dispute', { p_review: r.id, p_items: items }, function (d) {
           if (d.error === 'code-needed') { msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
@@ -1436,7 +1436,7 @@
   function paintMine() {
     var box = $('mineList');
     if (!box || !st.mine) return;
-    if (!st.mine.length) { UI.emptyLine(box, 'No reviews released yet.'); return; }
+    if (!st.mine.length) { UI.emptyLine(box, 'No reviews shared yet.'); return; }
     box.innerHTML = '';
     var G = window.ADspaceGroup;
     box.appendChild(G.section({
@@ -1455,7 +1455,7 @@
     b.className = 'crm-row mine-row';
     b.setAttribute('data-review', r.id);
     b.innerHTML = '<span class="mine-month"><b>' + esc(r.month) + '</b>' +
-        (r.dispute_open ? '<small>Dispute by ' + esc(dateWord(r.dispute_until)) + '</small>' : '') + '</span>' +
+        (r.dispute_open ? '<small>Queries until ' + esc(dateWord(r.dispute_until)) + '</small>' : '') + '</span>' +
       '<span class="perf-state">' + statusChip(r.status) + '</span>' +
       '<span class="perf-score">' + esc(res.complete ? num(res.final) : '—') + '</span>' +
       '<span class="perf-grade">' + gradeChip(res) + '</span>' +
@@ -1493,7 +1493,7 @@
     var people = ((st.month && st.month.people) || []).filter(function (p) {
       return p.review && p.review.status !== 'draft';
     });
-    if (!people.length) { msg('perfMsg', 'Nothing released for ' + monthWord(st.period) + ' yet.', 'warn'); return; }
+    if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + ' yet.', 'warn'); return; }
     btn.disabled = true;
     msg('perfMsg', 'Drawing ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
     var recs = [], left = people.length;
@@ -1586,183 +1586,233 @@
     return day + ', ' + at + ' MYT';
   }
 
+  /* The Monthly Performance Record (2026-10-05, the user: "not very golden
+     ratio arranged; doesn't follow the report's beauty and design system").
+     It keeps the letterhead (it is an HR letter, listed and verified as
+     one), and everything under it is drawn as the Social Media Report is:
+     one scale, 10pt times √φ step by step (S), so two steps apart is φ;
+     headings in title case, never capitals; tables of white cells under a
+     shaded title row, the title row and the grid in one grey (#f2f2f2);
+     one bold figure (the final score). Page one is the result, page two
+     the follow-up and the record of this copy, by design rather than by
+     spill. The foot is PRIVATE & CONFIDENTIAL and the page count on one
+     line, with the reference and who downloaded it above. */
+  var RPHI = 1.6180339887;
+  var RS = function (k) { return 10 * Math.pow(RPHI, k / 2); };
   function drawRecord(pdf, p, r) {
     var res = r.result || {}, m = r.member || {};
     var f = p.fonts, M = p.M, R = p.R, W = R - M;
-    var y;
+    var book = f.font, reg = f.bold, med = f.med || f.bold;
+    var g = function (v) { return window.PDFLib.rgb(v, v, v); };
+    var INK = p.ink, SOFT = p.mute, FILL = g(0.949), MARK = g(0.851), PAPER = g(1);
+    var TY = { title: RS(2), head: RS(1), body: RS(0), cell: RS(0), small: RS(-1), figure: RS(2) };
+    var SP = { tight: RS(-2), line: RS(-1), under: RS(1), block: RS(4) };
+    var LH = RS(1);                          // a line of body or cell text
+    var PADX = RS(-2), ROW = RS(3);          // a cell's side padding, a row's least height
+    var FOOT = 30;                           // the letterhead's foot line (the page count)
+    var FLOOR = FOOT + RS(1) + RS(4);        // nothing draws below this
+    var y, pageNo = 0;
     var page = function (first) {
       p.page = pdf.addPage([p.W, p.H]);
-      y = first ? p.head() : p.H - 60;
-      /* Every page names the record it belongs to, so a page lifted out still
-         says whose month it was. */
-      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month, M, 42, 7.5, f.font, p.mute);
+      pageNo++;
+      y = first ? p.head() - SP.under : p.H - M - SP.block;
       var st0 = r.__stamp;
-      p.text('Confidential, internal use' + (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
-        M, 32, 7.5, f.font, p.mute);
+      p.text('PRIVATE & CONFIDENTIAL', M, FOOT, TY.small, reg, INK);
+      p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
+        (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
+        M, FOOT + RS(1), TY.small, book, SOFT);
     };
-    var need = function (h) { if (y - h < 78) page(false); };
-    /* A heading never ends a page: it takes its first lines with it. */
-    var heading = function (s) {
-      need(76);
-      y -= 18;
-      p.text(s.toUpperCase(), M, y, 9, f.bold, p.mute);
-      y -= 6;
-      p.rule(y);
-      y -= 14;
+    var need = function (h) { if (y - h < FLOOR) page(false); };
+    var rect = function (x, yy, w, h, fill) {
+      p.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: fill, borderColor: FILL, borderWidth: 0.75 });
     };
-    var para = function (s, size, font, color, x, max) {
-      (p.wrap(s || '', max || W, size || 10, font || f.font)).forEach(function (ln) {
-        need(14); p.text(ln, x || M, y, size || 10, font || f.font, color || p.ink); y -= (size || 10) + 4;
+    /* A line break written into a cell is kept; each part wraps on its own. */
+    var lines = function (s, max, size, font) {
+      return String(s == null ? '' : s).split('\n').reduce(function (out, part) { return out.concat(p.wrap(part, max, size, font)); }, []);
+    };
+    /* A section's head keeps its first lines with it. */
+    var heading = function (s, keep) {
+      need(SP.block + TY.head + SP.under + (keep || ROW * 2));
+      y -= SP.block;
+      p.text(s, M, y, TY.head, med, INK);
+      y -= SP.under;
+    };
+    /* A short paragraph is never split from itself across a page. */
+    var para = function (s, size, font, color) {
+      var ls = lines(s, W, size || TY.body, font || book);
+      if (ls.length <= 4) need(ls.length * LH);
+      ls.forEach(function (ln) {
+        need(LH); y -= (size || TY.body); p.text(ln, M, y, size || TY.body, font || book, color || INK); y -= LH - (size || TY.body);
       });
     };
-    page(true);
-    p.text('PRIVATE & CONFIDENTIAL', M, y, 9, f.bold);
-    y -= 22;
-    p.text('MONTHLY PERFORMANCE RECORD', M, y, 13, f.med || f.bold);
-    if (r.serial) p.right('Ref ' + r.serial, R, y, 9.5, f.font, p.mute);
-    y -= 22;
+    /* One table: cols are widths in points with an alignment; the head is
+       shaded, every cell framed in the same grey, text wrapped inside its
+       cell, the row as tall as its tallest cell; a row that will not fit
+       starts the next page under the head again. */
+    var table = function (cols, head, rows) {
+      var xs = []; cols.reduce(function (x, c, i) { xs[i] = x; return x + c.w; }, M);
+      var cellOf = function (c, i) {
+        c = typeof c === 'object' && c ? c : { t: c };
+        var font = c.f || book, size = c.size || TY.cell;
+        return { ls: lines(c.t, cols[i].w - PADX * 2, size, font), f: font, size: size, fill: c.fill, color: c.color, align: c.align || cols[i].align || 'left' };
+      };
+      var hOf = function (cells) { return Math.max(ROW, Math.max.apply(null, cells.map(function (c) { return c.ls.length * LH; })) + (ROW - LH)); };
+      var draw = function (cells, h, fillAll) {
+        cells.forEach(function (c, i) {
+          rect(xs[i], y - h, cols[i].w, h, c.fill || fillAll || PAPER);
+          c.ls.forEach(function (ln, k) {
+            var by = y - (ROW - LH) / 2 - k * LH - (LH + c.size * 0.72) / 2;
+            var lw = p.width(ln, c.size, c.f);
+            var lx = c.align === 'right' ? xs[i] + cols[i].w - PADX - lw : c.align === 'center' ? xs[i] + (cols[i].w - lw) / 2 : xs[i] + PADX;
+            p.text(ln, lx, by, c.size, c.f, c.color || INK);
+          });
+        });
+        y -= h;
+      };
+      var hc = head ? head.map(function (t, i) { return cellOf({ t: t, f: reg }, i); }) : null;
+      var hh = hc ? hOf(hc) : 0;
+      rows.forEach(function (row, ri) {
+        var cells = row.map(cellOf), h = hOf(cells);
+        if (ri === 0 || y - h < FLOOR) {
+          if (ri > 0 || y - hh - h < FLOOR) need(hh + h);
+          if (hc) draw(hc, hh, FILL);
+        }
+        draw(cells, h);
+      });
+    };
     var none = 'Not set';
     var pnum = function (v) { return v == null || v === '' ? none : num(v); };
-    var facts = [['Team member', m.name], ['Employee ID', m.staff_code], ['Department', DEPT_WORD[m.department]],
-                 ['Role', ROLE_WORD[m.role_family] || m.designation], ['Review month', r.month],
-                 ['Date of evaluation', r.evaluated_on ? dateWord(r.evaluated_on) : ''],
-                 ['Dispute until', r.dispute_until ? timeWord(r.dispute_until) : ''], ['Reviewed by', r.reviewer]];
-    var colW = W / 4;
-    [facts.slice(0, 4), facts.slice(4)].forEach(function (row) {
-      var most = 1;
-      row.forEach(function (fc, i) {
-        var cx = M + i * colW;
-        var lines = p.wrap(fc[1] || none, colW - 12, 10, f.bold).slice(0, 2);
-        most = Math.max(most, lines.length);
-        p.text(fc[0], cx, y, 8, f.font, p.mute);
-        lines.forEach(function (ln, k) { p.text(ln, cx, y - 12 - k * 12, 10, f.bold); });
-      });
-      y -= 18 + most * 12;
-    });
-    y += 4;
-
-    heading('1 · Result this month');
-    var gw = W / 5, gy = y;
-    need(56);
-    var RANGE = { A: '90 to 100', B: '80 to 89', C: '70 to 79', D: '60 to 69', E: 'under 60' };
-    GRADES.forEach(function (g, i) {
-      var gx = M + i * gw, on = g[0] === res.grade;
-      p.page.drawRectangle({ x: gx + 2, y: gy - 40, width: gw - 4, height: 46,
-        color: on ? p.ink : undefined, borderColor: on ? p.ink : p.line, borderWidth: on ? 1 : 0.8 });
-      var tc = on ? window.PDFLib.rgb(1, 1, 1) : p.ink;
-      p.text(g[0], gx + 10, gy - 16, 16, f.bold, tc);
-      p.text(RANGE[g[0]], gx + 30, gy - 14, 8, f.font, on ? tc : p.mute);
-      p.text(g[2], gx + 10, gy - 32, 8.5, f.font, on ? tc : p.mute);
-    });
-    y = gy - 58;
-    var cells = [['Base score', pnum(res.base) + ' / 100'], ['Breach deduction', res.deduction ? num(res.deduction) : '0'],
-                 ['Final score', pnum(res.final) + ' / 100'], ['Grade', res.grade ? res.grade + ' · ' + res.grade_word : none],
-                 ['Reward eligible', res.complete ? (res.eligible ? 'Yes' : 'No') : none]];
-    cells.forEach(function (c, i) {
-      var cx = M + i * gw;
-      p.text(c[0], cx + 2, y, 8, f.font, p.mute);
-      p.text(c[1], cx + 2, y - 13, 10.5, f.bold);
-    });
-    y -= 34;
-    var notes = [];
-    if (res.capped) notes.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' breach.');
-    if (res.review) notes.push('Management review is triggered.');
-    if (res.grade === 'C' && res.previous_grade === 'C') notes.push('Baseline after a Baseline month, so not reward eligible.');
-    if (notes.length) { para(notes.join(' '), 9, f.font, p.mute); y -= 4; }
-
-    need(20);
-    p.text('Category', M, y, 8, f.bold, p.mute);
-    p.right('Score', M + 190, y, 8, f.bold, p.mute);
-    p.text('Evidence', M + 206, y, 8, f.bold, p.mute);
-    y -= 6; p.rule(y); y -= 13;
-    CATS.forEach(function (c) {
-      var note = (r.notes || {})[c[0]] || '';
-      var lines = note ? p.wrap(note, W - 206, 9, f.font) : [];
-      need(Math.max(1, lines.length) * 12 + 6);
-      p.text(c[1], M, y, 9.5, f.font);
-      p.right(pnum((r.scores || {})[c[0]]) + ' / ' + c[2], M + 190, y, 9.5, f.bold);
-      if (lines.length) lines.forEach(function (ln, i) { p.text(ln, M + 206, y - i * 12, 9, f.font, p.mute); });
-      y -= Math.max(1, lines.length) * 12 + 5;
-    });
-
-    heading('2 · What this grade means');
-    para(res.grade ? ACTION[res.grade] : 'Not graded.', 10);
-    para('Reward eligible: ' + (res.eligible ? 'Yes.' : 'No.'), 10);
-
-    heading('3 · Breach record this month');
-    var br = r.breaches || [];
-    if (!br.length) para('None recorded.', 10, f.font, p.mute);
-    br.forEach(function (b) {
-      var flags = [];
-      if (b.repeated) flags.push('repeated in the quarter (-5)');
-      if (b.late) flags.push('late disclosure (-5)');
-      need(40);
-      p.text(SEV_WORD[b.severity] + ' · ' + BREACH_CAT[b.category], M, y, 9.5, f.bold);
-      p.right(num(b.deduction), R, y, 9.5, f.bold);
-      y -= 13;
-      para(dateWord(b.occurred_on) + (flags.length ? ' · ' + flags.join(', ') : '') , 8.5, f.font, p.mute);
-      para(b.what, 9.5);
-      y -= 3;
-    });
-    if (br.length) para('Each incident is logged once under its highest-impact category. No points are added for fixing a mistake; recovery may prevent escalation, but the breach remains recorded.', 8.5, f.font, p.mute);
-
-    heading('4 · If this result repeats');
-    var path = res.path && PATH[res.path];
-    if (path) { need(14); p.text(path[0], M, y, 10, f.bold); y -= 14; para(path[1], 9.5); }
-    else para('No development or accountability path applies this month.', 9.5, f.font, p.mute);
-    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', 8.5, f.font, p.mute);
-
-    heading('5 · Required improvement and follow-up');
-    para(r.improvement || 'None set.', 10, f.font, r.improvement ? p.ink : p.mute);
     var stop = function (x) { x = String(x || '').trim(); return /[.!?]$/.test(x) ? x : x + '.'; };
-    para('Follow-up date: ' + stop(r.review_by ? dateWord(r.review_by) : none) + '  Step or reward to apply: ' + stop(r.reward_step || none), 9.5);
 
-    heading('6 · Dispute');
+    /* ---- Page one: the result ---- */
+    page(true);
+    p.text('Monthly Performance Record', M, y, TY.title, med, INK);
+    if (r.serial) p.right('Ref ' + r.serial, R, y, TY.small, book, SOFT);
+    y -= SP.under;
+    /* Who and which month: labels shaded, each label to its value as 1 to φ. */
+    var lw = W / (2 * (1 + RPHI)), vw = W / 2 - lw;
+    var lab = function (t) { return { t: t, f: reg, fill: FILL }; };
+    table([{ w: lw }, { w: vw }, { w: lw }, { w: vw }], null, [
+      [lab('Team member'), m.name || none, lab('Review month'), r.month],
+      [lab('Employee ID'), m.staff_code || none, lab('Date of evaluation'), r.evaluated_on ? dateWord(r.evaluated_on) : none],
+      [lab('Department'), DEPT_WORD[m.department] || none, lab('Queries until'), r.dispute_until ? timeWord(r.dispute_until) : none],
+      [lab('Role'), ROLE_WORD[m.role_family] || m.designation || none, lab('Reviewed by'), r.reviewer || none]
+    ]);
+
+    heading('Result', ROW * 4);
+    /* The grade scale as one row, the month's grade shaded; nothing black. */
+    var RANGE = { A: '90 to 100', B: '80 to 89', C: '70 to 79', D: '60 to 69', E: 'Under 60' };
+    var gw = W / GRADES.length;
+    table(GRADES.map(function () { return { w: gw, align: 'center' }; }), null, [
+      GRADES.map(function (gr) { var on = gr[0] === res.grade; return { t: gr[0] + ' · ' + RANGE[gr[0]], f: on ? med : book, fill: on ? MARK : null, color: on ? INK : SOFT }; }),
+      GRADES.map(function (gr) { var on = gr[0] === res.grade; return { t: gr[2], f: on ? med : book, fill: on ? MARK : null, color: on ? INK : SOFT, size: TY.small }; })
+    ]);
+    y -= SP.line;
+    var q = W / 4;
+    table([{ w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }, { w: q, align: 'center' }],
+      ['Base score', 'Deductions', 'Final score', 'Reward eligible'],
+      [[pnum(res.base) + ' / 100', res.deduction ? num(res.deduction) : '0',
+        { t: pnum(res.final) + ' / 100', f: med, size: TY.figure },
+        res.complete ? (res.eligible ? 'Yes' : 'No') : none]]);
+    var notes = [];
+    if (res.capped) notes.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
+    if (res.review) notes.push('Management will follow up.');
+    if (res.grade === 'C' && res.previous_grade === 'C') notes.push('Baseline after a Baseline month, so not reward eligible.');
+    if (notes.length) { y -= SP.line; para(notes.join(' '), TY.small, book, SOFT); }
+
+    heading('Scores', ROW * 3);
+    /* The category and score columns as wide as their widest entry, the
+       notes the rest. */
+    var catW = Math.max.apply(null, CATS.map(function (c) { return p.width(c[1], TY.cell, book); })) + PADX * 2 + 2;
+    var scW = Math.max(p.width('Score', TY.cell, reg), p.width('25 / 25', TY.cell, book)) + PADX * 4;
+    table([{ w: catW }, { w: scW, align: 'center' }, { w: W - catW - scW }], ['Category', 'Score', 'Notes'],
+      CATS.map(function (c) {
+        return [c[1], pnum((r.scores || {})[c[0]]) + ' / ' + c[2], { t: (r.notes || {})[c[0]] || '', color: SOFT }];
+      }));
+
+    heading('What This Grade Means', ROW);
+    para(res.grade ? ACTION[res.grade] : 'Not graded.');
+
+    /* ---- Page two: the follow-up and the record of this copy ---- */
+    if (pageNo === 1) page(false); else y -= SP.block;
+    y += SP.block;                           // the page's first heading sits on its top line
+
+    heading('Issues This Month', ROW * 2);
+    var br = r.breaches || [];
+    var bp = res.points || {};
+    var less = function (k) { return bp[k] == null ? '' : ' (−' + num(bp[k]) + ')'; };
+    if (!br.length) para('None recorded.', TY.body, book, SOFT);
+    else {
+      /* The date, the level over its area and the points as wide as their
+         widest entry; what happened takes the rest. */
+      var fit = function (ws, font) { return Math.max.apply(null, ws.map(function (s) { return p.width(s, TY.cell, font || book); })) + PADX * 2 + 2; };
+      var dW = fit(['30 Sept 2026']), ptW = fit(['Points'], reg) + PADX * 2;
+      var lvW = fit(Object.keys(SEV_WORD).map(function (k) { return SEV_WORD[k]; }).concat(Object.keys(BREACH_CAT).map(function (k) { return BREACH_CAT[k]; })));
+      table([{ w: dW }, { w: lvW }, { w: W - dW - lvW - ptW }, { w: ptW, align: 'center' }],
+        ['Date', 'Level', 'What happened', 'Points'],
+        br.map(function (b) {
+          var flags = [];
+          if (b.repeated) flags.push('Repeated in the quarter' + less('repeat'));
+          if (b.late) flags.push('Reported late' + less('late'));
+          return [dateWord(b.occurred_on), SEV_WORD[b.severity] + '\n' + BREACH_CAT[b.category],
+                  b.what + (flags.length ? ' ' + flags.join('. ') + '.' : ''), num(b.deduction)];
+        }));
+      y -= SP.line;
+      para('Each issue is recorded once, under the area it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.', TY.small, book, SOFT);
+    }
+
+    heading('If This Result Repeats', ROW);
+    var path = res.path && PATH[res.path];
+    if (path) { para(path[0], TY.body, med); para(path[1]); }
+    else para('No development or recovery path applies this month.', TY.body, book, SOFT);
+    y -= SP.tight;
+    para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', TY.small, book, SOFT);
+
+    heading('Improvement and Follow-up', ROW * 3);
+    var lw2 = W / (1 + RPHI) / RPHI;
+    table([{ w: lw2 }, { w: W - lw2 }], null, [
+      [lab('Improvement'), r.improvement || none],
+      [lab('Follow-up date'), r.review_by ? dateWord(r.review_by) : none],
+      [lab('Step or reward'), r.reward_step ? stop(r.reward_step).replace(/\.$/, '') : none]
+    ]);
+
+    heading('Queries', ROW);
     var ds = r.disputes || [];
-    if (!ds.length) para(r.dispute_until ? 'No dispute was raised by ' + timeWord(r.dispute_until) + '.' : 'No dispute raised.', 9.5, f.font, p.mute);
-    ds.forEach(function (d) {
-      need(44);
-      p.text(itemWord(d), M, y, 9.5, f.bold);
-      if (d.decision) p.right(DECISION[d.decision], R, y, 9.5, f.bold);
-      y -= 13;
-      para('Raised: ' + d.reason, 9);
-      if (d.decision) {
-        var change = d.decision === 'not_upheld' ? '' : d.item === 'breach'
-          ? (d.decision === 'upheld' ? ' Breach removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
-          : ' Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
-        para('Answer (' + (d.decided_by || '') + ', ' + dateWord(d.decided_at) + '): ' + d.response + change, 9);
-      }
-      y -= 3;
-    });
+    if (!ds.length) para(r.dispute_until ? 'No query was raised by ' + timeWord(r.dispute_until) + '.' : 'No query raised.', TY.body, book, SOFT);
+    else {
+      var decW = p.width('Partly agreed', TY.cell, book) + PADX * 2 + 2, itW = (W - decW) / RPHI / RPHI;
+      table([{ w: itW }, { w: (W - decW - itW) / 2 }, { w: (W - decW - itW) / 2 }, { w: decW, align: 'center' }],
+        ['Item', 'Raised', 'Answer', 'Decision'],
+        ds.map(function (d) {
+          var change = !d.decision || d.decision === 'not_upheld' ? '' : d.item === 'breach'
+            ? (d.decision === 'upheld' ? ' Issue removed.' : ' Lowered to ' + SEV_WORD[d.after_value] + '.')
+            : ' Score ' + num(d.before_value) + ' to ' + num(d.after_value) + '.';
+          return [itemWord(d), d.reason,
+                  d.decision ? (d.response || '') + change + ' (' + (d.decided_by || '') + ', ' + dateWord(d.decided_at) + ')' : 'Waiting',
+                  d.decision ? DECISION[d.decision] : ''];
+        }));
+    }
 
     /* The record of this copy: every step the portal's server stamped, by
        name, address and time, the download included. Acknowledgement is
        given in the portal and stated here, never signed on paper. */
     var stamp = r.__stamp;
     if (!stamp) return;
-    heading('7 · Record of this document');
-    var STEP = { released: 'Released', acknowledged: 'Acknowledged', finalised: 'Finalised' };
+    var STEP = { released: 'Shared', acknowledged: 'Acknowledged', finalised: 'Finalised' };
     var rows = (stamp.trail || []).filter(function (t) { return STEP[t.kind]; }).map(function (t) {
       return [STEP[t.kind], t.by || '', t.email || '', stampTime(t.at)];
     });
     rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
-    var cols = [M, M + 84, M + 84 + 118, M + 84 + 118 + 168];
-    var head = ['Step', 'Name', 'Email', 'Date and time'];
-    need(22 + rows.length * 16);
-    head.forEach(function (h, i) { p.text(h, cols[i], y, 8.5, f.bold, p.mute); });
-    y -= 6; p.rule(y); y -= 12;
-    rows.forEach(function (row) {
-      need(16);
-      row.forEach(function (c, i) {
-        var max = (i < 3 ? cols[i + 1] : R) - cols[i] - 8;
-        var txt = p.wrap(c, max, 8.5, i === 0 ? f.bold : f.font)[0] || '';
-        p.text(txt, cols[i], y, 8.5, i === 0 ? f.bold : f.font);
-      });
-      y -= 16;
-    });
-    y -= 2;
+    /* The record is one block: its table and its Document ID line together. */
+    heading('Record of This Document', ROW * (rows.length + 1) + SP.line + LH * 2);
+    var stW = p.width('Acknowledged', TY.cell, book) + PADX * 2 + 2;
+    var tmW = p.width('30 Sept 2026, 23:59:59 MYT', TY.cell, book) + PADX * 2 + 2;
+    var rest = W - stW - tmW;
+    table([{ w: stW }, { w: rest / (1 + RPHI) }, { w: rest - rest / (1 + RPHI) }, { w: tmW }],
+      ['Step', 'Name', 'Email', 'Date and time'], rows);
+    y -= SP.line;
     para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
-      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), 8, f.font, p.mute);
+      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), TY.small, book, SOFT);
   }
 
   // ---- Performance rewards (2026-09-28) ------------------------------------------------
@@ -1784,14 +1834,14 @@
   };
   /* Every figure a reason names is the one the rules used (`rules` on the
      quarter, the period and each deal; 2026-10-05), never one typed here. */
-  var WHY = { 'no-month': 'No month released', 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
-    'critical-breach': 'Level 4 breach', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
+  var WHY = { 'no-month': 'No month shared', 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
+    'critical-breach': 'Level 4 issue', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
     'few-b-months': 'Under {months_b} months at B' };
   var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
     'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
     'no-pool': 'No pool set', 'no-budget': 'No budget set' };
   var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', ''], pending: ['Pending', 'is-warn'] };
-  var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under {min}', breach: 'Level 3 or 4 breach' };
+  var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under {min}', breach: 'Level 3 or 4 issue' };
   /* A quarter or half confirmed before its rules were kept says the reason
      without a figure rather than an empty one. */
   var WHY_PLAIN = { 'Average under {min_average}': 'Average under the minimum', 'Under {months_b} months at B': 'Too few months at B',
@@ -2017,7 +2067,7 @@
           if (p.own) return youRow('rwf-row', p, 3);
           var has = p.final != null;
           var el = row('rwf-row', [
-            whoCell(p, p.breach ? 'Level 3 or 4 breach' : ''),
+            whoCell(p, p.breach ? 'Level 3 or 4 issue' : ''),
             cell(has ? esc(num(p.final)) : dash()),
             cell(gradeCell(p.grade)),
             cell(has ? chip(p.eligible ? 'Eligible' : 'Not eligible', p.eligible ? 'is-ok' : '') : dash(), true)
@@ -2365,11 +2415,11 @@
     /* The month's own rules (2026-10-05): the least score for each grade,
        the points a breach takes, and the days a member has to dispute. */
     ['Grades', [['grade_a', 'A from', 'score'], ['grade_b', 'B from', 'score'], ['grade_c', 'C from', 'score'], ['grade_d', 'D from', 'score']]],
-    ['Breaches', [['ded_l1', 'Level 1 (points)', 'points'], ['ded_l2', 'Level 2 (points)', 'points'],
+    ['Issues', [['ded_l1', 'Level 1 (points)', 'points'], ['ded_l2', 'Level 2 (points)', 'points'],
       ['ded_l3', 'Level 3 (points)', 'points'], ['ded_l4', 'Level 4 (points)', 'points']]],
     ['Repeats, lateness and the cap', [['ded_repeat', 'A repeat adds (points)', 'points'], ['ded_late', 'Late adds (points)', 'points'],
       ['ded_cap', 'Most a month loses (points)', 'points']], 'fgrid-3'],
-    ['Disputes', [['dispute_days', 'Days to dispute after release', 'days']]]
+    ['Queries', [['dispute_days', 'Days to raise a query after sharing', 'days']]]
   ];
   var RW_LABEL = {};
   RW_SET.forEach(function (g) { g[1].forEach(function (f) { RW_LABEL[f[0]] = f; }); });
