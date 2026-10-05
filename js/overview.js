@@ -139,7 +139,7 @@
                 var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
                 return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
                          meta: [t.clients.name, (W.stage || {})[t.clients.stage] || t.clients.stage].filter(Boolean).join(' · '),
-                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: 'warn',
+                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: n > 0 ? 'warn' : '',
                          age: 'Urgent delivery',
                          url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
               }) };
