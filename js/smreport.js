@@ -247,12 +247,18 @@
      platforms are not). Facebook and Instagram reported together take
      Meta's blue. A colour already used, or a platform with none, takes the
      next of a set that stays apart from these. Only marks take colour; every
-     word stays in ink. */
+     word stays in ink. One Pantone family of equal depth (the user,
+     2026-10-07: modern, minimalist, elegant; the platforms' own fluorescent
+     brand colours read loud beside each other): each platform's hue, none
+     brighter than the rest. */
   var PLAT_COLOR = {
-    facebook: '#1877F2', instagram: '#E1306C', meta: '#0866FF', tiktok: '#111111', rednote: '#FF2442', xhs: '#FF2442',
-    youtube: '#FF0000', linkedin: '#0A66C2', x: '#111111', threads: '#111111', wechat: '#07C160'
+    facebook: '#3A5DAE' /* 7455 C */, instagram: '#B7295A' /* 7425 C */, meta: '#004C97' /* 2945 C */,
+    tiktok: '#101820' /* Black 6 C */, rednote: '#C8102E' /* 186 C */, xhs: '#C8102E',
+    youtube: '#BA0C2F' /* 200 C */, linkedin: '#00558C' /* 7462 C */, x: '#101820', threads: '#101820',
+    wechat: '#4C8C2B' /* 362 C */
   };
-  var MORE_COLOR = ['#0F9D8A', '#E8A33D', '#7E57C2', '#8D6E63', '#5C6BC0', '#9E9E9E'];
+  var MORE_COLOR = ['#007681' /* 7474 C */, '#B58500' /* 7556 C */, '#5F259F' /* 267 C */,
+                    '#7A6855' /* 7531 C */, '#425563' /* 7545 C */, '#75787B' /* Cool Gray 9 C */];
   function groupColors(groups) {
     var used = {}, extra = 0;
     return groups.map(function (g) {
