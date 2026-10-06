@@ -1948,17 +1948,33 @@
       bs.forEach(function (b) {
         var row = document.createElement('div');
         row.className = 'wl-brand' + (b.active ? '' : ' is-off');
-        row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (b.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
+        var own = b.logo === 'adspace';
+        row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">ADspace logo</span>' : '') +
+          (b.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
           (can ? '<span class="team-act">' +
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
               '<button class="kmenu-item" data-a="rename" type="button"><b>Rename</b></button>' +
+              '<button class="kmenu-item" data-a="logo" type="button"><b>' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</b></button>' +
               '<button class="kmenu-item" data-a="state" type="button"><b>' + (b.active ? 'Set inactive' : 'Set active') + '</b></button>' +
             '</div></span>' : '');
         list.appendChild(row);
         if (!can) return;
         wireMenu(row);
         row.querySelector('[data-a="rename"]').addEventListener('click', function () { brandAsk(c, b); });
+        /* Whose mark heads the brand's reports (2026-10-07); reversible, so
+           it never asks. A published version keeps the mark it went out with. */
+        row.querySelector('[data-a="logo"]').addEventListener('click', function () {
+          db.rpc('client_brand_logo', { p_id: b.id, p_logo: own ? 'partner' : 'adspace' }).then(function (q) {
+            var d = (q && q.data) || {};
+            if ((q && q.error) || d.error) {
+              msg('crmBrandNote', d.error === 'denied' ? 'This needs Reports: White label.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
+              return;
+            }
+            msg('crmBrandNote', 'Saved.', 'ok');
+            loadBrands(c);
+          }).catch(function (e) { msg('crmBrandNote', (e && e.message) || 'Not saved.', 'err'); });
+        });
         row.querySelector('[data-a="state"]').addEventListener('click', function () {
           var go = function () { saveBrand(c, b, b.name, !b.active); };
           if (!b.active) { go(); return; }

@@ -433,7 +433,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames(), labelOf(st.open.label_client)])).then(function (x) {
+      return Promise.all(more.concat([loadNames(), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
@@ -444,13 +444,19 @@
   }
 
   /* The white-label client whose wide logo the report carries (2026-10-07),
-     while it is still ticked, or null. A refused read leaves the head as it
-     was: the PDF reads its own. */
-  function labelOf(cid) {
+     while it is still ticked and the report's brand takes it, or null (a
+     brand set to ADspace's logo). A refused read leaves the head as it was:
+     the PDF reads its own. */
+  function labelOf(cid, brand) {
     if (!cid) return Promise.resolve(null);
-    return db.from('clients').select('id, name, white_label').eq('id', cid).maybeSingle().then(function (q) {
-      var c = q && !q.error && q.data;
-      return c && c.white_label ? c : null;
+    return Promise.all([
+      db.from('clients').select('id, name, white_label').eq('id', cid).maybeSingle(),
+      brand ? db.rpc('client_brands_list', { p_client: cid }) : Promise.resolve(null)
+    ]).then(function (x) {
+      var c = x[0] && !x[0].error && x[0].data;
+      var bs = (x[1] && x[1].data && x[1].data.brands) || [];
+      var b = bs.filter(function (y) { return y.id === brand; })[0];
+      return c && c.white_label && !(b && b.logo === 'adspace') ? c : null;
     }).catch(function () { return null; });
   }
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
@@ -906,7 +912,9 @@
   }
 
   function moreMenu(r, live) {
-    var items = [];
+    /* Download (2026-10-07): the file itself under its own name, to send;
+       Preview PDF's tab holds a passing address and the browser's own name. */
+    var items = ['<button class="kmenu-item" type="button" data-a="download">Download</button>'];
     /* A report in review from before reviewers is given one the same way. */
     if (r.status === 'review' && may('work') &&
         (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
@@ -1038,6 +1046,10 @@
     var r = st.open, m = box.querySelector('[data-m="head"]');
     var on = function (a, fn) { var b = box.querySelector('.rp-head [data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('pdf', function (b) { downloadPdf(b, m); });
+    on('download', function (b) {
+      b.closest('.kmenu').hidden = true;
+      downloadPdf(box.querySelector('.rp-head [data-a="pdf"]') || b, m, true);
+    });
     on('more', function (b) {
       var menu = b.parentNode.querySelector('.kmenu');
       var open = menu.hidden;
@@ -1153,10 +1165,10 @@
   /* The file the client reads: a published report downloads its published
      version; anything else is a preview drawn from the rows as they stand,
      marked Draft on every page. */
-  function downloadPdf(btn, m) {
+  function downloadPdf(btn, m, save) {
     var r = st.open;
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    var tab = openTab();
+    var tab = save ? null : openTab();
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
     var get = r.status === 'published' && live

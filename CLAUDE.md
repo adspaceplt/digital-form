@@ -2160,6 +2160,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     by default, never after today nor before the period (`bad-date`);
     then Change sent date and Mark as not sent; filed from and to. The head
     reads Sent {day}; a published row reads Sent {day} or Not sent.
+  - Download (the head's ⋯, every report, Reports View) saves the PDF under
+    its own name with no tab: Preview PDF's tab holds a passing `blob:`
+    address that cannot be shared, and the browser may name a file saved
+    from it at random.
   - Transfer client (the head's ⋯, an admin's alone, a draft only;
     `sm_report_move`, `2026-10-06-report-move-client.sql`) moves a report
     started under a temporary client to an Active one with no report of its
@@ -2193,8 +2197,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`white-label`). The list names it by its brand with a White label
     chip, the client under it. There is no list of partners
     (`report_partners`, `partner_id`, `sm_report_white_label` and
-    `sm_report_label` are no longer used). `sm_report_snapshot` sends that client (its name and wide
-    logo, while still ticked) and, with a brand, the brand as the client's
+    `sm_report_label` are no longer used). Each brand says whose mark heads
+    its reports (`client_brands.logo`, `partner` by default or `adspace`;
+    `client_brand_logo`, the brand's ⋯ Use ADspace logo / Use {client} logo,
+    never asks, filed from and to; the row's `ADspace logo` chip;
+    `2026-10-07-white-label-brand-logo.sql`). `sm_report_snapshot` sends that client (its name and wide
+    logo, while still ticked and the brand takes it) and, with a brand, the brand as the client's
     name and no client logo; the PDF draws the logo at the head of every page
     in place of the ADspace wordmark (15pt high, two fifths of the line at
     most; the name in the wordmark's face where no logo is held) and a
