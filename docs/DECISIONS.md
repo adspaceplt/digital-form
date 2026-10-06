@@ -1004,3 +1004,6 @@ The same hour the user asked how to mark a creator campaign completed. Nothing d
 
 ### 2026-10-06 · A content set shows its own counts, never the last one's
 The user: opening another client's set in Content Review still showed the previous client's pending counts and videos. `loadPosts` cleared nothing until its answer came, a set with no posts returned before redrawing the strip, covers line or progress, and a slow answer for a set already left could paint over the next. A new set now clears them first (`clearPostView`), an empty set clears them for good, and an answer for a set no longer open is thrown away. `tests/crswitch.js` reproduced both before the fix.
+
+### 2026-10-06 · Platforms in their own colours on the report's chart
+The user, releasing a report: Views by week stacked its platforms in three greys, the third repeated past the third platform, and two accounts set to Other both read "Other". The brand stays monochrome; the platforms are not: each takes its own colour (Facebook #1877F2, Instagram #E1306C, the two together Meta's #0866FF, TikTok #111111, rednote #FF2442), a platform with none or one already used takes the next of a set kept apart from them, and only the marks are coloured. An account on a platform the list does not name is named by the account, in the chart and every table.

@@ -2468,6 +2468,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     and ends on `…`), the row as tall as it needs. The appendix has no Date or
     Format column: the Post column takes their room, a post named by its type
     and day says both, and a titled post carries them on a line under it.
+  - Views by week colours each platform as its own (`PLAT_COLOR`:
+    Facebook, Instagram, Meta's blue for the two together, TikTok, rednote;
+    a missing or repeated colour takes the next of `MORE_COLOR`); only the
+    marks take colour. An account on platform Other is named by the account
+    (the PDF names the platform otherwise, never the handle).
   - Every emoji is drawn and embedded before any page is laid out
     (`sh.ready()` before `draw`).
   - An accounts report reads: Executive summary; Insights and

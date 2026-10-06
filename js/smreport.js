@@ -242,6 +242,28 @@
     facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', rednote: 'rednote', xhs: 'rednote',
     youtube: 'YouTube', linkedin: 'LinkedIn', x: 'X', threads: 'Threads', wechat: 'WeChat', other: 'Other'
   };
+  /* A chart's platforms in their own colours (the user, 2026-10-06: greys
+     side by side could not be told apart; the brand is monochrome, the
+     platforms are not). Facebook and Instagram reported together take
+     Meta's blue. A colour already used, or a platform with none, takes the
+     next of a set that stays apart from these. Only marks take colour; every
+     word stays in ink. */
+  var PLAT_COLOR = {
+    facebook: '#1877F2', instagram: '#E1306C', meta: '#0866FF', tiktok: '#111111', rednote: '#FF2442', xhs: '#FF2442',
+    youtube: '#FF0000', linkedin: '#0A66C2', x: '#111111', threads: '#111111', wechat: '#07C160'
+  };
+  var MORE_COLOR = ['#0F9D8A', '#E8A33D', '#7E57C2', '#8D6E63', '#5C6BC0', '#9E9E9E'];
+  function groupColors(groups) {
+    var used = {}, extra = 0;
+    return groups.map(function (g) {
+      var plats = {};
+      (g.accounts || []).forEach(function (a) { plats[a.platform] = true; });
+      var c = plats.facebook && plats.instagram ? PLAT_COLOR.meta : PLAT_COLOR[(g.accounts[0] || {}).platform];
+      while (!c || used[c]) { c = MORE_COLOR[extra % MORE_COLOR.length]; extra++; if (extra > MORE_COLOR.length * 2) break; }
+      used[c] = true;
+      return c;
+    });
+  }
   var TYPE_WORD = {
     reel: 'Reel', video: 'Video', post: 'Post', photo: 'Photo', carousel: 'Carousel', story: 'Story',
     live: 'Live', short: 'Short', article: 'Article', other: ''
@@ -396,7 +418,10 @@
       var key = a.group_key || ('acc:' + a.id);
       var g = byKey[key];
       if (!g) {
-        g = { key: key, accounts: [], posts: [], label: a.group_label || PLATFORM_WORD[a.platform] || a.platform };
+        /* An account on a platform the list does not name is named by the
+           account, so two of them never both read Other. */
+        g = { key: key, accounts: [], posts: [], label: a.group_label ||
+          (a.platform === 'other' && String(a.account_name || '').trim() ? String(a.account_name).trim() : PLATFORM_WORD[a.platform] || a.platform) };
         byKey[key] = g; groups.push(g);
       }
       g.accounts.push(a);
@@ -954,9 +979,7 @@
     var FILL2 = g(0.851);          // #d9d9d9: a group heading cell
     var EDGE = FILL;               // the grid, in the title row's grey
     var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
-    var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);
-    var SERIES = [INK, DATA2, DATA3];
     var periodW = periodWord(rep.period_start, rep.period_end);
 
     var pages = [];
@@ -1323,7 +1346,10 @@
       var maxV = weeks.reduce(function (m, w) { return Math.max(m, w.total); }, 0) || 1;
       need(h + 30);
       var top = y;
-      if (groups.length > 1) { legend(groups.map(function (gg, i) { return { label: gg.label, color: SERIES[i] || DATA3 }; }), M, top - 6); }
+      var hue = groupColors(groups).map(function (h) {
+        return PDF.rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
+      });
+      if (groups.length > 1) { legend(groups.map(function (gg, i) { return { label: gg.label, color: hue[i] }; }), M, top - 6); }
       var axisW = S(6), plotX = M + axisW, plotW = CW - axisW;
       var base = top - h + 14, plotH = h - 14 - (groups.length > 1 ? 34 : 22);
       var scaleMax = axis(plotX, plotW, base, plotH, maxV);
@@ -1333,7 +1359,7 @@
         groups.forEach(function (gg, gi) {
           var v = wk.by[gg.key] || 0; if (!v) return;
           var bh = plotH * (v / scaleMax);
-          rect(cx - bw / 2, yy, bw, Math.max(0.8, bh - (gi < groups.length - 1 ? 1 : 0)), SERIES[gi] || DATA3);
+          rect(cx - bw / 2, yy, bw, Math.max(0.8, bh - (gi < groups.length - 1 ? 1 : 0)), groups.length > 1 ? hue[gi] : INK);
           yy += bh;
         });
         center(fmt(wk.total), cx, base + plotH * (wk.total / scaleMax) + 5, TY.small, med, INK);
