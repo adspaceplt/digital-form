@@ -988,3 +988,6 @@ The user: "Can our team create the report under temporary client first then chan
 
 ### 2026-10-06 · Meta's times are Pacific
 The user, with Meta Business Suite beside the report: "The timing looks like a bug?" It was. Both Meta exports write Publish time in US Pacific time, whatever the page's own zone: "Celebrate Malaysia Day" reads 09/14/2026 21:03 in the file and 15 September 12:03 on Meta's screen. The import took the written day, so every post before 3 pm (4 pm in the US winter) Malaysian time landed a day early. The date is now the Malaysian day of that Pacific moment, daylight saving included. The same comparison showed Facebook photos with no caption: Meta puts a photo's words under Title and leaves Description empty, and the import ignored Title. Title now stands in for an empty Description, still never as a title. A re-import corrects posts already in a report, since a post is matched by its link.
+
+### 2026-10-06 · Key dates name who did each step
+The user, on a report's Check and submit: "submitted by who is missing". Key dates named the reviewer a report went to and who confirmed it, but not who started it or who submitted it. Both are now named (`created_by`, `submitted_by`), on their own line under the date: two full names beside a date and a duration ran past the card on a phone, measured at 390.

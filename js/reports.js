@@ -839,8 +839,11 @@
   function keyDates(r) {
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
     var marks = [
-      ['Started', r.created_at, ''],
-      ['Submitted', r.status !== 'draft' && r.submitted_at, r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''],
+      /* Who did each step, and to whom it went (the user, 2026-10-06:
+         "submitted by who is missing"). */
+      ['Started', r.created_at, r.created_by && nameOf(r.created_by) ? 'by ' + nameOf(r.created_by) : ''],
+      ['Submitted', r.status !== 'draft' && r.submitted_at, [r.submitted_by && nameOf(r.submitted_by) ? 'by ' + nameOf(r.submitted_by) : '',
+        r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''].filter(Boolean).join(' ')],
       ['Confirmed', r.confirmed_at, r.confirmed_by && nameOf(r.confirmed_by) ? 'by ' + nameOf(r.confirmed_by) : ''],
       ['Published', live && r.status === 'published' && live.published_at, '']
     ].filter(function (x) { return x[1]; });
@@ -849,7 +852,7 @@
       var next = marks[i + 1];
       return '<div class="tl-row tl-stage">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(x[0]) + '</span>' +
-          '<span class="tl-when">' + esc(stampWord(x[1]) + (x[2] ? ' · ' + x[2] : '')) + '</span></span>' +
+          '<span class="tl-when">' + esc(stampWord(x[1])) + '</span>' + (x[2] ? '<span class="tl-who">' + esc(x[2]) + '</span>' : '') + '</span>' +
         '<span class="tl-span">' + (next ? esc(spanWord(new Date(next[1]) - new Date(x[1]))) : '') + '</span></div>';
     });
     var last = marks[marks.length - 1][1];

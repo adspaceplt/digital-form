@@ -2360,7 +2360,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     moved to another step or screen is saved all the same and shown when
     that report's Commentary is next opened, once (`aiKept`).
   - Check and submit ends in Key dates (`keyDates()`, two marks at least):
-    Started, Submitted (to whom), Confirmed (by whom), Published, each with
+    Started (by whom), Submitted (by whom, to whom), Confirmed (by whom),
+    Published, the names on their own line under the date (`.tl-who`), each with
     the time since the step before, and the total (so far); the rows sit in
     the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
