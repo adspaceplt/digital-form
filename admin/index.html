@@ -318,10 +318,11 @@
           <!-- The theme is on the bar now, on its own control. A second copy
                here would be the same fact twice, and the menu is who you are
                and the way out. -->
-          <!-- A person's own performance reviews are theirs, so they sit with
-               who you are rather than among the sections everybody shares. -->
+          <!-- A person's own HR records (reviews, initiatives, reflection,
+               letters) are theirs, so they sit with who you are rather than
+               among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My performance
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My HR
           </button>
           <!-- The person's own card to hand a client (js/namecard.js). -->
           <button class="kmenu-item" id="myCard" type="button">
@@ -3956,7 +3957,7 @@
       </div>
     </div>
 
-    <!-- ---- My performance: the signed-in person's own released months.
+    <!-- ---- My HR: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
     <div class="console-body" id="sectionHandbook" hidden>
@@ -4057,7 +4058,7 @@
            emailed to them in the last 15 minutes. -->
       <section class="lockcard" id="mineLock" hidden aria-labelledby="mineLockTitle">
         <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
-        <h3 class="lockcard-title" id="mineLockTitle">Your reviews are locked</h3>
+        <h3 class="lockcard-title" id="mineLockTitle">Your records are locked</h3>
         <p class="lockcard-line" id="mineLockLine"></p>
         <div class="lockcard-form">
           <input class="input lockcard-code" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
@@ -4589,7 +4590,7 @@ raya-2026        https://example.com/raya"></textarea>
         <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
           <select class="select" id="docMember" aria-required="true"></select></div>
       </div>
-      <!-- An HR letter is the colleague's to read in My performance (Letters)
+      <!-- An HR letter is the colleague's to read in My HR (Letters)
            and they are told; untick for a draft not yet theirs. -->
       <label class="tickline" id="docShareRow" hidden><input type="checkbox" id="docShare" checked> <span id="docShareWord">Share with the colleague</span></label>
       <!-- The fields run in the order the letter prints them: reference and
@@ -4806,7 +4807,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261007c"></script>
+<script src="/js/admin.js?v=20261007d"></script>
 <script src="/js/documents.js?v=20261005a"></script>
 <script src="/js/letters.js?v=20261006a"></script>
 <script src="/js/smreport.js?v=20261007a"></script>
@@ -4819,7 +4820,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/handbook.js?v=20261007a"></script>
 <script src="/js/campaigns.js?v=20261006a"></script>
 <script src="/js/ops.js?v=20261007a"></script>
-<script src="/js/perf.js?v=20261007a"></script>
+<script src="/js/perf.js?v=20261007b"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261005f"></script>
 </body>
