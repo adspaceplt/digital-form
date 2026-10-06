@@ -1541,7 +1541,9 @@
       if (!v || /[{}%]/.test(v.commit + v.built)) return;
       var at = new Date(v.built);
       if (isNaN(at)) return;
-      box.textContent = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.');
+      var sha = String(v.commit || '').slice(0, 7);
+      box.textContent = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.')
+        + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : '');
       box.hidden = false;
     }).catch(function () {});
   }
