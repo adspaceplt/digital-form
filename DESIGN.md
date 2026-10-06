@@ -198,6 +198,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
 | Status | A chip with the word (`.chip`, `.tone`); `select.state-select` (tinted) only for a state that moves as the work |
 | Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
+| Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261007e">
+<link rel="stylesheet" href="/css/portal.css?v=20261007f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -517,6 +517,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmLimits" type="button" hidden>Follow-up limits</button>
+              <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage">Select clients</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -606,6 +607,16 @@
           <div id="crmDueList"></div>
         </section>
 
+        <!-- Select (2026-10-07): the clients ticked and the one change many
+             take at once, each through the write one client uses. -->
+        <div class="bulkbar" id="crmBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="crmBulkAll"> <span id="crmBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" disabled>Change person in charge</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="crmBulkDone" type="button">Done</button>
+        </div>
+        <div class="msg" id="crmBulkMsg"></div>
         <div id="crmList"></div>
         <div id="crmSales" hidden></div>
       </section>
@@ -1387,6 +1398,7 @@
               <div class="kmenu-wrap">
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
+                  <button class="kmenu-item" id="selectPosts" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
                   <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
                 </div>
               </div>
@@ -1414,6 +1426,18 @@
           <button class="btn btn-sm" id="addAssets" data-need="review.sets:work" type="button">Add assets</button>
         </div>
         <nav class="tabrow poststages" id="postStages" role="tablist" aria-label="Posts by stage" hidden></nav>
+        <!-- Select (2026-10-07): the posts ticked under the stage strip and
+             what they can take together, each as one post takes it. -->
+        <div class="bulkbar" id="postBulk" data-narrow="640" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="postBulkAll"> <span id="postBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="postBulkConfirm" type="button" data-need="review.sets:work" hidden>Confirm internally</button>
+            <button class="btn btn-sm" id="postBulkReask" type="button" data-need="review.sets:work" hidden>Request re-approval</button>
+            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" disabled>Delete</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="postBulkDone" type="button">Done</button>
+        </div>
+        <div class="msg" id="postBulkMsg"></div>
         <div class="pairnote" id="pairNote" data-need="review.sets:work" hidden><span id="pairNoteText"></span><button class="btn btn-sm" id="pairCovers" type="button">Pair covers</button></div>
         <div id="postList"></div>
       </section>
@@ -4820,13 +4844,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261007d"></script>
+<script src="/js/admin.js?v=20261007f"></script>
 <script src="/js/documents.js?v=20261007a"></script>
 <script src="/js/letters.js?v=20261007a"></script>
 <script src="/js/smreport.js?v=20261007b"></script>
-<script src="/js/reports.js?v=20261007e"></script>
+<script src="/js/reports.js?v=20261007f"></script>
 <script src="/js/register.js?v=20261007a"></script>
-<script src="/js/crm.js?v=20261007c"></script>
+<script src="/js/crm.js?v=20261007f"></script>
 <script src="/js/sales.js?v=20261005d"></script>
 <script src="/js/team.js?v=20261007a"></script>
 <script src="/js/namecard.js?v=20261003f"></script>

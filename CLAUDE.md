@@ -55,7 +55,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses
     `.single()` on anything but one row (PGRST116; `.maybeSingle()` on more
-    than one).
+    than one). Every read and every function's answer is fresh JSON, so a
+    page changing what it read never changes the row.
   - It refuses, as PostgREST does, a table, column, function or argument the
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
     LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
@@ -1043,6 +1044,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     `campaign.edited`.
   - A completed campaign keeps who ran it.
   - A rename carries onto every record.
+  - Select clients (the bar's ⋯, `clients:manage`): each row shown becomes
+    its tick inside the name cell (`label.client-row.is-picking`, the
+    columns unmoved), a press anywhere on it ticking it; the bar
+    (`#crmBulk`: a tick for every client shown, `n selected`, Done) offers
+    Change person in charge, asking one colleague, moving each ticked client
+    not already theirs through the same write (`.select('id')`, the guard
+    re-checking, filed `client.edited` from and to), naming a refusal
+    against its client, with Undo where it happened putting back each
+    client's own.
 
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
@@ -1332,6 +1342,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - S3 signed PUT.
   - Active clients only.
   - A set's name grows out of New content set; a title is renamed in place.
+- Select posts (the set's ⋯, `review.sets:work`): a tick stands where each
+  post's ⋯ was (`.saved-pick`), the row its target; the bar under the stage
+  strip (`#postBulk`) counts the ticked posts shown and offers, each through
+  what one post takes and refused against its post: Confirm internally (a
+  published set, posts not approved; asked, `review_confirm`, Undo
+  reverting each), Request re-approval (posts the client approved; one
+  reason for all, filed per post) and Delete (`review.sets:manage`, red,
+  the count typed back, `.select('id')`). A set opened afresh holds no
+  ticks.
 - Deleting a set is `can_remove` / Manage, drawn behind it
   (`body.no-remove #deleteSet`). Both deletes take `.select('id')`.
 - Remove from Content Review hides the client and nothing else
@@ -2266,6 +2285,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
+  - Kept as sent (`2026-10-07-report-files-kept.sql`): once a version is
+    published its PDF is drawn from that snapshot and stored once under
+    the bucket's `private/{client}/` (`sign-upload` private, then
+    `sm_report_keep_file`: Reports Work, the key under the report's own
+    client, never replaced; `file_key`, `file_at`, `file_by`). A file
+    stands for the publish it was drawn after (`file_at` not before
+    `published_at`), so a version published again keeps the next file.
+    Every download of a published version (the head's Preview PDF and
+    Download, Select's Download, the client record's tab, the client
+    portal) hands over that file, read back as bytes through
+    `sign-download` `{ reportVersion }` (`sm_report_file_key`, asked as the
+    caller: a colleague at Reports or Clients View on a client they see,
+    any version; a client's contact only the version the portal shows),
+    never a link; a version with no file is drawn from its own snapshot and
+    kept then, and a kept file that does not open is drawn again with
+    "Drawn again: the kept file did not open.". The head's ⋯ Versions
+    (`#rpVerSheet`) lists every version newest first (published when and
+    by whom; On the client portal, or Unpublished and why) with its own
+    Download.
   - A report a client has seen is never deleted.
 - The list is one tab a stage (`#rhTabs`, the view strip, swipe and the
   arrows; `tab=` in the address, Drafts left out): Drafts, In review,
@@ -2909,7 +2947,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     code live only in Supabase.
   - The delete code lives in the database.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
-  and under `private/` (write and read, for invoices) once §5 is done;
+  and under `private/` (write and read, for invoices and each published
+  report's kept PDF) once §5 is done;
   `private/` is closed to CloudFront by the bucket policy. `content/` is
   served only with the media pass once §6 is done (`media-pass` signs with a
   key it made and keeps in `app_secrets`, `cf_media_private`; CloudFront's

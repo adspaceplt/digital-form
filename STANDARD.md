@@ -601,8 +601,9 @@ section holds only what is true of the project as a whole.
 - Documents:
   - Expiring links: built for a campaign's invoice PDF (`sign-download`,
     five minutes, 2026-10-02), on since 2026-10-03
-    (`docs/S3-STORAGE.md` §5 done). Letters and reports are never stored (redrawn
-    on Download). Content Review media and creator drafts open only with
+    (`docs/S3-STORAGE.md` §5 done). Letters are never stored (redrawn on
+    Download); each published version of a report keeps its PDF as it went
+    out (2026-10-07), read back only through `sign-download`. Content Review media and creator drafts open only with
     the media pass (`media-pass`, twelve hours, 2026-10-03), carried by the
     pages since 2026-10-03; required by CloudFront once the user has done
     `docs/S3-STORAGE.md` §6b.

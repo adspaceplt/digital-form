@@ -1620,6 +1620,10 @@ textarea.input { resize: vertical; max-width: 100%; }
 /* Drop the whole spec rather than leave half a pixel count on screen. */
 .saved-meta .spec { overflow: hidden; white-space: nowrap; }
 .saved-actions { grid-area: actions; display: flex; align-items: center; gap: 4px; }
+/* Select posts (2026-10-07): the tick stands where the row's ⋯ was, the
+   whole row its target. */
+.saved-pick { justify-content: center; min-width: 38px; min-height: 38px; margin-block: -6px; cursor: pointer; }
+.saved.is-picking { cursor: pointer; }
 /* A round, quiet mark that only takes colour when you reach for it. */
 .iconbtn {
   width: 38px; height: 38px; flex: 0 0 auto; padding: 0;
@@ -5110,6 +5114,17 @@ body > .shell { width: 100%; }
 /* The mark that says the row goes somewhere, in the column the header leaves
    empty — the same chevron an engagement row on the record already uses. */
 .crm-c-go { width: 15px; height: 15px; color: var(--ink-mute); justify-self: end; }
+/* Select (2026-10-07): the tick leads the name cell, so the columns never
+   move; the header's Client label starts where the names then do, and the
+   cell lets the tick's focus ring show. */
+.cl-pick { flex: 0 0 auto; }
+.crm-row.client-row.is-picking { cursor: pointer; }
+.crm-row.client-row.is-picking .crm-c-name { overflow: visible; }
+.crm-row.client-row.is-picked { background: var(--line-soft); }
+/* The initials' disc is the picked fill's colour, so on a ticked row it
+   takes the card's ground and keeps its shape. */
+.crm-row.client-row.is-picked .cl-mark:not(.has-logo) { background: var(--card); }
+.crm-head.client-row.is-picking > :first-child { padding-left: 74px; }
 /* Restated after the desktop template above, or the five columns win on a
    phone and the name is squeezed to a letter. The state track is fixed here
    too: this rule is the later one, so an `auto` here undid the column the
@@ -5127,6 +5142,8 @@ body > .shell { width: 100%; }
   .cl-mark { flex-basis: 28px; width: 28px; height: 28px; font-size: 11px; }
   .crm-row.client-row .crm-c-name { gap: 10px; align-items: flex-start; }
   .crm-row.client-row .crm-c-meta { padding-left: 38px; }
+  .crm-row.client-row.is-picking .crm-c-meta { padding-left: 66px; }
+  .cl-pick { margin-top: 5px; }
   /* Restated, because the two-line rule above is later in the file than the
      phone rule that hides the cell: the date rides the meta line here. */
   .crm-c-seen { display: none; }
@@ -8190,6 +8207,13 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
   .bulkbar-acts .btn, .bulkbar-acts .select { flex: 1 1 0; min-width: 0; }
 }
+/* A bar in a narrow pane states its own line (`data-narrow`), as a content
+   set's posts do beside their rail: laid as on a phone. Its acts share a line
+   as equal parts and never break a label; a third that will not fit takes
+   the next line whole. */
+.bulkbar.is-narrow .bulkbar-done { order: 1; margin-left: auto; }
+.bulkbar.is-narrow .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
+.bulkbar.is-narrow .bulkbar-acts .btn { flex: 1 1 0; min-width: max-content; white-space: nowrap; }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
 #qkForm .row { margin-top: 16px; }
@@ -8650,6 +8674,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-out-row.crm-head { padding: 12px 15px 8px; }
 .rp-out-row.crm-row { padding: 10px 15px; min-height: 52px; }
 .rp-out-act { display: flex; justify-content: flex-end; }
+/* Versions (2026-10-07): a row a version, its file at the right edge; the
+   meta (who published it, and why it came off) wraps, being words a person
+   typed. */
+/* Laid as the Handbook's Versions sheet lays them: flush with the sheet's
+   edges, a hairline between. */
+.rp-vrow {
+  display: grid; align-items: center; gap: 4px 12px; grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.rp-vrow:last-child { border-bottom: 0; }
+.rp-vrow .rp-name small { white-space: normal; overflow-wrap: anywhere; }
+.rp-vrow .rp-name .nb { white-space: nowrap; }
+.rp-vact { display: flex; justify-content: flex-end; }
 .rp-out-act .btn svg { width: 14px; height: 14px; }
 .is-narrow .rp-out-row.crm-head { display: none; }
 .is-narrow .rp-out-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "ver state"; gap: 4px 12px; }

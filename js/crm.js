@@ -468,6 +468,8 @@
 
   function paintList() {
     var rows = visible().sort(byCode);
+    state.shown = rows;
+    paintBulk();
     /* The same count everywhere: how many there are, or how many of them a
        filter has left. It used to read "1 client" whether that was the whole
        list or one of forty. */
@@ -508,7 +510,7 @@
         marks: bandMarks(mine),
         shut: !filtered && bandShut(g[0], mine.length === rows.length),
         table: function () {
-          var table = GRP.table('client-row',
+          var table = GRP.table('client-row' + (state.pick ? ' is-picking' : ''),
             ['Client', 'Stage', 'Industry', 'Person in charge', 'Last activity', ''], 'crm-register');
           /* A card draws its first thirty and offers the rest, so a book of a
              hundred and eighty opens as a page somebody can read rather than
@@ -537,9 +539,12 @@
      a chip stranded at the other end of a wide row. */
   function listRow(c) {
     var w = stageWord(c.stage || 'lead');
-    var row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'crm-row client-row';
+    /* Picking (Select clients, 2026-10-07), the row is its tick's label: a
+       press anywhere on it ticks it, and nothing opens. */
+    var picking = Boolean(state.pick);
+    var row = document.createElement(picking ? 'label' : 'button');
+    if (!picking) row.type = 'button';
+    row.className = 'crm-row client-row' + (picking ? ' is-picking' + (state.pick[c.id] ? ' is-picked' : '') : '');
     row.innerHTML =
       /* The number the accounting system issued, under the name it belongs to
          rather than in a column of its own: a seventh column costs the name
@@ -552,6 +557,8 @@
          is held, or where the picture fails to load, so the names keep one
          left edge. Decorative: the name beside it says who it is. */
       '<span class="crm-c crm-c-name">' +
+        (picking ? '<input class="trow-pick cl-pick" type="checkbox"' + (state.pick[c.id] ? ' checked' : '') +
+          ' aria-label="Select ' + esc(c.name || '') + '">' : '') +
         '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + '" aria-hidden="true">' +
           (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">' : esc(initialsOf(c.name || ''))) +
         '</span>' +
@@ -601,9 +608,103 @@
       mk.classList.remove('has-logo');
       mk.textContent = initialsOf(c.name || '');
     });
-    row.addEventListener('click', function () { openClient(c); });
+    if (picking) {
+      row.querySelector('.cl-pick').addEventListener('change', function () {
+        if (this.checked) state.pick[c.id] = 1; else delete state.pick[c.id];
+        row.classList.toggle('is-picked', this.checked);
+        paintBulk();
+      });
+    } else row.addEventListener('click', function () { openClient(c); });
     return row;
   }
+
+  /* SELECT (the user, 2026-10-06: "most of the sections are missing the
+     select button"): Select clients in the bar's ⋯ (Clients Full Access)
+     turns each row shown into its tick; the bar over the list counts them
+     and changes Person in charge for all of them at once, each through the
+     write one client takes (`.select('id')`, the owner guard re-checking),
+     filed as any edit of it, with Undo putting back each client's own. */
+  function setPicking(on) {
+    state.pick = on ? {} : null;
+    msg('crmBulkMsg', '');
+    paintList();
+  }
+  function pickedClients() {
+    return (state.shown || []).filter(function (c) { return state.pick && state.pick[c.id]; });
+  }
+  function paintBulk() {
+    var bar = $('crmBulk');
+    if (!bar) return;
+    bar.hidden = !state.pick || $('crmList').hidden;
+    if (bar.hidden) return;
+    var ids = (state.shown || []).map(function (c) { return c.id; });
+    Object.keys(state.pick).forEach(function (id) { if (ids.indexOf(id) < 0) delete state.pick[id]; });
+    var n = Object.keys(state.pick).length;
+    $('crmBulkCount').textContent = n + ' selected';
+    var all = $('crmBulkAll');
+    all.checked = n > 0 && n === ids.length;
+    all.indeterminate = n > 0 && n < ids.length;
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every client shown');
+    $('crmBulkOwner').disabled = !n;
+  }
+  /* Each client in turn, so a refusal is named against its client. */
+  function setOwners(list, nameOf, then) {
+    var out = { ok: [], bad: [] };
+    list.reduce(function (p, c) {
+      return p.then(function () {
+        var to = nameOf(c);
+        return db.from('clients').update({ owner: to || null }).eq('id', c.id).select('id').then(function (r) {
+          if (r.error || !(r.data || []).length) { out.bad.push({ c: c, err: r.error ? r.error.message : 'refused' }); return; }
+          var was = c.owner || '';
+          var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+          if (mine) mine.owner = to || null;
+          c.owner = to || null;
+          log('client.edited', c.name, 'Person in charge: ' + (was || 'not set') + ' → ' + (to || 'not set'));
+          out.ok.push({ c: c, was: was });
+        }).catch(function (e) { out.bad.push({ c: c, err: (e && e.message) || 'refused' }); });
+      });
+    }, Promise.resolve()).then(function () { then(out); });
+  }
+  function bulkOwner() {
+    var list = pickedClients();
+    if (!list.length) return;
+    var people = (state.team || []).slice().sort(F.byStaff);
+    window.ADspaceConfirm.ask({
+      title: 'Change person in charge?', go: 'Change',
+      field: { label: 'Person in charge', value: '', need: 'Choose a colleague.',
+        choices: [['', 'Choose a colleague']].concat(people.map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; })) }
+    }, function (v) {
+      var to = (v && typeof v === 'object' ? v[0] : v) || '';
+      if (!to) return;
+      var moving = list.filter(function (c) { return (c.owner || '') !== to; });
+      if (!moving.length) { msg('crmBulkMsg', 'No change.', 'ok'); return; }
+      setOwners(moving, function () { return to; }, function (out) {
+        setPicking(false);
+        var badWord = out.bad.length ? ' ' + out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
+          return (x.c.name || 'a client');
+        }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
+        msg('crmBulkMsg', badWord.trim(), out.bad.length ? 'warn' : '');
+        if (!out.ok.length) return;
+        undoBar(out.ok.length + (out.ok.length === 1 ? ' client' : ' clients') + ' now with ' + to + '.', function () {
+          var back = {};
+          out.ok.forEach(function (x) { back[x.c.id] = x.was; });
+          setOwners(out.ok.map(function (x) { return x.c; }), function (c) { return back[c.id]; }, function (res) {
+            paintList();
+            msg('crmBulkMsg', res.bad.length ? res.bad.length + ' not put back.' : 'Put back.', res.bad.length ? 'warn' : 'ok');
+          });
+        }, $('crmBulk'));
+      });
+    });
+  }
+  $('crmSelect').addEventListener('click', function () { setPicking(true); });
+  $('crmBulkDone').addEventListener('click', function () { setPicking(false); });
+  $('crmBulkOwner').addEventListener('click', bulkOwner);
+  $('crmBulkAll').addEventListener('change', function () {
+    var on = this.checked;
+    state.pick = {};
+    if (on) (state.shown || []).forEach(function (c) { state.pick[c.id] = 1; });
+    paintList();
+  });
 
   /* "12 Sept", or "Sept 2026" once the exact day has stopped mattering — the
      same units the stage clock already talks in. */
@@ -2529,7 +2630,23 @@
   /* One line with an Undo on it, for the few seconds after a removal when a
      person realises. Nothing is lost either way; this is only the fast path. */
   var undoTimer = null;
-  function undoBar(text, undo) {
+  function undoBar(text, undo, host) {
+    /* Drawn where the act happened when it was not on a record (the list's
+       Select, 2026-10-07): one line under `host`. */
+    if (host && host.parentNode) {
+      var here = host.parentNode.querySelector(':scope > .undobar-here');
+      if (!here) {
+        here = document.createElement('div');
+        here.className = 'undobar undobar-here';
+        host.parentNode.insertBefore(here, host.nextSibling);
+      }
+      var shut = function () { if (here.parentNode) here.parentNode.removeChild(here); };
+      here.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+      here.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
+      clearTimeout(undoTimer);
+      undoTimer = setTimeout(shut, 8000);
+      return;
+    }
     var bar = $('crmUndo');
     bar.hidden = false;
     bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
