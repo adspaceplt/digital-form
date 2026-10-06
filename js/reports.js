@@ -940,8 +940,8 @@
       st.gate = { id: r.id, g: g };
       var miss = g.missing || [];
       var has = function (k) { return miss.indexOf(k) > -1; };
-      var row = function (ok, title, note, act) {
-        return '<div class="rp-check rp-gate' + (ok ? ' is-done' : ' is-missing') + '">' +
+      var row = function (ok, title, note, act, late) {
+        return '<div class="rp-check rp-gate' + (ok ? ' is-done' : ' is-missing') + (late ? ' is-late' : '') + '">' +
           '<span class="rp-check-mark" aria-hidden="true">' + (ok ? ICON.tick : '') + '</span>' +
           '<span class="rp-check-t"><b>' + esc(title) + '</b><small>' + esc(note) + '</small></span>' + (act || '') + '</div>';
       };
@@ -953,7 +953,7 @@
           g.task ? '#WT' + String(g.task.task_no).padStart(5, '0') : 'Missing',
           g.task && bridge.may && bridge.may('ops', 'view') ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
         (mo ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
-        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late: Submit asks why' : ''));
+        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late: Submit asks why' : ''), '', g.late);
       var card = box.querySelector('.rp-checks');
       if (card) card.insertAdjacentHTML('beforeend', html);
       var open = box.querySelector('[data-a="opentask"]');

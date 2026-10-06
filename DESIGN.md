@@ -37,9 +37,9 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--action-ring` | `#8ab4f8` | `#8ab4f8` | The focus ring everywhere |
 | `--accent` = `--ok`, `--ok-bg` | `#1f7a4d`, `#ecf5f0` | `#4aa876`, `#17281f` | **Green: live state and success only** |
 | `--ok-solid` / `--on-ok` | `#1f7a4d` / `#fff` | `#4aa876` / `#07150e` | A green fill and its text |
-| `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | Caution, pending, reviewing, overdue |
+| `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | Caution and waiting: pending, reviewing, waiting on a person, due soon, over a guidance figure (WIP, capacity), an Important announcement |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#fff` | `#cf9350` / `#1d1408` | A warn fill |
-| `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys or refuses** (danger items, the billing gate, blocked) |
+| `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys, refuses, or is late** (danger items, the billing gate, blocked; a date already passed: overdue, late, Urgent, Urgent delivery, a lead over its follow-up time) |
 | `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | Legacy focus halo |
@@ -263,7 +263,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
   with the soft ink, or the tone of the state it counts where it counts any
   (Content Review: Pending warn, Changes requested rose, Approved green, as
-  the cards' own chips on both sides; Overview: warn where an item is late).
+  the cards' own chips on both sides; Overview: red where an item is late).
   It gives back its room on a phone (4px under 640, 3px under 400) before a
   tab's word is cut.
 - On a phone a sideways swipe presses the tab beside the chosen one
@@ -394,6 +394,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 ### Colour, state, hover
 - One status vocabulary and one colour set, on console and client pages alike
   (`W.TONE`). Pending and reviewing are warn.
+- Late is red, waiting is amber (the user, 2026-10-07): what is past its
+  date needs acting on today, so it takes `--err`, the word beside it
+  (Overdue, late, Urgent); what waits, or is due soon, keeps `--warn`.
 - A stage select is toned by `stage_group`:
   - not started: mute;
   - in hand: none;

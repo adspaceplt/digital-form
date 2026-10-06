@@ -415,7 +415,7 @@
     var att = document.createElement('article');
     att.className = 'chartcard ovw-card sl-attention';
     att.innerHTML = '<div class="ovw-cardhead"><h3>Needs attention</h3>' +
-      (f.attention.length ? '<span class="ovw-count tone is-warn">' + f.attention.length + '</span>' : '') + '</div><div class="ovw-body"></div>';
+      (f.attention.length ? '<span class="ovw-count tone' + (f.attention.some(function (a) { return a.kind === 'cold'; }) ? ' is-danger' : '') + '">' + f.attention.length + '</span>' : '') + '</div><div class="ovw-body"></div>';
     split.appendChild(att);
     var ab = att.querySelector('.ovw-body');
     if (!f.attention.length) UI.emptyLine(ab, 'Nothing waiting.');
@@ -426,7 +426,7 @@
           ? 'Paused' + (a.c.stage_reason ? ' · ' + reasonWord(a.c.stage_reason) : '')
           : stageWord(a.c.stage) + ' · Going cold';
         return '<button class="ovw-row" type="button" data-k="' + k + '"><span class="ovw-who"><b>' + esc(a.c.name) + '</b>' +
-          '<small>' + esc(meta) + '</small></span><span class="ovw-fig"><b' + (a.kind === 'cold' ? ' class="is-warn"' : '') + '>' +
+          '<small>' + esc(meta) + '</small></span><span class="ovw-fig"><b' + (a.kind === 'cold' ? ' class="is-err"' : '') + '>' +
           esc(days(a.days)) + '</b>' + (a.c.owner ? '<small>' + esc(a.c.owner) + '</small>' : '') + '</span></button>';
       }).join('') + '</div>' + (f.attention.length > SHOW ? '<p class="ovw-more">' + (f.attention.length - SHOW) + ' more</p>' : '');
       Array.prototype.forEach.call(ab.querySelectorAll('.ovw-row'), function (b) {
