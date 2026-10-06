@@ -73,12 +73,26 @@
   function liveSteps(guide) {
     return (guide.steps || []).slice(0, 3).filter(function (s) { return targetOf(s); });
   }
-  /* Something else has the person's attention: a sheet, a menu, a question,
-     a cover, the console still booting. */
-  function busy() {
-    return !!document.querySelector(
-      '.sheet:not([hidden]), .kmenu:not([hidden]), #askSheet:not([hidden]), ' +
-      '.console.is-booting, .maint-cover:not([hidden]), .cover:not([hidden]):not(.is-off)');
+  /* Something else is over the page: a sheet, a menu or popover card, a
+     question, the review canvas, the finder, a cover. Drawn, not merely
+     present: the console's Access denied cover sits in a hidden shell. */
+  var LAYERS = '.sheet, #askSheet, .kmenu, .popcard, .canvas, #pickerBox, .maint-cover, .cover';
+  function covered() {
+    var list = document.querySelectorAll(LAYERS);
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (el === card || el.classList.contains('is-off') || el.closest('[hidden]')) continue;
+      if (el.getClientRects().length) return true;
+    }
+    return false;
+  }
+  // Or the console is still booting.
+  function busy() { return covered() || !!document.querySelector('.console.is-booting'); }
+  // A list on the page still drawing its loading rows.
+  function loading() {
+    return Array.prototype.some.call(document.querySelectorAll('.skel'), function (s) {
+      return !s.closest('[hidden]') && s.getClientRects().length > 0;
+    });
   }
 
   function build() {
@@ -113,7 +127,10 @@
 
   function unring() { if (cur && cur.t) cur.t.classList.remove('guide-on'); }
 
-  function paint() {
+  /* `reveal` brings the step's control into view: a step newly shown. A
+     re-lay (a scroll, a press on the page, 中文) never scrolls the page,
+     so the guide follows its control and never pulls the page back. */
+  function paint(reveal) {
     if (!cur) return;
     var s = cur.steps[cur.i], t = targetOf(s);
     /* Its control has gone since (a repaint, a permission): the next step
@@ -133,7 +150,7 @@
     c.querySelector('#guideSkip').textContent = w.skip;
     c.querySelector('#guideSkip').hidden = cur.i === n - 1;
     c.hidden = false;
-    try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
+    if (reveal) { try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
     var r = t.getBoundingClientRect();
     window.ADspaceMenu.pop(t, c, r.left + r.width / 2 < window.innerWidth / 2 ? 'left' : 'right');
   }
@@ -142,7 +159,7 @@
     if (!cur) return;
     if (cur.i + d >= cur.steps.length) { close(true); return; }
     cur.i = Math.max(0, cur.i + d);
-    paint();
+    paint(true);
   }
 
   function close(done) {
@@ -160,28 +177,44 @@
     if (!steps.length) return false;
     close(false);
     cur = { key: key, guide: guide, steps: steps, i: 0, t: null };
-    paint();
+    paint(true);
     if (focus && cur && card) { try { card.querySelector('#guideNext').focus({ preventScroll: true }); } catch (e) {} }
     return true;
   }
 
+  /* After a press or a key on the page: something it opened over the page
+     (a sheet, a menu, the review canvas) means the person has moved on, and
+     the guide ends, met; otherwise the card is laid against its control
+     again, or the next step whose control is still drawn. */
+  var settleT = 0;
+  function settle() {
+    clearTimeout(settleT);
+    settleT = setTimeout(function () {
+      if (!cur) return;
+      if (covered()) close(true); else paint(false);
+    }, 60);
+  }
   /* Pressing the control a step points at is doing what it says: the guide
      has done its work. */
   document.addEventListener('click', function (e) {
-    if (cur && cur.t && cur.t.contains(e.target)) close(true);
+    if (!cur || (card && card.contains(e.target))) return;
+    if (cur.t && cur.t.contains(e.target)) { close(true); return; }
+    settle();
   }, true);
-  // Escape ends it, before anything under it hears the key.
+  /* Escape ends it, before anything under it hears the key; while something
+     else is over the page, that hears it first. */
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape' || !cur || !card || card.hidden) return;
-    if (document.querySelector('.sheet:not([hidden]), #askSheet:not([hidden])')) return;
+    if (!cur || !card || card.hidden) return;
+    if (e.key === 'Enter' || e.key === ' ') { if (!card.contains(e.target)) settle(); return; }
+    if (e.key !== 'Escape' || covered()) return;
     close(true);
     e.stopPropagation();
   }, true);
   // A scroll that carried its control away lays the card against it again.
-  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { if (cur) paint(); });
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { if (cur) paint(false); });
   // The client pages' 中文 switch re-words a guide on screen.
   try {
-    new MutationObserver(function () { if (cur) paint(); })
+    new MutationObserver(function () { if (cur) paint(false); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   } catch (e) {}
 
@@ -192,11 +225,15 @@
       var mine = ++offerSeq;
       var go = function () {
         if (mine !== offerSeq || cur || seen(key)) return;
-        var tries = 0;
+        var tries = 0, last = -1, all = Math.min(3, (guide.steps || []).length);
         (function wait() {
           if (mine !== offerSeq || cur || seen(key)) return;
-          if (!busy() && liveSteps(guide).length) { show(key, guide, false); return; }
-          // A list still loading draws its controls within a few seconds.
+          /* Shown once what it can point at has stopped changing: a list
+             still loading draws its rows a moment after its bar, and a step
+             counted before them would be left out. */
+          var n = busy() || loading() ? 0 : liveSteps(guide).length;
+          if (n && (n === all || n === last)) { show(key, guide, false); return; }
+          last = n;
           if (++tries < 24) waitT = setTimeout(wait, 250);
         })();
       };
