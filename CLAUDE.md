@@ -354,7 +354,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   English, 中文, Link, Starts and Ends as a date beside its time, MYT; one
   saved ends every other of its audience) and `announcement_end(id, on)`;
   each filed `team.changed` under subject Announcements. A plain line, never
-  a scrolling marquee.
+  a scrolling marquee. No bar is made while upgrade mode's cover is up (a box
+  made after the cover would sit outside its `inert`).
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
