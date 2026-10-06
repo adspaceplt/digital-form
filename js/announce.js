@@ -53,10 +53,17 @@
   }
 
   function paint() {
+    var a = shown;
+    /* Nothing to say, or the page is under upgrade mode's cover: no bar, and
+       none made (a box made after the cover would sit outside it). */
+    var quiet = !a || hiddenHere(a) || (document.body && document.body.classList.contains('is-maint'));
+    if (quiet) {
+      var was = document.getElementById('annBar');
+      if (was) { was.hidden = true; was.innerHTML = ''; }
+      return;
+    }
     var bar = host();
     if (!bar) return;
-    var a = shown;
-    if (!a || hiddenHere(a)) { bar.hidden = true; bar.innerHTML = ''; return; }
     var cn = zh();
     var text = cn && a.body_zh ? a.body_zh : a.body_en;
     bar.className = 'annbar' + (a.tone === 'important' ? ' is-important' : '');
