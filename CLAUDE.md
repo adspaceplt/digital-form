@@ -639,7 +639,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.changed` under Settings. One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
   is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
-  bar), Report deadline (My Work's ⋯), an admin's alone.
+  bar), Due dates (My Work's ⋯: report and revision days), an admin's alone.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -1892,13 +1892,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_create_pieces(p_payload, p_idem)` makes them through
     `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
     twice the same act.
-  - Every piece's line carries its own due date, typed by whoever plans it
-    and never worked out (`2026-10-05-piece-dates-as-typed.sql`,
-    `dates_as_given`: no template offsets, no tentative day); a blank line
-    reads Not set, and a date already passed is refused on its line. One
-    piece also keeps its first draft, publish date and brief. With several,
-    those leave and the button reads Create N tasks. Only a repeat takes a
-    tentative publish day inside its week, to count from.
+  - Every piece's line carries three dates, typed by whoever plans it and
+    never worked out (`2026-10-06-three-dates-a-post.sql`,
+    `dates_as_given`: no template offsets): Draft due (ready for AQC
+    review), Due date (for client review) and Post date. A blank one reads
+    Not set; a passed date, a draft due after the due date, or a post date
+    before it is refused on its line. One piece also keeps its brief; with
+    several the button reads Create N tasks. Only a repeat takes a
+    tentative post day inside its week, to count from.
+  - A move into Revision (Client) pushes the due date to today (MYT) plus
+    `revision_due_days` (1), only where that is later than the one held
+    (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
+    request).
   - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
     the same rule on every piece, and what already falls due made at once.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
@@ -2187,7 +2192,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     account shows is filled. One post a Post ID: a Lifetime row is taken as it is (figures
     to the day of the export); day rows are added up inside the report's
     period, reach left blank (it cannot be added across days). The summary
-    line says which.
+    line says which, and says in warn before Import a file with no Views or
+    Reach column (Meta's daily breakdown carries neither).
   - A post already in the account is matched by its link and updated, never
     added twice; a blank cell never clears a figure.
   - Select (`data-a="pickposts"`) ticks posts: Move to account (two accounts
