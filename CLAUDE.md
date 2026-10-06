@@ -906,7 +906,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `proposal_followup_days` 21, calendar days):
   - Lead and Proposal sent read Overdue past theirs;
   - Contacted has no limit.
-  - An over-run stage reads "N days · Overdue" in warn, and the group head
+  - An over-run stage reads "N days · Overdue" in red, and the group head
     counts them.
 - Intake: Brand name (the trading name; the registered name belongs to Billing),
   Source, Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
@@ -1592,7 +1592,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Each section is a tab (`#ovwTabs`, the view strip, swipe and the arrows;
   `tab=` in the address, the first left out) over its own pane, every card
   read once on the visit. A tab counts the items its list cards hold, in
-  warn where a late card has any (`.tab-n.is-warn`).
+  red where a late card has any (`.tab-n.is-err`).
 - Each card asks its own `may()` before any read, at Full Access (`manage`)
   on its section or part (Manage below it shows nothing); the granted parts
   (`ops.reports`, `ops.all`, `team.performance`) at their grant. A card not
@@ -1617,9 +1617,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   published · n in review`; the rows are what is left but review (the card
   above lists those): Not started, Draft, Confirmed, late first, each with
   who has the report task and its due time (else `report_due_days` after the
-  month), late in warn; a row opens the report, else its task.
+  month), late in red; a row opens the report, else its task.
 - No money anywhere on it: no value, revenue or fee.
-- A list card: the title, the count (warn only where late), View all to the
+- A list card: the title, the count (red only where late), View all to the
   section; five rows, name over meta, the figure over its age at the right
   edge, then Show N more listing the rest in the card itself; a row writes
   the record's address and opens it as search does. A
@@ -1725,7 +1725,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The report (`ops_report(p_from, p_to)`, `ops.reports`, no new schema):
   - It reads its figures on arrival, from its address too.
   - Open work by person is bars, most open first, the overdue count beside
-    the name in warn; the Monday counts fold under them.
+    the name in red; the Monday counts fold under them.
   - Stage duration is bars: the median, with the slowest 10% as the mark.
   - On-time delivery by month is a line over the last six months, one
     `ops_report` call a month (`loadTrend`), under the period's own figures.
@@ -1759,7 +1759,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Task fields:
   - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Special.
   - Format: the rate card's formats, optional.
-  - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip.
+  - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip,
+    Urgent in red.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
   - The post date is tentative and never required. It seeds the
     content month and week until they are touched (`ntTouched`). My Work

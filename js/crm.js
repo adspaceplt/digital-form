@@ -531,7 +531,7 @@
        client is worth is read on the record's Services, against the lines
        it is made of, not as a figure on a list. */
     var late = mine.filter(isStale).length;
-    return late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '';
+    return late ? '<span class="tone is-danger crm-band-late">' + late + ' overdue</span>' : '';
   }
 
   /* A column per fact, because that is what every CRM anyone here has used

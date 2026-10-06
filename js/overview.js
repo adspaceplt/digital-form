@@ -117,7 +117,7 @@
             return { count: list.length, rows: list.map(function (t) {
               return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
                        meta: [t.owner || 'Unassigned', t.client].filter(Boolean).join(' · '),
-                       fig: daysWord(Number(t.days_over) || 0) + ' over', figTone: 'warn', age: t.stage || '',
+                       fig: daysWord(Number(t.days_over) || 0) + ' over', figTone: 'err', age: t.stage || '',
                        url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
             }) };
           });
@@ -142,7 +142,7 @@
                 var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
                 return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
                          meta: [t.clients.name, (W.stage || {})[t.clients.stage] || t.clients.stage].filter(Boolean).join(' · '),
-                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: n > 0 ? 'warn' : '',
+                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: n > 0 ? 'err' : '',
                          age: 'Urgent delivery',
                          url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
               }) };
@@ -158,7 +158,7 @@
               rows: list.map(function (r) {
                 var late = Number(r.late) || 0;
                 return { label: r.name, value: Number(r.open) || 0,
-                         note: late ? late + ' late' : '', noteTone: late ? 'warn' : '' };
+                         note: late ? late + ' late' : '', noteTone: late ? 'err' : '' };
               }),
               fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
               table: { heads: ['Assigned to', 'Open', 'Late'],
@@ -210,7 +210,7 @@
               return { count: over.length, rows: over.map(function (x) {
                 var c = x.c;
                 return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, c.owner].filter(Boolean).join(' · '),
-                         fig: daysWord(Math.floor(x.h / 24)), figTone: 'warn', age: 'Overdue',
+                         fig: daysWord(Math.floor(x.h / 24)), figTone: 'err', age: 'Overdue',
                          url: clientUrl(c), section: 'clients' };
               }) };
             });
@@ -341,7 +341,7 @@
                 var o = x.o, cp = o.campaigns || {};
                 return { name: (o.creators && o.creators.name) || 'Creator',
                          meta: [cp.title, (W.step || {})[o.state] || o.state].filter(Boolean).join(' · '),
-                         fig: daysWord(daysSince(x.due)) + ' over', figTone: 'warn',
+                         fig: daysWord(daysSince(x.due)) + ' over', figTone: 'err',
                          age: o.state === 'pending_visit' ? 'Visit ' + dateWord(x.due) : 'Draft due ' + dateWord(x.due),
                          url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=schedule',
                          section: 'campaigns' };
@@ -435,7 +435,7 @@
                          meta: [x.brand ? x.client : '', SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind,
                                 x.assignee].filter(Boolean).join(' · '),
                          fig: STAGE[x.status] || x.status,
-                         age: x.late ? daysWord(over) + ' late' : 'Due ' + dateWord(x.due), ageTone: x.late ? 'warn' : '',
+                         age: x.late ? daysWord(over) + ' late' : 'Due ' + dateWord(x.due), ageTone: x.late ? 'err' : '',
                          url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
                            : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
                            : may('clients') ? clientUrl(c, 'reports') : '/admin/?s=reports',
@@ -487,7 +487,7 @@
     count.textContent = String(out.count || '');
     /* A card late only sometimes says so from what it read. */
     var late = out.warn != null ? Boolean(out.warn) : Boolean(card.warn);
-    count.className = 'ovw-count tone' + (out.count && late ? ' is-warn' : '');
+    count.className = 'ovw-count tone' + (out.count && late ? ' is-danger' : '');
     if (card.onCount) card.onCount(out.count || 0, late);
     var body = el.querySelector('.ovw-body');
     /* A whole being completed (a month's reports) says how far it has got,
@@ -574,7 +574,7 @@
 
   /* One tab a section, in the rail's order (the user, 2026-10-01: a page
      read section by section, not one long scroll). Each tab carries how
-     many items its cards hold waiting, warn where one of them is late, so
+     many items its cards hold waiting, red where one of them is late, so
      the glance across sections survives in the strip. Every card is read
      once on the visit; a tab only shows its pane. The tab rides in the
      address (`tab=`), the first left out. */
@@ -644,7 +644,7 @@
         var badge = tab.querySelector('.tab-n');
         badge.hidden = !n;
         badge.textContent = String(n);
-        badge.classList.toggle('is-warn', late);
+        badge.classList.toggle('is-err', late);
       };
       x.cards.forEach(function (c) {
         drawCard(grid, Object.assign({}, c, { onCount: function (n, warn) { counts[c.key] = { n: n, warn: warn }; mark(); } }));

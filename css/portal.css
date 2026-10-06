@@ -3947,10 +3947,10 @@ body.is-plain .topbar { background: var(--chrome); }
    column, which the phone has nowhere to put. */
 .crm-c-stage { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; white-space: normal; }
 .crm-age { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
-/* A stage that has run past its limit. Warn, the caution colour, and the
+/* A stage that has run past its limit. Red, the late colour, and the
    word Overdue beside it, because the mark has to survive a reader who
    cannot tell the two apart. */
-.crm-age.is-late { color: var(--warn); font-weight: 600; }
+.crm-age.is-late { color: var(--err); font-weight: 600; }
 .crm-c-mkt { font-variant-numeric: tabular-nums; }
 #crmList {
   background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
@@ -4273,8 +4273,8 @@ body > .shell { width: 100%; }
 .task-due > b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .task-due > small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* Overdue carries the word as well as the colour, so the mark survives
-   greyscale and a reader who cannot tell warn from mute. */
-.task-due.is-over > b { color: var(--warn); font-weight: 600; }
+   greyscale and a reader who cannot tell red from mute. */
+.task-due.is-over > b { color: var(--err); font-weight: 600; }
 /* Priority is a chip at the right end of the title line, only where it is
    the exception. */
 .task-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -4319,7 +4319,7 @@ body > .shell { width: 100%; }
   font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.rep-num.is-over { color: var(--warn); }
+.rep-num.is-over { color: var(--err); }
 .rep-open { text-align: left; }
 /* The column heading leaves at the phone breakpoint with every other
    `.crm-head`, so the middle cell's own word is what says what its figure is.
@@ -4556,7 +4556,7 @@ body > .shell { width: 100%; }
 .raildate { display: flex; align-items: baseline; gap: 10px; }
 .raildate dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
-.raildate dd.is-over { color: var(--warn); font-weight: 600; }
+.raildate dd.is-over { color: var(--err); font-weight: 600; }
 /* A commitment that moved keeps where it moved from under the date it is now,
    in the mute face, because the original is written once so replanning can
    be seen and the rail is the one place the dates are stated. */
@@ -4969,7 +4969,7 @@ body > .shell { width: 100%; }
 .touch-summary { font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
 .touch-meta { font-size: 12.5px; color: var(--ink-mute); margin-top: 4px; }
 .touch-next { font-size: 13px; margin-top: 8px; color: var(--ink-soft); font-weight: 500; }
-.touch-next.is-due { color: var(--warn); }
+.touch-next.is-due { color: var(--err); }
 .touch-meet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
 .touch-meet > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
 .touch-meetmsg { margin-top: 8px; }
@@ -4996,7 +4996,7 @@ body > .shell { width: 100%; }
 }
 .due-when { display: flex; flex-direction: column; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
 .due-when em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
-.due-row.is-due .due-when, .due-row.is-due .due-when em { color: var(--warn); }
+.due-row.is-due .due-when, .due-row.is-due .due-when em { color: var(--err); }
 .due-row.is-soon .due-when em { color: var(--accent); }
 .due-client {
   background: none; border: 0; padding: 0; text-align: left; font: inherit;
@@ -6330,7 +6330,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railnext > .railico { grid-column: 1; grid-row: 1 / -1; align-self: start; margin-top: 2px; }
 .railnext-text { grid-column: 2; min-width: 0; font-weight: 600; }
 .railnext-when { grid-column: 2; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
-.railnext-when.is-late { color: var(--warn); font-weight: 600; }
+.railnext-when.is-late { color: var(--err); font-weight: 600; }
 .railmiss > span:first-child { grid-column: 1 / 3; min-width: 0; }
 .railnext > .ovgo-chev, .railmiss > .ovgo-chev {
   grid-column: 3; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--ink-mute);
@@ -6380,9 +6380,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-/* An overdue date is the one anybody scans for: the caution colour and the
+/* An overdue date is the one anybody scans for: the late colour and the
    weight together, so the mark survives greyscale. */
-.raildates dd.is-late { color: var(--warn); font-weight: 600; }
+.raildates dd.is-late { color: var(--err); font-weight: 600; }
 /* A field and the one button that saves it, centred on each other: `end`
    aligned their boxes' bottoms, and a text-only button of a different height
    beside a 44px field then printed its word above the field's own line. */
@@ -6430,9 +6430,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
   text-align: right; font-variant-numeric: tabular-nums;
 }
-/* Overdue is the one thing anybody scans this block for: the caution colour
+/* Overdue is the one thing anybody scans this block for: the late colour
    and the weight together, so the mark survives greyscale. */
-.tl-span.is-late, .tl-when.is-late { color: var(--warn); font-weight: 600; }
+.tl-span.is-late, .tl-when.is-late { color: var(--err); font-weight: 600; }
 .tl-rule { height: 1px; background: var(--line-soft); }
 /* Who did a report's step, and to whom, on its own line under the date
    (2026-10-06), so two names never push the row past its card. */
@@ -7399,7 +7399,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .bcard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bcard-foot .bcard-due { margin-left: auto; flex: 0 0 auto; }
 .bcard-due { white-space: nowrap; }
-.bcard-due.is-over { color: var(--warn); font-weight: 600; }
+.bcard-due.is-over { color: var(--err); font-weight: 600; }
 .bcard .task-note { margin-top: 4px; }
 .is-narrow .board { flex-direction: column; align-items: stretch; overflow-x: visible; padding-bottom: 0; gap: 16px; }
 .is-narrow .bcol { flex: none; width: auto; }
@@ -7448,7 +7448,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cal-chip.is-ok { background: var(--ok-bg); color: var(--ok); }
 .cal-chip.is-warn { background: var(--warn-bg); color: var(--warn); }
 .cal-chip.is-danger { background: var(--err-bg); color: var(--err); }
-.cal-chip.is-late { box-shadow: inset 3px 0 0 var(--warn); }
+.cal-chip.is-late { box-shadow: inset 3px 0 0 var(--err); }
 /* The publish date is a date of its own kind, so it has a colour of its own,
    used nowhere else: the day a post goes out, beside the day work is owed. */
 .cal-chip.is-pub { background: var(--pub-bg); color: var(--pub); }
@@ -7827,7 +7827,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tnext-list { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink); }
 .tnext-list[hidden] { display: none; }
 .tnext-list li + li { margin-top: 2px; }
-.tnext-late { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--warn); }
+.tnext-late { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--err); }
 .tnext-late[hidden] { display: none; }
 /* One filled action, and at most one quiet one beside it. They keep their
    own widths at a desk; on a phone they are the row's two halves. */
@@ -7901,7 +7901,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
 
 .tdate:active, .tdate-src:active { transform: scale(.97); }
-.tdate.is-over, .tdate-read.is-over { color: var(--warn); font-weight: 600; }
+.tdate.is-over, .tdate-read.is-over { color: var(--err); font-weight: 600; }
 .tdate-src { color: var(--ink-soft); }
 .tdate-pick { width: 100%; max-width: 190px; }
 #taskDatesBlock .msg:empty, #taskPeopleBlock .msg:empty { display: none; }
@@ -7982,14 +7982,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tinline[hidden] { display: none; }
 .tinline-pick { width: 100%; min-width: 0; }
 .task-due { display: block; }
-.task-due.is-over .tinline, .task-due.is-over > span { color: var(--warn); font-weight: 600; }
+.task-due.is-over .tinline, .task-due.is-over > span { color: var(--err); font-weight: 600; }
 .task-row > .team-act { justify-self: end; }
 .trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
 
 /* The Workload view: one row a person. */
 .load-row { grid-template-columns: minmax(0, 1fr) repeat(6, 88px); }
 .load-n { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
-.load-n.is-over { color: var(--warn); font-weight: 600; }
+.load-n.is-over { color: var(--err); font-weight: 600; }
 .load-lab { display: none; }
 .load-row.crm-head > span:not(:first-child) { text-align: right; }
 .is-narrow .load-row { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; row-gap: 6px; }
@@ -8688,6 +8688,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-aicheck > .msg:empty { display: none; }
 .is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
 .rp-check.is-missing .rp-check-t small { color: var(--warn); }
+/* Past its due time is late, not merely not done: red, as late is everywhere. */
+.rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
+.rp-check.is-late .rp-check-t small { color: var(--err); }
 .rp-check .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 /* The client record's Reports tab: the finished reports only. */
 .rp-out-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) var(--state-w) 210px auto; }
@@ -8978,6 +8981,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cb-label { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
 .cb-label small { margin-left: 4px; font-size: 12px; color: var(--ink-mute); }
 .cb-label small.is-warn { color: var(--warn); font-weight: 600; }
+.cb-label small.is-err { color: var(--err); font-weight: 600; }
 .cb-value { margin-left: auto; flex: 0 0 auto; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cb-value.is-warn { color: var(--warn); }
 .cb-value.is-err { color: var(--err); }
@@ -9618,6 +9622,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ovw-fig b.is-warn { color: var(--warn); }
 .ovw-fig small.is-warn { color: var(--warn); }
+.ovw-fig b.is-err { color: var(--err); }
+.ovw-fig small.is-err { color: var(--err); }
 /* A month's progress over the list of what is left: the ring and its words,
    then the rows. */
 .ovw-progress { display: flex; margin: 0 0 4px; font-size: 13px; color: var(--ink-soft); }

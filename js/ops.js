@@ -110,7 +110,7 @@
   }
   /* "In 3 days" is what a person says; "2026-10-02T00:00:00Z" is what the row
      holds. Overdue carries the word as well as the colour, so the mark
-     survives greyscale and a reader who cannot tell warn from mute. */
+     survives greyscale and a reader who cannot tell red from mute. */
   function dueWord(v) {
     var n = daysAway(v);
     if (n === null) return 'No date set';
@@ -378,10 +378,11 @@
     return name || '';
   }
   /* Urgent and High carry a chip because they are the exception; Normal and
-     Low are the ordinary case and say nothing, which is the accent rule. */
+     Low are the ordinary case and say nothing, which is the accent rule.
+     Urgent is red, as late is: it cannot wait (the user, 2026-10-07). */
   function priorityChip(t) {
     var p = Number(t.priority_level);
-    if (p === 1) return '<span class="tone is-warn task-pri">Urgent</span>';
+    if (p === 1) return '<span class="tone is-danger task-pri">Urgent</span>';
     if (p === 2) return '<span class="tone task-pri">High</span>';
     return '';
   }
@@ -829,12 +830,12 @@
     return g.key === 'done' || g.key === 'donetoday';
   }
   function marksOf(g) {
-    if (g.key === 'overdue') return '<span class="tone is-warn">Overdue</span>';
+    if (g.key === 'overdue') return '<span class="tone is-danger">Overdue</span>';
     if (state.group === 'due') return '';
     var late = g.rows.filter(function (t) {
       return !isFinished(t) && daysAway(dueOf(t)) < 0;
     }).length;
-    return late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '';
+    return late ? '<span class="tone is-danger">' + late + ' overdue</span>' : '';
   }
 
   /* WHAT IS SHOWN: open work, finished work, or both. Open is the day's
@@ -3759,14 +3760,14 @@
     }
     /* Who is carrying the most, as bars a person reads down (the user,
        2026-09-26: charts where a table answers more slowly). The overdue
-       count rides beside the name in warn; every count a manager reads on a
+       count rides beside the name in red; every count a manager reads on a
        Monday is in the figures folded under the bars. */
     window.ADspaceChart.draw(host, {
       kind: 'bars', name: 'Open work by person', cls: 'load-chart',
       rows: order.map(function (id) {
         var r = by[id];
         return { label: r.name, value: r.open,
-                 note: r.overdue ? r.overdue + ' overdue' : '', noteTone: r.overdue ? 'warn' : '' };
+                 note: r.overdue ? r.overdue + ' overdue' : '', noteTone: r.overdue ? 'err' : '' };
       }),
       fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
       empty: 'No open tasks.',
@@ -6618,7 +6619,7 @@
         route: 'cwork', key: k, name: k === 'none' ? 'No month' : monthWord(k),
         count: trs.length,
         marks: (eng ? '<span class="tone eng-mark ' + toneOf(ENG_STATE, ph) + '">' + esc(wordOf(ENG_STATE, ph)) + '</span>' : '') +
-               (late ? '<span class="tone is-warn">' + late + ' late</span>' : ''),
+               (late ? '<span class="tone is-danger">' + late + ' late</span>' : ''),
         /* Open: this month, a month still being worked, a month still being
            planned (no tasks yet is exactly when its meeting is set), a month
            asking to be closed, and a month somebody filtered to, which is the
