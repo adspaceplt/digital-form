@@ -255,9 +255,12 @@
            line under the command bar, so it could not be opened from inside a
            record, where the bar is not on the screen; it comes from the title
            now, like every other surface in this console. -->
-      <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-label="About this section">
+      <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-labelledby="sectionAboutName">
+        <div class="popcard-head aboutpop-head">
+          <span class="aboutpop-name"><svg class="aboutpop-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg><b id="sectionAboutName">Clients</b></span>
+          <button class="iconbtn popcard-x" id="sectionAboutHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
         <p class="aboutpop-text" id="sectionAboutText"></p>
-        <button class="btn btn-sm btn-quiet aboutpop-hide" id="sectionAboutHide" type="button">Hide</button>
       </div>
       <span class="console-spacer"></span>
       <!-- The register this console is read in, on the control that changes

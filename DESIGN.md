@@ -45,6 +45,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
+| `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
 
 **How colour is used:**
@@ -175,7 +176,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
 | Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + view selects + the Filters mark (the filters in `#cmdPop` at a desk, `#cmdSheet` on a phone) + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
-| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb, a close mark in its head |
+| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name) and a close mark |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |

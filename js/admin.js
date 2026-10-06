@@ -962,6 +962,7 @@
     $('sectionMine').hidden      = name !== 'mine';
     $('sectionHandbook').hidden  = name !== 'handbook';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
+    if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
     /* Content Review's list was read once; a client's name, handles or logo

@@ -136,7 +136,13 @@
   --ctl-text:   13px;
   --field-text: 14px;
   --shadow:     0 1px 2px rgba(19,24,26,.05);
-  --shadow-lift: 0 1px 2px rgba(19,24,26,.06), 0 12px 32px rgba(19,24,26,.10);
+  --shadow-lift: 0 1px 2px rgba(19,24,26,.08), 0 6px 14px rgba(19,24,26,.08), 0 20px 44px rgba(19,24,26,.16);
+  /* What floats over the page (a ⋯ menu, a popover card, the finder) has its
+     own ground and a crisper edge than a card's rule, so it never melts into
+     the card under it (the user, 2026-10-07: the section's information card
+     "blends with the background"). In dark it is one step up from a card. */
+  --raised:     #ffffff;
+  --line-lift:  rgba(19,24,26,.16);
 
   /* Motion. Three durations and two curves, the way there are six spaces and
      one accent: nineteen transitions had been typed at their point of use, in
@@ -238,7 +244,9 @@
     --veil:       rgba(23,23,23,.88);
     --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
-    --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
+    --shadow-lift: 0 1px 2px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.6);
+    --raised:     #272727;
+    --line-lift:  rgba(255,255,255,.14);
   color-scheme: dark;
 }
 /* The wordmark is one flat dark colour on transparent, so it is inverted
@@ -3313,7 +3321,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .kmenu {
   position: absolute; top: 44px; right: 12px; z-index: 50;
   width: min(320px, calc(100vw - 48px));
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 5px; display: flex; flex-direction: column;
 }
@@ -5773,9 +5781,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   display: block; width: min(340px, calc(100vw - 16px)); padding: 14px 16px 10px;
 }
 .aboutpop-text {
-  margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
+  margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
 }
-.aboutpop-hide { min-width: 0; margin-left: -8px; }
 /* The `?` reopens the route's own line, so it belongs beside the count that
    says what is on the page, never out on its own. It is inserted into
    `.cmdbar-end` directly after the count, and that group's own gap spaces
@@ -9305,8 +9312,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .popcard { border-radius: var(--radius); box-shadow: var(--shadow-lift); }
 .popcard::before {
   content: ""; position: absolute; top: -7px; left: calc(var(--caret, 50%) - 6px);
-  width: 12px; height: 12px; background: var(--card);
-  border: 1px solid var(--line); border-right: 0; border-bottom: 0;
+  width: 12px; height: 12px; background: var(--raised);
+  border: 1px solid var(--line-lift); border-right: 0; border-bottom: 0;
   border-top-left-radius: 3px; transform: rotate(45deg);
 }
 .popcard.is-up::before { top: auto; bottom: -7px; transform: rotate(225deg); }
@@ -9324,9 +9331,15 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .popcard-x { margin: calc((20px - var(--ctl-h)) / 2) calc((16px - var(--ctl-h)) / 2) calc((20px - var(--ctl-h)) / 2) 0; }
 .kmenu.pushpop { gap: 8px; padding: 16px; }
 .popcard.is-dock .pushpop-acts .btn { min-height: var(--ctl-h); }
-.aboutpop.popcard { padding: 16px 16px 10px; }
-.aboutpop.is-dock { padding: 20px 20px 12px; }
+.aboutpop.popcard { padding: 14px 16px 16px; }
+.aboutpop.is-dock { padding: 18px 20px 20px; }
 .aboutpop.is-dock .aboutpop-text { font-size: 14px; }
+/* The card names what it explains: the information mark in the action
+   colour and the section's name, then its one sentence. */
+.aboutpop-head { margin-bottom: 6px; }
+.aboutpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action); stroke-width: 2; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
@@ -9799,7 +9812,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   /* Over the question sheet too (#askSheet, 95): a long list asked inside
      a question opened under its scrim. */
   position: fixed; z-index: 96; display: flex; flex-direction: column;
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 6px; overflow: hidden;
   transform-origin: top center; animation: mk-menu-in var(--t) var(--ease-out);
