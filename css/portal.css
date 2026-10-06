@@ -9397,6 +9397,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .guidecard.is-dock .guide-text { font-size: 14px; }
 .guidecard.is-dock .guide-acts .btn { flex: 1 1 0; min-height: var(--ctl-h); }
 .guide-on { outline: 2px solid var(--action-ring); outline-offset: 3px; }
+/* A row runs its table's width, and the table clips what falls outside it:
+   a row's ring is drawn inside the row. */
+.guide-on:is(.crm-row, .svc-row, .hb-row, .camp-row, .cr-client-row, .ovw-row, .qrow) { outline-offset: -2px; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }

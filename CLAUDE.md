@@ -497,8 +497,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     asked for.
   - A card (`.guidecard`, never `.kmenu`: the pages shut every menu on a
     press elsewhere), not a cover: laid by `ADspaceMenu.pop` from its step's
-    control, which wears `.guide-on` (the focus ring); docked at the foot on
-    a phone; never over the command bar; nothing under it locked. Skip, then
+    control, which wears `.guide-on` (the focus ring, drawn inside a row,
+    which its table clips); docked at the foot on a phone, its control
+    brought to the middle of the screen, clear of the card; never over the
+    command bar; nothing under it locked. Skip, then
     Next or Done; Escape (unless something is over it: that hears the key
     first), pressing the ringed control, opening something over it (a sheet,
     a menu, a post) or leaving the route ends it, and each counts it met. A

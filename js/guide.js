@@ -150,7 +150,12 @@
     c.querySelector('#guideSkip').textContent = w.skip;
     c.querySelector('#guideSkip').hidden = cur.i === n - 1;
     c.hidden = false;
-    if (reveal) { try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
+    /* On a phone the card docks at the foot of the screen, so the control is
+       brought to the middle, clear of it, never to the edge it covers. */
+    if (reveal) {
+      var dock = !!(window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
+      try { t.scrollIntoView({ block: dock ? 'center' : 'nearest', inline: 'nearest' }); } catch (e) {}
+    }
     var r = t.getBoundingClientRect();
     window.ADspaceMenu.pop(t, c, r.left + r.width / 2 < window.innerWidth / 2 ? 'left' : 'right');
   }
