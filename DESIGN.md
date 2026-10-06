@@ -495,6 +495,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     Reassign; Unassigned.
   - Add another; Create 3 tasks.
   - Import from spreadsheet.
+  - Transfer client (a report to the client it belongs to), never Move to
+    client.
 - Headings name their content: Task details, Posts, Schedule, Repeat,
   Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
   details, Contact details, Task settings, Inclusions, Time records, Team

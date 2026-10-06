@@ -402,7 +402,8 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames()])).then(function (x) {
+      return Promise.all(more.concat([loadNames(), partnerOf(st.open.client_id)])).then(function (x) {
+        st.partner = x[x.length - 1] || null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
@@ -411,6 +412,18 @@
     });
   }
 
+  /* The partner whose logo a client's reports carry (2026-10-06), or null.
+     A refused read leaves the head as it was: the PDF reads its own. */
+  function partnerOf(clientId) {
+    return db.from('report_partner_clients').select('client_id, partner_id').eq('client_id', clientId).then(function (r) {
+      var pid = r && !r.error && r.data && r.data[0] && r.data[0].partner_id;
+      if (!pid) return null;
+      return db.from('report_partners').select('id, name, active').eq('id', pid).then(function (q) {
+        var p = q && !q.error && q.data && q.data[0];
+        return p && p.active ? p : null;
+      });
+    }).catch(function () { return null; });
+  }
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
   /* Colleagues' names, read once, for the reviewer a report names. */
   var namesReady = null;
@@ -491,7 +504,7 @@
     box.innerHTML = '<section class="panel rp-head">' +
       '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
-        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + '</p></div>' +
+        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so
            the state, the file and the ⋯ sit beside the name on one line. */
@@ -839,8 +852,11 @@
   function keyDates(r) {
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
     var marks = [
-      ['Started', r.created_at, ''],
-      ['Submitted', r.status !== 'draft' && r.submitted_at, r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''],
+      /* Who did each step, and to whom it went (the user, 2026-10-06:
+         "submitted by who is missing"). */
+      ['Started', r.created_at, r.created_by && nameOf(r.created_by) ? 'by ' + nameOf(r.created_by) : ''],
+      ['Submitted', r.status !== 'draft' && r.submitted_at, [r.submitted_by && nameOf(r.submitted_by) ? 'by ' + nameOf(r.submitted_by) : '',
+        r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''].filter(Boolean).join(' ')],
       ['Confirmed', r.confirmed_at, r.confirmed_by && nameOf(r.confirmed_by) ? 'by ' + nameOf(r.confirmed_by) : ''],
       ['Published', live && r.status === 'published' && live.published_at, '']
     ].filter(function (x) { return x[1]; });
@@ -849,7 +865,7 @@
       var next = marks[i + 1];
       return '<div class="tl-row tl-stage">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(x[0]) + '</span>' +
-          '<span class="tl-when">' + esc(stampWord(x[1]) + (x[2] ? ' · ' + x[2] : '')) + '</span></span>' +
+          '<span class="tl-when">' + esc(stampWord(x[1])) + '</span>' + (x[2] ? '<span class="tl-who">' + esc(x[2]) + '</span>' : '') + '</span>' +
         '<span class="tl-span">' + (next ? esc(spanWord(new Date(next[1]) - new Date(x[1]))) : '') + '</span></div>';
     });
     var last = marks[marks.length - 1][1];
@@ -869,7 +885,7 @@
     }
     /* A draft started under a temporary client moves to its own (an
        admin's, 2026-10-06). */
-    if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Move to client</button>');
+    if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -1000,8 +1016,8 @@
       b.closest('.kmenu').hidden = true;
       clientsReady.then(function () {
         var pool = hub.clients.filter(function (c) { return c.id !== r.client_id; });
-        if (!pool.length) { say(m, 'No other Active client.', 'err'); return; }
-        window.ADspaceConfirm.ask({ title: 'Move to another client?', body: 'Its accounts, posts, ads and text go with it.', go: 'Move',
+        if (!pool.length) { say(m, 'There is no other active client to transfer to.', 'err'); return; }
+        window.ADspaceConfirm.ask({ title: 'Transfer to another client?', body: 'The accounts, posts, ads and commentary go with the report.', go: 'Transfer',
           field: { label: 'Client', choices: [['', 'Choose a client']].concat(pool.map(function (c) { return [c.id, F.named(c.client_code, c.name)]; })),
             value: '', need: 'Choose a client.' } },
           function (to) {
@@ -1010,11 +1026,11 @@
               var d = res.data || {};
               if (res.error || d.error) {
                 var e = (d && d.error) || '';
-                say(m, e === 'not-draft' ? 'Only a draft moves to another client.' : e === 'not-active' ? 'Choose an Active client.' :
+                say(m, e === 'not-draft' ? 'Only a draft can be transferred.' : e === 'not-active' ? 'Choose an Active client.' :
                   e === 'exists' ? name + ' already has a report for this period.' : said(res.error || d), 'err');
                 return;
               }
-              reopen('Moved to ' + name + '.');
+              reopen('Transferred to ' + name + '.');
             });
           });
       });
@@ -3303,6 +3319,158 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
+  // ---- Partners: white-label reports carry the partner's logo ----------------
+  /* ADspace subcontracts work from partners; a partner's clients' reports go
+     out under the partner's landscape logo in place of ADspace's wordmark,
+     as a courtesy (the user, 2026-10-06). An admin's or Reports Full
+     Access. A partner is stood down, never removed. */
+  function partnersSheet(opener) {
+    var box = sheetShell('rpPartnersSheet', 'Partners', '<div data-m="pt"></div>',
+      '<button class="btn btn-primary" type="button" data-a="add">' + ICON.plus + 'Add partner</button>' +
+      '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
+    var host = box.querySelector('[data-m="pt"]');
+    var paint = function () {
+      UI.skeleton(host, 2);
+      Promise.all([db.from('report_partners').select('id, name, logo_data, active').order('name', { ascending: true }),
+        db.from('report_partner_clients').select('client_id, partner_id'), clientsReady]).then(function (got) {
+        var r = got[0], m = got[1];
+        if (r.error || m.error) {
+          UI.failLine(host, 'Partners', /relation|schema cache|does not exist/i.test(((r.error || m.error) || {}).message || '') ? 'This needs a database update.' : said(r.error || m.error), paint);
+          return;
+        }
+        var list = r.data || [], links = m.data || [];
+        box._partners = list; box._links = links;
+        if (!list.length) { UI.emptyLine(host, 'No partners.'); return; }
+        host.innerHTML = '<div class="pt-list">' + list.slice().sort(function (x, y) { return (y.active ? 1 : 0) - (x.active ? 1 : 0) || x.name.localeCompare(y.name); })
+          .map(function (p) {
+            var names = links.filter(function (l) { return l.partner_id === p.id; })
+              .map(function (l) { return (hub.byClient[l.client_id] || {}).name; }).filter(Boolean).sort();
+            return '<button class="pt-row' + (p.active ? '' : ' is-off') + '" type="button" data-pt="' + esc(p.id) + '">' +
+              '<span class="pt-logo">' + (p.logo_data ? '<img src="' + esc(p.logo_data) + '" alt="">' : '') + '</span>' +
+              '<span class="pt-who"><span class="pt-name"><b>' + esc(p.name) + '</b>' + (p.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
+                '<small>' + esc(names.length ? names.join(', ') : 'No clients') + '</small></span>' +
+              ICON.go + '</button>';
+          }).join('') + '</div>';
+        Array.prototype.forEach.call(host.querySelectorAll('[data-pt]'), function (b) {
+          b.addEventListener('click', function () {
+            var p = list.filter(function (x) { return x.id === b.getAttribute('data-pt'); })[0];
+            window.ADspaceSheet.close(); partnerSheet(p, links, opener);
+          });
+        });
+      }).catch(function (e) { UI.failLine(host, 'Partners', said(e), paint); });
+    };
+    box.querySelector('[data-a="add"]').onclick = function () { window.ADspaceSheet.close(); partnerSheet(null, box._links || [], opener); };
+    paint();
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+  /* A landscape logo, drawn down to 1200 by 400 at most, kept as a PNG so
+     its transparency holds on the report's white page. */
+  function logoPng(file) {
+    return new Promise(function (ok, bad) {
+      var fr = new FileReader();
+      fr.onerror = function () { bad(new Error('The file could not be read.')); };
+      fr.onload = function () {
+        var img = new Image();
+        img.onerror = function () { bad(new Error('Choose a PNG, JPEG, WebP or SVG image.')); };
+        img.onload = function () {
+          var w = img.naturalWidth || img.width || 1200, h = img.naturalHeight || img.height || 400;
+          var k = Math.min(1, 1200 / w, 400 / h);
+          var cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          var url = cv.toDataURL('image/png');
+          if (url.length > 1500000) { bad(new Error('The logo is too large. Use a smaller file.')); return; }
+          ok(url);
+        };
+        img.src = String(fr.result || '');
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function partnerSheet(p, links, opener) {
+    var box = sheetShell('rpPartnerSheet', 'Partner',
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="ptName">Partner name</label>' +
+        '<input class="input" id="ptName" type="text" maxlength="80" aria-required="true" autocomplete="off"></div></div>' +
+      '<div class="row"><div><label class="field-label" for="ptLogoFile">Logo</label>' +
+        '<div class="pt-preview" id="ptPreview"></div>' +
+        '<input class="input" type="file" id="ptLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml">' +
+        '<button class="btn btn-sm btn-quiet" type="button" id="ptLogoOff">Remove logo</button></div></div></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Clients</h4>' +
+        '<input class="input" id="ptFind" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">' +
+        '<div class="pt-clients" id="ptClients"></div></section>',
+      '<button class="btn btn-primary" type="button" data-a="go">Save</button>' +
+      '<button class="btn" type="button" data-a="state"></button>' +
+      '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>');
+    box.querySelector('h3').textContent = p ? 'Edit partner' : 'Add partner';
+    var m = box.querySelector('[data-m="sheet"]'), go = box.querySelector('[data-a="go"]'), stBtn = box.querySelector('[data-a="state"]');
+    say(m, '');
+    var logo = p ? p.logo_data || null : null;
+    var pv = $('ptPreview');
+    var showLogo = function () {
+      pv.innerHTML = logo ? '<img src="' + esc(logo) + '" alt="Partner logo">' : '';
+      pv.hidden = !logo; $('ptLogoOff').hidden = !logo;
+    };
+    $('ptName').value = p ? p.name : '';
+    $('ptLogoFile').value = '';
+    showLogo();
+    $('ptLogoFile').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      logoPng(f).then(function (url) { logo = url; showLogo(); say(m, ''); })
+        .catch(function (e) { say(m, e.message, 'err'); });
+    };
+    $('ptLogoOff').onclick = function () { logo = null; $('ptLogoFile').value = ''; showLogo(); };
+    /* Every active client, code first; a client another partner holds says
+       so, and ticking it here moves it. */
+    var mine = {}, other = {};
+    (links || []).forEach(function (l) {
+      if (!l.partner_id) return;
+      if (p && l.partner_id === p.id) mine[l.client_id] = true;
+      else other[l.client_id] = l.partner_id;
+    });
+    var partners = (sheets.rpPartnersSheet && sheets.rpPartnersSheet._partners) || [];
+    var pName = function (id) { return (partners.filter(function (x) { return x.id === id; })[0] || {}).name || ''; };
+    $('ptClients').innerHTML = hub.clients.map(function (c) {
+      return '<label class="pt-client"><input type="checkbox" value="' + esc(c.id) + '"' + (mine[c.id] ? ' checked' : '') + '>' +
+        '<span>' + esc(F.named(c.client_code, c.name)) + (other[c.id] ? ' <small>' + esc(pName(other[c.id])) + '</small>' : '') + '</span></label>';
+    }).join('') || '<p class="hint">No active clients.</p>';
+    $('ptFind').value = '';
+    $('ptFind').oninput = function () {
+      var words = this.value.toLowerCase().split(/\s+/).filter(Boolean);
+      Array.prototype.forEach.call($('ptClients').querySelectorAll('.pt-client'), function (l) {
+        var t = l.textContent.toLowerCase();
+        l.hidden = !words.every(function (w) { return t.indexOf(w) > -1; });
+      });
+    };
+    stBtn.hidden = !p;
+    stBtn.textContent = p && p.active ? 'Set inactive' : 'Set active';
+    stBtn.onclick = function () {
+      stBtn.disabled = true;
+      db.rpc('report_partner_set_active', { p_id: p.id, p_on: !p.active }).then(function (res) {
+        stBtn.disabled = false;
+        var d = res.data || {};
+        if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+        window.ADspaceSheet.clean(); window.ADspaceSheet.close(); partnersSheet(opener);
+      }).catch(function (e) { stBtn.disabled = false; say(m, said(e), 'err'); });
+    };
+    go.onclick = function () {
+      var name = $('ptName').value.trim();
+      if (name.length < 2) { say(m, 'Enter the partner name.', 'err'); $('ptName').focus(); return; }
+      var picked = Array.prototype.map.call($('ptClients').querySelectorAll('input:checked'), function (x) { return x.value; });
+      go.disabled = true;
+      db.rpc('report_partner_save', { p_id: p ? p.id : null, p_name: name, p_logo: logo, p_clients: picked }).then(function (res) {
+        go.disabled = false;
+        var d = res.data || {};
+        if (res.error || d.error) {
+          say(m, d.error === 'bad-logo' ? 'Choose the logo again.' : d.error === 'bad-name' ? 'Enter the partner name.' : said(res.error || d), 'err');
+          return;
+        }
+        window.ADspaceSheet.clean(); window.ADspaceSheet.close(); partnersSheet(opener);
+      }).catch(function (e) { go.disabled = false; say(m, said(e), 'err'); });
+    };
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
   /* Like a usage page (the user, 2026-10-04): when it resets, then used
      today over the limit with a bar, for the whole team, each group and
@@ -3510,10 +3678,17 @@
           if (!it) return;
           shutM();
           if (it.getAttribute('data-a') === 'aiuse') aiUseSheet(mb);
+          if (it.getAttribute('data-a') === 'partners') partnersSheet(mb);
         });
       }
     }
-    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
+    /* The bar's ⋯: AI usage an admin's, Partners an admin's or Reports Full
+       Access (2026-10-06). */
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !(isAdmin() || may('manage'));
+    if ($('rhMore')) {
+      var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
+      if (aiIt) aiIt.hidden = !isAdmin();
+    }
     $('rhKind').innerHTML = '<option value="">All types</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();

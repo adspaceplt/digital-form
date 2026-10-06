@@ -6400,6 +6400,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    and the weight together, so the mark survives greyscale. */
 .tl-span.is-late, .tl-when.is-late { color: var(--warn); font-weight: 600; }
 .tl-rule { height: 1px; background: var(--line-soft); }
+/* Who did a report's step, and to whom, on its own line under the date
+   (2026-10-06), so two names never push the row past its card. */
+.rp-keydates .tl-lead { flex-wrap: wrap; row-gap: 2px; }
+.tl-who {
+  flex-basis: 100%; min-width: 0; font-size: 12.5px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* A dated row is read, so its date carries the ink the stage rows give the
    duration; the stage rows' own dates stay mute beside the stage. */
 .tl-date .tl-when { font-size: 13px; color: var(--ink); }
@@ -9999,3 +10006,31 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .sl-pop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .sl-poplist { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; }
 .sl-poplist .kmenu-item { width: 100%; }
+
+/* ---- Report partners (2026-10-06): a row a partner, its landscape logo on
+   a white strip (the PDF's own page), the name over its clients; the whole
+   row opens it. The sheet's client list is ticks under a search. */
+.pt-list { display: grid; }
+.pt-row { position: relative; display: grid; grid-template-columns: 96px minmax(0, 1fr) 16px; align-items: center; column-gap: 12px;
+  width: calc(100% + 24px); margin: 0 -12px; padding: 10px 12px; font: inherit; color: inherit; text-align: left;
+  background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+.pt-row + .pt-row::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; border-top: 1px solid var(--line-soft); }
+@media (hover: hover) { .pt-row:hover { background: var(--sunk); } }
+.pt-row.is-off .pt-logo, .pt-row.is-off .pt-who { opacity: .55; }
+.pt-row svg { width: 15px; height: 15px; color: var(--ink-mute); }
+.pt-logo { display: flex; align-items: center; justify-content: center; height: 40px; padding: 6px 8px; border-radius: var(--radius-ctl-sm); background: #fff; }
+.pt-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pt-who { display: grid; gap: 2px; min-width: 0; }
+.pt-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pt-name b { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-name .chip { flex: 0 0 auto; }
+#ptFind { width: 100%; }
+.pt-who small { color: var(--ink-mute); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-preview { display: flex; align-items: center; height: 72px; margin-bottom: 8px; padding: 12px 16px; border-radius: var(--radius-sm); background: #fff; }
+.pt-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+#ptLogoOff { margin-top: 8px; }
+.pt-clients { display: grid; max-height: 280px; overflow-y: auto; margin-top: 8px; border-radius: var(--radius-sm); background: var(--sunk); padding: 4px 12px; }
+.pt-client { display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h); font-size: 14px; cursor: pointer; }
+.pt-client[hidden] { display: none; }
+.pt-client input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--fill); }
+.pt-client small { color: var(--ink-mute); font-size: 12.5px; }
