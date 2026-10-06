@@ -1635,6 +1635,24 @@
     }
     return null;
   }
+  /* Meta writes Publish time in US Pacific time, whatever the page's own
+     (2026-10-06: a post at 12:03 pm on 15 Sept in Malaysia read 14 Sept
+     21:03), so its date is the Malaysian day of that moment. */
+  function metaDay(s) {
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/.exec(String(s || '').trim());
+    if (!m || !window.Intl || !Intl.DateTimeFormat) return null;
+    var wall = Date.UTC(+m[3], +m[1] - 1, +m[2], +m[4], +m[5]);
+    var fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    var offOf = function (t) {
+      var q = {};
+      fmt.formatToParts(new Date(t)).forEach(function (x) { q[x.type] = x.value; });
+      return Date.UTC(+q.year, +q.month - 1, +q.day, +q.hour % 24, +q.minute) - t;
+    };
+    var utc = wall - offOf(wall);
+    utc = wall - offOf(utc);
+    var my = new Date(utc + 8 * 3600000);
+    return my.getUTCFullYear() + '-' + String(my.getUTCMonth() + 1).padStart(2, '0') + '-' + String(my.getUTCDate()).padStart(2, '0');
+  }
   /* Rows and cells as a spreadsheet copies them: a cell holding line
      breaks (a caption) arrives quoted, with "" for a quote inside it, and
      its breaks belong to the cell, not the table (the user, 2026-10-01). */
@@ -1693,7 +1711,10 @@
     if (names.some(function (k) { return /^publish(ed)? (date|time)$/.test(k); })) {
       names.forEach(function (k, i) { if (head[i] === 'posted_on' && !/^publish(ed)? (date|time)$/.test(k)) head[i] = 'day'; });
     }
-    if (meta) names.forEach(function (k, i) { if (k === 'title') head[i] = null; });
+    /* Meta's Title repeats the caption, or holds it where Description is
+       empty (a Facebook photo, 2026-10-06): it is read as the caption's
+       stand-in, never as a title. */
+    if (meta) names.forEach(function (k, i) { if (k === 'title') head[i] = 'alt_caption'; });
     var seen = {};
     head = head.map(function (k) { if (!k || seen[k]) return null; seen[k] = true; return k; });
     if (head.indexOf('posted_on') < 0) return { error: 'The header row needs a Date column.' };
@@ -1707,15 +1728,17 @@
       head.forEach(function (k, i) {
         if (!k) return;
         var v = (cells[i] || '').trim();
-        if (k === 'posted_on') { row.posted_on = readDate(v, year, mdy); if (!row.posted_on) ok = false; return; }
+        if (k === 'posted_on') { row.posted_on = (meta && mdy && metaDay(v)) || readDate(v, year, mdy); if (!row.posted_on) ok = false; return; }
         if (k === 'day') { row.day = /^lifetime$/i.test(v) ? 'lifetime' : (readDate(v, year, mdy) || (v ? 'other' : null)); return; }
         if (k === 'post_id') { row.post_id = v || null; return; }
         if (k === 'caption') { var cv = String(cells[i] || '').replace(/^\s+|\s+$/g, ''); row.caption = cv || null; return; }
+        if (k === 'alt_caption') { var av = String(cells[i] || '').replace(/^\s+|\s+$/g, ''); row.alt_caption = av || null; return; }
         if (['title', 'url'].indexOf(k) > -1) { row[k] = v || null; return; }
         if (k === 'content_type') { row.content_type = v; return; }
         var n = v.replace(/[, ]/g, '');
         row[k] = n === '' || n === '-' ? null : (/^\d+$/.test(n) ? Number(n) : (/^\d+(\.\d+)?k$/i.test(n) ? Math.round(parseFloat(n) * 1000) : null));
       });
+      if ('alt_caption' in row) { if (!row.caption && row.alt_caption) row.caption = row.alt_caption; delete row.alt_caption; }
       var fm = formatOf(row.content_type, row.url);
       if (col('content_type') > -1 || fm) row.content_type = fm;
       if (ok) rows.push(row); else skipped++;
@@ -1766,7 +1789,7 @@
       }
       if (addEng && r.interactions != null) r.engagements = r.interactions;
     });
-    var columns = head.filter(function (k) { return k && k !== 'day' && k !== 'post_id' && !(mode && mode !== 'lifetime' && k === 'reach'); });
+    var columns = head.filter(function (k) { return k && k !== 'day' && k !== 'post_id' && k !== 'alt_caption' && !(mode && mode !== 'lifetime' && k === 'reach'); });
     if (addInter) columns.push('interactions');
     if (addEng) columns.push('engagements');
     return { rows: out, skipped: skipped, columns: columns, mode: mode, days: days, outside: outside, mdy: mdy };

@@ -2187,9 +2187,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A slashed date is day first unless the paste shows otherwise (a second
     part over 12) or is a Meta export (`Post ID` and `Publish time`), which
     is month first.
-  - A Meta Business Suite export: Title is ignored (it repeats the caption;
-    the post is named by its format and date, its caption's first line under
-    it), Description is the caption, Publish time the date, Reactions,
+  - A Meta Business Suite export: Title is never a title (it repeats the
+    caption, and is the caption where Description is empty, as on a
+    Facebook photo; the post is named by its format and date, its caption's
+    first line under it), Description is the caption, Publish time the date
+    (written in US Pacific time, read as the Malaysian day of that moment,
+    `metaDay`), Reactions,
     comments and shares the interactions, Post type (and a `/reel/` link)
     the format. Where a paste names no interactions (Instagram: Likes,
     Comments, Shares, Saves) they are the sum of those parts, and where it
