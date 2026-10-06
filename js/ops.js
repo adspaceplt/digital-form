@@ -187,7 +187,7 @@
     'skip-reason-required': 'Skipping a step needs a reason.',
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',
-    'planning-incomplete': 'This month\u2019s checklists are not done yet.',
+    'planning-incomplete': 'This month\u2019s checklists are not done.',
     'meeting-required': 'Content meeting not held or marked N/A.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'Not a team member.',
@@ -223,7 +223,7 @@
     'confirm-required': 'Type the task number as shown.',
     'needs-aqc': 'AQC review comes before client review.',
     'note-required': 'A note is required for this step.',
-    'needs-schedule': 'Set the publish date first.',
+    'needs-schedule': 'Set the post date first.',
     'needs-live-date': 'Confirm the date it went live.',
     'live-in-future': 'A post cannot go live after today.',
     'live-reason-required': 'Say why it went live on a different date.',
@@ -415,7 +415,7 @@
   function dueLead(t) {
     var s = stageOf(t), g = s ? s.stage_group : '';
     if (isFinished(t)) return '';
-    if ((g === 'approved' || g === 'scheduled') && t.publish_at) return 'Publish';
+    if ((g === 'approved' || g === 'scheduled') && t.publish_at) return 'Post';
     if ((g === 'live' || g === 'performance') && t.live_at) return 'Review';
     return '';
   }
@@ -1172,7 +1172,7 @@
       if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
         title: 'Task numbering',
-        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number yet.'),
+        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number.'),
         go: 'Save',
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
       }, function (v) {
@@ -1778,7 +1778,7 @@
           manager: past the commitment and still short of client review. The
           title opens the task, because a list of problems nobody can act on
           from is a list nobody reads twice. */
-    repTable(box, 'Overdue work', ['Task', 'Owner', 'Over by'], 'svc-row rep-row',
+    repTable(box, 'Overdue work', ['Task', 'Assigned to', 'Over by'], 'svc-row rep-row',
       (r.late || []).map(function (t) {
         return {
           open: t.task_id,
@@ -1787,7 +1787,7 @@
                   '<b>' + esc(t.title || 'Untitled') + '</b>' +
                   '<small>' + esc([t.client, t.stage].filter(Boolean).join(' · ')) + '</small>' +
                 '</button></span>' +
-                '<span class="rep-mid">' + repLab('Task owner') +
+                '<span class="rep-mid">' + repLab('Assigned to') +
                   (t.owner ? esc(t.owner) : '<span class="mute">—</span>') + '</span>' +
                 '<span class="rep-num is-over">' + esc(dayCount(Number(t.days_over))) + '</span>'
         };
@@ -1889,7 +1889,7 @@
       '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
       '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
       '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
-      '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Publish</span></span>' +
+      '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Post</span></span>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
       '</div>';
     var first = new Date(m), start = new Date(m);
@@ -1911,7 +1911,7 @@
         var t = x.t, pub = x.kind === 'pub';
         var late = !pub && !isFinished(t) && d < today;
         return '<button class="cal-chip btn-sm ' + (pub ? 'is-pub' : stageTone(t)) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '"' +
-          ' aria-label="' + esc((pub ? 'Publish: ' : 'Due: ') + (t.title || '')) + '">' +
+          ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + (t.title || '')) + '">' +
           esc(t.title) + '</button>';
       }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
@@ -2632,7 +2632,7 @@
     var ml = t.engagement_id ? monthLink(t) : null;
     var cl = !ml && t.clients && t.clients.slug
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
-    var link = ml ? { label: 'View engagement', href: ml.href } : cl;
+    var link = ml ? { label: 'View month', href: ml.href } : cl;
     $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
@@ -3199,7 +3199,7 @@
     var over = daysAway(t.current_final_due_at);
     b.late.hidden = !isLate(t);
     b.late.textContent = isLate(t)
-      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past due, not yet at client review.'
+      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past due, short of client review.'
       : '';
     b.acts.innerHTML = '';
     /* Somebody who is not the Task Owner reads the step and cannot take it. */
@@ -3303,7 +3303,7 @@
       inp.disabled = true;
       call('ops_set_publish_date', { p_task: t.id, p_at: inp.value ? inp.value + 'T00:00:00Z' : null, p_version: t.version }, 'dwMsg', function () {
         state.drawerDirty = true;
-        readTask(t.id, function () { msg('dwMsg', 'Publish date saved.', 'ok'); });
+        readTask(t.id, function () { msg('dwMsg', 'Post date saved.', 'ok'); });
       }, function () { inp.disabled = false; put(); });
     });
   }
@@ -3346,7 +3346,7 @@
     $('stepWhat').textContent = stageLabel(t) + ' to ' + labelOfStage(t, key) + '.';
     var live = key === 'live', sched = key === 'scheduled';
     $('stepDateRow').hidden = !(live || sched);
-    $('stepDateLabel').textContent = live ? 'Date it went live' : 'Publish date';
+    $('stepDateLabel').textContent = live ? 'Date it went live' : 'Post date';
     $('stepDate').value = live ? dateValue(new Date()) : dateValue(t.publish_at);
     if (live) $('stepDate').setAttribute('max', dateValue(new Date())); else $('stepDate').removeAttribute('max');
     $('stepWhy').value = '';
@@ -3427,7 +3427,7 @@
     };
     if (key === 'scheduled') {
       var day = $('stepDate').value;
-      if (!day) { fail('Set the publish date.'); $('stepDate').focus(); return; }
+      if (!day) { fail('Set the post date.'); $('stepDate').focus(); return; }
       rpc('ops_set_publish_date', { p_task: t.id, p_at: day + 'T00:00:00Z', p_version: t.version }, function (d) {
         rpc('ops_transition_task', {
           p_task: t.id, p_next: key, p_version: d && d.version != null ? d.version : null,
@@ -4313,7 +4313,7 @@
       n.line = t.publish_at
         ? (dn < 0 ? 'Was due out ' + niceDate(t.publish_at) + '. Confirm when it went live.'
           : dn === 0 ? 'Goes live today.' : 'Goes live ' + niceDate(t.publish_at) + '.')
-        : 'No publish date set.';
+        : 'No post date set.';
       if (work && hasNext(t, 'live')) n.go = stepAct(t, 'live');
       return n;
     }
@@ -4341,20 +4341,20 @@
     if (target === 'published' || tg === 'delivered') {
       var finalKind = target === 'published' ? 'publish' : 'deliver';
       if (target === 'published' && !t.publish_at) {
-        n.title = 'Schedule publishing';
-        n.line = 'Set the agreed publish date.';
+        n.title = 'Schedule the post';
+        n.line = 'Set the agreed post date.';
         if (work) n.go = { label: 'Schedule', run: function () { factHere('dwPublish', function () { editDate('publish'); }); } };
         if (work && hasLink('final')) n.alt = stepAct(t, target);
         return n;
       }
       if (!hasLink('final')) {
         n.blocked = true;
-        n.title = finalKind === 'publish' ? 'Not ready to publish' : 'Not ready to deliver';
+        n.title = finalKind === 'publish' ? 'Not ready to post' : 'Not ready to deliver';
         n.line = 'Add the final link.';
         if (work) n.go = { label: 'Add final link', run: function () { addLinkHere('final'); } };
         return n;
       }
-      n.title = finalKind === 'publish' ? 'Publish' : 'Deliver';
+      n.title = finalKind === 'publish' ? 'Post' : 'Deliver';
       n.line = t.publish_at ? 'Scheduled for ' + niceDate(t.publish_at) + '.' : 'Final link attached.';
       if (work) n.go = stepAct(t, target);
       return n;
@@ -4903,7 +4903,7 @@
     due_declined: 'Extension declined',
     renamed: 'Description changed', stage_skipped: 'Step skipped',
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
-    publish_changed: 'Publish date changed', commented: 'Comment',
+    publish_changed: 'Post date changed', commented: 'Comment',
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed',
     comment_edited: 'Comment edited', comment_removed: 'Comment deleted', comment_restored: 'Comment restored'
@@ -6537,9 +6537,9 @@
         '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
           '<option value="open">Open work</option><option value="active">In progress</option>' +
           '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
-          '<option value="late">Late</option><option value="done">Finished</option><option value="">Everything</option>' +
+          '<option value="late">Late</option><option value="done">Completed</option><option value="">All tasks</option>' +
         '</select>' +
-        '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">Every month</option>' +
+        '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">All months</option>' +
           months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('') +
         '</select>' +
         '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">Anybody</option>' +
@@ -6766,7 +6766,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
       body: (n ? (n === 1 ? 'Its task stays and leaves the month.' : 'Its ' + n + ' tasks stay and leave the month.') + ' ' : '') +
-        ((e.reports || []).length ? 'A report task not yet started is cancelled. ' : '') +
+        ((e.reports || []).length ? 'A report task nobody started is cancelled. ' : '') +
         (!checksOf(e, cw.checks).length ? 'The meeting goes with it.'
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })
             ? 'Its checklist ticks move to the next month; the meeting goes with it.'
@@ -6921,7 +6921,7 @@
     var k = d && d.error;
     if (k === 'meet-not-set-up') {
       var miss = (d.missing || []).join(', ');
-      return 'Google Meet is not connected yet' + (miss ? ': ' + miss + ' is not set in Supabase' : '') + '. Paste a link instead.';
+      return 'Google Meet is not connected' + (miss ? ': ' + miss + ' is not set in Supabase' : '') + '. Paste a link instead.';
     }
     /* Google turned the shared account's sign-in away: the word it gave says
        which secret to replace. */

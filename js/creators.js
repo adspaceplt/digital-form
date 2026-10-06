@@ -321,7 +321,7 @@
 
   // ---- Load ---------------------------------------------------------------
   function load() {
-    if (!db) { showState('Not connected', 'This portal has not been configured yet.', false); return; }
+    if (!db) { showState('Not connected', 'This portal is not set up.', false); return; }
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
     /* SST is a setting (js/money.js): read beside the campaign, never after it. */

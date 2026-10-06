@@ -668,7 +668,9 @@
     clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
-    register:  ['documents', 'hr'],
+    /* Document types (2026-10-07) is granted: an admin's by itself, any
+       other group's once set. */
+    register:  ['documents', 'hr', 'types'],
     /* The record is read a tab at a time, so its access is a part per tab.
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
@@ -698,7 +700,7 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1 };
+    'team.announce': 1, 'register.types': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1307,7 +1309,7 @@
         var sub = row.querySelector('[data-role="sub"]');
         if (!sub) return;
         if (b.error) { sub.innerHTML = '<span class="is-warn">Sets unavailable</span>'; return; }
-        if (!b.data.length) { sub.innerHTML = '<span class="muted">None yet</span>'; return; }
+        if (!b.data.length) { sub.innerHTML = '<span class="muted">No sets</span>'; return; }
         var live = b.data.filter(function (x) { return x.published; }).length;
         sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
           ' \u00b7 ' + live + ' published';
@@ -3329,7 +3331,7 @@
         // Neutral: nothing has happened yet. Green is kept for the import
         // actually finishing, so it means the same thing everywhere.
         msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found' +
-          (fresh ? ', ' + fresh + ' not imported yet.' : '. All of them are already in storage.'));
+          (fresh ? ', ' + fresh + ' to import.' : '. All of them are already in storage.'));
       });
     }).catch(function (e) {
       msg('driveMsg', e.name === 'AbortError'
@@ -4132,7 +4134,7 @@
   var CONFIRM_SAID = {
     denied: 'Not allowed for this group.',
     'no-post': 'That post is no longer there.',
-    'not-published': 'Publish the set first. The client cannot see it yet.',
+    'not-published': 'Publish the set first. The client sees only a published set.',
     'already-approved': 'Already approved.',
     'not-confirmed': 'There is no internal confirmation to take back.'
   };

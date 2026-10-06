@@ -704,8 +704,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   record removed), `team.settings` (Business settings), `team.upgrade`,
   `team.invite` (asked by `invite-member` as the caller), `team.handbook`
   (the four functions and the bucket's add and remove policies),
-  `reports.transfer`, `reports.ai`, and `team.announce` (Announcements,
-  2026-10-07); each offers Manage alone (on or off). A
+  `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
+  2026-10-07) and `register.types` (Document types, 2026-10-07); each
+  offers Manage alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
@@ -784,7 +785,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A filter never repeats the cards' own grouping: no state, kind, group or
   category filter on a route whose cards are those groups (Creator Campaigns,
   Documents, Team, Services, Handbook, Short Links). An option for all reads
-  All stages, All people, All platforms, never Every … or Everyone.
+  All stages, All people, All months, never Every …, Everyone or Everything.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
@@ -1174,7 +1175,25 @@ Each line is a rule that broke once. Its reason is in the archive.
     line cannot clear both.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
-  - `doc_types` is seeded once and is the team's to edit.
+  - `doc_types` is seeded once and is the team's to edit: Document types
+    in the bar (behind the ⋯ on a phone), `register.types`
+    (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
+    My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
+    Name (unique), an HR letter's Reference code (`ADHR/…/{code}{YYMM}`,
+    required, its own among the HR letters offered), To be signed, Offered
+    on Issue (`doc_type_set_active`; never removed, an issued document names
+    its type), the wording, and Fields. Saved by `doc_type_save`, filed
+    `team.changed` under Document types from and to.
+  - A type's fields are the words its wording holds in braces ({intern
+    name}, {from}); {first name}, {role} and {client} fill themselves.
+    `doc_types.fields` says how each is asked: Text, Date or Paragraph (a
+    name holding "date" is a date until set). Issue groups the kinds
+    (Quotation, Client letters, HR letters) and asks for them under Details,
+    filling each into the title, salutation and body as it is typed (a date
+    as `16 September 2026`; words typed over are filled on Issue); Issue
+    refuses a field still in braces ("Fill in From."), Preview draws it as
+    it stands, and `body.fields` keeps what was typed. A reissue keeps its
+    words and asks nothing.
   - The Register sorts newest first, with Oldest first and By reference in the
     bar.
 - The reference on a row is a copy control (`.serial-copy`).
@@ -1681,8 +1700,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     of their open tasks due by the week's end, overdue included, against
     `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
 - The calendar shows every task on its due date (the stage tone) and its
-  publish date (`--pub`), with a Due / Publish key. A task whose next date is
-  its publish date shows once. On a phone it lists only the days holding
+  post date (`--pub`), with a Due / Post key. A task whose next date is
+  its post date shows once. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
@@ -1728,8 +1747,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Format: the rate card's formats, optional.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
-  - The scheduled publish date is tentative and never required. It seeds the
-    content month and week until they are touched (`ntTouched`).
+  - The post date is tentative and never required. It seeds the
+    content month and week until they are touched (`ntTouched`). My Work
+    says post, never publish (Post date, Set the post date).
 - Duplicate (`ops_duplicate_task`: a new code, none of the history).
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
@@ -1780,7 +1800,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Include past clients only where `clients.past` is; a refused read of the
   clients is named in the sheet, never an empty list.
 - Add task and the content form open on one segment, Task / Content
-  deliverable (`.kindseg`). Switching swaps the sheet in place.
+  task (`.kindseg`). Switching swaps the sheet in place.
 - Add task is one act: it saves, the sheet shuts, the list is read again and
   the new row says Added. (`state.rowSaid`).
 - Kept report figures are drawn through `paint()` (which hides the other
@@ -2038,7 +2058,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     the day the numbers were reported to the member. The sheet prefills
     today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
     after today in MYT, `bad-eval-date`). The sheet, the member's page and
-    the printed record's head show it beside Dispute until.
+    the printed record's head show it beside Queries until.
   - Management answers, then it is acknowledged and finalised.
   - `result` is a snapshot.
   - Reference `ADHR/{staff_code}/PR{YYMM}`; an Employee ID is required.
@@ -2449,7 +2469,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     forced `tool_choice`. An accounts report sends the platforms and top
     posts the step shows (`platforms`, `posts`) and gets back each
     platform's four fields and each post's remark, read platform by
-    platform. Every press asks first (Draft with AI?, or Replace the
+    platform. Every press asks first (Write a draft?, or Replace the
     commentary? over written text), saying it uses one draft and how many
     are left; nothing is saved until Save.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',

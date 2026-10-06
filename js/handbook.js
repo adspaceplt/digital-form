@@ -180,7 +180,7 @@
     var row = document.createElement('div');
     row.className = 'hb-row' + (d.archived_at ? ' is-off' : '');
     row.setAttribute('data-doc', d.id);
-    var meta = d.link_url ? 'Link' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file yet';
+    var meta = d.link_url ? 'Link' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
     if (vers.length) items += '<button class="kmenu-item" data-a="vers" type="button"><b>Versions</b></button>';
     if (admin) {

@@ -1352,8 +1352,8 @@
     var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
     if (!rows.length) {
       return ovSection('Services', 'services', 'Manage services',
-        ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired, nothing quoted yet.' : ' lines enquired, nothing quoted yet.')
-                          : 'Nothing quoted or confirmed.'));
+        ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired.' : ' lines enquired.')
+                          : 'No services.'));
     }
     var body = '<div class="ovtable">' +
       '<div class="ovhead ovrow-svc"><span>Service</span><span>Details</span><span>Amount</span><span>State</span></div>' +
@@ -3184,7 +3184,7 @@
 
   var OVERRIDE_WORD = {
     'not-allowed': 'Only an admin can set a service state by hand.',
-    'bad-state': 'A service is enquired, quoted or confirmed.',
+    'bad-state': 'A service is enquired, to quote or confirmed.',
     'reason-required': 'A reason is required.',
     'not-found': 'That line could not be found.'
   };

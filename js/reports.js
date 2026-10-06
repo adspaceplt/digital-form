@@ -113,7 +113,7 @@
     'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
-    'not-finished': 'This report is not finished yet.',
+    'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
     'has-versions': 'A report the client has seen cannot be deleted. Unpublish it instead.',
     'confirm-mismatch': 'That does not match the period.',
@@ -198,7 +198,7 @@
             '<span class="rp-name"><b>' + esc(periodWord(x.period_start, x.period_end)) + '</b><small>' + esc(TYPE_WORD[x.kind] || '') + '</small></span>' +
             '<span class="rp-state">' + chip(live ? 'published' : 'confirmed') + '</span>' +
             '<span class="rp-ver">' + (live ? 'Version ' + x.live_version + ', ' + esc(stampWord(x.published_at))
-                                             : 'Version ' + x.version_no + ', not yet published') + '</span>' +
+                                             : 'Version ' + x.version_no + ', not published') + '</span>' +
             '<span class="rp-out-act"><button class="btn btn-sm" type="button" data-a="dl">' + ICON.file + 'Download</button></span></div>';
         }).join('') + '</div>';
       var m = host.querySelector('[data-m="out"]');
@@ -619,9 +619,9 @@
   }
   function stepNote(k) {
     var r = st.open || {};
-    if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None yet';
-    if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None yet';
-    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None yet';
+    if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None';
+    if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None';
+    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None';
     if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
     if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
     return (STATUS[r.status] || STATUS.draft)[0];

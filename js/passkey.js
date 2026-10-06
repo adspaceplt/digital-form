@@ -54,7 +54,7 @@
     var name = String((err.cause && err.cause.name) || err.name || '');
     if (/does not support WebAuthn/i.test(m)) return 'This browser cannot use passkeys. Use your email.';
     if (err.status === 404 || /disabled|not enabled/i.test(m + ' ' + code)) {
-      return 'Passkeys are not switched on yet. Use your email.';
+      return 'Passkeys are not switched on. Use your email.';
     }
     if (/InvalidStateError/.test(name)) return 'This device already holds a passkey for you.';
     if (/captcha/i.test(m + ' ' + code)) return 'The security check did not finish. Please try again.';
@@ -238,7 +238,7 @@
     db.auth.passkey.list().then(function (r) {
       if (r.error) {
         list.innerHTML = '';
-        say('pkMsg', r.error.status === 404 ? 'Passkeys are not switched on yet.' : 'Passkeys could not be loaded. ' + (r.error.message || ''));
+        say('pkMsg', r.error.status === 404 ? 'Passkeys are not switched on.' : 'Passkeys could not be loaded. ' + (r.error.message || ''));
         return;
       }
       rows = (r.data || []).slice().sort(function (a, b) {

@@ -556,7 +556,7 @@
     function reflect() {
       var got = readProfile(input.value);
       if (!input.value.trim()) { read.textContent = ''; read.className = 'prof-read muted'; }
-      else if (!got) { read.textContent = 'Not a profile link we recognise'; read.className = 'prof-read err'; }
+      else if (!got) { read.textContent = 'Not a recognised profile link'; read.className = 'prof-read err'; }
       else if (!got.handle) { read.textContent = PLATFORM_LABEL[got.platform] + ' · short link'; read.className = 'prof-read muted'; }
       else { read.textContent = PLATFORM_LABEL[got.platform] + ' · ' + got.handle; read.className = 'prof-read ok'; }
       warnDupes(ctx);
@@ -1582,7 +1582,7 @@
       var n = freeSlots(c);
       return { to: 'open', reopen: true, label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
         ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
-          body: 'The client can choose for ' + n + (n === 1 ? ' free slot' : ' free slots') +
+          body: 'The client can choose ' + n + (n === 1 ? ' more creator' : ' more creators') +
             '. Bookings already in production are kept.' } };
     }
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
@@ -1770,7 +1770,7 @@
   }
   function qcNames(o) {
     var names = qcRows(o).map(function (q) { return (q.team_members || {}).name || 'a colleague'; });
-    return names.length ? names.join(' and ') : 'nobody yet';
+    return names.length ? names.join(' and ') : 'nobody';
   }
 
   /* The Draft step has two routes into it and only ever named one. A field
@@ -4110,7 +4110,7 @@
   var SAID_QC = {
     denied: 'You do not have permission to release this.',
     'no-booking': 'That booking is no longer there.',
-    'not-submitted': 'Nothing has been handed in for this booking yet.',
+    'not-submitted': 'Nothing handed in for this booking.',
     'qc-required': 'Release to client needs the quality check completed.'
   };
 
@@ -4576,7 +4576,7 @@
     if (!keys.length) { msg('bulkMsg', 'A date or a note is required.', 'err'); return; }
 
     var targets = state.options.filter(isLive);
-    if (!targets.length) { msg('bulkMsg', 'Nothing is in production yet.', 'err'); return; }
+    if (!targets.length) { msg('bulkMsg', 'Nothing in production.', 'err'); return; }
 
     var left = targets.length, touched = 0, refused = 0;
     targets.forEach(function (o) {
