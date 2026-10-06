@@ -9366,6 +9366,40 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
   font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action); stroke-width: 2; }
+/* The ⓘ card offers the section's guide again (js/guide.js). */
+.aboutpop-guide { align-self: flex-start; margin-top: 10px; }
+.aboutpop.is-dock .aboutpop-guide { width: 100%; min-height: var(--ctl-h); }
+
+/* =========================================================================
+   A FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07)
+   A card, never a cover: on the floating ground like the ⓘ card, hung from
+   the control its step names (laid by ADspaceMenu.pop), docked at the foot
+   on a phone. The control is ringed in the focus colour while its step
+   shows. Nothing under it is dimmed or locked.
+   ========================================================================= */
+.guidecard {
+  position: fixed; z-index: 50;
+  width: min(320px, calc(100vw - 32px));
+  display: grid; gap: 8px; padding: 14px 16px 16px;
+  background: var(--raised); border: 1px solid var(--line-lift);
+  border-radius: var(--radius); box-shadow: var(--shadow-lift);
+  transform-origin: top center; animation: mk-menu-in var(--t) var(--ease-out);
+}
+.guidecard[hidden] { display: none; }
+.guide-head { align-items: baseline; }
+.guide-title { min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.guide-n { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.guide-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
+/* Skip, then Next at the right edge (the markup keeps the primary first). */
+.guide-acts { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; margin-top: 4px; }
+.guide-acts .btn { min-width: 0; }
+.guidecard.is-dock { padding: 18px 20px 20px; }
+.guidecard.is-dock .guide-text { font-size: 14px; }
+.guidecard.is-dock .guide-acts .btn { flex: 1 1 0; min-height: var(--ctl-h); }
+.guide-on { outline: 2px solid var(--action-ring); outline-offset: 3px; }
+/* A row runs its table's width, and the table clips what falls outside it:
+   a row's ring is drawn inside the row. */
+.guide-on:is(.crm-row, .svc-row, .hb-row, .camp-row, .cr-client-row, .ovw-row, .qrow) { outline-offset: -2px; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }

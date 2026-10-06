@@ -643,6 +643,11 @@
         me = { role: 'admin', is_admin: true, legacy: true };
       } else {
         me = r.data && r.data.id ? r.data : null;
+        /* First-visit guides (js/guide.js): which this colleague has met,
+           on any device. */
+        if (me && window.ADspaceGuide) window.ADspaceGuide.useServer(function () {
+          return db.rpc('guides_seen').then(function (g) { if (g.error) throw g.error; return g.data || []; });
+        }, function (key) { db.rpc('guide_seen_mark', { p_guide: key }).then(function () {}, function () {}); });
       }
       meLoaded = true;
       go();
@@ -878,6 +883,57 @@
     mine:      'Your own performance reviews, initiatives, reflections and HR letters.'
   };
   var INTRO_SHOWS = 3;
+  /* FIRST-VISIT GUIDES (js/guide.js; the user, 2026-10-07: first time users
+     do not know what each section is for). Two or three steps a section,
+     each on a control the section draws; a step whose control this person
+     cannot see is left out. Opened once by itself, and again from the ⓘ. */
+  var GUIDES = {
+    overview: { name: 'Overview', steps: [
+      { at: '#ovwTabs', text: 'One tab a section. Its count is what waits there, in red where something is late.' },
+      { at: '.ovw-grid .ovw-row', text: 'Press a row to open it where it is kept. View all opens the whole section.' }] },
+    work: { name: 'My Work', steps: [
+      { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
+      { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
+      { at: '#workList .task-stage .state-select', text: 'Move a task on from its stage. Whoever takes it next is told.' }] },
+    clients: { name: 'Clients', steps: [
+      { at: '#crmNew', text: 'Add a lead the day it comes in. Billing, brand and services follow as the deal firms.' },
+      { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client for its contacts, services, documents and every call and visit.' },
+      { at: '#crmViews', text: 'Sales shows the leads won, the clients lost and who needs a call.' }] },
+    review: { name: 'Content Review', steps: [
+      { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
+      { at: '#crFind', text: 'Find a client by name.' }] },
+    campaigns: { name: 'Creator Campaigns', steps: [
+      { at: '#showAddCamp', text: 'New campaign starts one for a client, with creators from the Creators List.' },
+      { at: '#campSectionTabs', text: 'Campaigns, and the Creators List of every creator and their rates.' },
+      { at: '#campCards .camp-row', text: 'Open a campaign to book creators, check drafts and release them to the client.' }] },
+    register: { name: 'Documents', steps: [
+      { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference is numbered for you.' },
+      { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at digital.adspace.me/verify.' }] },
+    reports: { name: 'Reports', steps: [
+      { at: '#rhNew', text: 'New report starts an Accounts or Advertising Report for an active client.' },
+      { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published, where the client reads it.' },
+      { at: '#rhMoreBtn', text: 'Select reports to download several, or mark them as sent.' }] },
+    links: { name: 'Short Links', steps: [
+      { at: '#showAddLink', text: 'Add link makes a short address and its QR code.' },
+      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused. Every namecard address is listed, so none is taken twice.' }] },
+    services: { name: 'Services', steps: [
+      { at: '#svcAdd', text: 'Add a service or an add-on to the rate card.' },
+      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line seeds a client\'s services, where it stays editable.' }] },
+    team: { name: 'Team', steps: [
+      { at: '#teamTabs', text: 'Members, the groups that set what each may open, Performance and Health.' },
+      { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and namecard.' }] },
+    handbook: { name: 'Handbook', steps: [
+      { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
+      { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯.' }] },
+    mine: { name: 'My HR', steps: [
+      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] }
+  };
+  function offerGuide(name) {
+    var G = window.ADspaceGuide;
+    if (!G) return;
+    G.leave();
+    if (meLoaded && me && !me.legacy && GUIDES[name]) G.offer(name, GUIDES[name]);
+  }
   function introSeen(name) {
     try { return Number(localStorage.getItem('adspace-hint-intro-' + name) || 0); } catch (e) { return INTRO_SHOWS; }
   }
@@ -891,6 +947,9 @@
   function aboutOpen(on) {
     var pop = $('sectionAbout'), btn = $('sectionTitle');
     if (!pop || !btn) return;
+    /* Show me around: the section's guide again, where a step of it is on
+       the screen (a record hides the list's controls). */
+    if (on && $('sectionGuide')) $('sectionGuide').hidden = !(window.ADspaceGuide && window.ADspaceGuide.can(GUIDES[section]));
     pop.hidden = !on;
     btn.setAttribute('aria-expanded', String(on));
     if (on) ADspaceMenu.pop(btn, pop, 'left');
@@ -906,6 +965,7 @@
     var pop = $('sectionAbout'), btn = $('sectionTitle');
     if (!pop || !btn) return;
     aboutOpen(false);
+    offerGuide(name);
     if (!INTRO[name]) { btn.classList.remove('is-new'); return; }
     $('sectionAboutText').textContent = INTRO[name];
     var seen = introSeen(name);
@@ -926,6 +986,10 @@
     aboutOpen(false);
   });
   $('sectionAbout').addEventListener('click', function (e) { e.stopPropagation(); });
+  if ($('sectionGuide')) $('sectionGuide').addEventListener('click', function () {
+    aboutOpen(false);
+    if (window.ADspaceGuide) window.ADspaceGuide.open(section, GUIDES[section]);
+  });
   document.addEventListener('click', function () { if (aboutIsOpen()) aboutOpen(false); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && aboutIsOpen()) { aboutOpen(false); $('sectionTitle').focus(); }

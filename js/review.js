@@ -6,6 +6,11 @@
   var feed = null;
 
   var $ = function (id) { return document.getElementById(id); };
+  /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
+     this browser, the moment the page shows what it is for. */
+  var GUIDE = { name: 'Content Review', steps: [
+    { at: '#stageStrip', text: 'Posts waiting for your decision are under Pending.' },
+    { at: '.approve-row', text: 'Approve a post, or request changes with a note for the team.' }] };
 
   // ---- Token ---------------------------------------------------------------
   // GitHub Pages serves static files only, so the token travels as ?k=.
@@ -966,6 +971,7 @@
     $('filterbar').hidden = false;
     $('stageStrip').hidden = false;
     $('qrBtn').hidden = false;
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('review', GUIDE);
     paintSafeSwitch();
     watchVideos(document);
 

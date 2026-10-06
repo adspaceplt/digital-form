@@ -209,6 +209,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
+| A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My HR, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), an admin's Upgrade mode as a switch (drawn for an admin alone), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the warn pair for Important; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
@@ -463,8 +464,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Nothing says the same thing twice (a cover line never restates its title;
     a chip never repeats its column).
   - The one exception is the route's one-sentence purpose, which opens from
-    its name; and Health, which speaks as the company where a colleague is
-    asked to agree, answer honestly and seek help (the user, 2026-10-07).
+    its name; the first-visit guides (two or three short steps a section, met
+    once, `js/guide.js`); and Health, which speaks as the company where a
+    colleague is asked to agree, answer honestly and seek help (the user,
+    2026-10-07).
 - Buttons:
   - one to three words, sentence case, verb first;
   - no article, and no object the context gives (**Delete**, never
