@@ -4,7 +4,7 @@
  *
  * Two readers, one sheet. Management reads everybody's month from Team >
  * Performance, behind the master code; a colleague reads their own released
- * months from My performance in the account menu. What each is sent is the
+ * months from My HR in the account menu. What each is sent is the
  * database's decision (`perf_*` functions, no table readable directly), so
  * nothing here withholds anything: it draws what arrived.
  *
@@ -1337,7 +1337,7 @@
     if (e.target.classList && e.target.classList.contains('perf-evidence')) grow(e.target);
   });
 
-  // ---- My performance --------------------------------------------------------------------
+  // ---- My HR ----------------------------------------------------------------------------
   /* THE EMAIL-CODE LOCK. A member's own reviews open only for a session
      verified by a code emailed to them in the last 15 minutes; the proof is
      the signed token's own claim, so nothing here can fake it. It was a
@@ -1358,7 +1358,7 @@
     if (!on) return;
     $('mineList').innerHTML = '';
     $('mineRewards').innerHTML = '';
-    $('mineLockTitle').textContent = 'Your reviews are locked';
+    $('mineLockTitle').textContent = 'Your records are locked';
     /* A passkey (Face ID, Touch ID, the device password) unlocks them in one
        touch where this browser can use one; the emailed code stays beside it
        for a new device (the user, 2026-09-26). The server reads either proof
@@ -1967,7 +1967,7 @@
     var el = document.createElement('div');
     el.className = 'crm-row rw-row ' + cls + ' is-own';
     el.innerHTML = (lead ? Array(lead + 1).join('<span class="rw-c">' + dash() + '</span>') : '') +
-      whoCell(p, 'Your own is in My performance') +
+      whoCell(p, 'Your own is in My HR') +
       Array(cells).join('x').split('x').map(function () { return '<span class="rw-c">' + dash() + '</span>'; }).join('') +
       '<span class="rw-sum"></span>';
     var cs = el.querySelectorAll('.rw-c'), last = cs[cs.length - 1];
@@ -2812,7 +2812,7 @@
     });
   });
 
-  // My performance: the member's own rewards -------------------------------------------------
+  // My HR: the member's own rewards ---------------------------------------------------------
   function loadMineRewards() {
     call('perf_rewards_mine', {}, function (d) {
       if (d.error === 'code-needed') { $('mineRewards').innerHTML = ''; return; }
@@ -3313,7 +3313,7 @@
       if (st.pv === 'initiatives') return { tab: 'performance', view: 'initiatives' };
       return { tab: 'performance', m: st.period.slice(0, 7) };
     },
-    /* My performance: the view, Reviews left out of the address. */
+    /* My HR: the view, Reviews left out of the address. */
     mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); },

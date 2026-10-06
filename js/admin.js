@@ -276,8 +276,8 @@
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
   });
 
-  /* My performance is the person's own record, so it opens from who they
-     are rather than from the rail everybody shares. */
+  /* My HR is the person's own record, so it opens from who they are rather
+     than from the rail everybody shares. */
   $('myPerf').addEventListener('click', function () {
     shutAcct();
     showSection('mine');
@@ -494,7 +494,7 @@
     db.auth.signOut().then(function () { location.reload(); });
   });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
-  /* A proof of who you are (a passkey on My performance) runs a sign-in, and
+  /* A proof of who you are (a passkey on My HR) runs a sign-in, and
      the library announces the session it makes before the page can check
      whose it is. While one runs the console holds its auth events, and it
      reads the session again once the proof has finished (`hold`). */
@@ -846,7 +846,7 @@
     services: 'Services',
     team: 'Team',
     handbook: 'Handbook',
-    mine: 'My performance'
+    mine: 'My HR'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -873,7 +873,7 @@
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
-    mine:      'Your monthly performance reviews, once each is released at your 1-1.'
+    mine:      'Your own performance reviews, initiatives, reflections and HR letters.'
   };
   var INTRO_SHOWS = 3;
   function introSeen(name) {

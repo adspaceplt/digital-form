@@ -1104,7 +1104,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   row's ⋯ Share with {first name} / Stop sharing (`document_share`, HR
   Letters at Work, `not-hr`, `no-member`). Shared, the colleague is told once
   (kind `hr.letter`, its kind and never its words; the bell and a push open
-  Letters) and reads it in My performance, Letters (`my_letters()`, behind
+  Letters) and reads it in My HR, Letters (`my_letters()`, behind
   `perf_mine_gate()`, their own alone, a replaced version left out, a voided
   one marked Void), its PDF drawn in their browser: no Documents access is
   needed. Filed under HR with the kind alone.
@@ -2077,9 +2077,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 <!-- Performance rewards (2026-09-28) -->
 - Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
   `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
-  - My performance is four views (`#mineViews`, `view=` in the address,
-    Reviews left out): Reviews, Initiatives, Reflection, Letters, all behind
-    the fresh proof (`perf_mine_gate()`).
+  - My HR (`?s=mine`, the account menu's first item; never My performance,
+    the user, 2026-10-06: it holds more than reviews) is four views
+    (`#mineViews`, `view=` in the address, Reviews left out): Reviews,
+    Initiatives, Reflection, Letters, all behind the fresh proof
+    (`perf_mine_gate()`, the card Your records are locked).
   - An initiative (title 3 to 140, Improves: Client work, Process, Tool, SOP,
     Other; details; an https link) is logged in this month as Proposed and
     edited while Proposed; Withdraw (Undo in place, Restore in the ⋯) is its
