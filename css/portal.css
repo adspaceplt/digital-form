@@ -9156,6 +9156,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .init-row > .team-act { grid-area: act; }
 .is-narrow .crm-head.init-row { display: none; }
 
+/* My performance > Letters: the letter, its state, Download at the edge. */
+.ml-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 132px; align-items: center; }
+.crm-head.ml-row { padding: 12px 15px 8px; }
+.ml-row.is-off > :not(.ml-act) { opacity: .55; }
+.ml-act { display: flex; justify-content: flex-end; }
+.is-narrow .ml-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who act" "state act"; gap: 4px 10px; }
+.is-narrow .ml-row > .init-name { grid-area: who; }
+.is-narrow .ml-row > .ml-state { grid-area: state; }
+.is-narrow .ml-row > .ml-state:empty { display: none; }
+.is-narrow .ml-row > .ml-act { grid-area: act; }
+.is-narrow .crm-head.ml-row { display: none; }
+
 /* The reflection reads as the card's own section: each question beside its
    answer, the answer keeping the lines it was written in. */
 .refl-head { justify-content: space-between; }

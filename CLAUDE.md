@@ -132,11 +132,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
 | `portal.js` | portal |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
-| `perf.js` | perfui, perfguard, perf |
+| `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
@@ -1064,6 +1064,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     write;
   - an HR row never arrives without `register.hr`;
   - the activity record logs the kind alone, under subject `HR`.
+- An HR letter is shared with the colleague it names
+  (`2026-10-06-hr-letters-shared.sql`, `documents.shared_at` / `shared_by`):
+  Issue's Share with {first name} tick (`#docShare`) is on by default and
+  off for a letter not yet theirs (a reissue keeps the earlier choice); the
+  row's ⋯ Share with {first name} / Stop sharing (`document_share`, HR
+  Letters at Work, `not-hr`, `no-member`). Shared, the colleague is told once
+  (kind `hr.letter`, its kind and never its words; the bell and a push open
+  Letters) and reads it in My performance, Letters (`my_letters()`, behind
+  `perf_mine_gate()`, their own alone, a replaced version left out, a voided
+  one marked Void), its PDF drawn in their browser: no Documents access is
+  needed. Filed under HR with the kind alone.
 - Add entry (`register_add` / `register_update`, nine arguments with
   `p_member`):
   - an HR entry names a team member and no client;
@@ -1829,7 +1840,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The owner is told about another person's change.
   - A new owner is told they were assigned.
   - Nobody is told about their own act.
-  - The bell re-reads every minute while visible, and on return.
+  - The bell is drawn for every colleague (a row is its reader's own), and
+    re-reads every minute while visible, and on return.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New
@@ -2028,9 +2040,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 <!-- Performance rewards (2026-09-28) -->
 - Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
   `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
-  - My performance is three views (`#mineViews`, `view=` in the address,
-    Reviews left out): Reviews, Initiatives, Reflection, all behind the
-    fresh proof (`perf_mine_gate()`).
+  - My performance is four views (`#mineViews`, `view=` in the address,
+    Reviews left out): Reviews, Initiatives, Reflection, Letters, all behind
+    the fresh proof (`perf_mine_gate()`).
   - An initiative (title 3 to 140, Improves: Client work, Process, Tool, SOP,
     Other; details; an https link) is logged in this month as Proposed and
     edited while Proposed; Withdraw (Undo in place, Restore in the ⋯) is its

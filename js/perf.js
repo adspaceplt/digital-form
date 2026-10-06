@@ -1430,6 +1430,7 @@
         loadMineRewards();
         if (st.mv === 'initiatives') loadMineInits();
         if (st.mv === 'reflection') loadRefl();
+        if (st.mv === 'letters') loadLetters();
       });
     });
   }
@@ -2898,9 +2899,9 @@
   // The colleague's own --------------------------------------------------------------------
   function mvFromUrl() {
     var v = new URLSearchParams(location.search).get('view');
-    return v === 'initiatives' || v === 'reflection' ? v : 'reviews';
+    return v === 'initiatives' || v === 'reflection' || v === 'letters' ? v : 'reviews';
   }
-  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl' };
+  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl', letters: 'mineLetters' };
   function setMv(v, quiet) {
     if (!MV[v]) v = 'reviews';
     st.mv = v;
@@ -2919,7 +2920,50 @@
     setMv(b.getAttribute('data-mv'));
     if (st.mv === 'initiatives') loadMineInits();
     if (st.mv === 'reflection') loadRefl();
+    if (st.mv === 'letters') loadLetters();
   });
+  /* HR letters issued to the colleague and shared with them (2026-10-06),
+     behind the same proof as their reviews: their own alone, newest first,
+     a voided one marked so, each PDF drawn here as Documents draws it. */
+  function loadLetters() {
+    if (!st.letters) UI.skeleton($('mineLetterList'), 2);
+    mineCall('my_letters', {}, function (d) {
+      if (d.error) { UI.failLine($('mineLetterList'), 'Your letters', said(d), loadLetters); return; }
+      st.letters = d.letters || [];
+      paintLetters();
+    });
+  }
+  var DL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>';
+  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M18 14v5H5V6h5"/></svg>';
+  function paintLetters() {
+    var box = $('mineLetterList'), list = st.letters || [];
+    if (!list.length) { UI.emptyLine(box, 'No letters.'); return; }
+    box.innerHTML = '<div class="crm-table softpanel">' +
+      '<div class="crm-head ml-row"><span>Letter</span><span>State</span><span></span></div>' +
+      list.map(function (l, i) {
+        var canDraw = l.source !== 'manual';
+        var act = canDraw ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="dl">' + DL + 'Download</button>'
+          : l.file_url ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="open">Open' + OUT + '</button>' : '';
+        return '<div class="crm-row ml-row' + (l.void ? ' is-off' : '') + '">' +
+          '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + '</b>' +
+          '<small>' + esc([l.serial, dateWord(l.issued_at)].filter(Boolean).join(' · ')) + '</small></span>' +
+          '<span class="ml-state">' + (l.void ? '<span class="chip">Void</span>' : '') + '</span>' +
+          '<span class="ml-act">' + act + '</span></div>';
+      }).join('') + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a]'), function (b) {
+      b.addEventListener('click', function () {
+        var l = list[Number(b.getAttribute('data-i'))];
+        if (!l) return;
+        if (b.getAttribute('data-a') === 'open') { window.open(l.file_url, '_blank', 'noopener'); return; }
+        var LET = window.ADspaceLetters;
+        if (!LET) { msg('mineLetterMsg', 'The letter could not be drawn. Refresh the page.', 'err'); return; }
+        b.disabled = true;
+        LET.download(l, function (warn) { b.disabled = false; msg('mineLetterMsg', warn || '', warn ? 'err' : ''); });
+      });
+    });
+  }
   /* The proof goes stale while the page stays open; a refused read puts the
      lock back. */
   function mineCall(fn, args, then) {
@@ -3220,7 +3264,9 @@
     /* My performance: the view, Reviews left out of the address. */
     mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
-    openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); }
+    openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); },
+    /* The bell's letter opens Letters, read again. */
+    openLetters: function () { st.mv = 'letters'; st.letters = null; if (bridge.show) bridge.show('mine'); }
   };
   if (bridge.perfReady) bridge.perfReady();
 })();

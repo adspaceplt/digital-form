@@ -148,8 +148,8 @@
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {
-        if (e2 || !doc) { then({ ok: true, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be drawn.' }); return; }
-        download(doc, function (warn) { then({ ok: true, repeat: out.repeat, serial: out.serial, doc: doc, warn: warn }); });
+        if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be drawn.' }); return; }
+        download(doc, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: doc, warn: warn }); });
       });
     });
   }
@@ -164,8 +164,8 @@
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (d2, e2) {
-        if (e2 || !d2) { then({ ok: true, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be drawn.' }); return; }
-        download(d2, function (warn) { then({ ok: true, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
+        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be drawn.' }); return; }
+        download(d2, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
       });
     });
   }
