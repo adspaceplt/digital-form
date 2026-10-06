@@ -1835,7 +1835,7 @@
       ['Step', 'Name', 'Email', 'Date and time'], rows);
     y -= SP.line;
     para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
-      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), TY.small, book, SOFT);
+      (r.serial ? 'Verify the reference ' + r.serial + ' at ' + ((window.ADSPACE_ORG && window.ADSPACE_ORG.verifyUrl) || 'digital.adspace.me/verify') + '.' : ''), TY.small, book, SOFT);
   }
 
   // ---- Performance rewards (2026-09-28) ------------------------------------------------

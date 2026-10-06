@@ -401,8 +401,8 @@
     /* The page count bottom right. The monogram belongs to the letterhead at
        the top of the page and nowhere else: the foot carried a second one,
        which ADspace has dropped (the user, 2026-09-25). */
-    p.footMark = function (i, n) {
-      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
+    p.footMark = function (i, n, size) {
+      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, size || 7.5, font, mute);
     };
     return p;
   }
@@ -824,13 +824,38 @@
      stored PDF and no signed upload, so the row is the letter and removing it
      removes the whole of it. */
 
+  /* A document not yet final carries its stage over every page (the user,
+     2026-10-02 for reports, 2026-10-06 for a letter's Preview): light text
+     repeated on the diagonal, drawn last and faint so nothing on the page
+     hides it and it hides nothing. On the report's golden scale: S(4) in the
+     book face, a gap along the line of the size times φ², rows the size
+     times φ⁴ apart, at the golden angle (atan 1/φ, 31.7°), each row half a
+     step along from the last, in a light ink at a tenth. One copy for every
+     PDF the portal draws. */
+  function watermark(page, word, font) {
+    var PDF = window.PDFLib;
+    if (!page || !word || !font || !PDF) return;
+    var PHI = 1.6180339887, size = 10 * PHI * PHI;
+    var dim = page.getSize(), W = dim.width, H = dim.height;
+    var ang = Math.atan(1 / PHI), cos = Math.cos(ang), sin = Math.sin(ang);
+    var tw = font.widthOfTextAtSize(word, size), step = tw + size * PHI * PHI, rowGap = size * Math.pow(PHI, 4);
+    var reach = Math.sqrt(W * W + H * H) / 2 + step, cx = W / 2, cy = H / 2;
+    for (var v = -reach, k = 0; v <= reach; v += rowGap, k++) {
+      for (var u = -reach - (k % 2) * step / 2; u <= reach; u += step) {
+        var x = cx + u * cos - v * sin, y = cy + u * sin + v * cos;
+        if (x < -tw || x > W + tw || y < -tw || y > H + tw) continue;
+        page.drawText(word, { x: x, y: y, size: size, font: font, color: PDF.rgb(0.55, 0.55, 0.55), opacity: 0.1, rotate: PDF.radians(ang) });
+      }
+    }
+  }
+
   window.ADspaceDocs = {
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
-    pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate,
+    pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
     logoWarn: function () { return logoWarn; }
   };
 })();

@@ -44,7 +44,7 @@ window.ADSPACE_ORG = {
   // and refused by name when it cannot be, rather than drawing boxes.
   fontCjk: '/css/NotoSansSC-Regular.ttf',
   // The public page a letter's footer points to.
-  verifyUrl: 'go.adspace.me/verify'
+  verifyUrl: 'digital.adspace.me/verify'
 };
 
 window.ADSPACE_CONFIG = {

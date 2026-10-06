@@ -1155,8 +1155,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The sheet runs in the letter's own order.
   - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
     on the same pen without issuing it: no row, no number spent, the
-    reference reading PREVIEW (a reissue keeps its own); a new tab, else a
-    download.
+    reference reading PREVIEW (a reissue keeps its own), every page under
+    DRAFT (INTERNAL USE ONLY) (the report's watermark, one copy:
+    `ADspaceDocs.watermark`); a new tab, else a download.
+  - A letter's foot is one row (the user, 2026-10-06): the reference, the
+    verify line (`ADSPACE_ORG.verifyUrl`, digital.adspace.me/verify, on
+    every PDF that names it), the page count; 7.5pt, 7 where the longest
+    line cannot clear both.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit.
@@ -2550,7 +2555,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     line; no draft or version line.
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
     REVIEW (INTERNAL USE ONLY), repeated over every page and drawn last
-    (`WM` in `js/smreport.js`) on the report's golden scale: S(4) in Slate
+    (`WM` in `js/smreport.js`, drawn by `ADspaceDocs.watermark`) on the report's golden scale: S(4) in Slate
     Book at the golden angle (31.7°), the size times φ² apart along a row and
     φ⁴ between rows, each row offset half a step, grey at a tenth's opacity;
     confirmed, published and every version the client reads carry none.
