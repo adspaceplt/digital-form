@@ -8436,6 +8436,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ctl { display: flex; align-items: center; gap: 8px; }
 .rp-ctl .chip { align-self: center; }
 .rp-note { margin: 0; font-size: 13px; color: var(--warn); }
+/* Sent to the client? (2026-10-06): one line under the head once a
+   published report's PDF is drawn, shaded as a box inside a card is, the
+   question then its one press and the way to close it. */
+.rp-sentask { display: flex; align-items: center; gap: 8px 12px; margin: 0; padding: 6px 6px 6px 14px;
+  background: var(--sunk); border-radius: var(--radius-sm); font-size: 13px; color: var(--ink); }
+.rp-sentask-q { flex: 1 1 auto; min-width: 0; }
+.rp-sentask > .btn { flex: 0 0 auto; }
+.rp-sentask-x { flex: 0 0 auto; color: var(--ink-mute); }
 /* The report's next step is an action row as every other: Send back, then
    the step forward at the right edge, each at its own width (`.btn` is
    `flex: 1` at its base, which drew Send back across the whole row,
@@ -8655,10 +8663,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rh-row.crm-head { display: none; }
 .is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "per upd"; gap: 4px 12px; }
 .is-narrow .rh-row > .rp-name { grid-area: name; }
-.is-narrow .rh-row > :nth-child(2) { grid-area: per; }
-.is-narrow .rh-row > :nth-child(3) { grid-area: ver; text-align: right; }
-.is-narrow .rh-row > :nth-child(4) { grid-area: upd; text-align: right; }
+.is-narrow .rh-row > .rh-per { grid-area: per; }
+.is-narrow .rh-row > .rh-vno { grid-area: ver; text-align: right; }
+.is-narrow .rh-row > .rh-upd { grid-area: upd; text-align: right; }
 .is-narrow .rh-row > .rp-go { display: none; }
+/* Select (2026-10-06): a tick leads each row; the row is its label. */
+.rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 150px 64px 110px 20px; cursor: pointer; }
+.rh-row.is-picking > .rp-go { visibility: hidden; }
+.rh-row.is-picked { background: var(--line-soft); }
+.rh-pick { display: flex; align-items: center; }
+.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick per upd"; }
+.is-narrow .rh-row > .rh-pick { grid-area: pick; align-self: start; padding-top: 2px; }
 
 /* My Work, Clients: one client's content months, meetings and tasks, picked
    from the select above them. The select is as wide as a client's name reads

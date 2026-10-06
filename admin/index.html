@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261007c">
+<link rel="stylesheet" href="/css/portal.css?v=20261007e">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4312,6 +4312,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="rhMore" hidden role="menu">
+                  <button class="kmenu-item" data-a="select" type="button" role="menuitem">Select reports</button>
                   <button class="kmenu-item" data-a="aiuse" type="button" role="menuitem">AI usage</button>
                 </div>
               </span>
@@ -4320,6 +4321,18 @@
           </span>
         </div>
         <nav class="tabrow rhtabs" id="rhTabs" role="tablist" aria-label="Report stages" hidden></nav>
+        <!-- Select (2026-10-06): the reports ticked in this tab and what they
+             can take together, each through the function one report uses. -->
+        <div class="bulkbar" id="rhBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="rhBulkAll"> <span id="rhBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="rhBulkPdf" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
+            <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" disabled hidden>Mark as sent</button>
+            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish to client</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="rhBulkDone" type="button">Done</button>
+        </div>
+        <div class="msg" id="rhBulkMsg"></div>
         <div id="rhList" role="tabpanel" data-swipe="rhTabs"></div>
       </div>
       <div id="rhEdit" hidden></div>
@@ -4811,7 +4824,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261007a"></script>
 <script src="/js/letters.js?v=20261007a"></script>
 <script src="/js/smreport.js?v=20261007b"></script>
-<script src="/js/reports.js?v=20261007c"></script>
+<script src="/js/reports.js?v=20261007e"></script>
 <script src="/js/register.js?v=20261007a"></script>
 <script src="/js/crm.js?v=20261007c"></script>
 <script src="/js/sales.js?v=20261005d"></script>
