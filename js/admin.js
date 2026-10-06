@@ -676,9 +676,13 @@
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance']
+    team:      ['performance'],
+    /* White label (2026-10-07): granted like the ones above, so an admin
+       holds it and any other group only once it is set. */
+    reports:   ['whitelabel']
   };
-  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1 };
+  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
+    'reports.whitelabel': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws

@@ -497,8 +497,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Import from spreadsheet.
   - Transfer client (a report to the client it belongs to), never Move to
     client.
-  - White label (a report's partner logo and the brand it covers); Brand on
-    the report; Partner logo.
+  - White label (on a client's Brand: its reports carry the client's wide
+    logo; on a report: the white-label client and the brand it covers);
+    Wide logo; Brand on the report.
 - Headings name their content: Task details, Posts, Schedule, Repeat,
   Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
   details, Contact details, Task settings, Inclusions, Time records, Team

@@ -408,7 +408,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames(), partnerOf(st.open.partner_id)])).then(function (x) {
+      return Promise.all(more.concat([loadNames(), labelOf(st.open.label_client)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
@@ -418,14 +418,14 @@
     });
   }
 
-  /* The partner whose logo a white-label report carries (2026-10-06), set on
-     the report itself, or null. A refused read leaves the head as it was:
-     the PDF reads its own. */
-  function partnerOf(pid) {
-    if (!pid) return Promise.resolve(null);
-    return db.from('report_partners').select('id, name, active').eq('id', pid).then(function (q) {
-      var p = q && !q.error && q.data && q.data[0];
-      return p && p.active ? p : null;
+  /* The white-label client whose wide logo the report carries (2026-10-07),
+     while it is still ticked, or null. A refused read leaves the head as it
+     was: the PDF reads its own. */
+  function labelOf(cid) {
+    if (!cid) return Promise.resolve(null);
+    return db.from('clients').select('id, name, white_label').eq('id', cid).maybeSingle().then(function (q) {
+      var c = q && !q.error && q.data;
+      return c && c.white_label ? c : null;
     }).catch(function () { return null; });
   }
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
@@ -890,9 +890,10 @@
     /* A draft started under a temporary client moves to its own (an
        admin's, 2026-10-06). */
     if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
-    /* White-label work for a partner (2026-10-06): the partner's logo and the
-       brand the report covers, while it stays under the client who pays. */
-    if (r.status !== 'published' && (isAdmin() || may('manage'))) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
+    /* White-label work for a partner (2026-10-07): a client ticked White
+       label lends its wide logo, and the report names the brand it covers,
+       while it stays under the client who pays. */
+    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -1044,28 +1045,36 @@
     });
     on('whitelabel', function (b) {
       b.closest('.kmenu').hidden = true;
-      db.from('report_partners').select('id, name, active').order('name', { ascending: true }).then(function (q) {
+      /* Only Active clients ticked White label, holding their wide logo; the
+         one the report carries stays offered while it is. */
+      db.from('clients').select('id, name, client_code').eq('white_label', true).eq('stage', 'active').then(function (q) {
         if (q.error) { say(m, said(q.error), 'err'); return; }
-        var pts = (q.data || []).filter(function (p) { return p.active || p.id === r.partner_id; });
+        var F = window.ADspaceForm || {};
+        var cl = (q.data || []).slice().sort(F.sequence ? F.sequence('client_code') : function (x, y) { return x.name.localeCompare(y.name); });
+        var cur = st.partner ? st.partner.id : '';
+        if (!cl.length && !r.brand_name && !cur) {
+          say(m, 'No client is set to White label. Tick White label on a client\'s Brand.', 'warn');
+          return;
+        }
         window.ADspaceConfirm.ask({ title: 'White label', go: 'Save',
           fields: [
-            { name: 'partner', label: 'Partner logo', required: false, value: r.partner_id || '',
-              choices: [['', 'None (ADspace)']].concat(pts.map(function (p) { return [p.id, p.name]; })) },
+            { name: 'label', label: 'White label', required: false, value: cur,
+              choices: [['', 'None (ADspace)']].concat(cl.map(function (c) { return [c.id, F.named ? F.named(c.client_code, c.name) : c.name]; })) },
             { name: 'brand', label: 'Brand on the report', required: false, value: r.brand_name || '', placeholder: 'Optional' }
           ] },
           function (v) {
-            db.rpc('sm_report_white_label', { p_id: r.id, p_partner: v.partner || null, p_brand: v.brand || null }).then(function (res) {
+            db.rpc('sm_report_label', { p_id: r.id, p_client: v.label || null, p_brand: v.brand || null }).then(function (res) {
               var d = res.data || {};
               if (res.error || d.error) {
                 var e = (d && d.error) || '';
                 say(m, e === 'published' ? 'A published report keeps its brand. Revise it first.' :
-                  e === 'bad-partner' ? 'That partner is inactive.' : e === 'bad-brand' ? 'Keep the brand to 120 characters.' : said(res.error || d), 'err');
+                  e === 'bad-client' ? 'That client is no longer set to White label.' : e === 'bad-brand' ? 'Keep the brand to 120 characters.' : said(res.error || d), 'err');
                 return;
               }
               reopen('Saved.');
-            });
+            }).catch(function (e) { say(m, said(e), 'err'); });
           });
-      });
+      }).catch(function (e) { say(m, said(e), 'err'); });
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
@@ -3363,128 +3372,6 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
-  // ---- Partners: white-label reports carry the partner's logo ----------------
-  /* ADspace subcontracts work from partners; a partner's clients' reports go
-     out under the partner's landscape logo in place of ADspace's wordmark,
-     as a courtesy (the user, 2026-10-06). An admin's or Reports Full
-     Access. A partner is stood down, never removed. */
-  function partnersSheet(opener) {
-    var box = sheetShell('rpPartnersSheet', 'Partners', '<div data-m="pt"></div>',
-      '<button class="btn btn-primary" type="button" data-a="add">' + ICON.plus + 'Add partner</button>' +
-      '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
-    var host = box.querySelector('[data-m="pt"]');
-    var paint = function () {
-      UI.skeleton(host, 2);
-      /* A partner is a name and a logo; the report chooses it (White label in
-         the report's ⋯, 2026-10-06), so the partner holds no clients. */
-      db.from('report_partners').select('id, name, logo_data, active').order('name', { ascending: true }).then(function (r) {
-        if (r.error) {
-          UI.failLine(host, 'Partners', /relation|schema cache|does not exist/i.test((r.error || {}).message || '') ? 'This needs a database update.' : said(r.error), paint);
-          return;
-        }
-        var list = r.data || [];
-        if (!list.length) { UI.emptyLine(host, 'No partners.'); return; }
-        host.innerHTML = '<div class="pt-list">' + list.slice().sort(function (x, y) { return (y.active ? 1 : 0) - (x.active ? 1 : 0) || x.name.localeCompare(y.name); })
-          .map(function (p) {
-            return '<button class="pt-row' + (p.active ? '' : ' is-off') + '" type="button" data-pt="' + esc(p.id) + '">' +
-              '<span class="pt-logo">' + (p.logo_data ? '<img src="' + esc(p.logo_data) + '" alt="">' : '') + '</span>' +
-              '<span class="pt-who"><span class="pt-name"><b>' + esc(p.name) + '</b>' + (p.active ? '' : '<span class="chip">Inactive</span>') + '</span></span>' +
-              ICON.go + '</button>';
-          }).join('') + '</div>';
-        Array.prototype.forEach.call(host.querySelectorAll('[data-pt]'), function (b) {
-          b.addEventListener('click', function () {
-            var p = list.filter(function (x) { return x.id === b.getAttribute('data-pt'); })[0];
-            window.ADspaceSheet.close(); partnerSheet(p, opener);
-          });
-        });
-      }).catch(function (e) { UI.failLine(host, 'Partners', said(e), paint); });
-    };
-    box.querySelector('[data-a="add"]').onclick = function () { window.ADspaceSheet.close(); partnerSheet(null, opener); };
-    paint();
-    window.ADspaceSheet.show(box, { opener: opener });
-  }
-  /* A landscape logo, drawn down to 1200 by 400 at most, kept as a PNG so
-     its transparency holds on the report's white page. */
-  function logoPng(file) {
-    return new Promise(function (ok, bad) {
-      var fr = new FileReader();
-      fr.onerror = function () { bad(new Error('The file could not be read.')); };
-      fr.onload = function () {
-        var img = new Image();
-        img.onerror = function () { bad(new Error('Choose a PNG, JPEG, WebP or SVG image.')); };
-        img.onload = function () {
-          var w = img.naturalWidth || img.width || 1200, h = img.naturalHeight || img.height || 400;
-          var k = Math.min(1, 1200 / w, 400 / h);
-          var cv = document.createElement('canvas');
-          cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
-          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          var url = cv.toDataURL('image/png');
-          if (url.length > 1500000) { bad(new Error('The logo is too large. Use a smaller file.')); return; }
-          ok(url);
-        };
-        img.src = String(fr.result || '');
-      };
-      fr.readAsDataURL(file);
-    });
-  }
-  function partnerSheet(p, opener) {
-    var box = sheetShell('rpPartnerSheet', 'Partner',
-      '<section class="fsec"><div class="row"><div><label class="field-label" for="ptName">Partner name</label>' +
-        '<input class="input" id="ptName" type="text" maxlength="80" aria-required="true" autocomplete="off"></div></div>' +
-      '<div class="row"><div><label class="field-label" for="ptLogoFile">Partner logo</label>' +
-        '<div class="pt-preview" id="ptPreview"></div>' +
-        '<input class="input" type="file" id="ptLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml">' +
-        '<button class="btn btn-sm btn-quiet" type="button" id="ptLogoOff">Remove logo</button></div></div></section>',
-      '<button class="btn btn-primary" type="button" data-a="go">Save</button>' +
-      '<button class="btn" type="button" data-a="state"></button>' +
-      '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>');
-    box.querySelector('h3').textContent = p ? 'Edit partner' : 'Add partner';
-    var m = box.querySelector('[data-m="sheet"]'), go = box.querySelector('[data-a="go"]'), stBtn = box.querySelector('[data-a="state"]');
-    say(m, '');
-    var logo = p ? p.logo_data || null : null;
-    var pv = $('ptPreview');
-    var showLogo = function () {
-      pv.innerHTML = logo ? '<img src="' + esc(logo) + '" alt="Partner logo">' : '';
-      pv.hidden = !logo; $('ptLogoOff').hidden = !logo;
-    };
-    $('ptName').value = p ? p.name : '';
-    $('ptLogoFile').value = '';
-    showLogo();
-    $('ptLogoFile').onchange = function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      logoPng(f).then(function (url) { logo = url; showLogo(); say(m, ''); })
-        .catch(function (e) { say(m, e.message, 'err'); });
-    };
-    $('ptLogoOff').onclick = function () { logo = null; $('ptLogoFile').value = ''; showLogo(); };
-    stBtn.hidden = !p;
-    stBtn.textContent = p && p.active ? 'Set inactive' : 'Set active';
-    stBtn.onclick = function () {
-      stBtn.disabled = true;
-      db.rpc('report_partner_set_active', { p_id: p.id, p_on: !p.active }).then(function (res) {
-        stBtn.disabled = false;
-        var d = res.data || {};
-        if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
-        window.ADspaceSheet.clean(); window.ADspaceSheet.close(); partnersSheet(opener);
-      }).catch(function (e) { stBtn.disabled = false; say(m, said(e), 'err'); });
-    };
-    go.onclick = function () {
-      var name = $('ptName').value.trim();
-      if (name.length < 2) { say(m, 'Enter the partner name.', 'err'); $('ptName').focus(); return; }
-      go.disabled = true;
-      db.rpc('report_partner_save', { p_id: p ? p.id : null, p_name: name, p_logo: logo, p_clients: [] }).then(function (res) {
-        go.disabled = false;
-        var d = res.data || {};
-        if (res.error || d.error) {
-          say(m, d.error === 'bad-logo' ? 'Choose the logo again.' : d.error === 'bad-name' ? 'Enter the partner name.' : said(res.error || d), 'err');
-          return;
-        }
-        window.ADspaceSheet.clean(); window.ADspaceSheet.close(); partnersSheet(opener);
-      }).catch(function (e) { go.disabled = false; say(m, said(e), 'err'); });
-    };
-    window.ADspaceSheet.show(box, { opener: opener });
-  }
-
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------
   /* Like a usage page (the user, 2026-10-04): when it resets, then used
      today over the limit with a bar, for the whole team, each group and
@@ -3692,13 +3579,11 @@
           if (!it) return;
           shutM();
           if (it.getAttribute('data-a') === 'aiuse') aiUseSheet(mb);
-          if (it.getAttribute('data-a') === 'partners') partnersSheet(mb);
         });
       }
     }
-    /* The bar's ⋯: AI usage an admin's, Partners an admin's or Reports Full
-       Access (2026-10-06). */
-    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !(isAdmin() || may('manage'));
+    /* The bar's ⋯: AI usage, an admin's. */
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
     if ($('rhMore')) {
       var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
       if (aiIt) aiIt.hidden = !isAdmin();

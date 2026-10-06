@@ -259,7 +259,7 @@
     $('teamMembersPane').hidden = st.tab !== 'members';
     $('teamGroupsPane').hidden = st.tab !== 'groups';
     $('teamPerfPane').hidden = st.tab !== 'performance';
-    $('perfLockBtn').hidden = st.tab !== 'performance';
+    $('perfTools').hidden = st.tab !== 'performance';
     if (st.tab === 'members' || st.tab === 'groups') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
     else enterPerf();
   }
@@ -270,6 +270,22 @@
       if (bridge.setUrl) bridge.setUrl();
     });
   });
+
+  /* At a desk the gear and the padlock close the Team tab row; on a phone
+     they close the Performance view row, so the three Team tabs keep their
+     whole words (the user, 2026-10-07). */
+  var TOOLS_PHONE = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
+  function placeTools() {
+    var tools = $('perfTools'), phone = TOOLS_PHONE && TOOLS_PHONE.matches;
+    var home = phone ? document.querySelector('#perfOpen .perf-views') : document.querySelector('.tabline');
+    if (home && tools.parentNode !== home) home.appendChild(tools);
+    tools.classList.toggle('is-in-views', !!phone);
+  }
+  if (TOOLS_PHONE) {
+    if (TOOLS_PHONE.addEventListener) TOOLS_PHONE.addEventListener('change', placeTools);
+    else if (TOOLS_PHONE.addListener) TOOLS_PHONE.addListener(placeTools);
+  }
+  placeTools();
 
   function enterPerf() {
     token = token || readToken();
@@ -294,6 +310,7 @@
     b.classList.toggle('is-open', open);
     b.setAttribute('aria-label', open ? 'Unlocked. Lock performance reviews' : 'Locked');
     b.title = open ? 'Lock' : 'Locked';
+    $('perfSetIcon').hidden = !open;
   }
   function showLock(why) {
     padlock(false);
@@ -753,6 +770,7 @@
       breachCard(r, draft) + planCard(r) + disputeCard(r, res) +
       (manage() ? historyCard(r) : '');
     $('pvBody').innerHTML = html;
+    if ($('pvHist') && window.ADspaceRecords) window.ADspaceRecords.paint($('pvHist'), historyItems(r));
     wireSheet(r);
     if (manage()) loadCtx(r);
   }
@@ -1108,14 +1126,19 @@
       return (a[0].kind === 'started') - (b[0].kind === 'started') || a[1] - b[1];
     }).map(function (x) { return x[0]; });
   }
-  function historyCard(r) {
-    var ev = r.events || [];
-    if (!ev.length) return '';
-    return card('History', '<ul class="perf-history">' + inOrder(ev).slice(0, 20).map(function (e) {
+  /* Every history is drawn by js/records.js (the user, 2026-10-07: the
+     Performance histories had kept the old two-line list). A performance
+     entry is never folded into another. */
+  function historyItems(r) {
+    return inOrder(r.events || []).slice(0, 20).map(function (e) {
       var why = e.kind === 'scored' ? savedWord(e.detail) : e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
       var word = e.kind === 'scored' && firstSave(e.detail) ? 'Scores entered' : EVENT_WORD[e.kind] || e.kind;
-      return '<li><b>' + esc(word + why) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
-    }).join('') + '</ul>');
+      return { at: e.at, who: e.by || '', what: word, detail: why.replace(/^: /, ''), sticky: true };
+    });
+  }
+  function historyCard(r) {
+    if (!(r.events || []).length) return '';
+    return card('History', '<div class="perf-hist" id="pvHist"></div>');
   }
 
   // ---- Wiring the sheet ----------------------------------------------------------------
@@ -1875,11 +1898,14 @@
     'figures-needed': 'Enter the company figures first.'
   };
   function monthsWord(n) { return n + (n === 1 ? ' month' : ' months'); }
+  /* The quarter waits on reviews, one a person a month (6 people over July
+     to September are 18): never "months", which read as calendar months. */
+  function reviewsWord(n) { return n + (n === 1 ? ' review' : ' reviews'); }
   function rwSaid(d) {
     if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', ' + Number(d.pct) + '% of profit.';
     if (d && d.error === 'pool-closed') return 'The bonus pool opens at ' + rm(d.at) + ' revenue.';
     if (d && d.error === 'trip-closed') return 'The trip opens at ' + rm(d.at) + ' revenue.';
-    if (d && d.error === 'months-open') return monthsWord(d.count) + ' in the quarter ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
+    if (d && d.error === 'months-open') return reviewsWord(d.count) + ' in the quarter ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
     if (d && RW_SAID[d.error]) return RW_SAID[d.error];
     return said(d);
   }
@@ -1995,9 +2021,10 @@
       table: function () {
         var t = document.createElement('div');
         t.className = 'crm-table softpanel rw-history';
-        t.innerHTML = '<ul class="perf-history">' + events.map(function (e) {
-          return '<li><b>' + esc(eventWord(e)) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
-        }).join('') + '</ul>';
+        window.ADspaceRecords.paint(t, events.map(function (e) {
+          var w = eventWord(e), cut = w.indexOf(': ');
+          return { at: e.at, who: e.by || '', what: cut < 0 ? w : w.slice(0, cut), detail: cut < 0 ? '' : w.slice(cut + 2), sticky: true };
+        }));
         return t;
       }
     });
@@ -2132,8 +2159,8 @@
     /* What still stands between the quarter and its confirmation: months
        not final refuse it; months nobody entered are asked about. */
     var waits = d.confirmed ? '' :
-      (Number(d.open_months) > 0 ? chip(monthsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') +
-      (d.ended && Number(d.missing_months) > 0 ? chip(monthsWord(Number(d.missing_months)) + ' not entered', 'is-warn') : '');
+      (Number(d.open_months) > 0 ? chip(reviewsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') +
+      (d.ended && Number(d.missing_months) > 0 ? chip(reviewsWord(Number(d.missing_months)) + ' not started', 'is-warn') : '');
     /* Best to worst by average, with the individual prize. A rank is
        shared by equal averages. The department prize is the department's,
        its team leader deciding the split (the user, 2026-10-01). */
@@ -2215,7 +2242,7 @@
     if (!missing) { go(); return; }
     window.ADspaceConfirm.ask({
       title: 'Confirm ' + (d0.word || qWord(st.q)),
-      body: monthsWord(missing) + ' on the review list ' + (missing === 1 ? 'has' : 'have') + ' no review and ' + (missing === 1 ? 'is' : 'are') + ' left out of the averages.',
+      body: reviewsWord(missing) + ' for people on the review list ' + (missing === 1 ? 'was' : 'were') + ' never started and ' + (missing === 1 ? 'is' : 'are') + ' left out of the averages.',
       go: 'Confirm quarter'
     }, go);
   });
@@ -2361,7 +2388,7 @@
       route: 'team-rw', key: 'units', name: 'Bonus pool and trip', count: ppl.length,
       shut: false,
       table: function () {
-        var t = G.table('rw-row rwp-row', ['Person', 'Months at B', 'Average', 'Grade', 'Units', 'Bonus', 'Trip']);
+        var t = G.table('rw-row rwp-row', ['Person', 'Months at B', 'Average', 'Grade', 'Shares', 'Bonus', 'Trip']);
         if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
         G.more(t, ppl, 30, '', function (p) {
           if (p.own) return youRow('rwp-row', p, 6);
@@ -2374,7 +2401,7 @@
             cell(p.units ? esc(num(p.units)) : dash()),
             cell(money0(p.bonus), true),
             cell(money0(p.trip))
-          ], [p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', p.units ? num(p.units) + ' units' : '', Number(p.trip) > 0 ? 'Trip ' + rm(p.trip) : '']);
+          ], [p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', p.units ? num(p.units) + (Number(p.units) === 1 ? ' share' : ' shares') : '', Number(p.trip) > 0 ? 'Trip ' + rm(p.trip) : '']);
         });
         return t;
       }
@@ -2405,33 +2432,48 @@
      them; the rest of management reads them. Only the fields changed are
      sent, so a value set for a later quarter is never put back by one left
      as it was. */
+  /* One sheet for every Performance figure, opened from the gear beside the
+     padlock (the user, 2026-10-07), in four parts that match the views:
+     each label states the rule in the team's words, a score out of 100. A
+     field is [key, label, kind, the name the change log gives it]. */
+  var RW_VIEWS = [['months', 'Months'], ['quarters', 'Quarters'], ['company', 'Bonus and trip'], ['commission', 'Commission']];
   var RW_SET = [
-    ['Quarterly prizes', [['prize_individual', 'Individual prize (RM)', 'money'],
-      ['prize_department', 'Department prize (RM)', 'money'], ['prize_department_min_total', 'Department total at least', 'score']], 'fgrid-3'],
-    ['Flexible hours', [['flex_member_min', 'A month at least', 'score'], ['flex_team_share', 'Share of the team at it (%)', 'pct']]],
-    ['Bonus pool and trip', [['bonus_pool_revenue', 'Bonus pool opens at revenue (RM)', 'money'], ['bonus_pool_profit_pct', 'Bonus pool, at most of profit (%)', 'pct'],
-      ['trip_revenue', 'Trip opens at revenue (RM)', 'money'], ['bonus_months_b', 'Months at B or better, of six', 'count']]],
-    ['Units by grade', [['units_a', 'Units for A', 'units'], ['units_b', 'Units for B', 'units'], ['units_c', 'Units for C', 'units']], 'fgrid-3'],
-    ['Commission', [['commission_min', 'Payable where the month is at least', 'score']]],
-    /* The month's own rules (2026-10-05): the least score for each grade,
-       the points a breach takes, and the days a member has to dispute. */
-    ['Grades', [['grade_a', 'A from', 'score'], ['grade_b', 'B from', 'score'], ['grade_c', 'C from', 'score'], ['grade_d', 'D from', 'score']]],
-    ['Issues', [['ded_l1', 'Level 1 (points)', 'points'], ['ded_l2', 'Level 2 (points)', 'points'],
-      ['ded_l3', 'Level 3 (points)', 'points'], ['ded_l4', 'Level 4 (points)', 'points']]],
-    ['Repeats, lateness and the cap', [['ded_repeat', 'A repeat adds (points)', 'points'], ['ded_late', 'Late adds (points)', 'points'],
-      ['ded_cap', 'Most a month loses (points)', 'points']], 'fgrid-3'],
-    ['Queries', [['dispute_days', 'Days to raise a query after sharing', 'days']]]
+    ['Score needed for each grade (out of 100)', [['grade_a', 'A · Distinction', 'score', 'Grade A from'],
+      ['grade_b', 'B · Strong', 'score', 'Grade B from'], ['grade_c', 'C · Baseline', 'score', 'Grade C from'],
+      ['grade_d', 'D · Needs support', 'score', 'Grade D from']], 'fgrid', 'months'],
+    ['Points taken off for an issue', [['ded_l1', 'Level 1', 'points', 'Points off, level 1'], ['ded_l2', 'Level 2', 'points', 'Points off, level 2'],
+      ['ded_l3', 'Level 3', 'points', 'Points off, level 3'], ['ded_l4', 'Level 4', 'points', 'Points off, level 4']], 'fgrid', 'months'],
+    ['Extra points off, and the limit', [['ded_repeat', 'Repeated in the quarter', 'points', 'Extra points off, repeated'],
+      ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
+      ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
+    ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
+    ['Quarterly prizes', [['prize_individual', 'Top scorer of the quarter (RM)', 'money', 'Top scorer prize'],
+      ['prize_department', 'Top department (RM)', 'money', 'Top department prize'],
+      ['prize_department_min_total', 'Department score needed to win (out of 100)', 'score', 'Department score needed']], 'fgrid', 'quarters'],
+    ['Flexible hours next month', [['flex_member_min', 'Score each person needs (out of 100)', 'score', 'Flexible hours, score needed'],
+      ['flex_team_share', 'Share of the team that must reach it (%)', 'pct', 'Flexible hours, share of the team']], 'fgrid', 'quarters'],
+    ['Bonus pool and company trip, each half year', [['bonus_pool_revenue', 'Bonus opens at revenue of (RM)', 'money', 'Bonus opens at revenue'],
+      ['trip_revenue', 'Trip opens at revenue of (RM)', 'money', 'Trip opens at revenue'],
+      ['bonus_pool_profit_pct', 'Bonus pool at most (% of profit)', 'pct', 'Bonus pool at most'],
+      ['bonus_months_b', 'Months at B or better to qualify (of 6)', 'count', 'Months at B or better to qualify']], 'fgrid', 'company'],
+    ['Shares of the pool by average grade', [['units_a', 'A', 'units', 'Shares for an A'], ['units_b', 'B', 'units', 'Shares for a B'],
+      ['units_c', 'C', 'units', 'Shares for a C']], 'fgrid-3', 'company'],
+    ['Commission', [['commission_min', 'Paid when the month scores at least (out of 100)', 'score', 'Commission, month score needed']], '', 'commission']
   ];
-  var RW_LABEL = {};
-  RW_SET.forEach(function (g) { g[1].forEach(function (f) { RW_LABEL[f[0]] = f; }); });
-  var rwSet = { data: null, from: null };
+  var RW_LABEL = {}, RW_VIEW_OF = {};
+  RW_SET.forEach(function (g) { g[1].forEach(function (f) { RW_LABEL[f[0]] = f; RW_VIEW_OF[f[0]] = g[3]; }); });
+  function setName(key) { var f = RW_LABEL[key]; return f ? f[3] || f[1] : key; }
+  var rwSet = { data: null, from: null, view: 'months' };
   function setValue(key, kind, v) {
     if (v == null) return '—';
     if (kind === 'money') return rm(v);
     if (kind === 'pct') return Number(v) + '%';
     if (kind === 'days') return Number(v) + (Number(v) === 1 ? ' day' : ' days');
+    if (kind === 'points') return Number(v) + (Number(v) === 1 ? ' point' : ' points');
     return String(Number(v));
   }
+  /* A label read back without its unit, which the value then carries. */
+  function bare(label) { return String(label).replace(/ \((RM|%|out of 100|of 6|% of profit)\)$/, ''); }
   function setAt(key, from) {
     var rows = ((rwSet.data && rwSet.data.settings) || []).filter(function (r) { return r.key === key; });
     var on = rows.filter(function (r) { return r.from <= from; });
@@ -2452,7 +2494,7 @@
     var d = rwSet.data || {}, admin = !!d.admin, from = rwSet.from;
     var box = $('rwSFields');
     box.innerHTML = RW_SET.map(function (g) {
-      return '<section class="fsec"><h4 class="fsec-h">' + esc(g[0]) + '</h4>' + (admin
+      return '<section class="fsec" data-view="' + g[3] + '"' + (g[3] === rwSet.view ? '' : ' hidden') + '><h4 class="fsec-h">' + esc(g[0]) + '</h4>' + (admin
         ? '<div class="row' + (g[1].length > 1 ? ' ' + (g[2] || 'fgrid') : '') + '">' + g[1].map(function (f) {
             var v = setAt(f[0], from);
             return '<div><label class="field-label" for="rwS_' + f[0] + '">' + esc(f[1]) + '</label>' +
@@ -2460,22 +2502,33 @@
               (v == null ? '' : f[2] === 'money' ? Number(v).toLocaleString('en-MY', { maximumFractionDigits: 2 }) : String(v)) + '"></div>';
           }).join('') + '</div>'
         : '<dl class="ovfacts">' + g[1].map(function (f) {
-            return '<dt>' + esc(f[1].replace(/ \((RM|%|points)\)$/, '')) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';
+            return '<dt>' + esc(bare(f[1])) + '</dt><dd>' + esc(setValue(f[0], f[2], setAt(f[0], from))) + '</dd>';
           }).join('') + '</dl>') + '</section>';
     }).join('');
     $('rwSSave').hidden = !admin;
     var ev = d.events || [];
     $('rwSLog').hidden = !ev.length;
     $('rwSLog').querySelector('summary').textContent = 'Changes (' + ev.length + ')';
-    $('rwSLogList').innerHTML = ev.map(function (e) {
+    window.ADspaceRecords.paint($('rwSLogList'), ev.map(function (e) {
       var x = e.detail || {};
-      return '<p class="rw-setlog"><b>' + esc(x.word || '') + '</b> ' + esc((x.changed || []).map(function (c) {
+      return { at: e.at, who: e.by || '', what: 'From ' + (x.word || ''), sticky: true,
+        detail: (x.changed || []).map(function (c) {
           var f = RW_LABEL[c.key] || [c.key, c.key, ''];
-          return f[1].replace(/ \((RM|%|points)\)$/, '') + ': ' + setValue(c.key, f[2], c.from) + ' → ' + setValue(c.key, f[2], c.to);
-        }).join(' · ')) + '<small>' + esc((e.by || '') + (e.at ? ' · ' + timeWord(e.at) : '')) + '</small></p>';
-    }).join('');
+          return setName(c.key) + ': ' + setValue(c.key, f[2], c.from) + ' → ' + setValue(c.key, f[2], c.to);
+        }).join('; ') };
+    }));
+  }
+  /* The part shown follows the view the gear was pressed on. */
+  function showSetView(v) {
+    rwSet.view = RW_VIEWS.some(function (x) { return x[0] === v; }) ? v : 'months';
+    if ($('rwSView').value !== rwSet.view) { $('rwSView').value = rwSet.view; $('rwSView').dispatchEvent(new Event('change')); }
+    Array.prototype.forEach.call($('rwSFields').querySelectorAll('section[data-view]'), function (sec) {
+      sec.hidden = sec.getAttribute('data-view') !== rwSet.view;
+    });
   }
   function openSettings(opener) {
+    rwSet.view = st.pv === 'initiatives' ? 'months' : st.pv;
+    if ($('rwSView').value !== rwSet.view) $('rwSView').value = rwSet.view;
     msg('rwSMsg', '');
     $('rwSFields').innerHTML = '';
     UI.skeleton($('rwSFields'), 3);
@@ -2492,9 +2545,8 @@
       paintSettings();
     });
   }
-  $('rwQSet').addEventListener('click', function () { openSettings(this); });
-  $('rwPSet').addEventListener('click', function () { openSettings(this); });
-  $('perfSetBtn').addEventListener('click', function () { openSettings(this); });
+  $('perfSetIcon').addEventListener('click', function () { openSettings(this); });
+  $('rwSView').addEventListener('change', function () { if (this.value !== rwSet.view) showSetView(this.value); });
   $('rwSFrom').addEventListener('change', function () { rwSet.from = this.value; msg('rwSMsg', ''); paintSettings(); });
   $('rwSClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('rwSCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
@@ -2511,7 +2563,8 @@
     });
     if (bad) {
       var f = RW_LABEL[bad.getAttribute('data-key')];
-      msg('rwSMsg', f[1].replace(/ \((RM|%|points)\)$/, '') + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
+      showSetView(RW_VIEW_OF[f[0]]);
+      msg('rwSMsg', setName(f[0]) + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
         pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.',
         points: 'points from 0 to 100.', days: 'a whole number of days from 1 to 30.' }[f[2]]), 'err');
       bad.focus(); return;
@@ -2522,7 +2575,7 @@
       b.disabled = false;
       if (d.error) {
         msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or pick a later quarter.'
-          : d.error === 'bad-value' && RW_LABEL[d.key] ? RW_LABEL[d.key][1].replace(/ \((RM|%|points)\)$/, '') + ' is out of range.'
+          : d.error === 'bad-value' && RW_LABEL[d.key] ? setName(d.key) + ' is out of range.'
           : d.error === 'bad-order' ? 'Each grade starts above the next: A above B above C above D, D above 0.' : rwSaid(d), 'err');
         return;
       }
@@ -2794,7 +2847,7 @@
         cell(esc(dep))
       ], [me.average == null ? '' : num(me.average), me.grade ? gradeWord(me.grade) : '', dp && dp.won ? dep : '']);
     });
-    add('periods', 'Bonus and trip', d.periods, ['Period', 'Months at B', 'Units', 'Bonus', 'Trip'], 'rwmp-row', function (x) {
+    add('periods', 'Bonus and trip', d.periods, ['Period', 'Months at B', 'Shares', 'Bonus', 'Trip'], 'rwmp-row', function (x) {
       var me = x.me || {};
       var elig = me.eligible ? '' : ruled(WHY[(me.reasons || [])[0]], x.rules) || 'Not eligible';
       return row('rwmp-row', [
@@ -2803,7 +2856,7 @@
         cell(me.units ? esc(num(me.units)) : dash()),
         cell(money0(me.bonus), true),
         cell(x.trip_open ? money0(me.trip) : esc('Not open'))
-      ], [me.units ? num(me.units) + ' units' : '', x.trip_open && Number(me.trip) > 0 ? 'Trip ' + rm(me.trip) : '']);
+      ], [me.units ? num(me.units) + (Number(me.units) === 1 ? ' share' : ' shares') : '', x.trip_open && Number(me.trip) > 0 ? 'Trip ' + rm(me.trip) : '']);
     });
     add('flex', 'Flexible hours', d.flex, ['Month', 'Team', 'You'], 'rwmf-row', function (x) {
       return row('rwmf-row', [

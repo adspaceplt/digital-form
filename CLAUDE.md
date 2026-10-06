@@ -668,7 +668,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
   section reads Same as section.
 - Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
-  `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`. Their unset
+  `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`,
+  `reports.whitelabel` (on for Managers from 2026-10-07). Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
   grants (`offered()`).
@@ -1967,8 +1968,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member sees nothing of a month, breaches included, until it is released.
   - A dispute window from release of the month's `dispute_days` setting
     (7; 3 before 2026-10-01; a month keeps the window it was given), item
-    by item. Every Performance figure is edited in Performance settings
-    (the Months, Quarters and Bonus bars), an admin's.
+    by item. Every Performance figure is edited in Performance settings,
+    an admin's: one gear beside the padlock (`#perfSetIcon`, while unlocked;
+    on a phone the pair closes the Performance view row, `placeTools`, so
+    the Team tabs stay whole), the sheet in four parts matching the views
+    (`#rwSView`: Months, Quarters, Bonus and trip, Commission), opening on
+    the view in front, each label the rule in plain words (`RW_SET`).
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
     the day the numbers were reported to the member. The sheet prefills
     today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
@@ -2068,7 +2073,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Worked out on every read (`perf_quarter_calc`, `perf_flex_calc`,
     `perf_period_calc`, `perf_commission_json`) from finalised months, but
     the quarter's ranking, which reads every month released to its member
-    (any state but draft; `2026-10-05-performance-quarter-live.sql`), so
+    (any state but draft; `2026-10-05-performance-quarter-live.sql`; it
+    waits on reviews, a person's month each, never called months), so
     management sees the order as it stands: `provisional` while the quarter
     runs or a month is not final or not entered, each row's `finals` said
     under its average (`2 of 3 · Not final`), and whoever is ahead reads
@@ -2102,7 +2108,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     and trip gates, the pool's share of profit, months at B, units by grade,
     the commission floor), each from a quarter on and read as at the
     quarter, month, half or deal month (`perf_setting`). Reward settings
-    (the Quarters and Bonus bars, `#rwSetSheet`): management reads, an admin
+    (the gear's sheet, `#rwSetSheet`): management reads, an admin
     changes them from a quarter on (`perf_settings_set`), never into a
     quarter or half already confirmed (`confirmed`); each change is filed
     from and to (`settings_set`), and every calculation says the rules it
@@ -2154,24 +2160,29 @@ Each line is a rule that broke once. Its reason is in the archive.
     started under a temporary client to an Active one with no report of its
     kind for a day of its period (`not-draft`, `not-active`, `exists`); its
     rows and AI uses follow it, filed `report.saved` under both clients.
-  - White label (`2026-10-06-report-white-label.sql`): the partner is the
-    client (billed, with its portal) and ADspace services the partner's own
-    clients under its name, so the report stays under the partner and the
-    report chooses, in its head's ⋯ (White label, an admin's or Reports
-    Full Access, any report not published), the partner's logo and the
-    brand it covers (`sm_reports.partner_id`, `brand_name`;
-    `sm_report_white_label`, filed from and to). A partner is a name and a
-    landscape logo (Partners in the Reports bar's ⋯; `report_partners`, a
-    PNG drawn down to 1200 by 400; `report_partner_save` /
-    `report_partner_set_active`, filed under Partners; stood down, never
-    removed; `report_partner_clients` is no longer read).
-    `sm_report_snapshot` sends the report's partner and, with a brand, the
-    brand as the client's name and no client logo; the PDF draws the logo at
-    the head of every page in place of the ADspace wordmark (15pt high, two
-    fifths of the line at most; the name in the wordmark's face where no
-    logo is held) and a published version keeps both. Everything else stays
-    ADspace's (the glossary link, the file's properties). The report head
-    reads `For {brand} · {partner} logo`.
+  - White label (`2026-10-07-white-label-on-the-client.sql`): the partner
+    is the client (billed, with its portal) and ADspace services the
+    partner's own clients under its name, so the report stays under the
+    partner. A client is made a partner on its Brand (Reports, White label:
+    `clients.white_label`, read with the record alone, never the list), and
+    ticked it needs its wide logo (`clients.report_logo`, a PNG drawn down to
+    1200 by 400; the sheet refuses Save without it and the database's
+    `clients_white_label_logo` too; filed `client.brand`). Both the tick and
+    the report's choice are Reports: White label at Work (a granted part;
+    `clients_white_label_guard`, the Brand sheet's Reports section drawn only
+    for it). The report's head ⋯ (White label, any report not published)
+    offers only Active clients ticked White label and the brand
+    it covers (`sm_reports.label_client`, `brand_name`; `sm_report_label`,
+    `bad-client`, filed from and to). There is no list of partners
+    (`report_partners`, `partner_id` and `sm_report_white_label` are no
+    longer used). `sm_report_snapshot` sends that client (its name and wide
+    logo, while still ticked) and, with a brand, the brand as the client's
+    name and no client logo; the PDF draws the logo at the head of every page
+    in place of the ADspace wordmark (15pt high, two fifths of the line at
+    most; the name in the wordmark's face where no logo is held) and a
+    published version keeps both. Everything else stays ADspace's (the
+    glossary link, the file's properties). The report head reads
+    `For {brand} · {client} logo`.
   - An account on a platform the database's list does not hold is kept as
     `other` with `sm_report_platforms.platform_name`
     (`2026-10-06-report-platform-names.sql`, carried forward by
@@ -2697,7 +2708,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
-  rail, a task's log and recent activity) is drawn by `js/records.js`
+  rail, a task's log and recent activity, and every Performance history) is
+  drawn by `js/records.js`
   (`ADspaceRecords.paint`): at 720px and over one 12.5px line an entry
   (`.reclist.is-wide`: time, what and on what, the detail cut at the line's
   end in the soft ink, who at the right edge in a 150px track, a hairline
