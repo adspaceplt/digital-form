@@ -1897,13 +1897,25 @@
      card stops reading In production over a list with nobody in it. Derived
      here rather than in each of the three menu actions, because it is one
      fact about the campaign and not three. */
+  /* In production and Completed are derived from the bookings on every load,
+     never pressed (the user, 2026-10-06: a campaign whose creators were all
+     Completed still read In production, with nothing to move it): every
+     booked creator at Completed is a completed campaign, one taken back from
+     Completed returns it to production, and none in production opens it. */
   function syncCampState() {
     var c = state.campaign;
-    if (!c || c.state !== 'production' || state.options.some(isLive)) return;
-    db.from('campaigns').update({ state: 'open' }).eq('id', c.id).select('id').then(function (r) {
+    if (!c || (c.state !== 'production' && c.state !== 'completed')) return;
+    var live = state.options.filter(isLive);
+    var done = live.length > 0 && live.every(function (o) { return o.state === 'completed'; });
+    var want = !live.length ? 'open' : done ? 'completed' : 'production';
+    if (want === c.state) return;
+    var was = c.state;
+    db.from('campaigns').update({ state: want }).eq('id', c.id).select('id').then(function (r) {
       if (r.error || !(r.data || []).length) return;
-      c.state = 'open';
-      log('campaign.opened', c.title, 'no creators in production');
+      c.state = want;
+      if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
+      else log('campaign.stage', c.title, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
+        (want === 'completed' ? ' · every creator completed' : ' · a creator reopened'));
       paintCampState(c);
     });
   }

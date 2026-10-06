@@ -57,9 +57,14 @@ do $$ begin
     create policy report_partner_clients_read on public.report_partner_clients for select to authenticated
       using (public.allowed('reports', 'view'));
   end if;
+  -- The scope rule asks the two helpers every other table's does: a login
+  -- may not run client_seen itself, so a policy naming it fails every read.
   if not exists (select 1 from pg_policies where tablename = 'report_partner_clients' and policyname = 'client_scope') then
     create policy client_scope on public.report_partner_clients as restrictive for select to authenticated
-      using (public.client_seen(client_id, 'view'));
+      using ((select public.client_scope_free('view')) or public.client_scope_ok('client', client_id, 'view'));
+  else
+    alter policy client_scope on public.report_partner_clients
+      using ((select public.client_scope_free('view')) or public.client_scope_ok('client', client_id, 'view'));
   end if;
 end $$;
 
