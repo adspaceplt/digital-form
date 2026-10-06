@@ -911,7 +911,10 @@
         if (u) thumbJobs[p.id] = embedImage(pdf, u, warn);
       });
       var logoJob = rep.client_logo_url ? embedImage(pdf, rep.client_logo_url, null) : Promise.resolve(null);
-      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob, sh.ready()]);
+      /* A partner's client's report carries the partner's logo (2026-10-06). */
+      var partnerJob = rep.partner && rep.partner.logo ? embedImage(pdf, rep.partner.logo, warn) : Promise.resolve(null);
+      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob, sh.ready(),
+        partnerJob.then(function (img) { mdl.partnerLogo = img; })]);
     }).then(function (got) {
       var thumbs = {};
       got[0].forEach(function (pair) { thumbs[pair[0]] = pair[1]; });
@@ -2123,12 +2126,24 @@
     };
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
-    var markW = width('ADspace', S(2), mark);
+    /* The head's mark: ADspace's wordmark, or for a partner's client the
+       partner's landscape logo (2026-10-06), its top on the top margin and
+       its foot under the wordmark's baseline, no wider than two fifths of
+       the line; a partner with no logo held is named in the wordmark's face. */
+    var pt = rep.partner || null, ptImg = pt && mdl.partnerLogo;
+    var ptH = 0, ptW = 0;
+    if (ptImg) {
+      ptH = 15; ptW = ptH * ptImg.width / ptImg.height;
+      if (ptW > CW * 0.4) { ptW = CW * 0.4; ptH = ptW * ptImg.height / ptImg.width; }
+    }
+    var markWord = pt && !ptImg ? String(pt.name || '') : 'ADspace';
+    var markW = ptImg ? ptW : width(markWord, S(2), mark);
     var zhOn = ZH;
     pages.forEach(function (p, i) {
       pg = p;
       ZH = false;   // the head and foot are the template's, English throughout
-      text('ADspace', M, HEAD_Y, S(2), mark, INK);
+      if (ptImg) p.page.drawImage(ptImg, { x: M, y: HEAD_Y + 11.6 - ptH, width: ptW, height: ptH });
+      else text(markWord, M, HEAD_Y, S(2), mark, INK);
       if (label) {
         var lab = clip(label, CW - markW - S(4), TY.small, med);
         var lw = sh.lineWidth(sh.linesOf(lab, 1e6, TY.small, med)[0] || [], TY.small);

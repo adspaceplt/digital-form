@@ -2129,11 +2129,26 @@ Each line is a rule that broke once. Its reason is in the archive.
     question asks for it beside the reviewer, kept as `gate_note` /
     `late_reason` and filed. At Work a month not in order rests Submit.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
-  - Move to client (the head's ⋯, an admin's alone, a draft only;
+  - Transfer client (the head's ⋯, an admin's alone, a draft only;
     `sm_report_move`, `2026-10-06-report-move-client.sql`) moves a report
     started under a temporary client to an Active one with no report of its
     kind for a day of its period (`not-draft`, `not-active`, `exists`); its
     rows and AI uses follow it, filed `report.saved` under both clients.
+  - Partners (`2026-10-06-report-partners.sql`; the Reports bar's ⋯, an
+    admin's or Reports Full Access): ADspace's white-label work for a
+    partner. A partner (`report_partners`: name, a landscape logo kept as a
+    PNG data address drawn down to 1200 by 400, active) holds its clients
+    (`report_partner_clients`, one row a client; a tick moves a client from
+    another partner); `report_partner_save` / `report_partner_set_active`
+    are the only writes, filed `report.saved` under Partners. A partner is
+    stood down, never removed. `sm_report_snapshot` sends the client's
+    active partner, so the PDF draws its logo at the head of every page in
+    place of the ADspace wordmark (15pt high on the top margin, two fifths
+    of the line at most; the name in the wordmark's face where no logo is
+    held) and a published version keeps it; everything else stays
+    ADspace's (the glossary link, the file's properties: the user, the
+    partner's clients know who does the work). The report head reads
+    `{partner} logo`.
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
