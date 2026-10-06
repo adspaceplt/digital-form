@@ -893,7 +893,7 @@
       { at: '.ovw-grid .ovw-row', text: 'Press a row to open it where it is kept. View all opens the whole section.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
-      { at: '#workNew', text: 'New adds a task, or a month of content for a client.' },
+      { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
       { at: '#workList .task-stage .state-select', text: 'Move a task on from its stage. Whoever takes it next is told.' }] },
     clients: { name: 'Clients', steps: [
       { at: '#crmNew', text: 'Add a lead the day it comes in. Billing, brand and services follow as the deal firms.' },
@@ -914,7 +914,7 @@
       { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published, where the client reads it.' },
       { at: '#rhMoreBtn', text: 'Select reports to download several, or mark them as sent.' }] },
     links: { name: 'Short Links', steps: [
-      { at: '#showAddLink', text: 'New link makes a short address and its QR code.' },
+      { at: '#showAddLink', text: 'Add link makes a short address and its QR code.' },
       { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused. Every namecard address is listed, so none is taken twice.' }] },
     services: { name: 'Services', steps: [
       { at: '#svcAdd', text: 'Add a service or an add-on to the rate card.' },
