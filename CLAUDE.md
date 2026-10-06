@@ -167,7 +167,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - contrast under 4.5:1; a control border under 3:1; focus without a ring;
     the way out drawn on the wrong side, measured by x (`order`);
   - a bar height that differs between pages (`head`); a hover equal to
-    selected (`hover`).
+    selected (`hover`);
+  - a strip short of its row on a phone (every strip; a record's, a card's
+    and a report's steps at every width), a strip that scrolls with no faded
+    edge, or a sliding surface off its chosen option, segments included
+    (`strip`); every strip on its list met at 1280 and 390.
 - **matrix** takes one screen per route at 320, 375, 390, 768, 1024, 1280 and
   1440, then 1280 and 1440 at 200% browser zoom (the viewport halved). It runs
   uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
@@ -1151,8 +1155,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The sheet runs in the letter's own order.
   - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
     on the same pen without issuing it: no row, no number spent, the
-    reference reading PREVIEW (a reissue keeps its own); a new tab, else a
-    download.
+    reference reading PREVIEW (a reissue keeps its own), every page under
+    DRAFT (INTERNAL USE ONLY) (the report's watermark, one copy:
+    `ADspaceDocs.watermark`); a new tab, else a download.
+  - A letter's foot is one row (the user, 2026-10-06): the reference, the
+    verify line (`ADSPACE_ORG.verifyUrl`, digital.adspace.me/verify, on
+    every PDF that names it), the page count; 7.5pt, 7 where the longest
+    line cannot clear both.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit.
@@ -2546,7 +2555,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     line; no draft or version line.
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
     REVIEW (INTERNAL USE ONLY), repeated over every page and drawn last
-    (`WM` in `js/smreport.js`) on the report's golden scale: S(4) in Slate
+    (`WM` in `js/smreport.js`, drawn by `ADspaceDocs.watermark`) on the report's golden scale: S(4) in Slate
     Book at the golden angle (31.7°), the size times φ² apart along a row and
     φ⁴ between rows, each row offset half a step, grey at a tenth's opacity;
     confirmed, published and every version the client reads carry none.

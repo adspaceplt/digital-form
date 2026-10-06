@@ -249,8 +249,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   column, never bleeding past the page's margins. A report's step strip
   (`.rp-steps`, each step's summary under its name) is one too. A record's strip
   (`.rectabs`, the client portal's too) and a strip inside a card (a set's
-  `.poststages`) run the width of that card at every width; a section's switch (`.tabrow`) is its own width at a desk
-  and the column's on a phone. Tabs in a full strip share what is spare
+  `.poststages`) run the width of that card at every width; a section's switch
+  (`.tabrow`, or a view strip on its own row: My HR, Performance, the Activity
+  record) is its own width at a desk and the column's on a phone, up to a
+  control sharing its line (`uxaudit` `strip`). Tabs in a full strip share what is spare
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`

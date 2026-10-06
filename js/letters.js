@@ -330,12 +330,32 @@
 
       var n = pages.length;
       var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +
-        'Verify document authenticity: ' + (ORG.verifyUrl || 'go.adspace.me/verify');
+        'Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
+      /* One row at the foot (the user, 2026-10-06): the reference on the
+         left, the page count on the right, the verify line between them,
+         centred on the page where it clears both, else in the room they
+         leave. The row is 7.5pt; where the longest line (an unsigned letter
+         beside a long HR reference) cannot clear both, the whole row is 7pt,
+         the same on every page. */
+      var GAP = 12, lineW = R - M;
+      var rowFits = function (z) {
+        return font.widthOfTextAtSize(String(doc.serial || ''), z) + font.widthOfTextAtSize(footWord, z) +
+          font.widthOfTextAtSize('Page ' + n + ' of ' + n, z) + GAP * 2 <= lineW;
+      };
+      var FZ = rowFits(7.5) ? 7.5 : 7;
+      var refEnd = M + font.widthOfTextAtSize(String(doc.serial || ''), FZ);
+      var sentW = font.widthOfTextAtSize(footWord, FZ);
       pages.forEach(function (pg, i) {
         pn.page = pg;
-        pn.footMark(i, n);
-        text(doc.serial, M, 30, 7.5, font, mute);
-        centre(footWord, 56, 7.5, font, mute);
+        pn.footMark(i, n, FZ);
+        text(doc.serial, M, 30, FZ, font, mute);
+        var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
+        var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
+        x = Math.min(x, pageStart - GAP - sentW);
+        text(footWord, x, 30, FZ, font, mute);
+        /* A Preview is a draft, and says so over every page (the user,
+           2026-10-06), as a report not yet confirmed does. */
+        if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
       });
       return pdf.save();
     });

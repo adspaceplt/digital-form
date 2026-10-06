@@ -657,14 +657,16 @@
   /* Preview draws the letter from the sheet as it stands, on the same pen
      and letterhead, without issuing it: nothing is written and no number
      is spent, and the reference reads PREVIEW until Issue gives it one
-     (the user, 2026-10-01). It opens in a new tab, else downloads. */
+     (the user, 2026-10-01). Every page carries DRAFT (INTERNAL USE ONLY)
+     on the diagonal, as a report not yet confirmed does (2026-10-06). It
+     opens in a new tab, else downloads. */
   function previewIssue() {
     var g = gather();
     if (!g) return;
     msg('docMsg', '');
     var a = g.args, t = g.t;
     var doc = {
-      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed,
+      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed, draft: true,
       closing: t.closing != null ? t.closing : (g.re ? g.re.closing : 'Yours sincerely,'),
       issued_at: a.issued_at || today(), title: a.title, salutation: a.salutation,
       recipient: a.recipient, body: a.body, signatory: a.signatory, languages: a.languages
