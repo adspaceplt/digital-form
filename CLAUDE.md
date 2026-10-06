@@ -296,8 +296,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   page load that failed. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
 - The rail's foot names the build under the Activity record (`#appVersion`,
-  `.appver`, 11px mute): `v{YYYY.MM.DD} · {commit}`, the deploy's day in
-  Malaysia and its commit's first seven characters, read from
+  `.appver`, 11px mute): `v{YY.MM.DD}`, the deploy's day in Malaysia
+  (`v26.10.06`; the user, 2026-10-06: simple), read from
   `/version.json`, which the Pages build writes through Jekyll
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
   (no build) or missing, the line is hidden (`tests/appver.js`).
@@ -2906,7 +2906,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
 - The report lists what the user does by hand: a dashboard setting.
-- Every go-live report names the version code the console shows (`v{YYYY.MM.DD} · {commit}`: the deploy's day in MYT and the merge commit's first seven characters; the user, 2026-10-06).
+- Every go-live report names the version the console shows (`v{YY.MM.DD}`, the deploy's day in MYT; the user, 2026-10-06) and the merge commit's first seven characters beside it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
 
