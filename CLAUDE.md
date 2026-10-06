@@ -2816,6 +2816,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
 - The report lists what the user does by hand: a dashboard setting.
+- Every go-live report names the version code the console shows (`v{YYYY.MM.DD} · {commit}`: the deploy's day in MYT and the merge commit's first seven characters; the user, 2026-10-06).
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
 
