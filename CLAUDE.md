@@ -489,14 +489,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A guide is up to three steps, each on a control the page draws (`at`);
     a step whose control is not drawn (a permission, an empty list) is left
     out, and a guide with none left waits for a visit that has one.
-  - `offer` opens it once, by itself, when nothing else is open (a sheet, a
-    menu, a question, a cover, the console booting); `open` is asked for.
+  - `offer` opens it once, by itself, when nothing is drawn over the page
+    (a sheet, a menu or popover card, a question, the review canvas, the
+    finder, a cover, the console booting; drawn, not merely present: the
+    Access denied cover sits in a hidden shell) and the section has finished
+    drawing (no `.skel` on screen, the same steps on two reads); `open` is
+    asked for.
   - A card (`.guidecard`, never `.kmenu`: the pages shut every menu on a
     press elsewhere), not a cover: laid by `ADspaceMenu.pop` from its step's
     control, which wears `.guide-on` (the focus ring); docked at the foot on
     a phone; never over the command bar; nothing under it locked. Skip, then
-    Next or Done; Escape, pressing the ringed control, or leaving the route
-    ends it, and each counts it met.
+    Next or Done; Escape (unless something is over it: that hears the key
+    first), pressing the ringed control, opening something over it (a sheet,
+    a menu, a post) or leaving the route ends it, and each counts it met. A
+    scroll re-lays the card on its control and never pulls the page back.
   - Met is kept per person: a colleague's in `guide_seen`
     (`2026-10-07-first-visit-guides.sql`: `guides_seen()`,
     `guide_seen_mark(p_guide)`; RLS on, no policy, no grant), asked once
