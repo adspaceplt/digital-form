@@ -13,6 +13,11 @@
  */
 (function () {
   var API = window.ADspaceAPI;
+  /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
+     this browser, the moment the page shows what it is for. */
+  var GUIDE = { name: { en: 'Your portal', zh: '客户门户' }, steps: [
+    { at: '#cpTabs', text: { en: 'Your services, letters, reports and meetings, a tab each.', zh: '服务、函件、报告与会议，各在一个分页。' } },
+    { at: '#ovRequest', text: { en: 'Request change asks your account manager for an upgrade, a downgrade or new details.', zh: '如需升级、调整服务或更新资料，请点「申请修改」，客户经理会为您跟进。' } }] };
   var db  = API && API.client;
   var MON = window.ADspaceMoney;
   /* The shared list and record primitives: the same `initials` both console
@@ -596,6 +601,7 @@
     $('stateBox').hidden = true;
     $('app').hidden = false;
     $('portalOut').hidden = false;
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('client', GUIDE);
     if ($('kicker')) $('kicker').textContent = w.kicker;
     if ($('langToggle')) $('langToggle').textContent = w.lang;
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');

@@ -115,7 +115,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `tests/stub2.js` | `all` |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | `all` |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Before a merge | The union of the rows above for everything in the batch; `all` only where a row says so |
@@ -483,6 +483,33 @@ Each line is a rule that broke once. Its reason is in the archive.
   addresses never change. A refused or slow pass (6s) never holds a page.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
+- `js/guide.js` (`ADspaceGuide.offer(key, guide)`, `open`, `leave`, `can`,
+  `useServer`) is the only first-visit guide (the user, 2026-10-07: "a one
+  time tutorial kind into the entire portal"):
+  - A guide is up to three steps, each on a control the page draws (`at`);
+    a step whose control is not drawn (a permission, an empty list) is left
+    out, and a guide with none left waits for a visit that has one.
+  - `offer` opens it once, by itself, when nothing else is open (a sheet, a
+    menu, a question, a cover, the console booting); `open` is asked for.
+  - A card (`.guidecard`, never `.kmenu`: the pages shut every menu on a
+    press elsewhere), not a cover: laid by `ADspaceMenu.pop` from its step's
+    control, which wears `.guide-on` (the focus ring); docked at the foot on
+    a phone; never over the command bar; nothing under it locked. Skip, then
+    Next or Done; Escape, pressing the ringed control, or leaving the route
+    ends it, and each counts it met.
+  - Met is kept per person: a colleague's in `guide_seen`
+    (`2026-10-07-first-visit-guides.sql`: `guides_seen()`,
+    `guide_seen_mark(p_guide)`; RLS on, no policy, no grant), asked once
+    `me()` answers, so a guide met at a desk is not met on a phone; a client
+    page's in this browser (`adspace-guide:{key}`). The browser keeps a copy
+    either way.
+  - The console's guides are `GUIDES` in `js/admin.js` (a route each, its
+    name the route's), reopened from the ⓘ card's Show me around while a
+    step of it is on screen; the client portal's, the review page's, the
+    selection page's and the creator's page's are in their own scripts, in
+    English and Chinese where the page has 中文 (it follows the switch).
+  - The stand-in seeds every guide as met; `window.__guidesFresh` (or the
+    tab's `adspace-guides-fresh`) starts a person on none (`tests/guides.js`).
 - `js/state.js` owns loading, empty and failed (`skeleton`, `emptyLine`,
   `failLine`) and `initials`. **A failed read is never drawn as an empty list.**
   - `fit` writes `is-narrow` (≤640) and `is-tight` (≤460) on `.console-body`,
@@ -798,7 +825,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The route's purpose line opens from the route name (`.console-title` button,
   14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
   - One sentence per route, from `INTRO`.
-  - Never opens by itself. While a route is new, the glyph carries `--action`.
+  - Never opens by itself (the first-visit guide is the one that does). While
+    a route is new, the glyph carries `--action`.
   - Below 400px the glyph gives way and the name never does.
 - A standing fact about a route is a `.routenote` under the register:
   - the verify page as a link;

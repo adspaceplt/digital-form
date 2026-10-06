@@ -20,6 +20,11 @@
  */
 (function () {
   var API = window.ADspaceAPI;
+  /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
+     this browser, the moment the page shows what it is for. */
+  var GUIDE = { name: { en: 'Your bookings', zh: '您的合作' }, steps: [
+    { at: '#workList .qrow', text: { en: 'Your bookings, the one that needs you first. Open one for its brief and dates.', zh: '您的合作项目，需要您处理的排在最前。点开即可查看简介与日期。' } },
+    { at: '#linksEdit', text: { en: 'Keep your profile links up to date.', zh: '请保持您的主页链接为最新。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
   var KEY = 'adspace-creator';
@@ -274,6 +279,7 @@
     document.body.classList.remove('is-plain');
     $('stateBox').hidden = true;
     $('app').hidden = false;
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('creator', GUIDE);
     var cr = feed.creator || {};
     $('whoName').textContent = cr.name || '';
     paintHead();

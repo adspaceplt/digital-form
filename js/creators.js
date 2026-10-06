@@ -7,6 +7,11 @@
  */
 (function () {
   var API = window.ADspaceAPI;
+  /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
+     this browser, the moment the page shows what it is for. */
+  var GUIDE = { name: { en: 'Choose your creators', zh: '挑选创作者' }, steps: [
+    { at: '.crow-tick', text: { en: 'Tick the creators you want for this campaign. Each pick is kept as you go.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
+    { at: '#confirmBtn', text: { en: 'Confirm selection once your picks are final.', zh: '选定后，请点「确认选择」。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
 
@@ -443,6 +448,7 @@
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
 
     $('app').hidden = false;
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('creators', GUIDE);
 
     // Seed from whatever the server already holds, so returning to the link
     // shows what was left rather than an empty sheet.
