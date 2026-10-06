@@ -1269,7 +1269,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A video's thumbnail in a console row is its cover frame (`poster`),
     else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
     a bare `<video>` is blank on iPhone Safari until it plays.
-  - Sets are folded, one open at a time.
+  - Sets are folded, one open at a time. Opening a set clears the last
+    one's strip, covers line, progress and posts (`clearPostView`), and a
+    read answered for a set already left is thrown away
+    (`tests/crswitch.js`).
   - Publish / Unpublish (warn).
   - Resend with a note.
   - Drive import with progress (a folder link only).
