@@ -5809,11 +5809,12 @@
   }
   // ---- Pieces --------------------------------------------------------------
   /* A line a piece (2026-09-28, Bulk add folded in): the first is the form's
-     own description, format and week; Add piece draws the next under it, the
-     format carried and the week the one after, so eight presses spread two a
-     week. Every line carries its own due date, typed and never worked out;
-     with more than one piece the lone piece's draft and publish dates and its
-     brief leave, and Create names the count. */
+     own description, format and week; Add another draws the next under it,
+     the format carried and the week the one after, so eight presses spread
+     two a week. Every line carries its three dates, typed and never worked
+     out (the user, 2026-10-06): Draft due (ready for AQC review), Due date
+     (to the client) and Post date. With more than one piece the brief
+     leaves, and Create names the count. */
   var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   /* An add carries its plus wherever it is drawn (the bar's New task, a
      month's Add task). */
@@ -5826,14 +5827,18 @@
       desc: row.querySelector('.piece-desc input').value,
       fmt: row.querySelector('.piece-fmt select').value,
       week: row.querySelector('.piece-week select').value,
-      due: row.querySelector('.piece-due input').value
+      draft: row.querySelector('.piece-draft input').value,
+      due: row.querySelector('.piece-due input').value,
+      post: row.querySelector('.piece-post input').value
     };
   }
   function ntRowSet(row, v) {
     row.querySelector('.piece-desc input').value = v.desc || '';
     row.querySelector('.piece-fmt select').value = v.fmt || '';
     row.querySelector('.piece-week select').value = v.week || '1';
+    row.querySelector('.piece-draft input').value = v.draft || '';
     row.querySelector('.piece-due input').value = v.due || '';
+    row.querySelector('.piece-post input').value = v.post || '';
   }
   function ntAddPiece() {
     var rows = ntRows();
@@ -5841,11 +5846,20 @@
     var last = ntRowVals(rows[rows.length - 1]);
     var row = document.createElement('div');
     row.className = 'piece';
+    /* Every line names its fields as the first does: three dates on a line
+       read as one another without their labels. */
+    var k = 'ntP' + (rows.length + 1) + '-';
+    var fld = function (cls, key, label, control) {
+      return '<div class="field ' + cls + '"><label class="field-label" for="' + k + key + '">' + label + '</label>' +
+        control.replace('>', ' id="' + k + key + '">') + '</div>';
+    };
     row.innerHTML =
-      '<div class="field piece-desc"><input class="input" placeholder="Content Post" autocomplete="off"></div>' +
-      '<div class="field piece-fmt"><select class="select">' + $('ntFormat').innerHTML + '</select></div>' +
-      '<div class="field piece-week"><select class="select">' + $('ntWeek').innerHTML + '</select></div>' +
-      '<div class="field piece-due"><input class="input" type="date"></div>' +
+      fld('piece-desc', 'desc', 'Content description', '<input class="input" placeholder="Content Post" autocomplete="off">') +
+      fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
+      fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
+      fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date">') +
+      fld('piece-due', 'due', 'Due date', '<input class="input" type="date">') +
+      fld('piece-post', 'post', 'Post date', '<input class="input" type="date">') +
       '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
@@ -5868,15 +5882,8 @@
     var rows = ntRows(), n = rows.length;
     $('ntPieces').classList.toggle('is-many', n > 1);
     rows.forEach(function (r, i) {
-      var k = i + 1;
-      r.querySelector('.piece-x').setAttribute('aria-label', 'Remove post ' + k);
-      if (!i) return;
-      r.querySelector('.piece-desc input').setAttribute('aria-label', 'Description, post ' + k);
-      r.querySelector('.piece-fmt select').setAttribute('aria-label', 'Format, post ' + k);
-      r.querySelector('.piece-week select').setAttribute('aria-label', 'Week, post ' + k);
-      r.querySelector('.piece-due input').setAttribute('aria-label', 'Due date, post ' + k);
+      r.querySelector('.piece-x').setAttribute('aria-label', 'Remove post ' + (i + 1));
     });
-    $('ntDates').hidden = n > 1;
     $('ntBriefRow').hidden = n > 1;
     $('ntAddPiece').hidden = n >= 60;
     $('ntGo').textContent = n > 1 ? 'Create ' + n + ' tasks' : 'Create task';
@@ -5902,10 +5909,11 @@
     var rows = ntRows();
     var pieces = rows.map(function (row) {
       var v = ntRowVals(row);
-      /* Each piece's due date is the one typed on its line, and a line left
-         blank stays without one (the user, 2026-10-05). */
+      /* Each piece's dates are the ones typed on its line, and a date left
+         blank stays without one (the user, 2026-10-05 and 06). */
+      var at = function (d) { return d ? d + 'T00:00:00Z' : null; };
       var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null,
-                final_due_at: v.due ? v.due + 'T00:00:00Z' : null };
+                first_draft_due_at: at(v.draft), final_due_at: at(v.due), publish_at: at(v.post) };
       if (scope !== 'internal') p.code_week = Number(v.week) || 1;
       return p;
     });
@@ -5923,16 +5931,20 @@
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
     var one = pieces.length === 1;
-    /* A due date already passed is a slip of the finger, caught on its line. */
+    /* A date already passed is a slip of the finger, and the three keep
+       their order (draft before due, the post not before it); each caught on
+       its own line. */
     var todayMyt = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-    var past = rows.map(function (r) { return ntRowVals(r).due; }).map(function (d, i) { return d && d < todayMyt ? i : -1; })
-      .filter(function (i) { return i > -1; })[0];
-    if (past != null) {
-      msg('ntMsg', 'That due date has already passed.', 'err'); rows[past].querySelector('.piece-due input').focus(); return;
-    }
-    var draft = one ? $('ntDraft').value : '', fin = one ? ntRowVals(rows[0]).due : '';
-    if (draft && fin && draft >= fin) {
-      msg('ntMsg', said('draft-not-before-final'), 'err'); $('ntDraft').focus(); return;
+    var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
+      ['draft', 'due', 'post'].some(function (k) {
+        if (rv[k] && rv[k] < todayMyt) { bad = k; said2 = 'That ' + DATE_WORD[k] + ' has already passed.'; return true; }
+        return false;
+      });
+      if (!bad && rv.draft && rv.due && rv.draft >= rv.due) { bad = 'draft'; said2 = said('draft-not-before-final'); }
+      if (!bad && rv.post && rv.due && rv.post < rv.due) { bad = 'post'; said2 = 'The post date must be on or after the due date.'; }
+      if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
     }
     var rep = null;
     if ($('ntRepeat').checked) {
@@ -5946,10 +5958,6 @@
         ends_on: $('ntEnds').value || null,
         max_count: Number($('ntMax').value) || null
       };
-    }
-    if (one) {
-      pieces[0].publish_at = $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null;
-      pieces[0].first_draft_due_at = draft ? draft + 'T00:00:00Z' : null;
     }
     var payload = {
       scope: scope,
@@ -7145,9 +7153,12 @@
         if (a === 'template') openTpl();
         if (a === 'select') setSelecting(!state.selecting);
         if (a === 'numbering') openNumbering();
-        /* When a month's report is due, an admin's setting (2026-10-05). */
-        if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Report deadline', msg: 'workMsg',
-          keys: [['report_due_days', 'Days after the month ends', 'due']] }, $('workMoreBtn'));
+        /* When a month's report is due, and how far a client's request for
+           changes moves a task's due date: an admin's settings (2026-10-05,
+           2026-10-06). */
+        if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Due dates', msg: 'workMsg',
+          keys: [['report_due_days', 'Report: days after the month ends', 'due'],
+                 ['revision_due_days', 'Revision (Client): days after changes are asked', 'due']] }, $('workMoreBtn'));
       });
     }
     // Several at once
