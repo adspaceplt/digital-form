@@ -10029,4 +10029,6 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .widelogo img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .widelogo.is-read { display: inline-flex; height: 48px; margin: 0; padding: 8px 12px; max-width: 100%; }
 .wl-acts { display: flex; gap: 8px; }
+.wl-acts > .btn { flex: 0 0 auto; }
+@media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
 #ptLogoOff { margin-top: 8px; }
