@@ -684,7 +684,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
   `ops_report` (a colleague's own tasks always), and inside `client_billing`,
   `sm_client_reports`, `sm_report_file` and `sm_report_snapshot`. A new table
-  hanging off a client joins the do-block's list. A removal from `clients`,
+  hanging off a client joins the do-block's list; a policy of its own asks
+  `client_scope_free` / `client_scope_ok`, never `client_seen` (closed to a
+  login, so the read fails for everyone). A removal from `clients`,
   `client_documents`, `documents`, `sm_reports` or `ops_engagements` asks it
   at Manage (`client_scope_removal`, before delete,
   `2026-10-03-client-scope-on-removal.sql`), so the delete functions keep to
@@ -1295,7 +1297,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Deleting a campaign or a creator takes the name typed back; every
     campaign write takes `.select('id')` and names a refusal (Confirm
     creators counts the bookings not confirmed).
-  - In production is derived (`syncCampState` off `loadOptions`).
+  - In production and Completed are derived (`syncCampState` off
+    `loadOptions`): every booked creator at Completed completes the
+    campaign, one reverted puts it back in production, none open returns it
+    to Open; filed `campaign.stage`. Nothing presses it.
 - Release to client (Submitted → Reviewing) goes only through
   `campaign_qc_pass(p_option, p_want_second)`. A trigger refuses any other
   route.
