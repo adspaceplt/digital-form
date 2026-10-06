@@ -159,6 +159,8 @@
     'not-final': 'Only a final record can be reopened.',
     'confirm-mismatch': 'The name and month typed do not match.',
     'admin-only': 'This needs Team: Performance admin.',
+    'shared': 'That month has been shared, so it can no longer be rated.',
+    'not-reviewed': 'That month is not open to rate.',
     'not-found': 'Not found.'
   };
   function said(d) {
@@ -232,6 +234,7 @@
       var q = new URLSearchParams(location.search);
       if (q.get('tab') === 'performance') st.tab = 'performance';
       if (q.get('tab') === 'groups') st.tab = 'groups';
+      if (q.get('tab') === 'health') st.tab = 'health';
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
       /* The rewards views (2026-09-28) and the quarter or period they show. */
       var pv = q.get('view'), qq = q.get('q');
@@ -242,14 +245,18 @@
       }
     }
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
+    /* Team: Health is a granted part of its own (2026-10-07). */
+    var canHealth = may('team.health', 'work');
     if (!canPerf && st.tab === 'performance') st.tab = 'members';
-    if (!canMembers) st.tab = 'performance';
-    /* Members and Groups are one permission and Performance another; the
-       strip draws whenever there is more than one tab to choose. */
-    $('teamTabs').hidden = !canMembers;
+    if (!canHealth && st.tab === 'health') st.tab = 'members';
+    if (!canMembers && (st.tab === 'members' || st.tab === 'groups')) st.tab = canPerf ? 'performance' : 'health';
+    /* Members and Groups are one permission, Performance another and Health
+       a third; the strip draws whenever there is more than one tab. */
+    $('teamTabs').hidden = (canMembers ? 2 : 0) + (canPerf ? 1 : 0) + (canHealth ? 1 : 0) < 2;
     $('teamTabMembers').hidden = !canMembers;
     $('teamTabGroups').hidden = !canMembers;
     $('teamTabPerf').hidden = !canPerf;
+    $('teamTabHealth').hidden = !canHealth;
     Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
       var on = b.getAttribute('data-tab') === st.tab;
       b.classList.toggle('is-on', on);
@@ -258,8 +265,10 @@
     $('teamMembersPane').hidden = st.tab !== 'members';
     $('teamGroupsPane').hidden = st.tab !== 'groups';
     $('teamPerfPane').hidden = st.tab !== 'performance';
+    $('teamHealthPane').hidden = st.tab !== 'health';
     $('perfTools').hidden = st.tab !== 'performance';
     if (st.tab === 'members' || st.tab === 'groups') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
+    else if (st.tab === 'health') { if (window.ADspaceHealth) window.ADspaceHealth.enterTeam(); }
     else enterPerf();
   }
   Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
@@ -813,7 +822,8 @@
         }
       } else if (r.status === 'released') {
         title = 'Shared';
-        line = open ? name + ' may raise a query until ' + dUntil + '.' : 'Queries have closed. Waiting for acknowledgement.';
+        line = open ? name + ' may raise a query until ' + dUntil + '. With none raised, it becomes final then.'
+                    : 'Queries have closed. It becomes final within the hour.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'disputed') {
         var n = (r.disputes || []).filter(function (x) { return !x.decision; }).length;
@@ -821,21 +831,22 @@
         line = n + (n === 1 ? ' item is' : ' items are') + ' waiting for your answer below.';
       } else if (r.status === 'resolved') {
         title = 'Query answered';
-        line = open ? 'Waiting for acknowledgement.' : 'Waiting for acknowledgement. It may be finalised now.';
+        line = open ? 'Answered. It becomes final when queries close on ' + dUntil + '.' : 'Answered. It becomes final within the hour.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'acknowledged') {
         title = 'Acknowledged';
-        line = name + ' acknowledged it on ' + timeWord(r.acknowledged_at) + '.';
+        line = name + ' acknowledged it on ' + timeWord(r.acknowledged_at) + '. It becomes final within the hour.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button">Finalise</button>';
       } else if (r.status === 'final') {
         title = 'Final';
-        line = 'Finalised on ' + timeWord(r.finalised_at) + (r.finalised_by ? ' by ' + r.finalised_by : '') + '.';
+        line = 'Finalised on ' + timeWord(r.finalised_at) +
+          (r.final_auto ? ', when queries closed' : r.finalised_by ? ' by ' + r.finalised_by : '') + '.';
         acts = '<button class="btn btn-sm" id="pvPrint" type="button">Download PDF</button>';
       }
     } else {
       if (r.status === 'released' && open) {
         title = 'Your review is ready';
-        line = 'Acknowledge it, or raise a query on any part of it by ' + dUntil + '.';
+        line = 'Acknowledge it, or raise a query on any part of it by ' + dUntil + '. With no query by then, it becomes final.';
         acts = '<button class="btn btn-sm btn-go" id="pvAck" type="button">Acknowledge</button>' +
                '<button class="btn btn-sm" id="pvDisputeGo" type="button">Raise a query</button>';
       } else if (r.status === 'released') {
@@ -895,15 +906,27 @@
     var fam = r.member && r.member.role_family;
     return fam ? '<small class="perf-std">' + esc(ROLE_WORD[fam] + ': ' + ROLE_STD[fam]) + '</small>' : '';
   }
+  /* The colleague's own rating of the month (2026-10-07), beside each score
+     and summed once; it never enters the grade. */
+  function selfLine(r, k) {
+    var g = r.self && r.self.scores;
+    if (!g || g[k] == null) return '';
+    return '<small class="perf-cat-self">' + (manage() ? 'Self-rated ' : 'You gave ') + esc(num(g[k])) + '</small>';
+  }
+  function selfSum(r) {
+    if (!r.self) return manage() && r.status === 'draft' ? '<p class="perf-quiet perf-self-sum">No self-rating.</p>' : '';
+    return '<p class="perf-quiet perf-self-sum">' + (manage() ? 'Self-rated ' : 'You rated yourself ') +
+      esc(num(r.self.total)) + ' of 100 on ' + esc(dateWord(r.self.saved_at)) + '.</p>';
+  }
   function scoreRead(r) {
     var rows = CATS.map(function (c) {
       var note = (r.notes || {})[c[0]];
       return '<div class="perf-cat"><span class="perf-cat-name">' + esc(c[1]) +
-        (c[0] === 'output' ? roleLine(r) : '') +
+        (c[0] === 'output' ? roleLine(r) : '') + selfLine(r, c[0]) +
         (note ? '<small class="perf-cat-note">' + esc(note) + '</small>' : '') + '</span>' +
         '<span class="perf-cat-val">' + esc(num((r.scores || {})[c[0]])) + '<small> / ' + c[2] + '</small></span></div>';
     }).join('');
-    return card('Scores', '<div class="perf-cats">' + rows + '</div>');
+    return card('Scores', selfSum(r) + '<div class="perf-cats">' + rows + '</div>');
   }
   function scoreForm(r, res) {
     var sug = res.suggested || {};
@@ -911,14 +934,14 @@
       var k = c[0], v = (r.scores || {})[k], s = sug[k];
       return '<div class="perf-cat is-edit">' +
         '<span class="perf-cat-name"><label for="pvS_' + k + '">' + esc(c[1]) + '</label>' +
-          (k === 'output' ? roleLine(r) : '') +
+          (k === 'output' ? roleLine(r) : '') + selfLine(r, k) +
           (s != null ? '<button class="linkbtn perf-use" type="button" data-use="' + k + '" data-v="' + s + '">Suggested ' + esc(num(s)) + ' from the rates</button>' : '') +
         '</span>' +
         '<span class="perf-cat-val"><input class="input input-sm perf-num" id="pvS_' + k + '" type="number" inputmode="decimal" min="0" max="' + c[2] + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small> / ' + c[2] + '</small></span>' +
         '<textarea class="input perf-evidence" id="pvN_' + k + '" rows="1" maxlength="2000" placeholder="Notes" aria-label="' + esc(c[1]) + ' notes">' + esc((r.notes || {})[k] || '') + '</textarea>' +
       '</div>';
     }).join('');
-    return card('Scores', '<div class="perf-cats">' + rows + '</div>');
+    return card('Scores', selfSum(r) + '<div class="perf-cats">' + rows + '</div>');
   }
   function rateLabel(x, ads) {
     return x[0] === 'pacing' ? x[1] + ', target ' + x[2] + '% or under' : x[1] + ', target ' + x[2] + '%';
@@ -1082,7 +1105,8 @@
 
   var EVENT_WORD = { started: 'Started', scored: 'Saved', released: 'Shared', returned: 'Reverted to draft',
     disputed: 'Query raised', decided: 'Query answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
-    reopened: 'Reopened', breach_logged: 'Issue added', breach_voided: 'Issue withdrawn', printed: 'Downloaded', profile: 'Profile changed' };
+    reopened: 'Reopened', breach_logged: 'Issue added', breach_voided: 'Issue withdrawn', printed: 'Downloaded', profile: 'Profile changed',
+    opened: 'Opened', 'self.saved': 'Self-rating saved' };
   /* What a save changed, named (the user, 2026-09-26: "scores saved should
      show which score"): each scorecard and rate from and to, then the notes
      or the plan. An older save named nothing and still reads Saved. */
@@ -1132,7 +1156,10 @@
     return inOrder(r.events || []).slice(0, 20).map(function (e) {
       var why = e.kind === 'scored' ? savedWord(e.detail) : e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
       var word = e.kind === 'scored' && firstSave(e.detail) ? 'Scores entered' : EVENT_WORD[e.kind] || e.kind;
-      return { at: e.at, who: e.by || '', what: word, detail: why.replace(/^: /, ''), sticky: true };
+      /* A month settled by itself when its queries closed (2026-10-07). */
+      var auto = Boolean(e.detail && e.detail.auto);
+      return { at: e.at, who: e.by || (auto ? 'Automatic' : ''), what: word,
+               detail: auto ? 'Queries closed' : why.replace(/^: /, ''), sticky: true };
     });
   }
   function historyCard(r) {
@@ -1449,10 +1476,12 @@
         if (d.error) { UI.failLine($('mineList'), 'Your reviews', said(d), enterMine); return; }
         st.mine = d.reviews || [];
         paintMine();
+        loadSelf();
         loadMineRewards();
         if (st.mv === 'initiatives') loadMineInits();
         if (st.mv === 'reflection') loadRefl();
         if (st.mv === 'letters') loadLetters();
+        if (st.mv === 'health') loadHealth();
       });
     });
   }
@@ -1489,6 +1518,14 @@
       st.mode = 'mine'; st.editing = null; st.rec = r;
       showSheet(b);
       paintSheet();
+      /* The first open of what was shared is recorded (2026-10-07). */
+      if (!r.opened_at && r.status !== 'draft') {
+        mineCall('perf_seen', { p_review: r.id }, function (d) {
+          if (d.error || !d.id) return;
+          st.mine = (st.mine || []).map(function (x) { return x.id === d.id ? d : x; });
+          if (st.rec && st.rec.id === d.id && st.mode === 'mine') st.rec.opened_at = d.opened_at;
+        });
+      }
     });
     return b;
   }
@@ -1497,6 +1534,76 @@
     st.mine = st.mine.map(function (x) { return x.id === d.id ? d : x; });
     paintMine();
   }
+
+  // ---- Rating yourself (2026-10-07) --------------------------------------------------
+  /* The six scorecard categories, by the colleague, for a month that has
+     ended and whose review is not shared yet (perf_self_open). Management
+     reads it beside its own scores; it never enters the grade. */
+  function loadSelf() {
+    mineCall('perf_self_mine', {}, function (d) {
+      if (d.error) { st.self = null; paintSelf(d); return; }
+      st.self = d.months || [];
+      paintSelf();
+    });
+  }
+  function paintSelf(err) {
+    var box = $('mineSelf');
+    if (!box) return;
+    if (err) { box.hidden = false; UI.failLine(box, 'Rate yourself', said(err), loadSelf); return; }
+    var list = st.self || [];
+    box.hidden = !list.length;
+    box.innerHTML = list.map(function (m) {
+      var g = m.rating, sc = (g && g.scores) || {};
+      return '<div class="ovcard self-card" data-period="' + esc(m.period) + '">' +
+        '<div class="ovsec"><div class="ovsec-head refl-head"><h3>Rate yourself, ' + esc(m.month) + '</h3>' +
+          '<span class="refl-ctl">' + (g ? '<button class="btn btn-sm" data-a="self" type="button">' + PEN_MARK + 'Edit</button>' : '') + '</span></div>' +
+        (g ? '<dl class="ovfacts self-facts">' + CATS.map(function (c) {
+               return '<div><dt>' + esc(c[1]) + '</dt><dd>' + esc(num(sc[c[0]])) + '<small> / ' + c[2] + '</small></dd></div>';
+             }).join('') + '<div><dt>Total</dt><dd><b>' + esc(num(g.total)) + '</b><small> / 100</small></dd></div></dl>'
+           : '<p class="perf-quiet">Open until your ' + esc(m.month) + ' review is shared.</p>' +
+             '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="self" type="button">Rate yourself</button></div>') +
+        '</div></div>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="self"]'), function (b) {
+      b.addEventListener('click', function () { openSelf(b.closest('[data-period]').getAttribute('data-period'), b); });
+    });
+  }
+  function openSelf(period, opener) {
+    var m = (st.self || []).filter(function (x) { return x.period === period; })[0];
+    if (!m) return;
+    st.selfAt = m;
+    var sc = (m.rating && m.rating.scores) || {};
+    $('selfSheetTitle').textContent = 'Rate yourself, ' + m.month;
+    CATS.forEach(function (c) { var el = $('selfS_' + c[0]); if (el) el.value = sc[c[0]] == null ? '' : sc[c[0]]; });
+    msg('selfMsg', '');
+    window.ADspaceSheet.show($('selfSheet'), { opener: opener });
+  }
+  $('selfClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('selfCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('selfSave').addEventListener('click', function () {
+    var b = this, scores = {}, bad = null;
+    CATS.forEach(function (c) {
+      if (bad) return;
+      var el = $('selfS_' + c[0]), raw = String(el.value || '').trim(), v = Number(raw);
+      if (raw === '' || isNaN(v) || v < 0 || v > c[2] || Math.round(v * 10) !== v * 10) { bad = [el, c]; return; }
+      scores[c[0]] = v;
+    });
+    if (bad) {
+      msg('selfMsg', bad[1][1] + ': a score from 0 to ' + bad[1][2] + ', in steps of 0.1.', 'err');
+      bad[0].focus(); return;
+    }
+    var m = st.selfAt;
+    b.disabled = true;
+    mineCall('perf_self_save', { p_period: m.period, p_scores: scores }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('selfMsg', said(d), 'err'); return; }
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      st.self = d.months || [];
+      paintSelf();
+      msg('mineSelfMsg', 'Saved.', 'ok');
+    });
+  });
 
   // ---- The printed record --------------------------------------------------------------
   /* The record of the month, for keeping and for reading at the 1-1, drawn
@@ -1821,9 +1928,9 @@
        given in the portal and stated here, never signed on paper. */
     var stamp = r.__stamp;
     if (!stamp) return;
-    var STEP = { released: 'Shared', acknowledged: 'Acknowledged', finalised: 'Finalised' };
+    var STEP = { released: 'Shared', opened: 'Opened', acknowledged: 'Acknowledged', finalised: 'Finalised' };
     var rows = (stamp.trail || []).filter(function (t) { return STEP[t.kind]; }).map(function (t) {
-      return [STEP[t.kind], t.by || '', t.email || '', stampTime(t.at)];
+      return [STEP[t.kind], t.auto ? 'Automatic, queries closed' : t.by || '', t.auto ? '' : t.email || '', stampTime(t.at)];
     });
     rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
     /* The record is one block: its table and its Document ID line together. */
@@ -2446,6 +2553,8 @@
       ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
       ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
+    ['Reminders', [['remind_before_days', 'Days before a month or half month ends (0 for none)', 'remind', 'Reminder, days before the end'],
+      ['remind_again_days', 'Days after the 1st to remind again (0 for none)', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
     ['Quarterly prizes', [['prize_individual', 'Top scorer of the quarter (RM)', 'money', 'Top scorer prize'],
       ['prize_department', 'Top department (RM)', 'money', 'Top department prize'],
       ['prize_department_min_total', 'Department score needed to win (out of 100)', 'score', 'Department score needed']], 'fgrid', 'quarters'],
@@ -2468,6 +2577,7 @@
     if (kind === 'money') return rm(v);
     if (kind === 'pct') return Number(v) + '%';
     if (kind === 'days') return Number(v) + (Number(v) === 1 ? ' day' : ' days');
+    if (kind === 'remind') return Number(v) === 0 ? 'None' : Number(v) + (Number(v) === 1 ? ' day' : ' days');
     if (kind === 'points') return Number(v) + (Number(v) === 1 ? ' point' : ' points');
     return String(Number(v));
   }
@@ -2557,7 +2667,8 @@
       var raw = String(el.value || '').replace(/[,\s]/g, '').replace(/^RM/i, '').replace(/%$/, '');
       var v = /^\d+(\.\d{1,2})?$/.test(raw) ? Number(raw) : NaN;
       if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct' || kind === 'points') && v > 100) ||
-          (kind === 'units' && v > 10) || (kind === 'days' && (v < 1 || v > 30 || v % 1))) { bad = el; return; }
+          (kind === 'units' && v > 10) || (kind === 'days' && (v < 1 || v > 30 || v % 1)) ||
+          (kind === 'remind' && (v > 14 || v % 1))) { bad = el; return; }
       if (String(v) !== String(Number(el.getAttribute('data-was')))) vals[k] = v;
     });
     if (bad) {
@@ -2565,7 +2676,8 @@
       showSetView(RW_VIEW_OF[f[0]]);
       msg('rwSMsg', setName(f[0]) + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
         pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.',
-        points: 'points from 0 to 100.', days: 'a whole number of days from 1 to 30.' }[f[2]]), 'err');
+        points: 'points from 0 to 100.', days: 'a whole number of days from 1 to 30.',
+        remind: 'a whole number of days from 0 to 14.' }[f[2]]), 'err');
       bad.focus(); return;
     }
     if (!Object.keys(vals).length) { msg('rwSMsg', 'No change.', 'ok'); return; }
@@ -2951,9 +3063,12 @@
   // The colleague's own --------------------------------------------------------------------
   function mvFromUrl() {
     var v = new URLSearchParams(location.search).get('view');
-    return v === 'initiatives' || v === 'reflection' || v === 'letters' ? v : 'reviews';
+    return v === 'initiatives' || v === 'reflection' || v === 'letters' || v === 'health' ? v : 'reviews';
   }
-  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl', letters: 'mineLetters' };
+  var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl', letters: 'mineLetters',
+             health: 'mineHealth' };
+  /* Health is its own script (js/health.js, 2026-10-07), behind the same proof. */
+  function loadHealth() { if (window.ADspaceHealth) window.ADspaceHealth.enterMine(); }
   function setMv(v, quiet) {
     if (!MV[v]) v = 'reviews';
     st.mv = v;
@@ -2973,6 +3088,7 @@
     if (st.mv === 'initiatives') loadMineInits();
     if (st.mv === 'reflection') loadRefl();
     if (st.mv === 'letters') loadLetters();
+    if (st.mv === 'health') loadHealth();
   });
   /* HR letters issued to the colleague and shared with them (2026-10-06),
      behind the same proof as their reviews: their own alone, newest first,
@@ -3306,6 +3422,7 @@
     lock: function (then) { lock(then); },
     urlState: function () {
       if (st.tab === 'groups') return { tab: 'groups' };
+      if (st.tab === 'health') return { tab: 'health' };
       if (st.tab !== 'performance') return {};
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
       if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };
@@ -3318,7 +3435,16 @@
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); },
     /* The bell's letter opens Letters, read again. */
-    openLetters: function () { st.mv = 'letters'; st.letters = null; if (bridge.show) bridge.show('mine'); }
+    openLetters: function () { st.mv = 'letters'; st.letters = null; if (bridge.show) bridge.show('mine'); },
+    /* A reminder opens the view it points at (2026-10-07), read again. */
+    openView: function (v) {
+      st.mv = MV[v] ? v : 'reviews'; st.refl = null; st.inits = null; st.letters = null;
+      if (bridge.show) bridge.show('mine');
+    },
+    /* The colleague's own call, for js/health.js: a stale proof puts the
+       lock back over My HR. */
+    mineCall: function (fn, args, then) { mineCall(fn, args, then); },
+    showMineLock: function (on) { showMineLock(on); }
   };
   if (bridge.perfReady) bridge.perfReady();
 })();

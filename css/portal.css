@@ -48,6 +48,10 @@
   --ok-bg:      #ecf5f0;
   --pub:        #6a3fb5;
   --pub-bg:     #f2edfa;
+  /* Health's own mark (2026-10-07: "highlighted pantone pink with the health
+     icons"): Pantone 214 C, on Health's glyph and its chosen answers alone. */
+  --health:     #ce0f69;
+  --health-bg:  #fcebf3;
   /* The namecard (js/namecard.js) is the brand's own five tones, light in
      both themes as the post mockups are: never redefined below. */
   --nc-ground:  #ffffff;
@@ -213,6 +217,8 @@
     --ok-bg:      #17281f;
     --pub:        #c4a8f4;
     --pub-bg:     #251d33;
+    --health:     #f57eb6;
+    --health-bg:  #2e1a24;
     --ok-solid:   #4aa876;
     --on-ok:      #07150e;
     --warn:       #cf9350;
@@ -6096,6 +6102,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .link-label { color: var(--ink-soft); }
 .link-act { position: relative; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+/* A namecard's row copies and opens, with no ⋯: its marks keep the places
+   the links' copy and QR marks hold above it. */
+.link-row.is-card .link-act { justify-content: flex-start; }
 
 @media (max-width: 640px) {
   /* Two lines: what it is and what it does, then where it goes. */
@@ -9259,6 +9268,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .refl-a { white-space: pre-line; overflow-wrap: anywhere; }
 .is-narrow .refl-line, .perfcard .refl-line { grid-template-columns: minmax(0, 1fr); }
 .refl-acts { margin-top: 12px; }
+/* Rate yourself (2026-10-07): a month's own scores read as label beside
+   value; beside management's scores, each category names it once. */
+#mineReviews > .msg:empty { display: none; }
+#mineSelf { display: grid; gap: 12px; margin-bottom: 12px; }
+#mineSelf[hidden] { display: none; }
+.self-facts dd small { color: var(--ink-mute); font-weight: 400; }
+.perf-cat-self { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
+.perf-self-sum { margin: 0 0 8px; }
 .refl-acts > .btn { flex: 0 0 auto; }
 .ctx-inits { display: flex; flex-direction: column; gap: 8px; }
 .ctx-init { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -10183,3 +10200,111 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .wl-brands .wl-add { justify-self: start; margin-top: 8px; }
 @media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
 #ptLogoOff { margin-top: 8px; }
+
+/* =========================================================================
+   HEALTH (js/health.js, 2026-10-07)
+   A colleague's own check-in in My HR and everybody's in Team: Health. The
+   pink marks Health's glyph and the answer chosen; a low answer is a warn
+   figure with its word beside or on it, never a colour alone.
+   ========================================================================= */
+.health-mark { width: 16px; height: 16px; flex: 0 0 auto; color: var(--health); }
+.acttab-health, .tab-health { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.acttab-health .health-mark, .tab-health .health-mark { width: 14px; height: 14px; }
+.health-h { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+#mineHealth > .msg { margin: 0 0 12px; }
+#mineHealth > .msg:empty { display: none; }
+/* One step between the blocks: the stack's gap alone, so a card's or a
+   directory's own margin never adds to it (it made 24 and 36). */
+#mineHealthBox, #teamHealthBox { display: grid; gap: 12px; }
+#mineHealthBox > *, #teamHealthBox > * { margin: 0; }
+/* The card's title with a mute line under it (when it was checked in). */
+.health-hd { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.health-meta { font-size: 12.5px; color: var(--ink-mute); }
+/* The company's own words before a colleague agrees, read at a reading
+   width, then what agreeing means. */
+.health-lead { margin: 0 0 12px; max-width: 68ch; font-size: 14px; line-height: 1.55; color: var(--ink); }
+.health-gone { margin: 0 0 12px; font-size: 13px; color: var(--ink-mute); }
+.health-sub { margin: 16px 0 8px; font-size: 13px; font-weight: 600; }
+.health-terms { margin: 0 0 4px; padding-left: 18px; display: grid; gap: 6px; max-width: 68ch; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.sheet-body > .health-lead { margin-bottom: 16px; color: var(--ink-soft); }
+.health-facts dd { display: flex; align-items: center; gap: 8px; }
+/* The five answers across the card at a desk, two across in a narrow pane
+   with the fifth taking the row; the note under them, the card's width. */
+.facts.health-facts { grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; }
+.facts.health-facts dd { white-space: nowrap; }
+.facts.health-facts > .health-notecell { grid-column: 1 / -1; }
+.facts.health-facts dd.health-note { display: block; white-space: pre-line; }
+.is-narrow .facts.health-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-narrow .facts.health-facts > :nth-child(5) { grid-column: 1 / -1; }
+/* At a desk the words and the terms side by side on the record's 1.618 : 1,
+   the terms shaded inside the card; stacked in a narrow pane. */
+.health-cols { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 16px 32px; align-items: start; }
+.is-narrow .health-cols { grid-template-columns: minmax(0, 1fr); }
+.health-words > :last-child { margin-bottom: 0; }
+.health-cols .health-lead, .health-cols .health-terms { max-width: none; }
+.health-termbox { padding: 14px 16px; border-radius: var(--radius-sm); background: var(--sunk); }
+.health-termbox .health-sub { margin-top: 0; }
+.health-termbox .health-terms { margin: 0; }
+/* After a low answer, a word of care opening Talks, shaded inside the card. */
+.health-care { margin: 0 0 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk);
+  font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+/* The agreement: a standing fact, one quiet line under the cards. */
+.health-agree { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 4px 0 18px; font-size: 12.5px; color: var(--ink-mute); }
+.health-agree .btn { flex: 0 0 auto; }
+.is-narrow .health-agree { padding-left: 15px; }
+.health-scale-word:empty { display: none; }
+.health-word { color: var(--ink-soft); font-size: 13px; }
+.health-note { overflow-wrap: anywhere; white-space: pre-line; color: var(--ink-soft); }
+.health-fig { display: inline-block; min-width: 22px; padding: 0 6px; border-radius: 5px; text-align: center;
+  font-size: 13px; font-weight: 600; line-height: 22px; font-variant-numeric: tabular-nums;
+  background: var(--tonal); color: var(--ink); }
+.health-fig.is-low { background: var(--warn-bg); color: var(--warn); }
+.health-dash { color: var(--ink-mute); }
+/* Your check-ins: a half month a row, the five answers in fixed tracks. */
+.health-table { display: grid; }
+.health-hrow, .health-trow { display: grid; grid-template-columns: minmax(0, 1fr) repeat(5, 72px); gap: 0 12px; align-items: center; padding: 8px 0; }
+.health-hrow { padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.health-trow + .health-trow { border-top: 1px solid var(--line-soft); }
+.health-when { font-size: 13.5px; }
+.health-cell-k { display: none; }
+.is-narrow .health-hrow { display: none; }
+.is-narrow .health-trow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px 8px; }
+.is-narrow .health-when { grid-column: 1 / -1; font-weight: 600; }
+.is-narrow .health-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.is-narrow .health-cell-k { display: block; font-size: 12px; color: var(--ink-mute); }
+/* Talks: who, when and the note, the one act at the right edge. */
+.health-talks { display: grid; }
+.health-talk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; }
+.health-talk + .health-talk { border-top: 1px solid var(--line-soft); }
+.health-talk-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.health-talk-who b { font-size: 14px; font-weight: 600; }
+.health-talk-who small { font-size: 12px; color: var(--ink-mute); }
+.health-talk.is-closed .health-talk-who b { font-weight: 400; color: var(--ink-soft); }
+.health-talk-act:empty { display: none; }
+/* The check-in sheet: the chosen answer in Health's pink, its word under it. */
+.health-scale .seg-opt.is-on { color: var(--health); }
+.health-scale-word { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+/* Team: Health. The summary card, then a row a colleague: name, the five
+   answers of this half month, when they checked in. */
+.health-count { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+/* The averages are the summary card's own content: the chart draws no box of
+   its own inside it. */
+#healthAvg > .chartcard { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
+.health-prow { grid-template-columns: minmax(0, 1fr) repeat(5, 72px) 128px 16px; cursor: pointer; }
+.health-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.health-who b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.health-line { display: none; }
+.health-at { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.health-prow.is-faded .health-who, .health-prow.is-faded .health-col { opacity: .6; }
+.is-narrow .health-prow { grid-template-columns: minmax(0, 1fr) 120px 16px; grid-template-areas: "who at chev"; gap: 4px 10px; }
+.is-narrow .health-prow > .health-who { grid-area: who; }
+.is-narrow .health-prow > .health-at { grid-area: at; justify-self: stretch; text-align: right; }
+.is-narrow .health-prow > .perf-chev { grid-area: chev; align-self: center; }
+.is-narrow .health-prow > .health-col { display: none; }
+.is-narrow .health-line { display: block; white-space: normal; }
+/* On a phone a colleague who checked in reads name over answers: the five
+   take the line the position held. */
+.is-narrow .health-who.has-line .health-code { display: none; }
+.is-narrow .crm-head.health-prow { display: none; }

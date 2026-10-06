@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261007g">
+<link rel="stylesheet" href="/css/portal.css?v=20261007h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3479,6 +3479,7 @@
           <button class="tab is-on" id="teamTabMembers" data-tab="members" type="button" role="tab">Members</button>
           <button class="tab" id="teamTabGroups" data-tab="groups" type="button" role="tab">Groups</button>
           <button class="tab" id="teamTabPerf" data-tab="performance" type="button" role="tab">Performance</button>
+          <button class="tab tab-health" id="teamTabHealth" data-tab="health" type="button" role="tab" hidden><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
         </div>
         <!-- The lock's state, at the row's right end and outside the strip, so
              it never reads as a third tab (the user, 2026-09-27): shut while
@@ -3695,6 +3696,12 @@
       <!-- ---- Performance reviews: everybody's month, behind the master code.
            Nothing here is read until the code is entered, and the database
            asks for it again on every read and write, not only this page. ---- -->
+      <!-- Team: Health (js/health.js, 2026-10-07): every colleague's
+           check-ins by name while their agreement stands, for Team: Health
+           alone (an admin's by itself). -->
+      <div id="teamHealthPane" hidden>
+        <div id="teamHealthBox" data-narrow="780"></div>
+      </div>
       <div id="teamPerfPane" hidden>
         <div class="lockcard" id="perfLock" hidden>
           <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
@@ -4109,8 +4116,13 @@
           <button class="acttab btn-sm" data-mv="initiatives" type="button" aria-pressed="false">Initiatives</button>
           <button class="acttab btn-sm" data-mv="reflection" type="button" aria-pressed="false">Reflection</button>
           <button class="acttab btn-sm" data-mv="letters" type="button" aria-pressed="false">Letters</button>
+          <button class="acttab btn-sm acttab-health" data-mv="health" type="button" aria-pressed="false"><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
         </span></div>
         <div id="mineReviews">
+          <!-- Rate yourself (js/perf.js, 2026-10-07): a month that has ended,
+               until its review is shared; drawn only while one is open. -->
+          <div id="mineSelf" data-narrow="640" hidden></div>
+          <div class="msg" id="mineSelfMsg"></div>
           <div id="mineList" data-narrow="780"></div>
           <!-- The member's own rewards: confirmed quarters and periods, flexible
                hours and commissions, drawn only where there is something. -->
@@ -4140,6 +4152,12 @@
         <div id="mineLetters" hidden>
           <div class="msg" id="mineLetterMsg"></div>
           <div id="mineLetterList" data-narrow="640"></div>
+        </div>
+        <!-- Health (js/health.js, 2026-10-07): the colleague's own check-in
+             every half month once they have agreed, and their talks. -->
+        <div id="mineHealth" hidden>
+          <div class="msg" id="mineHealthMsg"></div>
+          <div id="mineHealthBox" data-narrow="640"></div>
         </div>
       </div>
     </div>
@@ -4209,6 +4227,124 @@
         <div class="sheet-foot">
           <button class="btn btn-primary" id="reflSave" type="button">Save</button>
           <button class="btn btn-quiet" id="reflCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- A health check-in (js/health.js, 2026-10-07): five scales, 5 is
+         well on each, and a note. -->
+    <div class="sheet" id="healthSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="healthSheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="healthSheetTitle">Check-in</h3>
+          <button class="iconbtn" id="hcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <p class="health-lead">There are no right or wrong answers. Answer as you truly feel today.</p>
+          <div class="row health-scale"><div class="field">
+            <label class="field-label" for="hcS_body">Body</label>
+            <select class="select" id="hcS_body" data-seg aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <span class="health-scale-word" id="hcW_body" aria-live="polite"></span>
+          </div></div>
+          <div class="row health-scale"><div class="field">
+            <label class="field-label" for="hcS_mind">Mind</label>
+            <select class="select" id="hcS_mind" data-seg aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <span class="health-scale-word" id="hcW_mind" aria-live="polite"></span>
+          </div></div>
+          <div class="row health-scale"><div class="field">
+            <label class="field-label" for="hcS_sleep">Sleep</label>
+            <select class="select" id="hcS_sleep" data-seg aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <span class="health-scale-word" id="hcW_sleep" aria-live="polite"></span>
+          </div></div>
+          <div class="row health-scale"><div class="field">
+            <label class="field-label" for="hcS_energy">Energy</label>
+            <select class="select" id="hcS_energy" data-seg aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <span class="health-scale-word" id="hcW_energy" aria-live="polite"></span>
+          </div></div>
+          <div class="row health-scale"><div class="field">
+            <label class="field-label" for="hcS_workload">Workload</label>
+            <select class="select" id="hcS_workload" data-seg aria-required="true"><option value="" hidden></option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <span class="health-scale-word" id="hcW_workload" aria-live="polite"></span>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="hcNote">Note</label>
+            <textarea class="input" id="hcNote" rows="3" maxlength="1000" placeholder="Optional"></textarea>
+          </div></div>
+          <div class="msg" id="hcMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="hcSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="hcCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ask for a talk (js/health.js): the colleague of their choice is told
+         through the bell and a push, by name alone. -->
+    <div class="sheet" id="talkSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="talkSheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="talkSheetTitle">Ask for a talk</h3>
+          <button class="iconbtn" id="talkClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div class="field">
+            <label class="field-label" for="talkWith">With</label>
+            <select class="select" id="talkWith" aria-required="true"></select>
+          </div></div>
+          <div class="row"><div class="field">
+            <label class="field-label" for="talkNote">About</label>
+            <textarea class="input" id="talkNote" rows="3" maxlength="1000" placeholder="Optional"></textarea>
+          </div></div>
+          <div class="msg" id="talkMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-go" id="talkSave" type="button">Ask</button>
+          <button class="btn btn-quiet" id="talkCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- One colleague's check-ins for Team: Health (js/health.js). -->
+    <div class="sheet" id="healthPersonSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hpTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="hpTitle">Check-ins</h3>
+          <button class="iconbtn" id="hpClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" id="hpBody"></div>
+      </div>
+    </div>
+
+    <!-- Rate yourself (js/perf.js, 2026-10-07): the six scorecard categories
+         for a month that has ended, until its review is shared. Management
+         reads it beside its own scores; it never enters the grade. -->
+    <div class="sheet" id="selfSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="selfSheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="selfSheetTitle">Rate yourself</h3>
+          <button class="iconbtn" id="selfClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row fgrid">
+            <div class="field"><label class="field-label" for="selfS_output">Role output quality (out of 25)</label>
+              <input class="input" id="selfS_output" type="number" inputmode="decimal" min="0" max="25" step="0.1" aria-required="true"></div>
+            <div class="field"><label class="field-label" for="selfS_accuracy">Accuracy and compliance (out of 15)</label>
+              <input class="input" id="selfS_accuracy" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
+            <div class="field"><label class="field-label" for="selfS_delivery">Delivery and reliability (out of 15)</label>
+              <input class="input" id="selfS_delivery" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
+            <div class="field"><label class="field-label" for="selfS_client">Client ownership (out of 20)</label>
+              <input class="input" id="selfS_client" type="number" inputmode="decimal" min="0" max="20" step="0.1" aria-required="true"></div>
+            <div class="field"><label class="field-label" for="selfS_comms">Communication and collaboration (out of 15)</label>
+              <input class="input" id="selfS_comms" type="number" inputmode="decimal" min="0" max="15" step="0.1" aria-required="true"></div>
+            <div class="field"><label class="field-label" for="selfS_initiative">Initiative and improvement (out of 10)</label>
+              <input class="input" id="selfS_initiative" type="number" inputmode="decimal" min="0" max="10" step="0.1" aria-required="true"></div>
+          </div>
+          <div class="msg" id="selfMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="selfSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="selfCancel" type="button">Cancel</button>
         </div>
       </div>
     </div>
@@ -4949,7 +5085,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261007g"></script>
+<script src="/js/admin.js?v=20261007h"></script>
 <script src="/js/documents.js?v=20261007g"></script>
 <script src="/js/letters.js?v=20261007g"></script>
 <script src="/js/smreport.js?v=20261007b"></script>
@@ -4957,12 +5093,13 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/register.js?v=20261007g"></script>
 <script src="/js/crm.js?v=20261007g"></script>
 <script src="/js/sales.js?v=20261005d"></script>
-<script src="/js/team.js?v=20261007g"></script>
-<script src="/js/namecard.js?v=20261003f"></script>
+<script src="/js/team.js?v=20261007h"></script>
+<script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/campaigns.js?v=20261007g"></script>
-<script src="/js/ops.js?v=20261007g"></script>
-<script src="/js/perf.js?v=20261007g"></script>
+<script src="/js/ops.js?v=20261007h"></script>
+<script src="/js/perf.js?v=20261007h"></script>
+<script src="/js/health.js?v=20261007h"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261007g"></script>
 </body>

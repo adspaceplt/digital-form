@@ -700,7 +700,7 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -740,7 +740,7 @@
     if (name === 'work') return may('ops', 'view');
     /* Team is two jobs gated apart: members and groups, and the monthly
        reviews. Either opens the route; the tab strip shows what is held. */
-    if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
+    if (name === 'team') return may('team', 'view') || may('team.performance', 'view') || may('team.health', 'work');
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
     /* The Handbook is every colleague's to read (only an admin changes it),
@@ -1501,7 +1501,8 @@
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review shared', disputed: 'Query raised', decided: 'Query answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
-                    returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
+                    returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted',
+                    opened: 'Review opened', 'self.saved': 'Self-rating saved' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -1671,7 +1672,8 @@
       ? db.rpc('perf_activity', { p_limit: 200 }).then(function (r) {
           var d = (r && r.data) || {};
           return (r && r.error) || d.error ? [] : (d.rows || []).map(function (x) {
-            return { created_at: x.at, kind: x.kind, _section: 'performance', _who: x.actor_name || x.actor || '',
+            return { created_at: x.at, kind: x.kind, _section: 'performance',
+                     _who: x.actor_name || x.actor || (x.auto ? 'Automatic' : ''),
                      subject: [x.member, x.period ? monthLong(x.period) : ''].filter(Boolean).join(' · '), detail: '' };
           });
         }, function () { return []; })
@@ -3910,7 +3912,8 @@
     tick:   '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
     qr:     '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
             '<rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/>' +
-            '<path d="M20 14v3M14 20h3M20 20h.01"/>'
+            '<path d="M20 14v3M14 20h3M20 20h.01"/>',
+    out:    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
   };
 
   /* A round mark with the action named for anyone who cannot see the shape. */
@@ -4668,6 +4671,10 @@
     return '<a class="plink" href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
   }
   var links = [];
+  /* Every colleague's namecard slug answers on the links host too, so the
+     list shows them beside the links, taken (the user, 2026-10-07: which
+     slugs are in use). Null where the read failed. */
+  var cards = [];
   var editingSlug = null;
 
   // What a slug may be: the part after the slash, and safe in a URL as typed.
@@ -4694,20 +4701,30 @@
   function loadLinks() {
     var box = $('linkList');
     box.innerHTML = '<div class="empty">Loading…</div>';
-    db.from('links').select('*').order('slug').then(function (r) {
-      if (r.error) {
+    var left = 2, failed = null;
+    var settle = function () {
+      if (--left) return;
+      if (failed) {
         links = [];
         box.innerHTML = '<div class="softpanel"><div class="errline">' +
-          '<b>Could not load the links.</b><span>' + esc(r.error.message) + '</span>' +
+          '<b>Could not load the links.</b><span>' + esc(failed) + '</span>' +
           '<button class="btn btn-sm" data-a="retry" type="button">Try again</button>' +
           '</div></div>';
         box.querySelector('[data-a="retry"]').addEventListener('click', loadLinks);
         $('linkCount').textContent = '';
         return;
       }
-      links = r.data || [];
       paintLinks();
-    });
+    };
+    db.from('links').select('*').order('slug').then(function (r) {
+      if (r.error) failed = r.error.message; else links = r.data || [];
+      settle();
+    }).catch(function (e) { failed = String((e && e.message) || e); settle(); });
+    db.from('team_members').select('id, name, card_slug, card_key, card_on, active').order('card_slug')
+      .then(function (r) {
+        cards = r.error ? null : (r.data || []).filter(function (t) { return t.card_slug; });
+        settle();
+      }).catch(function () { cards = null; settle(); });
   }
 
   /* A slug is looked at far more often than it is changed, so the list is a
@@ -4723,26 +4740,47 @@
         .toLowerCase().indexOf(q) > -1;
     });
   }
+  function cardShown() {
+    var q = $('linkSearch').value.trim().toLowerCase();
+    return (cards || []).filter(function (t) {
+      return !q || (t.card_slug + ' ' + (t.name || '')).toLowerCase().indexOf(q) > -1;
+    });
+  }
 
   function paintLinks() {
     var box = $('linkList');
     var shown = linkShown();
-    var filtered = shown.length !== links.length;
+    var cshown = cardShown();
+    /* A namecard's slug is a short link on the same host, so it counts. */
+    var total = links.length + (cards || []).length;
+    var count = shown.length + cshown.length;
+    var filtered = count !== total;
 
-    $('linkCount').textContent = !links.length ? '' :
-      (filtered ? shown.length + ' of ' + links.length
-                : links.length + (links.length === 1 ? ' link' : ' links'));
+    $('linkCount').textContent = !total ? '' :
+      (filtered ? count + ' of ' + total
+                : total + (total === 1 ? ' link' : ' links'));
 
     box.innerHTML = '';
-    if (!links.length) {
+    /* A failed read of the cards is said, never drawn as none. */
+    var cardsFailed = function () {
+      if (cards !== null) return;
+      var fail = document.createElement('div');
+      fail.className = 'softpanel';
+      fail.innerHTML = '<div class="errline"><b>Could not load the namecards.</b>' +
+        '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div>';
+      fail.querySelector('[data-a="retry"]').addEventListener('click', loadLinks);
+      box.appendChild(fail);
+    };
+    if (!total) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
         '<b>No short links.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
         '</div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null, this); });
+      cardsFailed();
       return;
     }
-    if (!shown.length) {
+    if (!count) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
         '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
         '</div></div>';
@@ -4750,6 +4788,7 @@
         $('linkSearch').value = '';
         paintLinks();
       });
+      cardsFailed();
       return;
     }
 
@@ -4762,18 +4801,49 @@
     var GRP = window.ADspaceGroup;
     var liveRows = shown.filter(function (l) { return l.active !== false; });
     var pausedRows = shown.filter(function (l) { return l.active === false; });
-    [['live', 'Live', liveRows, false], ['paused', 'Paused', pausedRows, true]].forEach(function (g) {
+    /* The colleagues' namecards sit between, open: their slugs are taken
+       while the card answers, and while it is off or its colleague stood
+       down (the trigger still refuses them to a new link). */
+    [['live', 'Live', liveRows, false, 'Label', 'links', linkRow],
+     ['cards', 'Namecards', cshown, false, 'Colleague', 'namecards', cardRow],
+     ['paused', 'Paused', pausedRows, true, 'Label', 'links', linkRow]].forEach(function (g) {
       if (!g[2].length) return;
       box.appendChild(GRP.section({
         route: 'links', key: g[0], name: g[1], count: g[2].length,
-        shut: !filtered && GRP.shut('links', g[0], g[3], g[2].length === shown.length),
+        shut: !filtered && GRP.shut('links', g[0], g[3], g[2].length === count),
         table: function () {
-          var table = GRP.table('link-row', ['Short link', 'Destination', 'Label', '']);
-          GRP.more(table, g[2], 30, 'links', linkRow);
+          var table = GRP.table('link-row', ['Short link', 'Destination', g[4], '']);
+          GRP.more(table, g[2], 30, g[5], g[6]);
           return table;
         }
       }));
     });
+    cardsFailed();
+  }
+
+  /* A colleague's namecard: its slug, the card's own address it answers
+     with, and whose it is. Edited in Team or My namecard, never here, so
+     the row copies and opens and holds no ⋯. */
+  function cardRow(t) {
+    var off = !t.active || t.card_on === false;
+    var url = window.ADspaceCard ? window.ADspaceCard.link(t.card_key)
+      : location.origin + '/card/?k=' + encodeURIComponent(t.card_key || '');
+    var row = document.createElement('div');
+    row.className = 'link-row is-card' + (off ? ' is-off' : '');
+    row.innerHTML =
+      '<span class="link-slug">/' + esc(t.card_slug) +
+        (!t.active ? ' <span class="tone">Inactive</span>' : off ? ' <span class="tone">Card off</span>' : '') + '</span>' +
+      '<span class="link-target">' + esc(url) + '</span>' +
+      '<span class="link-label">' + esc(t.name || '') + '</span>' +
+      '<span class="link-act">' +
+        iconBtn('copy', 'copy', 'Copy short link') +
+        (off ? '' : '<a class="iconbtn" data-a="open" href="' + esc(url) + '" target="_blank" rel="noopener" title="Open namecard" aria-label="Open namecard">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>') +
+      '</span>';
+    row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
+      window.ADspaceCopy.to(e.currentTarget, shortUrl(t.card_slug));
+    });
+    return row;
   }
 
   function linkRow(l) {
@@ -4953,6 +5023,9 @@
     // Renaming a slug is a new row plus a delete, so catch the collision first.
     var clash = links.filter(function (l) { return l.slug === slug && l.slug !== editingSlug; });
     if (clash.length) { msg('linkMsg', '/' + slug + ' is already in use.', 'err'); return; }
+    if ((cards || []).some(function (t) { return t.card_slug === slug; })) {
+      msg('linkMsg', '/' + slug + ' is a colleague\'s namecard.', 'err'); return;
+    }
 
     var body = {
       slug: slug, target_url: target,

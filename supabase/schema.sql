@@ -32972,3 +32972,1044 @@ revoke all on function public.sm_reports_owed(text) from public, anon, authentic
 grant execute on function public.sm_reports_owed(text) to authenticated;
 
 -- END OF REPORTS OWED ---------------------------------------------------------
+
+-- ===========================================================================
+-- PERFORMANCE SELF-RATING — a colleague rates themselves on the scorecard
+-- before the month is shared, a month whose query window has closed settles
+-- by itself, and the first open of a shared review is recorded.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/perf.js compares the
+-- two.
+--
+-- WHAT CHANGED (the user, 2026-10-07: "we need them to rate themselves too
+-- based on the same metrics"; "after dispute period, no disputes = auto
+-- acknowledged same goes to previous months. So i would be able to confirm
+-- and issue the quarter rewards"; answered: the scorecard only, before
+-- management scores, Acknowledged and Final, record the first open)
+--   1. `perf_self_ratings` (colleague, month, the six scorecard scores in
+--      the scorecard's own maxima, when saved): RLS on, no policy, no
+--      grant. A month opens to rate on the 1st after it (from June 2026)
+--      for a colleague on the review list, or one whose review of it has
+--      begun, from the month they joined, and stays open until its review
+--      is shared (`perf_self_open`: `bad-month`, `shared`, `not-reviewed`).
+--      `perf_self_mine()` answers the months open and what was given;
+--      `perf_self_save(p_period, p_scores)` writes all six at once
+--      (`incomplete`, `bad-score` with the item and its maximum); both
+--      behind the fresh proof (`perf_mine_gate`). Each save is filed
+--      `self.saved`, which the review's history reads.
+--   2. `perf_json` sends the colleague's rating as `self` (scores, total,
+--      when saved) beside management's scores; it never enters the grade.
+--      It sends `opened_at` (the open of the version on show) and
+--      `final_auto` (settled by itself).
+--   3. `perf_reviews.opened_at`: `perf_seen(p_review)` stamps the first time
+--      the colleague opens their shared review (again after a release
+--      that followed it), filed `opened`. It moves nothing else.
+--   4. `perf_close_windows()`: a shared month whose query window has closed
+--      with no query waiting on an answer (shared, every query answered, or
+--      acknowledged) becomes Final by itself: acknowledged as at the window's
+--      close, or the last answer where that came after it, and finalised
+--      now, each filed with `auto`, its result kept as Final keeps it.
+--      Every hour (pg_cron `perf-close-windows`) and once at the foot of
+--      this file, so earlier months settle at once. No browser calls it.
+--   5. `perf_printed`'s trail adds Opened and marks the automatic steps;
+--      `perf_activity` lists `opened` and `self.saved`, each with `auto`.
+--
+-- ROLLBACK (in the SQL Editor)
+--   select cron.unschedule('perf-close-windows');
+--   Run perf_json from DATE OF EVALUATION, perf_printed from PERFORMANCE
+--   RECORDS, THEIR TRAIL AND THEIR CHECK and perf_activity from A
+--   PERFORMANCE RECORD CAN BE DELETED again; then drop perf_close_windows,
+--   perf_seen, perf_self_save, perf_self_mine, perf_self_open and the
+--   table, and run
+--   alter table public.perf_reviews drop column if exists opened_at;
+-- ===========================================================================
+
+alter table public.perf_reviews add column if not exists opened_at timestamptz;
+
+create table if not exists public.perf_self_ratings (
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  period         date not null check (extract(day from period) = 1),
+  s_output       numeric(4,1) not null check (s_output between 0 and 25),
+  s_accuracy     numeric(4,1) not null check (s_accuracy between 0 and 15),
+  s_delivery     numeric(4,1) not null check (s_delivery between 0 and 15),
+  s_client       numeric(4,1) not null check (s_client between 0 and 20),
+  s_comms        numeric(4,1) not null check (s_comms between 0 and 15),
+  s_initiative   numeric(4,1) not null check (s_initiative between 0 and 10),
+  saved_at       timestamptz not null default now(),
+  primary key (team_member_id, period)
+);
+alter table public.perf_self_ratings enable row level security;
+revoke all on public.perf_self_ratings from public, anon, authenticated;
+
+/* One reading of a colleague's own rating, for them and for management. */
+create or replace function public.perf_self_json(p_member uuid, p_period date)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'scores', jsonb_build_object('output', s.s_output, 'accuracy', s.s_accuracy,
+      'delivery', s.s_delivery, 'client', s.s_client, 'comms', s.s_comms,
+      'initiative', s.s_initiative),
+    'total', s.s_output + s.s_accuracy + s.s_delivery + s.s_client + s.s_comms + s.s_initiative,
+    'saved_at', s.saved_at)
+    from public.perf_self_ratings s
+   where s.team_member_id = p_member and s.period = p_period
+$$;
+revoke all on function public.perf_self_json(uuid, date) from public, anon, authenticated;
+
+/* Null when the month is open to rate; else why not. */
+create or replace function public.perf_self_open(p_member uuid, p_period date)
+returns text
+language sql stable security definer set search_path = public as $$
+  select case
+    when p_period is null or extract(day from p_period) <> 1 or p_period < date '2026-06-01'
+      or p_period >= date_trunc('month', public.perf_today())::date
+      then 'bad-month'
+    when exists (select 1 from public.perf_reviews r
+                  where r.team_member_id = p_member and r.period = p_period and r.status <> 'draft')
+      then 'shared'
+    when not exists (select 1 from public.perf_reviews r
+                      where r.team_member_id = p_member and r.period = p_period)
+     and (not coalesce(public.perf_reviewed(p_member), false)
+          or p_period < (select date_trunc('month', t.created_at)::date
+                           from public.team_members t where t.id = p_member))
+      then 'not-reviewed'
+  end
+$$;
+revoke all on function public.perf_self_open(uuid, date) from public, anon, authenticated;
+
+create or replace function public.perf_self_mine()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  return jsonb_build_object('months', coalesce((
+    select jsonb_agg(jsonb_build_object('period', p.period, 'month', public.perf_month_word(p.period),
+                                        'rating', public.perf_self_json(m.id, p.period))
+                     order by p.period desc)
+      from (select generate_series(date '2026-06-01',
+                                   (date_trunc('month', public.perf_today()) - interval '1 month')::date,
+                                   interval '1 month')::date as period) p
+     where public.perf_self_open(m.id, p.period) is null), '[]'::jsonb));
+end $$;
+
+create or replace function public.perf_self_save(p_period date, p_scores jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members; g jsonb; err text; p date := date_trunc('month', p_period)::date;
+  k text; mx numeric; v numeric; was boolean; rid uuid;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  err := public.perf_self_open(m.id, p);
+  if err is not null then return jsonb_build_object('error', err); end if;
+  if jsonb_typeof(p_scores) is distinct from 'object' then return jsonb_build_object('error', 'incomplete'); end if;
+  foreach k in array array['output', 'accuracy', 'delivery', 'client', 'comms', 'initiative'] loop
+    if jsonb_typeof(p_scores -> k) is distinct from 'number' then
+      return jsonb_build_object('error', 'incomplete', 'item', k);
+    end if;
+    mx := case k when 'output' then 25 when 'accuracy' then 15 when 'delivery' then 15
+                 when 'client' then 20 when 'comms' then 15 when 'initiative' then 10 end;
+    v := (p_scores ->> k)::numeric;
+    if v < 0 or v > mx or round(v, 1) <> v then
+      return jsonb_build_object('error', 'bad-score', 'item', k, 'max', mx);
+    end if;
+  end loop;
+  was := exists (select 1 from public.perf_self_ratings s where s.team_member_id = m.id and s.period = p);
+  insert into public.perf_self_ratings (team_member_id, period, s_output, s_accuracy, s_delivery,
+                                        s_client, s_comms, s_initiative, saved_at)
+  values (m.id, p, (p_scores ->> 'output')::numeric, (p_scores ->> 'accuracy')::numeric,
+          (p_scores ->> 'delivery')::numeric, (p_scores ->> 'client')::numeric,
+          (p_scores ->> 'comms')::numeric, (p_scores ->> 'initiative')::numeric, now())
+  on conflict (team_member_id, period) do update
+     set s_output = excluded.s_output, s_accuracy = excluded.s_accuracy, s_delivery = excluded.s_delivery,
+         s_client = excluded.s_client, s_comms = excluded.s_comms, s_initiative = excluded.s_initiative,
+         saved_at = now();
+  select r.id into rid from public.perf_reviews r where r.team_member_id = m.id and r.period = p;
+  perform public.perf_log(rid, m.id, 'self.saved', jsonb_build_object('period', p, 'again', was));
+  return public.perf_self_mine();
+end $$;
+
+/* The first open of what was shared, by the colleague it is about. */
+create or replace function public.perf_seen(p_review uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; r public.perf_reviews;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  update public.perf_reviews set opened_at = now()
+   where id = p_review and team_member_id = m.id and status <> 'draft'
+     and (opened_at is null or opened_at < released_at)
+  returning * into r;
+  if r.id is not null then
+    perform public.perf_log(r.id, r.team_member_id, 'opened', jsonb_build_object('version', r.version));
+  else
+    select * into r from public.perf_reviews
+     where id = p_review and team_member_id = m.id and status <> 'draft';
+    if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  end if;
+  return public.perf_json(r, false);
+end $$;
+
+create or replace function public.perf_json(r public.perf_reviews, p_full boolean)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare m public.team_members; pp public.perf_people; out jsonb;
+begin
+  select * into m from public.team_members where id = r.team_member_id;
+  select * into pp from public.perf_people where team_member_id = r.team_member_id;
+  out := jsonb_build_object(
+    'id', r.id, 'team_member_id', r.team_member_id, 'period', r.period,
+    'month', public.perf_month_word(r.period), 'status', r.status,
+    'member', jsonb_build_object('name', m.name, 'staff_code', m.staff_code,
+      'designation', m.designation, 'department', m.department,
+      'role_family', m.role_family, 'runs_ads', coalesce(pp.runs_ads, false)),
+    'scores', jsonb_build_object('output', r.s_output, 'accuracy', r.s_accuracy,
+      'delivery', r.s_delivery, 'client', r.s_client, 'comms', r.s_comms,
+      'initiative', r.s_initiative),
+    'self', public.perf_self_json(r.team_member_id, r.period),
+    'rates', jsonb_build_object('posting', r.r_posting, 'timeline', r.r_timeline,
+      'satisfaction', r.r_satisfaction, 'pacing', r.r_pacing, 'sla', r.r_sla),
+    'notes', r.notes, 'improvement', r.improvement, 'review_by', r.review_by,
+    'evaluated_on', r.evaluated_on,
+    'reward_step', r.reward_step, 'serial', r.serial,
+    'reviewer', (select name from public.team_members where id = r.reviewer_id),
+    'released_at', r.released_at, 'dispute_until', r.dispute_until,
+    'dispute_open', r.status = 'released' and r.dispute_until > now()
+                    and not exists (select 1 from public.perf_disputes d
+                                     where d.review_id = r.id and d.version = r.version),
+    'opened_at', case when r.opened_at >= r.released_at then r.opened_at end,
+    'acknowledged_at', r.acknowledged_at, 'finalised_at', r.finalised_at,
+    'finalised_by', (select name from public.team_members where id = r.finalised_by),
+    'final_auto', r.status = 'final' and r.finalised_by is null,
+    'version', r.version, 'rev', r.rev,
+    'result', public.perf_calc(r),
+    'breaches', public.perf_breaches_json(r.team_member_id, r.period, false),
+    'disputes', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', d.id, 'item', d.item, 'breach_id', d.breach_id, 'reason', d.reason,
+        'breach_what', (select b.what from public.perf_breaches b where b.id = d.breach_id),
+        'raised_at', d.raised_at, 'decision', d.decision, 'response', d.response,
+        'before_value', d.before_value, 'after_value', d.after_value,
+        'decided_by', (select name from public.team_members where id = d.decided_by),
+        'decided_at', d.decided_at) order by d.raised_at)
+        from public.perf_disputes d where d.review_id = r.id and d.version = r.version), '[]'::jsonb));
+  if p_full then
+    out := out || jsonb_build_object(
+      'voided', (select coalesce(jsonb_agg(x), '[]'::jsonb)
+                   from jsonb_array_elements(public.perf_breaches_json(r.team_member_id, r.period, true)) x
+                  where x ->> 'voided_at' is not null),
+      'ops', public.perf_ops_rate(r.team_member_id, r.period),
+      'events', coalesce((select jsonb_agg(jsonb_build_object(
+          'kind', e.kind, 'detail', e.detail, 'at', e.created_at,
+          'by', coalesce((select name from public.team_members where id = e.actor_id), e.actor_email))
+          order by e.created_at desc)
+          from public.perf_events e
+         where e.review_id = r.id
+            or (e.review_id is null and e.kind = 'self.saved' and e.team_member_id = r.team_member_id
+                and e.detail ->> 'period' = r.period::text)), '[]'::jsonb));
+  end if;
+  return out;
+end $$;
+
+/* A month whose window has closed with nothing waiting on an answer is
+   settled: acknowledged as at the close (or the last answer, where that
+   came after it) and finalised now, each filed as automatic. */
+create or replace function public.perf_close_windows()
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare r public.perf_reviews; res jsonb; n integer := 0; v_ack timestamptz;
+begin
+  for r in
+    select x.* from public.perf_reviews x
+     where x.status in ('released', 'resolved', 'acknowledged')
+       and x.dispute_until is not null and x.dispute_until <= now()
+       and not exists (select 1 from public.perf_disputes d
+                        where d.review_id = x.id and d.version = x.version and d.decision is null)
+     order by x.period, x.id
+     for update skip locked
+  loop
+    v_ack := coalesce(r.acknowledged_at, greatest(r.dispute_until,
+               coalesce((select max(d.decided_at) from public.perf_disputes d
+                          where d.review_id = r.id and d.version = r.version), r.dispute_until)));
+    res := public.perf_calc(r);
+    update public.perf_reviews
+       set status = 'final', result = res, acknowledged_at = v_ack,
+           finalised_at = now(), finalised_by = null, rev = rev + 1, updated_at = now()
+     where id = r.id;
+    if r.acknowledged_at is null then
+      insert into public.perf_events (review_id, team_member_id, actor_id, actor_email, kind, detail, created_at)
+      values (r.id, r.team_member_id, null, null, 'acknowledged', jsonb_build_object('auto', true), v_ack);
+    end if;
+    insert into public.perf_events (review_id, team_member_id, actor_id, actor_email, kind, detail)
+    values (r.id, r.team_member_id, null, null, 'finalised',
+            jsonb_build_object('auto', true, 'grade', res ->> 'grade', 'final', res -> 'final'));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+create or replace function public.perf_printed(p_review uuid, p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews; ev_id uuid; ev_at timestamptz;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into r from public.perf_reviews where id = p_review;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id <> m.id and public.perf_check(p_token, 'view') is not null then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if r.team_member_id = m.id and r.status = 'draft' then return jsonb_build_object('error', 'not-found'); end if;
+  insert into public.perf_events (review_id, team_member_id, actor_id, actor_email, kind, detail)
+  values (r.id, r.team_member_id, m.id, m.email, 'printed', jsonb_build_object('version', r.version))
+  returning id, created_at into ev_id, ev_at;
+  return jsonb_build_object('ok', true, 'id', ev_id, 'at', ev_at, 'by', m.name, 'email', m.email,
+    'trail', coalesce((
+      select jsonb_agg(jsonb_build_object('kind', t.kind, 'at', t.created_at, 'by', t.who,
+                                          'email', t.actor_email, 'auto', t.auto)
+                       order by t.created_at)
+        from (select distinct on (pe.kind) pe.kind, pe.created_at, pe.actor_email,
+                     coalesce(tm.name, pe.actor_email) as who,
+                     coalesce((pe.detail ->> 'auto')::boolean, false) as auto
+                from public.perf_events pe
+                left join public.team_members tm on tm.id = pe.actor_id
+               where pe.review_id = r.id
+                 and ((pe.kind = 'released' and r.released_at is not null)
+                   or (pe.kind = 'opened' and r.opened_at >= r.released_at)
+                   or (pe.kind = 'acknowledged' and r.acknowledged_at is not null)
+                   or (pe.kind = 'finalised' and r.finalised_at is not null))
+               order by pe.kind, pe.created_at desc) t), '[]'::jsonb));
+end $$;
+
+/* The Activity record's Performance tab, now with the first open and a
+   colleague's own rating, and whether a step settled by itself. */
+create or replace function public.perf_activity(p_limit integer default 200)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me_row public.team_members;
+begin
+  me_row := public.ops_me();
+  if me_row.id is null or not public.ops_granted('team.performance', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('rows', coalesce((
+    select jsonb_agg(jsonb_build_object(
+             'at', e.created_at, 'kind', e.kind, 'member', tm.name,
+             'period', coalesce(rv.period, case when e.kind in ('deleted', 'self.saved')
+                                                then (e.detail ->> 'period')::date end),
+             'actor', e.actor_email, 'actor_name', ac.name,
+             'auto', coalesce((e.detail ->> 'auto')::boolean, false)) order by e.created_at desc)
+      from (select pe.* from public.perf_events pe
+             where pe.kind in ('released', 'opened', 'self.saved', 'disputed', 'decided', 'acknowledged',
+                               'finalised', 'reopened', 'returned', 'printed', 'deleted')
+               and pe.team_member_id is distinct from me_row.id
+             order by pe.created_at desc
+             limit greatest(1, least(coalesce(p_limit, 200), 500))) e
+      left join public.team_members tm on tm.id = e.team_member_id
+      left join public.perf_reviews rv on rv.id = e.review_id
+      left join public.team_members ac on ac.id = e.actor_id), '[]'::jsonb));
+end $$;
+
+revoke all on function public.perf_self_mine() from public, anon, authenticated;
+revoke all on function public.perf_self_save(date, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_seen(uuid) from public, anon, authenticated;
+revoke all on function public.perf_json(public.perf_reviews, boolean) from public, anon, authenticated;
+revoke all on function public.perf_close_windows() from public, anon, authenticated;
+revoke all on function public.perf_printed(uuid, text) from public, anon, authenticated;
+revoke all on function public.perf_activity(integer) from public, anon, authenticated;
+grant execute on function public.perf_self_mine() to authenticated;
+grant execute on function public.perf_self_save(date, jsonb) to authenticated;
+grant execute on function public.perf_seen(uuid) to authenticated;
+grant execute on function public.perf_printed(uuid, text) to authenticated;
+grant execute on function public.perf_activity(integer) to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: a closed window settles on the next run of this file.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'perf-close-windows';
+  perform cron.schedule('perf-close-windows', '7 * * * *', 'select public.perf_close_windows()');
+end $$;
+
+-- Earlier months past their window settle now.
+select public.perf_close_windows();
+
+-- END OF PERFORMANCE SELF-RATING ----------------------------------------------
+
+-- ===========================================================================
+-- HEALTH CHECK-INS — a colleague's own check-in on body, mind, sleep, energy
+-- and workload every half month once they have agreed to it, a request to
+-- talk to the colleague of their choice, and every colleague's check-ins for
+-- the holders of Team: Health.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/health.js compares the
+-- two.
+--
+-- WHAT CHANGED (the user, 2026-10-07: "a health section (company concerns
+-- about their physical health, mental health, body health, sleep health
+-- etc.)"; answered: an admin alone views everyone's health data, set in the
+-- user permissions; colleagues declare that they accept first; every two
+-- weeks, reminded with the month's reflection; the check-in and Ask for a
+-- talk)
+--   1. `health_consents` (colleague, when agreed, the wording agreed to,
+--      when withdrawn) and `health_log` (agreed, withdrawn; append only).
+--      Health is sensitive personal data (PDPA 2010, s.40): nothing is
+--      asked or kept before the colleague agrees, and withdrawing stops the
+--      check-ins and takes their answers out of Team: Health.
+--   2. `health_checkins` (colleague, the half month it is for: the 1st to
+--      the 15th or the 16th to the month's end, MYT; five scales from 1 to
+--      5 where 5 is well: body, mind, sleep, energy, workload; a note up to
+--      1000 characters): one a half month, changed until that half ends.
+--   3. `health_talks` (who asks, who with, a note, open / done /
+--      withdrawn): the colleague asked is told through the bell and a push
+--      (`health.talk`, the asker's name alone, never the note), reads the
+--      note in My HR, Health and marks it done; the asker withdraws it.
+--      Each way back reopens it.
+--   4. The colleague's own, behind the fresh proof My HR asks
+--      (`perf_mine_gate`): `health_mine()`, `health_consent(p_on)`,
+--      `health_checkin_save(p_scores, p_note)`, `health_talk_ask(p_with,
+--      p_note)`, `health_talk_set(p_id, p_status)`.
+--   5. Team: Health (`team.health`, a granted part: an admin's by itself,
+--      any other group's once set, at Work): `health_team()` answers every
+--      active colleague with their consent and, while it stands, their
+--      check-ins of the last twelve half months, and the talks of the last
+--      ninety days.
+--   Every table: RLS on, no policy, no grant. Nothing about health is
+--   written to the Activity record, and no notification carries a score or
+--   a note.
+--
+-- ROLLBACK (in the SQL Editor)
+--   drop the eleven functions below, then the four tables.
+-- ===========================================================================
+
+create table if not exists public.health_consents (
+  team_member_id uuid primary key references public.team_members(id) on delete cascade,
+  agreed_at      timestamptz not null default now(),
+  wording        integer not null default 1,
+  withdrawn_at   timestamptz,
+  updated_at     timestamptz not null default now()
+);
+create table if not exists public.health_log (
+  id             uuid primary key default gen_random_uuid(),
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  kind           text not null check (kind in ('agreed', 'withdrawn')),
+  wording        integer,
+  created_at     timestamptz not null default now()
+);
+create table if not exists public.health_checkins (
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  half           date not null check (extract(day from half) in (1, 16)),
+  body           smallint not null check (body between 1 and 5),
+  mind           smallint not null check (mind between 1 and 5),
+  sleep          smallint not null check (sleep between 1 and 5),
+  energy         smallint not null check (energy between 1 and 5),
+  workload       smallint not null check (workload between 1 and 5),
+  note           text check (note is null or char_length(note) <= 1000),
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  primary key (team_member_id, half)
+);
+create table if not exists public.health_talks (
+  id             uuid primary key default gen_random_uuid(),
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  with_id        uuid not null references public.team_members(id) on delete cascade,
+  note           text check (note is null or char_length(note) <= 1000),
+  status         text not null default 'open' check (status in ('open', 'done', 'withdrawn')),
+  created_at     timestamptz not null default now(),
+  closed_at      timestamptz,
+  closed_by      uuid references public.team_members(id) on delete set null
+);
+create index if not exists health_talks_with_idx on public.health_talks (with_id, status);
+create index if not exists health_talks_member_idx on public.health_talks (team_member_id, status);
+
+alter table public.health_consents enable row level security;
+alter table public.health_log enable row level security;
+alter table public.health_checkins enable row level security;
+alter table public.health_talks enable row level security;
+revoke all on public.health_consents, public.health_log, public.health_checkins, public.health_talks
+  from public, anon, authenticated;
+
+/* Today in Malaysia, the one clock health asks. */
+create or replace function public.health_today()
+returns date language sql stable as $$
+  select (now() at time zone 'Asia/Kuala_Lumpur')::date
+$$;
+/* The half month a day falls in, named by its first day. */
+create or replace function public.health_half(p_day date)
+returns date language sql immutable as $$
+  select case when extract(day from p_day) <= 15 then date_trunc('month', p_day)::date
+              else (date_trunc('month', p_day) + interval '15 days')::date end
+$$;
+create or replace function public.health_half_end(p_half date)
+returns date language sql immutable as $$
+  select case when extract(day from p_half) = 1 then (p_half + interval '14 days')::date
+              else (date_trunc('month', p_half) + interval '1 month' - interval '1 day')::date end
+$$;
+/* Whether a colleague's agreement stands. */
+create or replace function public.health_agreed(p_member uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.health_consents c
+                  where c.team_member_id = p_member and c.withdrawn_at is null)
+$$;
+create or replace function public.health_checkin_json(c public.health_checkins)
+returns jsonb language sql stable as $$
+  select jsonb_build_object('half', c.half, 'half_end', public.health_half_end(c.half),
+    'scales', jsonb_build_object('body', c.body, 'mind', c.mind, 'sleep', c.sleep,
+                                 'energy', c.energy, 'workload', c.workload),
+    'note', c.note, 'at', c.updated_at)
+$$;
+revoke all on function public.health_today() from public, anon, authenticated;
+revoke all on function public.health_half(date) from public, anon, authenticated;
+revoke all on function public.health_half_end(date) from public, anon, authenticated;
+revoke all on function public.health_agreed(uuid) from public, anon, authenticated;
+revoke all on function public.health_checkin_json(public.health_checkins) from public, anon, authenticated;
+
+create or replace function public.health_mine()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; c public.health_consents; h date;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  select * into c from public.health_consents where team_member_id = m.id;
+  h := public.health_half(public.health_today());
+  return jsonb_build_object(
+    'consent', case when c.team_member_id is null then null else jsonb_build_object(
+      'agreed_at', c.agreed_at, 'withdrawn_at', c.withdrawn_at, 'wording', c.wording) end,
+    'half', h, 'half_end', public.health_half_end(h),
+    'history', coalesce((select jsonb_agg(public.health_checkin_json(x) order by x.half desc)
+                           from (select * from public.health_checkins k
+                                  where k.team_member_id = m.id order by k.half desc limit 12) x), '[]'::jsonb),
+    'asked', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'with', w.name, 'with_id', t.with_id,
+                         'note', t.note, 'status', t.status, 'at', t.created_at, 'closed_at', t.closed_at)
+                         order by (t.status = 'open') desc, t.created_at desc)
+                         from (select * from public.health_talks x where x.team_member_id = m.id
+                                order by (x.status = 'open') desc, x.created_at desc limit 20) t
+                         join public.team_members w on w.id = t.with_id), '[]'::jsonb),
+    'asked_me', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'from', f.name, 'from_id', t.team_member_id,
+                            'note', t.note, 'status', t.status, 'at', t.created_at, 'closed_at', t.closed_at)
+                            order by (t.status = 'open') desc, t.created_at desc)
+                            from (select * from public.health_talks x where x.with_id = m.id and x.status <> 'withdrawn'
+                                   order by (x.status = 'open') desc, x.created_at desc limit 20) t
+                            join public.team_members f on f.id = t.team_member_id), '[]'::jsonb),
+    'colleagues', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name, 'staff_code', t.staff_code)
+                              order by t.staff_code nulls last, t.name)
+                              from public.team_members t where t.active and t.id <> m.id), '[]'::jsonb));
+end $$;
+
+create or replace function public.health_consent(p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; n integer;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  if coalesce(p_on, false) then
+    insert into public.health_consents (team_member_id, agreed_at, wording, withdrawn_at, updated_at)
+    values (m.id, now(), 1, null, now())
+    on conflict (team_member_id) do update
+       set agreed_at = now(), wording = 1, withdrawn_at = null, updated_at = now();
+    insert into public.health_log (team_member_id, kind, wording) values (m.id, 'agreed', 1);
+  else
+    update public.health_consents set withdrawn_at = now(), updated_at = now()
+     where team_member_id = m.id and withdrawn_at is null;
+    get diagnostics n = row_count;
+    if n = 0 then return jsonb_build_object('error', 'not-agreed'); end if;
+    insert into public.health_log (team_member_id, kind) values (m.id, 'withdrawn');
+  end if;
+  return public.health_mine();
+end $$;
+
+create or replace function public.health_checkin_save(p_scores jsonb, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; k text; v numeric; h date;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  if not public.health_agreed(m.id) then return jsonb_build_object('error', 'no-consent'); end if;
+  if jsonb_typeof(p_scores) is distinct from 'object' then return jsonb_build_object('error', 'incomplete'); end if;
+  foreach k in array array['body', 'mind', 'sleep', 'energy', 'workload'] loop
+    if jsonb_typeof(p_scores -> k) is distinct from 'number' then
+      return jsonb_build_object('error', 'incomplete', 'item', k);
+    end if;
+    v := (p_scores ->> k)::numeric;
+    if v < 1 or v > 5 or v <> trunc(v) then return jsonb_build_object('error', 'bad-score', 'item', k); end if;
+  end loop;
+  if char_length(coalesce(p_note, '')) > 1000 then return jsonb_build_object('error', 'too-long'); end if;
+  h := public.health_half(public.health_today());
+  insert into public.health_checkins (team_member_id, half, body, mind, sleep, energy, workload, note)
+  values (m.id, h, (p_scores ->> 'body')::smallint, (p_scores ->> 'mind')::smallint,
+          (p_scores ->> 'sleep')::smallint, (p_scores ->> 'energy')::smallint,
+          (p_scores ->> 'workload')::smallint, nullif(btrim(coalesce(p_note, '')), ''))
+  on conflict (team_member_id, half) do update
+     set body = excluded.body, mind = excluded.mind, sleep = excluded.sleep, energy = excluded.energy,
+         workload = excluded.workload, note = excluded.note, updated_at = now();
+  return public.health_mine();
+end $$;
+
+create or replace function public.health_talk_ask(p_with uuid, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; t uuid;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  if not public.health_agreed(m.id) then return jsonb_build_object('error', 'no-consent'); end if;
+  if p_with is null or p_with = m.id
+     or not exists (select 1 from public.team_members x where x.id = p_with and x.active) then
+    return jsonb_build_object('error', 'bad-colleague');
+  end if;
+  if char_length(coalesce(p_note, '')) > 1000 then return jsonb_build_object('error', 'too-long'); end if;
+  if exists (select 1 from public.health_talks x
+              where x.team_member_id = m.id and x.with_id = p_with and x.status = 'open') then
+    return jsonb_build_object('error', 'already-asked');
+  end if;
+  insert into public.health_talks (team_member_id, with_id, note)
+  values (m.id, p_with, nullif(btrim(coalesce(p_note, '')), ''))
+  returning id into t;
+  perform public.perf_notify(p_with, 'health.talk', m.name || ' would like to talk.', 'health.talk.' || t);
+  return public.health_mine();
+end $$;
+
+/* The asker withdraws and asks again; the colleague asked marks it done and
+   reopens it. */
+create or replace function public.health_talk_set(p_id uuid, p_status text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; g jsonb; t public.health_talks;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  m := public.ops_me();
+  select * into t from public.health_talks where id = p_id for update;
+  if t.id is null or m.id not in (t.team_member_id, t.with_id) then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if not ((m.id = t.team_member_id and ((t.status = 'open' and p_status = 'withdrawn')
+                                     or (t.status = 'withdrawn' and p_status = 'open')))
+       or (m.id = t.with_id and ((t.status = 'open' and p_status = 'done')
+                              or (t.status = 'done' and p_status = 'open')))) then
+    return jsonb_build_object('error', 'bad-status');
+  end if;
+  if m.id = t.team_member_id and p_status = 'open' and not public.health_agreed(m.id) then
+    return jsonb_build_object('error', 'no-consent');
+  end if;
+  update public.health_talks
+     set status = p_status,
+         closed_at = case when p_status = 'open' then null else now() end,
+         closed_by = case when p_status = 'open' then null else m.id end
+   where id = t.id;
+  return public.health_mine();
+end $$;
+
+/* Team: Health. Every active colleague, their agreement and, while it
+   stands, their check-ins; the talks of the last ninety days, a note shown
+   only while its asker's agreement stands. */
+create or replace function public.health_team()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; h date;
+begin
+  m := public.ops_me();
+  if m.id is null or not public.ops_granted('team.health', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  h := public.health_half(public.health_today());
+  return jsonb_build_object('half', h, 'half_end', public.health_half_end(h),
+    'people', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', t.id, 'name', t.name, 'staff_code', t.staff_code, 'designation', t.designation,
+        'department', t.department, 'role', t.role,
+        'consent', case when c.team_member_id is null then null else jsonb_build_object(
+          'agreed_at', c.agreed_at, 'withdrawn_at', c.withdrawn_at) end,
+        'checkins', case when c.team_member_id is not null and c.withdrawn_at is null then coalesce((
+            select jsonb_agg(public.health_checkin_json(x) order by x.half desc)
+              from (select * from public.health_checkins k where k.team_member_id = t.id
+                     order by k.half desc limit 12) x), '[]'::jsonb) else '[]'::jsonb end)
+        order by t.staff_code nulls last, t.name)
+        from public.team_members t
+        left join public.health_consents c on c.team_member_id = t.id
+       where t.active), '[]'::jsonb),
+    'talks', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', k.id, 'from', f.name, 'from_id', k.team_member_id, 'with', w.name, 'with_id', k.with_id,
+        'note', case when public.health_agreed(k.team_member_id) then k.note end,
+        'status', k.status, 'at', k.created_at, 'closed_at', k.closed_at)
+        order by (k.status = 'open') desc, k.created_at desc)
+        from public.health_talks k
+        join public.team_members f on f.id = k.team_member_id
+        join public.team_members w on w.id = k.with_id
+       where k.status <> 'withdrawn' and k.created_at > now() - interval '90 days'), '[]'::jsonb));
+end $$;
+
+revoke all on function public.health_mine() from public, anon, authenticated;
+revoke all on function public.health_consent(boolean) from public, anon, authenticated;
+revoke all on function public.health_checkin_save(jsonb, text) from public, anon, authenticated;
+revoke all on function public.health_talk_ask(uuid, text) from public, anon, authenticated;
+revoke all on function public.health_talk_set(uuid, text) from public, anon, authenticated;
+revoke all on function public.health_team() from public, anon, authenticated;
+grant execute on function public.health_mine() to authenticated;
+grant execute on function public.health_consent(boolean) to authenticated;
+grant execute on function public.health_checkin_save(jsonb, text) to authenticated;
+grant execute on function public.health_talk_ask(uuid, text) to authenticated;
+grant execute on function public.health_talk_set(uuid, text) to authenticated;
+grant execute on function public.health_team() to authenticated;
+
+-- END OF HEALTH CHECK-INS -----------------------------------------------------
+
+-- ===========================================================================
+-- MY HR REMINDERS — a nudge for what a colleague still owes: the month's
+-- reflection before it ends, last month's rating and reflection on the 1st
+-- and again a few days on, and the health check-in before each half month
+-- ends.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/health.js compares the
+-- two. Runs after PERFORMANCE SELF-RATING and HEALTH CHECK-INS.
+--
+-- WHAT CHANGED (the user, 2026-10-07: "send periodic u suggest reminder for
+-- those being selected for review on the self rating and reflection before
+-- the month ends and after"; the health check-in "every two weeks with
+-- reflection for the month reminders")
+--   1. Two Performance settings, from Q3 2026 into a key that has no row:
+--      `remind_before_days` (3: the days before a month or a half month
+--      ends that its reminder goes out) and `remind_again_days` (3: the days
+--      after the 1st that last month's goes out again); each 0 to 14, 0
+--      sending none. `perf_settings_set` takes both.
+--   2. `my_hr_remind(p_today)`, every day at 09:05 MYT (pg_cron
+--      `my-hr-reminders`), one notice a colleague a day at most, naming
+--      only what is still owed:
+--        - on the 1st, and again `remind_again_days` on: a colleague on the
+--          review list rates last month while it is open and unrated, and
+--          writes its reflection while it is open and empty;
+--        - `remind_before_days` before the month's last day: this month's
+--          reflection, while empty;
+--        - `remind_before_days` before each half month ends (the 15th, the
+--          month's last day): the health check-in, for every active
+--          colleague whose agreement stands and who has not checked in
+--          (never one who has not agreed); at the month's end it shares the
+--          reflection's notice.
+--      Never a score or a note; no browser calls it.
+--   3. `ops_notifications_push` opens the reminder where it points (Reviews,
+--      Reflection, Health), a query on a review the team's month, and an
+--      initiative decided the colleague's Initiatives.
+--
+-- ROLLBACK (in the SQL Editor)
+--   select cron.unschedule('my-hr-reminders');
+--   Run ops_notifications_push from HR LETTERS SHARED and perf_settings_set
+--   from PERFORMANCE RULE SETTINGS again; then drop my_hr_remind.
+-- ===========================================================================
+
+insert into public.perf_settings (key, from_period, value)
+select k.key, date '2026-07-01', k.value
+  from (values ('remind_before_days', 3), ('remind_again_days', 3)) k(key, value)
+ where not exists (select 1 from public.perf_settings s where s.key = k.key);
+
+create or replace function public.perf_settings_set(p_token text, p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_err text; v_me public.team_members; v_from date; v_k text; v_v numeric; v_was numeric;
+  v_changed jsonb := '[]'::jsonb;
+  v_keys constant text[] := array['prize_individual', 'prize_department', 'prize_department_min_total',
+    'flex_team_share', 'flex_member_min', 'bonus_pool_revenue',
+    'bonus_pool_profit_pct', 'trip_revenue', 'bonus_months_b', 'units_a', 'units_b', 'units_c', 'commission_min',
+    'grade_a', 'grade_b', 'grade_c', 'grade_d', 'ded_l1', 'ded_l2', 'ded_l3', 'ded_l4', 'ded_repeat', 'ded_late',
+    'ded_cap', 'dispute_days', 'remind_before_days', 'remind_again_days'];
+  v_a numeric; v_b numeric; v_c numeric; v_d numeric;
+begin
+  v_err := public.perf_check(p_token, 'work');
+  if v_err is not null then return jsonb_build_object('error', v_err); end if;
+  if not public.perf_is_admin() then return jsonb_build_object('error', 'admin-only'); end if;
+  v_me := public.ops_me();
+  v_from := date_trunc('quarter', p_from)::date;
+  if v_from is null or v_from < date '2026-07-01' then return jsonb_build_object('error', 'before-first'); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  if exists (select 1 from public.perf_rewards r
+              where (r.kind = 'quarter' and r.period >= v_from)
+                 or (r.kind = 'period' and (r.period + interval '6 months')::date > v_from)) then
+    return jsonb_build_object('error', 'confirmed');
+  end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if v_v < 0 or round(v_v, 2) <> v_v
+       or (v_k in ('prize_individual', 'prize_department', 'bonus_pool_revenue', 'trip_revenue') and v_v >= 1e9)
+       or (v_k in ('prize_department_min_total', 'flex_team_share', 'flex_member_min',
+                   'bonus_pool_profit_pct', 'commission_min', 'grade_a', 'grade_b', 'grade_c', 'grade_d',
+                   'ded_l1', 'ded_l2', 'ded_l3', 'ded_l4', 'ded_repeat', 'ded_late', 'ded_cap') and v_v > 100)
+       or (v_k = 'dispute_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('remind_before_days', 'remind_again_days') and (v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'bonus_months_b' and (v_v > 6 or v_v <> trunc(v_v)))
+       or (v_k in ('units_a', 'units_b', 'units_c') and v_v > 10) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  -- The grade bands stay in order from the quarter on: A above B above C above D.
+  v_a := coalesce((p_values ->> 'grade_a')::numeric, public.perf_setting('grade_a', v_from));
+  v_b := coalesce((p_values ->> 'grade_b')::numeric, public.perf_setting('grade_b', v_from));
+  v_c := coalesce((p_values ->> 'grade_c')::numeric, public.perf_setting('grade_c', v_from));
+  v_d := coalesce((p_values ->> 'grade_d')::numeric, public.perf_setting('grade_d', v_from));
+  if not (v_a > v_b and v_b > v_c and v_c > v_d and v_d > 0) then
+    return jsonb_build_object('error', 'bad-order');
+  end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.perf_setting(v_k, v_from);
+    if v_was is distinct from v_v then
+      insert into public.perf_settings (key, from_period, value, set_by, set_at)
+      values (v_k, v_from, v_v, v_me.id, now())
+      on conflict (key, from_period) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      v_changed := v_changed || jsonb_build_array(jsonb_build_object('key', v_k, 'from', v_was, 'to', v_v));
+    end if;
+  end loop;
+  if jsonb_array_length(v_changed) > 0 then
+    perform public.perf_log(null, null, 'settings_set', jsonb_build_object('from_period', v_from,
+      'word', public.perf_quarter_word(v_from), 'changed', v_changed));
+  end if;
+  return public.perf_settings_read(p_token);
+end $$;
+
+/* What a colleague still owes today, in one notice. */
+create or replace function public.my_hr_remind(p_today date default null)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  v_today    date := coalesce(p_today, public.health_today());
+  v_before   integer := coalesce(public.perf_setting('remind_before_days', coalesce(p_today, public.health_today())), 3)::integer;
+  v_again    integer := coalesce(public.perf_setting('remind_again_days', coalesce(p_today, public.health_today())), 3)::integer;
+  v_month    date := date_trunc('month', coalesce(p_today, public.health_today()))::date;
+  v_last     date;
+  v_half     date;
+  v_after    boolean;
+  v_end_day  boolean;
+  v_half_day boolean;
+  v_self     boolean;
+  v_rlast    boolean;
+  v_refl     boolean;
+  v_health   boolean;
+  v_parts    text[];
+  v_said     text;
+  v_title    text;
+  m          record;
+  n          integer := 0;
+begin
+  v_last := (v_month - interval '1 month')::date;
+  v_half := public.health_half(v_today);
+  v_after := extract(day from v_today) = 1 or (v_again > 0 and extract(day from v_today) = 1 + v_again);
+  v_end_day := v_before > 0 and v_today = (v_month + interval '1 month' - interval '1 day')::date - v_before;
+  v_half_day := v_before > 0 and v_today = public.health_half_end(v_half) - v_before;
+  if not (v_after or v_end_day or v_half_day) then return 0; end if;
+  for m in select t.id from public.team_members t where t.active order by t.id loop
+    v_self := false; v_rlast := false; v_refl := false; v_health := false;
+    if public.perf_reviewed(m.id) then
+      if v_after then
+        v_self := public.perf_self_open(m.id, v_last) is null
+                  and not exists (select 1 from public.perf_self_ratings s
+                                   where s.team_member_id = m.id and s.period = v_last);
+        v_rlast := public.perf_reflection_open(m.id, v_last) is null
+                   and not exists (select 1 from public.perf_reflections f
+                                    where f.team_member_id = m.id and f.period = v_last
+                                      and coalesce(f.proud, f.hard, f.learn) is not null);
+      end if;
+      if v_end_day then
+        v_refl := public.perf_reflection_open(m.id, v_month) is null
+                  and not exists (select 1 from public.perf_reflections f
+                                   where f.team_member_id = m.id and f.period = v_month
+                                     and coalesce(f.proud, f.hard, f.learn) is not null);
+      end if;
+    end if;
+    if v_half_day then
+      v_health := public.health_agreed(m.id)
+                  and not exists (select 1 from public.health_checkins k
+                                   where k.team_member_id = m.id and k.half = v_half);
+    end if;
+    v_parts := array[]::text[];
+    if v_self and v_rlast then
+      v_parts := v_parts || ('rate yourself and write your reflection for ' || public.perf_month_word(v_last));
+    elsif v_self then
+      v_parts := v_parts || ('rate yourself for ' || public.perf_month_word(v_last));
+    elsif v_rlast then
+      v_parts := v_parts || ('write your reflection for ' || public.perf_month_word(v_last));
+    end if;
+    if v_refl then v_parts := v_parts || ('write your ' || public.perf_month_word(v_month) || ' reflection'); end if;
+    if v_health then v_parts := v_parts || 'check in on your health'::text; end if;
+    if cardinality(v_parts) = 0 then continue; end if;
+    if cardinality(v_parts) = 1 and v_refl then
+      v_title := 'Write your reflection for ' || public.perf_month_word(v_month) || ' before the month ends.';
+    elsif cardinality(v_parts) = 1 and v_health then
+      v_title := 'Check in on your health by ' || to_char(public.health_half_end(v_half), 'FMDD FMMonth') || '.';
+    else
+      v_said := case cardinality(v_parts)
+                  when 1 then v_parts[1]
+                  when 2 then v_parts[1] || ' and ' || v_parts[2]
+                  else v_parts[1] || ', ' || v_parts[2] || ' and ' || v_parts[3] end;
+      v_title := upper(left(v_said, 1)) || substr(v_said, 2) || '.';
+    end if;
+    insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
+    values (m.id, null,
+            case when v_self then 'perf.remind' when v_rlast or v_refl then 'perf.reflect' else 'health.remind' end,
+            v_title, null, 'myhr.remind.' || m.id || '.' || v_today)
+    on conflict (dedupe_key) do nothing;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.my_hr_remind(date) from public, anon, authenticated;
+
+create or replace function public.ops_notifications_push()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_title text := coalesce(nullif(btrim(new.title), ''), 'My Work');
+  v_body  text := coalesce(new.body, '');
+begin
+  perform public.push_queue('team', new.team_member_id,
+    jsonb_build_object('en', jsonb_build_object('title', v_title, 'body', v_body),
+                       'zh', jsonb_build_object('title', v_title, 'body', v_body)),
+    case when new.task_id is not null then '/admin/?s=work&open=' || new.task_id::text
+         when new.report_id is not null then '/admin/?s=reports&report=' || new.report_id::text
+         when new.kind = 'client_left' then '/admin/?s=work'
+         when new.kind = 'hr.letter' then '/admin/?s=mine&view=letters'
+         when new.kind = 'perf.disputed' then '/admin/?s=team&tab=performance'
+         when new.kind = 'perf.reflect' then '/admin/?s=mine&view=reflection'
+         when new.kind = 'perf.initiative' then '/admin/?s=mine&view=initiatives'
+         when new.kind like 'health.%' then '/admin/?s=mine&view=health'
+         when new.kind like 'perf.%' then '/admin/?s=mine'
+         else '/admin/' end,
+    case when new.task_id is not null then 'task-' || new.task_id::text
+         when new.report_id is not null then 'report-' || new.report_id::text
+         when new.kind = 'hr.letter' then 'hr-letter'
+         when new.kind in ('perf.remind', 'perf.reflect', 'health.remind') then 'my-hr'
+         else null end);
+  return new;
+exception when others then
+  return new;
+end $$;
+
+revoke all on function public.perf_settings_set(text, date, jsonb) from public, anon, authenticated;
+grant execute on function public.perf_settings_set(text, date, jsonb) to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: no reminders go out until it is.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'my-hr-reminders';
+  perform cron.schedule('my-hr-reminders', '5 1 * * *', 'select public.my_hr_remind()');
+end $$;
+
+-- END OF MY HR REMINDERS ------------------------------------------------------
+
+-- ===========================================================================
+-- NAMECARD SHORT LINK SHOWN — the card names its short link, and a card's
+-- short link is the name run together, numbered without a dash.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/levels.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user, 2026-10-07: the card shows its short link in place of its long
+--   address; Short Links lists every card's slug, so the team can see which
+--   are taken; and a card's short link is the name run together, no dash.
+--   1. `namecard_get` adds `slug`. The QR still holds the card's own address
+--      (`/card/?k=`), which never changes, so a printed code survives an
+--      edited slug.
+--   2. `card_slug_from(name, email)`: the name's letters and digits run
+--      together (Xue Yi reads `xueyi`); a name with none, written in Chinese,
+--      takes the sign-in email's name (`qiaorou@…` reads `qiaorou`).
+--      `team_card_slug` makes an empty slug from it.
+--   3. `card_slug_free` numbers a taken slug without a dash (`xueyi2`, never
+--      `xueyi-2`). Live on 2026-10-07 every card's slug was its name with no
+--      dash, so no slug moves.
+--   Short Links reads the cards' slugs from `team_members` (every colleague
+--   reads it, `team_read`), so it needs no function.
+--
+-- ROLLBACK
+--   Re-run namecard_get from NAMECARD MOBILE SWITCH, and card_slug_free and
+--   team_card_slug from NAMECARD SHORT LINKS; then remove
+--   card_slug_from(text, text).
+-- ===========================================================================
+
+/* A card's short link from its colleague: the name's letters and digits run
+   together, else the sign-in email's name, else `card`. */
+create or replace function public.card_slug_from(p_name text, p_email text)
+returns text language sql immutable as $$
+  select coalesce(
+    nullif(left(regexp_replace(lower(coalesce(p_name, '')), '[^a-z0-9]+', '', 'g'), 70), ''),
+    nullif(left(regexp_replace(lower(split_part(coalesce(p_email, ''), '@', 1)), '[^a-z0-9]+', '', 'g'), 70), ''),
+    'card')
+$$;
+revoke all on function public.card_slug_from(text, text) from public, anon, authenticated;
+
+/* The base, else the base numbered with no dash, free of every short link
+   and every other colleague's card. */
+create or replace function public.card_slug_free(p_base text, p_self uuid)
+returns text language plpgsql security definer stable set search_path = public as $$
+declare
+  cand text := p_base;
+  k int := 1;
+begin
+  loop
+    exit when not exists (select 1 from public.links l where l.slug = cand)
+          and not exists (select 1 from public.team_members t
+                           where t.card_slug = cand and t.id is distinct from p_self);
+    k := k + 1;
+    cand := p_base || k;
+  end loop;
+  return cand;
+end $$;
+revoke all on function public.card_slug_free(text, uuid) from public, anon, authenticated;
+
+create or replace function public.team_card_slug()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and new.card_slug is not distinct from old.card_slug then
+    return new;
+  end if;
+  if new.card_slug is null or btrim(new.card_slug) = '' then
+    new.card_slug := public.card_slug_free(public.card_slug_from(new.name, new.email), new.id);
+    return new;
+  end if;
+  new.card_slug := lower(btrim(new.card_slug));
+  if new.card_slug !~ '^[a-z0-9][a-z0-9._-]{0,79}$' then
+    raise exception 'slug-shape' using hint = 'Lowercase letters, digits, dots, dashes or underscores.';
+  end if;
+  if exists (select 1 from public.links l where l.slug = new.card_slug)
+     or exists (select 1 from public.team_members t where t.card_slug = new.card_slug and t.id <> new.id) then
+    raise exception 'slug-taken' using errcode = '23505';
+  end if;
+  return new;
+end $$;
+revoke all on function public.team_card_slug() from public, anon, authenticated;
+
+create or replace function public.namecard_get(p_key text)
+returns jsonb language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select jsonb_build_object(
+             'name', t.name,
+             'designation', t.designation,
+             'mobile', case when t.card_mobile then nullif(btrim(coalesce(t.mobile, '')), '') end,
+             'email', lower(t.email),
+             'slug', t.card_slug)
+      from public.team_members t
+     where t.card_key = lower(btrim(coalesce(p_key, ''))) and t.active and t.card_on
+     limit 1), jsonb_build_object('error', 'not-found'))
+$$;
+grant execute on function public.namecard_get(text) to anon, authenticated;
+
+-- END OF NAMECARD SHORT LINK SHOWN --------------------------------------------
