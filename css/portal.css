@@ -7560,6 +7560,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tabline > .tabrow { margin: 0; min-width: 0; flex: 0 1 auto; }
 .tabline:not(:has(> :not([hidden]))) { display: none; }
 .perf-lockicon { flex: 0 0 auto; margin-left: auto; color: var(--ink-mute); background: none; border-color: transparent; }
+/* The gear and the padlock are one pair at the row's right end. */
+.perf-tools { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; margin-left: auto; }
+.perf-tools[hidden] { display: none; }
+.perf-tools > .perf-lockicon { margin-left: 0; }
+.perf-tools > .perf-seticon { color: var(--ink); }
+@media (hover: hover) { .perf-tools > .perf-seticon:hover { background: var(--tonal); } }
+/* On a phone the pair closes the Performance view row, whose views scroll
+   in what is left. */
+.perf-views:has(> .perf-tools.is-in-views) { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; }
+.perf-views:has(> .perf-tools.is-in-views) > .cmdbar-views.actviews { min-width: 0; flex: 0 1 auto; order: 1; }
+.perf-views > .perf-tools.is-in-views { order: 2; margin-left: auto; }
 .perf-lockicon.is-open { color: var(--ink); }
 .perf-lockicon[hidden] { display: none; }
 .perf-lockicon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -8368,10 +8379,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-dpick textarea[hidden] { display: none; }
 .perf-decide .row { margin-top: 0; }
 .perf-decide [data-show][hidden] { display: none; }
-.perf-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.perf-history li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
-.perf-history b { font-weight: 500; }
-.perf-history small { font-size: 12px; color: var(--ink-mute); }
 .perf-sums { margin-top: 2px; }
 
 /* ---- Social media reports (the client record's Reports pane) -------------
@@ -9090,9 +9097,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rw-c .rw-why { display: block; margin-top: 2px; }
 /* Reward settings: each change filed, the quarter, from and to, then who. */
 #rwSLogList { display: grid; gap: 8px; padding-top: 8px; }
-.rw-setlog { margin: 0; font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
-.rw-setlog b { color: var(--ink); font-weight: 600; }
-.rw-setlog small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
 .rw-row .rw-c:has(.rw-why) { white-space: normal; }
 .rw-sum { display: none; }
 .rw-row > .team-act { align-self: center; }

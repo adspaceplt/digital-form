@@ -1967,8 +1967,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member sees nothing of a month, breaches included, until it is released.
   - A dispute window from release of the month's `dispute_days` setting
     (7; 3 before 2026-10-01; a month keeps the window it was given), item
-    by item. Every Performance figure is edited in Performance settings
-    (the Months, Quarters and Bonus bars), an admin's.
+    by item. Every Performance figure is edited in Performance settings,
+    an admin's: one gear beside the padlock (`#perfSetIcon`, while unlocked;
+    on a phone the pair closes the Performance view row, `placeTools`, so
+    the Team tabs stay whole), the sheet in four parts matching the views
+    (`#rwSView`: Months, Quarters, Bonus and trip, Commission), opening on
+    the view in front, each label the rule in plain words (`RW_SET`).
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
     the day the numbers were reported to the member. The sheet prefills
     today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
@@ -2068,7 +2072,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Worked out on every read (`perf_quarter_calc`, `perf_flex_calc`,
     `perf_period_calc`, `perf_commission_json`) from finalised months, but
     the quarter's ranking, which reads every month released to its member
-    (any state but draft; `2026-10-05-performance-quarter-live.sql`), so
+    (any state but draft; `2026-10-05-performance-quarter-live.sql`; it
+    waits on reviews, a person's month each, never called months), so
     management sees the order as it stands: `provisional` while the quarter
     runs or a month is not final or not entered, each row's `finals` said
     under its average (`2 of 3 · Not final`), and whoever is ahead reads
@@ -2102,7 +2107,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     and trip gates, the pool's share of profit, months at B, units by grade,
     the commission floor), each from a quarter on and read as at the
     quarter, month, half or deal month (`perf_setting`). Reward settings
-    (the Quarters and Bonus bars, `#rwSetSheet`): management reads, an admin
+    (the gear's sheet, `#rwSetSheet`): management reads, an admin
     changes them from a quarter on (`perf_settings_set`), never into a
     quarter or half already confirmed (`confirmed`); each change is filed
     from and to (`settings_set`), and every calculation says the rules it
@@ -2697,7 +2702,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
-  rail, a task's log and recent activity) is drawn by `js/records.js`
+  rail, a task's log and recent activity, and every Performance history) is
+  drawn by `js/records.js`
   (`ADspaceRecords.paint`): at 720px and over one 12.5px line an entry
   (`.reclist.is-wide`: time, what and on what, the detail cut at the line's
   end in the soft ink, who at the right edge in a 150px track, a hairline
