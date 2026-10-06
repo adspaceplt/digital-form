@@ -1780,6 +1780,15 @@
         bits.push(plural(out.days - out.outside, 'daily row') + ' added up' + (period ? ', ' + dayWord(period[0]) + ' to ' + dayWord(period[1]) : '') +
           (out.outside ? ' (' + out.outside + ' outside the period left out)' : '') + '. Reach is not added across days and is left blank.');
       }
+      /* A file without Views or Reach (Meta's daily breakdown carries
+         neither) is named before it is imported, never found empty after
+         (the user, 2026-10-06). */
+      var miss = ['views', 'reach'].filter(function (k) { return out.columns.indexOf(k) < 0 && !(k === 'reach' && out.mode && out.mode !== 'lifetime'); });
+      if (miss.length) {
+        bits.push('No ' + miss.map(function (k) { return METRIC_WORD[k]; }).join(' or ') + ' column in this file: ' +
+          (miss.length > 1 ? 'those figures stay' : 'that figure stays') + ' empty. Meta\'s Lifetime export carries them.');
+      }
+      sum.classList.toggle('is-warn', miss.length > 0);
       bits.push('Columns: ' + out.columns.map(function (c) { return c === 'posted_on' ? 'Date' : c === 'content_type' ? 'Format' : (METRIC_WORD[c] || c.charAt(0).toUpperCase() + c.slice(1)); }).join(', ') + '.');
       sum.textContent = bits.join(' ');
       go.disabled = !out.rows.length;

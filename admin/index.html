@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261005l">
+<link rel="stylesheet" href="/css/portal.css?v=20261006a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -73,7 +73,7 @@
 <script src="/js/api.js?v=20261001a"></script>
 <script src="/js/maintenance.js?v=20261004h"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261005a"></script>
+<script src="/js/money.js?v=20261006a"></script>
 <script src="/js/media.js?v=20261003b"></script>
 <script src="/js/mockups.js?v=20261004a"></script>
 </head>
@@ -2204,7 +2204,7 @@
                   <button class="kmenu-item" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                   <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
-                  <button class="kmenu-item" data-a="reportdue" type="button" role="menuitem" hidden>Report deadline</button>
+                  <button class="kmenu-item" data-a="reportdue" type="button" role="menuitem" hidden>Due dates</button>
                 </div>
               </span>
               <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
@@ -2639,9 +2639,12 @@
                 <span>Include past clients</span></label>
               <p class="hint genplan" id="ntMonthHint" hidden></p>
             </section>
-            <!-- A line a piece. The first is the form's own; Add piece draws
-                 the next under it, its format and the week after carried
-                 over. The code is the database's, given on save. -->
+            <!-- A line a piece. The first is the form's own; Add another
+                 draws the next under it, its format and the week after
+                 carried over. Every line carries its three dates, typed:
+                 Draft due (ready for AQC review), Due date (to the client)
+                 and Post date (the user, 2026-10-06). The code is the
+                 database's, given on save. -->
             <section class="fsec">
               <h4 class="fsec-h">Posts</h4>
               <div class="pieces" id="ntPieces">
@@ -2678,9 +2681,17 @@
                     <option value="5">Week 5</option>
                   </select>
                   </div>
+                  <div class="field piece-draft">
+                    <label class="field-label" for="ntDraft">Draft due</label>
+                    <input class="input" id="ntDraft" type="date">
+                  </div>
                   <div class="field piece-due">
                     <label class="field-label" for="ntDue">Due date</label>
                     <input class="input" id="ntDue" type="date">
+                  </div>
+                  <div class="field piece-post">
+                    <label class="field-label" for="ntPublish">Post date</label>
+                    <input class="input" id="ntPublish" type="date">
                   </div>
                   <button class="iconbtn piece-x" type="button" aria-label="Remove piece 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -2691,22 +2702,6 @@
                 <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another</button>
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
-            </section>
-            <!-- Every piece's due date is on its own line, typed by whoever
-                 plans it (the user, 2026-10-05: nothing worked out). A lone
-                 piece may also name its first draft and its publish date. -->
-            <section class="fsec" id="ntDates">
-              <h4 class="fsec-h">Schedule</h4>
-              <div class="row fgrid">
-                <div class="field">
-                  <label class="field-label" for="ntDraft">Draft due</label>
-                  <input class="input" id="ntDraft" type="date">
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntPublish">Post date</label>
-                  <input class="input" id="ntPublish" type="date">
-                </div>
-              </div>
             </section>
             <!-- The same rule on every piece, made by the database each
                  morning and when a client's month is confirmed. -->
@@ -4771,7 +4766,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261005a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261005a"></script>
-<script src="/js/reports.js?v=20261005h"></script>
+<script src="/js/reports.js?v=20261006a"></script>
 <script src="/js/register.js?v=20261004a"></script>
 <script src="/js/crm.js?v=20261005e"></script>
 <script src="/js/sales.js?v=20261005d"></script>
@@ -4779,7 +4774,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261004a"></script>
-<script src="/js/ops.js?v=20261005h"></script>
+<script src="/js/ops.js?v=20261006a"></script>
 <script src="/js/perf.js?v=20261005g"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261005f"></script>

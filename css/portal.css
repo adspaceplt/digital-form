@@ -4373,38 +4373,38 @@ body > .shell { width: 100%; }
    head grows by as little as a field can when the pen is pressed. */
 /* A hint under its own field sits on the field, not a block step away. */
 .field > .hint { margin: 6px 0 0; }
-/* The New sheet's pieces (2026-09-28): a line each, the description, the
-   format and the week on one grid, the remove mark at the end once there is
-   more than one. The first line carries the labels; the rest name themselves.
-   On a narrow card a piece is two lines, what over which format and week,
-   the pieces a hairline apart. */
+/* The New sheet's pieces (2026-09-28): a line each, every field named on
+   every line, the remove mark at the end once there is more than one. Three
+   lines a piece: what it is; its format and week; its draft due, due date
+   and post date (the user, 2026-10-06: three dates a post, typed). Pieces
+   sit a hairline apart. On a narrow card the dates go two and one. */
 .pieces { display: grid; gap: 12px; }
-/* Two lines a piece: what it is, then its format, week and due date (the
-   user, 2026-10-05: every line carries its own date, typed). */
 .piece {
   display: grid; gap: 12px; align-items: end;
-  grid-template-columns: minmax(0, 1fr) 104px 160px;
-  grid-template-areas: "desc desc desc" "fmt week due";
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas: "desc desc desc" "fmt fmt week" "draft due post";
 }
 .piece-desc { grid-area: desc; }
 .piece-fmt { grid-area: fmt; }
 .piece-week { grid-area: week; }
+.piece-draft { grid-area: draft; }
 .piece-due { grid-area: due; }
+.piece-post { grid-area: post; }
 .piece-x { grid-area: x; }
-.pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 104px 160px var(--ctl-h); grid-template-areas: "desc desc desc x" "fmt week due ."; }
-.pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) 160px; grid-template-areas: "desc desc" "fmt due"; }
-.pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) 160px var(--ctl-h); grid-template-areas: "desc desc x" "fmt due ."; }
+.piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.pieces.is-many .piece { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--ctl-h); grid-template-areas: "desc desc desc x" "fmt fmt week ." "draft due post ."; }
+.pieces.no-week .piece { grid-template-areas: "desc desc desc" "fmt fmt fmt" "draft due post"; }
+.pieces.no-week.is-many .piece { grid-template-areas: "desc desc desc x" "fmt fmt fmt ." "draft due post ."; }
 .pieces.no-week .piece-week, .pieces:not(.is-many) .piece-x { display: none; }
 .pieces-foot { display: flex; margin-top: 12px; }
 /* A piece's fields fill their tracks: a select's own 180px floor would
    push the week over the remove mark. */
 .piece .input, .piece .select { width: 100%; min-width: 0; }
 #ntCodeHint { margin: 8px 0 0; }
-.is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt fmt" "week due"; }
-.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt fmt fmt" "week due due"; }
-.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desc" "fmt" "due"; }
-.is-narrow .pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc x" "fmt fmt" "due due"; }
-.is-narrow .piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt week" "draft due" "post post"; }
+.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt week week" "draft due due" "post post post"; }
+.is-narrow .pieces.no-week .piece { grid-template-areas: "desc desc" "fmt fmt" "draft due" "post post"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-areas: "desc desc x" "fmt fmt fmt" "draft due due" "post post post"; }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
@@ -8461,6 +8461,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ticks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; margin-bottom: 16px; }
 .rp-paste { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .rp-paste-sum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.rp-paste-sum.is-warn { color: var(--warn); }
 .rp-facts dd { white-space: normal; }
 /* A narrow pane: two lines a row. */
 .is-narrow .rp-acc-row.crm-head, .is-narrow .rp-post-row.crm-head { display: none; }
