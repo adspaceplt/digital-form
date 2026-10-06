@@ -867,6 +867,9 @@
         (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
       items.push('<button class="kmenu-item" type="button" data-a="reassign">' + (r.reviewer_id ? 'Change reviewer' : 'Assign reviewer') + '</button>');
     }
+    /* A draft started under a temporary client moves to its own (an
+       admin's, 2026-10-06). */
+    if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Move to client</button>');
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -882,17 +885,20 @@
       if (btn) btn.disabled = false;
       var d = res.data || {};
       if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
-      var id = st.open.id;
-      st.open = { id: id }; st.step = '';
-      if (bridge.setUrl) bridge.setUrl();
-      openReport(id, true);
-      var tries = 0;
-      (function tell() {
-        var el = st.host && st.host.querySelector('.rp-head [data-m="head"]');
-        if (el && st.open && st.open.client_id) { say(el, done, 'ok'); return; }
-        if (++tries < 40) setTimeout(tell, 50);
-      })();
+      reopen(done);
     });
+  }
+  function reopen(done) {
+    var id = st.open.id;
+    st.open = { id: id }; st.step = '';
+    if (bridge.setUrl) bridge.setUrl();
+    openReport(id, true);
+    var tries = 0;
+    (function tell() {
+      var el = st.host && st.host.querySelector('.rp-head [data-m="head"]');
+      if (el && st.open && st.open.client_id) { say(el, done, 'ok'); return; }
+      if (++tries < 40) setTimeout(tell, 50);
+    })();
   }
 
   /* Who reviews: the colleagues the database offers (Reports Full Access or
@@ -989,6 +995,29 @@
       var first = !r.reviewer_id;
       pickReviewer(r, null, m, { title: first ? 'Assign reviewer?' : 'Change reviewer?', body: 'The reviewer is told.', go: first ? 'Assign' : 'Change', skip: r.reviewer_id },
         function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, (first ? 'Assigned to ' : 'Reviewer changed to ') + nameOf(who) + '.', null, m); });
+    });
+    on('move', function (b) {
+      b.closest('.kmenu').hidden = true;
+      clientsReady.then(function () {
+        var pool = hub.clients.filter(function (c) { return c.id !== r.client_id; });
+        if (!pool.length) { say(m, 'No other Active client.', 'err'); return; }
+        window.ADspaceConfirm.ask({ title: 'Move to another client?', body: 'Its accounts, posts, ads and text go with it.', go: 'Move',
+          field: { label: 'Client', choices: [['', 'Choose a client']].concat(pool.map(function (c) { return [c.id, F.named(c.client_code, c.name)]; })),
+            value: '', need: 'Choose a client.' } },
+          function (to) {
+            var name = (hub.byClient[to] || {}).name || 'the client';
+            db.rpc('sm_report_move', { p_id: r.id, p_client: to }).then(function (res) {
+              var d = res.data || {};
+              if (res.error || d.error) {
+                var e = (d && d.error) || '';
+                say(m, e === 'not-draft' ? 'Only a draft moves to another client.' : e === 'not-active' ? 'Choose an Active client.' :
+                  e === 'exists' ? name + ' already has a report for this period.' : said(res.error || d), 'err');
+                return;
+              }
+              reopen('Moved to ' + name + '.');
+            });
+          });
+      });
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;

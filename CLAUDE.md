@@ -2129,6 +2129,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     question asks for it beside the reviewer, kept as `gate_note` /
     `late_reason` and filed. At Work a month not in order rests Submit.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
+  - Move to client (the head's ⋯, an admin's alone, a draft only;
+    `sm_report_move`, `2026-10-06-report-move-client.sql`) moves a report
+    started under a temporary client to an Active one with no report of its
+    kind for a day of its period (`not-draft`, `not-active`, `exists`); its
+    rows and AI uses follow it, filed `report.saved` under both clients.
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
