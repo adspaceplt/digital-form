@@ -9876,6 +9876,43 @@ body.is-maint { overflow: hidden; }
   .upgradebar { margin: 12px 16px 0; }
 }
 
+/* ---- Announcements (js/announce.js, 2026-10-07) ------------------------------
+   One line under the top bar: the team's in the console, laid like the
+   upgrade line; the clients' across a client page under its bar, the words
+   on the mark's 24px edge. Info is the tonal ground in ink; Important is the
+   warn pair. Its link and its close sit at the right edge. */
+.annbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 4px 4px 14px; background: var(--tonal); color: var(--ink);
+  font-size: 13px; line-height: 1.45;
+}
+.annbar[hidden] { display: none; }
+.annbar.is-important { background: var(--warn-bg); color: var(--warn); font-weight: 600; }
+.annbar-text { margin: 0; flex: 1 1 auto; min-width: 0; padding: 4px 0; overflow-wrap: anywhere; }
+.annbar-acts { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.annbar-acts .btn { flex: 0 0 auto; }
+.annbar.is-important .annbar-x { color: var(--warn); }
+.console .annbar { margin: 16px 28px 0; border-radius: var(--radius-sm); }
+.topbar + .annbar { padding-left: 24px; padding-right: 12px; }
+@media (max-width: 640px) {
+  .console .annbar { margin: 12px 16px 0; }
+  .topbar + .annbar { padding-left: 16px; padding-right: 4px; }
+}
+/* The console's list: a section an audience, its one announcement as a row. */
+.ann-sec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.ann-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.ann-head .fsec-h { margin: 0; }
+.ann-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: start;
+  padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm); }
+.ann-what { min-width: 0; }
+.ann-text, .ann-zh { margin: 0; overflow-wrap: anywhere; }
+.ann-zh { color: var(--ink-soft); margin-top: 4px; }
+.ann-meta { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.ann-ctl { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.ann-acts .btn { flex: 0 0 auto; }
+.ann-none { margin: 0; color: var(--ink-mute); }
+
 /* ---- Pair covers (js/admin.js, 2026-10-03) ---------------------------------
    One card a cover: the cover and the video proposed for it side by side at
    9:16, large enough to judge the match by eye (the video plays in place),

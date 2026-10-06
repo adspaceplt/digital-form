@@ -55,10 +55,9 @@
     if (n >= 1024) return Math.round(n / 1024) + ' KB';
     return n ? n + ' bytes' : '';
   }
-  function isAdmin() {
-    var m = bridge.me && bridge.me();
-    return Boolean(m && (m.is_admin || m.role === 'admin'));
-  }
+  /* Who adds, edits, versions, archives and removes files: an admin, or a
+     group given Team: Handbook files (2026-10-07). */
+  function isAdmin() { return Boolean(bridge.may && bridge.may('team.handbook', 'work')); }
   function say(el, text, tone) {
     if (!el) return;
     el.textContent = text || '';

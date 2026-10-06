@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
   // 3. What they want. kind "client" invites a client contact to /client/
   //    (anyone on the team who works the Clients section may do that); a team
-  //    invite stays an admin's alone.
+  //    invite is Team: Send invitation.
   let body: { email?: string; name?: string; kind?: string; notify?: boolean } = {};
   try { body = await req.json(); } catch { /* handled below */ }
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -84,7 +84,12 @@ Deno.serve(async (req) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
-  if (kind === 'team' && !isAdmin) return json({ error: 'not_admin' }, 403, origin);
+  // A team invite is Team: Send invitation (2026-10-07), an admin's by itself
+  // and any other group's once set, asked as the caller.
+  if (kind === 'team' && !isAdmin) {
+    const { data: mayInvite } = await asCaller.rpc('ops_granted', { p_key: 'team.invite', p_level: 'work' });
+    if (mayInvite !== true) return json({ error: 'not_admin' }, 403, origin);
+  }
   if (kind === 'client') {
     // Contacts at Work, asked as the caller (the retired `can_clients` switch
     // answered for nobody on the levels), and the contact read as the caller

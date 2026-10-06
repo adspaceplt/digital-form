@@ -922,7 +922,7 @@
     }
     /* A draft started under a temporary client moves to its own (an
        admin's, 2026-10-06). */
-    if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
+    if (r.status === 'draft' && bridge.may && bridge.may('reports.transfer', 'work')) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
     /* White-label work for a partner (2026-10-07): a client ticked White
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
@@ -3647,11 +3647,13 @@
         });
       }
     }
-    /* The bar's ⋯: AI usage, an admin's. */
-    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !isAdmin();
+    /* The bar's ⋯: AI usage, Reports: AI usage and limits (an admin's by
+       default, 2026-10-07). */
+    var aiMay = Boolean(bridge.may && bridge.may('reports.ai', 'work'));
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !aiMay;
     if ($('rhMore')) {
       var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
-      if (aiIt) aiIt.hidden = !isAdmin();
+      if (aiIt) aiIt.hidden = !aiMay;
     }
     $('rhKind').innerHTML = '<option value="">All types</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');

@@ -3780,7 +3780,7 @@
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !maySvc();
-    $('svcTax').hidden = !window.ADspaceAdmin.isAdmin();
+    $('svcTax').hidden = !window.ADspaceAdmin.may('team.settings', 'work');
     shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
@@ -4063,7 +4063,7 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');
-      $('crmLimits').hidden = !window.ADspaceAdmin.isAdmin();
+      $('crmLimits').hidden = !window.ADspaceAdmin.may('team.settings', 'work');
       state.view = params.get('view') === 'sales' ? 'sales' : 'list';
       var sp = params.get('sp');
       state.salesPeriod = /^(month|last|3m|6m|12m)$/.test(sp || '') ? sp : 'month';
