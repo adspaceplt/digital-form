@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261006g">
+<link rel="stylesheet" href="/css/portal.css?v=20261006h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -875,6 +875,21 @@
                 <div class="row">
                   <div><label class="field-label" for="crmNotes">Brand notes</label>
                     <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
+                </div>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Reports</h4>
+                <label class="tickline">
+                  <input type="checkbox" id="crmWl"> <span>White label</span>
+                </label>
+                <div class="row" id="crmWlRow" hidden>
+                  <div><label class="field-label" for="crmWlUp" id="crmWlLabel">Wide logo</label>
+                    <div class="widelogo" id="crmWlPreview" hidden></div>
+                    <div class="wl-acts">
+                      <button class="btn btn-sm" id="crmWlUp" type="button" aria-required="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                      <button class="btn btn-sm btn-quiet" id="crmWlOff" type="button">Remove</button>
+                      <input id="crmWlFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden data-nodraft>
+                    </div></div>
                 </div>
               </section>
               <div class="msg" id="crmBrandMsg"></div>
@@ -4290,7 +4305,6 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="rhMore" hidden role="menu">
-                  <button class="kmenu-item" data-a="partners" type="button" role="menuitem">Partners</button>
                   <button class="kmenu-item" data-a="aiuse" type="button" role="menuitem">AI usage</button>
                 </div>
               </span>
@@ -4790,9 +4804,9 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261005a"></script>
 <script src="/js/letters.js?v=20261006a"></script>
 <script src="/js/smreport.js?v=20261006c"></script>
-<script src="/js/reports.js?v=20261006g"></script>
+<script src="/js/reports.js?v=20261006h"></script>
 <script src="/js/register.js?v=20261006a"></script>
-<script src="/js/crm.js?v=20261005e"></script>
+<script src="/js/crm.js?v=20261006a"></script>
 <script src="/js/sales.js?v=20261005d"></script>
 <script src="/js/team.js?v=20261005f"></script>
 <script src="/js/namecard.js?v=20261003f"></script>

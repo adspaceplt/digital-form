@@ -860,6 +860,13 @@
        handles and logo, so a record opened from the list is read again and
        repainted where the row has moved on (2026-09-26). */
     if (!same) {
+      /* White label and its wide logo (2026-10-07) are read with the record
+         alone, never with the list: the logo is a picture. */
+      db.from('clients').select('white_label, report_logo').eq('id', c.id).maybeSingle().then(function (r) {
+        if (!r || r.error || !r.data || state.client !== c) return;
+        c.white_label = Boolean(r.data.white_label); c.report_logo = r.data.report_logo || null;
+        paintBrandRead(c);
+      }).catch(function () {});
       db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
         var moved = Object.keys(r.data).some(function (k) {
@@ -1917,13 +1924,62 @@
         ['Instagram', handle('handle_ig')], ['Facebook', handle('handle_fb')],
         ['TikTok', handle('handle_tiktok')], ['rednote', c.handle_xhs ? esc(c.handle_xhs) : '']
       ]) +
-      readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]);
+      readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
+      (c.white_label ? readGroup('Reports', [['White label', 'On'],
+        ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) : '');
   }
   function fillBrand(c) {
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
     paintLogoPreview();
+    $('crmWl').checked = Boolean(c.white_label);
+    wlLogo = c.report_logo || null;
+    $('crmWlFile').value = '';
+    paintWl();
   }
+  /* White label (2026-10-07): ticked, the client's wide logo heads the
+     reports set to it, so the tick needs the logo, drawn down to 1200 by 400
+     as a PNG so its transparency holds on the report's white page. */
+  var wlLogo = null;
+  function paintWl() {
+    var on = $('crmWl').checked;
+    $('crmWlRow').hidden = !on && !wlLogo;
+    $('crmWlOff').hidden = !wlLogo;
+    $('crmWlPreview').innerHTML = wlLogo ? '<img src="' + esc(wlLogo) + '" alt="Wide logo">' : '';
+    $('crmWlPreview').hidden = !wlLogo;
+    $('crmWlUp').lastChild.textContent = wlLogo ? 'Replace' : 'Upload';
+  }
+  function logoPng(file) {
+    return new Promise(function (ok, bad) {
+      var fr = new FileReader();
+      fr.onerror = function () { bad(new Error('The file could not be read.')); };
+      fr.onload = function () {
+        var img = new Image();
+        img.onerror = function () { bad(new Error('Choose a PNG, JPEG, WebP or SVG image.')); };
+        img.onload = function () {
+          var w = img.naturalWidth || img.width || 1200, h = img.naturalHeight || img.height || 400;
+          var k = Math.min(1, 1200 / w, 400 / h);
+          var cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          var url = cv.toDataURL('image/png');
+          if (url.length > 1500000) { bad(new Error('The logo is too large. Use a smaller file.')); return; }
+          ok(url);
+        };
+        img.src = String(fr.result || '');
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  $('crmWl').addEventListener('change', function () { paintWl(); msg('crmBrandMsg', ''); });
+  $('crmWlUp').addEventListener('click', function () { $('crmWlFile').click(); });
+  $('crmWlOff').addEventListener('click', function () { wlLogo = null; $('crmWlFile').value = ''; paintWl(); });
+  $('crmWlFile').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    logoPng(f).then(function (url) { wlLogo = url; paintWl(); msg('crmBrandMsg', ''); })
+      .catch(function (e) { msg('crmBrandMsg', e.message, 'err'); });
+  });
   $('crmBrandEdit').addEventListener('click', function () {
     fillBrand(state.client); msg('crmBrandMsg', ''); msg('crmBrandNote', '');
     openSheet('crmBrandSheet', this);
@@ -1989,14 +2045,25 @@
     var was = Object.assign({}, state.client);
     var patch = { brand_notes: val('crmNotes') || null };
     BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    was.white_label = Boolean(was.white_label); was.report_logo = was.report_logo || null;
+    if ($('crmWl').checked && !wlLogo) {
+      msg('crmBrandMsg', 'Upload the wide logo for reports.', 'err');
+      $('crmWlUp').focus();
+      return;
+    }
+    if ($('crmWl').checked !== was.white_label) patch.white_label = $('crmWl').checked;
+    if (wlLogo !== was.report_logo) patch.report_logo = wlLogo;
     db.from('clients').update(patch).eq('id', state.client.id)
       .select('id').then(function (r) {
         if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
-        log('client.brand', state.client.name, changed(was, patch, [
+        log('client.brand', state.client.name, [changed(was, patch, [
           ['website', 'Website'], ['phone', 'Phone'], ['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
-          ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote'], ['logo_url', 'Logo'], ['brand_notes', 'Brand notes']]));
+          ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote'], ['logo_url', 'Logo'], ['brand_notes', 'Brand notes']]),
+          'white_label' in patch ? 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On') : '',
+          'report_logo' in patch ? (patch.report_logo ? (was.report_logo ? 'Wide logo replaced' : 'Wide logo set') : 'Wide logo removed') : ''
+        ].filter(Boolean).join('; '));
         if (window.ADspaceSheet) window.ADspaceSheet.clean();
         shutSheet('crmBrandSheet');
         openClient(state.client);

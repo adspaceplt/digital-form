@@ -2159,24 +2159,27 @@ Each line is a rule that broke once. Its reason is in the archive.
     started under a temporary client to an Active one with no report of its
     kind for a day of its period (`not-draft`, `not-active`, `exists`); its
     rows and AI uses follow it, filed `report.saved` under both clients.
-  - White label (`2026-10-06-report-white-label.sql`): the partner is the
-    client (billed, with its portal) and ADspace services the partner's own
-    clients under its name, so the report stays under the partner and the
-    report chooses, in its head's ⋯ (White label, an admin's or Reports
-    Full Access, any report not published), the partner's logo and the
-    brand it covers (`sm_reports.partner_id`, `brand_name`;
-    `sm_report_white_label`, filed from and to). A partner is a name and a
-    landscape logo (Partners in the Reports bar's ⋯; `report_partners`, a
-    PNG drawn down to 1200 by 400; `report_partner_save` /
-    `report_partner_set_active`, filed under Partners; stood down, never
-    removed; `report_partner_clients` is no longer read).
-    `sm_report_snapshot` sends the report's partner and, with a brand, the
-    brand as the client's name and no client logo; the PDF draws the logo at
-    the head of every page in place of the ADspace wordmark (15pt high, two
-    fifths of the line at most; the name in the wordmark's face where no
-    logo is held) and a published version keeps both. Everything else stays
-    ADspace's (the glossary link, the file's properties). The report head
-    reads `For {brand} · {partner} logo`.
+  - White label (`2026-10-07-white-label-on-the-client.sql`): the partner
+    is the client (billed, with its portal) and ADspace services the
+    partner's own clients under its name, so the report stays under the
+    partner. A client is made a partner on its Brand (Reports, White label:
+    `clients.white_label`, read with the record alone, never the list), and
+    ticked it needs its wide logo (`clients.report_logo`, a PNG drawn down to
+    1200 by 400; the sheet refuses Save without it and the database's
+    `clients_white_label_logo` too; filed `client.brand`). The report's head
+    ⋯ (White label, an admin's or Reports Full Access, any report not
+    published) offers only Active clients ticked White label and the brand
+    it covers (`sm_reports.label_client`, `brand_name`; `sm_report_label`,
+    `bad-client`, filed from and to). There is no list of partners
+    (`report_partners`, `partner_id` and `sm_report_white_label` are no
+    longer used). `sm_report_snapshot` sends that client (its name and wide
+    logo, while still ticked) and, with a brand, the brand as the client's
+    name and no client logo; the PDF draws the logo at the head of every page
+    in place of the ADspace wordmark (15pt high, two fifths of the line at
+    most; the name in the wordmark's face where no logo is held) and a
+    published version keeps both. Everything else stays ADspace's (the
+    glossary link, the file's properties). The report head reads
+    `For {brand} · {client} logo`.
   - An account on a platform the database's list does not hold is kept as
     `other` with `sm_report_platforms.platform_name`
     (`2026-10-06-report-platform-names.sql`, carried forward by
