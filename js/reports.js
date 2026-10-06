@@ -551,6 +551,7 @@
       '<nav class="rp-steps" aria-label="Steps"></nav>' +
       '<div class="rp-stepbox"></div>';
     wireHead(box);
+    if (st.askSent === r.id) askSent();
     paintSteps();
     paintStep();
   }
@@ -950,7 +951,7 @@
       reopen(done);
     });
   }
-  function reopen(done) {
+  function reopen(done, after) {
     var id = st.open.id;
     st.open = { id: id }; st.step = '';
     if (bridge.setUrl) bridge.setUrl();
@@ -958,7 +959,7 @@
     var tries = 0;
     (function tell() {
       var el = st.host && st.host.querySelector('.rp-head [data-m="head"]');
-      if (el && st.open && st.open.client_id) { say(el, done, 'ok'); return; }
+      if (el && st.open && st.open.client_id) { if (done) say(el, done, 'ok'); if (after) after(); return; }
       if (++tries < 40) setTimeout(tell, 50);
     })();
   }
@@ -1162,6 +1163,47 @@
     });
   }
 
+  /* SENT TO THE CLIENT? (the user, 2026-10-06: Mark as sent sat out of
+     sight in the head's ⋯). Once a published report not yet marked sent
+     has its PDF drawn (Preview PDF or Download), a line under the head asks,
+     and stays through a repaint until it is answered or closed: one press
+     marks it sent today, with Undo where it happened. The ⋯ keeps Mark as
+     sent for any other day. */
+  function askSent() {
+    var r = st.open, head = st.host && st.host.querySelector('.rp-head');
+    if (!r || !head || r.status !== 'published' || r.sent_on || !may('work')) return;
+    st.askSent = r.id;
+    if (head.querySelector('.rp-sentask')) return;
+    var line = document.createElement('div');
+    line.className = 'rp-sentask';
+    line.setAttribute('role', 'status');
+    line.innerHTML = '<span class="rp-sentask-q">Sent to the client?</span>' +
+      '<button class="btn btn-sm" type="button" data-a="sentnow">Mark as sent</button>' +
+      '<button class="iconbtn rp-sentask-x" type="button" data-a="sentno" aria-label="Close">' + ICON.close + '</button>';
+    head.insertBefore(line, head.querySelector('[data-m="head"]'));
+    var m = head.querySelector('[data-m="head"]');
+    line.querySelector('[data-a="sentno"]').addEventListener('click', function () { st.askSent = null; line.remove(); });
+    line.querySelector('[data-a="sentnow"]').addEventListener('click', function (e) {
+      var b = e.currentTarget;
+      var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+      b.disabled = true;
+      db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
+        var d = res.data || {};
+        if (res.error || d.error) { b.disabled = false; say(m, said(res.error || d), 'err'); return; }
+        st.askSent = null;
+        reopen('', function () {
+          undoBar('Marked as sent.', st.host.querySelector('.rp-head'), function () {
+            db.rpc('sm_report_sent', { p_id: r.id, p_on: null }).then(function (back) {
+              var bd = back.data || {};
+              if (back.error || bd.error) { say(st.host.querySelector('.rp-head [data-m="head"]'), said(back.error || bd), 'err'); return; }
+              reopen('Marked as not sent.');
+            });
+          });
+        });
+      }).catch(function (x) { b.disabled = false; say(m, said(x), 'err'); });
+    });
+  }
+
   /* The file the client reads: a published report downloads its published
      version; anything else is a preview drawn from the rows as they stand,
      marked Draft on every page. */
@@ -1183,6 +1225,7 @@
     get.then(function (snap) { return saveFile(snap, tab); }).then(function (warn) {
       btn.disabled = false;
       say(m, warn ? (tab && !tab.closed ? 'Opened. ' : 'Downloaded. ') + warn : (tab && !tab.closed ? '' : 'Downloaded.'), warn ? 'warn' : 'ok');
+      askSent();
     }).catch(function (e) {
       btn.disabled = false;
       if (tab && !tab.closed) tab.close();
@@ -3614,7 +3657,7 @@
       var strip = $('rhTabs');
       strip.addEventListener('click', function (e) {
         var b = e.target.closest && e.target.closest('.tab');
-        if (b) { hub.tab = b.getAttribute('data-tab'); paintHub(); if (bridge.setUrl) bridge.setUrl(); }
+        if (b) { hub.tab = b.getAttribute('data-tab'); if (hub.pick) hub.pick = {}; paintHub(); if (bridge.setUrl) bridge.setUrl(); }
       });
       strip.addEventListener('keydown', function (e) {
         var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab:not([hidden])'));
@@ -3644,13 +3687,25 @@
           if (!it) return;
           shutM();
           if (it.getAttribute('data-a') === 'aiuse') aiUseSheet(mb);
+          if (it.getAttribute('data-a') === 'select') setPicking(true);
         });
       }
+      $('rhBulkAll').addEventListener('change', function () {
+        var on = this.checked;
+        hub.pick = {};
+        if (on) (hub.mine || []).forEach(function (r) { hub.pick[r.id] = 1; });
+        paintHub();
+      });
+      $('rhBulkDone').addEventListener('click', function () { setPicking(false); });
+      $('rhBulkPdf').addEventListener('click', bulkPdf);
+      $('rhBulkSent').addEventListener('click', bulkSent);
+      $('rhBulkPublish').addEventListener('click', bulkPublish);
     }
     /* The bar's ⋯: AI usage, Reports: AI usage and limits (an admin's by
        default, 2026-10-07). */
     var aiMay = Boolean(bridge.may && bridge.may('reports.ai', 'work'));
-    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = !aiMay;
+    /* Select is everybody's who reads reports: Download asks no more. */
+    if ($('rhMoreWrap')) $('rhMoreWrap').hidden = false;
     if ($('rhMore')) {
       var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
       if (aiIt) aiIt.hidden = !aiMay;
@@ -3735,6 +3790,8 @@
     $('rhPeriod').hidden = hub.tab !== 'published' || Boolean(q);
     list.setAttribute('aria-labelledby', 'rhTab-' + hub.tab);
     var mine = byTab[hub.tab];
+    hub.mine = mine;
+    paintBulk();
     var shown = HUB_BANDS.reduce(function (t, bd) { return t + byTab[bd[0]].length; }, 0);
     $('rhCount').textContent = !q && !kind && shown === hub.rows.length ? plural(hub.rows.length, 'report') : shown + ' of ' + hub.rows.length;
     list.innerHTML = '';
@@ -3761,28 +3818,170 @@
            working stages are short and open. A search opens every card. */
         shut: q ? false : GRP.shut('reports', hub.tab + ':' + k, hub.tab === 'published' && i > 0, months.length === 1),
         table: function () {
-          var t = GRP.table('rh-row', ['Client', 'Period', 'Version', 'Updated', '']);
+          var picking = Boolean(hub.pick);
+          var t = GRP.table('rh-row' + (picking ? ' is-picking' : ''), (picking ? [''] : []).concat(['Client', 'Period', 'Version', 'Updated', '']));
           GRP.more(t, inMonth, 30, 'reports', function (r) {
             var c = hub.byClient[r.client_id] || {};
-            var b2 = document.createElement('button');
-            b2.type = 'button'; b2.className = 'crm-row rh-row';
+            /* Picking, the row is its tick: a press anywhere on it ticks it. */
+            var b2 = document.createElement(picking ? 'label' : 'button');
+            if (!picking) b2.type = 'button';
+            b2.className = 'crm-row rh-row' + (picking ? ' is-picking' + (hub.pick[r.id] ? ' is-picked' : '') : '');
             /* A white-label report is named by its brand and marked so,
                the client it is billed to under it (2026-10-07). */
             var wl = r.brand_id && r.brand_name;
-            b2.innerHTML = '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+            b2.innerHTML = (picking ? '<span class="rh-pick"><input class="trow-pick" type="checkbox"' + (hub.pick[r.id] ? ' checked' : '') +
+                ' aria-label="Select ' + esc((wl ? r.brand_name : (c.name || '')) + ' ' + periodWord(r.period_start, r.period_end)) + '"></span>' : '') +
+              '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
                 '</b><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
                 (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
-              '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
-              '<span class="rp-ver">v' + r.version_no + '</span>' +
-              '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +
+              '<span class="rp-ver rh-per">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
+              '<span class="rp-ver rh-vno">v' + r.version_no + '</span>' +
+              '<span class="rp-ver rh-upd">' + esc(stampWord(r.updated_at)) + '</span>' +
               '<span class="rp-go" aria-hidden="true">' + ICON.go + '</span>';
-            b2.addEventListener('click', function () { openReport(r.id); });
+            if (picking) {
+              b2.querySelector('input').addEventListener('change', function () {
+                if (this.checked) hub.pick[r.id] = 1; else delete hub.pick[r.id];
+                b2.classList.toggle('is-picked', this.checked);
+                paintBulk();
+              });
+            } else b2.addEventListener('click', function () { openReport(r.id); });
             return b2;
           });
           return t;
         }
       }));
+    });
+  }
+
+  /* SELECT (the user, 2026-10-06: "most of the sections are missing the
+     select button ... esp Report"): Select reports in the bar's ⋯ turns each
+     row into its tick; the bar under the tabs counts them and offers what
+     the tab's reports can take together, each through the function one
+     report uses and re-checked there: Download on every tab, Mark as sent on
+     Published (Reports at Work, one day for all, with Undo), Publish to
+     client on Confirmed (Full Access). What is refused is counted and said. */
+  function setPicking(on) {
+    hub.pick = on ? {} : null;
+    say($('rhBulkMsg'), '');
+    paintHub();
+  }
+  function picked() { return (hub.mine || []).filter(function (r) { return hub.pick && hub.pick[r.id]; }); }
+  function paintBulk() {
+    var bar = $('rhBulk');
+    if (!bar) return;
+    bar.hidden = !hub.pick || !(hub.rows || []).length;
+    if (bar.hidden) return;
+    var ids = (hub.mine || []).map(function (r) { return r.id; });
+    Object.keys(hub.pick).forEach(function (id) { if (ids.indexOf(id) < 0) delete hub.pick[id]; });
+    var n = Object.keys(hub.pick).length;
+    $('rhBulkCount').textContent = n + ' selected';
+    var all = $('rhBulkAll');
+    all.checked = n > 0 && n === ids.length;
+    all.indeterminate = n > 0 && n < ids.length;
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every report in this tab');
+    $('rhBulkSent').hidden = hub.tab !== 'published' || !may('work');
+    $('rhBulkPublish').hidden = hub.tab !== 'confirmed' || !may('manage');
+    ['rhBulkPdf', 'rhBulkSent', 'rhBulkPublish'].forEach(function (k) { $(k).disabled = !n; });
+  }
+  /* Read the list again after an act, keeping the ticks that still stand. */
+  function rereadHub() {
+    return db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on')
+      .order('period_start', { ascending: false }).then(function (r) {
+        if (!r.error) hub.rows = r.data || [];
+        paintHub();
+      });
+  }
+  /* One report after another, so a refusal is named against its report. */
+  function eachOf(rows, act) {
+    var out = { ok: [], bad: [] };
+    return rows.reduce(function (p, r) {
+      return p.then(function () {
+        return Promise.resolve(act(r)).then(function (err) { (err ? out.bad : out.ok).push({ r: r, err: err }); })
+          .catch(function (e) { out.bad.push({ r: r, err: said(e) }); });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+  function nameOfRow(r) {
+    var c = hub.byClient[r.client_id] || {};
+    return (r.brand_id && r.brand_name ? r.brand_name : (c.name || 'A report')) + ' ' + periodWord(r.period_start, r.period_end);
+  }
+  function badWord(out) {
+    return out.bad.length ? ' ' + out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) { return nameOfRow(x.r) + ' (' + x.err + ')'; }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
+  }
+  function bulkSent() {
+    var rows = picked().filter(function (r) { return r.status === 'published'; });
+    if (!rows.length) return;
+    var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var from = rows.reduce(function (a, r) { return r.period_start > a ? r.period_start : a; }, '');
+    window.ADspaceConfirm.ask({ title: 'Mark ' + plural(rows.length, 'report') + ' as sent?', go: 'Save',
+      fields: [{ name: 'day', label: 'Sent on', type: 'date', value: today, min: from, max: today, required: true }] },
+      function (v) {
+        var day = v && v.day;
+        var before = {};
+        rows.forEach(function (r) { before[r.id] = r.sent_on || null; });
+        eachOf(rows, function (r) {
+          return db.rpc('sm_report_sent', { p_id: r.id, p_on: day }).then(function (res) {
+            var d = res.data || {};
+            return res.error || d.error ? (d.error === 'bad-date' ? 'the day is before its period' : said(res.error || d)) : null;
+          });
+        }).then(function (out) {
+          setPicking(false);
+          rereadHub().then(function () {
+            say($('rhBulkMsg'), badWord(out).trim(), out.bad.length ? 'warn' : '');
+            if (!out.ok.length) return;
+            undoBar(plural(out.ok.length, 'report') + ' marked as sent.', $('rhBulk'), function () {
+              eachOf(out.ok.map(function (x) { return x.r; }), function (r) {
+                return db.rpc('sm_report_sent', { p_id: r.id, p_on: before[r.id] }).then(function (res) { var d = res.data || {}; return res.error || d.error ? said(res.error || d) : null; });
+              }).then(function (back) { rereadHub().then(function () { say($('rhBulkMsg'), back.bad.length ? badWord(back).trim() : 'Put back.', back.bad.length ? 'warn' : 'ok'); }); });
+            });
+          });
+        });
+      });
+  }
+  function bulkPublish() {
+    var rows = picked().filter(function (r) { return r.status === 'confirmed'; });
+    if (!rows.length) return;
+    window.ADspaceConfirm.ask({ title: 'Publish ' + plural(rows.length, 'report') + ' to the client portal?',
+      body: 'Each client can read theirs from now.', go: 'Publish' },
+      function () {
+        eachOf(rows, function (r) {
+          return db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) { var d = res.data || {}; return res.error || d.error ? said(res.error || d) : null; });
+        }).then(function (out) {
+          setPicking(false);
+          rereadHub().then(function () {
+            say($('rhBulkMsg'), (out.ok.length ? plural(out.ok.length, 'report') + ' published.' : '') + badWord(out), out.bad.length ? 'warn' : 'ok');
+          });
+        });
+      });
+  }
+  /* Each file under its own name, one after another: a browser may ask once
+     whether the page may save several. */
+  function bulkPdf() {
+    var rows = picked();
+    if (!rows.length) return;
+    var btn = $('rhBulkPdf'), i = 0;
+    btn.disabled = true;
+    eachOf(rows, function (r) {
+      i++;
+      say($('rhBulkMsg'), 'Downloading ' + i + ' of ' + rows.length + '…');
+      var get = r.status === 'published'
+        ? db.from('sm_report_versions').select('snapshot, version_no, withdrawn_at').eq('report_id', r.id).order('version_no', { ascending: false }).then(function (x) {
+            if (x.error) throw new Error(x.error.message);
+            var live = (x.data || []).filter(function (v) { return !v.withdrawn_at; })[0];
+            if (!live || !live.snapshot) throw new Error('no published version');
+            return live.snapshot;
+          })
+        : db.rpc('sm_report_snapshot', { p_id: r.id, p_final: false }).then(function (x) {
+            if (x.error || (x.data && x.data.error)) throw new Error(x.error ? x.error.message : x.data.error);
+            return x.data;
+          });
+      return get.then(function (snap) { return saveFile(snap, null); }).then(function () {
+        return new Promise(function (ok) { setTimeout(function () { ok(null); }, 350); });
+      });
+    }).then(function (out) {
+      btn.disabled = false;
+      say($('rhBulkMsg'), (out.ok.length ? plural(out.ok.length, 'file') + ' downloaded.' : '') + badWord(out), out.bad.length ? 'warn' : 'ok');
     });
   }
 

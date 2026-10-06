@@ -2202,7 +2202,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `sm_report_sent`, `sm_reports.sent_on` / `sent_by`): one date, today
     by default, never after today nor before the period (`bad-date`);
     then Change sent date and Mark as not sent; filed from and to. The head
-    reads Sent {day}; a published row reads Sent {day} or Not sent.
+    reads Sent {day}; a published row reads Sent {day} or Not sent. Once a
+    published report not yet sent has its PDF drawn (Preview PDF or
+    Download), a line under the head asks Sent to the client? (`.rp-sentask`:
+    Mark as sent, today, and a close mark; kept through a repaint until
+    answered or closed), and the way back is Undo where it happened; no
+    Share or WhatsApp button (the user, 2026-10-06).
   - Download (the head's ⋯, every report, Reports View) saves the PDF under
     its own name with no tab: Preview PDF's tab holds a passing `blob:`
     address that cannot be shared, and the browser may name a file saved
@@ -2272,6 +2277,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   through every report, whatever the tab and the period. New report opens
   on the type as a segment (Accounts Report / Advertising Report). Only
   Active clients.
+- Select reports (the bar's ⋯, Reports View) turns each row of the tab into
+  its tick (`.rh-row.is-picking`, the row a `label`) under a bar
+  (`#rhBulk`: a tick for the whole tab, `n selected`, Download, Mark as
+  sent on Published at Work, Publish to client on Confirmed at Manage,
+  Done); changing tab clears the ticks. Each act runs one report after
+  another through the function one report uses (`sm_report_sent`,
+  `sm_report_publish`), and what is refused is named against its report
+  (`#rhBulkMsg`). Mark as sent asks one day for all (today, never before
+  the latest period), with Undo over the list putting back each report's
+  own day. Download saves each file under its own name.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
   - The head is the record head: the name, then the state, Preview PDF and
