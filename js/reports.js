@@ -3391,11 +3391,11 @@
     var box = sheetShell('rpPartnerSheet', 'Partner',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="ptName">Partner name</label>' +
         '<input class="input" id="ptName" type="text" maxlength="80" aria-required="true" autocomplete="off"></div></div>' +
-      '<div class="row"><div><label class="field-label" for="ptLogoFile">Logo</label>' +
+      '<div class="row"><div><label class="field-label" for="ptLogoFile">Partner logo</label>' +
         '<div class="pt-preview" id="ptPreview"></div>' +
         '<input class="input" type="file" id="ptLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml">' +
         '<button class="btn btn-sm btn-quiet" type="button" id="ptLogoOff">Remove logo</button></div></div></section>' +
-      '<section class="fsec"><h4 class="fsec-h">Clients</h4>' +
+      '<section class="fsec"><h4 class="fsec-h">Clients for this partner</h4>' +
         '<input class="input" id="ptFind" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">' +
         '<div class="pt-clients" id="ptClients"></div></section>',
       '<button class="btn btn-primary" type="button" data-a="go">Save</button>' +
