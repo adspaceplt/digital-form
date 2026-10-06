@@ -9074,6 +9074,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    ("E · Performance Review" 172px, "RM 12,345.67" at 13.5px). ---- */
 .perf-views { padding: 0 0 12px; }
 .perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+/* On a phone a view strip standing on its own row (My HR, Performance, the
+   Activity record) is the column's width with its views sharing what is
+   spare, as every strip is (2026-09-28): it kept its desk width and stopped
+   short of the card under it (the user, 2026-10-06, the third time). Beside
+   the Performance tools it runs up to them; one that cannot fit scrolls with
+   its edge faded. `uxaudit` `strip` measures every strip on the walk. */
+@media (max-width: 640px) {
+  .actstrip > .cmdbar-views.actviews { display: flex; width: 100%; }
+  .actstrip > .cmdbar-views.actviews > .acttab { flex: 1 0 auto; }
+  .perf-views:has(> .perf-tools.is-in-views) > .cmdbar-views.actviews { flex: 1 1 auto; width: auto; }
+}
 .rw-row { padding-top: 10px; padding-bottom: 10px; }
 .crm-head.rw-row { padding: 12px 15px 8px; }
 .rwq-row  { grid-template-columns: 36px minmax(0, 1fr) 64px 172px 150px 104px; }

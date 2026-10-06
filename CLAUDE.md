@@ -167,7 +167,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - contrast under 4.5:1; a control border under 3:1; focus without a ring;
     the way out drawn on the wrong side, measured by x (`order`);
   - a bar height that differs between pages (`head`); a hover equal to
-    selected (`hover`).
+    selected (`hover`);
+  - a strip short of its row on a phone (every strip; a record's, a card's
+    and a report's steps at every width), a strip that scrolls with no faded
+    edge, or a sliding surface off its chosen option, segments included
+    (`strip`); every strip on its list met at 1280 and 390.
 - **matrix** takes one screen per route at 320, 375, 390, 768, 1024, 1280 and
   1440, then 1280 and 1440 at 200% browser zoom (the viewport halved). It runs
   uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
