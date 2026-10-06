@@ -893,7 +893,7 @@
     /* White-label work for a partner (2026-10-07): a client ticked White
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
-    if (r.status !== 'published' && (isAdmin() || may('manage'))) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
+    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';

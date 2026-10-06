@@ -14,21 +14,27 @@
 --   1. `clients.white_label` (off by default) and `clients.report_logo` (a
 --      PNG data URL, 1200 by 400 at most); ticked needs the logo
 --      (`clients_white_label_logo`). Both readable to the team, as every
---      other non-billing column.
+--      other non-billing column. Changing either is Reports: White label
+--      at Work (`clients_white_label_guard`, as Billing's).
 --   2. `sm_reports.label_client`: the white-label client whose logo the
 --      report carries.
---   3. `sm_report_label(p_id, p_client, p_brand)`: an admin's or Reports
---      Full Access, on any report not published (`published`), a client
+--   3. `sm_report_label(p_id, p_client, p_brand)`: Reports: White label at
+--      Work, on any report not published (`published`), a client
 --      ticked White label, holding its logo and Active (`bad-client`), a
 --      brand of 120 characters at most (`bad-brand`); filed `report.saved`
 --      from and to.
---   4. `sm_report_snapshot` sends that client as the partner (name, logo)
+--   4. Reports: White label (`reports.whitelabel`) is a granted part, as
+--      the operations parts are (`ops_granted`): an admin holds it, any
+--      other group only once it is set (the user, 2026-10-07: controllable
+--      in the groups, on for Admin and Managers for now). Managers is given
+--      it once, where the key is not yet set.
+--   5. `sm_report_snapshot` sends that client as the partner (name, logo)
 --      while it is still ticked, and, where a brand is set, the brand as the
 --      client's name and no client logo. `report_partners` is no longer read.
 --
 -- ROLLBACK
---   Run sm_report_snapshot from REPORT WHITE LABEL again; the columns and
---   the function may stay unused.
+--   Run sm_report_snapshot from REPORT WHITE LABEL again; the columns, the
+--   guard (it only asks the part) and the function may stay unused.
 -- ===========================================================================
 
 alter table public.clients add column if not exists white_label boolean not null default false;
@@ -45,7 +51,26 @@ do $$ begin
 end $$;
 grant select (white_label, report_logo) on table public.clients to authenticated;
 
-alter table public.sm_reports add column if not exists label_client uuid references public.clients(id) on delete set null;
+create or replace function public.clients_white_label_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if pg_trigger_depth() > 1 or (auth.jwt() ->> 'email') is null then return new; end if;
+  if (new.white_label, new.report_logo) is distinct from (old.white_label, old.report_logo)
+     and not public.ops_granted('reports.whitelabel', 'work') then
+    raise exception 'White label needs Reports: White label at Work.' using errcode = '42501', hint = 'white-label';
+  end if;
+  return new;
+end $$;
+revoke all on function public.clients_white_label_guard() from public, anon, authenticated;
+create or replace trigger clients_white_label_guard before update on public.clients
+  for each row execute function public.clients_white_label_guard();
+
+-- No foreign key, as `posts.cover_for`: a client gone leaves the report on
+-- ADspace's wordmark (the snapshot finds no ticked client).
+alter table public.sm_reports add column if not exists label_client uuid;
+
+update public.team_roles set access = access || '{"reports.whitelabel": "work"}'::jsonb
+ where slug = 'managers' and not (access ? 'reports.whitelabel');
 
 create or replace function public.sm_report_label(p_id uuid, p_client uuid, p_brand text)
 returns jsonb
@@ -58,7 +83,7 @@ declare
   v_was text;
   v_bits text[] := '{}';
 begin
-  if me.id is null or not (public.allowed('admin') or public.allowed('reports', 'manage')) then
+  if me.id is null or not public.ops_granted('reports.whitelabel', 'work') then
     return jsonb_build_object('error', 'denied');
   end if;
   select * into r from public.sm_reports where id = p_id for update;

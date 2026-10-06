@@ -1932,6 +1932,8 @@
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
     paintLogoPreview();
+    /* Reports: White label at Work (2026-10-07), a granted part. */
+    $('crmWlSec').hidden = !mayPart('reports.whitelabel', 'work');
     $('crmWl').checked = Boolean(c.white_label);
     wlLogo = c.report_logo || null;
     $('crmWlFile').value = '';
@@ -2046,13 +2048,15 @@
     var patch = { brand_notes: val('crmNotes') || null };
     BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     was.white_label = Boolean(was.white_label); was.report_logo = was.report_logo || null;
-    if ($('crmWl').checked && !wlLogo) {
+    if (!$('crmWlSec').hidden && $('crmWl').checked && !wlLogo) {
       msg('crmBrandMsg', 'Upload the wide logo for reports.', 'err');
       $('crmWlUp').focus();
       return;
     }
-    if ($('crmWl').checked !== was.white_label) patch.white_label = $('crmWl').checked;
-    if (wlLogo !== was.report_logo) patch.report_logo = wlLogo;
+    if (!$('crmWlSec').hidden) {
+      if ($('crmWl').checked !== was.white_label) patch.white_label = $('crmWl').checked;
+      if (wlLogo !== was.report_logo) patch.report_logo = wlLogo;
+    }
     db.from('clients').update(patch).eq('id', state.client.id)
       .select('id').then(function (r) {
         if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }

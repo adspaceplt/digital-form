@@ -668,7 +668,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
   section reads Same as section.
 - Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
-  `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`. Their unset
+  `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`,
+  `reports.whitelabel` (on for Managers from 2026-10-07). Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
   grants (`offered()`).
@@ -2166,9 +2167,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     `clients.white_label`, read with the record alone, never the list), and
     ticked it needs its wide logo (`clients.report_logo`, a PNG drawn down to
     1200 by 400; the sheet refuses Save without it and the database's
-    `clients_white_label_logo` too; filed `client.brand`). The report's head
-    ⋯ (White label, an admin's or Reports Full Access, any report not
-    published) offers only Active clients ticked White label and the brand
+    `clients_white_label_logo` too; filed `client.brand`). Both the tick and
+    the report's choice are Reports: White label at Work (a granted part;
+    `clients_white_label_guard`, the Brand sheet's Reports section drawn only
+    for it). The report's head ⋯ (White label, any report not published)
+    offers only Active clients ticked White label and the brand
     it covers (`sm_reports.label_client`, `brand_name`; `sm_report_label`,
     `bad-client`, filed from and to). There is no list of partners
     (`report_partners`, `partner_id` and `sm_report_white_label` are no
