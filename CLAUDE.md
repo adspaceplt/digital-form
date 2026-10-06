@@ -139,6 +139,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
+| `announce.js` | announce, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -296,8 +297,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   page load that failed. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
 - The rail's foot names the build under the Activity record (`#appVersion`,
-  `.appver`, 11px mute): `v{YYYY.MM.DD} · {commit}`, the deploy's day in
-  Malaysia and its commit's first seven characters, read from
+  `.appver`, 11px mute): `v{YY.MM.DD}`, the deploy's day in Malaysia
+  (`v26.10.06`; the user, 2026-10-06: simple), read from
   `/version.json`, which the Pages build writes through Jekyll
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
   (no build) or missing, the line is hidden (`tests/appver.js`).
@@ -330,11 +331,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
     The switch is the account menu's Upgrade mode (`role="switch"`, Off /
-    On / Set, an admin's alone): on asks for Starts, Ends (each a date beside
+    On / Set, `team.upgrade`): on asks for Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's) and a note, refusing in the sheet a window that does not end
     after its start and now; off never
     asks.
+- Announcements (`js/announce.js`, `2026-10-07-announcements.sql`): one line
+  under the top bar, the team's on the console (laid like `.upgradebar`) and
+  the clients' on every client page that loads `maintenance.js` (edge to edge
+  under its bar), each its own and one at a time (`announcements`, RLS on,
+  no policy, no grant). `announcement_now(audience)` answers the one live
+  (started or no start, its end ahead or none, not ended), the clients' to
+  anyone and the team's to the team, never who wrote it; asked on load (the
+  console once `me()` answers), every minute while on screen and on return.
+  Info is the tonal ground, Important the warn pair; the words follow the
+  page's language (中文 where given); an https link opens in a new tab; the
+  reader's × hides it in this browser (`adspace-ann-hide:{id}:{updated_at}`,
+  so an edit returns it). Team: Announcements (`team.announce`, granted) in
+  the account menu opens the list (`#annSheet`: Team and Clients, each its
+  current or stopped line with Edit / Stop, which asks, or Restore, which
+  never does, and New): `announcement_save` (an ADspaceConfirm sheet: Tone,
+  English, 中文, Link, Starts and Ends as a date beside its time, MYT; one
+  saved ends every other of its audience) and `announcement_end(id, on)`;
+  each filed `team.changed` under subject Announcements. A plain line, never
+  a scrolling marquee.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
@@ -639,7 +659,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.changed` under Settings. One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
   is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
-  bar), Due dates (My Work's ⋯: report and revision days), an admin's alone.
+  bar), Due dates (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -669,7 +689,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   section reads Same as section.
 - Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
   `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`,
-  `reports.whitelabel` (on for Managers from 2026-10-07). Their unset
+  `reports.whitelabel` (on for Managers from 2026-10-07). Every act an admin
+  alone could take is one (`2026-10-07-admin-parts.sql`; an admin's by
+  itself, no other group given any): `ops.numbering` (Task numbering),
+  `ops.override` (move anybody's task and its final date), `team.perfadmin`
+  (`perf_is_admin()`: revenue and profit, Performance settings, a month's
+  record removed), `team.settings` (Business settings), `team.upgrade`,
+  `team.invite` (asked by `invite-member` as the caller), `team.handbook`
+  (the four functions and the bucket's add and remove policies),
+  `reports.transfer`, `reports.ai`, and `team.announce` (Announcements,
+  2026-10-07); each offers Manage alone (on or off). A
+  new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
   grants (`offered()`).
@@ -742,7 +772,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Documents by family;
   - Services by category;
   - Team by user group;
-  - the Handbook by category (Archived shut, an admin's alone);
+  - the Handbook by category (Archived shut, `team.handbook` alone);
   - My Work by its axis.
 - A filter never repeats the cards' own grouping: no state, kind, group or
   category filter on a route whose cards are those groups (Creator Campaigns,
@@ -1697,7 +1727,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Neither function, nor the trigger's, is callable from a browser.
 - The bar's ⋯ holds Templates (`ops.workflows` Work: edits families and makes
   no task), Select tasks (Manage: a sticky bar with Reassign and
-  Delete) and Task numbering (admin); it is drawn only where one applies.
+  Delete) and Task numbering (`ops.numbering`); it is drawn only where one applies.
 - A template is a family (`ops_template_variants`): one checklist and the rate
   card formats it serves, each with its own hours; a format belongs to one
   family (`format-taken`, naming it). A task's format fills it from its family
@@ -1709,7 +1739,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock and never rewritten.
   - The description is edited in place (`ops_set_content_desc`).
-  - The number is `#WT00001` (`ops_serial`). The next number is set by an admin
+  - The number is `#WT00001` (`ops_serial`). The next number is set under `ops.numbering`
     (`ops_set_next_task_no`, refused at or below the highest in use).
 - Scope is Client / Lead / Internal, checked once at creation
   (`ops_scope_error`):
@@ -2108,7 +2138,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     and trip gates, the pool's share of profit, months at B, units by grade,
     the commission floor), each from a quarter on and read as at the
     quarter, month, half or deal month (`perf_setting`). Reward settings
-    (the gear's sheet, `#rwSetSheet`): management reads, an admin
+    (the gear's sheet, `#rwSetSheet`): management reads, `team.perfadmin`
     changes them from a quarter on (`perf_settings_set`), never into a
     quarter or half already confirmed (`confirmed`); each change is filed
     from and to (`settings_set`), and every calculation says the rules it
@@ -2160,7 +2190,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     by default, never after today nor before the period (`bad-date`);
     then Change sent date and Mark as not sent; filed from and to. The head
     reads Sent {day}; a published row reads Sent {day} or Not sent.
-  - Transfer client (the head's ⋯, an admin's alone, a draft only;
+  - Download (the head's ⋯, every report, Reports View) saves the PDF under
+    its own name with no tab: Preview PDF's tab holds a passing `blob:`
+    address that cannot be shared, and the browser may name a file saved
+    from it at random.
+  - Transfer client (the head's ⋯, `reports.transfer`, a draft only;
     `sm_report_move`, `2026-10-06-report-move-client.sql`) moves a report
     started under a temporary client to an Active one with no report of its
     kind for a day of its period (`not-draft`, `not-active`, `exists`); its
@@ -2193,8 +2227,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`white-label`). The list names it by its brand with a White label
     chip, the client under it. There is no list of partners
     (`report_partners`, `partner_id`, `sm_report_white_label` and
-    `sm_report_label` are no longer used). `sm_report_snapshot` sends that client (its name and wide
-    logo, while still ticked) and, with a brand, the brand as the client's
+    `sm_report_label` are no longer used). Each brand says whose mark heads
+    its reports (`client_brands.logo`, `partner` by default or `adspace`;
+    `client_brand_logo`, the brand's ⋯ Use ADspace logo / Use {client} logo,
+    never asks, filed from and to; the row's `ADspace logo` chip;
+    `2026-10-07-white-label-brand-logo.sql`). `sm_report_snapshot` sends that client (its name and wide
+    logo, while still ticked and the brand takes it) and, with a brand, the brand as the client's
     name and no client logo; the PDF draws the logo at the head of every page
     in place of the ADspace wordmark (15pt high, two fifths of the line at
     most; the name in the wordmark's face where no logo is held) and a
@@ -2411,7 +2449,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     hairline; the hint and the fields follow it (the user, 2026-10-05).
   - The words: Write draft (Commentary), Check (Check and submit), AI usage
     (the bar's ⋯), filed under subject AI; never "Draft with AI".
-  - AI usage (the Reports bar's ⋯, an admin's alone;
+  - AI usage (the Reports bar's ⋯, `reports.ai`;
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
@@ -2596,7 +2634,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Handbook (`js/handbook.js`, `?s=handbook`)
 - The company's internal files: Employee Handbook, SOPs, Policies, Templates
   and forms, Other (`handbook_docs`, `handbook_versions`,
-  `2026-10-01-handbook.sql`). Every colleague reads (`is_team()`); an admin
+  `2026-10-01-handbook.sql`). Every colleague reads (`is_team()`); `team.handbook`
   alone adds, edits, versions, archives and deletes (`handbook_save`,
   `handbook_add_version`, `handbook_archive`, `handbook_delete`, each
   `allowed('admin')` and filed `handbook.*`). No acknowledgement step.
@@ -2624,8 +2662,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
-  group's ⋯ are Team Full Access (`team_admin`); Send invitation is an
-  admin's (`invite-member`). A row with nothing it may press draws no ⋯.
+  group's ⋯ are Team Full Access (`team_admin`); Send invitation is
+  `team.invite` (`invite-member`). A row with nothing it may press draws no ⋯.
 - Changing a member's email asks first.
 - A member row carries:
   - Employee ID (`staff_code`, `^[A-Z0-9]{3,8}$`);
@@ -2898,7 +2936,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
 - The report lists what the user does by hand: a dashboard setting.
-- Every go-live report names the version code the console shows (`v{YYYY.MM.DD} · {commit}`: the deploy's day in MYT and the merge commit's first seven characters; the user, 2026-10-06).
+- Every go-live report names the version the console shows (`v{YY.MM.DD}`, the deploy's day in MYT; the user, 2026-10-06) and the merge commit's first seven characters beside it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
 

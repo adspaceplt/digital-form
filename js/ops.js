@@ -1166,7 +1166,7 @@
      it, for an admin: the database refuses a number already used and files
      the change in the activity record. */
   function openNumbering() {
-    if (!isAdmin()) return;
+    if (!may('ops.numbering', 'work')) return;
     db.rpc('ops_next_task_no').then(function (r) {
       var d = r.data;
       if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
@@ -4546,7 +4546,7 @@
   }
   function mayMove(t) {
     if (!t || !may('ops', 'work')) return false;
-    if (isAdmin()) return true;
+    if (may('ops.override', 'work')) return true;
     var o = (state.ownerIds && state.ownerIds[t.id]) || ownerId(t);
     return !o || o === myId();
   }
@@ -5282,10 +5282,11 @@
      action the reader has. Nobody is shown a button that is not theirs. */
   function whoDecides(t) { return (t && t.created_by) || null; }
   function myId() { var m = bridge.me && bridge.me(); return (m && m.id) || null; }
-  /* An admin moves any date directly, as the database lets them. */
+  /* An admin, or a group given My Work: Move any task, moves any date
+     directly, as the database lets them (ops.override, 2026-10-07). */
   function needsAsking(t) {
     var d = whoDecides(t);
-    return Boolean(d && myId() && d !== myId() && !isAdmin());
+    return Boolean(d && myId() && d !== myId() && !may('ops.override', 'work'));
   }
 
   function paintDue(t) {
@@ -7762,11 +7763,11 @@
        (Manage) and, for an admin, the next number. It is drawn only where
        one of them is offered, never as an empty menu. */
     var more = $('workMoreWrap');
-    if (more) more.hidden = !(may('ops.workflows', 'work') || may('ops', 'manage') || isAdmin());
+    if (more) more.hidden = !(may('ops.workflows', 'work') || may('ops', 'manage') || may('ops.numbering', 'work') || may('team.settings', 'work'));
     var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
-    if (num) num.hidden = !isAdmin();
+    if (num) num.hidden = !may('ops.numbering', 'work');
     var due = $('workMore') && $('workMore').querySelector('[data-a="reportdue"]');
-    if (due) due.hidden = !isAdmin();
+    if (due) due.hidden = !may('team.settings', 'work');
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     ['list', 'board', 'calendar'].forEach(function (k) {
       var b = document.querySelector('#workViews [data-view="' + k + '"]');

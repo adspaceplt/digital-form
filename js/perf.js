@@ -26,7 +26,6 @@
   function may(k, l) { return bridge.may ? bridge.may(k, l) : false; }
   function me() { return bridge.me ? bridge.me() : null; }
   /* Deleting a month is an admin's alone (2026-09-27); the database asks again. */
-  function isAdmin() { var u = me(); return Boolean(u && (u.is_admin || u.role === 'admin')); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -159,7 +158,7 @@
     'bad-item': 'That item cannot be queried.',
     'not-final': 'Only a final record can be reopened.',
     'confirm-mismatch': 'The name and month typed do not match.',
-    'admin-only': 'Only an admin can delete a record.',
+    'admin-only': 'This needs Team: Performance admin.',
     'not-found': 'Not found.'
   };
   function said(d) {
@@ -491,7 +490,7 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
         '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="profile" type="button"><b>Review profile</b></button>' +
-          (r && r.id && isAdmin() ? '<button class="kmenu-item is-danger" data-a="delete" type="button">Delete</button>' : '') + '</div>' +
+          (r && r.id && may('team.perfadmin', 'work') ? '<button class="kmenu-item is-danger" data-a="delete" type="button">Delete</button>' : '') + '</div>' +
       '</span>';
     el.querySelector('.perf-open').addEventListener('click', function () { openReview(p.team_member_id, this); });
     var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
@@ -753,7 +752,7 @@
       print: Boolean(r.id) && r.status !== 'draft',
       'return': canWork() && r.status === 'released' && !(r.disputes || []).length,
       reopen: manage() && may('team.performance', 'manage') && r.status === 'final',
-      'delete': manage() && isAdmin() && Boolean(r.id)
+      'delete': manage() && may('team.perfadmin', 'work') && Boolean(r.id)
     };
     var any = false;
     Array.prototype.forEach.call($('pvMenu').querySelectorAll('.kmenu-item'), function (b) {
@@ -1886,7 +1885,7 @@
     'dept-scores-needed': 'Enter both departments’ scores first.',
     'confirmed': 'Confirmed. Reopen it to change it.',
     'not-confirmed': 'Not confirmed.',
-    'admin-only': 'Revenue and profit are for an admin only.',
+    'admin-only': 'This needs Team: Performance admin.',
 
     'bad-amount': 'Enter each amount in RM, to the cent.',
     'bad-pct': 'The rate is above 0 and at most 100, to two decimals.',

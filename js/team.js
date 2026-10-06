@@ -136,22 +136,30 @@
        team's queue and Report the team's figures, so those two are granted. */
     ops:       [['list', 'List view'], ['board', 'Board view'], ['calendar', 'Calendar view'],
                 ['all', 'Workload and the whole team\'s tasks'], ['reports', 'Report view'],
-                ['workflows', 'Templates and recurring tasks'], ['time', 'Another person\'s time records']],
+                ['workflows', 'Templates and recurring tasks'], ['time', 'Another person\'s time records'],
+                /* What an admin alone did before (2026-10-07): an admin's by
+                   itself, any other group's once set. */
+                ['numbering', 'Task numbering'], ['override', 'Move anyone\'s task and due date']],
     /* Everybody's monthly performance review: View reads them, Work scores,
        releases and answers disputes, Manage also reopens a final record.
        Granted like the four above, because administering the team is not
        reading its scores, and the master code is asked for on top. */
-    team:      [['performance', 'Performance reviews']],
+    team:      [['performance', 'Performance reviews'],
+                ['perfadmin', 'Performance company figures, settings and removals'],
+                ['settings', 'Business settings'], ['upgrade', 'Upgrade mode'],
+                ['invite', 'Send invitation'], ['handbook', 'Handbook files'], ['announce', 'Announcements']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
-    reports:   [['whitelabel', 'White label']]
+    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits']]
   };
   /* The parts that are granted rather than inherited: each opens more than
      its section does, so silence means no. The same list the console reads
      (`OPS_GRANTED` in js/admin.js) and the database asks (`ops_granted()`). */
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
-    'reports.whitelabel': 1 };
+    'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
+    'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
+    'team.announce': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
@@ -166,6 +174,9 @@
     'ops.all': ['view'], 'ops.reports': ['view'], 'ops.workflows': ['view', 'work'],
     'ops.list': ['view'], 'ops.board': ['view'], 'ops.calendar': ['view'],
     'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage'], 'reports.whitelabel': ['work'],
+    'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
+    'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
+    'reports.ai': ['work'], 'team.announce': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -465,7 +476,7 @@
          than a select on every row. A person cannot switch themselves off. */
       rowMenu((manage ? menuItem('edit', 'Edit') : '') +
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
-              (manage && amAdmin() && m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
+              (may('team.invite', 'work') && m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
               (self || !manage ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
     wireMenu(el);

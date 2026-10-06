@@ -375,9 +375,12 @@
   function paintUpgrade(d) {
     var M = window.ADspaceMaintenance;
     upgrade = d || { on: false, set: false };
-    var admin = isAdminMe();
+    var admin = may('team.upgrade', 'work');
     if ($('acctUpgrade')) {
-      $('acctUpgrade').hidden = $('acctUpgradeSep').hidden = !admin;
+      $('acctUpgrade').hidden = !admin;
+      var ann = may('team.announce', 'work');
+      if ($('acctAnnounce')) $('acctAnnounce').hidden = !ann;
+      $('acctUpgradeSep').hidden = !(admin || ann);
       $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
       $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
     }
@@ -387,7 +390,7 @@
       $('upgradeOff').hidden = false;
       bar.hidden = !(admin && upgrade.set);
       var w = !M ? '' : upgrade.on
-        ? 'Upgrade mode is on. Only admins can use the portal' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '.'
+        ? 'Upgrade mode is on. The portal is covered for the team' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '.'
         : 'Upgrade mode starts ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' and ends ' + M.when(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
@@ -416,7 +419,7 @@
       if (r.error || d.error) {
         done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
                      : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
-                     : d.error === 'denied' ? 'Only an admin can switch upgrade mode.' : d.error);
+                     : d.error === 'denied' ? 'This needs Team: Upgrade mode.' : d.error);
         return;
       }
       done('');
@@ -465,6 +468,11 @@
     });
   });
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
+  if ($('acctAnnounce')) $('acctAnnounce').addEventListener('click', function (e) {
+    e.stopPropagation();
+    shutAcct();
+    if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage($('acctBtn') || this);
+  });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
@@ -572,6 +580,8 @@
     loadMe(function () {
       applyAccess();
       readUpgrade();
+      /* The team's announcement, once the person is known (js/announce.js). */
+      if (me && window.ADspaceAnnounce) window.ADspaceAnnounce.refresh();
       /* The media pass for a colleague (js/media.js). Not waited on: a file
          drawn before it lands asks again and loads. */
       if (me && window.ADspaceMedia && window.ADspaceMedia.pass) window.ADspaceMedia.pass({});
@@ -671,18 +681,24 @@
        falling back for them, exactly as `ops_granted()` does in the
        database. A group given `{"ops":"work"}` reads its own work and
        nothing else, today and after somebody adds a group next year. */
-    ops:       ['all', 'reports', 'workflows', 'time'],
+    ops:       ['all', 'reports', 'workflows', 'time', 'numbering', 'override'],
     /* Everybody's monthly performance review. Granted and never inherited
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance'],
+    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce'],
     /* White label (2026-10-07): granted like the ones above, so an admin
-       holds it and any other group only once it is set. */
-    reports:   ['whitelabel']
+       holds it and any other group only once it is set. So is every act an
+       admin alone could take before (2026-10-07, ADMIN PARTS): task
+       numbering, moving anybody's task, Performance's company figures,
+       settings and removals, business settings, upgrade mode, invitations,
+       Handbook files, Transfer client and AI usage. */
+    reports:   ['whitelabel', 'transfer', 'ai']
   };
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
-    'reports.whitelabel': 1 };
+    'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
+    'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
+    'team.announce': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1514,11 +1530,10 @@
     $('activityOpen').hidden = !maySeeActivity;
   }
 
-  /* The build this console is running, under the Activity record, as IT
-     names a web app deployed many times a day: the calendar version of the
-     deploy in Malaysia (v2026.10.05) and the commit it was built from
-     (2026-10-05). /version.json is written by the Pages build itself; read
-     raw (no build ran) or not at all, the line stays hidden. */
+  /* The build this console is running, under the Activity record: the
+     deploy's day in Malaysia, short (v26.10.06; the user, 2026-10-06).
+     /version.json is written by the Pages build itself; read raw (no build
+     ran) or not at all, the line stays hidden. */
   function showVersion() {
     var box = $('appVersion');
     if (!box || !window.fetch) return;
@@ -1526,9 +1541,7 @@
       if (!v || /[{}%]/.test(v.commit + v.built)) return;
       var at = new Date(v.built);
       if (isNaN(at)) return;
-      var my = new Date(at.getTime() + 8 * 3600000).toISOString().slice(0, 10).replace(/-/g, '.');
-      var sha = String(v.commit || '').slice(0, 7);
-      box.textContent = 'v' + my + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : '');
+      box.textContent = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.');
       box.hidden = false;
     }).catch(function () {});
   }
@@ -3909,7 +3922,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false] };
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
-    if (!isAdminMe() || !MON) return;
+    if (!may('team.settings', 'work') || !MON) return;
     var day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k, i) {
       return { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
@@ -3935,7 +3948,7 @@
         var d = r.data || {};
         if (r.error || d.error) {
           if (spec.msg) msg(spec.msg, r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
-            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'Only an admin changes this.'
+            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'This needs Team: Business settings.'
             : d.error === 'bad-value' ? 'A figure is out of range.' : d.error, 'err');
           return;
         }
