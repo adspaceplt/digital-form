@@ -1603,12 +1603,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   by `batches.published_at`; Active clients with no set this month),
   Creator Campaigns (Bookings past their date; Waiting for the quality
   check), Documents (Letters of Offer not yet signed, `clients.documents`),
-  Reports (Waiting for confirmation; No report for last month), Team (last
+  Reports (Waiting for confirmation; Reports for last month), Team (last
   month's reviews through `perf_overview`: names and steps only).
+- Reports for last month (`sm_reports_owed(p_period)`,
+  `2026-10-07-reports-owed.sql`, Reports Full Access, client scope): the
+  reports the months of that period ask for (their Reports ticks), found or
+  not started, and every report made for the period no tick asked for (a
+  report is the month's whose span holds its last day, else its calendar
+  month's); a client with neither is never listed (the user, 2026-10-07:
+  not every client is a monthly engagement). The ring reads `n of N
+  published · n in review`; the rows are what is left but review (the card
+  above lists those): Not started, Draft, Confirmed, late first, each with
+  who has the report task and its due time (else `report_due_days` after the
+  month), late in warn; a row opens the report, else its task.
 - No money anywhere on it: no value, revenue or fee.
 - A list card: the title, the count (warn only where late), View all to the
   section; five rows, name over meta, the figure over its age at the right
-  edge; a row writes the record's address and opens it as search does. A
+  edge, then Show N more listing the rest in the card itself; a row writes
+  the record's address and opens it as search does. A
   refused read is `failLine` with Try again. Read again on every visit,
   never polled.
 - `batches.published_at` is stamped by `batches_published_at` on the move to

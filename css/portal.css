@@ -9577,7 +9577,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-fig b, .ovw-fig small { white-space: nowrap; }
 .ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ovw-fig b.is-warn { color: var(--warn); }
-.ovw-more { margin: 8px 0 0; font-size: 13px; color: var(--ink-mute); }
+.ovw-fig small.is-warn { color: var(--warn); }
+/* A month's progress over the list of what is left: the ring and its words,
+   then the rows. */
+.ovw-progress { display: flex; margin: 0 0 4px; font-size: 13px; color: var(--ink-soft); }
+/* The rest of the list, a press away in the card: a quiet button whose words
+   sit on the rows' own edge, giving its padding back to the side and below. */
+.ovw-more.btn { min-width: 0; margin: 4px 0 -6px -13px; align-self: flex-start; }
 /* The empty and failed lines sit in the card as its content, not as a second
    card inside it. */
 .ovw-card .softpanel { background: none; border: 0; border-radius: 0; }

@@ -12,7 +12,8 @@
  * here is money (the user, 2026-09-28).
  *
  * The page reads again each time it is opened and never polls. A row opens
- * the record; View all opens the section.
+ * the record; Show N more lists the rest in the card; View all opens the
+ * section.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -62,6 +63,7 @@
   function isoDay(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
+  var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
@@ -98,7 +100,8 @@
 
   /* ---- The cards -------------------------------------------------------------
      A list card: `load()` answers `{ rows: [{ name, meta, fig, figTone, age,
-     url, section }], count, warn }`. A chart card: `load()` answers a spec for
+     ageTone, url, section }], count, warn, progress }` (warn and progress
+     where the card reads them). A chart card: `load()` answers a spec for
      ADspaceChart.draw, or `{ empty }`. Sections run in the rail's order. */
   /* How long a stage may run, from the Clients list's own rule. */
   function staleH() { return window.ADspaceCRM.staleH(); }
@@ -398,22 +401,46 @@
               }) };
             });
         } },
-      { key: 'noreport', title: function () { return 'No report for ' + lastMonth().word; },
+      /* Last month's reports, from the months that ask for them (the user,
+         2026-10-07: "some clients are not monthly engagement"): every report
+         a month's Reports ticks ask for and every report made for the month,
+         with where each stands. A report in review is the card above's, so
+         it is counted in the progress line and listed there. */
+      { key: 'owed', title: function () { return 'Reports for ' + lastMonth().word; },
         can: function () { return may('reports', 'manage'); },
-        all: ['/admin/?s=reports', 'reports'], empty: 'Every active client has one.',
+        all: ['/admin/?s=reports', 'reports'], empty: 'No reports owed.',
         load: function () {
-          var lm = lastMonth(), ms = lm.start, me = lm.end;
-          return Promise.all([
-            db.from('clients').select('id, name, slug').eq('stage', 'active').order('name').then(rows),
-            db.from('sm_reports').select('client_id, period_start, period_end')
-              .lte('period_start', isoDay(me)).gte('period_end', isoDay(ms)).then(rows)
-          ]).then(function (r) {
-            var has = {};
-            (r[1] || []).forEach(function (x) { has[x.client_id] = 1; });
-            var none = (r[0] || []).filter(function (c) { return !has[c.id]; });
-            return { count: none.length, rows: none.map(function (c) {
-              return { name: c.name, meta: '', fig: '', age: '', url: '/admin/?s=reports', section: 'reports' };
-            }) };
+          var SM = window.ADspaceSmReport;
+          var STAGE = { none: 'Not started', draft: 'Draft', confirmed: 'Confirmed' };
+          var RANK = { none: 0, draft: 1, confirmed: 2 };
+          return db.rpc('sm_reports_owed', { p_period: lastMonth().key }).then(rows).then(function (d) {
+            var items = (d && d.items) || [];
+            var done = items.filter(function (x) { return x.status === 'published'; }).length;
+            var asked = items.filter(function (x) { return x.status === 'review'; }).length;
+            var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
+            open.sort(function (a, b) {
+              if (a.late !== b.late) return a.late ? -1 : 1;
+              if (a.late && a.due !== b.due) return a.due < b.due ? -1 : 1;
+              if (RANK[a.status] !== RANK[b.status]) return RANK[a.status] - RANK[b.status];
+              return String(a.brand || a.client).localeCompare(String(b.brand || b.client));
+            });
+            return { count: open.length, warn: open.some(function (x) { return x.late; }),
+              empty: !items.length ? '' : done === items.length ? 'Every report is published.' : 'The rest are waiting for confirmation.',
+              progress: items.length ? { done: done, total: items.length,
+                word: done + ' of ' + items.length + ' published' + (asked ? ' · ' + asked + ' in review' : '') } : null,
+              rows: open.map(function (x) {
+                var over = x.late ? Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)) : 0;
+                var c = { slug: x.slug, id: x.client_id };
+                return { name: x.brand || x.client,
+                         meta: [x.brand ? x.client : '', SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind,
+                                x.assignee].filter(Boolean).join(' · '),
+                         fig: STAGE[x.status] || x.status,
+                         age: x.late ? daysWord(over) + ' late' : 'Due ' + dateWord(x.due), ageTone: x.late ? 'warn' : '',
+                         url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
+                           : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
+                           : may('clients') ? clientUrl(c, 'reports') : '/admin/?s=reports',
+                         section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
+              }) };
           });
         } }
     ] },
@@ -458,21 +485,49 @@
     var count = el.querySelector('.ovw-count');
     count.hidden = !out.count;
     count.textContent = String(out.count || '');
-    count.className = 'ovw-count tone' + (out.count && card.warn ? ' is-warn' : '');
-    if (card.onCount) card.onCount(out.count || 0, Boolean(card.warn));
+    /* A card late only sometimes says so from what it read. */
+    var late = out.warn != null ? Boolean(out.warn) : Boolean(card.warn);
+    count.className = 'ovw-count tone' + (out.count && late ? ' is-warn' : '');
+    if (card.onCount) card.onCount(out.count || 0, late);
     var body = el.querySelector('.ovw-body');
-    if (!out.rows.length) { UI.emptyLine(body, card.empty || 'Nothing waiting.'); return; }
-    body.innerHTML = '<div class="ovw-rows">' + out.rows.slice(0, SHOWN).map(function (r, i) {
-      return '<button class="ovw-row" type="button" data-i="' + i + '">' +
+    /* A whole being completed (a month's reports) says how far it has got,
+       the ring and the count, over the list of what is left. */
+    var prog = '';
+    if (out.progress) {
+      var pr = out.progress, full = pr.done >= pr.total;
+      var rad = 8, len = 2 * Math.PI * rad, off = len * (1 - (pr.total ? pr.done / pr.total : 0));
+      prog = '<p class="ringline ovw-progress">' + (full ? RING_DONE
+        : '<svg class="ring" viewBox="0 0 20 20" aria-hidden="true"><circle class="ring-track" cx="10" cy="10" r="' + rad + '"/>' +
+          '<circle class="ring-arc" cx="10" cy="10" r="' + rad + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>') +
+        '<span>' + esc(pr.word) + '</span></p>';
+    }
+    if (!out.rows.length) {
+      UI.emptyLine(body, out.empty || card.empty || 'Nothing waiting.');
+      if (prog) body.insertAdjacentHTML('afterbegin', prog);
+      return;
+    }
+    var rowHtml = function (r, i) {
+      return '<button class="ovw-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
         '<span class="ovw-who"><b>' + esc(r.name) + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
         ((r.fig || r.age) ? '<span class="ovw-fig">' + (r.fig ? '<b' + (r.figTone ? ' class="is-' + r.figTone + '"' : '') + '>' + esc(r.fig) + '</b>' : '') +
-          (r.age ? '<small>' + esc(r.age) + '</small>' : '') + '</span>' : '') +
+          (r.age ? '<small' + (r.ageTone ? ' class="is-' + r.ageTone + '"' : '') + '>' + esc(r.age) + '</small>' : '') + '</span>' : '') +
         '</button>';
-    }).join('') + '</div>' +
-      (out.rows.length > SHOWN && card.all ? '<p class="ovw-more">' + (out.rows.length - SHOWN) + ' more</p>' : '');
+    };
+    /* Five rows, then the rest a press away in the card itself, never in
+       another section that lists something else (the user, 2026-10-07). */
+    var more = out.rows.length - SHOWN;
+    body.innerHTML = prog + '<div class="ovw-rows">' + out.rows.map(rowHtml).join('') + '</div>' +
+      (more > 0 ? '<button class="btn btn-quiet btn-sm ovw-more" type="button" aria-expanded="false">Show ' + more + ' more</button>' : '');
     Array.prototype.forEach.call(body.querySelectorAll('.ovw-row'), function (b) {
       var r = out.rows[Number(b.getAttribute('data-i'))];
       b.addEventListener('click', function () { go(r.url, r.section); });
+    });
+    var mb = body.querySelector('.ovw-more');
+    if (mb) mb.addEventListener('click', function () {
+      var first = null;
+      Array.prototype.forEach.call(body.querySelectorAll('.ovw-row[hidden]'), function (b) { b.hidden = false; if (!first) first = b; });
+      mb.remove();
+      if (first) first.focus();
     });
   }
 
