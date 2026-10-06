@@ -1007,3 +1007,7 @@ The user: opening another client's set in Content Review still showed the previo
 
 ### 2026-10-06 · Platforms in their own colours on the report's chart
 The user, releasing a report: Views by week stacked its platforms in three greys, the third repeated past the third platform, and two accounts set to Other both read "Other". The brand stays monochrome; the platforms are not: each takes its own colour (Facebook #1877F2, Instagram #E1306C, the two together Meta's #0866FF, TikTok #111111, rednote #FF2442), a platform with none or one already used takes the next of a set kept apart from them, and only the marks are coloured. An account on a platform the list does not name is named by the account, in the chart and every table.
+
+### 2026-10-06 · White label is chosen on the report; platforms by name
+The user corrected the Partners model: the partner (The Peakle Creative) is the client, billed and in the portal; ADspace services the partner's own clients (SKS City Mall JBCC) under the partner's name. So a partner no longer holds clients: the report, still under the partner, chooses in its ⋯ the partner's logo and the brand it covers (`sm_reports.partner_id`, `brand_name`, `sm_report_white_label`), and the snapshot names the brand with no client logo. The partner sheet is a name and a logo.
+Asked for Douyin, Pinterest and 大众点评, and for Other to take a typed name: the platform check would need a statement the connector holds for the SQL Editor, so the names are kept as `other` with `platform_name` and named everywhere through `platWord()`.

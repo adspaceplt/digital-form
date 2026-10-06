@@ -2142,21 +2142,30 @@ Each line is a rule that broke once. Its reason is in the archive.
     started under a temporary client to an Active one with no report of its
     kind for a day of its period (`not-draft`, `not-active`, `exists`); its
     rows and AI uses follow it, filed `report.saved` under both clients.
-  - Partners (`2026-10-06-report-partners.sql`; the Reports bar's ⋯, an
-    admin's or Reports Full Access): ADspace's white-label work for a
-    partner. A partner (`report_partners`: name, a landscape logo kept as a
-    PNG data address drawn down to 1200 by 400, active) holds its clients
-    (`report_partner_clients`, one row a client; a tick moves a client from
-    another partner); `report_partner_save` / `report_partner_set_active`
-    are the only writes, filed `report.saved` under Partners. A partner is
-    stood down, never removed. `sm_report_snapshot` sends the client's
-    active partner, so the PDF draws its logo at the head of every page in
-    place of the ADspace wordmark (15pt high on the top margin, two fifths
-    of the line at most; the name in the wordmark's face where no logo is
-    held) and a published version keeps it; everything else stays
-    ADspace's (the glossary link, the file's properties: the user, the
-    partner's clients know who does the work). The report head reads
-    `{partner} logo`.
+  - White label (`2026-10-06-report-white-label.sql`): the partner is the
+    client (billed, with its portal) and ADspace services the partner's own
+    clients under its name, so the report stays under the partner and the
+    report chooses, in its head's ⋯ (White label, an admin's or Reports
+    Full Access, any report not published), the partner's logo and the
+    brand it covers (`sm_reports.partner_id`, `brand_name`;
+    `sm_report_white_label`, filed from and to). A partner is a name and a
+    landscape logo (Partners in the Reports bar's ⋯; `report_partners`, a
+    PNG drawn down to 1200 by 400; `report_partner_save` /
+    `report_partner_set_active`, filed under Partners; stood down, never
+    removed; `report_partner_clients` is no longer read).
+    `sm_report_snapshot` sends the report's partner and, with a brand, the
+    brand as the client's name and no client logo; the PDF draws the logo at
+    the head of every page in place of the ADspace wordmark (15pt high, two
+    fifths of the line at most; the name in the wordmark's face where no
+    logo is held) and a published version keeps both. Everything else stays
+    ADspace's (the glossary link, the file's properties). The report head
+    reads `For {brand} · {partner} logo`.
+  - An account on a platform the database's list does not hold is kept as
+    `other` with `sm_report_platforms.platform_name`
+    (`2026-10-06-report-platform-names.sql`, carried forward by
+    `sm_report_create`): the account sheet offers Douyin, Pinterest and
+    大众点评 by name, and Other asks for the Platform name (required).
+    `platWord()` (both scripts) names it everywhere; never "Other".
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
