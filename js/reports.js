@@ -113,7 +113,7 @@
     'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
-    'not-finished': 'This report is not finished yet.',
+    'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
     'has-versions': 'A report the client has seen cannot be deleted. Unpublish it instead.',
     'confirm-mismatch': 'That does not match the period.',
@@ -198,7 +198,7 @@
             '<span class="rp-name"><b>' + esc(periodWord(x.period_start, x.period_end)) + '</b><small>' + esc(TYPE_WORD[x.kind] || '') + '</small></span>' +
             '<span class="rp-state">' + chip(live ? 'published' : 'confirmed') + '</span>' +
             '<span class="rp-ver">' + (live ? 'Version ' + x.live_version + ', ' + esc(stampWord(x.published_at))
-                                             : 'Version ' + x.version_no + ', not yet published') + '</span>' +
+                                             : 'Version ' + x.version_no + ', not published') + '</span>' +
             '<span class="rp-out-act"><button class="btn btn-sm" type="button" data-a="dl">' + ICON.file + 'Download</button></span></div>';
         }).join('') + '</div>';
       var m = host.querySelector('[data-m="out"]');
@@ -210,7 +210,11 @@
             var got = x.data || {};
             if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
             if (got.snapshot.error) throw new Error(got.snapshot.error);
-            return saveFile(got.snapshot);
+            /* A published version: the file kept as it went out. */
+            if (!got.version_id) return saveFile(got.snapshot);
+            return versionFile({ id: got.version_id, kept: got.kept === true }, client.id,
+              function () { return Promise.resolve(got.snapshot); }, SM() ? SM().fileName(got.snapshot) : 'Report.pdf')
+              .then(function (f) { return handOver(f, null); });
           }).then(function (warn) {
             b.disabled = false;
             say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
@@ -228,16 +232,109 @@
   function saveFile(snap, tab) {
     if (!SM()) return Promise.reject(new Error('The report engine did not load. Refresh the page.'));
     return SM().render(snap).then(function (out) {
-      var blob = new Blob([out.bytes], { type: 'application/pdf' });
-      var url = URL.createObjectURL(blob);
-      if (tab && !tab.closed) tab.location.href = url;
-      else {
-        var a = document.createElement('a');
-        a.href = url; a.download = SM().fileName(snap);
-        document.body.appendChild(a); a.click(); a.remove();
-      }
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-      return out.warnings && out.warnings.length ? out.warnings.join(' ') : '';
+      return handOver({ blob: new Blob([out.bytes], { type: 'application/pdf' }), name: SM().fileName(snap),
+        warn: out.warnings && out.warnings.length ? out.warnings.join(' ') : '' }, tab);
+    });
+  }
+  /* The file to the tab opened at the press, else saved under its name. */
+  function handOver(file, tab) {
+    var url = URL.createObjectURL(file.blob);
+    if (tab && !tab.closed) tab.location.href = url;
+    else {
+      var a = document.createElement('a');
+      a.href = url; a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    return file.warn || '';
+  }
+
+  /* KEPT AS SENT (the user, 2026-10-06: "if our client received version at
+     (2026/10/06) but in the future ... there is a new version, i no longer
+     can fetch back the 2026/10/06 version"). Once a version is published,
+     its PDF is drawn from the version's frozen snapshot and stored once, in
+     the bucket's private folder for its client (`sm_report_keep_file`). From
+     then on that file is what the team and the client download, whatever
+     changes later in how reports are drawn; it comes back through
+     sign-download as the reader, never as a link. A version with no file
+     yet (published before this, or its first keep failed) is drawn from its
+     own snapshot and kept then. */
+  var keeping = {};
+  function keptOf(v) {
+    if (!v) return false;
+    if (v.kept === true) return true;
+    return Boolean(v.file_key && v.file_at && v.published_at && new Date(v.file_at) >= new Date(v.published_at));
+  }
+  function keepFile(v, clientId, bytes) {
+    var s3 = (window.ADSPACE_CONFIG || {}).s3;
+    if (!v || !v.id || keptOf(v) || !s3 || !s3.privateInvoices || !bridge.putToS3 || !may('work')) return Promise.resolve(null);
+    if (keeping[v.id]) return keeping[v.id];
+    var job = db.functions.invoke(s3.functionName || 'sign-upload', {
+      body: { ext: 'pdf', clientId: clientId, size: bytes.length, private: true }
+    }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || (r.error && r.error.message) || 'refused');
+      return bridge.putToS3(d.uploadUrl, new Blob([bytes], { type: 'application/pdf' }), 'application/pdf').then(function () {
+        return db.rpc('sm_report_keep_file', { p_version: v.id, p_key: d.key });
+      });
+    }).then(function (res) {
+      var d = res.data || {};
+      if (res.error || d.error) throw new Error(said(res.error || d));
+      v.kept = true;
+      (st.openVersions || []).forEach(function (x) { if (x.id === v.id) x.kept = true; });
+      return d;
+    });
+    keeping[v.id] = job;
+    job.catch(function () { return null; }).then(function () { delete keeping[v.id]; });
+    return job;
+  }
+  /* The kept file's bytes, through sign-download as the reader. */
+  function readKept(vid) {
+    return db.functions.invoke('sign-download', { body: { reportVersion: vid } }).then(function (r) {
+      var b = r && r.data;
+      if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('kept-unread');
+      return b.type === 'application/pdf' ? b : new Blob([b], { type: 'application/pdf' });
+    });
+  }
+  /* One published version's file: the kept file where it stands, else drawn
+     from the version's snapshot and kept without holding the save. Resolves
+     with { blob, name, warn }; `name` names a kept file, whose snapshot is
+     not read. */
+  function versionFile(v, clientId, snapOf, name) {
+    var draw = function (first) {
+      return snapOf().then(function (snap) {
+        if (!SM()) throw new Error('The report engine did not load. Refresh the page.');
+        return SM().render(snap).then(function (out) {
+          keepFile(v, clientId, out.bytes).catch(function () { return null; });
+          return { blob: new Blob([out.bytes], { type: 'application/pdf' }), name: SM().fileName(snap),
+            warn: [first].concat(out.warnings || []).filter(Boolean).join(' ') };
+        });
+      });
+    };
+    if (!keptOf(v)) return draw('');
+    return readKept(v.id).then(function (b) { return { blob: b, name: name, warn: '' }; })
+      .catch(function () { return draw('Drawn again: the kept file did not open.'); });
+  }
+  function versionSnap(vid) {
+    return db.from('sm_report_versions').select('snapshot').eq('id', vid).maybeSingle().then(function (x) {
+      if (x.error || !x.data) throw new Error(x.error ? x.error.message : 'not-found');
+      return x.data.snapshot;
+    });
+  }
+  /* A report's file name from its row, as the PDF names itself. */
+  function fileNameOf(r, clientName) {
+    return SM() ? SM().fileName({ report: { client_name: r.brand_id && r.brand_name ? r.brand_name : clientName,
+      kind: r.kind, title: r.title, period_start: r.period_start, period_end: r.period_end } }) : 'Report.pdf';
+  }
+  /* Right after Publish: the version drawn from its frozen snapshot and kept. */
+  function keepPublished(vid, clientId) {
+    if (!vid) return Promise.resolve(null);
+    return db.from('sm_report_versions').select('id, published_at, file_key, file_at, snapshot').eq('id', vid).maybeSingle().then(function (x) {
+      if (x.error || !x.data) throw new Error(x.error ? x.error.message : 'not-found');
+      var v = x.data;
+      if (keptOf(v)) return null;
+      if (!SM()) throw new Error('The report engine did not load.');
+      return SM().render(v.snapshot).then(function (out) { return keepFile(v, clientId, out.bytes); });
     });
   }
   function openTab() {
@@ -419,7 +516,7 @@
       db.from('sm_reports').select('*').eq('id', id).maybeSingle(),
       db.from('sm_report_platforms').select('*').eq('report_id', id).order('position', { ascending: true }),
       db.from('sm_report_posts').select('*').eq('report_id', id).order('posted_on', { ascending: true }).order('position', { ascending: true }),
-      db.from('sm_report_versions').select('id, version_no, published_at, published_by, withdrawn_at, withdraw_reason').eq('report_id', id).order('version_no', { ascending: false })
+      db.from('sm_report_versions').select('id, version_no, published_at, published_by, withdrawn_at, withdrawn_by, withdraw_reason, file_key, file_at').eq('report_id', id).order('version_no', { ascending: false })
     ]).then(function (got) {
       var box = host.querySelector('.rp-editbox');
       var bad = got.filter(function (r) { return r.error; })[0];
@@ -522,9 +619,9 @@
   }
   function stepNote(k) {
     var r = st.open || {};
-    if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None yet';
-    if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None yet';
-    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None yet';
+    if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None';
+    if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None';
+    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None';
     if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
     if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
     return (STATUS[r.status] || STATUS.draft)[0];
@@ -916,6 +1013,8 @@
     /* Download (2026-10-07): the file itself under its own name, to send;
        Preview PDF's tab holds a passing address and the browser's own name. */
     var items = ['<button class="kmenu-item" type="button" data-a="download">Download</button>'];
+    /* Every version the client was given, each its own file (2026-10-07). */
+    if ((st.openVersions || []).length) items.push('<button class="kmenu-item" type="button" data-a="versions">Versions</button>');
     /* A report in review from before reviewers is given one the same way. */
     if (r.status === 'review' && may('work') &&
         (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
@@ -1031,7 +1130,20 @@
     });
     on('publish', function (b) {
       window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download it in their portal.', go: 'Publish' },
-        function () { stepCall('sm_report_publish', { p_id: r.id }, 'Published to the client portal.', b, m); });
+        function () {
+          b.disabled = true;
+          db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) {
+            b.disabled = false;
+            var d = res.data || {};
+            if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+            /* The version's PDF is kept as it goes out (2026-10-07). */
+            reopen('Published to the client portal.', function () {
+              keepPublished(d.version_id, r.client_id).catch(function (e) {
+                say(st.host && st.host.querySelector('.rp-head [data-m="head"]'), 'Published to the client portal. PDF not kept: ' + said(e), 'warn');
+              });
+            });
+          }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+        });
     });
     on('revise', function (b) {
       window.ADspaceConfirm.ask({ title: 'Revise this report?', body: 'Version ' + (r.version_no + 1) + ' starts as a draft. The client keeps version ' + r.version_no + ' until it is published.', go: 'Revise' },
@@ -1050,6 +1162,10 @@
     on('download', function (b) {
       b.closest('.kmenu').hidden = true;
       downloadPdf(box.querySelector('.rp-head [data-a="pdf"]') || b, m, true);
+    });
+    on('versions', function (b) {
+      b.closest('.kmenu').hidden = true;
+      versionsSheet(box.querySelector('.rp-head [data-a="more"]'));
     });
     on('more', function (b) {
       var menu = b.parentNode.querySelector('.kmenu');
@@ -1213,16 +1329,15 @@
     var tab = save ? null : openTab();
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
-    var get = r.status === 'published' && live
-      ? db.from('sm_report_versions').select('snapshot').eq('id', live.id).maybeSingle().then(function (x) {
-          if (x.error || !x.data) throw new Error(x.error ? x.error.message : 'not-found');
-          return x.data.snapshot;
-        })
+    /* A published report hands over the file kept as it went out. */
+    var job = r.status === 'published' && live
+      ? versionFile(live, r.client_id, function () { return versionSnap(live.id); }, fileNameOf(r, st.client && st.client.name))
+          .then(function (f) { return handOver(f, tab); })
       : db.rpc('sm_report_snapshot', { p_id: r.id, p_final: false }).then(function (x) {
           if (x.error || (x.data && x.data.error)) throw new Error(x.error ? x.error.message : x.data.error);
           return x.data;
-        });
-    get.then(function (snap) { return saveFile(snap, tab); }).then(function (warn) {
+        }).then(function (snap) { return saveFile(snap, tab); });
+    job.then(function (warn) {
       btn.disabled = false;
       say(m, warn ? (tab && !tab.closed ? 'Opened. ' : 'Downloaded. ') + warn : (tab && !tab.closed ? '' : 'Downloaded.'), warn ? 'warn' : 'ok');
       askSent();
@@ -1233,6 +1348,41 @@
     });
   }
 
+  /* VERSIONS (2026-10-07): every version the client was given, newest
+     first, each with when and by whom it went out, whether the portal shows
+     it or it was taken off and why, and its own file as it went out. */
+  function versionsSheet(opener) {
+    var r = st.open;
+    var box = sheetShell('rpVerSheet', 'Versions', '<div data-m="vers"></div>',
+      '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
+    var host = box.querySelector('[data-m="vers"]'), m = box.querySelector('[data-m="sheet"]');
+    var vers = (st.openVersions || []).slice().sort(function (a, b) { return b.version_no - a.version_no; });
+    var live = vers.filter(function (v) { return !v.withdrawn_at; })[0];
+    say(m, '');
+    /* A line of parts wraps between its parts; the reason, being typed,
+       breaks where it must. */
+    var nb = function (t) { return '<span class="nb">' + esc(t) + '</span>'; };
+    host.innerHTML = '<div class="rp-vlist">' + vers.map(function (v) {
+      var meta = [nb('Published ' + stampWord(v.published_at)) + (v.published_by ? ' ' + nb('by ' + v.published_by) : '')];
+      if (v.withdrawn_at) meta.push(nb('Unpublished ' + stampWord(v.withdrawn_at)) + (v.withdraw_reason ? ': ' + esc(v.withdraw_reason) : ''));
+      else if (live && v.id === live.id) meta.push(nb('On the client portal'));
+      return '<div class="rp-vrow" data-v="' + esc(v.id) + '">' +
+        '<span class="rp-name"><b>Version ' + v.version_no + '</b><small>' + meta.join(' · ') + '</small></span>' +
+        '<span class="rp-vact"><button class="btn btn-sm" type="button" data-a="vdl">' + ICON.file + 'Download</button></span></div>';
+    }).join('') + '</div>';
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="vdl"]'), function (b) {
+      b.addEventListener('click', function () {
+        var v = vers.filter(function (x) { return x.id === b.closest('[data-v]').getAttribute('data-v'); })[0];
+        if (!v) return;
+        b.disabled = true; say(m, 'Drawing the PDF…');
+        versionFile(v, r.client_id, function () { return versionSnap(v.id); }, fileNameOf(r, st.client && st.client.name))
+          .then(function (f) { return handOver(f, null); })
+          .then(function (warn) { b.disabled = false; say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok'); })
+          .catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+      });
+    });
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
 
   // ---- Accounts ----------------------------------------------------------------------
   function growthOf(a) {
@@ -3718,7 +3868,7 @@
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on').order('period_start', { ascending: false }).then(function (r) {
+    db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on').order('period_start', { ascending: false }).then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
       Promise.all([clientsReady, loadNames()]).then(paintHub);
@@ -3886,7 +4036,7 @@
   }
   /* Read the list again after an act, keeping the ticks that still stand. */
   function rereadHub() {
-    return db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on')
+    return db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on')
       .order('period_start', { ascending: false }).then(function (r) {
         if (!r.error) hub.rows = r.data || [];
         paintHub();
@@ -3945,12 +4095,19 @@
     window.ADspaceConfirm.ask({ title: 'Publish ' + plural(rows.length, 'report') + ' to the client portal?',
       body: 'Each client can read theirs from now.', go: 'Publish' },
       function () {
+        var unkept = 0;
         eachOf(rows, function (r) {
-          return db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) { var d = res.data || {}; return res.error || d.error ? said(res.error || d) : null; });
+          return db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) {
+            var d = res.data || {};
+            if (res.error || d.error) return said(res.error || d);
+            /* Each version's PDF is kept as it goes out (2026-10-07). */
+            return keepPublished(d.version_id, r.client_id).catch(function () { unkept++; }).then(function () { return null; });
+          });
         }).then(function (out) {
           setPicking(false);
           rereadHub().then(function () {
-            say($('rhBulkMsg'), (out.ok.length ? plural(out.ok.length, 'report') + ' published.' : '') + badWord(out), out.bad.length ? 'warn' : 'ok');
+            say($('rhBulkMsg'), (out.ok.length ? plural(out.ok.length, 'report') + ' published.' : '') + badWord(out) +
+              (unkept ? ' PDF not kept for ' + plural(unkept, 'report') + '.' : ''), out.bad.length || unkept ? 'warn' : 'ok');
           });
         });
       });
@@ -3965,18 +4122,20 @@
     eachOf(rows, function (r) {
       i++;
       say($('rhBulkMsg'), 'Downloading ' + i + ' of ' + rows.length + '…');
+      /* A published report: the file kept as it went out. */
       var get = r.status === 'published'
-        ? db.from('sm_report_versions').select('snapshot, version_no, withdrawn_at').eq('report_id', r.id).order('version_no', { ascending: false }).then(function (x) {
+        ? db.from('sm_report_versions').select('id, version_no, published_at, withdrawn_at, file_key, file_at').eq('report_id', r.id).order('version_no', { ascending: false }).then(function (x) {
             if (x.error) throw new Error(x.error.message);
             var live = (x.data || []).filter(function (v) { return !v.withdrawn_at; })[0];
-            if (!live || !live.snapshot) throw new Error('no published version');
-            return live.snapshot;
+            if (!live) throw new Error('no published version');
+            return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, fileNameOf(r, (hub.byClient[r.client_id] || {}).name))
+              .then(function (f) { return handOver(f, null); });
           })
         : db.rpc('sm_report_snapshot', { p_id: r.id, p_final: false }).then(function (x) {
             if (x.error || (x.data && x.data.error)) throw new Error(x.error ? x.error.message : x.data.error);
-            return x.data;
+            return saveFile(x.data, null);
           });
-      return get.then(function (snap) { return saveFile(snap, null); }).then(function () {
+      return get.then(function () {
         return new Promise(function (ok) { setTimeout(function () { ok(null); }, 350); });
       });
     }).then(function (out) {

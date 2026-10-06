@@ -1459,7 +1459,7 @@
   function paintMine() {
     var box = $('mineList');
     if (!box || !st.mine) return;
-    if (!st.mine.length) { UI.emptyLine(box, 'No reviews shared yet.'); return; }
+    if (!st.mine.length) { UI.emptyLine(box, 'No reviews.'); return; }
     box.innerHTML = '';
     var G = window.ADspaceGroup;
     box.appendChild(G.section({
@@ -1516,7 +1516,7 @@
     var people = ((st.month && st.month.people) || []).filter(function (p) {
       return p.review && p.review.status !== 'draft';
     });
-    if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + ' yet.', 'warn'); return; }
+    if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + '.', 'warn'); return; }
     btn.disabled = true;
     msg('perfMsg', 'Drawing ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
     var recs = [], left = people.length;

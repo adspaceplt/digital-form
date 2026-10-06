@@ -14,6 +14,13 @@
  * An older invoice is a public CloudFront address and is handed back as it
  * is. Nothing here writes or deletes.
  *
+ * A report's kept PDF (2026-10-07) comes back through here as bytes, never
+ * as a link: the caller sends { reportVersion } with their own sign-in (a
+ * colleague, or the client's portal contact), the key is what
+ * `sm_report_file_key` answers them, and the file is read from the bucket
+ * with the upload key and streamed back, so the page saves it under its own
+ * name exactly as it went out.
+ *
  * Once CloudFront serves `private/*` behind the portal's key group
  * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
  * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
@@ -100,12 +107,38 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { campaignId?: string; token?: string; passcode?: string };
+  let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
   const url = Deno.env.get('SUPABASE_URL')!;
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
   let stored = '';
+
+  if (body.reportVersion) {
+    // A report's kept PDF: the database answers the caller as themselves.
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const version = String(body.reportVersion);
+    if (!UUID.test(version)) return json({ error: 'bad_version' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('sm_report_file_key', { p_version: version });
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
+    const key = String(data.key || '');
+    if (!PRIVATE_KEY.test(key)) return json({ error: 'bad_key' }, 400, origin);
+    const aws = new AwsClient({
+      accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+      secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+      region: Deno.env.get('S3_REGION')!,
+      service: 's3'
+    });
+    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
+    return new Response(got.body, {
+      status: 200,
+      headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store', ...cors(origin) }
+    });
+  }
 
   if (body.token) {
     // The client's page: the same answer the page itself was given.

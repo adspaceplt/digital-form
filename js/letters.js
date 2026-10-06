@@ -54,7 +54,7 @@
   function missingWord(m) {
     m = String(m || '');
     if (/could not find|does not exist|schema cache|function public\.(issue_document|register_add|document_set_void|document_delete|serial_taken)/i.test(m)) {
-      return 'The database has not been updated yet. Re-run supabase/schema.sql, then try again.';
+      return 'This needs a database update.';
     }
     return m || 'The request failed.';
   }
@@ -199,7 +199,7 @@
      placeholder nothing answers stays in the text, where the person sees it. */
   function fill(text, vars) {
     return String(text || '').replace(/\{([^{}]+)\}/g, function (m, k) {
-      var key = k.trim().toLowerCase();
+      var key = k.trim().toLowerCase().replace(/\s+/g, ' ');
       var v = vars && vars[key];
       return v == null || v === '' ? m : String(v);
     });

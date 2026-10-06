@@ -110,7 +110,7 @@
                 ['leads', 'Leads'], ['past', 'Past clients']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
-    register:  [['documents', 'Client documents'], ['hr', 'HR Letters']],
+    register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
        campaigns log to the team opened every client's billing change and
@@ -159,7 +159,7 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1 };
+    'team.announce': 1, 'register.types': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
@@ -176,7 +176,7 @@
     'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage'], 'reports.whitelabel': ['work'],
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
-    'reports.ai': ['work'], 'team.announce': ['work'],
+    'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -348,7 +348,7 @@
     }
 
     if (!all.length) {
-      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>Nobody on the team yet.</b>' +
+      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No members.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first member</button></div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(null, this); });
       return;
@@ -757,7 +757,7 @@
      what the database's own checks open at that level. */
   var DESC = {
     ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
-           work: 'Also create tasks and bulk add a month.', manage: 'Also reassign and delete tasks.' },
+           work: 'Also create tasks and add months.', manage: 'Also reassign and delete tasks.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
                work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',

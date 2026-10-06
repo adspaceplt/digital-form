@@ -668,7 +668,9 @@
     clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
-    register:  ['documents', 'hr'],
+    /* Document types (2026-10-07) is granted: an admin's by itself, any
+       other group's once set. */
+    register:  ['documents', 'hr', 'types'],
     /* The record is read a tab at a time, so its access is a part per tab.
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
@@ -698,7 +700,7 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1 };
+    'team.announce': 1, 'register.types': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -960,6 +962,7 @@
     $('sectionMine').hidden      = name !== 'mine';
     $('sectionHandbook').hidden  = name !== 'handbook';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
+    if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
     /* Content Review's list was read once; a client's name, handles or logo
@@ -1307,7 +1310,7 @@
         var sub = row.querySelector('[data-role="sub"]');
         if (!sub) return;
         if (b.error) { sub.innerHTML = '<span class="is-warn">Sets unavailable</span>'; return; }
-        if (!b.data.length) { sub.innerHTML = '<span class="muted">None yet</span>'; return; }
+        if (!b.data.length) { sub.innerHTML = '<span class="muted">No sets</span>'; return; }
         var live = b.data.filter(function (x) { return x.published; }).length;
         sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
           ' \u00b7 ' + live + ' published';
@@ -3329,7 +3332,7 @@
         // Neutral: nothing has happened yet. Green is kept for the import
         // actually finishing, so it means the same thing everywhere.
         msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found' +
-          (fresh ? ', ' + fresh + ' not imported yet.' : '. All of them are already in storage.'));
+          (fresh ? ', ' + fresh + ' to import.' : '. All of them are already in storage.'));
       });
     }).catch(function (e) {
       msg('driveMsg', e.name === 'AbortError'
@@ -3674,6 +3677,9 @@
      open is thrown away. */
   function clearPostView() {
     state.postView = null;
+    state.postPick = null;
+    state.postShown = [];
+    if ($('postBulk')) $('postBulk').hidden = true;
     $('postStages').hidden = true;
     $('postStages').innerHTML = '';
     $('pairNote').hidden = true;
@@ -3846,6 +3852,8 @@
       });
       box.appendChild(g);
     });
+    state.postShown = v.posts.filter(shown).map(function (p) { return p.id; });
+    paintPostBulk();
     if (!box.children.length) UI.emptyLine(box, 'No posts.');
   }
   $('postStages').addEventListener('click', function (e) {
@@ -4124,10 +4132,177 @@
     return v ? 'Cover for ' + v.label : 'No video';
   }
 
+  var CONFIRM_SAID = {
+    denied: 'Not allowed for this group.',
+    'no-post': 'That post is no longer there.',
+    'not-published': 'Publish the set first. The client sees only a published set.',
+    'already-approved': 'Already approved.',
+    'not-confirmed': 'There is no internal confirmation to take back.'
+  };
+  function confirmSaid(e) {
+    var k = String(e || '');
+    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This needs a database update.';
+    return CONFIRM_SAID[k] || k || 'Not saved.';
+  }
+
+  /* SELECT POSTS (the user, 2026-10-06: Select where many items are acted
+     on): the set's ⋯ turns each post shown into its tick, at the right edge
+     where its ⋯ was; the bar under the stage strip counts them and offers
+     what the ticked posts can take, each as one post takes it: Confirm
+     internally (a published set; posts not approved), Request re-approval
+     (posts the client approved), Delete (the count typed back). */
+  function setPostPicking(on) {
+    state.postPick = on ? {} : null;
+    msg('postBulkMsg', '');
+    if (state.postView) paintPostStages(); else paintPostBulk();
+  }
+  function pickedPosts() {
+    var v = state.postView;
+    return v ? v.posts.filter(function (p) { return state.postPick && state.postPick[p.id]; }) : [];
+  }
+  function postConfirmable(p) { var r = state.postView && state.postView.latest[p.id]; return !r || r.decision !== 'approved'; }
+  function postReaskable(p) { var r = state.postView && state.postView.latest[p.id]; return Boolean(r && r.decision === 'approved' && r.source !== 'team'); }
+  function paintPostBulk() {
+    var bar = $('postBulk');
+    if (!bar) return;
+    bar.hidden = !state.postPick || !state.postView;
+    if (bar.hidden) return;
+    var ids = state.postShown || [];
+    Object.keys(state.postPick).forEach(function (id) { if (ids.indexOf(id) < 0) delete state.postPick[id]; });
+    var n = Object.keys(state.postPick).length;
+    $('postBulkCount').textContent = n + ' selected';
+    var all = $('postBulkAll');
+    all.checked = n > 0 && n === ids.length;
+    all.indeterminate = n > 0 && n < ids.length;
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every post shown');
+    /* An act is drawn once a ticked post can take it, never greyed. */
+    var picked = pickedPosts();
+    $('postBulkConfirm').hidden = !(state.batch && state.batch.published) || !picked.some(postConfirmable);
+    $('postBulkReask').hidden = !picked.some(postReaskable);
+    $('postBulkDelete').disabled = !n;
+  }
+  /* One post after another, so a refusal is named against its post. */
+  function eachPost(list, act) {
+    var out = { ok: [], bad: [] };
+    return list.reduce(function (pr, p) {
+      return pr.then(function () {
+        return Promise.resolve(act(p)).then(function (err) { (err ? out.bad : out.ok).push({ p: p, err: err }); })
+          .catch(function (e) { out.bad.push({ p: p, err: (e && e.message) || String(e) }); });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+  function postsWord(n) { return n + (n === 1 ? ' post' : ' posts'); }
+  function badPosts(out) {
+    return out.bad.length ? out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
+      return MK.label(x.p) + ' (' + x.err + ')';
+    }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
+  }
+  function bulkPostConfirm() {
+    var list = pickedPosts().filter(postConfirmable);
+    if (!list.length) return;
+    var who = (state.client && state.client.name) || 'the client';
+    window.ADspaceConfirm.ask({
+      title: 'Confirm ' + postsWord(list.length) + ' internally?',
+      body: 'Each is approved on the client\u2019s behalf. Their review page reads Confirmed by ' + who + '.',
+      go: 'Confirm'
+    }, function () {
+      eachPost(list, function (p) {
+        return db.rpc('review_confirm', { p_post: p.id }).then(function (res) {
+          var d = (res && res.data) || {};
+          return res.error || d.error ? confirmSaid(res.error ? res.error.message : d.error) : null;
+        });
+      }).then(function (out) {
+        state.postPick = null;
+        loadPosts();
+        msg('postBulkMsg', badPosts(out), out.bad.length ? 'warn' : '');
+        if (!out.ok.length) return;
+        undoHere(postsWord(out.ok.length) + ' confirmed internally.', function () {
+          eachPost(out.ok.map(function (x) { return x.p; }), function (p) {
+            return db.rpc('review_revert_confirm', { p_post: p.id }).then(function (res) {
+              var d = (res && res.data) || {};
+              return res.error || d.error ? confirmSaid(res.error ? res.error.message : d.error) : null;
+            });
+          }).then(function (back) {
+            loadPosts();
+            msg('postBulkMsg', back.bad.length ? badPosts(back) : 'Confirmation reverted.', back.bad.length ? 'warn' : 'ok');
+          });
+        }, $('postBulk'));
+      });
+    });
+  }
+  function bulkPostReask() {
+    var list = pickedPosts().filter(postReaskable);
+    if (!list.length) return;
+    window.ADspaceConfirm.ask({
+      title: 'Request re-approval for ' + postsWord(list.length) + '?', go: 'Request re-approval',
+      field: { label: 'Reason for re-approval', rows: 3, need: 'Say why the client is asked again.',
+        placeholder: 'Why the client is being asked again. They read this.' }
+    }, function (why) {
+      eachPost(list, function (p) {
+        return db.from('posts').update({ review_reset_at: new Date().toISOString(), review_reset_note: why })
+          .eq('id', p.id).select('id').then(function (r) {
+            if (r.error) return r.error.message;
+            if (!(r.data || []).length) return 'refused';
+            logAction('reapproval.requested', state.client.name + ' \u2014 ' + MK.label(p), why);
+            return null;
+          });
+      }).then(function (out) {
+        state.postPick = null;
+        loadPosts();
+        msg('postBulkMsg', ((out.ok.length ? 'Re-approval requested for ' + postsWord(out.ok.length) + '. ' : '') + badPosts(out)).trim(),
+          out.bad.length ? 'warn' : 'ok');
+      });
+    });
+  }
+  function bulkPostDelete() {
+    var list = pickedPosts();
+    var n = list.length;
+    if (!n) return;
+    window.ADspaceConfirm.ask({
+      title: 'Delete ' + postsWord(n),
+      body: (n === 1 ? 'It leaves the client view, with its approval record.' : 'They leave the client view, with their approval records.') + ' There is no restore.',
+      go: 'Delete', tone: 'danger',
+      fields: [{ name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' }]
+    }, function () {
+      eachPost(list, function (p) {
+        return db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
+          if (r.error) return r.error.message;
+          if (!(r.data || []).length) return 'Not deleted. The database refused the request.';
+          logAction('post.deleted', state.client.name + ' \u2014 ' + state.batch.title, MK.label(p));
+          return null;
+        });
+      }).then(function (out) {
+        state.postPick = null;
+        loadPosts(); loadBatches();
+        msg('postBulkMsg', ((out.ok.length ? postsWord(out.ok.length) + ' deleted. ' : '') + badPosts(out)).trim(),
+          out.bad.length ? 'warn' : 'ok');
+      });
+    });
+  }
+  $('selectPosts').addEventListener('click', function () { shutSetMenu(); setPostPicking(true); });
+  $('postBulkDone').addEventListener('click', function () { setPostPicking(false); });
+  $('postBulkConfirm').addEventListener('click', bulkPostConfirm);
+  $('postBulkReask').addEventListener('click', bulkPostReask);
+  $('postBulkDelete').addEventListener('click', bulkPostDelete);
+  $('postBulkAll').addEventListener('change', function () {
+    var on = this.checked;
+    state.postPick = {};
+    if (on) (state.postShown || []).forEach(function (id) { state.postPick[id] = 1; });
+    paintPostStages();
+  });
+
   function savedRow(p, review, extra) {
     extra = extra || {};
     var row = document.createElement('div');
     row.className = 'saved';
+    row.addEventListener('click', function (e) {
+      if (!state.postPick || row.classList.contains('is-editing')) return;
+      if (e.target.closest && e.target.closest('input, button, a, textarea, select, label, video')) return;
+      var t = row.querySelector('.saved-pick input');
+      if (!t) return;
+      t.checked = !t.checked;
+      t.dispatchEvent(new Event('change'));
+    });
     var m = (p.media || [])[0] || {};
     var round = p.round || 1;
     /* A change after the client decided is the next round (the database
@@ -4176,7 +4351,10 @@
             ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
             : '') +
         '</div>' +
-        '<div class="saved-actions">' +
+        (state.postPick
+          ? '<label class="saved-actions saved-pick"><input class="trow-pick" type="checkbox"' + (state.postPick[p.id] ? ' checked' : '') +
+              ' aria-label="Select ' + esc(MK.label(p)) + '"></label>'
+          : '<div class="saved-actions">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
@@ -4195,7 +4373,21 @@
               ? '<button class="kmenu-item" data-a="reask" data-need="review.sets:work" type="button" role="menuitem">Request re-approval</button>' : '') +
             '<button class="kmenu-item is-danger" data-a="del" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>' +
           '</div>' +
-        '</div>';
+        '</div>');
+
+      /* Picking (Select posts, 2026-10-07): the row is ticked, not acted on. */
+      row.classList.toggle('is-picking', Boolean(state.postPick));
+      row.classList.toggle('is-picked', Boolean(state.postPick && state.postPick[p.id]));
+      if (state.postPick) {
+        var tick = row.querySelector('.saved-pick input');
+        tick.addEventListener('change', function () {
+          if (!state.postPick) return;
+          if (tick.checked) state.postPick[p.id] = 1; else delete state.postPick[p.id];
+          row.classList.toggle('is-picked', tick.checked);
+          paintPostBulk();
+        });
+        return;
+      }
 
       var mbtn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
       mbtn.addEventListener('click', function (e) {
@@ -4258,18 +4450,6 @@
 
       /* Confirm internally asks first, because the client's page will name
          who; Revert confirmation is the way back and never asks. */
-      var CONFIRM_SAID = {
-        denied: 'Not allowed for this group.',
-        'no-post': 'That post is no longer there.',
-        'not-published': 'Publish the set first. The client cannot see it yet.',
-        'already-approved': 'Already approved.',
-        'not-confirmed': 'There is no internal confirmation to take back.'
-      };
-      function confirmSaid(e) {
-        var k = String(e || '');
-        if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This needs a database update.';
-        return CONFIRM_SAID[k] || k || 'Not saved.';
-      }
       var conf = row.querySelector('[data-a="confirm"]');
       if (conf) conf.addEventListener('click', function () {
         shutPostMenus();

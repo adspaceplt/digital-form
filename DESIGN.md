@@ -40,11 +40,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | Caution, pending, reviewing, overdue |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#fff` | `#cf9350` / `#1d1408` | A warn fill |
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys or refuses** (danger items, the billing gate, blocked) |
-| `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The publish date on the My Work calendar, nowhere else |
+| `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
+| `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
 
 **How colour is used:**
@@ -175,7 +176,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
 | Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + view selects + the Filters mark (the filters in `#cmdPop` at a desk, `#cmdSheet` on a phone) + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
-| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb, a close mark in its head |
+| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name) and a close mark |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
@@ -198,6 +199,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
 | Status | A chip with the word (`.chip`, `.tone`); `select.state-select` (tinted) only for a state that moves as the work |
 | Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
+| Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
@@ -249,7 +251,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   column, never bleeding past the page's margins. A report's step strip
   (`.rp-steps`, each step's summary under its name) is one too. A record's strip
   (`.rectabs`, the client portal's too) and a strip inside a card (a set's
-  `.poststages`) run the width of that card at every width; a section's switch
+  `.poststages`) run the width of that card at every width, as the Overview's
+  does over its grid of cards; a section's switch
   (`.tabrow`, or a view strip on its own row: My HR, Performance, the Activity
   record) is its own width at a desk and the column's on a phone, up to a
   control sharing its line (`uxaudit` `strip`). Tabs in a full strip share what is spare
@@ -510,7 +513,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Messages:
   - a success is one or two words ("Saved.");
   - a validation names what is required;
-  - an empty list is two words ("No entries."), never "yet".
+  - an empty list is two words ("No entries."), and no line says "yet"
+    (Not issued, Not set, No reviews.).
   - A missing value in a table cell is a mute em dash (the one place a dash is
     allowed).
 - Count creators, not slots. rednote is lower case; never Xiaohongshu or

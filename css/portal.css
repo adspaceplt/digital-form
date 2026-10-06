@@ -136,7 +136,13 @@
   --ctl-text:   13px;
   --field-text: 14px;
   --shadow:     0 1px 2px rgba(19,24,26,.05);
-  --shadow-lift: 0 1px 2px rgba(19,24,26,.06), 0 12px 32px rgba(19,24,26,.10);
+  --shadow-lift: 0 1px 2px rgba(19,24,26,.08), 0 6px 14px rgba(19,24,26,.08), 0 20px 44px rgba(19,24,26,.16);
+  /* What floats over the page (a ⋯ menu, a popover card, the finder) has its
+     own ground and a crisper edge than a card's rule, so it never melts into
+     the card under it (the user, 2026-10-07: the section's information card
+     "blends with the background"). In dark it is one step up from a card. */
+  --raised:     #ffffff;
+  --line-lift:  rgba(19,24,26,.16);
 
   /* Motion. Three durations and two curves, the way there are six spaces and
      one accent: nineteen transitions had been typed at their point of use, in
@@ -238,7 +244,9 @@
     --veil:       rgba(23,23,23,.88);
     --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
-    --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
+    --shadow-lift: 0 1px 2px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.45), 0 20px 44px rgba(0,0,0,.6);
+    --raised:     #272727;
+    --line-lift:  rgba(255,255,255,.14);
   color-scheme: dark;
 }
 /* The wordmark is one flat dark colour on transparent, so it is inverted
@@ -1327,7 +1335,7 @@ textarea.input { resize: vertical; max-width: 100%; }
    the first, and one that follows the choice a sheet opens on (the kind of
    task, What in Bulk add), takes no rule. */
 .fsec { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
-.sheet-body > .fsec:first-child, .panelhead + .fsec, .panelhead + .hint + .fsec { margin-top: 0; padding-top: 0; border-top: 0; }
+.sheet-body > .fsec:first-child, .sheet-body > :first-child > .fsec:first-child, .panelhead + .fsec, .panelhead + .hint + .fsec { margin-top: 0; padding-top: 0; border-top: 0; }
 .kindseg + .fsec, .sheet-body > .row:first-child + .fsec { margin-top: 20px; padding-top: 0; border-top: 0; }
 .fsec-h {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
@@ -1338,8 +1346,8 @@ textarea.input { resize: vertical; max-width: 100%; }
    between rows starts after it. */
 .fsec > .fsec-h + .row, .fsec > .fsec-h + .seg-field { margin-top: 0; }
 /* A tick under a section's fields is a field of its own, on the same step. */
-.fsec > .tickline { margin-top: 16px; }
-.fsec > .fsec-h + .tickline { margin-top: 0; }
+.fsec > .tickline, .fsec > .tickstack { margin-top: 16px; }
+.fsec > .fsec-h + .tickline, .fsec > .fsec-h + .tickstack { margin-top: 0; }
 .sheet-body > .tickline:first-child + .fsec { margin-top: 20px; }
 /* The one quiet action a section adds with sits on its own line under it,
    its glyph on the section's own margin. */
@@ -1620,6 +1628,10 @@ textarea.input { resize: vertical; max-width: 100%; }
 /* Drop the whole spec rather than leave half a pixel count on screen. */
 .saved-meta .spec { overflow: hidden; white-space: nowrap; }
 .saved-actions { grid-area: actions; display: flex; align-items: center; gap: 4px; }
+/* Select posts (2026-10-07): the tick stands where the row's ⋯ was, the
+   whole row its target. */
+.saved-pick { justify-content: center; min-width: 38px; min-height: 38px; margin-block: -6px; cursor: pointer; }
+.saved.is-picking { cursor: pointer; }
 /* A round, quiet mark that only takes colour when you reach for it. */
 .iconbtn {
   width: 38px; height: 38px; flex: 0 0 auto; padding: 0;
@@ -3309,7 +3321,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .kmenu {
   position: absolute; top: 44px; right: 12px; z-index: 50;
   width: min(320px, calc(100vw - 48px));
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 5px; display: flex; flex-direction: column;
 }
@@ -5110,6 +5122,17 @@ body > .shell { width: 100%; }
 /* The mark that says the row goes somewhere, in the column the header leaves
    empty — the same chevron an engagement row on the record already uses. */
 .crm-c-go { width: 15px; height: 15px; color: var(--ink-mute); justify-self: end; }
+/* Select (2026-10-07): the tick leads the name cell, so the columns never
+   move; the header's Client label starts where the names then do, and the
+   cell lets the tick's focus ring show. */
+.cl-pick { flex: 0 0 auto; }
+.crm-row.client-row.is-picking { cursor: pointer; }
+.crm-row.client-row.is-picking .crm-c-name { overflow: visible; }
+.crm-row.client-row.is-picked { background: var(--line-soft); }
+/* The initials' disc is the picked fill's colour, so on a ticked row it
+   takes the card's ground and keeps its shape. */
+.crm-row.client-row.is-picked .cl-mark:not(.has-logo) { background: var(--card); }
+.crm-head.client-row.is-picking > :first-child { padding-left: 74px; }
 /* Restated after the desktop template above, or the five columns win on a
    phone and the name is squeezed to a letter. The state track is fixed here
    too: this rule is the later one, so an `auto` here undid the column the
@@ -5127,6 +5150,8 @@ body > .shell { width: 100%; }
   .cl-mark { flex-basis: 28px; width: 28px; height: 28px; font-size: 11px; }
   .crm-row.client-row .crm-c-name { gap: 10px; align-items: flex-start; }
   .crm-row.client-row .crm-c-meta { padding-left: 38px; }
+  .crm-row.client-row.is-picking .crm-c-meta { padding-left: 66px; }
+  .cl-pick { margin-top: 5px; }
   /* Restated, because the two-line rule above is later in the file than the
      phone rule that hides the cell: the date rides the meta line here. */
   .crm-c-seen { display: none; }
@@ -5398,6 +5423,7 @@ body.no-view-register-documents [data-need="register.documents:view"],
 body.no-manage-register-hr [data-need="register.hr:manage"],
 body.no-work-register-hr [data-need="register.hr:work"],
 body.no-view-register-hr [data-need="register.hr:view"],
+body.no-work-register-types [data-need="register.types:work"],
 /* The Activity record is read a tab at a time, so each tab is a part and
    draws only where that part is readable. The database decides which rows
    arrive (`activity_section()` and the read policy), so a tab a group cannot
@@ -5755,9 +5781,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   display: block; width: min(340px, calc(100vw - 16px)); padding: 14px 16px 10px;
 }
 .aboutpop-text {
-  margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
+  margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
 }
-.aboutpop-hide { min-width: 0; margin-left: -8px; }
 /* The `?` reopens the route's own line, so it belongs beside the count that
    says what is on the page, never out on its own. It is inserted into
    `.cmdbar-end` directly after the count, and that group's own gap spaces
@@ -8190,6 +8215,13 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
   .bulkbar-acts .btn, .bulkbar-acts .select { flex: 1 1 0; min-width: 0; }
 }
+/* A bar in a narrow pane states its own line (`data-narrow`), as a content
+   set's posts do beside their rail: laid as on a phone. Its acts share a line
+   as equal parts and never break a label; a third that will not fit takes
+   the next line whole. */
+.bulkbar.is-narrow .bulkbar-done { order: 1; margin-left: auto; }
+.bulkbar.is-narrow .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
+.bulkbar.is-narrow .bulkbar-acts .btn { flex: 1 1 0; min-width: max-content; white-space: nowrap; }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
 #qkForm .row { margin-top: 16px; }
@@ -8650,6 +8682,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-out-row.crm-head { padding: 12px 15px 8px; }
 .rp-out-row.crm-row { padding: 10px 15px; min-height: 52px; }
 .rp-out-act { display: flex; justify-content: flex-end; }
+/* Versions (2026-10-07): a row a version, its file at the right edge; the
+   meta (who published it, and why it came off) wraps, being words a person
+   typed. */
+/* Laid as the Handbook's Versions sheet lays them: flush with the sheet's
+   edges, a hairline between. */
+.rp-vrow {
+  display: grid; align-items: center; gap: 4px 12px; grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.rp-vrow:last-child { border-bottom: 0; }
+.rp-vrow .rp-name small { white-space: normal; overflow-wrap: anywhere; }
+.rp-vrow .rp-name .nb { white-space: nowrap; }
+.rp-vact { display: flex; justify-content: flex-end; }
 .rp-out-act .btn svg { width: 14px; height: 14px; }
 .is-narrow .rp-out-row.crm-head { display: none; }
 .is-narrow .rp-out-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "ver state"; gap: 4px 12px; }
@@ -8887,6 +8932,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    width as a record's strip does (the user, 2026-10-03). */
 .tabrow.poststages { width: 100%; }
 .tabrow.poststages .tab { flex: 1 0 auto; text-align: center; }
+/* The Overview's sections sit over a grid of cards the page's width, so its
+   strip runs that width at a desk too (the user, 2026-10-07: "the desktop
+   width and the strip width"). */
+.tabrow.ovwtabs { width: 100%; }
+.tabrow.ovwtabs .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {
   .tabrow { width: 100%; }
   .tabrow .tab { flex: 1 0 auto; text-align: center; }
@@ -9262,8 +9312,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .popcard { border-radius: var(--radius); box-shadow: var(--shadow-lift); }
 .popcard::before {
   content: ""; position: absolute; top: -7px; left: calc(var(--caret, 50%) - 6px);
-  width: 12px; height: 12px; background: var(--card);
-  border: 1px solid var(--line); border-right: 0; border-bottom: 0;
+  width: 12px; height: 12px; background: var(--raised);
+  border: 1px solid var(--line-lift); border-right: 0; border-bottom: 0;
   border-top-left-radius: 3px; transform: rotate(45deg);
 }
 .popcard.is-up::before { top: auto; bottom: -7px; transform: rotate(225deg); }
@@ -9281,9 +9331,15 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .popcard-x { margin: calc((20px - var(--ctl-h)) / 2) calc((16px - var(--ctl-h)) / 2) calc((20px - var(--ctl-h)) / 2) 0; }
 .kmenu.pushpop { gap: 8px; padding: 16px; }
 .popcard.is-dock .pushpop-acts .btn { min-height: var(--ctl-h); }
-.aboutpop.popcard { padding: 16px 16px 10px; }
-.aboutpop.is-dock { padding: 20px 20px 12px; }
+.aboutpop.popcard { padding: 14px 16px 16px; }
+.aboutpop.is-dock { padding: 18px 20px 20px; }
 .aboutpop.is-dock .aboutpop-text { font-size: 14px; }
+/* The card names what it explains: the information mark in the action
+   colour and the section's name, then its one sentence. */
+.aboutpop-head { margin-bottom: 6px; }
+.aboutpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action); stroke-width: 2; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
@@ -9539,7 +9595,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-fig b, .ovw-fig small { white-space: nowrap; }
 .ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .ovw-fig b.is-warn { color: var(--warn); }
-.ovw-more { margin: 8px 0 0; font-size: 13px; color: var(--ink-mute); }
+.ovw-fig small.is-warn { color: var(--warn); }
+/* A month's progress over the list of what is left: the ring and its words,
+   then the rows. */
+.ovw-progress { display: flex; margin: 0 0 4px; font-size: 13px; color: var(--ink-soft); }
+/* The rest of the list, a press away in the card: a quiet button whose words
+   sit on the rows' own edge, giving its padding back to the side and below. */
+.ovw-more.btn { min-width: 0; margin: 4px 0 -6px -13px; align-self: flex-start; }
 /* The empty and failed lines sit in the card as its content, not as a second
    card inside it. */
 .ovw-card .softpanel { background: none; border: 0; border-radius: 0; }
@@ -9563,6 +9625,23 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .tefmt.is-held .tickline > span { color: var(--ink-mute); }
 .tefmt-hours { width: 100%; text-align: right; }
 .tefmt-hours:disabled { visibility: hidden; }
+/* Document types (2026-10-07): laid as My Work's templates are, a group a
+   section; a type no longer offered carries its chip and fades, its Edit
+   kept whole. */
+.dtrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.dtrow:last-child { border-bottom: 0; }
+.dtrow-name { display: grid; gap: 2px; min-width: 0; }
+.dtrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dtrow-title b { font-weight: 600; overflow-wrap: anywhere; }
+.dtrow-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.dtrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.dtrow.is-off > .dtrow-name { opacity: .55; }
+/* A field the wording names, and how Issue asks for it. */
+.dtfields { display: grid; gap: 8px; }
+.dtfield { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: var(--ctl-h-sm); }
+.dtfield-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; font-size: 14px; }
+.dtfield-key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.is-tight .dtfield, .sheet-card.is-tight .dtfield { grid-template-columns: 1fr; gap: 6px; }
 
 /* A word or a value that acts inside a line of text (Change, a due date, a
    reference, Open the month) keeps its whole target, 38px at a desk and 44
@@ -9733,7 +9812,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   /* Over the question sheet too (#askSheet, 95): a long list asked inside
      a question opened under its scrim. */
   position: fixed; z-index: 96; display: flex; flex-direction: column;
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 6px; overflow: hidden;
   transform-origin: top center; animation: mk-menu-in var(--t) var(--ease-out);

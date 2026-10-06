@@ -199,7 +199,7 @@
   function missingWord(m) {
     m = String(m || '');
     if (/could not find|does not exist|schema cache|function public\.(issue_letter|letter_delete|letter_set_void)/i.test(m)) {
-      return 'The database has not been updated yet. Run the letter lifecycle migration, then try again.';
+      return 'This needs a database update.';
     }
     return m || 'The letter could not be issued.';
   }

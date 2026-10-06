@@ -345,7 +345,14 @@ the browser sends.
 
 ```
 private/{clientId}/{uuid}.pdf            a campaign's invoice, from 2026-10-02
+private/{clientId}/{uuid}.pdf            a published report version's PDF, from 2026-10-07
 ```
+
+Each published version of a report keeps its PDF here as it went out
+(2026-10-07): drawn in the console once it is published, stored once, and
+read back only as bytes through `sign-download` with the caller's own sign-in
+(the key from `sm_report_file_key`), never as a link. It needs nothing beyond
+5a's grant.
 
 Invoices uploaded before keep their public CloudFront address (nothing is
 moved or deleted). To close one, open the campaign → Finance → Remove PDF,

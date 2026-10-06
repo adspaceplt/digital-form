@@ -32504,3 +32504,471 @@ revoke all on function public.announcement_end(uuid, boolean) from public, anon;
 grant execute on function public.announcement_end(uuid, boolean) to authenticated;
 
 -- END OF ANNOUNCEMENTS --------------------------------------------------------
+
+-- ===========================================================================
+-- REPORT FILES KEPT — each published version of a report keeps the PDF it
+-- went out as, so a later change to how reports are drawn never changes a
+-- report a client was sent, and every earlier version can be fetched again.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after SOCIAL MEDIA REPORTS and CLIENT SCOPE.
+--
+-- WHAT CHANGED (the user, 2026-10-06: "if our client received version at
+-- (2026/10/06) but in the future maybe 2026/12/12 there is a new version, i
+-- no longer can fetch back the 2026/10/06 version")
+--   1. `sm_report_versions.file_key`, `file_at`, `file_by`: the PDF drawn
+--      from the version once it is published, stored in the bucket under
+--      `private/{client}/`, which is never served without a five-minute
+--      signature. A file stands for the publish it was drawn after
+--      (`file_at` not before `published_at`): a version taken off the portal
+--      and published again keeps the next file drawn instead.
+--   2. `sm_report_keep_file(p_version, p_key)`: Reports at Work, on a client
+--      the colleague sees; the key must sit under the report's own client; a
+--      version whose file stands answers `kept` with its own key and keeps
+--      it.
+--   3. `sm_report_file_key(p_version)`: what sign-download asks, as the
+--      caller. A colleague at Reports View, or Clients View, on a client they
+--      see: any version. A client's portal contact: only the version the
+--      portal shows. Anybody else is answered `not-found`.
+--   4. `portal_report` and `sm_report_file` say whether the version's file
+--      stands (`kept`); `sm_report_file` also names the version.
+--
+-- ROLLBACK
+--   Revoke execute on sm_report_keep_file(uuid, text) and
+--   sm_report_file_key(uuid) from authenticated, then run portal_report from
+--   SOCIAL MEDIA REPORTS and sm_report_file from CLIENT SCOPE again; the
+--   columns may stay unused.
+-- ===========================================================================
+
+alter table public.sm_report_versions add column if not exists file_key text;
+alter table public.sm_report_versions add column if not exists file_at timestamptz;
+alter table public.sm_report_versions add column if not exists file_by text;
+
+create or replace function public.sm_report_keep_file(p_version uuid, p_key text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v public.sm_report_versions;
+  v_client uuid;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.sm_report_versions where id = p_version for update;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select r.client_id into v_client from public.sm_reports r where r.id = v.report_id;
+  if v_client is null or not public.client_seen(v_client, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  if v.file_key is not null and v.file_at >= v.published_at then
+    return jsonb_build_object('ok', true, 'kept', true, 'key', v.file_key);
+  end if;
+  if coalesce(p_key, '') !~ ('^private/' || v_client::text || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$') then
+    return jsonb_build_object('error', 'bad-key');
+  end if;
+  update public.sm_report_versions set file_key = p_key, file_at = now(), file_by = me.name where id = v.id;
+  return jsonb_build_object('ok', true, 'key', p_key);
+end $$;
+revoke all on function public.sm_report_keep_file(uuid, text) from public, anon;
+grant execute on function public.sm_report_keep_file(uuid, text) to authenticated;
+
+create or replace function public.sm_report_file_key(p_version uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v public.sm_report_versions;
+  v_client uuid;
+begin
+  if auth.jwt() ->> 'email' is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  select * into v from public.sm_report_versions where id = p_version;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select r.client_id into v_client from public.sm_reports r where r.id = v.report_id;
+  if v_client is null then return jsonb_build_object('error', 'not-found'); end if;
+  if public.is_team() then
+    if not (public.allowed('reports', 'view') or public.allowed('clients', 'view'))
+       or not public.client_seen(v_client, 'view') then
+      return jsonb_build_object('error', 'not-found');
+    end if;
+  elsif v_client not in (select public.portal_clients())
+     or v.withdrawn_at is not null
+     or exists (select 1 from public.sm_report_versions x where x.report_id = v.report_id
+                 and x.withdrawn_at is null and x.version_no > v.version_no) then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if v.file_key is null or v.file_at < v.published_at then return jsonb_build_object('error', 'not-kept'); end if;
+  return jsonb_build_object('key', v.file_key);
+end $$;
+revoke all on function public.sm_report_file_key(uuid) from public, anon;
+grant execute on function public.sm_report_file_key(uuid) to authenticated;
+
+create or replace function public.portal_report(p_version uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v public.sm_report_versions;
+  cid uuid;
+begin
+  if auth.jwt() ->> 'email' is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  select * into v from public.sm_report_versions where id = p_version and withdrawn_at is null;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select client_id into cid from public.sm_reports where id = v.report_id;
+  if cid is null or cid not in (select public.portal_clients()) then return jsonb_build_object('error', 'not-found'); end if;
+  if exists (select 1 from public.sm_report_versions x where x.report_id = v.report_id
+              and x.withdrawn_at is null and x.version_no > v.version_no) then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  return jsonb_build_object('snapshot', v.snapshot,
+    'kept', v.file_key is not null and v.file_at >= v.published_at);
+end $$;
+revoke all on function public.portal_report(uuid) from public, anon;
+grant execute on function public.portal_report(uuid) to authenticated;
+
+create or replace function public.sm_report_file(p_id uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  r public.sm_reports;
+  v public.sm_report_versions;
+begin
+  if not public.allowed('clients', 'view') and not public.allowed('reports', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into r from public.sm_reports where id = p_id;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(r.client_id, 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.sm_report_versions x
+   where x.report_id = p_id and x.withdrawn_at is null order by x.version_no desc limit 1;
+  if v.id is not null then
+    return jsonb_build_object('snapshot', v.snapshot, 'version_id', v.id,
+      'kept', v.file_key is not null and v.file_at >= v.published_at);
+  end if;
+  if r.status <> 'confirmed' then return jsonb_build_object('error', 'not-finished'); end if;
+  return jsonb_build_object('snapshot', public.sm_report_snapshot(p_id, false));
+end $$;
+grant execute on function public.sm_report_file(uuid) to authenticated;
+
+-- END OF REPORT FILES KEPT ----------------------------------------------------
+
+-- ===========================================================================
+-- DOCUMENT TYPES — the team adds and edits its own kinds of letter, each
+-- asking on Issue for the fields its wording names.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `doc_types.fields`: how each field the wording names in braces is
+--      asked for on Issue ({intern name} as text, {from} as a date, {scope}
+--      as a paragraph), a map from the field's name to `text`, `date` or
+--      `long`. A field the map does not name is asked as text. The fields
+--      themselves are whatever the wording names; {first name}, {role} and
+--      {client} fill themselves and are never asked.
+--   2. `doc_type_save(...)` adds or edits a type: its group (fixed once
+--      made: Quotation, Client letter, HR letter), its name (unique), an HR
+--      letter's reference code (ADHR/{Employee ID}/{code}{YYMM}), the
+--      wording, whether it is signed, and its fields. `doc_type_set_active`
+--      offers it on Issue or stops offering it. Both are Documents: Document
+--      types (`register.types`), a granted part: an admin's by itself, any
+--      other group's once set. Each is filed `team.changed` under subject
+--      Document types, naming what changed from and to. A type is never
+--      removed: an issued document names its type.
+--
+-- ROLLBACK (in the SQL Editor)
+--   drop function if exists public.doc_type_set_active(text, boolean);
+--   drop function if exists public.doc_type_save(text, text, text, text, text, text, text, text, text, text, boolean, jsonb);
+--   alter table public.doc_types drop column if exists fields;
+-- ===========================================================================
+
+alter table public.doc_types add column if not exists fields jsonb not null default '{}'::jsonb;
+
+create or replace function public.doc_type_save(
+  p_id         text,
+  p_family     text,
+  p_name       text,
+  p_code       text,
+  p_title      text,
+  p_salutation text,
+  p_closing    text,
+  p_body_en    text,
+  p_body_zh    text,
+  p_body_ms    text,
+  p_signed     boolean,
+  p_fields     jsonb
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me        public.team_members;
+  v_old     public.doc_types%rowtype;
+  v_name    text := btrim(coalesce(p_name, ''));
+  v_code    text := upper(btrim(coalesce(p_code, '')));
+  v_title   text := btrim(coalesce(p_title, ''));
+  v_sal     text := btrim(coalesce(p_salutation, ''));
+  v_close   text := btrim(coalesce(p_closing, ''));
+  v_en      text := btrim(coalesce(p_body_en, ''));
+  v_zh      text := btrim(coalesce(p_body_zh, ''));
+  v_ms      text := btrim(coalesce(p_body_ms, ''));
+  v_signed  boolean := coalesce(p_signed, true);
+  v_fields  jsonb := coalesce(p_fields, '{}'::jsonb);
+  v_family  text;
+  v_id      text;
+  v_n       int;
+  v_key     text;
+  v_kind    text;
+  v_moves   text[] := '{}';
+  v_said    text;
+  v_was     text;
+begin
+  if not public.ops_granted('register.types', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  me := public.ops_me();
+  if char_length(v_name) < 2 or char_length(v_name) > 80 then return jsonb_build_object('error', 'bad-name'); end if;
+  if char_length(v_title) > 200 or char_length(v_sal) > 120 or char_length(v_close) > 120
+     or char_length(v_en) > 20000 or char_length(v_zh) > 20000 or char_length(v_ms) > 20000 then
+    return jsonb_build_object('error', 'too-long');
+  end if;
+  if jsonb_typeof(v_fields) <> 'object' or (select count(*) from jsonb_object_keys(v_fields)) > 30 then
+    return jsonb_build_object('error', 'bad-fields');
+  end if;
+  for v_key, v_kind in select e.key, e.value from jsonb_each_text(v_fields) as e loop
+    if v_key !~ '^[^{}\n]{1,40}$' or v_kind is null or v_kind not in ('text', 'date', 'long') then
+      return jsonb_build_object('error', 'bad-fields');
+    end if;
+  end loop;
+
+  if coalesce(btrim(p_id), '') <> '' then
+    select * into v_old from public.doc_types d where d.id = btrim(p_id);
+    if v_old.id is null then return jsonb_build_object('error', 'not-found'); end if;
+    if p_family is not null and p_family <> v_old.family then return jsonb_build_object('error', 'family-fixed'); end if;
+    v_family := v_old.family;
+  else
+    if p_family is null or p_family not in ('quote_cover', 'client', 'hr') then return jsonb_build_object('error', 'bad-family'); end if;
+    v_family := p_family;
+  end if;
+
+  if exists (select 1 from public.doc_types d
+              where lower(btrim(d.name)) = lower(v_name) and d.id is distinct from v_old.id) then
+    return jsonb_build_object('error', 'taken');
+  end if;
+  -- An HR letter's reference is ADHR/{Employee ID}/{code}{YYMM}, so its code
+  -- is required and is its own among the HR letters offered.
+  if v_family = 'hr' then
+    if v_code !~ '^[A-Z0-9]{1,4}$' then return jsonb_build_object('error', 'bad-code'); end if;
+    if exists (select 1 from public.doc_types d
+                where d.family = 'hr' and d.active and upper(coalesce(d.code, '')) = v_code
+                  and d.id is distinct from v_old.id) then
+      return jsonb_build_object('error', 'code-taken');
+    end if;
+  else
+    v_code := v_old.code;
+  end if;
+
+  if v_old.id is null then
+    v_id := left(coalesce(nullif(btrim(regexp_replace(lower(v_name), '[^a-z0-9]+', '_', 'g'), '_'), ''), 'type'), 40);
+    if exists (select 1 from public.doc_types d where d.id = v_id) then
+      v_n := 2;
+      while exists (select 1 from public.doc_types d where d.id = v_id || '_' || v_n) loop v_n := v_n + 1; end loop;
+      v_id := v_id || '_' || v_n;
+    end if;
+    insert into public.doc_types (id, family, code, name, title, salutation, closing, body_en, body_zh, body_ms,
+                                  signed, position, active, fields)
+    values (v_id, v_family, v_code, v_name, v_title, v_sal, v_close, v_en, v_zh, v_ms, v_signed,
+            coalesce((select max(d.position) from public.doc_types d), 0) + 10, true, v_fields);
+    insert into public.activity_log (actor, action, subject, detail)
+    values (coalesce(me.name, lower(auth.jwt() ->> 'email')), 'team.changed', 'Document types',
+            'Added: ' || v_name || ' · ' || case v_family when 'hr' then 'HR letter · Code ' || v_code
+                                                          when 'client' then 'Client letter' else 'Quotation' end);
+    return jsonb_build_object('ok', true, 'id', v_id);
+  end if;
+
+  -- What changed, from and to; the wording is long, so it is named only.
+  if v_old.name <> v_name then v_moves := v_moves || ('Name: ' || v_old.name || ' → ' || v_name); end if;
+  if v_family = 'hr' and coalesce(v_old.code, '') <> v_code then
+    v_moves := v_moves || ('Code: ' || coalesce(nullif(v_old.code, ''), 'not set') || ' → ' || v_code);
+  end if;
+  if coalesce(v_old.title, '') <> v_title then
+    v_moves := v_moves || ('Title: ' || coalesce(nullif(v_old.title, ''), 'not set') || ' → ' || coalesce(nullif(v_title, ''), 'not set'));
+  end if;
+  if coalesce(v_old.salutation, '') <> v_sal then
+    v_moves := v_moves || ('Salutation: ' || coalesce(nullif(v_old.salutation, ''), 'not set') || ' → ' || coalesce(nullif(v_sal, ''), 'not set'));
+  end if;
+  if coalesce(v_old.closing, '') <> v_close then
+    v_moves := v_moves || ('Closing: ' || coalesce(nullif(v_old.closing, ''), 'not set') || ' → ' || coalesce(nullif(v_close, ''), 'not set'));
+  end if;
+  if v_old.signed <> v_signed then
+    v_moves := v_moves || ('To be signed: ' || case when v_old.signed then 'Yes → No' else 'No → Yes' end);
+  end if;
+  if coalesce(v_old.body_en, '') <> v_en then v_moves := v_moves || 'Wording changed'::text; end if;
+  if coalesce(v_old.body_zh, '') <> v_zh then v_moves := v_moves || 'Chinese wording changed'::text; end if;
+  if coalesce(v_old.body_ms, '') <> v_ms then v_moves := v_moves || 'Malay wording changed'::text; end if;
+  if coalesce(v_old.fields, '{}'::jsonb) <> v_fields then
+    select coalesce(string_agg(e.key || ' (' || case e.value when 'long' then 'paragraph' else e.value end || ')', ', ' order by e.key), 'none')
+      into v_was from jsonb_each_text(coalesce(v_old.fields, '{}'::jsonb)) as e;
+    select coalesce(string_agg(e.key || ' (' || case e.value when 'long' then 'paragraph' else e.value end || ')', ', ' order by e.key), 'none')
+      into v_said from jsonb_each_text(v_fields) as e;
+    v_moves := v_moves || ('Fields: ' || v_was || ' → ' || v_said);
+  end if;
+  if array_length(v_moves, 1) is null then
+    return jsonb_build_object('ok', true, 'id', v_old.id, 'unchanged', true);
+  end if;
+
+  update public.doc_types d
+     set name = v_name, code = v_code, title = v_title, salutation = v_sal, closing = v_close,
+         body_en = v_en, body_zh = v_zh, body_ms = v_ms, signed = v_signed, fields = v_fields
+   where d.id = v_old.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, lower(auth.jwt() ->> 'email')), 'team.changed', 'Document types',
+          v_name || ' · ' || array_to_string(v_moves, ' · '));
+  return jsonb_build_object('ok', true, 'id', v_old.id);
+end $$;
+grant execute on function public.doc_type_save(text, text, text, text, text, text, text, text, text, text, boolean, jsonb) to authenticated;
+
+-- Offered on Issue, or no longer. The way back never asks.
+create or replace function public.doc_type_set_active(p_id text, p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me    public.team_members;
+  v_t   public.doc_types%rowtype;
+  v_on  boolean := coalesce(p_on, false);
+begin
+  if not public.ops_granted('register.types', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_t from public.doc_types d where d.id = p_id;
+  if v_t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_t.active = v_on then return jsonb_build_object('ok', true, 'unchanged', true); end if;
+  if v_on and v_t.family = 'hr' and exists (select 1 from public.doc_types d
+       where d.family = 'hr' and d.active and d.id <> v_t.id and upper(coalesce(d.code, '')) = upper(coalesce(v_t.code, ''))) then
+    return jsonb_build_object('error', 'code-taken');
+  end if;
+  me := public.ops_me();
+  update public.doc_types d set active = v_on where d.id = v_t.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, lower(auth.jwt() ->> 'email')), 'team.changed', 'Document types',
+          v_t.name || ' · ' || case when v_on then 'Inactive → Active' else 'Active → Inactive' end);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.doc_type_set_active(text, boolean) to authenticated;
+
+-- END OF DOCUMENT TYPES -------------------------------------------------------
+
+-- ===========================================================================
+-- REPORTS OWED — the reports a content month asks for, and where each one
+-- stands, for the Overview's Reports card.
+-- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED (the user, 2026-10-07: "some clients are not monthly
+-- engagement ... show only those have content month")
+--   1. `sm_reports_owed(p_period)`: for a content month ('YYYY-MM'; last
+--      month in Malaysia when none is given), every report a client's month
+--      asks for (its Reports ticks) and every report made for that month
+--      that no tick asked for, each with its stage: none (not started),
+--      draft, review, confirmed or published; the brand of a white-label
+--      report; the report task and who it is assigned to; the due time (the
+--      task's, else `report_due_days` after the month's last day, 23:59
+--      MYT); and late once that time has passed short of published. A
+--      report belongs to the month whose span holds its last day, else to
+--      the calendar month of its last day. Reports at Full Access, and only
+--      the clients the caller may see (`client_row_seen`).
+--
+-- ROLLBACK (in the SQL Editor)
+--   drop function if exists public.sm_reports_owed(text);
+-- ===========================================================================
+
+create or replace function public.sm_reports_owed(p_period text default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_period   text := coalesce(nullif(btrim(p_period), ''),
+                       to_char(date_trunc('month', now() at time zone 'Asia/Kuala_Lumpur') - interval '1 month', 'YYYY-MM'));
+  v_items    jsonb := '[]'::jsonb;
+  v_seen     uuid[] := '{}';
+  v_task     uuid;
+  v_tdue     timestamptz;
+  v_assignee text;
+  v_due      timestamptz;
+  v_found    boolean;
+  e          record;
+  k          text;
+  r          record;
+begin
+  if not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if v_period !~ '^[0-9]{4}-(0[1-9]|1[0-2])$' then return jsonb_build_object('error', 'bad-period'); end if;
+
+  -- Every report a month of the period asks for, found or not started.
+  for e in
+    select x.id, x.client_id, x.reports, s.starts, s.ends, c.name as client_name, c.slug as client_slug
+      from public.ops_engagements x
+      join public.clients c on c.id = x.client_id
+     cross join lateral public.ops_month_span(x.period, x.start_day) s
+     where x.period = v_period and x.status <> 'cancelled' and cardinality(x.reports) > 0
+       and public.client_row_seen(c.stage, c.owner, 'view')
+     order by c.name
+  loop
+    foreach k in array e.reports loop
+      v_task := null; v_tdue := null; v_assignee := null;
+      select x.id, x.current_final_due_at, m.name into v_task, v_tdue, v_assignee
+        from public.ops_tasks x
+        left join public.ops_task_assignees a
+          on a.task_id = x.id and a.responsibility = 'owner' and a.ended_at is null
+        left join public.team_members m on m.id = a.team_member_id
+       where x.engagement_id = e.id and x.source_type = 'report_' || k
+         and x.cancelled_at is null and x.archived_at is null
+       order by x.created_at desc limit 1;
+      v_due := coalesce(v_tdue,
+        ((e.ends + public.app_setting('report_due_days', e.ends)::integer)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur');
+      v_found := false;
+      for r in
+        select y.id, y.status, y.sent_on, b.name as brand_name
+          from public.sm_reports y
+          left join public.client_brands b on b.id = y.brand_id
+         where y.client_id = e.client_id and y.kind = k and y.period_end between e.starts and e.ends
+         order by b.name nulls first, y.period_start
+      loop
+        v_found := true;
+        v_seen := v_seen || r.id;
+        v_items := v_items || jsonb_build_object(
+          'client_id', e.client_id, 'client', e.client_name, 'slug', e.client_slug, 'kind', k,
+          'brand', r.brand_name, 'report_id', r.id, 'status', r.status, 'sent_on', r.sent_on,
+          'asked', true, 'task_id', v_task, 'assignee', v_assignee, 'due', v_due,
+          'late', r.status <> 'published' and now() > v_due);
+      end loop;
+      if not v_found then
+        v_items := v_items || jsonb_build_object(
+          'client_id', e.client_id, 'client', e.client_name, 'slug', e.client_slug, 'kind', k,
+          'brand', null, 'report_id', null, 'status', 'none', 'sent_on', null,
+          'asked', true, 'task_id', v_task, 'assignee', v_assignee, 'due', v_due, 'late', now() > v_due);
+      end if;
+    end loop;
+  end loop;
+
+  -- Every report made for the period that no month's tick asked for: it
+  -- belongs to the month whose span holds its last day, else to the
+  -- calendar month of that day.
+  for r in
+    select y.id, y.client_id, y.kind, y.status, y.sent_on, y.period_end,
+           c.name as client_name, c.slug as client_slug, b.name as brand_name
+      from public.sm_reports y
+      join public.clients c on c.id = y.client_id
+      left join public.client_brands b on b.id = y.brand_id
+     where not (y.id = any (v_seen))
+       and coalesce((select x.period from public.ops_engagements x
+                      cross join lateral public.ops_month_span(x.period, x.start_day) s
+                      where x.client_id = y.client_id and x.status <> 'cancelled'
+                        and y.period_end between s.starts and s.ends
+                      order by x.period desc limit 1),
+                    to_char(y.period_end, 'YYYY-MM')) = v_period
+       and public.client_row_seen(c.stage, c.owner, 'view')
+     order by c.name, y.kind, b.name nulls first
+  loop
+    v_due := ((r.period_end + public.app_setting('report_due_days', r.period_end)::integer)::timestamp + time '23:59') at time zone 'Asia/Kuala_Lumpur';
+    v_items := v_items || jsonb_build_object(
+      'client_id', r.client_id, 'client', r.client_name, 'slug', r.client_slug, 'kind', r.kind,
+      'brand', r.brand_name, 'report_id', r.id, 'status', r.status, 'sent_on', r.sent_on,
+      'asked', false, 'task_id', null, 'assignee', null, 'due', v_due,
+      'late', r.status <> 'published' and now() > v_due);
+  end loop;
+
+  return jsonb_build_object('period', v_period, 'items', v_items);
+end $$;
+revoke all on function public.sm_reports_owed(text) from public, anon, authenticated;
+grant execute on function public.sm_reports_owed(text) to authenticated;
+
+-- END OF REPORTS OWED ---------------------------------------------------------

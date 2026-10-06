@@ -164,6 +164,7 @@
     if (vl) vl.textContent = location.host + '/verify';
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
+    if ($('regTypes')) $('regTypes').hidden = !may('register.types', 'work');
     load();
   }
 
@@ -414,13 +415,49 @@
   var issuing = null;   // { client, member, families, idem, onDone, reissue }
 
   function typeById(id) { return state.types.filter(function (t) { return t.id === id; })[0]; }
+  /* FIELDS PER TYPE (the user, 2026-10-06: "go on the Document types page
+     with fields per type"). A type's fields are the words its wording holds
+     in braces ({intern name}, {from}); each is asked for on Issue as its
+     type says (text, a date, a paragraph; a name with "date" in it is a date
+     until somebody says otherwise) and filled in where it stands. {first
+     name}, {role} and {client} fill themselves and are never asked. */
+  var GROUPS = ['quote_cover', 'client', 'hr'];
+  var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client letters', hr: 'HR letters' };
+  var SELF = { hr: ['first name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'] };
+  var KINDS = [['text', 'Text'], ['date', 'Date'], ['long', 'Paragraph']];
+  function fieldKey(k) { return String(k || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  function fieldWord(k) { return k.charAt(0).toUpperCase() + k.slice(1); }
+  function fieldsIn(family, texts) {
+    var self = SELF[family] || ['first name'], out = [];
+    texts.forEach(function (x) {
+      String(x || '').replace(/\{([^{}\n]+)\}/g, function (m, k) {
+        k = fieldKey(k);
+        if (k && k.length <= 40 && self.indexOf(k) < 0 && out.indexOf(k) < 0) out.push(k);
+        return m;
+      });
+    });
+    return out;
+  }
+  function typeFields(t) { return t ? fieldsIn(t.family, [t.title, t.salutation, t.closing, t.body_en, t.body_zh, t.body_ms]) : []; }
+  function kindOf(t, k) { var f = (t && t.fields) || {}; return f[k] || (/\bdate\b/.test(k) ? 'date' : 'text'); }
+  /* A date in a letter's prose reads as the agreement does: 16 September 2026. */
+  function proseDate(v) {
+    var d = new Date(String(v || '').slice(0, 10) + 'T00:00:00');
+    return isNaN(d.getTime()) ? String(v || '') : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
   function fillKinds() {
     var sel = $('docKind');
     var allowed = state.types.filter(function (t) {
       if (issuing.families && issuing.families.indexOf(t.family) < 0) return false;
       return mayFamily(t.family, 'work');
     });
-    sel.innerHTML = allowed.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('');
+    /* Grouped as the register is (Quotation, Client letters, HR letters)
+       where more than one group is offered. */
+    var opt = function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; };
+    var fams = GROUPS.filter(function (f) { return allowed.some(function (t) { return t.family === f; }); });
+    sel.innerHTML = fams.length > 1 ? fams.map(function (f) {
+      return '<optgroup label="' + esc(GROUP_WORD[f]) + '">' + allowed.filter(function (t) { return t.family === f; }).map(opt).join('') + '</optgroup>';
+    }).join('') : allowed.map(opt).join('');
     /* A reissue keeps its kind whatever the kind list says now: the type may
        since have been retired, and the document is still what it was. */
     var re = issuing.reissue;
@@ -471,11 +508,73 @@
      colleague afterwards reseeds the recipient and, where the words have not
      been touched since they were seeded, the salutation and the body: a body
      somebody has already edited is never overwritten by a select. */
-  var seeded = { sal: null, body: null, to: null, addr: null };
+  var seeded = { title: null, sal: null, body: null, zh: null, ms: null, to: null, addr: null };
+  /* The Details section: one field a name the type's wording holds. */
+  function paintDocFields(t) {
+    var keys = typeFields(t), box = $('docFields');
+    if (!box) return;
+    $('docFieldsSec').hidden = !keys.length || Boolean(issuing && issuing.reissue);
+    box.innerHTML = keys.map(function (k, i) {
+      var kind = kindOf(t, k), id = 'docF' + i;
+      var ctl = kind === 'long'
+        ? '<textarea class="input" id="' + id + '" data-key="' + esc(k) + '" rows="3" aria-required="true"></textarea>'
+        : '<input class="input" id="' + id + '" data-key="' + esc(k) + '" type="' + (kind === 'date' ? 'date' : 'text') + '" aria-required="true">';
+      return '<div' + (kind === 'long' ? ' class="span-all"' : '') + '><label class="field-label" for="' + id + '">' + esc(fieldWord(k)) + '</label>' + ctl + '</div>';
+    }).join('');
+    if (F && F.scan) F.scan(box);
+    Array.prototype.forEach.call(box.querySelectorAll('[data-key]'), function (el) {
+      el.addEventListener('input', refill);
+      el.addEventListener('change', refill);
+    });
+  }
+  function fieldInput(k) {
+    return Array.prototype.filter.call(($('docFields') || document).querySelectorAll('[data-key]'), function (el) { return el.getAttribute('data-key') === k; })[0];
+  }
+  function fieldValues() {
+    var out = {};
+    Array.prototype.forEach.call(($('docFields') || document).querySelectorAll('[data-key]'), function (el) {
+      var v = String(el.value || '').trim();
+      if (v) out[el.getAttribute('data-key')] = v;
+    });
+    return out;
+  }
+  function addFieldVars(vars, t) {
+    var vals = fieldValues();
+    Object.keys(vals).forEach(function (k) { vars[k] = kindOf(t, k) === 'date' ? proseDate(vals[k]) : vals[k]; });
+    return vars;
+  }
+  /* What fills itself, as seed() fills it, with the fields typed so far. */
+  function selfVars(t) {
+    var vars = {};
+    if (!t) return vars;
+    if (t.family === 'hr') {
+      var m = memberOf($('docMember').value);
+      if (m) { vars['first name'] = firstName(m.name); vars['role'] = $('docRole').value.trim() || m.designation || ''; }
+    } else {
+      var c = (issuing && issuing.client) || clientOf($('docClient').value);
+      if (c) { vars['client'] = c.legal_name || c.name; vars['first name'] = firstName(((issuing && issuing.contact) || {}).name); }
+    }
+    return addFieldVars(vars, t);
+  }
+  /* A field typed fills the words still as they were seeded; words somebody
+     has typed over are left, and filled on Issue. */
+  function refill() {
+    var t = typeById($('docKind').value);
+    if (!t || !issuing || issuing.reissue) return;
+    var vars = selfVars(t);
+    [['docTitleIn', 'title', t.title], ['docSal', 'sal', t.salutation], ['docBodyEn', 'body', t.body_en],
+     ['docBodyZh', 'zh', t.body_zh], ['docBodyMs', 'ms', t.body_ms]].forEach(function (x) {
+      var el = $(x[0]);
+      if (!el || el.value !== seeded[x[1]]) return;
+      el.value = LET.fill(x[2], vars); seeded[x[1]] = el.value;
+    });
+  }
   function seed(e) {
     var t = typeById($('docKind').value);
     if (!t) return;
     var reseed = !(e && e.target && e.target.id !== 'docKind');
+    if (reseed) paintDocFields(t);
+    var keepTitle = !reseed && $('docTitleIn').value !== seeded.title;
     var keepSal = !reseed && $('docSal').value !== seeded.sal;
     var keepBody = !reseed && $('docBodyEn').value !== seeded.body;
     /* The registered name and address follow the client chosen, and are the
@@ -493,7 +592,7 @@
     $('docSignRow').hidden = false;
     if (reseed) $('docSigned').checked = Boolean(t.signed);
     $('docSerial').placeholder = quote ? 'AQT2601001' : 'Assigned on issue';
-    if (reseed) { $('docTitleIn').value = t.title || ''; $('docSerial').value = ''; }
+    if (reseed) $('docSerial').value = '';
     var c = issuing.client || clientOf($('docClient').value);
     var m = memberOf($('docMember').value);
     var vars = {};
@@ -515,11 +614,13 @@
       vars['first name'] = firstName(m.name);
       vars['role'] = m.designation || '';
     }
+    addFieldVars(vars, t);
+    if (!keepTitle) { $('docTitleIn').value = LET.fill(t.title, vars); seeded.title = $('docTitleIn').value; }
     if (!keepSal) { $('docSal').value = LET.fill(t.salutation, vars); seeded.sal = $('docSal').value; }
     if (!keepBody) { $('docBodyEn').value = LET.fill(t.body_en, vars); seeded.body = $('docBodyEn').value; }
     if (reseed) {
-      $('docBodyZh').value = t.body_zh || '';
-      $('docBodyMs').value = t.body_ms || '';
+      $('docBodyZh').value = LET.fill(t.body_zh, vars); seeded.zh = $('docBodyZh').value;
+      $('docBodyMs').value = LET.fill(t.body_ms, vars); seeded.ms = $('docBodyMs').value;
       $('docLangEn').checked = true;
       $('docLangZh').checked = quote && Boolean(t.body_zh);
       $('docLangMs').checked = quote && Boolean(t.body_ms);
@@ -593,7 +694,9 @@
     $('docLangZh').checked = langs.indexOf('zh') > -1; $('docLangMs').checked = langs.indexOf('ms') > -1;
     langBodies();
     $('docSigName').value = sg.name || ''; $('docSigRole').value = sg.designation || '';
-    seeded.sal = null; seeded.body = null; seeded.to = null; seeded.addr = null;
+    /* A reissue's words already hold what its fields said. */
+    $('docFieldsSec').hidden = true; $('docFields').innerHTML = '';
+    seeded.title = null; seeded.sal = null; seeded.body = null; seeded.zh = null; seeded.ms = null; seeded.to = null; seeded.addr = null;
   }
   /* An HR letter is shared with the colleague it names by default (the user,
      2026-10-06), the tick turned off for one not yet theirs; a reissue keeps
@@ -621,7 +724,7 @@
   function ticked(id) { return $(id).checked; }
   /* The sheet read and checked once, for Issue and for Preview alike:
      null after naming the first thing missing. */
-  function gather() {
+  function gather(forIssue) {
     if (!issuing) return null;
     var re = issuing.reissue;
     var t = typeById($('docKind').value) || (re ? { id: re.type_id, family: re.family, signed: Boolean(re.signed) } : null);
@@ -637,6 +740,24 @@
     var body = { en: $('docBodyEn').value.trim() };
     if (languages.indexOf('zh') > -1) body.zh = $('docBodyZh').value.trim();
     if (languages.indexOf('ms') > -1) body.ms = $('docBodyMs').value.trim();
+    var title = $('docTitleIn').value.trim(), salutation = $('docSal').value.trim();
+    if (!re) {
+      /* Whatever still stands in braces is filled from the fields, and on
+         Issue a field the words still ask for is required. */
+      var vars = selfVars(t), keys = typeFields(t);
+      title = LET.fill(title, vars); salutation = LET.fill(salutation, vars);
+      Object.keys(body).forEach(function (l) { body[l] = LET.fill(body[l], vars); });
+      var left = null;
+      if (forIssue) {
+        [title, salutation, body.en, body.zh || '', body.ms || ''].join('\n').replace(/\{([^{}\n]+)\}/g, function (m, k) {
+          k = fieldKey(k);
+          if (!left && keys.indexOf(k) > -1) left = k;
+          return m;
+        });
+      }
+      if (left) { msg('docMsg', 'Fill in ' + fieldWord(left) + '.', 'err'); var fe = fieldInput(left); if (fe) fe.focus(); return; }
+      if (keys.length) body.fields = fieldValues();
+    }
     if (!body.en) { msg('docMsg', 'The letter needs a body.', 'err'); $('docBodyEn').focus(); return; }
     var recipient = hr
       ? { name: (memberOf($('docMember').value) || {}).name || '', role: $('docRole').value.trim(),
@@ -649,8 +770,8 @@
     if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
     return { re: re, t: t, args: {
       type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
-      serial: serial || null, issued_at: $('docDate').value || null, title: $('docTitleIn').value.trim(),
-      salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages,
+      serial: serial || null, issued_at: $('docDate').value || null, title: title,
+      salutation: salutation, recipient: recipient, body: body, signatory: signatory, languages: languages,
       signed: signed
     } };
   }
@@ -661,7 +782,7 @@
      on the diagonal, as a report not yet confirmed does (2026-10-06). It
      opens in a new tab, else downloads. */
   function previewIssue() {
-    var g = gather();
+    var g = gather(false);
     if (!g) return;
     msg('docMsg', '');
     var a = g.args, t = g.t;
@@ -691,7 +812,7 @@
     });
   }
   function sendIssue() {
-    var g = gather();
+    var g = gather(true);
     if (!g) return;
     var re = g.re, args = g.args;
     issuing.idem = issuing.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey());
@@ -718,6 +839,194 @@
       }).catch(function () { finish('Not shared: the database refused the request.', 'warn'); });
     };
     if (re) LET.reissue(re, args, back); else LET.issue(args, back);
+  }
+
+  // ---- Document types ----------------------------------------------------------
+  /* The kinds of letter Issue offers, added and edited by the team (the user,
+     2026-10-06: "go on the Document types page with fields per type"), as My
+     Work's templates are: a list in a sheet, and one type in a sheet of its
+     own. Documents: Document types, a granted part (an admin's by itself).
+     A type is never removed, only no longer offered, because every document
+     issued names its type. */
+  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var dt = { all: [], editing: null, kinds: {} };
+  var DT_SAID = {
+    'denied':       'You do not have permission to do this.',
+    'bad-name':     'A name is 2 to 80 characters.',
+    'taken':        'Another document type has that name.',
+    'bad-family':   'Choose a group.',
+    'family-fixed': 'The group stays as the type was made.',
+    'bad-code':     'An HR letter takes a reference code of 1 to 4 capital letters or digits, as IC.',
+    'code-taken':   'Another HR letter uses that reference code.',
+    'bad-fields':   'A field name is up to 40 characters.',
+    'too-long':     'The wording is too long.',
+    'not-found':    'That document type is no longer there.'
+  };
+  function dtSaid(r) {
+    var m = r && r.error && (r.error.message || '');
+    if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    var k = (r && r.data && r.data.error) || m;
+    return DT_SAID[k] || k || 'The request failed.';
+  }
+  /* Every type, offered or not; Issue keeps the offered ones. */
+  function readTypes(then) {
+    db.from('doc_types').select('*').order('position').order('name').then(function (r) {
+      if (r.error) { then(r.error); return; }
+      dt.all = r.data || [];
+      state.types = dt.all.filter(function (t) { return t.active !== false; });
+      then(null);
+    }).catch(function (e) { then(e || new Error('read')); });
+  }
+  function typeMeta(t) {
+    var n = typeFields(t).length;
+    return [t.family === 'hr' && t.code ? 'Code ' + t.code : '', t.signed === false ? 'Not signed' : 'To be signed',
+      n ? n + (n === 1 ? ' field' : ' fields') : ''].filter(Boolean).join(' · ');
+  }
+  function paintTypes() {
+    var box = $('dtList');
+    if (!box) return;
+    var html = GROUPS.map(function (f) {
+      var rows = dt.all.filter(function (t) { return t.family === f; });
+      if (!rows.length) return '';
+      return '<section class="fsec"><h4 class="fsec-h">' + esc(GROUP_WORD[f]) + '</h4>' + rows.map(function (t) {
+        var off = t.active === false;
+        return '<div class="dtrow' + (off ? ' is-off' : '') + '">' +
+          '<span class="dtrow-name"><span class="dtrow-title"><b>' + esc(t.name) + '</b>' + (off ? '<span class="tone">Inactive</span>' : '') + '</span>' +
+          '<small>' + esc(typeMeta(t)) + '</small></span>' +
+          '<button class="btn btn-quiet btn-sm" data-edit="' + esc(t.id) + '" type="button">' + PEN + 'Edit</button></div>';
+      }).join('') + '</section>';
+    }).join('');
+    if (html) box.innerHTML = html; else UI.emptyLine(box, 'No document types.');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-edit]'), function (b) {
+      b.addEventListener('click', function () {
+        openTypeEdit(dt.all.filter(function (t) { return t.id === b.getAttribute('data-edit'); })[0] || null, b);
+      });
+    });
+  }
+  function openTypes(opener, said) {
+    if (!may('register.types', 'work')) return;
+    var box = $('dtList');
+    msg('dtMsg', said || '', said ? 'ok' : '');
+    UI.skeleton(box, 4);
+    window.ADspaceSheet.show($('dtSheet'), { opener: opener || $('regTypes') });
+    readTypes(function (err) {
+      if (err) { UI.failLine(box, 'Document types', (err && err.message) || '', function () { openTypes(opener); }); return; }
+      paintTypes();
+    });
+  }
+  /* The wording as it stands in the sheet, every language. */
+  function dtTexts() {
+    return ['dtTitle', 'dtSal', 'dtClosing', 'dtBodyEn', 'dtBodyZh', 'dtBodyMs'].map(function (id) { return $(id).value; });
+  }
+  function dtFamily() { return dt.editing ? dt.editing.family : $('dtFamily').value; }
+  /* The Fields section follows the wording: a line a field, its kind a
+     segment, a choice kept while the sheet is open. */
+  function paintTypeFields() {
+    var fam = dtFamily(), keys = fieldsIn(fam, dtTexts()), box = $('dtFields');
+    $('dtFieldsSec').hidden = !keys.length;
+    box.innerHTML = keys.map(function (k, i) {
+      var kind = dt.kinds[k] || kindOf(dt.editing, k);
+      return '<div class="dtfield"><span class="dtfield-name" id="dtFieldName' + i + '">' + esc(fieldWord(k)) +
+        '<code class="dtfield-key">{' + esc(k) + '}</code></span>' +
+        '<select class="select select-sm" data-seg data-key="' + esc(k) + '" aria-labelledby="dtFieldName' + i + '">' +
+        KINDS.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === kind ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+        '</select></div>';
+    }).join('');
+    if (F && F.scan) F.scan(box);
+    Array.prototype.forEach.call(box.querySelectorAll('select[data-key]'), function (sel) {
+      sel.addEventListener('change', function () { dt.kinds[sel.getAttribute('data-key')] = sel.value; });
+    });
+  }
+  var dtFieldsLater = null;
+  function dtWordingTyped() {
+    clearTimeout(dtFieldsLater);
+    dtFieldsLater = setTimeout(paintTypeFields, 250);
+  }
+  /* A new type's salutation and closing start as its group writes them, and
+     follow the group while nobody has typed over them. */
+  var DT_OPEN = { hr: ['Dear {first name},', 'Warm regards,'], client: ['Dear Sir/Madam,', 'Yours sincerely,'], quote_cover: ['Dear Sir/Madam,', 'Yours sincerely,'] };
+  function dtGroupShown() {
+    var fam = dtFamily();
+    $('dtCodeWrap').hidden = fam !== 'hr';
+    /* Chinese and Malay are a quotation's, or a type that already holds them. */
+    $('dtBodyZhWrap').hidden = fam !== 'quote_cover' && !$('dtBodyZh').value.trim();
+    $('dtBodyMsWrap').hidden = fam !== 'quote_cover' && !$('dtBodyMs').value.trim();
+  }
+  function dtGroupMoved() {
+    if (dt.editing) return;
+    var fam = $('dtFamily').value;
+    var was = Object.keys(DT_OPEN).map(function (k) { return DT_OPEN[k]; });
+    if (was.some(function (w) { return w[0] === $('dtSal').value; }) || !$('dtSal').value.trim()) $('dtSal').value = DT_OPEN[fam][0];
+    if (was.some(function (w) { return w[1] === $('dtClosing').value; }) || !$('dtClosing').value.trim()) $('dtClosing').value = DT_OPEN[fam][1];
+    dtGroupShown();
+    paintTypeFields();
+  }
+  /* The instruction beside Body opens by itself three times, then waits
+     behind its mark (DESIGN.md: an instruction). */
+  function dtHint(open) {
+    var seen = 0;
+    try { seen = Number(localStorage.getItem('adspace-hint-doctype-fields') || 0); } catch (e) { seen = 3; }
+    var show = open == null ? seen < 3 : open;
+    $('dtHintText').hidden = !show;
+    $('dtHintBtn').setAttribute('aria-expanded', String(show));
+    if (open == null && show) { try { localStorage.setItem('adspace-hint-doctype-fields', String(seen + 1)); } catch (e) {} }
+  }
+  function openTypeEdit(t, opener) {
+    if (!may('register.types', 'work')) return;
+    dt.editing = t || null;
+    dt.kinds = {};
+    var fam = t ? t.family : 'client';
+    $('dtEditHead').textContent = t ? t.name : 'New document type';
+    $('dtFamily').value = fam;
+    $('dtFamily').disabled = Boolean(t);
+    $('dtName').value = t ? t.name : '';
+    $('dtCode').value = t ? (t.code || '') : '';
+    $('dtSigned').checked = t ? t.signed !== false : true;
+    $('dtActive').checked = t ? t.active !== false : true;
+    $('dtTitle').value = t ? (t.title || '') : '';
+    $('dtSal').value = t ? (t.salutation || '') : DT_OPEN[fam][0];
+    $('dtClosing').value = t ? (t.closing || '') : DT_OPEN[fam][1];
+    $('dtBodyEn').value = t ? (t.body_en || '') : '';
+    $('dtBodyZh').value = t ? (t.body_zh || '') : '';
+    $('dtBodyMs').value = t ? (t.body_ms || '') : '';
+    $('dtSave').disabled = false; $('dtSave').textContent = 'Save';
+    msg('dtEditMsg', '');
+    dtGroupShown();
+    paintTypeFields();
+    dtHint();
+    window.ADspaceSheet.show($('dtEditSheet'), { opener: opener || null });
+  }
+  function shutTypeEdit(said) {
+    dt.editing = null;
+    openTypes($('regTypes'), said);
+  }
+  function saveType() {
+    var t = dt.editing, fam = dtFamily(), btn = $('dtSave');
+    var name = $('dtName').value.trim().replace(/\s+/g, ' ');
+    if (name.length < 2) { msg('dtEditMsg', 'A name is required.', 'err'); $('dtName').focus(); return; }
+    var code = $('dtCode').value.trim().toUpperCase();
+    if (fam === 'hr' && !/^[A-Z0-9]{1,4}$/.test(code)) { msg('dtEditMsg', DT_SAID['bad-code'], 'err'); $('dtCode').focus(); return; }
+    var fields = {};
+    fieldsIn(fam, dtTexts()).forEach(function (k) { fields[k] = dt.kinds[k] || kindOf(t, k); });
+    var wantOn = $('dtActive').checked, wasOn = t ? t.active !== false : true;
+    btn.disabled = true; btn.textContent = 'Saving…';
+    var fail = function (r) { btn.disabled = false; btn.textContent = 'Save'; msg('dtEditMsg', dtSaid(r), 'err'); };
+    db.rpc('doc_type_save', {
+      p_id: t ? t.id : null, p_family: t ? null : fam, p_name: name, p_code: fam === 'hr' ? code : null,
+      p_title: $('dtTitle').value.trim(), p_salutation: $('dtSal').value.trim(), p_closing: $('dtClosing').value.trim(),
+      p_body_en: $('dtBodyEn').value.trim(), p_body_zh: $('dtBodyZh').value.trim(), p_body_ms: $('dtBodyMs').value.trim(),
+      p_signed: $('dtSigned').checked, p_fields: fields
+    }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { fail(r); return; }
+      var moved = wantOn !== wasOn;
+      var next = moved ? db.rpc('doc_type_set_active', { p_id: d.id, p_on: wantOn }) : Promise.resolve({ data: { ok: true } });
+      return next.then(function (r2) {
+        if (r2.error || (r2.data && r2.data.error)) { fail(r2); return; }
+        btn.disabled = false; btn.textContent = 'Save';
+        shutTypeEdit(d.unchanged && !moved ? 'No changes.' : 'Saved.');
+      });
+    }).catch(function (e) { fail({ error: e }); });
   }
 
   // ---- A serial added by hand ------------------------------------------------
@@ -895,6 +1204,19 @@
       if (n) $('regAddKind').focus();
     });
     ['docLangZh', 'docLangMs'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', langBodies); });
+    /* Document types: the list, one type, the way back to the list. */
+    on('regTypes', function () { openTypes(this); });
+    on('dtNew', function () { openTypeEdit(null, this); });
+    on('dtCancel', function () { window.ADspaceSheet.close(); });
+    on('dtClose', function () { $('dtCancel').click(); });
+    on('dtEditCancel', function () { shutTypeEdit(''); });
+    on('dtEditClose', function () { $('dtEditCancel').click(); });
+    on('dtSave', saveType);
+    on('dtHintBtn', function () { dtHint($('dtHintText').hidden); });
+    if ($('dtFamily')) $('dtFamily').addEventListener('change', dtGroupMoved);
+    ['dtTitle', 'dtSal', 'dtClosing', 'dtBodyEn', 'dtBodyZh', 'dtBodyMs'].forEach(function (id) {
+      if ($(id)) $(id).addEventListener('input', dtWordingTyped);
+    });
     on('rvoidGo', function () {
       if (!voiding) return;
       var why = $('rvoidReason').value.trim();

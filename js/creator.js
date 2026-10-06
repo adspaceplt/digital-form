@@ -76,7 +76,7 @@
       payHead: 'Payment details', payLine: 'Please complete your payment details.',
       payGo: 'Fill in the form',
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Published on',
-      countPeriod: 'Count from {a} to {b}', periodWait: 'The count period is not set yet.',
+      countPeriod: 'Count from {a} to {b}', periodWait: 'The count period is not set.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
       linkWrong: 'This is not a {p} post link.', numWrong: 'Enter whole numbers.',
       rateHead: 'Your experience',
@@ -84,7 +84,7 @@
       rateThanks: 'Thank you.',
       ended: 'This booking has ended.',
       nextUp: {
-        confirmed: 'We will confirm the shoot date with you.',
+        confirmed: 'The shoot date will be confirmed with you.',
         pending_visit: 'Your shoot is booked.',
         pending_delivery: 'The product is on its way to you.',
         pending_draft: 'Your submission is due.',

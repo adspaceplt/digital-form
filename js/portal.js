@@ -563,11 +563,23 @@
     db.rpc('portal_report', { p_version: v.id }).then(function (r) {
       var snap = r.data && r.data.snapshot;
       if (r.error || !snap) throw new Error((r.error && r.error.message) || 'not-found');
-      return SMR.render(snap).then(function (out) {
-        var blob = new Blob([out.bytes], { type: 'application/pdf' });
+      var drawn = function () {
+        return SMR.render(snap).then(function (out) { return new Blob([out.bytes], { type: 'application/pdf' }); });
+      };
+      /* The file kept as it went out (2026-10-07), through sign-download as
+         this contact; drawn from the version's own snapshot where none is
+         kept or it does not open. */
+      var get = r.data.kept
+        ? db.functions.invoke('sign-download', { body: { reportVersion: v.id } }).then(function (x) {
+            var b = x && x.data;
+            if (x.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('kept-unread');
+            return b.type === 'application/pdf' ? b : new Blob([b], { type: 'application/pdf' });
+          }).catch(drawn)
+        : drawn();
+      return get.then(function (blob) {
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = SMR.fileName(snap, v.version_no);
+        a.download = SMR.fileName(snap);
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
       });

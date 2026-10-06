@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261007e">
+<link rel="stylesheet" href="/css/portal.css?v=20261007g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -87,7 +87,7 @@
 <main class="shell" id="publicShell">
 
   <section class="panel" id="notConfigured" hidden>
-    <h3>Not connected yet</h3>
+    <h3>Not connected</h3>
     <p class="hint">Supabase keys are not set in <code>js/config.js</code>. See <code>docs/CONTENT-REVIEW-SETUP.md</code>.</p>
   </section>
 
@@ -255,9 +255,12 @@
            line under the command bar, so it could not be opened from inside a
            record, where the bar is not on the screen; it comes from the title
            now, like every other surface in this console. -->
-      <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-label="About this section">
+      <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-labelledby="sectionAboutName">
+        <div class="popcard-head aboutpop-head">
+          <span class="aboutpop-name"><svg class="aboutpop-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg><b id="sectionAboutName">Clients</b></span>
+          <button class="iconbtn popcard-x" id="sectionAboutHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
         <p class="aboutpop-text" id="sectionAboutText"></p>
-        <button class="btn btn-sm btn-quiet aboutpop-hide" id="sectionAboutHide" type="button">Hide</button>
       </div>
       <span class="console-spacer"></span>
       <!-- The register this console is read in, on the control that changes
@@ -517,6 +520,7 @@
             </span>
             <span class="cmdbar-acts">
               <button class="btn btn-sm" id="crmLimits" type="button" hidden>Follow-up limits</button>
+              <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage">Select clients</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -606,6 +610,16 @@
           <div id="crmDueList"></div>
         </section>
 
+        <!-- Select (2026-10-07): the clients ticked and the one change many
+             take at once, each through the write one client uses. -->
+        <div class="bulkbar" id="crmBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="crmBulkAll"> <span id="crmBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" disabled>Change person in charge</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="crmBulkDone" type="button">Done</button>
+        </div>
+        <div class="msg" id="crmBulkMsg"></div>
         <div id="crmList"></div>
         <div id="crmSales" hidden></div>
       </section>
@@ -940,7 +954,7 @@
               <div><label class="field-label" for="svState">State</label>
                 <select class="select" id="svState" data-seg>
                   <option value="enquired">Enquired</option>
-                  <option value="quoted">Quoted</option>
+                  <option value="quoted">To quote</option>
                   <option value="confirmed">Confirmed</option>
                 </select></div>
             </div>
@@ -1387,6 +1401,7 @@
               <div class="kmenu-wrap">
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
+                  <button class="kmenu-item" id="selectPosts" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
                   <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
                 </div>
               </div>
@@ -1414,6 +1429,18 @@
           <button class="btn btn-sm" id="addAssets" data-need="review.sets:work" type="button">Add assets</button>
         </div>
         <nav class="tabrow poststages" id="postStages" role="tablist" aria-label="Posts by stage" hidden></nav>
+        <!-- Select (2026-10-07): the posts ticked under the stage strip and
+             what they can take together, each as one post takes it. -->
+        <div class="bulkbar" id="postBulk" data-narrow="640" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="postBulkAll"> <span id="postBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="postBulkConfirm" type="button" data-need="review.sets:work" hidden>Confirm internally</button>
+            <button class="btn btn-sm" id="postBulkReask" type="button" data-need="review.sets:work" hidden>Request re-approval</button>
+            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" disabled>Delete</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="postBulkDone" type="button">Done</button>
+        </div>
+        <div class="msg" id="postBulkMsg"></div>
         <div class="pairnote" id="pairNote" data-need="review.sets:work" hidden><span id="pairNoteText"></span><button class="btn btn-sm" id="pairCovers" type="button">Pair covers</button></div>
         <div id="postList"></div>
       </section>
@@ -1933,7 +1960,7 @@
             <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
             <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
             <span>Invoice</span>
-            <span class="muted" id="invoiceSummary">Not issued yet</span>
+            <span class="muted" id="invoiceSummary">Not issued</span>
           </button>
           <div class="disclosure-body" id="invoiceBody" hidden>
             <div class="row">
@@ -2715,7 +2742,7 @@
                     <label class="field-label" for="ntPublish">Post date</label>
                     <input class="input" id="ntPublish" type="date">
                   </div>
-                  <button class="iconbtn piece-x" type="button" aria-label="Remove piece 1">
+                  <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                   </button>
                 </div>
@@ -2838,7 +2865,7 @@
                 <select class="select" id="engManager"></select>
               </div>
               <div class="field">
-                <label class="field-label" for="engPlanned">Pieces planned</label>
+                <label class="field-label" for="engPlanned">Posts planned</label>
                 <input class="input" id="engPlanned" type="number" min="0" max="200" inputmode="numeric">
               </div>
             </div>
@@ -3430,6 +3457,7 @@
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm" id="regAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
+            <button class="btn btn-sm" id="regTypes" type="button" data-need="register.types:work" hidden>Document types</button>
             <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           </span>
         </span>
@@ -4637,6 +4665,12 @@ raya-2026        https://example.com/raya"></textarea>
           <input class="input" id="docIc" placeholder="000214-01-XXXX"></div>
       </div>
       </section>
+      <!-- The fields the type's wording names in braces ({intern name},
+           {from}), each filled into the title, salutation and body. -->
+      <section class="fsec" id="docFieldsSec" hidden>
+      <h4 class="fsec-h">Details</h4>
+      <div class="row fgrid" id="docFields"></div>
+      </section>
       <section class="fsec">
       <h4 class="fsec-h">Letter</h4>
       <div class="row">
@@ -4683,6 +4717,101 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="btn btn-quiet" id="docCancel" type="button">Cancel</button>
     </div>
     <div class="msg" id="docMsg"></div>
+  </div>
+</div>
+
+<!-- DOCUMENT TYPES (2026-10-07): the kinds of letter Issue offers, each with
+     its wording and the fields that wording names. Documents: Document
+     types, a granted part (an admin's by itself). -->
+<div class="sheet" id="dtSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dtHead">
+    <div class="sheet-head">
+      <h3 id="dtHead">Document types</h3>
+      <button class="iconbtn" id="dtClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div id="dtList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="dtNew" type="button">New type</button>
+      <button class="btn btn-quiet" id="dtCancel" type="button">Close</button>
+    </div>
+    <div class="msg" id="dtMsg"></div>
+  </div>
+</div>
+
+<div class="sheet" id="dtEditSheet" hidden>
+  <div class="sheet-card sheet-wide" role="dialog" aria-modal="true" aria-labelledby="dtEditHead">
+    <div class="sheet-head">
+      <h3 id="dtEditHead">Document type</h3>
+      <button class="iconbtn" id="dtEditClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <section class="fsec">
+        <h4 class="fsec-h">Type</h4>
+        <div class="row">
+          <div><label class="field-label" for="dtFamily">Group</label>
+            <select class="select" id="dtFamily" data-seg>
+              <option value="client">Client letter</option>
+              <option value="hr">HR letter</option>
+              <option value="quote_cover">Quotation</option>
+            </select></div>
+        </div>
+        <div class="row fgrid">
+          <div><label class="field-label" for="dtName">Name</label>
+            <input class="input" id="dtName" aria-required="true" maxlength="80" placeholder="Engagement Cover Letter"></div>
+          <div id="dtCodeWrap" hidden><label class="field-label" for="dtCode">Reference code</label>
+            <input class="input" id="dtCode" aria-required="true" maxlength="4" autocapitalize="characters" spellcheck="false" placeholder="IC"></div>
+        </div>
+        <div class="tickstack">
+          <label class="tickline"><input type="checkbox" id="dtSigned" checked> <span>To be signed</span></label>
+          <label class="tickline"><input type="checkbox" id="dtActive" checked> <span>Offered on Issue</span></label>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Wording</h4>
+        <div class="row">
+          <div><label class="field-label" for="dtTitle">Title</label>
+            <input class="input" id="dtTitle" maxlength="200" placeholder="Title"></div>
+        </div>
+        <div class="row fgrid">
+          <div><label class="field-label" for="dtSal">Salutation</label>
+            <input class="input" id="dtSal" maxlength="120" placeholder="Dear Sir/Madam,"></div>
+          <div><label class="field-label" for="dtClosing">Closing</label>
+            <input class="input" id="dtClosing" maxlength="120" placeholder="Yours sincerely,"></div>
+        </div>
+        <div class="row">
+          <div><label class="field-label" for="dtBodyEn">Body</label>
+            <div class="hintline" data-hint="doctype-fields">
+              <button class="hintbtn" type="button" id="dtHintBtn" aria-expanded="false" aria-label="How fields work">?</button>
+              <p class="hinttext" id="dtHintText" hidden>Words in braces, as {intern name}, are asked for on Issue and filled in. {first name}, {role} and {client} fill themselves.</p>
+            </div>
+            <textarea class="input" id="dtBodyEn" rows="10" placeholder="Body"></textarea></div>
+        </div>
+        <div class="row" id="dtBodyZhWrap" hidden>
+          <div><label class="field-label" for="dtBodyZh">Body, Chinese</label>
+            <textarea class="input" id="dtBodyZh" rows="6" lang="zh" placeholder="正文"></textarea></div>
+        </div>
+        <div class="row" id="dtBodyMsWrap" hidden>
+          <div><label class="field-label" for="dtBodyMs">Body, Malay</label>
+            <textarea class="input" id="dtBodyMs" rows="6" placeholder="Kandungan"></textarea></div>
+        </div>
+      </section>
+      <!-- One line a field the wording names, and how it is asked. -->
+      <section class="fsec" id="dtFieldsSec" hidden>
+        <h4 class="fsec-h">Fields</h4>
+        <div class="dtfields" id="dtFields"></div>
+      </section>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="dtSave" type="button">Save</button>
+      <button class="btn btn-quiet" id="dtEditCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="dtEditMsg"></div>
   </div>
 </div>
 
@@ -4819,22 +4948,22 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261007d"></script>
-<script src="/js/documents.js?v=20261007a"></script>
-<script src="/js/letters.js?v=20261007a"></script>
+<script src="/js/passkey.js?v=20261007g"></script>
+<script src="/js/admin.js?v=20261007g"></script>
+<script src="/js/documents.js?v=20261007g"></script>
+<script src="/js/letters.js?v=20261007g"></script>
 <script src="/js/smreport.js?v=20261007b"></script>
-<script src="/js/reports.js?v=20261007e"></script>
-<script src="/js/register.js?v=20261007a"></script>
-<script src="/js/crm.js?v=20261007c"></script>
+<script src="/js/reports.js?v=20261007g"></script>
+<script src="/js/register.js?v=20261007g"></script>
+<script src="/js/crm.js?v=20261007g"></script>
 <script src="/js/sales.js?v=20261005d"></script>
-<script src="/js/team.js?v=20261007a"></script>
+<script src="/js/team.js?v=20261007g"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
-<script src="/js/handbook.js?v=20261007a"></script>
-<script src="/js/campaigns.js?v=20261006a"></script>
-<script src="/js/ops.js?v=20261007a"></script>
-<script src="/js/perf.js?v=20261007c"></script>
+<script src="/js/handbook.js?v=20261007g"></script>
+<script src="/js/campaigns.js?v=20261007g"></script>
+<script src="/js/ops.js?v=20261007g"></script>
+<script src="/js/perf.js?v=20261007g"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261005f"></script>
+<script src="/js/overview.js?v=20261007g"></script>
 </body>
 </html>

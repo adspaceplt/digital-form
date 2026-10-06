@@ -55,7 +55,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses
     `.single()` on anything but one row (PGRST116; `.maybeSingle()` on more
-    than one).
+    than one). Every read and every function's answer is fresh JSON, so a
+    page changing what it read never changes the row.
   - It refuses, as PostgREST does, a table, column, function or argument the
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
     LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
@@ -703,8 +704,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   record removed), `team.settings` (Business settings), `team.upgrade`,
   `team.invite` (asked by `invite-member` as the caller), `team.handbook`
   (the four functions and the bucket's add and remove policies),
-  `reports.transfer`, `reports.ai`, and `team.announce` (Announcements,
-  2026-10-07); each offers Manage alone (on or off). A
+  `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
+  2026-10-07) and `register.types` (Document types, 2026-10-07); each
+  offers Manage alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
@@ -783,7 +785,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A filter never repeats the cards' own grouping: no state, kind, group or
   category filter on a route whose cards are those groups (Creator Campaigns,
   Documents, Team, Services, Handbook, Short Links). An option for all reads
-  All stages, All people, All platforms, never Every … or Everyone.
+  All stages, All people, All months, never Every …, Everyone or Everything.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
@@ -1043,6 +1045,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     `campaign.edited`.
   - A completed campaign keeps who ran it.
   - A rename carries onto every record.
+  - Select clients (the bar's ⋯, `clients:manage`): each row shown becomes
+    its tick inside the name cell (`label.client-row.is-picking`, the
+    columns unmoved), a press anywhere on it ticking it; the bar
+    (`#crmBulk`: a tick for every client shown, `n selected`, Done) offers
+    Change person in charge, asking one colleague, moving each ticked client
+    not already theirs through the same write (`.select('id')`, the guard
+    re-checking, filed `client.edited` from and to), naming a refusal
+    against its client, with Undo where it happened putting back each
+    client's own.
 
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
@@ -1164,7 +1175,25 @@ Each line is a rule that broke once. Its reason is in the archive.
     line cannot clear both.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
-  - `doc_types` is seeded once and is the team's to edit.
+  - `doc_types` is seeded once and is the team's to edit: Document types
+    in the bar (behind the ⋯ on a phone), `register.types`
+    (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
+    My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
+    Name (unique), an HR letter's Reference code (`ADHR/…/{code}{YYMM}`,
+    required, its own among the HR letters offered), To be signed, Offered
+    on Issue (`doc_type_set_active`; never removed, an issued document names
+    its type), the wording, and Fields. Saved by `doc_type_save`, filed
+    `team.changed` under Document types from and to.
+  - A type's fields are the words its wording holds in braces ({intern
+    name}, {from}); {first name}, {role} and {client} fill themselves.
+    `doc_types.fields` says how each is asked: Text, Date or Paragraph (a
+    name holding "date" is a date until set). Issue groups the kinds
+    (Quotation, Client letters, HR letters) and asks for them under Details,
+    filling each into the title, salutation and body as it is typed (a date
+    as `16 September 2026`; words typed over are filled on Issue); Issue
+    refuses a field still in braces ("Fill in From."), Preview draws it as
+    it stands, and `body.fields` keeps what was typed. A reissue keeps its
+    words and asks nothing.
   - The Register sorts newest first, with Oldest first and By reference in the
     bar.
 - The reference on a row is a copy control (`.serial-copy`).
@@ -1332,6 +1361,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - S3 signed PUT.
   - Active clients only.
   - A set's name grows out of New content set; a title is renamed in place.
+- Select posts (the set's ⋯, `review.sets:work`): a tick stands where each
+  post's ⋯ was (`.saved-pick`), the row its target; the bar under the stage
+  strip (`#postBulk`) counts the ticked posts shown and offers, each through
+  what one post takes and refused against its post: Confirm internally (a
+  published set, posts not approved; asked, `review_confirm`, Undo
+  reverting each), Request re-approval (posts the client approved; one
+  reason for all, filed per post) and Delete (`review.sets:manage`, red,
+  the count typed back, `.select('id')`). A set opened afresh holds no
+  ticks.
 - Deleting a set is `can_remove` / Manage, drawn behind it
   (`body.no-remove #deleteSet`). Both deletes take `.select('id')`.
 - Remove from Content Review hides the client and nothing else
@@ -1565,12 +1603,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   by `batches.published_at`; Active clients with no set this month),
   Creator Campaigns (Bookings past their date; Waiting for the quality
   check), Documents (Letters of Offer not yet signed, `clients.documents`),
-  Reports (Waiting for confirmation; No report for last month), Team (last
+  Reports (Waiting for confirmation; Reports for last month), Team (last
   month's reviews through `perf_overview`: names and steps only).
+- Reports for last month (`sm_reports_owed(p_period)`,
+  `2026-10-07-reports-owed.sql`, Reports Full Access, client scope): the
+  reports the months of that period ask for (their Reports ticks), found or
+  not started, and every report made for the period no tick asked for (a
+  report is the month's whose span holds its last day, else its calendar
+  month's); a client with neither is never listed (the user, 2026-10-07:
+  not every client is a monthly engagement). The ring reads `n of N
+  published · n in review`; the rows are what is left but review (the card
+  above lists those): Not started, Draft, Confirmed, late first, each with
+  who has the report task and its due time (else `report_due_days` after the
+  month), late in warn; a row opens the report, else its task.
 - No money anywhere on it: no value, revenue or fee.
 - A list card: the title, the count (warn only where late), View all to the
   section; five rows, name over meta, the figure over its age at the right
-  edge; a row writes the record's address and opens it as search does. A
+  edge, then Show N more listing the rest in the card itself; a row writes
+  the record's address and opens it as search does. A
   refused read is `failLine` with Try again. Read again on every visit,
   never polled.
 - `batches.published_at` is stamped by `batches_published_at` on the move to
@@ -1662,8 +1712,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     of their open tasks due by the week's end, overdue included, against
     `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
 - The calendar shows every task on its due date (the stage tone) and its
-  publish date (`--pub`), with a Due / Publish key. A task whose next date is
-  its publish date shows once. On a phone it lists only the days holding
+  post date (`--pub`), with a Due / Post key. A task whose next date is
+  its post date shows once. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
@@ -1709,8 +1759,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Format: the rate card's formats, optional.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
-  - The scheduled publish date is tentative and never required. It seeds the
-    content month and week until they are touched (`ntTouched`).
+  - The post date is tentative and never required. It seeds the
+    content month and week until they are touched (`ntTouched`). My Work
+    says post, never publish (Post date, Set the post date).
 - Duplicate (`ops_duplicate_task`: a new code, none of the history).
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
@@ -1761,7 +1812,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Include past clients only where `clients.past` is; a refused read of the
   clients is named in the sheet, never an empty list.
 - Add task and the content form open on one segment, Task / Content
-  deliverable (`.kindseg`). Switching swaps the sheet in place.
+  task (`.kindseg`). Switching swaps the sheet in place.
 - Add task is one act: it saves, the sheet shuts, the list is read again and
   the new row says Added. (`state.rowSaid`).
 - Kept report figures are drawn through `paint()` (which hides the other
@@ -2019,7 +2070,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     the day the numbers were reported to the member. The sheet prefills
     today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
     after today in MYT, `bad-eval-date`). The sheet, the member's page and
-    the printed record's head show it beside Dispute until.
+    the printed record's head show it beside Queries until.
   - Management answers, then it is acknowledged and finalised.
   - `result` is a snapshot.
   - Reference `ADHR/{staff_code}/PR{YYMM}`; an Employee ID is required.
@@ -2266,6 +2317,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.
+  - Kept as sent (`2026-10-07-report-files-kept.sql`): once a version is
+    published its PDF is drawn from that snapshot and stored once under
+    the bucket's `private/{client}/` (`sign-upload` private, then
+    `sm_report_keep_file`: Reports Work, the key under the report's own
+    client, never replaced; `file_key`, `file_at`, `file_by`). A file
+    stands for the publish it was drawn after (`file_at` not before
+    `published_at`), so a version published again keeps the next file.
+    Every download of a published version (the head's Preview PDF and
+    Download, Select's Download, the client record's tab, the client
+    portal) hands over that file, read back as bytes through
+    `sign-download` `{ reportVersion }` (`sm_report_file_key`, asked as the
+    caller: a colleague at Reports or Clients View on a client they see,
+    any version; a client's contact only the version the portal shows),
+    never a link; a version with no file is drawn from its own snapshot and
+    kept then, and a kept file that does not open is drawn again with
+    "Drawn again: the kept file did not open.". The head's ⋯ Versions
+    (`#rpVerSheet`) lists every version newest first (published when and
+    by whom; On the client portal, or Unpublished and why) with its own
+    Download.
   - A report a client has seen is never deleted.
 - The list is one tab a stage (`#rhTabs`, the view strip, swipe and the
   arrows; `tab=` in the address, Drafts left out): Drafts, In review,
@@ -2411,7 +2481,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     forced `tool_choice`. An accounts report sends the platforms and top
     posts the step shows (`platforms`, `posts`) and gets back each
     platform's four fields and each post's remark, read platform by
-    platform. Every press asks first (Draft with AI?, or Replace the
+    platform. Every press asks first (Write a draft?, or Replace the
     commentary? over written text), saying it uses one draft and how many
     are left; nothing is saved until Save.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
@@ -2909,7 +2979,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     code live only in Supabase.
   - The delete code lives in the database.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
-  and under `private/` (write and read, for invoices) once §5 is done;
+  and under `private/` (write and read, for invoices and each published
+  report's kept PDF) once §5 is done;
   `private/` is closed to CloudFront by the bucket policy. `content/` is
   served only with the media pass once §6 is done (`media-pass` signs with a
   key it made and keeps in `app_secrets`, `cf_media_private`; CloudFront's
