@@ -705,8 +705,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.invite` (asked by `invite-member` as the caller), `team.handbook`
   (the four functions and the bucket's add and remove policies),
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
-  2026-10-07) and `register.types` (Document types, 2026-10-07); each
-  offers Manage alone (on or off). A
+  2026-10-07), `register.types` (Document types, 2026-10-07) and
+  `team.health` (Health check-ins, every colleague's answers by name,
+  2026-10-07); each offers Manage alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
@@ -766,7 +767,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Clients fold; Own makes the preset Custom.
   - No preset below Admin opens Team, HR letters or performance reviews.
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
-  Members and Performance.
+  Members, Performance and Health (`tab=health`, `team.health` alone); the
+  strip is drawn only where two tabs show.
 - The Admin group has no ⋯ and cannot be deleted. A group delete takes
   `.select('slug')` and names a refusal.
 
@@ -776,7 +778,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Content Review as one card;
   - Campaigns by state (Completed shut);
   - the Creators List by fee band (Inactive shut);
-  - Short Links Live/Paused (Paused shut);
+  - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;
   - Services by category;
   - Team by user group;
@@ -2126,6 +2128,33 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
   `notified`); unticked, the member is not told and the sheet says so.
+- Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
+  RLS on, no policy, no grant): a colleague on the review list rates
+  themselves on the six scorecard categories in My HR, Reviews (Rate
+  yourself, {Month}), for each month from June 2026 to last month while its
+  review is not shared (`perf_self_open`: `bad-month`, `shared`,
+  `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
+  score (`incomplete`) or one outside its category's maximum or off a step
+  of 0.1 (`bad-score`), filed `self.saved`. Management reads it beside its
+  own scores (Self-rated n under each category, the total in one line); it
+  never moves the grade.
+- A month whose query window has closed with no query open is acknowledged
+  and finalised by itself, earlier months too (`perf_close_windows()`,
+  pg_cron `perf-close-windows` at minute 7 of every hour, `finalised_by`
+  null); History and the printed record read Automatic, queries closed, and
+  the review card says while the window runs that it becomes final then.
+- A member's first open of a shared month is stamped (`perf_seen`,
+  `perf_reviews.opened_at`, filed `opened`) and listed as Opened in History
+  and the printed record.
+- Reminders (`2026-10-07-my-hr-reminders.sql`, `my_hr_remind()`, pg_cron
+  `my-hr-reminders` 09:05 MYT): one notice a colleague a day at most, naming
+  only what is owed: on the 1st and `remind_again_days` (3) on, last month's
+  self-rating and reflection (the review list only); `remind_before_days`
+  (3) before the month ends, its reflection; the same before each half
+  month ends, the health check-in, only to a colleague whose agreement
+  stands. Both days are Performance settings (Reminders, 0 to 14, 0 sends
+  none). The bell and a push open the view (`perf.remind`, `perf.reflect`,
+  `health.remind`, tag `my-hr`); never a score or a note.
 - An admin deletes a member's month in any state (`perf_delete`: the
   performance part at Manage, a live unlock and admin; never their own), from
   the row's ⋯ and the review's ⋯, with the name and month typed back
@@ -2138,9 +2167,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
   `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
   - My HR (`?s=mine`, the account menu's first item; never My performance,
-    the user, 2026-10-06: it holds more than reviews) is four views
+    the user, 2026-10-06: it holds more than reviews) is five views
     (`#mineViews`, `view=` in the address, Reviews left out): Reviews,
-    Initiatives, Reflection, Letters, all behind the fresh proof
+    Initiatives, Reflection, Letters, Health, all behind the fresh proof
     (`perf_mine_gate()`, the card Your records are locked).
   - An initiative (title 3 to 140, Improves: Client work, Process, Tool, SOP,
     Other; details; an https link) is logged in this month as Proposed and
@@ -2213,6 +2242,48 @@ Each line is a rule that broke once. Its reason is in the archive.
     member reads theirs through `perf_rewards_mine()` behind the fresh code.
   - `perf_today()` is the one clock the rules ask; `tests/perf.js` replaces
     it, and the stand-in reads `window.__perfToday`.
+
+### Health (`js/health.js`, `?s=mine&view=health`, `?s=team&tab=health`)
+- A colleague's own check-in every half month (`2026-10-07-health-check-ins.sql`;
+  `health_consents`, `health_log`, `health_checkins`, `health_talks`, RLS on,
+  no policy, no grant). Health is sensitive personal data (PDPA 2010):
+  nothing is asked before the colleague agrees, and every agreement and
+  withdrawal is kept (`health_log`).
+- Before agreeing, the card speaks as the company, the one place the console
+  says "we" (the user, 2026-10-07): Your health matters to us; work and home
+  both shape body and mind; answer honestly, there are no right or wrong
+  answers; if something feels heavy, ask for a talk, reaching out early is a
+  strength. Beside it, shaded, What you agree to (five questions every two
+  weeks; ADspace management reads the answers by name, only to understand
+  and support; never part of a performance review; withdraw at any time);
+  then I agree, which never asks (`health_consent`). Withdraw asks (warn),
+  stops the check-ins and takes the answers out of Team: Health; Agree again
+  is the way back.
+- The check-in: Body, Mind, Sleep, Energy, Workload, 1 to 5 each (5 is well,
+  a word for every step) as segments, and an optional note of 1,000
+  characters, once a half month (the 1st to the 15th, the 16th to the month's
+  end, MYT), edited until it ends (`health_checkin_save`: `no-consent`,
+  `incomplete`, `bad-score`, `too-long`); the sheet opens on There are no
+  right or wrong answers. Answer as you truly feel today.
+- The view: the half month's card (Checked in on {day} under its title; the
+  five answers across it, two across in a narrow pane with the fifth taking
+  the row; the note under them), Your check-ins (a half month a row), Talks,
+  then Agreed on {day} with Withdraw as one quiet line, never a card; one
+  12px step between them. A low answer (2 or under), with no talk asked
+  for, opens Talks with a word of care. A low answer is a warn figure with
+  its word, never a colour alone; Health's pink marks its glyph and the
+  chosen answer, nothing else.
+- Ask for a talk (`health_talk_ask`: a colleague, an optional note;
+  `already-asked`, `bad-colleague`) tells the colleague asked (`health.talk`,
+  the asker's name, never the note); the asker withdraws it and asks again,
+  the colleague asked marks it done and reopens it (`health_talk_set`).
+- Team: Health (`tab=health`, `team.health`): the half month's averages as
+  bars (warn under 3) with `n of m checked in`, Colleagues (every active
+  colleague: this half's five answers, Checked in, or Not agreed /
+  Withdrawn as a chip), each opening their history, and the last 90 days'
+  talks. `health_team()` sends a colleague's answers only while their
+  agreement stands, and a talk's note only while its asker's does. The
+  answers never reach a review, the Activity record or a notification.
 
 ### Reports (`js/reports.js`, `js/smreport.js`, `?s=reports`)
 - Reports is its own section (`reports` View / Work / Manage), not a part of
@@ -2726,6 +2797,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Both take `.select('id')`, filed as `shortlink.updated` with the detail.
   - `ADspaceGroup.keep` opens the card the row moves into.
 - No Status column. Paused is a chip beside the slug.
+- Every colleague's namecard slug is listed under Namecards, between Live and
+  Paused (read from `team_members`; Short link, Destination the card's own
+  address, Colleague; Inactive or Card off as a chip; Copy and Open, no ⋯:
+  edited in Team or My namecard), so a slug in use is in sight; the count
+  takes them in and the search finds them by slug or name; a refused read
+  is said (Could not load the namecards.), never drawn as none (the user,
+  2026-10-07).
 - A short link never takes a colleague's card slug (`links_card_clash`,
   named `/{slug} is a colleague's namecard.`).
 
@@ -2800,23 +2878,29 @@ Each line is a rule that broke once. Its reason is in the archive.
     working; the card answers only while the colleague is active and their
     card is on (`card_on`, Team's sheet; off answers the cover, and the
     same address works again once on);
-  - `namecard_get(p_key)` (anon) answers name, position, mobile and the
-    sign-in email alone (`2026-10-03-namecard-login-email.sql`; whatever its
-    domain, interns' personal addresses included; `card_email` is unread);
-    never the Employee ID, group or access;
+  - `namecard_get(p_key)` (anon) answers name, position, mobile, the
+    sign-in email (`2026-10-03-namecard-login-email.sql`; whatever its
+    domain, interns' personal addresses included; `card_email` is unread)
+    and the card's short link (`slug`, 2026-10-07) alone; never the
+    Employee ID, group or access;
   - the email row never breaks inside the address: it shrinks to 12px
     (`fitMail`), else breaks only before the @;
   - the pair under the card (turn, QR code) is two equal halves of the
     portrait card's width on every face, so a turn never moves them;
   - every card has a short link on the links host (`card_slug`,
-    `2026-10-03-namecard-short-links.sql`): made from the name with no space
-    as the colleague is added (Xue Yi `xueyi`, numbered where taken), never
-    following a rename, edited in the Team sheet's Namecard and by the
+    `2026-10-03-namecard-short-links.sql`): made as the colleague is added
+    from the name's letters and digits run together (Xue Yi `xueyi`; a
+    name with none, written in Chinese, takes the sign-in email's name),
+    numbered with no dash where taken (`xueyi2`; `card_slug_from`,
+    `2026-10-07-namecard-short-link-shown.sql`; the user, 2026-10-07),
+    never following a rename, edited in the Team sheet's Namecard and by the
     colleague in My namecard (`namecard_save`; emptied, made again from
     the name); one slug is never both a card's and a short link's
     (`slug-taken`, both ways); `link_resolve` answers it with the card's own
     address while the colleague is active and the card on, else missing; My
-    namecard shows and copies it; the card's QR keeps the card's own address;
+    namecard shows and copies it; the card's QR face names it under the
+    name (`hi.adspace.me/{slug}`, never the long address; the user,
+    2026-10-07) while the QR itself keeps the card's own address;
   - whether the mobile is on the card is the colleague's own choice
     (`card_mobile`, Mobile on card Show / Hide, shown by default;
     `2026-10-03-namecard-mobile-switch.sql`): one card, one link and one QR,

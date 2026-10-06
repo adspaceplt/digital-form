@@ -7881,8 +7881,14 @@
     markRead([id]);
     /* A performance review is not a task: a released or answered month opens
        the person's own record, a dispute opens the team's month. */
-    if (!x.task_id && /^perf\./.test(x.kind || '')) {
-      if (x.kind === 'perf.disputed' && window.ADspacePerf) window.ADspacePerf.openTeam();
+    if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
+      if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
+      /* A reminder, an initiative decided or a request to talk opens the
+         My HR view it is about (2026-10-07). */
+      var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
+        : /^health\./.test(x.kind) ? 'health' : 'reviews';
+      history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
+      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
       else if (bridge.show) bridge.show('mine');
       return;
     }

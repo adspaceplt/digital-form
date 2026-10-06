@@ -56,6 +56,14 @@
   function address() { return String(ORG.address || '').split('\n').join(', '); }
   function site() { return String(ORG.website || '').replace(/^https?:\/\//, ''); }
   function link(key) { return location.origin + '/card/?k=' + encodeURIComponent(key || ''); }
+  /* The address named under the QR: the card's short link on the links host
+     where it has one (the user, 2026-10-07), else its own. The QR itself
+     keeps the card's own address, which never changes, so a printed code
+     survives an edited short link. */
+  function linkHost() { return (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me'; }
+  function named(card, key) {
+    return card && card.slug ? linkHost() + '/' + card.slug : link(key).replace(/^https?:\/\//, '');
+  }
 
   /* vCard 3.0, the form every phone's contacts open. */
   function vcf(card) {
@@ -109,7 +117,7 @@
           '<span class="nc-word nc-word-sm">ADspace</span>' +
           '<div class="nc-qrbox" data-nc="qrbox"></div>' +
           '<b class="nc-qrname">' + esc(card.name) + '</b>' +
-          '<span class="nc-qrlink">' + esc(link(key).replace(/^https?:\/\//, '')) + '</span></div>' +
+          '<span class="nc-qrlink" data-nc="qrlink">' + esc(named(card, key)) + '</span></div>' +
       '</section>' +
       '<section class="nc-face nc-back" aria-label="Contact details">' +
         '<span class="nc-word nc-word-sm">ADspace</span>' +
@@ -191,6 +199,7 @@
         if (wa && next.mobile) wa.href = 'https://wa.me/' + digits(next.mobile);
         host.querySelector('.nc-acts').classList.toggle('is-one', !next.mobile);
         if (wa) wa.hidden = !next.mobile;
+        q('qrlink').textContent = named(next, key);
         fitMail(host);
       },
       link: link(key)
@@ -224,10 +233,14 @@
         return;
       }
       /* The preview is the card as others see it: hidden, it has no mobile. */
+      var typedSlug = function () {
+        var v = ($('mycSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+        return /^[a-z0-9][a-z0-9._-]{0,79}$/.test(v) ? v : null;
+      };
       var cardOf = function () {
         return { name: d.name, designation: d.designation,
                  mobile: $('mycShow').value === 'hide' ? null : ($('mycMobile').value || '').trim() || null,
-                 email: d.email };
+                 email: d.email, slug: typedSlug() };
       };
       $('mycMobile').value = d.mobile || '';
       $('mycShow').value = d.show_mobile === false ? 'hide' : 'show';
@@ -246,6 +259,7 @@
       $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, share); };
       $('mycMobile').oninput = function () { handle.update(cardOf()); };
       $('mycShow').onchange = function () { handle.update(cardOf()); };
+      $('mycSlug').oninput = function () { handle.update(cardOf()); };
       $('mycSave').onclick = function () {
         var btn = this;
         btn.disabled = true;
