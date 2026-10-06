@@ -8925,6 +8925,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    width as a record's strip does (the user, 2026-10-03). */
 .tabrow.poststages { width: 100%; }
 .tabrow.poststages .tab { flex: 1 0 auto; text-align: center; }
+/* The Overview's sections sit over a grid of cards the page's width, so its
+   strip runs that width at a desk too (the user, 2026-10-07: "the desktop
+   width and the strip width"). */
+.tabrow.ovwtabs { width: 100%; }
+.tabrow.ovwtabs .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {
   .tabrow { width: 100%; }
   .tabrow .tab { flex: 1 0 auto; text-align: center; }
