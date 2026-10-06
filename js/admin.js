@@ -3648,9 +3648,30 @@
   // ---- Saved posts --------------------------------------------------------
   /* Once a post is in the set it is shown as settled rather than as a form.
      Editing is deliberate, so a stray click cannot change what a client sees. */
+  /* The strip, the covers line and the progress belong to the set they were
+     counted for (the user, 2026-10-06: opening another client's set still
+     showed the last one's counts, since a set with no posts never redrew
+     them). They are cleared on a new set, and an answer for a set no longer
+     open is thrown away. */
+  function clearPostView() {
+    state.postView = null;
+    $('postStages').hidden = true;
+    $('postStages').innerHTML = '';
+    $('pairNote').hidden = true;
+    $('setProgressBlock').hidden = true;
+  }
   function loadPosts() {
-    db.from('posts').select('*').eq('batch_id', state.batch.id).order('position')
+    if (!state.batch) return;
+    var bid = state.batch.id;
+    if (!state.postView || state.postView.batch !== bid) {
+      clearPostView();
+      $('postList').innerHTML = '';
+      $('savedCount').textContent = '';
+    }
+    var here = function () { return state.batch && state.batch.id === bid; };
+    db.from('posts').select('*').eq('batch_id', bid).order('position')
       .then(function (r) {
+        if (!here()) return;
         var box = $('postList');
         box.innerHTML = '';
         /* A failed read used to print "Nothing added yet." over a set that
@@ -3667,7 +3688,7 @@
           ? n + ' post' + (n === 1 ? '' : 's')
           : 'No posts.';
         $('setProgressBlock').hidden = true;
-        if (!n) { settleScroll(); return; }
+        if (!n) { clearPostView(); settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
         /* The decision on the round on show, what was asked of the round
@@ -3678,6 +3699,7 @@
           db.from('reviews').select('*').in('post_id', ids).order('created_at', { ascending: false }),
           db.from('post_versions').select('*').in('post_id', ids).order('round', { ascending: false })
         ]).then(function (both) {
+            if (!here()) return;
             var rev = both[0], vers = both[1];
             var latest = {}, asked = {}, kept = {}, earlier = {};
             var byId = {};
@@ -3699,7 +3721,7 @@
             (vers.error ? [] : vers.data || []).forEach(function (v) {
               (kept[v.post_id] = kept[v.post_id] || []).push(v);
             });
-            state.postView = { posts: r.data, latest: latest, asked: asked, kept: kept, earlier: earlier };
+            state.postView = { batch: bid, posts: r.data, latest: latest, asked: asked, kept: kept, earlier: earlier };
             paintPostStages(true);
             paintProgress(r.data, latest, !rev.error);
             settleScroll();
@@ -3745,7 +3767,7 @@
 
   function paintPostStages(fresh) {
     var v = state.postView, box = $('postList'), strip = $('postStages');
-    if (!v || !state.batch) return;
+    if (!v || !state.batch || v.batch !== state.batch.id) return;
     var counts = { pending: 0, changes: 0, approved: 0, all: v.posts.length };
     v.posts.forEach(function (p) { counts[postStageOf(v.latest[p.id])]++; });
     var id = state.batch.id;
