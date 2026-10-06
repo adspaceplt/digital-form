@@ -258,12 +258,25 @@
     return groups.map(function (g) {
       var plats = {};
       (g.accounts || []).forEach(function (a) { plats[a.platform] = true; });
-      var c = plats.facebook && plats.instagram ? PLAT_COLOR.meta : PLAT_COLOR[(g.accounts[0] || {}).platform];
+      var first = g.accounts[0] || {};
+      var c = plats.facebook && plats.instagram ? PLAT_COLOR.meta :
+        first.platform === 'other' ? NAME_COLOR[String(first.platform_name || '').trim().toLowerCase()] : PLAT_COLOR[first.platform];
       while (!c || used[c]) { c = MORE_COLOR[extra % MORE_COLOR.length]; extra++; if (extra > MORE_COLOR.length * 2) break; }
       used[c] = true;
       return c;
     });
   }
+  /* A platform kept as `other` carries its own name (2026-10-06: Douyin,
+     Pinterest, 大众点评, or one typed); one with no name is named by the
+     account, so two never both read Other. */
+  function platWord(a) {
+    a = a || {};
+    var own = String(a.platform_name || '').trim();
+    if (own) return own;
+    if (a.platform === 'other' && String(a.account_name || '').trim()) return String(a.account_name).trim();
+    return PLATFORM_WORD[a.platform] || a.platform || '';
+  }
+  var NAME_COLOR = { douyin: '#111111', pinterest: '#E60023', '大众点评': '#FF6633' };
   var TYPE_WORD = {
     reel: 'Reel', video: 'Video', post: 'Post', photo: 'Photo', carousel: 'Carousel', story: 'Story',
     live: 'Live', short: 'Short', article: 'Article', other: ''
@@ -418,10 +431,7 @@
       var key = a.group_key || ('acc:' + a.id);
       var g = byKey[key];
       if (!g) {
-        /* An account on a platform the list does not name is named by the
-           account, so two of them never both read Other. */
-        g = { key: key, accounts: [], posts: [], label: a.group_label ||
-          (a.platform === 'other' && String(a.account_name || '').trim() ? String(a.account_name).trim() : PLATFORM_WORD[a.platform] || a.platform) };
+        g = { key: key, accounts: [], posts: [], label: a.group_label || platWord(a) };
         byKey[key] = g; groups.push(g);
       }
       g.accounts.push(a);
@@ -1556,7 +1566,7 @@
              2026-10-01: "Video, 1 Sept" over "1 Sept 2026 · Video"). */
           var own = words(p.title).trim();
           var acc = gg.accounts.length > 1 ? gg.accounts.filter(function (a) { return a.id === p.platform_id; })[0] : null;
-          var meta = [acc ? PLATFORM_WORD[acc.platform] || acc.platform : '', own ? dayWord(p.posted_on) : '', own ? typeWord(p) : ''].filter(Boolean).join('  ·  ');
+          var meta = [acc ? platWord(acc) : '', own ? dayWord(p.posted_on) : '', own ? typeWord(p) : ''].filter(Boolean).join('  ·  ');
           var NAME = S(2), META = NAME + S(2), BOX = (meta ? META : NAME) + S(-1), LABH = S(2), VALH = S(3);
           var AFTER = BOX + LABH + VALH + S(2);
           var textH = AFTER + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
@@ -1594,7 +1604,7 @@
       pageTitle(gg.label);
       var cells = [{ label: 'Posts', value: String(gg.posts.length) }];
       gg.accounts.forEach(function (a) {
-        cells.push({ label: (gg.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(growthOf(a)) });
+        cells.push({ label: (gg.accounts.length > 1 ? platWord(a) + ' follower growth' : 'Follower growth'), value: signed(growthOf(a)) });
       });
       if (gg.volume) cells.push({ label: 'Total ' + METRIC_WORD[gg.volume].toLowerCase(), value: fmt(gg.views) });
       if (gg.engKey) cells.push({ label: 'Total ' + METRIC_WORD[gg.engKey].toLowerCase(), value: fmt(gg.eng) });
@@ -1606,7 +1616,7 @@
         blockTitle('Followers', T.minH * (movers.length + 1));
         table([{ w: 1 / (PHI * PHI) }, { w: 0.2 }, { w: 0.2 }, { w: 1 - 1 / (PHI * PHI) - 0.4 }].map(function (c, i) { if (!i) c.align = 'left'; return c; }),
           [{ t: 'Account', align: 'left' }, 'Start of period', 'End of period', 'Growth'],
-          movers.map(function (a) { return { cells: [PLATFORM_WORD[a.platform] || a.platform, fmt(a.followers_start), fmt(a.followers_end), signed(growthOf(a))] }; }),
+          movers.map(function (a) { return { cells: [platWord(a), fmt(a.followers_start), fmt(a.followers_end), signed(growthOf(a))] }; }),
           { labelCol: true });
         gap(BLOCK);
       }
@@ -2205,7 +2215,7 @@
 
   window.ADspaceSmReport = {
     render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, shortResult: shortResult, adName: adName,
-    engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
+    engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, platWord: platWord, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
     AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord
   };
 })();

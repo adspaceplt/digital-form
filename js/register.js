@@ -317,6 +317,10 @@
             /* A portal document is corrected by reissuing it: the same serial,
                the earlier version kept and voided as Reissued. */
             (d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') ? menuItem('reissue', 'Reissue', '', need + ':work') : '') +
+            /* An HR letter is the colleague's to read once shared (My
+               performance, Letters); shared later, or taken back. */
+            (d.family === 'hr' && d.member_id && !d.voided_at
+              ? menuItem('share', d.shared_at ? 'Stop sharing' : 'Share with ' + shareName(d), '', 'register.hr:work') : '') +
             (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need + ':manage')) +
             /* Delete, not "Delete permanently": the menu has named what this
                is and the sheet states that there is no restore. */
@@ -358,9 +362,19 @@
     on('edit', function () { openAdd(d, onChange); });
     on('reissue', function () { openIssue({ reissue: d, onDone: onChange, msg: sayTo }); });
     on('void', function () { openVoid(d, onChange); });
+    on('share', function () {
+      var on2 = !d.shared_at;
+      db.rpc('document_share', { p_id: d.id, p_on: on2 }).then(function (r) {
+        var x = r.data || {};
+        if (r.error || x.error) { say('Not changed. The database refused the request.', 'err'); return; }
+        say(on2 ? 'Shared with ' + shareName(d) + '.' : 'No longer shared.', 'ok');
+        if (onChange) onChange(); else load();
+      }).catch(function () { say('Not changed. The database refused the request.', 'err'); });
+    });
     on('del', function () { openDelete(d, onChange); });
     return el;
   }
+  function shareName(d) { var m = memberOf(d.member_id) || teamOf(d); return m && m.name ? m.name.split(' ')[0] : 'the colleague'; }
   var sayTo = 'regMsg';
   function say(text, kind) { msg(sayTo, text, kind); }
 
@@ -471,6 +485,7 @@
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     $('docClientWrap').hidden = hr || Boolean(issuing.client);
     $('docMemberWrap').hidden = !hr;
+    shareRow(hr, null);
     $('docToRow').hidden = hr;
     $('docAttnRow').hidden = hr;
     $('docHrRow').hidden = !hr;
@@ -561,6 +576,7 @@
     $('docClient').value = d.client_id || '';
     $('docMember').value = d.member_id || '';
     $('docClientWrap').hidden = hr; $('docMemberWrap').hidden = !hr;
+    shareRow(hr, d);
     $('docToRow').hidden = hr; $('docAttnRow').hidden = hr; $('docHrRow').hidden = !hr;
     $('docLangRow').hidden = !quote; $('docSignRow').hidden = false;
     $('docSigned').checked = Boolean(d.signed); $('docSigned').disabled = true;
@@ -579,6 +595,23 @@
     $('docSigName').value = sg.name || ''; $('docSigRole').value = sg.designation || '';
     seeded.sal = null; seeded.body = null; seeded.to = null; seeded.addr = null;
   }
+  /* An HR letter is shared with the colleague it names by default (the user,
+     2026-10-06), the tick turned off for one not yet theirs; a reissue keeps
+     the earlier version's choice. The tick names who is told. */
+  function shareRow(hr, d) {
+    if (!$('docShareRow')) return;
+    $('docShareRow').hidden = !hr;
+    if (d) $('docShare').checked = Boolean(d.shared_at);
+    else if (!issuing || !issuing.shareSet) $('docShare').checked = true;
+    var m = memberOf($('docMember').value);
+    $('docShareWord').textContent = 'Share with ' + (m && m.name ? m.name.split(' ')[0] : 'the colleague');
+  }
+  if ($('docShare')) $('docShare').addEventListener('change', function () { if (issuing) issuing.shareSet = true; });
+  if ($('docMember')) $('docMember').addEventListener('change', function () {
+    if (!$('docShareRow') || $('docShareRow').hidden) return;
+    var m = memberOf($('docMember').value);
+    $('docShareWord').textContent = 'Share with ' + (m && m.name ? m.name.split(' ')[0] : 'the colleague');
+  });
   function shutIssue() {
     $('docSheet').hidden = true; issuing = null;
     $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false;
@@ -664,12 +697,23 @@
     var go = $('docGo');
     go.disabled = true; go.textContent = re ? 'Reissuing…' : 'Issuing…';
     var done = issuing.onDone;
+    var share = args.member && !$('docShareRow').hidden && $('docShare').checked;
+    var shareTo = share ? ((memberOf(args.member) || {}).name || 'the colleague') : '';
     var back = function (r) {
       go.disabled = false; go.textContent = re ? 'Reissue' : 'Issue';
       if (r.error) { msg('docMsg', r.error, 'err'); return; }
       shutIssue();
-      say(r.serial + (re ? ' reissued.' : r.repeat ? ' was already issued.' : ' issued.') + (r.warn ? ' ' + r.warn : ''), r.warn ? 'warn' : 'ok');
-      if (done) done(r); else load();
+      var line = r.serial + (re ? ' reissued.' : r.repeat ? ' was already issued.' : ' issued.') + (r.warn ? ' ' + r.warn : '');
+      var finish = function (extra, tone) {
+        say(line + (extra ? ' ' + extra : ''), tone || (r.warn ? 'warn' : 'ok'));
+        if (done) done(r); else load();
+      };
+      if (!share || !r.id) { finish(); return; }
+      db.rpc('document_share', { p_id: r.id, p_on: true }).then(function (s2) {
+        var d2 = s2.data || {};
+        if (s2.error || d2.error) finish('Not shared: the database refused the request.', 'warn');
+        else finish('Shared with ' + shareTo + '.');
+      }).catch(function () { finish('Not shared: the database refused the request.', 'warn'); });
     };
     if (re) LET.reissue(re, args, back); else LET.issue(args, back);
   }

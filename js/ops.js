@@ -7817,14 +7817,16 @@
 
   // ---- The bell --------------------------------------------------------------
   /* A change somebody else made to a task you own, written by the database
-     beside the event that caused it. Drawn on every route for anybody who can
-     read My Work; the count is the unread rows and nothing else. Pressing one
+     beside the event that caused it. Drawn on every route for every
+     colleague, since a row is its reader's own (an HR letter reaches somebody
+     with no My Work); the count is the unread rows and nothing else. Pressing one
      opens the task and marks the row read, which is the one write a browser
      makes to this table directly. */
   function signedIn() {
     var wrap = $('notifWrap');
     if (!wrap) return;
-    wrap.hidden = !may('ops', 'view');
+    var me = bridge.me && bridge.me();
+    wrap.hidden = !(me && me.id);
     if (wrap.hidden) return;
     loadNotifs();
     /* The count was read once, when the console opened, so a change made
@@ -7880,6 +7882,13 @@
        the person's own record, a dispute opens the team's month. */
     if (!x.task_id && /^perf\./.test(x.kind || '')) {
       if (x.kind === 'perf.disputed' && window.ADspacePerf) window.ADspacePerf.openTeam();
+      else if (bridge.show) bridge.show('mine');
+      return;
+    }
+    /* A letter shared with the colleague opens their Letters. */
+    if (!x.task_id && x.kind === 'hr.letter') {
+      history.replaceState(null, '', '/admin/?s=mine&view=letters');
+      if (window.ADspacePerf && window.ADspacePerf.openLetters) window.ADspacePerf.openLetters();
       else if (bridge.show) bridge.show('mine');
       return;
     }

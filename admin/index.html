@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261006d">
+<link rel="stylesheet" href="/css/portal.css?v=20261006f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -285,8 +285,8 @@
            somebody actually came for. One control at the end of the bar,
            where every application this team uses keeps an account. -->
       <!-- What the record has to tell you: a change somebody else made to a
-           task you own. Drawn only where My Work is readable; the count is
-           the unread rows and nothing else. -->
+           task you own, a letter issued to you. Drawn for every colleague;
+           the count is the unread rows and nothing else. -->
       <div class="notif" id="notifWrap" hidden>
         <button class="notif-btn" id="notifBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
@@ -4045,6 +4045,7 @@
           <button class="acttab btn-sm is-on" data-mv="reviews" type="button" aria-pressed="true">Reviews</button>
           <button class="acttab btn-sm" data-mv="initiatives" type="button" aria-pressed="false">Initiatives</button>
           <button class="acttab btn-sm" data-mv="reflection" type="button" aria-pressed="false">Reflection</button>
+          <button class="acttab btn-sm" data-mv="letters" type="button" aria-pressed="false">Letters</button>
         </span></div>
         <div id="mineReviews">
           <div id="mineList" data-narrow="780"></div>
@@ -4070,6 +4071,12 @@
           </div>
           <div class="msg" id="mineReflMsg"></div>
           <div id="mineReflBox" data-narrow="640"></div>
+        </div>
+        <!-- HR letters issued to the colleague and shared with them
+             (2026-10-06): their own alone, each redrawn on Download. -->
+        <div id="mineLetters" hidden>
+          <div class="msg" id="mineLetterMsg"></div>
+          <div id="mineLetterList" data-narrow="640"></div>
         </div>
       </div>
     </div>
@@ -4549,6 +4556,9 @@ raya-2026        https://example.com/raya"></textarea>
         <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
           <select class="select" id="docMember" aria-required="true"></select></div>
       </div>
+      <!-- An HR letter is the colleague's to read in My performance (Letters)
+           and they are told; untick for a draft not yet theirs. -->
+      <label class="tickline" id="docShareRow" hidden><input type="checkbox" id="docShare" checked> <span id="docShareWord">Share with the colleague</span></label>
       <!-- The fields run in the order the letter prints them: reference and
            date, To and address, Attn and designation (a colleague's position
            and NRIC), the title, the salutation, the body, the signature. -->
@@ -4765,18 +4775,18 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/passkey.js?v=20261001a"></script>
 <script src="/js/admin.js?v=20261006a"></script>
 <script src="/js/documents.js?v=20261005a"></script>
-<script src="/js/letters.js?v=20261002a"></script>
-<script src="/js/smreport.js?v=20261006b"></script>
-<script src="/js/reports.js?v=20261006f"></script>
-<script src="/js/register.js?v=20261004a"></script>
+<script src="/js/letters.js?v=20261006a"></script>
+<script src="/js/smreport.js?v=20261006c"></script>
+<script src="/js/reports.js?v=20261006g"></script>
+<script src="/js/register.js?v=20261006a"></script>
 <script src="/js/crm.js?v=20261005e"></script>
 <script src="/js/sales.js?v=20261005d"></script>
 <script src="/js/team.js?v=20261005f"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261004e"></script>
 <script src="/js/campaigns.js?v=20261006a"></script>
-<script src="/js/ops.js?v=20261006a"></script>
-<script src="/js/perf.js?v=20261005g"></script>
+<script src="/js/ops.js?v=20261006b"></script>
+<script src="/js/perf.js?v=20261006a"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261005f"></script>
 </body>

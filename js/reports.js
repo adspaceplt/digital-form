@@ -61,9 +61,15 @@
   var TYPE_WORD = {};
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
-                   ['youtube', 'YouTube'], ['linkedin', 'LinkedIn'], ['x', 'X'], ['threads', 'Threads'], ['other', 'Other']];
+                   ['youtube', 'YouTube'], ['linkedin', 'LinkedIn'], ['x', 'X'], ['threads', 'Threads'],
+                   ['douyin', 'Douyin'], ['pinterest', 'Pinterest'], ['dianping', '大众点评'], ['other', 'Other']];
   var PLATFORM_WORD = {};
   PLATFORMS.forEach(function (p) { PLATFORM_WORD[p[0]] = p[1]; });
+  /* A platform the database's list does not hold (2026-10-06): kept as
+     `other` with its name in `platform_name`; the list offers the ones the
+     team uses by name, and Other asks for the name. */
+  var NAMED = { douyin: 'Douyin', pinterest: 'Pinterest', dianping: '大众点评' };
+  function platWord(a) { return (a && String(a.platform_name || '').trim()) || PLATFORM_WORD[a && a.platform] || (a && a.platform) || ''; }
   var METRICS = [['views', 'Views'], ['reach', 'Reach'], ['impressions', 'Impressions'], ['interactions', 'Interactions'],
                  ['engagements', 'Engagements'], ['likes', 'Likes'], ['comments', 'Comments'], ['shares', 'Shares'], ['saves', 'Saves']];
   var METRIC_WORD = {};
@@ -402,7 +408,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames(), partnerOf(st.open.client_id)])).then(function (x) {
+      return Promise.all(more.concat([loadNames(), partnerOf(st.open.partner_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
@@ -412,16 +418,14 @@
     });
   }
 
-  /* The partner whose logo a client's reports carry (2026-10-06), or null.
-     A refused read leaves the head as it was: the PDF reads its own. */
-  function partnerOf(clientId) {
-    return db.from('report_partner_clients').select('client_id, partner_id').eq('client_id', clientId).then(function (r) {
-      var pid = r && !r.error && r.data && r.data[0] && r.data[0].partner_id;
-      if (!pid) return null;
-      return db.from('report_partners').select('id, name, active').eq('id', pid).then(function (q) {
-        var p = q && !q.error && q.data && q.data[0];
-        return p && p.active ? p : null;
-      });
+  /* The partner whose logo a white-label report carries (2026-10-06), set on
+     the report itself, or null. A refused read leaves the head as it was:
+     the PDF reads its own. */
+  function partnerOf(pid) {
+    if (!pid) return Promise.resolve(null);
+    return db.from('report_partners').select('id, name, active').eq('id', pid).then(function (q) {
+      var p = q && !q.error && q.data && q.data[0];
+      return p && p.active ? p : null;
     }).catch(function () { return null; });
   }
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
@@ -504,7 +508,7 @@
     box.innerHTML = '<section class="panel rp-head">' +
       '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
-        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
+        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (r.brand_name ? ' · For ' + esc(r.brand_name) : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so
            the state, the file and the ⋯ sit beside the name on one line. */
@@ -886,6 +890,9 @@
     /* A draft started under a temporary client moves to its own (an
        admin's, 2026-10-06). */
     if (r.status === 'draft' && isAdmin()) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
+    /* White-label work for a partner (2026-10-06): the partner's logo and the
+       brand the report covers, while it stays under the client who pays. */
+    if (r.status !== 'published' && (isAdmin() || may('manage'))) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -1035,6 +1042,31 @@
           });
       });
     });
+    on('whitelabel', function (b) {
+      b.closest('.kmenu').hidden = true;
+      db.from('report_partners').select('id, name, active').order('name', { ascending: true }).then(function (q) {
+        if (q.error) { say(m, said(q.error), 'err'); return; }
+        var pts = (q.data || []).filter(function (p) { return p.active || p.id === r.partner_id; });
+        window.ADspaceConfirm.ask({ title: 'White label', go: 'Save',
+          fields: [
+            { name: 'partner', label: 'Partner logo', required: false, value: r.partner_id || '',
+              choices: [['', 'None (ADspace)']].concat(pts.map(function (p) { return [p.id, p.name]; })) },
+            { name: 'brand', label: 'Brand on the report', required: false, value: r.brand_name || '', placeholder: 'Optional' }
+          ] },
+          function (v) {
+            db.rpc('sm_report_white_label', { p_id: r.id, p_partner: v.partner || null, p_brand: v.brand || null }).then(function (res) {
+              var d = res.data || {};
+              if (res.error || d.error) {
+                var e = (d && d.error) || '';
+                say(m, e === 'published' ? 'A published report keeps its brand. Revise it first.' :
+                  e === 'bad-partner' ? 'That partner is inactive.' : e === 'bad-brand' ? 'Keep the brand to 120 characters.' : said(res.error || d), 'err');
+                return;
+              }
+              reopen('Saved.');
+            });
+          });
+      });
+    });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
       window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client can no longer read it. It can be published again.', go: 'Unpublish', tone: 'warn',
@@ -1107,7 +1139,7 @@
       '<div class="crm-head rp-acc-row"><span>Account</span><span>Followers</span><span>Growth</span><span>Figures</span><span></span></div>' +
       st.platforms.map(function (a) {
         return '<div class="crm-row rp-acc-row" data-id="' + esc(a.id) + '">' +
-          '<span class="rp-name"><b>' + esc(a.account_name || PLATFORM_WORD[a.platform] || a.platform) + '</b><small>' + esc(PLATFORM_WORD[a.platform] || a.platform) +
+          '<span class="rp-name"><b>' + esc(a.account_name || platWord(a)) + '</b><small>' + esc(platWord(a)) +
             (a.group_label ? ' · ' + esc(a.group_label) : '') + '</small></span>' +
           '<span class="rp-num">' + (a.followers_start != null || a.followers_end != null ? fmt(a.followers_start) + ' to ' + fmt(a.followers_end) : '<span class="mute">—</span>') + '</span>' +
           '<span class="rp-num">' + esc(signed(growthOf(a))) + '</span>' +
@@ -1172,6 +1204,8 @@
         '<div class="row fgrid"><div><label class="field-label" for="rpAccPlatform">Platform</label><select class="select" id="rpAccPlatform">' +
           PLATFORMS.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label class="field-label" for="rpAccName">Handle</label><input class="input" id="rpAccName" type="text" autocapitalize="off" spellcheck="false" placeholder="@adspace.advertising"></div></div>' +
+        '<div class="row" id="rpAccPlatNameRow" hidden><div><label class="field-label" for="rpAccPlatName">Platform name</label>' +
+          '<input class="input" id="rpAccPlatName" type="text" maxlength="40" aria-required="true" autocomplete="off"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccGroup">Report together as</label><input class="input" id="rpAccGroup" type="text" placeholder="Facebook and Instagram"></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Followers</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccStart">At start of period</label><input class="input" id="rpAccStart" data-num="int" type="text" inputmode="numeric"></div>' +
@@ -1203,13 +1237,21 @@
       var h = String((st.client || {})[HANDLE_COL[pl]] || '').trim();
       return h && pl !== 'facebook' && h.charAt(0) !== '@' ? '@' + h : h;
     };
-    v('rpAccPlatform', a ? a.platform : 'instagram'); v('rpAccName', a ? a.account_name : handleFor('instagram'));
-    if (!a) {
-      var lastHandle = $('rpAccName').value;
-      $('rpAccPlatform').onchange = function () {
-        if ($('rpAccName').value.trim() === lastHandle.trim()) { lastHandle = handleFor($('rpAccPlatform').value); $('rpAccName').value = lastHandle; }
-      };
+    /* A named platform kept as `other` shows as itself in the list; any
+       other name shows Other with the name under it. */
+    var named = '';
+    if (a && a.platform === 'other' && a.platform_name) {
+      Object.keys(NAMED).forEach(function (k) { if (NAMED[k] === a.platform_name) named = k; });
     }
+    v('rpAccPlatform', a ? (named || a.platform) : 'instagram'); v('rpAccName', a ? a.account_name : handleFor('instagram'));
+    v('rpAccPlatName', a && a.platform === 'other' && !named ? a.platform_name : '');
+    var nameRow = function () { $('rpAccPlatNameRow').hidden = $('rpAccPlatform').value !== 'other'; };
+    nameRow();
+    var lastHandle = $('rpAccName').value;
+    $('rpAccPlatform').onchange = function () {
+      nameRow();
+      if (!a && $('rpAccName').value.trim() === lastHandle.trim()) { lastHandle = handleFor($('rpAccPlatform').value); $('rpAccName').value = lastHandle; }
+    };
     v('rpAccGroup', a ? a.group_label : ''); v('rpAccStart', a && a.followers_start); v('rpAccEnd', a && a.followers_end);
     v('rpAccGrowth', a && a.growth_override); v('rpAccWhy', a && a.growth_reason);
     numFields(box);
@@ -1229,8 +1271,10 @@
         .map(function (c) { return c.getAttribute('data-metric'); });
       if (!metrics.length) { say(sm, 'Tick at least one figure.', 'err'); return; }
       var label = $('rpAccGroup').value.trim();
+      var pick = $('rpAccPlatform').value, pName = NAMED[pick] || (pick === 'other' ? $('rpAccPlatName').value.trim() : '');
+      if (pick === 'other' && !pName) { say(sm, 'Enter the platform name.', 'err'); $('rpAccPlatName').focus(); return; }
       var row = {
-        platform: $('rpAccPlatform').value, account_name: $('rpAccName').value.trim() || null,
+        platform: NAMED[pick] ? 'other' : pick, platform_name: pName || null, account_name: $('rpAccName').value.trim() || null,
         group_label: label || null, group_key: label ? label.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null,
         followers_start: numOf('rpAccStart'), followers_end: numOf('rpAccEnd'),
         growth_override: numOf('rpAccGrowth'), growth_reason: $('rpAccWhy').value.trim() || null,
@@ -1266,7 +1310,7 @@
         st.platforms = st.platforms.filter(function (x) { return x.id !== a.id; });
         st.posts = st.posts.filter(function (p) { return p.platform_id !== a.id; });
         paintEditor();
-        undoBar((a.account_name || PLATFORM_WORD[a.platform]) + ' removed.', st.host.querySelector('.rp-accs'), function () {
+        undoBar((a.account_name || platWord(a)) + ' removed.', st.host.querySelector('.rp-accs'), function () {
           db.from('sm_report_platforms').insert(a).select('*').then(function (x) {
             if (x.error) return;
             st.platforms.push(x.data[0]);
@@ -1324,7 +1368,7 @@
       return '<span class="rp-pick"><input class="trow-pick" type="checkbox"' + (id ? ' data-pick="' + esc(id) + '"' : ' data-pickall') +
         (on ? ' checked' : '') + ' aria-label="' + esc(label) + '"></span>';
     };
-    var accWord = function (a) { return (a.account_name || PLATFORM_WORD[a.platform]) + ' · ' + (PLATFORM_WORD[a.platform] || a.platform); };
+    var accWord = function (a) { return (a.account_name || platWord(a)) + ' · ' + platWord(a); };
     var bar = pick ? '<div class="bulkbar rp-adbar">' +
       '<label class="tickline bulkbar-all"><input type="checkbox" id="rpPostAll"> <span id="rpPostCount"></span></label>' +
       '<span class="bulkbar-acts">' + (st.platforms.length > 1 ? '<select class="select select-sm" id="rpPostMove" aria-label="Move to account"><option value="">Move to account</option>' +
@@ -1424,7 +1468,7 @@
       setAccount(moving, to).then(function () {
         st.postPick = {};
         sortPosts(); paintPosts();
-        var word = moving.length + ' post' + (moving.length === 1 ? '' : 's') + ' moved to ' + (acc ? (acc.account_name || PLATFORM_WORD[acc.platform]) : 'another account');
+        var word = moving.length + ' post' + (moving.length === 1 ? '' : 's') + ' moved to ' + (acc ? (acc.account_name || platWord(acc)) : 'another account');
         fileReport('report.saved', word);
         undoBar(word + '.', st.host.querySelector('.rp-posts'), function () {
           Object.keys(was).reduce(function (p0, k) { return p0.then(function () { return setAccount(was[k], k); }); }, Promise.resolve())
@@ -1522,7 +1566,7 @@
     box.querySelector('h3').textContent = p ? 'Edit post' : 'Add post';
     var acc = $('rpPostAcc');
     acc.innerHTML = st.platforms.map(function (a) {
-      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + (PLATFORM_WORD[a.platform] || a.platform)) + '</option>';
+      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
     }).join('');
     acc.value = p ? p.platform_id : (st.lastAcc && st.platforms.some(function (a) { return a.id === st.lastAcc; }) ? st.lastAcc : st.platforms[0].id);
     var thumb = p ? p.thumb_data : null;
@@ -1821,7 +1865,7 @@
       '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Import'));
     var acc = $('rpPasteAcc');
     acc.innerHTML = st.platforms.map(function (a) {
-      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + (PLATFORM_WORD[a.platform] || a.platform)) + '</option>';
+      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
     }).join('');
     $('rpPasteText').value = '';
     $('rpPasteFile').value = '';
@@ -3331,35 +3375,31 @@
     var host = box.querySelector('[data-m="pt"]');
     var paint = function () {
       UI.skeleton(host, 2);
-      Promise.all([db.from('report_partners').select('id, name, logo_data, active').order('name', { ascending: true }),
-        db.from('report_partner_clients').select('client_id, partner_id'), clientsReady]).then(function (got) {
-        var r = got[0], m = got[1];
-        if (r.error || m.error) {
-          UI.failLine(host, 'Partners', /relation|schema cache|does not exist/i.test(((r.error || m.error) || {}).message || '') ? 'This needs a database update.' : said(r.error || m.error), paint);
+      /* A partner is a name and a logo; the report chooses it (White label in
+         the report's ⋯, 2026-10-06), so the partner holds no clients. */
+      db.from('report_partners').select('id, name, logo_data, active').order('name', { ascending: true }).then(function (r) {
+        if (r.error) {
+          UI.failLine(host, 'Partners', /relation|schema cache|does not exist/i.test((r.error || {}).message || '') ? 'This needs a database update.' : said(r.error), paint);
           return;
         }
-        var list = r.data || [], links = m.data || [];
-        box._partners = list; box._links = links;
+        var list = r.data || [];
         if (!list.length) { UI.emptyLine(host, 'No partners.'); return; }
         host.innerHTML = '<div class="pt-list">' + list.slice().sort(function (x, y) { return (y.active ? 1 : 0) - (x.active ? 1 : 0) || x.name.localeCompare(y.name); })
           .map(function (p) {
-            var names = links.filter(function (l) { return l.partner_id === p.id; })
-              .map(function (l) { return (hub.byClient[l.client_id] || {}).name; }).filter(Boolean).sort();
             return '<button class="pt-row' + (p.active ? '' : ' is-off') + '" type="button" data-pt="' + esc(p.id) + '">' +
               '<span class="pt-logo">' + (p.logo_data ? '<img src="' + esc(p.logo_data) + '" alt="">' : '') + '</span>' +
-              '<span class="pt-who"><span class="pt-name"><b>' + esc(p.name) + '</b>' + (p.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
-                '<small>' + esc(names.length ? names.join(', ') : 'No clients') + '</small></span>' +
+              '<span class="pt-who"><span class="pt-name"><b>' + esc(p.name) + '</b>' + (p.active ? '' : '<span class="chip">Inactive</span>') + '</span></span>' +
               ICON.go + '</button>';
           }).join('') + '</div>';
         Array.prototype.forEach.call(host.querySelectorAll('[data-pt]'), function (b) {
           b.addEventListener('click', function () {
             var p = list.filter(function (x) { return x.id === b.getAttribute('data-pt'); })[0];
-            window.ADspaceSheet.close(); partnerSheet(p, links, opener);
+            window.ADspaceSheet.close(); partnerSheet(p, opener);
           });
         });
       }).catch(function (e) { UI.failLine(host, 'Partners', said(e), paint); });
     };
-    box.querySelector('[data-a="add"]').onclick = function () { window.ADspaceSheet.close(); partnerSheet(null, box._links || [], opener); };
+    box.querySelector('[data-a="add"]').onclick = function () { window.ADspaceSheet.close(); partnerSheet(null, opener); };
     paint();
     window.ADspaceSheet.show(box, { opener: opener });
   }
@@ -3387,17 +3427,14 @@
       fr.readAsDataURL(file);
     });
   }
-  function partnerSheet(p, links, opener) {
+  function partnerSheet(p, opener) {
     var box = sheetShell('rpPartnerSheet', 'Partner',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="ptName">Partner name</label>' +
         '<input class="input" id="ptName" type="text" maxlength="80" aria-required="true" autocomplete="off"></div></div>' +
       '<div class="row"><div><label class="field-label" for="ptLogoFile">Partner logo</label>' +
         '<div class="pt-preview" id="ptPreview"></div>' +
         '<input class="input" type="file" id="ptLogoFile" accept="image/png,image/jpeg,image/webp,image/svg+xml">' +
-        '<button class="btn btn-sm btn-quiet" type="button" id="ptLogoOff">Remove logo</button></div></div></section>' +
-      '<section class="fsec"><h4 class="fsec-h">Clients for this partner</h4>' +
-        '<input class="input" id="ptFind" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">' +
-        '<div class="pt-clients" id="ptClients"></div></section>',
+        '<button class="btn btn-sm btn-quiet" type="button" id="ptLogoOff">Remove logo</button></div></div></section>',
       '<button class="btn btn-primary" type="button" data-a="go">Save</button>' +
       '<button class="btn" type="button" data-a="state"></button>' +
       '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>');
@@ -3420,28 +3457,6 @@
         .catch(function (e) { say(m, e.message, 'err'); });
     };
     $('ptLogoOff').onclick = function () { logo = null; $('ptLogoFile').value = ''; showLogo(); };
-    /* Every active client, code first; a client another partner holds says
-       so, and ticking it here moves it. */
-    var mine = {}, other = {};
-    (links || []).forEach(function (l) {
-      if (!l.partner_id) return;
-      if (p && l.partner_id === p.id) mine[l.client_id] = true;
-      else other[l.client_id] = l.partner_id;
-    });
-    var partners = (sheets.rpPartnersSheet && sheets.rpPartnersSheet._partners) || [];
-    var pName = function (id) { return (partners.filter(function (x) { return x.id === id; })[0] || {}).name || ''; };
-    $('ptClients').innerHTML = hub.clients.map(function (c) {
-      return '<label class="pt-client"><input type="checkbox" value="' + esc(c.id) + '"' + (mine[c.id] ? ' checked' : '') + '>' +
-        '<span>' + esc(F.named(c.client_code, c.name)) + (other[c.id] ? ' <small>' + esc(pName(other[c.id])) + '</small>' : '') + '</span></label>';
-    }).join('') || '<p class="hint">No active clients.</p>';
-    $('ptFind').value = '';
-    $('ptFind').oninput = function () {
-      var words = this.value.toLowerCase().split(/\s+/).filter(Boolean);
-      Array.prototype.forEach.call($('ptClients').querySelectorAll('.pt-client'), function (l) {
-        var t = l.textContent.toLowerCase();
-        l.hidden = !words.every(function (w) { return t.indexOf(w) > -1; });
-      });
-    };
     stBtn.hidden = !p;
     stBtn.textContent = p && p.active ? 'Set inactive' : 'Set active';
     stBtn.onclick = function () {
@@ -3456,9 +3471,8 @@
     go.onclick = function () {
       var name = $('ptName').value.trim();
       if (name.length < 2) { say(m, 'Enter the partner name.', 'err'); $('ptName').focus(); return; }
-      var picked = Array.prototype.map.call($('ptClients').querySelectorAll('input:checked'), function (x) { return x.value; });
       go.disabled = true;
-      db.rpc('report_partner_save', { p_id: p ? p.id : null, p_name: name, p_logo: logo, p_clients: picked }).then(function (res) {
+      db.rpc('report_partner_save', { p_id: p ? p.id : null, p_name: name, p_logo: logo, p_clients: [] }).then(function (res) {
         go.disabled = false;
         var d = res.data || {};
         if (res.error || d.error) {
