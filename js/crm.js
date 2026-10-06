@@ -1926,7 +1926,71 @@
       ]) +
       readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
       (c.white_label ? readGroup('Reports', [['White label', 'On'],
-        ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) : '');
+        ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) +
+        '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '');
+    if (c.white_label) loadBrands(c);
+  }
+  /* The brands a white-label client is serviced for (2026-10-07): each its
+     own report a month, picked on New report and in a report's White label.
+     Added and renamed here, stood down, never removed. */
+  var brandSeq = 0;
+  function loadBrands(c) {
+    var host = $('crmWlBrands');
+    if (!host) return;
+    var list = host.querySelector('[data-m="list"]'), seq = ++brandSeq;
+    var can = mayPart('reports.whitelabel', 'work');
+    db.rpc('client_brands_list', { p_client: c.id }).then(function (q) {
+      if (seq !== brandSeq || state.client !== c) return;
+      var d = (q && q.data) || {};
+      if ((q && q.error) || d.error) { list.innerHTML = '<p class="msg err">Brands could not be read.</p>'; return; }
+      var bs = d.brands || [];
+      list.innerHTML = (bs.length ? '' : '<p class="wl-none">No brands.</p>');
+      bs.forEach(function (b) {
+        var row = document.createElement('div');
+        row.className = 'wl-brand' + (b.active ? '' : ' is-off');
+        row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (b.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
+          (can ? '<span class="team-act">' +
+            '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" data-menu hidden>' +
+              '<button class="kmenu-item" data-a="rename" type="button"><b>Rename</b></button>' +
+              '<button class="kmenu-item" data-a="state" type="button"><b>' + (b.active ? 'Set inactive' : 'Set active') + '</b></button>' +
+            '</div></span>' : '');
+        list.appendChild(row);
+        if (!can) return;
+        wireMenu(row);
+        row.querySelector('[data-a="rename"]').addEventListener('click', function () { brandAsk(c, b); });
+        row.querySelector('[data-a="state"]').addEventListener('click', function () {
+          var go = function () { saveBrand(c, b, b.name, !b.active); };
+          if (!b.active) { go(); return; }
+          window.ADspaceConfirm.ask({ title: 'Set ' + b.name + ' inactive?', body: 'It is no longer offered for new reports. Its reports are kept.', go: 'Set inactive', tone: 'warn' }, go);
+        });
+      });
+      if (can) {
+        var add = document.createElement('button');
+        add.type = 'button'; add.className = 'btn btn-sm wl-add'; add.id = 'crmWlAdd';
+        add.innerHTML = PLUS_ICON + 'Add brand';
+        add.addEventListener('click', function () { brandAsk(c, null); });
+        list.appendChild(add);
+      }
+    }).catch(function () { if (seq === brandSeq) list.innerHTML = '<p class="msg err">Brands could not be read.</p>'; });
+  }
+  var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  function brandAsk(c, b) {
+    window.ADspaceConfirm.ask({ title: b ? 'Rename brand' : 'Add brand', go: b ? 'Save' : 'Add',
+      field: { label: 'Brand name', need: 'Enter the brand name.', value: b ? b.name : '', placeholder: 'ADspace Advertising' } },
+      function (name) { saveBrand(c, b, name, b ? b.active : true); });
+  }
+  function saveBrand(c, b, name, active) {
+    db.rpc('client_brand_save', { p_id: b ? b.id : null, p_client: c.id, p_name: name, p_active: active }).then(function (q) {
+      var d = (q && q.data) || {};
+      if ((q && q.error) || d.error) {
+        msg('crmBrandNote', d.error === 'taken' ? 'That brand is already on the list.' : d.error === 'bad-name' ? 'Enter the brand name.' :
+          d.error === 'denied' ? 'This needs Reports: White label.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
+        return;
+      }
+      msg('crmBrandNote', 'Saved.', 'ok');
+      loadBrands(c);
+    }).catch(function (e) { msg('crmBrandNote', (e && e.message) || 'Not saved.', 'err'); });
   }
   function fillBrand(c) {
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });

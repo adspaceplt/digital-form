@@ -289,6 +289,9 @@
             return '<option value="' + t.key + '">' + esc(t.seg) + '</option>';
           }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
+        /* A white-label client's report is for the client itself or one of
+           its brands (2026-10-07): each its own report a month. */
+        '<div class="row" id="rpNewForRow" hidden><div><label class="field-label" for="rpNewFor">For</label><select class="select" id="rpNewFor"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" aria-required="true" type="month"></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
@@ -297,6 +300,23 @@
     $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
       return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
     }).join('');
+    var forSeq = 0;
+    var paintFor = function () {
+      var cid = $('rpNewClient').value, c = hub.byClient[cid] || {}, seq = ++forSeq;
+      $('rpNewForRow').hidden = true; $('rpNewFor').innerHTML = '';
+      if (!cid || !c.white_label || !(bridge.may && bridge.may('reports.whitelabel', 'work'))) return;
+      db.rpc('client_brands_list', { p_client: cid }).then(function (q) {
+        if (seq !== forSeq) return;
+        var bs = ((q && q.data && q.data.brands) || []).filter(function (b) { return b.active; });
+        if (!bs.length) return;
+        $('rpNewFor').innerHTML = '<option value="">' + esc(c.name) + '</option>' +
+          bs.map(function (b) { return '<option value="' + esc(b.id) + '">' + esc(b.name) + ' · White label</option>'; }).join('');
+        $('rpNewForRow').hidden = false;
+        if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpNewFor'));
+      }).catch(function () {});
+    };
+    $('rpNewClient').onchange = paintFor;
+    paintFor();
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
     if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
     var now = new Date();
@@ -342,11 +362,16 @@
         a = ymd(new Date(y, mo - 1, 1)); b = ymd(new Date(y, mo, 0));
       }
       go.disabled = true;
-      db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social' }).then(function (r) {
+      var brand = $('rpNewForRow').hidden ? '' : $('rpNewFor').value;
+      (brand ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social', p_brand: brand })
+             : db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social' })).then(function (r) {
         go.disabled = false;
         var d = r.data || {};
         var id = d.id;
-        if (r.error || (d.error && !(d.error === 'exists' && id))) { say(sm, said(r.error || d), 'err'); return; }
+        if (r.error || (d.error && !(d.error === 'exists' && id))) {
+          say(sm, d.error === 'index-pending' ? 'This needs a database update.' : d.error === 'bad-brand' ? 'That brand is no longer offered.' : said(r.error || d), 'err');
+          return;
+        }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         if (d.error === 'exists') { openReport(id); return; }
         /* A new report is written in the main contact's preferred language. */
@@ -508,7 +533,7 @@
     box.innerHTML = '<section class="panel rp-head">' +
       '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
-        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (r.brand_name ? ' · For ' + esc(r.brand_name) : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
+        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (r.brand_name ? ' · For ' + esc(r.brand_name) : '') + (r.status === 'published' && r.sent_on ? ' · Sent ' + esc(dayWord(r.sent_on)) : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so
            the state, the file and the ⋯ sit beside the name on one line. */
@@ -894,6 +919,11 @@
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
     if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
+    /* Mark as sent (2026-10-07): a published report's day it went out. */
+    if (r.status === 'published' && may('work')) {
+      items.push('<button class="kmenu-item" type="button" data-a="sent">' + (r.sent_on ? 'Change sent date' : 'Mark as sent') + '</button>');
+      if (r.sent_on) items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
+    }
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
@@ -1034,7 +1064,7 @@
               var d = res.data || {};
               if (res.error || d.error) {
                 var e = (d && d.error) || '';
-                say(m, e === 'not-draft' ? 'Only a draft can be transferred.' : e === 'not-active' ? 'Choose an Active client.' :
+                say(m, e === 'not-draft' ? 'Only a draft can be transferred.' : e === 'white-label' ? 'Set White label back to the client first.' : e === 'not-active' ? 'Choose an Active client.' :
                   e === 'exists' ? name + ' already has a report for this period.' : said(res.error || d), 'err');
                 return;
               }
@@ -1045,30 +1075,34 @@
     });
     on('whitelabel', function (b) {
       b.closest('.kmenu').hidden = true;
-      /* Only Active clients ticked White label, holding their wide logo; the
-         one the report carries stays offered while it is. */
-      db.from('clients').select('id, name, client_code').eq('white_label', true).eq('stage', 'active').then(function (q) {
-        if (q.error) { say(m, said(q.error), 'err'); return; }
-        var F = window.ADspaceForm || {};
-        var cl = (q.data || []).slice().sort(F.sequence ? F.sequence('client_code') : function (x, y) { return x.name.localeCompare(y.name); });
-        var cur = st.partner ? st.partner.id : '';
-        if (!cl.length && !r.brand_name && !cur) {
-          say(m, 'No client is set to White label. Tick White label on a client\'s Brand.', 'warn');
+      /* The report's own client's brands (2026-10-07): a white-label client
+         is serviced for its brands, each its own report a period. */
+      Promise.all([
+        db.from('clients').select('id, name, white_label').eq('id', r.client_id).maybeSingle(),
+        db.rpc('client_brands_list', { p_client: r.client_id })
+      ]).then(function (x) {
+        var c = (x[0] && x[0].data) || {};
+        if (x[0] && x[0].error) { say(m, said(x[0].error), 'err'); return; }
+        if (x[1] && x[1].error) { say(m, said(x[1].error), 'err'); return; }
+        var bs = ((x[1] && x[1].data && x[1].data.brands) || []).filter(function (q) { return q.active || q.id === r.brand_id; });
+        if (!c.white_label || !bs.length) {
+          say(m, !c.white_label ? 'Tick White label on ' + (c.name || 'the client') + '\'s Brand first.' : 'Add a brand on ' + (c.name || 'the client') + '\'s Brand first.', 'warn');
           return;
         }
         window.ADspaceConfirm.ask({ title: 'White label', go: 'Save',
           fields: [
-            { name: 'label', label: 'White label', required: false, value: cur,
-              choices: [['', 'None (ADspace)']].concat(cl.map(function (c) { return [c.id, F.named ? F.named(c.client_code, c.name) : c.name]; })) },
-            { name: 'brand', label: 'Brand on the report', required: false, value: r.brand_name || '', placeholder: 'Optional' }
+            { name: 'brand', label: 'For', required: false, value: r.brand_id || '',
+              choices: [['', (c.name || 'Client') + ' (no white label)']].concat(bs.map(function (q) { return [q.id, q.name]; })) }
           ] },
           function (v) {
-            db.rpc('sm_report_label', { p_id: r.id, p_client: v.label || null, p_brand: v.brand || null }).then(function (res) {
+            db.rpc('sm_report_brand', { p_id: r.id, p_brand: (v && v.brand) || null }).then(function (res) {
               var d = res.data || {};
               if (res.error || d.error) {
                 var e = (d && d.error) || '';
                 say(m, e === 'published' ? 'A published report keeps its brand. Revise it first.' :
-                  e === 'bad-client' ? 'That client is no longer set to White label.' : e === 'bad-brand' ? 'Keep the brand to 120 characters.' : said(res.error || d), 'err');
+                  e === 'exists' ? 'That brand already has a report for this period.' :
+                  e === 'bad-brand' ? 'That brand is no longer offered.' :
+                  e === 'index-pending' ? 'This needs a database update.' : said(res.error || d), 'err');
                 return;
               }
               reopen('Saved.');
@@ -1076,6 +1110,25 @@
           });
       }).catch(function (e) { say(m, said(e), 'err'); });
     });
+    var sentCall = function (day) {
+      db.rpc('sm_report_sent', { p_id: r.id, p_on: day || null }).then(function (res) {
+        var d = res.data || {};
+        if (res.error || d.error) {
+          var e = (d && d.error) || '';
+          say(m, e === 'bad-date' ? 'Choose a day from the period\'s start up to today.' : e === 'not-published' ? 'Only a published report is sent.' : said(res.error || d), 'err');
+          return;
+        }
+        reopen(day ? 'Marked as sent.' : 'Marked as not sent.');
+      }).catch(function (e) { say(m, said(e), 'err'); });
+    };
+    on('sent', function (b) {
+      b.closest('.kmenu').hidden = true;
+      var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+      window.ADspaceConfirm.ask({ title: r.sent_on ? 'Change sent date' : 'Mark as sent', go: 'Save',
+        fields: [{ name: 'day', label: 'Sent on', type: 'date', value: r.sent_on || today, min: r.period_start, max: today, required: true }] },
+        function (v) { sentCall(v && v.day); });
+    });
+    on('unsent', function (b) { b.closest('.kmenu').hidden = true; sentCall(null); });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
       window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client can no longer read it. It can be published again.', go: 'Unpublish', tone: 'warn',
@@ -3596,7 +3649,7 @@
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id').order('period_start', { ascending: false }).then(function (r) {
+    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on').order('period_start', { ascending: false }).then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
       Promise.all([clientsReady, loadNames()]).then(paintHub);
@@ -3604,7 +3657,7 @@
   }
   var clientsReady = Promise.resolve();
   function loadClients() {
-    clientsReady = db.from('clients').select('id, name, slug, stage, client_code').order('name', { ascending: true }).then(function (c) {
+    clientsReady = db.from('clients').select('id, name, slug, stage, client_code, white_label').order('name', { ascending: true }).then(function (c) {
       var all = c.data || [];
       hub.byClient = {};
       all.forEach(function (x) { hub.byClient[x.id] = x; });
@@ -3642,7 +3695,7 @@
       if (kind && r.kind !== kind) return false;
       if (!q) return true;
       var c = hub.byClient[r.client_id] || {};
-      return (String(c.name || '') + ' ' + String(c.client_code || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
+      return (String(c.name || '') + ' ' + String(r.brand_name || '') + ' ' + String(c.client_code || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
     });
     var byTab = {};
     HUB_BANDS.forEach(function (bd) {
@@ -3699,8 +3752,13 @@
             var c = hub.byClient[r.client_id] || {};
             var b2 = document.createElement('button');
             b2.type = 'button'; b2.className = 'crm-row rh-row';
-            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc((TYPE_WORD[r.kind] || '') +
-                (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '')) + '</small></span>' +
+            /* A white-label report is named by its brand and marked so,
+               the client it is billed to under it (2026-10-07). */
+            var wl = r.brand_id && r.brand_name;
+            b2.innerHTML = '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+                '</b><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
+                (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
+                (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
               '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
               '<span class="rp-ver">v' + r.version_no + '</span>' +
               '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +

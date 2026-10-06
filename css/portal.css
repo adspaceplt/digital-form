@@ -8397,6 +8397,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-name b .rp-wl { margin-left: 8px; vertical-align: 1px; }
 /* An ad's Ad IDs: the team's reference, one quiet control naming how many
    on the line under the dates, which opens them over the row; in the Edit
    sheet the same control sits in the foot, left of Cancel and Save. */
@@ -10030,5 +10031,13 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .widelogo.is-read { display: inline-flex; height: 48px; margin: 0; padding: 8px 12px; max-width: 100%; }
 .wl-acts { display: flex; gap: 8px; }
 .wl-acts > .btn { flex: 0 0 auto; }
+.wl-brands [data-m="list"] { display: grid; }
+.wl-brand { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); padding: 4px 0; }
+.wl-brand + .wl-brand { border-top: 1px solid var(--line-soft); }
+.wl-brand.is-off .wl-brand-name { color: var(--ink-mute); }
+.wl-brand-name { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.wl-brand .team-act { margin-block: -4px; }
+.wl-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
+.wl-brands .wl-add { justify-self: start; margin-top: 8px; }
 @media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
 #ptLogoOff { margin-top: 8px; }

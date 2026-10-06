@@ -2155,6 +2155,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     question asks for it beside the reviewer, kept as `gate_note` /
     `late_reason` and filed. At Work a month not in order rests Submit.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
+  - Mark as sent (the head's ⋯ on a published report, Reports at Work;
+    `sm_report_sent`, `sm_reports.sent_on` / `sent_by`): one date, today
+    by default, never after today nor before the period (`bad-date`);
+    then Change sent date and Mark as not sent; filed from and to. The head
+    reads Sent {day}; a published row reads Sent {day} or Not sent.
   - Transfer client (the head's ⋯, an admin's alone, a draft only;
     `sm_report_move`, `2026-10-06-report-move-client.sql`) moves a report
     started under a temporary client to an Active one with no report of its
@@ -2170,12 +2175,25 @@ Each line is a rule that broke once. Its reason is in the archive.
     `clients_white_label_logo` too; filed `client.brand`). Both the tick and
     the report's choice are Reports: White label at Work (a granted part;
     `clients_white_label_guard`, the Brand sheet's Reports section drawn only
-    for it). The report's head ⋯ (White label, any report not published)
-    offers only Active clients ticked White label and the brand
-    it covers (`sm_reports.label_client`, `brand_name`; `sm_report_label`,
-    `bad-client`, filed from and to). There is no list of partners
-    (`report_partners`, `partner_id` and `sm_report_white_label` are no
-    longer used). `sm_report_snapshot` sends that client (its name and wide
+    for it). Brands (`2026-10-07-white-label-brands.sql`): a white-label
+    client keeps a saved list (`client_brands`, RLS on, no policy, no
+    grant; `client_brands_list`, `client_brand_save` at Reports: White
+    label; unique within the client in any case, `taken`; stood down, never
+    removed; a rename reaches its reports not published; filed
+    `client.brand`), on its Brand with Add brand and each brand's ⋯ Rename /
+    Set inactive. A report is its client plus a brand (`sm_reports.brand_id`;
+    the client's own has none): one a client, kind, period and brand
+    (`sm_reports_client_brand_period_idx`), New report's For (the client or
+    an active brand, `sm_report_create_for`), the head ⋯'s White label (any
+    report not published; `sm_report_brand`, `exists`, `bad-brand`, filed
+    from and to), accounts carried from the same brand's last report and
+    the AI quota counted by brand (`ai_drafts.brand_id`, filled by
+    trigger). A brand's report sets `label_client` to its own client and
+    `brand_name` to the brand. A white-label report is not transferred
+    (`white-label`). The list names it by its brand with a White label
+    chip, the client under it. There is no list of partners
+    (`report_partners`, `partner_id`, `sm_report_white_label` and
+    `sm_report_label` are no longer used). `sm_report_snapshot` sends that client (its name and wide
     logo, while still ticked) and, with a brand, the brand as the client's
     name and no client logo; the PDF draws the logo at the head of every page
     in place of the ADspace wordmark (15pt high, two fifths of the line at
@@ -2500,8 +2518,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     and ends on `…`), the row as tall as it needs. The appendix has no Date or
     Format column: the Post column takes their room, a post named by its type
     and day says both, and a titled post carries them on a line under it.
-  - Views by week colours each platform as its own (`PLAT_COLOR`:
-    Facebook, Instagram, Meta's blue for the two together, TikTok, rednote;
+  - Views by week colours each platform as its own (`PLAT_COLOR`, one
+    Pantone family of equal depth, never the platforms' fluorescent brand
+    colours: Facebook 7455 C, Instagram 7425 C, the two together 2945 C,
+    TikTok Black 6 C, rednote 186 C;
     a missing or repeated colour takes the next of `MORE_COLOR`); only the
     marks take colour. An account on platform Other is named by the account
     (the PDF names the platform otherwise, never the handle).
