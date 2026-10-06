@@ -4402,9 +4402,9 @@ body > .shell { width: 100%; }
 .piece .input, .piece .select { width: 100%; min-width: 0; }
 #ntCodeHint { margin: 8px 0 0; }
 .is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt week" "draft due" "post post"; }
-.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt week week" "draft due due" "post post post"; }
+.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt week ." "draft due ." "post post ."; }
 .is-narrow .pieces.no-week .piece { grid-template-areas: "desc desc" "fmt fmt" "draft due" "post post"; }
-.is-narrow .pieces.no-week.is-many .piece { grid-template-areas: "desc desc x" "fmt fmt fmt" "draft due due" "post post post"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-areas: "desc desc x" "fmt fmt ." "draft due ." "post post ."; }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
