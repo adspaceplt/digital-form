@@ -64,12 +64,30 @@ const FIELDS: Record<string, [string, string][]> = {
            ['underperformed', 'Areas to improve: one point a line'], ['next_actions', 'Next steps: one point a line']]
 };
 
+/* The words a report never uses about a result or our work, with what it
+   says instead (the user, 2026-10-07: "cannot say things like Creative is
+   bad, since we're the one providing creatives"). The draft keeps to them
+   and the check finds them, in English and in Chinese. */
+const AVOID = `weak, poor, bad, underperformed, disappointing, not ideal (say: had room to grow, or give the figure and what we will test);
+failed, did not work, flopped (say: gave a clear signal for the next test);
+unclear, confusing, boring, not engaging, said of a creative, copy or caption (say: the audience responded more to [the angle that did better]);
+wasted, lost, burnt, said of spend (say: spend that showed us where to optimise next);
+mistake, problem, issue, error, wrong (leave it out and say what we will refine);
+unfortunately, sadly, only before a figure ("only 3 leads") (state the figure plainly);
+in Chinese: 失败, 表现差, 表现不佳, 效果不好, 效果不佳, 不理想, 素材不佳, 创意不足, 文案不吸引, 没有吸引力, 浪费, 白花, 遗憾, 可惜, 问题, 错误, 失误 (say: 仍有提升空间, 有待优化, 为下一轮测试提供了明确方向, 受众对[卖点]的反应更积极, 为后续优化提供依据).`;
+
 /* What every draft keeps to (the user, 2026-10-01): only what a client
    needs, short, and never a word against the work we made for them. */
 const SHARED = `
 
 OUR WORK
-We made the creatives, the copy, the content plan and the targeting. Never call any of it weak, poor, unclear, ineffective, a mistake or a problem, and never blame the creative, design, copy, planning or set up for a result. Read a shortfall as what the figures show about the audience or the platform, then say confidently what we will test or refine next ("we will test a shorter opening", "we will bring the offer forward"). Never suggest the client's spend was wasted. A cause outside the ads is stated only when the notes give it.
+We made the creatives, the copy, the captions, the content plan, the schedule and the targeting, and the client chose to invest in them: the report reads as a partner's, never as a verdict on either side.
+When something works, credit the choice behind it (the offer we led with, the hook, the format, the audience we picked), not luck.
+When something delivers less, never call our work weak or blame the creative, design, copy, caption, plan, schedule or set up for it. Write it in three steps: the figure, what it shows about the audience or the platform, then what we will test or refine ("2609_Facilities had the highest cost per lead at RM 38.90; its 31% hook rate shows the opening holds attention, so we will bring the offer into the first five seconds"). A shortfall is a finding that tells us what to test next.
+Never blame the client (their product, price, stock or reply time), the platform or the season unless the notes give that reason; never suggest the client's spend was wasted.
+Never spin: a figure that fell is stated as it fell, with its number, and never dressed as a rise. Never promise a result ("this will double the leads"); say what we will test.
+Words never used, with what to say instead:
+${AVOID}
 
 LENGTH
 Write only what the client needs to understand the month and the next step; the tables already show every figure, so a point repeats a figure only to explain a decision. Pick the few ads or posts that matter most, never one point per ad. Each point is one sentence of at most 35 words; a sub-point only where it is essential, at most one under a point. Keep to the counts given for each field.`;
@@ -149,8 +167,11 @@ LIST ONLY WHAT IS WRONG
 1. A figure that is not in the data or does not match it: a count, an amount, a percentage, a change against the previous period, a currency, a date or period, an ad or post name.
 2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform.
 3. A comparison the figures do not allow: cost per result compared between different result types; platforms ranked against each other or their figures added into one judgement; a post compared with a post on another platform.
-4. A word against our own work: the creatives, copy, content plan and targeting are ours, so calling any of them weak, poor, unclear, ineffective, a mistake or a problem, or blaming them for a result, is a finding.
-Nothing else: never comment on style, tone, length, order or word choice, never on a reason, plan or budget the figures cannot show (the writer may know it), and never on a figure the data does not hold one way or the other. When every part holds, return no findings.
+4. A word against our own work: the creatives, copy, captions, content plan, schedule and targeting are ours, so calling any of them weak, poor, unclear, ineffective, a mistake or a problem, or blaming them for a result, is a finding.
+5. A word that judges a result as a failure, from this list, in English or Chinese; the fix uses the words given after it:
+${AVOID}
+6. A result blamed on the client's own business (their product, price, stock or reply time): even where true it reads as blame in a report from us; the fix says what the figures show and what we will do.
+Nothing else: never comment on style, tone, length, order or any other word choice, never on a reason, plan or budget the figures cannot show (the writer may know it), and never on a figure the data does not hold one way or the other. When every part holds, return no findings.
 
 EACH FINDING
 ref: the part it is in. quote: the exact words that are wrong, copied from the part, at most 30 words. issue: one sentence in plain British English naming what the figures show, with the figure. fix: the corrected words, ready to paste in place of the quote, in the part's own language and voice; empty where the words should simply go.
