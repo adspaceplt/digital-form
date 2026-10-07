@@ -242,14 +242,7 @@
   }
   /* The file to the tab opened at the press, else saved under its name. */
   function handOver(file, tab) {
-    var url = URL.createObjectURL(file.blob);
-    if (tab && !tab.closed) tab.location.href = url;
-    else {
-      var a = document.createElement('a');
-      a.href = url; a.download = file.name;
-      document.body.appendChild(a); a.click(); a.remove();
-    }
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    window.ADspaceDocs.save(file.blob, file.name, tab);
     return file.warn || '';
   }
 

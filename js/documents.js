@@ -275,13 +275,7 @@
     var say = function (w) { if (said) return; said = true; if (then) then(w); };
     try {
       render(doc).then(function (bytes) {
-        var blob = new Blob([bytes], { type: 'application/pdf' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName(doc);
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+        save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc));
         say(logoWarn);
       }).catch(function (e) {
         say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
@@ -849,7 +843,58 @@
     }
   }
 
+  /* Hand the person a file under its own name (the user, 2026-10-07: "when
+     saving / exporting to iphone, the pdf will become unknown.pdf"). An
+     iPhone's or iPad's Safari keeps no name for a `blob:` address, so there
+     the file goes through the share sheet as a named File, whose Save to
+     Files keeps the name; Safari lets a share start only close to a press,
+     so a file drawn too long after one asks for a press of its own (the
+     confirm sheet where the page has it). Everywhere else, a tab opened at
+     the press shows it, else it downloads under its name. `zh` words the
+     question in Chinese on a client page. */
+  var IOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function fileOf(blob, name) {
+    try { return new File([blob], name, { type: blob.type || 'application/pdf' }); }
+    catch (e) { return blob; }
+  }
+  function anchor(file, name) {
+    var url = URL.createObjectURL(file);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+  function save(blob, name, tab, zh) {
+    var file = fileOf(blob, name);
+    var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
+      (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+    if (shareable) {
+      if (tab && !tab.closed) { try { tab.close(); } catch (e) {} }
+      var share = function () {
+        return navigator.share({ files: [file] }).catch(function (e) {
+          if (e && e.name === 'AbortError') return;
+          throw e;
+        });
+      };
+      return share().catch(function (e) {
+        if (!(e && e.name === 'NotAllowedError')) { anchor(file, name); return; }
+        if (window.ADspaceConfirm) {
+          window.ADspaceConfirm.ask({ title: zh ? '文件已准备好' : 'File ready', body: name,
+            go: zh ? '保存' : 'Save', cancel: zh ? '取消' : 'Cancel' }, function () { share().catch(function () { anchor(file, name); }); });
+        } else anchor(file, name);
+      });
+    }
+    if (tab && !tab.closed) {
+      var url = URL.createObjectURL(file);
+      tab.location.href = url;
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    } else anchor(file, name);
+    return Promise.resolve();
+  }
+
   window.ADspaceDocs = {
+    save: save, ios: IOS,
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,

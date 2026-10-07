@@ -133,7 +133,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
 | `portal.js` | portal |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
@@ -225,8 +225,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   iPhone.
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
-  `applyAccess()` removes it. A refused team row goes to Access denied. Never
-  draw the client pages' bar in its place.
+  `applyAccess()` removes it. A refused team row goes to Access denied; a
+  `me()` that errors is asked again once after `refreshSession()`, and an
+  error still standing reads Unable to load with Try again, never a console
+  drawn with no access read. Never draw the client pages' bar in its place.
 - `/` is the front door and the host's one listed page, a visitor card after
   Apple's visitor centre page (`body.lp`):
   - one centred column (`--lp-col` 980px, 560 at 900 and under; `--lp-gut`
@@ -1105,6 +1107,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
   never stored: a row holds the snapshot and the file is redrawn on Download.
+- Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
+  tab, zh)` under its own file name: on an iPhone or iPad the share sheet
+  with a named File (Safari names a `blob:` address Unknown.pdf), and a
+  share refused for a stale press asks File ready · Save (`ADspaceConfirm`;
+  the client portal loads it); elsewhere the tab opened at the press, else a
+  download (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load).
@@ -2441,7 +2449,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     published its PDF is drawn from that snapshot and stored once under
     the bucket's `private/{client}/` (`sign-upload` private, then
     `sm_report_keep_file`: Reports Work, the key under the report's own
-    client, never replaced; `file_key`, `file_at`, `file_by`). A file
+    client, never replaced; `file_key`, `file_at`, `file_by`; its own
+    write passes `client_scope_guard` under `adspace.keep_file`, so a
+    client seen at View is kept too, `2026-10-07-report-file-kept-in-scope.sql`). A file
     stands for the publish it was drawn after (`file_at` not before
     `published_at`), so a version published again keeps the next file.
     Every download of a published version (the head's Preview PDF and
