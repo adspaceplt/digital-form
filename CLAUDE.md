@@ -2645,7 +2645,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point; and never a word against the creative,
     copy, plan or targeting we made: a shortfall is read as what the
-    audience showed and what we will test next. The ads field `fix` is
+    audience showed and what we will test next, a win credits the choice
+    behind it, nobody is blamed (the client, the platform, the season) unless
+    the notes say so, a fall is never spun, and the words in `AVOID` (English
+    and Chinese, each with what to say instead) are never used; the check
+    finds them (the user, 2026-10-07). The ads field `fix` is
     headed Areas to improve.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`), by subject
