@@ -8,7 +8,9 @@
  * API: the period, the account totals, the previous period, each ad or
  * post's figures, the notes the colleague typed for this draft, and the
  * client's last finished report's commentary. The client's name is masked
- * as "the brand" wherever the team's words carry it; no contact, image or
+ * as {brand} wherever the team's words carry it, and the drafts name the
+ * client by {brand}, filled with the brand's name only once the answer is
+ * back (`brandIn`); no contact, image or
  * billing detail leaves the database. The answer is four fields of text,
  * which the page puts in the fields for the team to edit; nothing is saved
  * here and nothing is published.
@@ -75,7 +77,7 @@ Write only what the client needs to understand the month and the next step; the 
 const ZH = `
 
 LANGUAGE
-This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们; the client is 贵品牌 or 您. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.`;
+This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们. Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name): "{brand}本月的潜在客户成本下降". Never 贵公司, 貴公司, 贵司, 貴司, 贵品牌, 貴品牌, 贵方, 贵企业 or 您公司: these honorifics read stiff to a Malaysian or Singaporean business owner. Use 您 sparingly, never in place of {brand}. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.`;
 
 /* The house style, taken from the team's approved ads reports (the user,
    2026-10-01) and tightened where those reports were loosest: a reason for
@@ -84,7 +86,7 @@ This replaces the British English named above: write every field in Simplified C
 const SYSTEM = `You draft the commentary of a monthly social media advertising report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
 
 VOICE
-Formal, corporate and client-facing British English (optimisation, prioritising), written for a business owner who is busy and not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client ("showing that", "indicating that"), then, where it applies, what we will do about it.
+Formal, corporate and client-facing British English (optimisation, prioritising), written for a business owner who is busy and not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we". Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name): "{brand}'s cost per lead fell", "reach for {brand} rose". Never "your company", "your business", "the client" or "the brand"; "you" and "your" only where a sentence plainly needs them, and never as the only way the client is named. Every point gives the figure, then what it means for the client ("showing that", "indicating that"), then, where it applies, what we will do about it.
 
 TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
@@ -106,7 +108,7 @@ EXAMPLE (invented brand and figures, for tone and shape only)
 intro: September spend was RM 2,140.50, 12.40% lower than August, as part of the budget moved to Google Ads. Reach still rose to 182,300 people, showing more efficient delivery. Leads took 70% of the budget and brought 64 leads, with 2609_OpenHouse the strongest at 31 leads for RM 14.20 each and a CTR of 3.85%.
 worked: 2609_OpenHouse generated 31 leads at RM 14.20 cost per lead with the highest CTR of 3.85%, showing that the open house offer is the clearest reason to enquire.
 - Its hold rate of 11.20% was also the strongest, so viewers stayed for the details as well as the opening.
-For Awareness, 2608_Skyline reached 96,400 people at RM 2.05 per 1,000 reached, keeping the brand visible at low cost.
+For Awareness, 2608_Skyline reached 96,400 people at RM 2.05 per 1,000 reached, keeping {brand} visible at low cost.
 fix: 2609_Facilities had the highest cost per lead at RM 38.90; its strong 31% hook rate shows the opening draws attention, so we will bring the key message into the first five seconds to turn that attention into enquiries.
 focus: We will keep about 80% of the budget on Leads and 20% on Awareness.
 We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is ready.`;
@@ -118,7 +120,7 @@ We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is r
 const SOCIAL_SYSTEM = `You draft the commentary of a monthly social media accounts report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
 
 VOICE
-Formal, corporate and client-facing British English, written for a busy business owner who is not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client, then, where it applies, what we will do.
+Formal, corporate and client-facing British English, written for a busy business owner who is not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we". Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name). Never "your company", "your business", "the client" or "the brand"; "you" and "your" only where a sentence plainly needs them. Every point gives the figure, then what it means for the client, then, where it applies, what we will do.
 
 TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience or a benchmark. A reason is stated only when the team's notes give it; otherwise describe what the figures show ("suggests", "indicates"). Compare with the previous period only where its figures are given. Recommendations may draw on how each platform works (TikTok rewards watch time and a strong first two seconds; Instagram Reels reach beyond followers while carousels earn saves; rednote rewards saves, searchable titles and an authentic first-person voice; Facebook rewards shares and community conversation), but never present that as a measured result.
@@ -152,6 +154,7 @@ Nothing else: never comment on style, tone, length, order or word choice, never 
 
 EACH FINDING
 ref: the part it is in. quote: the exact words that are wrong, copied from the part, at most 30 words. issue: one sentence in plain British English naming what the figures show, with the figure. fix: the corrected words, ready to paste in place of the quote, in the part's own language and voice; empty where the words should simply go.
+The client is named {brand} in the commentary: keep {brand} exactly as it is in a quote and a fix.
 At most 10 findings, the most serious first. No dashes as punctuation, no emoji.`;
 
 function num(v: unknown): number | null {
@@ -160,6 +163,18 @@ function num(v: unknown): number | null {
 }
 /* The team's creator code ending a name (_222) is the team's, never the client's. */
 function adName(s: unknown): string { return String(s ?? '').trim().replace(/[\s_-]+(\d)\1\1$/, ''); }
+
+/* The client named by the brand itself (the user, 2026-10-07: "avoid using
+   贵公司 / 貴司 all these very strong chinese wordings. use brand name to
+   mention our client straight. also applies into english"): {brand} is
+   filled with the name, and a Chinese honorific that slipped through is put
+   back to the name too. With no name held, {brand} reads 品牌 or the brand. */
+function brandIn(s: string, name: string): string {
+  const zh = /[\u4e00-\u9fff]/.test(s);
+  const n = name || (zh ? '品牌' : 'the brand');
+  return s.replace(/\{\s*brand\s*\}/gi, n)
+    .replace(/(贵|貴)(公司|司|品牌|企业|企業|方)|您公司/g, n);
+}
 
 /* The parts of the commentary as they stand, each with the place a reader
    finds it: the report's own fields, each platform's block and each top
@@ -174,7 +189,7 @@ const PLAT_WORD: Record<string, string> = { instagram: 'Instagram', facebook: 'F
 
 // deno-lint-ignore no-explicit-any
 async function runCheck(db: any, id: string, kind: string, r: Record<string, unknown>, data: Record<string, unknown>,
-  mask: (s: string) => string, origin: string | null) {
+  mask: (s: string) => string, origin: string | null, forName: string) {
   const parts: { ref: string; where: string; text: string }[] = [];
   const add = (ref: string, where: string, v: unknown) => {
     const t = String(v ?? '').replace(/\r/g, '').trim();
@@ -240,7 +255,7 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
     const clean = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
     const findings = (got2.findings as Record<string, unknown>[]).filter((f) => refs.includes(String(f.ref))).slice(0, 10)
       .map((f) => ({ ref: String(f.ref), where: parts.find((p) => p.ref === String(f.ref))!.where,
-        quote: clean(f.quote, 400), issue: clean(f.issue, 600), fix: clean(f.fix, 1200) }))
+        quote: brandIn(clean(f.quote, 400), forName), issue: brandIn(clean(f.issue, 600), forName), fix: brandIn(clean(f.fix, 1200), forName) }))
       .filter((f) => f.issue);
     const result = { findings };
     await done(true, result);
@@ -291,7 +306,7 @@ Deno.serve(async (req) => {
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
 
   const rep = await db.from('sm_reports')
-    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id, intro, insights')
+    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id, intro, insights, brand_name')
     .eq('id', id).maybeSingle();
   if (rep.error || !rep.data) return json({ error: 'not-found' }, 200, origin);
   const r = rep.data as Record<string, unknown>;
@@ -305,11 +320,14 @@ Deno.serve(async (req) => {
   const cl = await db.from('clients').select('market, name').eq('id', r.client_id as string).maybeSingle();
   const crow = (cl.data || {}) as Record<string, unknown>;
   const currency = String(crow.market || '').toUpperCase() === 'SG' ? 'SGD' : 'MYR';
-  /* The client's name never leaves: wherever the team's words carry it, it
-     reads as the brand. */
+  /* The client's name never leaves: wherever the team's words carry it (or
+     a white-label report's brand), it reads as {brand}, and the answer's
+     {brand} is filled with the name the report is for once it is back. */
   const cname = String(crow.name || '').trim();
-  const mask = (s: string) => cname.length > 1
-    ? s.replace(new RegExp(cname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'the brand') : s;
+  const bname = String(r.brand_name || '').trim();
+  const forName = bname || cname;
+  const mask = (s: string) => [bname, cname].filter((n) => n.length > 1).reduce((t, n) =>
+    t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '{brand}'), s);
 
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
   const targets: { platforms: string[]; posts: string[] } = { platforms: [], posts: [] };
@@ -400,7 +418,7 @@ Deno.serve(async (req) => {
     data.posts_to_remark = targets.posts;
   }
 
-  if (check) return runCheck(db, id, kind, r, data, mask, origin);
+  if (check) return runCheck(db, id, kind, r, data, mask, origin, forName);
 
   const fields = kind === 'ads' ? FIELDS.ads : [FIELDS.social[0]];
   const str = (d: string) => ({ type: 'string', description: d });
@@ -454,7 +472,7 @@ Deno.serve(async (req) => {
       await done(false);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
-    const clean = (v: unknown) => String(v ?? '').replace(/\r/g, '').trim();
+    const clean = (v: unknown) => brandIn(String(v ?? '').replace(/\r/g, '').trim(), forName);
     const out: Record<string, unknown> = {};
     for (const [k] of fields) {
       if (typeof draft[k] !== 'string') { await done(false); return json({ error: 'ai-incomplete' }, 200, origin); }
