@@ -64,12 +64,14 @@
   var BREACH_CAT = { client: 'Client and account', delivery: 'Delivery and execution',
                      compliance: 'Compliance and platform', asset: 'Assets and finance' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
-  var STATUS = { none: ['Not started', ''], draft: ['Draft', ''], released: ['Shared', 'is-warn'],
+  var STATUS = { none: ['Not started', 'is-off'], draft: ['Draft', 'is-off'], released: ['Shared', 'is-warn'],
                  disputed: ['Query raised', 'is-warn'], resolved: ['Query answered', 'is-warn'],
-                 acknowledged: ['Acknowledged', ''], final: ['Final', 'is-ok'] };
+                 acknowledged: ['Acknowledged', 'is-warn'], final: ['Final', 'is-ok'] };
   var GRADES = [['A', '90–100', 'Distinction'], ['B', '80–89', 'Strong'], ['C', '70–79', 'Baseline'],
                 ['D', '60–69', 'Needs support'], ['E', 'Under 60', 'Improvement plan']];
-  var GRADE_TONE = { A: 'is-ok', B: 'is-ok', C: '', D: 'is-warn', E: 'is-danger' };
+  /* A grade is a fact about a month, never a status colour (2026-10-07): a
+     grey tag whatever it is, so a grade cannot read as an alarm. */
+  var GRADE_TONE = { A: '', B: '', C: '', D: '', E: '' };
   var ACTION = {
     A: 'Maintain standard and mentor where needed.',
     B: 'Maintain consistency.',
@@ -1064,7 +1066,7 @@
       }
       return '<div class="perf-dispute">' +
         '<div class="perf-breach-top"><b>' + esc(itemWord(d)) + '</b>' +
-          (dec ? '<span class="chip ' + (dec === 'not_upheld' ? '' : 'is-ok') + '">' + esc(DECISION[dec]) + '</span>' : '<span class="chip is-warn">Waiting</span>') + '</div>' +
+          (dec ? '<span class="chip ' + (dec === 'not_upheld' ? 'is-off' : 'is-ok') + '">' + esc(DECISION[dec]) + '</span>' : '<span class="chip is-warn">Waiting</span>') + '</div>' +
         '<p class="perf-breach-what">' + esc(d.reason) + '</p>' +
         (dec ? '<p class="perf-answer"><small>' + esc((d.decided_by || 'Answered') + ', ' + timeWord(d.decided_at)) + '</small>' + esc(d.response) + (change ? ' ' + esc(change) : '') + '</p>' : '') +
         (decide ? decideForm(d, r) : '') +
@@ -1356,13 +1358,9 @@
         });
       });
     }
-    Array.prototype.forEach.call($('pvBody').querySelectorAll('.perf-evidence'), grow);
+    /* Notes start one line tall and grow with what is written (js/grow.js). */
+    if (window.ADspaceGrow) window.ADspaceGrow.fit($('pvBody'));
   }
-  /* Evidence starts one line tall and grows with what is written. */
-  function grow(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 200) + 'px'; }
-  $('pvBody').addEventListener('input', function (e) {
-    if (e.target.classList && e.target.classList.contains('perf-evidence')) grow(e.target);
-  });
 
   // ---- My Records ----------------------------------------------------------------------------
   /* THE EMAIL-CODE LOCK. A member's own reviews open only for a session
@@ -1968,7 +1966,7 @@
   var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
     'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
     'no-pool': 'No pool set', 'no-budget': 'No budget set' };
-  var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', ''], pending: ['Pending', 'is-warn'] };
+  var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', 'is-off'], pending: ['Pending', 'is-warn'] };
   var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under {min}', breach: 'Level 3 or 4 issue' };
   /* A quarter or half confirmed before its rules were kept says the reason
      without a figure rather than an empty one. */
@@ -2187,7 +2185,7 @@
       return fail;
     }
     var marks = !f.members ? '' : f.decided
-      ? chip(f.unlocked ? 'Unlocked' : 'Not unlocked', f.unlocked ? 'is-ok' : '')
+      ? chip(f.unlocked ? 'Unlocked' : 'Not unlocked', f.unlocked ? 'is-ok' : 'is-off')
       : chip((f.members - f.finals) + ' not final', 'is-warn');
     return G.section({
       route: 'team-perf', key: 'flex', name: 'Flexible hours in ' + f.next_month, count: f.members, marks: marks,
@@ -2202,7 +2200,7 @@
             whoCell(p, p.breach ? 'Level 3 or 4 issue' : ''),
             cell(has ? esc(num(p.final)) : dash()),
             cell(gradeCell(p.grade)),
-            cell(has ? chip(p.eligible ? 'Eligible' : 'Not eligible', p.eligible ? 'is-ok' : '') : dash(), true)
+            cell(has ? chip(p.eligible ? 'Eligible' : 'Not eligible', p.eligible ? 'is-ok' : 'is-off') : dash(), true)
           ], [has ? num(p.final) : 'Not final', p.grade ? gradeWord(p.grade) : '']);
           return el;
         });
@@ -2235,7 +2233,7 @@
     if (bridge.setUrl) bridge.setUrl();
   });
   function confirmedChip(d) {
-    return d.confirmed ? chip('Confirmed', 'is-ok') : d.ended ? chip('Not confirmed', 'is-warn') : chip('Running');
+    return d.confirmed ? chip('Confirmed', 'is-ok') : d.ended ? chip('Not confirmed', 'is-warn') : chip('Running', 'is-warn');
   }
   function paintQuarter() {
     var d = st.quarter, box = $('rwQList'), G = window.ADspaceGroup;
@@ -2970,8 +2968,8 @@
     add('flex', 'Flexible hours', d.flex, ['Month', 'Team', 'You'], 'rwmf-row', function (x) {
       return row('rwmf-row', [
         whoCell({ name: x.next_month }, 'From ' + x.month),
-        cell(chip(x.unlocked ? 'Unlocked' : 'Not unlocked', x.unlocked ? 'is-ok' : '')),
-        cell(x.unlocked ? chip(x.eligible ? 'Eligible' : 'Not eligible', x.eligible ? 'is-ok' : '') : dash(), true)
+        cell(chip(x.unlocked ? 'Unlocked' : 'Not unlocked', x.unlocked ? 'is-ok' : 'is-off')),
+        cell(x.unlocked ? chip(x.eligible ? 'Eligible' : 'Not eligible', x.eligible ? 'is-ok' : 'is-off') : dash(), true)
       ], [x.unlocked ? 'Unlocked' : 'Not unlocked']);
     });
     add('commission', 'Growth commission', d.commissions, ['Deal', 'Net profit', 'Rate', 'Commission', 'State'], 'rwmc-row', function (c) {
@@ -2995,8 +2993,8 @@
      reflection reaches management only once its author shares it, and is
      never scored (2026-10-04-initiatives-reflection.sql). */
   var IMPROVES = { client: 'Client work', process: 'Process', tool: 'Tool', sop: 'SOP', other: 'Other' };
-  var INIT_STATE = { proposed: ['Proposed', 'is-warn'], adopted: ['Adopted', ''], done: ['Done', 'is-ok'],
-                     not_now: ['Not now', ''], withdrawn: ['Withdrawn', ''] };
+  var INIT_STATE = { proposed: ['Proposed', 'is-warn'], adopted: ['Adopted', 'is-warn'], done: ['Done', 'is-ok'],
+                     not_now: ['Not now', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
   var INIT_ORDER = ['proposed', 'adopted', 'done', 'not_now', 'withdrawn'];
   function initChip(s) { var w = INIT_STATE[s] || [s, '']; return chip(w[0], w[1]); }
   var MENU_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
@@ -3115,7 +3113,7 @@
         return '<div class="crm-row ml-row' + (l.void ? ' is-off' : '') + '">' +
           '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + '</b>' +
           '<small>' + esc([l.serial, dateWord(l.issued_at)].filter(Boolean).join(' · ')) + '</small></span>' +
-          '<span class="ml-state">' + (l.void ? '<span class="chip">Void</span>' : '') + '</span>' +
+          '<span class="ml-state">' + (l.void ? '<span class="chip is-off">Void</span>' : '') + '</span>' +
           '<span class="ml-act">' + act + '</span></div>';
       }).join('') + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-a]'), function (b) {

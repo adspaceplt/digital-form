@@ -66,7 +66,7 @@
       out.innerHTML = '<b>' + esc(t().notFound) + '</b><span>' + esc(t().notFoundText) + '</span>';
       return;
     }
-    var tone = a.state === 'valid' ? 'is-ok' : a.state === 'voided' ? 'is-danger' : '';
+    var tone = a.state === 'valid' ? 'is-ok' : a.state === 'voided' ? 'is-danger' : 'is-off';
     out.innerHTML =
       '<b>' + esc(a.serial) + '</b>' +
       '<span>' + esc(a.kind + (a.issued_at ? ' · ' + t().issued + ' ' + niceDate(a.issued_at) : '')) + '</span>' +

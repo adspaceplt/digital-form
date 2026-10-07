@@ -1381,7 +1381,7 @@
           '<span class="ovname">' + esc(d.number || '') + '</span>' +
           '<span class="ovdim">' + esc(DOC_WORD[d.kind] || d.kind || '') + '</span>' +
           '<span class="ovdim">' + esc(d.issued_at ? niceDate(d.issued_at) : '') + '</span>' +
-          '<span>' + (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
+          '<span>' + (d.voided_at ? '<span class="tone is-off">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
         '</div>';
       }).join('') +
       (rows.length > 4 ? '<p class="ovmore">' + (rows.length - 4) + ' more</p>' : '') +
@@ -2051,7 +2051,7 @@
         row.className = 'wl-brand' + (b.active ? '' : ' is-off');
         var own = b.logo === 'adspace';
         row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">ADspace logo</span>' : '') +
-          (b.active ? '' : '<span class="chip">Inactive</span>') + '</span>' +
+          (b.active ? '' : '<span class="chip is-off">Inactive</span>') + '</span>' +
           (can ? '<span class="team-act">' +
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
@@ -2356,7 +2356,7 @@
          the live thing is the sign-in: main contact is a designation, so it
          reads neutral and the accent is spent once. */
       '<span class="svc-name"><span class="ct-top"><b>' + esc(ct.name) + '</b>' +
-        (removed ? '<span class="tone">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
+        (removed ? '<span class="tone is-off">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
@@ -2694,7 +2694,7 @@
     row.innerHTML =
       '<div class="touch-when"><b>' + esc(niceDate(tc.happened_at)) + '</b>' +
         '<span class="tone">' + esc(KIND_WORD[tc.kind] || tc.kind) + '</span>' +
-        (removed ? '<span class="tone">Removed</span>' : '') + '</div>' +
+        (removed ? '<span class="tone is-off">Removed</span>' : '') + '</div>' +
       '<div class="touch-body">' +
         '<p class="touch-summary">' + esc(tc.summary) + '</p>' +
         '<p class="touch-meta">' +
@@ -4014,7 +4014,7 @@
        control taller than it. The row is the name and what it costs; Inactive
        is the exception, so that is what gets named. */
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone">Inactive</span>' : '') + '</b>' +
+      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +

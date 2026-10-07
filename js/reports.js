@@ -48,8 +48,8 @@
 
   // ---- Words ----------------------------------------------------------------
   var STATUS = {
-    draft: ['Draft', ''], review: ['In review', 'is-warn'],
-    confirmed: ['Confirmed', ''], published: ['Published', 'is-ok']
+    draft: ['Draft', 'is-off'], review: ['In review', 'is-warn'],
+    confirmed: ['Confirmed', 'is-warn'], published: ['Published', 'is-ok']
   };
   /* The kinds of report the builder makes. Each is one engine of steps —
      draft, review, confirmed, published — with its own entry and its own

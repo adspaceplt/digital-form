@@ -158,16 +158,19 @@
 
   /* The colour half of a state. One map, no language: a word and its tone
      travel together, so the console and the client page cannot show the same
-     state in two colours. */
+     state in two colours. A status is a dot and its word (2026-10-07):
+     `is-ok` done or live, `is-warn` waiting on somebody or still running,
+     `is-danger` needs acting on now, `is-off` not started, paused or closed.
+     Every state here is one of the four: a bare tone is a fact, not a state. */
   W.TONE = {
-    option: '', shortlisted: 'is-warn', backup: '',
+    option: 'is-off', shortlisted: 'is-warn', backup: 'is-off',
     confirmed: 'is-ok', pending_visit: 'is-warn', pending_delivery: 'is-warn',
     pending_draft: 'is-warn', submitted: 'is-warn', reviewing: 'is-warn', changes: 'is-warn',
-    scheduled: 'is-ok', posted: 'is-ok', completed: 'is-ok', withdrawn: 'is-danger',
-    enquired: '', quoted: 'is-warn',
-    lead: '', contacted: '', proposal: 'is-warn', active: 'is-ok', paused: 'is-warn', past: '',
-    requested: 'is-warn', approved: 'is-ok', declined: '', applied: 'is-ok',
-    draft: '', open: 'is-warn', production: 'is-warn'
+    scheduled: 'is-ok', posted: 'is-ok', completed: 'is-ok', withdrawn: 'is-off',
+    enquired: 'is-off', quoted: 'is-warn',
+    lead: 'is-off', contacted: 'is-off', proposal: 'is-warn', active: 'is-ok', paused: 'is-off', past: 'is-off',
+    requested: 'is-warn', approved: 'is-ok', declined: 'is-off', applied: 'is-ok',
+    draft: 'is-off', open: 'is-warn', production: 'is-warn'
   };
   W.tone = function (key) { return W.TONE[key] || ''; };
 

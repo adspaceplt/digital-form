@@ -2111,7 +2111,7 @@
           card.type = 'button';
           card.innerHTML =
             '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
-              '<span class="tone ' + (b.published ? 'is-ok' : '') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
+              '<span class="tone ' + (b.published ? 'is-ok' : 'is-off') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
             '<span class="set-row-sub" data-role="sub">Loading…</span>';
           card.addEventListener('click', function () { openBatch(b); });
           box.appendChild(card);
@@ -2195,7 +2195,7 @@
 
     var chip = $('setState');
     chip.textContent = live ? 'Published' : 'Draft';
-    chip.className = 'chip' + (live ? ' is-live' : '');
+    chip.className = 'chip ' + (live ? 'is-ok' : 'is-off');
 
     // Publishing is the positive action, taking it back is a step in reverse,
     // so they should not look the same.
@@ -3963,7 +3963,7 @@
     $('setProgress').innerHTML =
       '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
       '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
-      (ch ? '<p class="setprog-note"><span class="tone is-warn">' + ch + ' changes requested</span></p>' : '');
+      (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + ' changes requested</span></p>' : '');
     block.hidden = false;
   }
 
@@ -4901,7 +4901,7 @@
     row.className = 'link-row is-card' + (off ? ' is-off' : '');
     row.innerHTML =
       '<span class="link-slug">/' + esc(t.card_slug) +
-        (!t.active ? ' <span class="tone">Inactive</span>' : off ? ' <span class="tone">Card off</span>' : '') + '</span>' +
+        (!t.active ? ' <span class="tone is-off">Inactive</span>' : off ? ' <span class="tone is-off">Card off</span>' : '') + '</span>' +
       '<span class="link-target">' + esc(url) + '</span>' +
       '<span class="link-label">' + esc(t.name || '') + '</span>' +
       '<span class="link-act">' +
@@ -4923,7 +4923,7 @@
         // Live is true of nearly every row, so only the exception is named,
         // and it is named beside the thing it is true of.
         '<span class="link-slug">/' + esc(l.slug) +
-          (off ? ' <span class="tone is-warn">Paused</span>' : '') + '</span>' +
+          (off ? ' <span class="tone is-off">Paused</span>' : '') + '</span>' +
         '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
         '<span class="link-label">' + esc(l.title || '') + '</span>' +
         '<span class="link-act">' +
@@ -5232,7 +5232,7 @@
         '<div class="qrrow-img"></div>' +
         '<div class="qrrow-body">' +
           '<b>' + esc(q.label || 'Untitled code') + '</b>' +
-          (q.active ? '' : '<span class="act-tag is-danger" style="margin-left:8px">Revoked</span>') +
+          (q.active ? '' : '<span class="tone is-off" style="margin-left:8px">Revoked</span>') +
           '<span class="qrrow-url">' + esc(qrUrl(q.slug, q.code)) + '</span>' +
           '<span class="muted">' +
             [made(q.created_at, 'Created '), made(q.revoked_at, 'revoked ')]

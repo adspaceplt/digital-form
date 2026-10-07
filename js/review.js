@@ -547,16 +547,8 @@
 
   /* A request or a caption being written grows with its words, up to most
      of the screen, then scrolls (the user, 2026-10-04: a long request sat in
-     two lines). Measured only while it is on the page. */
-  function grow(t) {
-    if (!t || !t.offsetParent) return;
-    t.style.height = 'auto';
-    t.style.height = Math.min(t.scrollHeight + 2, Math.round(window.innerHeight * 0.6)) + 'px';
-  }
-  document.addEventListener('input', function (e) {
-    var t = e.target;
-    if (t && t.matches && t.matches('.changebox .textarea, .copyfield')) grow(t);
-  });
+     two lines): js/grow.js, the one copy for every typed box. */
+  function grow(t) { if (window.ADspaceGrow) window.ADspaceGrow.fit(t); }
 
   function approvalBlock(post, badge, copyBlock) {
     var wrap = document.createElement('div');

@@ -560,9 +560,7 @@
 
   // The same colour the console gives the same state.
   function toneOf(s) {
-    if (['confirmed', 'scheduled', 'posted', 'completed'].indexOf(s) > -1) return 'is-ok';
-    if (s === 'withdrawn') return 'is-danger';
-    return 'is-warn';
+    return window.ADspaceWords.tone(s) || 'is-warn';
   }
 
   function bookingRow(o, no) {

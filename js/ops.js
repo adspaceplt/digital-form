@@ -391,11 +391,15 @@
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
   }
 
-  /* After approval the post is a fact and then a live one, so Scheduled and
-     Live are green; the performance review waits on a person, so it is warn;
-     a post taken down is an outcome and reads mute. */
+  /* Every stage is a status, so every stage has its dot (2026-10-07): not
+     started, set aside or closed is grey; work in hand, and work waiting on a
+     review or a person, is still running and amber (App Store Connect's
+     yellow: a process still happening); after approval the post is a fact
+     and then a live one, so Approved, Scheduled and Live are green; Blocked
+     needs acting on now and is red. A post taken down is an outcome: grey. */
   var STAGE_TONE = {
-    intake: 'is-off', kiv: 'is-off', cancelled: 'is-off', taken_down: 'is-off',
+    intake: 'is-off', ready: 'is-off', kiv: 'is-off', cancelled: 'is-off', taken_down: 'is-off',
+    active: 'is-warn', revision: 'is-warn',
     internal_review: 'is-warn', client_review: 'is-warn', waiting: 'is-warn', performance: 'is-warn',
     approved: 'is-ok', delivered: 'is-ok', done: 'is-ok', scheduled: 'is-ok', live: 'is-ok',
     blocked: 'is-danger'
@@ -427,8 +431,8 @@
     /* A workflow of somebody's own making need not use the seeded groups, so
        the old test is the fallback and never the rule. */
     if (s.is_terminal) return 'is-ok';
-    if (s.is_waiting || s.is_review) return 'is-warn';
-    return '';
+    if (s.is_waiting || s.is_review || s.is_active_work) return 'is-warn';
+    return 'is-off';
   }
   function isFinished(t) { return Boolean(t.completed_at || t.cancelled_at); }
 
@@ -651,9 +655,9 @@
   function isEveryday(t) { return wfKey(t) === 'task'; }
   var PLAIN = {
     todo: { word: 'To do', tone: 'is-off' },
-    doing: { word: 'In progress', tone: '' },
+    doing: { word: 'In progress', tone: 'is-warn' },
     waiting: { word: 'Waiting', tone: 'is-warn' },
-    review: { word: 'Review', tone: '' },
+    review: { word: 'Review', tone: 'is-warn' },
     done: { word: 'Done', tone: 'is-ok' },
     cancelled: { word: 'Cancelled', tone: 'is-off' }
   };
@@ -829,8 +833,9 @@
     if (state.group !== 'due') return true;
     return g.key === 'done' || g.key === 'donetoday';
   }
+  /* The Overdue band's heading says it once; a mark repeating the heading
+     ("Overdue 1 Overdue") is gone (2026-10-07). */
   function marksOf(g) {
-    if (g.key === 'overdue') return '<span class="tone is-danger">Overdue</span>';
     if (state.group === 'due') return '';
     var late = g.rows.filter(function (t) {
       return !isFinished(t) && daysAway(dueOf(t)) < 0;
@@ -2715,7 +2720,7 @@
         ? itemMenu(c.label, [['rename', 'Rename'], ['remove', 'Remove', true]]) : '';
       return '<div class="qitem qitem-mid" data-row="' + esc(c.id) + '"><label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
         '<input type="checkbox" data-item="' + esc(c.id) + '"' + (c.completed_at ? ' checked' : '') + (work ? '' : ' disabled') + '>' +
-        '<span class="checkrow-label">' + esc(c.label) + (c.required ? ' <span class="tone is-warn">Required</span>' : '') + '</span></label>' +
+        '<span class="checkrow-label">' + esc(c.label) + (c.required ? ' <span class="tone">Required</span>' : '') + '</span></label>' +
         menu + '</div>';
     }).join('') || (work && !fin ? '<p class="qempty">No items.</p>' : '');
     var doneN = items.filter(function (c) { return c.completed_at; }).length;
@@ -4631,7 +4636,7 @@
         '<input type="checkbox" data-item="' + esc(c.id) + '"' +
           (c.completed_at ? ' checked' : '') + (can ? '' : ' disabled') + '>' +
         '<span class="checkrow-label">' + esc(c.label) +
-          (c.required ? ' <span class="tone is-warn">Required</span>' : '') + '</span>' +
+          (c.required ? ' <span class="tone">Required</span>' : '') + '</span>' +
         '<span class="checkrow-when">' + esc(c.completed_at ? niceTime(c.completed_at) : '') + '</span>' +
         '</label>' + (can && !fin0 && !c.required ? itemMenu(c.label, [['rename', 'Rename'], ['remove', 'Remove', true]]) : '') + '</div>';
     }).join('') + '</div>';
@@ -6178,11 +6183,11 @@
   var CHECK_ORDER = ['onboarding', 'pre_ads'];
   var CHECK_STATE = [
     ['not_started', 'Not started', 'is-off'], ['waiting_client', 'Waiting on client', 'is-warn'],
-    ['in_progress', 'In progress', ''], ['ready', 'Ready', 'is-ok'], ['na', 'Not applicable', 'is-off']
+    ['in_progress', 'In progress', 'is-warn'], ['ready', 'Ready', 'is-ok'], ['na', 'Not applicable', 'is-off']
   ];
   var ENG_STATE = [
     ['planning', 'Planning', 'is-off'], ['ready', 'Ready', 'is-ok'],
-    ['in_production', 'In production', ''], ['closing', 'Ready to close', 'is-warn'],
+    ['in_production', 'In production', 'is-warn'], ['closing', 'Ready to close', 'is-warn'],
     ['completed', 'Completed', 'is-ok'], ['cancelled', 'Cancelled', 'is-off']
   ];
   /* THE MONTH'S STAGE, worked out on every load from what is true of it,

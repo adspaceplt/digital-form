@@ -1,10 +1,15 @@
-/* Announcements (2026-10-07): one line under the top bar, the team's on the
- * console and the clients' on every client page, each its own and one at a
- * time. It asks `announcement_now(audience)` on load, every minute while the
- * page is on screen and on every return to it (ADspaceMaintenance.often), and
- * draws nothing when none is live. The words follow the page's language
- * (中文 where it was given). The person reading closes it for this browser
- * (`adspace-ann-hide:{id}:{updated_at}`), so an edited line comes back.
+/* Announcements (2026-10-07): one bar under the top bar, the team's on the
+ * console and the clients' on every client page. Several may be live for
+ * each (the user, 2026-10-07: "i want multiples for internal and also
+ * clients"); the bar shows one at a time and slides between them with its
+ * count, 1/3, 2/3, 3/3, never stacking (the user: "should not stack else it
+ * will push down all contents"). It asks `announcement_now(audience)` (the
+ * live ones, Important first, then the newest) on load, every minute while
+ * the page is on screen and on every return to it (ADspaceMaintenance.often),
+ * and draws nothing when none is live. The words follow the page's language
+ * (中文 where it was given). The person reading closes each one for this
+ * browser (`adspace-ann-hide:{id}:{updated_at}`), so an edited line comes
+ * back; a swipe on a phone moves along.
  *
  * The console's account menu opens the list (Team: Announcements,
  * `team.announce`): `ADspaceAnnounce.manage(opener)`.
@@ -16,10 +21,13 @@
   var API = window.ADspaceAPI;
   var inConsole = /^\/admin(\/|$)/.test(location.pathname);
   var audience = inConsole ? 'team' : 'clients';
-  var shown = null;
+  var shown = [];   // the live announcements, as the database orders them
+  var at = 0;       // the one in view, among those not closed here
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
+  var NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
@@ -52,11 +60,16 @@
     return bar;
   }
 
+  function open() { return shown.filter(function (a) { return !hiddenHere(a); }); }
+
+  /* The bar holds every line on one track, side by side, and the track
+     slides to the one in view: the bar is as tall as its longest line, so
+     moving along never moves the page under it. */
   function paint() {
-    var a = shown;
+    var list = open();
     /* Nothing to say, or the page is under upgrade mode's cover: no bar, and
        none made (a box made after the cover would sit outside it). */
-    var quiet = !a || hiddenHere(a) || (document.body && document.body.classList.contains('is-maint'));
+    var quiet = !list.length || (document.body && document.body.classList.contains('is-maint'));
     if (quiet) {
       var was = document.getElementById('annBar');
       if (was) { was.hidden = true; was.innerHTML = ''; }
@@ -65,15 +78,61 @@
     var bar = host();
     if (!bar) return;
     var cn = zh();
-    var text = cn && a.body_zh ? a.body_zh : a.body_en;
-    bar.className = 'annbar' + (a.tone === 'important' ? ' is-important' : '');
-    bar.innerHTML = '<p class="annbar-text">' + esc(text) + '</p>' +
+    var many = list.length > 1;
+    at = Math.min(Math.max(at, 0), list.length - 1);
+    /* Read again every minute: the same lines are left as they are, so a
+       control in the bar never loses the focus it holds. */
+    var sig = list.map(function (a) { return a.id + a.updated_at; }).join('|') + (cn ? ':zh' : ':en');
+    if (bar.__sig === sig && !bar.hidden) { place(bar, list, true); return; }
+    bar.__sig = sig;
+    bar.className = 'annbar' + (many ? ' is-many' : '');
+    bar.innerHTML = '<div class="annbar-view"><div class="annbar-track">' +
+        list.map(function (a) {
+          return '<p class="annbar-text' + (a.tone === 'important' ? ' is-important' : '') + '">' +
+            esc(cn && a.body_zh ? a.body_zh : a.body_en) + '</p>';
+        }).join('') +
+      '</div></div>' +
       '<span class="annbar-acts">' +
-        (a.link ? '<a class="btn btn-sm annbar-open" href="' + esc(a.link) + '" target="_blank" rel="noopener">' + (cn ? '查看' : 'Open') + OUT + '</a>' : '') +
+        '<a class="btn btn-sm annbar-open" target="_blank" rel="noopener" hidden>' + (cn ? '查看' : 'Open') + OUT + '</a>' +
+        (many ? '<span class="annbar-pager">' +
+          '<button class="iconbtn annbar-step" id="annPrev" type="button" aria-label="' + (cn ? '上一条' : 'Previous') + '">' + PREV + '</button>' +
+          '<span class="annbar-n" aria-live="polite"></span>' +
+          '<button class="iconbtn annbar-step" id="annNext" type="button" aria-label="' + (cn ? '下一条' : 'Next') + '">' + NEXT + '</button>' +
+        '</span>' : '') +
         '<button class="iconbtn annbar-x" type="button" aria-label="' + (cn ? '关闭' : 'Dismiss') + '">' + X + '</button>' +
       '</span>';
+    if (many) { bar.setAttribute('data-swipe-prev', 'annPrev'); bar.setAttribute('data-swipe-next', 'annNext'); }
+    else { bar.removeAttribute('data-swipe-prev'); bar.removeAttribute('data-swipe-next'); }
     bar.hidden = false;
-    bar.querySelector('.annbar-x').addEventListener('click', function () { hideHere(a); paint(); });
+    var step = function (by) { at = (at + by + list.length) % list.length; place(bar, list); };
+    if (many) {
+      bar.querySelector('#annPrev').addEventListener('click', function () { step(-1); });
+      bar.querySelector('#annNext').addEventListener('click', function () { step(1); });
+    }
+    bar.querySelector('.annbar-x').addEventListener('click', function () {
+      hideHere(list[at]);
+      paint();
+      var nx = document.querySelector('#annBar:not([hidden]) .annbar-x');
+      if (nx) nx.focus();
+    });
+    place(bar, list, true);
+  }
+
+  /* Puts the line in view: the track, the count, its link, and which line a
+     screen reader reads. */
+  function place(bar, list, now) {
+    var a = list[at];
+    var track = bar.querySelector('.annbar-track');
+    if (now) track.style.transition = 'none';
+    track.style.transform = 'translateX(' + (-100 * at) + '%)';
+    if (now) { void track.offsetWidth; track.style.transition = ''; }
+    Array.prototype.forEach.call(track.children, function (p, i) {
+      if (i === at) p.removeAttribute('aria-hidden'); else p.setAttribute('aria-hidden', 'true');
+    });
+    var n = bar.querySelector('.annbar-n');
+    if (n) n.textContent = (at + 1) + '/' + list.length;
+    var go = bar.querySelector('.annbar-open');
+    if (a.link) { go.href = a.link; go.hidden = false; } else { go.hidden = true; go.removeAttribute('href'); }
   }
 
   function refresh() {
@@ -81,14 +140,22 @@
     if (!c || !c.rpc) return Promise.resolve(null);
     return Promise.resolve(c.rpc('announcement_now', { p_audience: audience })).then(function (r) {
       if (!r || r.error) return;               // a read that fails changes nothing
-      shown = r.data && r.data.id ? r.data : null;
+      /* A list since SEVERAL ANNOUNCEMENTS; the one line the function
+         answered before it, until the migration runs. */
+      var d = r.data;
+      var next = Array.isArray(d) ? d.filter(function (x) { return x && x.id; }) : d && d.id ? [d] : [];
+      var cur = open()[at];
+      shown = next;
+      /* The line in view stays in view when the list is read again. */
+      var keep = cur ? open().map(function (x) { return x.id; }).indexOf(cur.id) : -1;
+      at = keep >= 0 ? keep : 0;
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint, { once: true });
       else paint();
     }).catch(function () {});
   }
 
   if (window.MutationObserver) {
-    new MutationObserver(function () { if (shown) paint(); })
+    new MutationObserver(function () { if (shown.length) paint(); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   }
   /* The console asks once the person is known (ADspaceAnnounce.refresh from
@@ -127,6 +194,7 @@
     'bad-window': 'Choose an end after the start, and later than now.',
     'bad-tone': 'Choose Info or Important.',
     over: 'Its end has passed. Post it again with a new end.',
+    live: 'Stop it first.',
     'not-found': 'That announcement is no longer there.'
   };
   function said(e) {
@@ -168,28 +236,33 @@
       var now = new Date(d.now || Date.now());
       var items = d.items || [];
       list.innerHTML = ['team', 'clients'].map(function (aud) {
+        /* Every announcement of the audience: those live or set for later
+           first, then those stopped or ended, each the newest first. */
         var mine = items.filter(function (a) { return a.audience === aud; });
-        var cur = mine.filter(function (a) { var s = stateOf(a, now); return s === 'Live' || s === 'Scheduled'; })[0];
-        var last = !cur ? mine.filter(function (a) { return stateOf(a, now) === 'Stopped' && (!a.ends_at || new Date(a.ends_at) > now); })[0] : null;
-        var row = function (a, st) {
+        var up = function (a) { var st = stateOf(a, now); return st === 'Live' || st === 'Scheduled'; };
+        var rows = mine.filter(up).concat(mine.filter(function (a) { return !up(a); }));
+        var row = function (a) {
+          var st = stateOf(a, now);
+          var over = a.ends_at && new Date(a.ends_at) <= now;
           var win = [a.starts_at ? 'From ' + when(a.starts_at) : '', a.ends_at ? 'Until ' + when(a.ends_at) : ''].filter(Boolean).join(' · ');
-          return '<div class="ann-row" data-id="' + esc(a.id) + '">' +
+          return '<div class="ann-row' + (up(a) ? '' : ' is-off') + '" data-id="' + esc(a.id) + '">' +
             '<div class="ann-what"><p class="ann-text">' + esc(a.body_en) + '</p>' +
               (a.body_zh ? '<p class="ann-zh" lang="zh">' + esc(a.body_zh) + '</p>' : '') +
               '<p class="ann-meta">' + esc([win, a.updated_by ? 'By ' + a.updated_by : ''].filter(Boolean).join(' · ')) + '</p></div>' +
-            '<div class="ann-ctl"><span class="chip' + (st === 'Live' ? ' tone is-ok' : st === 'Scheduled' ? ' tone is-warn' : '') + '">' + st + '</span>' +
-              (a.tone === 'important' ? '<span class="chip tone is-warn">Important</span>' : '') + '</div>' +
+            '<div class="ann-ctl"><span class="chip ' + (st === 'Live' ? 'is-ok' : st === 'Scheduled' ? 'is-warn' : 'is-off') + '">' + st + '</span>' +
+              (a.tone === 'important' ? '<span class="chip is-warn">Important</span>' : '') + '</div>' +
             '<div class="ann-acts">' +
-              (st === 'Stopped'
-                ? '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>'
-                : '<button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>' +
-                  '<button class="btn btn-sm btn-warn" type="button" data-a="stop">Stop</button>') +
+              (up(a)
+                ? '<button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>' +
+                  '<button class="btn btn-sm btn-warn" type="button" data-a="stop">Stop</button>'
+                : (over ? '' : '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>') +
+                  '<button class="btn btn-sm btn-danger" type="button" data-a="delete">Delete</button>') +
             '</div></div>';
         };
         return '<section class="fsec ann-sec" data-aud="' + aud + '">' +
           '<div class="ann-head"><h4 class="fsec-h">' + NAME[aud] + '</h4>' +
           '<button class="btn btn-sm" type="button" data-a="new">' + PLUS + 'New</button></div>' +
-          (cur ? row(cur, stateOf(cur, now)) : last ? row(last, 'Stopped') : '<p class="ann-none">No announcement.</p>') +
+          (rows.length ? '<div class="ann-rows">' + rows.map(row).join('') + '</div>' : '<p class="ann-none">No announcement.</p>') +
           '</section>';
       }).join('');
       var byId = {};
@@ -206,6 +279,12 @@
               function () { end(a, false); });
           });
           on('restore', function () { end(a, true); });
+          /* Stop is the soft remove; Delete, once it is stopped, is the one
+             that cannot be taken back. */
+          on('delete', function () {
+            window.ADspaceConfirm.ask({ title: 'Delete this announcement?', body: 'It is removed for good. There is no restore.', go: 'Delete', tone: 'danger' },
+              function () { drop(a); });
+          });
         });
       });
     }).catch(function (e) { if (S && S.failLine) S.failLine(list, 'Announcements', said(e), load); });
@@ -216,6 +295,15 @@
       var d = (r && r.data) || {};
       if ((r && r.error) || d.error) { msg(said(r.error || d.error), 'err'); return; }
       msg(on ? 'Restored.' : 'Stopped.', 'ok');
+      load(); refresh();
+    }).catch(function (e) { msg(said(e), 'err'); });
+  }
+
+  function drop(a) {
+    db().rpc('announcement_delete', { p_id: a.id }).then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) { msg(said(r.error || d.error), 'err'); return; }
+      msg('Deleted.', 'ok');
       load(); refresh();
     }).catch(function (e) { msg(said(e), 'err'); });
   }
