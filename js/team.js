@@ -471,8 +471,8 @@
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       /* The exception only: Inactive, Access expired, or a card turned off
          for somebody still working; an ordinary row says nothing. */
-      '<span class="team-state">' + (!m.active ? '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
-        : m.card_on === false ? '<span class="tone">Card off</span>' : '') + '</span>' +
+      '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
+        : m.card_on === false ? '<span class="tone is-off">Card off</span>' : '') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather

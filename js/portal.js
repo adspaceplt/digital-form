@@ -541,7 +541,7 @@
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
           '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
-          '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held)) + '</span>' +
+          '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held, 'is-ok')) + '</span>' +
           menuCell(items);
         wireMenu(row);
         if (items.length) row.querySelector('[data-a="join"]').addEventListener('click', function () {
@@ -638,7 +638,7 @@
 
     // Overview
     var st = w.stage[c.stage] || c.stage || '';
-    var stTone = c.stage === 'active' ? 'is-ok' : (c.stage === 'paused' || c.stage === 'proposal') ? 'is-warn' : '';
+    var stTone = window.ADspaceWords.tone(c.stage) || 'is-off';
     var mute = function (s) { return '<span class="muted">' + esc(s) + '</span>'; };
 
     /* Who this page is for. A client signed in and read a table of their own

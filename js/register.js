@@ -886,7 +886,7 @@
       return '<section class="fsec"><h4 class="fsec-h">' + esc(GROUP_WORD[f]) + '</h4>' + rows.map(function (t) {
         var off = t.active === false;
         return '<div class="dtrow' + (off ? ' is-off' : '') + '">' +
-          '<span class="dtrow-name"><span class="dtrow-title"><b>' + esc(t.name) + '</b>' + (off ? '<span class="tone">Inactive</span>' : '') + '</span>' +
+          '<span class="dtrow-name"><span class="dtrow-title"><b>' + esc(t.name) + '</b>' + (off ? '<span class="tone is-off">Inactive</span>' : '') + '</span>' +
           '<small>' + esc(typeMeta(t)) + '</small></span>' +
           '<button class="btn btn-quiet btn-sm" data-edit="' + esc(t.id) + '" type="button">' + PEN + 'Edit</button></div>';
       }).join('') + '</section>';

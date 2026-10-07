@@ -8,8 +8,9 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 ## 1. Register
 - Apple / Cloudflare: clarity, deference, depth by layering, not shadow. Flat,
   quiet, one accent, corporate, warm neutrals.
-- Never "AI SaaS": no rainbow gradients, no decorative shadows, no coloured
-  dots for status, no explanatory blurbs, no highlighter colours.
+- Never "AI SaaS": no rainbow gradients, no decorative shadows, no walls of
+  tinted pills, no explanatory blurbs, no highlighter colours. A status is a
+  dot and its word in ink (App Store Connect), never a coloured box.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never
   from dimming text.
@@ -30,19 +31,21 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Fields, buttons, the contact chip, menus, sheets and file tiles keep their edges. `uxaudit` `outline` |
-| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: the primary for your own progress, a selected `.acttab`, progress. Never the Undo bar |
+| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress. Never a button, never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
-| `--action` / `--on-action` | `#0b57d0` / `#fff` | `#a8c7fa` / `#062e6f` | **Blue: moves work to somebody else** (Publish, Release, Submit, Approve, a hand-off) |
-| `--action-hover` / `--action-pressed` | `#0847ae` / `#063989` | `#c2dafc` / `#d3e3fd` | Its steps |
+| `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
+| `--action-hover` / `--action-pressed` | `#0068d1` / `#005bb8` | the same | Its steps, each darker so the label keeps AA (Apple's lighter hover is 4.32:1). `#007AFF` (4.02:1) is refused |
+| `--action-ink` | `#0066cc` | `#2997ff` | Blue as words or a glyph (5.57:1 on white, 5.47:1 on the dark card) |
+| `--dot-ok` / `--dot-wait` / `--dot-late` / `--dot-off` | `#34c759` / `#ff9f0a` / `#ff3b30` / `#aeaeb2` | `#30d158` / `#ff9f0a` / `#ff453a` / `#636366` | A status's 8px dot before its word in ink, Apple's system colours: green done or live, amber waiting on somebody or still running, red needs acting on now, grey not started, paused or closed. The word carries the meaning; the dot is never alone |
 | `--action-ring` | `#8ab4f8` | `#8ab4f8` | The focus ring everywhere |
-| `--accent` = `--ok`, `--ok-bg` | `#1f7a4d`, `#ecf5f0` | `#4aa876`, `#17281f` | **Green: live state and success only** |
+| `--accent` = `--ok`, `--ok-bg` | `#1f7a4d`, `#ecf5f0` | `#4aa876`, `#17281f` | **Green words: success only** (`.msg.ok`, a ring done); a live or done state is its dot |
 | `--ok-solid` / `--on-ok` | `#1f7a4d` / `#fff` | `#4aa876` / `#07150e` | A green fill and its text |
-| `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | Caution and waiting: pending, reviewing, waiting on a person, due soon, over a guidance figure (WIP, capacity), an Important announcement |
+| `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | A mark drawn over a guidance figure (a capacity bar, a chart bar or key); a waiting state is its amber dot, a caution a neutral box led by it (the upgrade line, an Important announcement, `.msg.warn`), never a tinted slab |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#fff` | `#cf9350` / `#1d1408` | A warn fill |
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys, refuses, or is late** (danger items, the billing gate, blocked; a date already passed: overdue, late, Urgent, Urgent delivery, a lead over its follow-up time) |
 | `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
-| `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | Legacy focus halo |
+| `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
@@ -53,11 +56,19 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 - Every colour is a token; a literal cannot follow the theme.
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
-- A fill and its text are always a pair (`--fill` / `--on-fill`, never
-  `var(--ink)` / `#fff`). A hover is `filter: brightness()` on the same token.
-- One colour per promise, and the screen stays about nine-tenths neutral.
-  - Add, Create and Save are ink operations.
-  - Copy link, Preview, Edit, Cancel and row actions are neutral.
+- A fill and its text are always a pair (`--action` / `--on-action`, never
+  `var(--ink)` / `#fff`). A hover is the token's own step (`--action-hover`)
+  or `filter: brightness()` on the same token.
+- One colour, one meaning, and the screen stays about nine-tenths neutral (the
+  user, 2026-10-07, after the colour audit, on Apple's guidelines): blue is
+  the action, green done or live, amber waiting or still running, red needs
+  acting on now or destroys, grey not started or closed. A fact (High,
+  Goodwill, White label, You) is a grey tag, never a status colour. Health's
+  pink and the calendar's purple keep their one place.
+  - Every primary is blue: Add, Create and Save as much as Publish, Release
+    and Approve.
+  - Copy link, Preview, Edit, Cancel, row actions and every caution (Unpublish,
+    Withdraw, Stop, Revert, Reopen) are the neutral tonal button.
   - One blue action per view, two at most (`uxaudit` `accent`).
 - The accent marks the exception, not the norm. A state true of nearly every
   row carries no colour: the row says nothing, and the exception is a neutral
@@ -109,7 +120,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Money in a row | 13.5px tabular | `.svc-rate` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
-| Chip | 11.5/600, radius 5, padding 2px 8px, sentence case | `.tone`, `.chip`, `.chip-state`; `.state-select` 12.5/600 |
+| Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 160px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
 | Numbers in cells | 17/600/-.02em | `.tally-cell b` |
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |
@@ -198,7 +209,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A record pane of facts | Read first (`readGroup`, missing required values in warn); Edit opens the same groups in a sheet |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
-| Status | A chip with the word (`.chip`, `.tone`); `select.state-select` (tinted) only for a state that moves as the work |
+| Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (its dot in the box, no tint) only for a state that moves as the work |
 | Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
 | Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
@@ -211,7 +222,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My Records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), an admin's Upgrade mode as a switch (drawn for an admin alone), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
-| A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the warn pair for Important; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
+| A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
 | Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |
@@ -262,9 +273,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
-  with the soft ink, or the tone of the state it counts where it counts any
-  (Content Review: Pending warn, Changes requested rose, Approved green, as
-  the cards' own chips on both sides; Overview: red where an item is late).
+  with the soft ink, red (`is-err`) only where what it counts needs acting
+  on now (Content Review: Changes requested, on both sides; Overview: an
+  item is late); a waiting or done count stays neutral (2026-10-07).
   It gives back its room on a phone (4px under 640, 3px under 400) before a
   tab's word is cut.
 - On a phone a sideways swipe presses the tab beside the chosen one
@@ -341,10 +352,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     a typed address (a website, a profile, a past link) is a `.plink`.
   - The command bar's controls are 32px and take the small corner
     (`--radius-ctl-sm`).
-  - `.btn-primary` is ink.
-  - `.btn-go` is blue.
-  - `.btn-warn` is warn on its tint (reversible caution).
-  - `.btn-danger` is red.
+  - Three roles, as Apple's (2026-10-07): `.btn-primary` and `.btn-go` are
+    the one blue primary; `.btn` is tonal, caution included (`.btn-warn` is
+    the tonal button, its question saying what it costs); `.btn-danger` is
+    red words on the tonal button, never a red slab.
   - `.btn-quiet` is text only.
   - `.btn-sm`.
   - A sheet Cancel is `.btn-quiet`, never a bare `.btn` (`flex: 1` grows it).
@@ -360,7 +371,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `.row > .btn` to the bottom. A field standing alone fills its container.
 - A required field carries a red asterisk from `aria-required`.
 - A typed box (`textarea`) runs its row's width and stretches downwards only
-  (`resize: vertical`): a sideways drag never widens the page.
+  (`resize: vertical`): a sideways drag never widens the page. It grows with
+  its words (`js/grow.js`, on every page with a typed box): as it is typed
+  in, as it comes into view holding words, when a page sets its value and
+  when the width changes, up to 60% of the screen, then scrolls; measuring it
+  never moves the page or its sheet. `data-nogrow` keeps one still. No page
+  grows its own (`tests/grow.js`).
 - A native field is reskinned to our box:
   - `::file-selector-button` shaded (`--line-soft`), concentric, 13px;
   - a date or time field with `appearance: none`, the value left aligned,
@@ -394,14 +410,17 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 
 ### Colour, state, hover
 - One status vocabulary and one colour set, on console and client pages alike
-  (`W.TONE`). Pending and reviewing are warn.
+  (`W.TONE`, every status word with its tone). Pending and reviewing are
+  amber.
 - Late is red, waiting is amber (the user, 2026-10-07): what is past its
-  date needs acting on today, so it takes `--err`, the word beside it
-  (Overdue, late, Urgent); what waits, or is due soon, keeps `--warn`.
+  date needs acting on today, so it takes the red dot or `--err`, the word
+  beside it (Overdue, late, Urgent); what waits, or is still running, takes
+  the amber dot. A count (`.tab-n`) is red only where it counts something to
+  act on now; a waiting or done count is neutral.
 - A stage select is toned by `stage_group`:
-  - not started: mute;
-  - in hand: none;
-  - waiting on a person: warn;
+  - not started (and ready to start): grey;
+  - in hand (in progress, a revision): amber, still running;
+  - waiting on a person: amber;
   - cleared: green;
   - blocked: red.
 - A lifecycle flag flipped once (Active / Inactive) is a chip plus a ⋯ item,

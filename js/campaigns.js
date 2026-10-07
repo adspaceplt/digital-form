@@ -407,7 +407,7 @@
       }).join('');
       row.innerHTML =
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
-          (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
+          (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
         '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
@@ -459,7 +459,7 @@
   function histDiff(before, after) {
     var urls = function (l) { return (l || []).map(function (p) { return p.url; }); };
     var b = urls(before), a = urls(after), out = [];
-    (after || []).forEach(function (p) { if (b.indexOf(p.url) < 0) out.push({ tone: 'is-ok', word: 'Added', p: p }); });
+    (after || []).forEach(function (p) { if (b.indexOf(p.url) < 0) out.push({ tone: '', word: 'Added', p: p }); });
     (before || []).forEach(function (p) { if (a.indexOf(p.url) < 0) out.push({ tone: 'is-danger', word: 'Removed', p: p }); });
     return out;
   }
@@ -1062,11 +1062,13 @@
       '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + '</span>' +
       '<span class="crm-c camp-c-slots">' + esc(String(c.slots || 0)) + '</span>' +
       /* A campaign nobody has been booked on yet has no amount, and the
-         currency sign alone is a fragment that reads like a broken field. */
+         currency sign alone is a fragment that reads like a broken field:
+         the cell's missing value is the mute dash. */
       '<span class="crm-c svc-rate">' + (amount ? esc(amount)
-        : '<span class="muted">' + esc(MON.market(mk).sign) + '</span>') + '</span>' +
-      '<span class="crm-c crm-c-stage"><span class="tone ' +
-        (c.state === 'draft' ? '' : 'is-ok') + '">' +
+        : '<span class="muted">\u2014</span>') + '</span>' +
+      /* The state's own dot, as everywhere (2026-10-07): a campaign still
+         open or in production is still running, never green. */
+      '<span class="crm-c crm-c-stage"><span class="tone ' + W.tone(c.state) + '">' +
         esc(STATE_WORD[c.state] || c.state) + '</span></span>' +
       /* The one line the phone gets: the client, how many creators, and what
          it is worth where that is known. It may wrap between its parts, never
@@ -1462,7 +1464,7 @@
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
     var linkOpen = c.state !== 'draft';
-    $('campLinkState').className = 'tone' + (linkOpen ? ' is-ok' : '');
+    $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');
     $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
     showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
@@ -1512,7 +1514,7 @@
 
   function paintCampState(c) {
     $('campState').textContent = STATE_WORD[c.state] || c.state;
-    $('campState').classList.toggle('is-live', c.state !== 'draft');
+    $('campState').className = 'chip ' + W.tone(c.state);
     var move = publishMove(c.state);
     $('campPublish').hidden = !move;
     if (!move) return;
@@ -1645,7 +1647,7 @@
      campaign now. */
   var OPTION_WORD = Object.keys(W.en.step).reduce(function (m, k) {
     m[k] = [W.en.step[k], W.tone(k)]; return m;
-  }, { replaced: ['Replaced', 'is-danger'] });
+  }, { replaced: ['Replaced', 'is-off'] });
 
   function loadOptions() {
     db.from('campaign_options').select('*, creators(name, access_code, creator_profiles(platform, url))')
@@ -3193,8 +3195,8 @@
         '<span class="kcard-sum">' + (sum ? esc(sum) : '') + '</span>' +
         '<span class="kcard-tags">' +
           '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
-          (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
-          (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
+          (o.is_replacement ? '<span class="tone">Replacement</span>' : '') +
+          (o.goodwill ? '<span class="tone">Goodwill</span>' : '') +
         '</span>' +
         '<span class="kcard-act">' +
           /* Sending a creator their link is the everyday action on this row, so
@@ -4353,7 +4355,7 @@
           : '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">' + leave + '</a>') +
         (c.invoice_uploaded_at
           ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
-        '<button class="btn btn-warn" id="invRemove" type="button">Remove PDF</button>';
+        '<button class="btn btn-danger" id="invRemove" type="button">Remove PDF</button>';
       cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
       if (cur.querySelector('#invView')) cur.querySelector('#invView').addEventListener('click', function () { openPrivateInvoice(c); });
     } else {

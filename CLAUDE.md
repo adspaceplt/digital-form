@@ -351,33 +351,43 @@ Each line is a rule that broke once. Its reason is in the archive.
     covers itself; switched off, a covered page reloads (to its latest
     version). A read that fails (`ask(true)` answers null) changes nothing.
   - The console covers itself for anybody but an admin (the whole screen,
-    with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
+    with Sign out); an admin works on under `.upgradebar` (led by the amber
+    dot, Turn off).
     The switch is the account menu's Upgrade mode (`role="switch"`, Off /
     On / Set, `team.upgrade`): on asks for Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's) and a note, refusing in the sheet a window that does not end
     after its start and now; off never
     asks.
-- Announcements (`js/announce.js`, `2026-10-07-announcements.sql`): one line
-  under the top bar, the team's on the console (laid like `.upgradebar`) and
-  the clients' on every client page that loads `maintenance.js` (edge to edge
-  under its bar), each its own and one at a time (`announcements`, RLS on,
-  no policy, no grant). `announcement_now(audience)` answers the one live
-  (started or no start, its end ahead or none, not ended), the clients' to
-  anyone and the team's to the team, never who wrote it; asked on load (the
-  console once `me()` answers), every minute while on screen and on return.
-  Info is the tonal ground, Important the warn pair; the words follow the
-  page's language (中文 where given); an https link opens in a new tab; the
-  reader's × hides it in this browser (`adspace-ann-hide:{id}:{updated_at}`,
-  so an edit returns it). Team: Announcements (`team.announce`, granted) in
-  the account menu opens the list (`#annSheet`: Team and Clients, each its
-  current or stopped line with Edit / Stop, which asks, or Restore, which
-  never does, and New): `announcement_save` (an ADspaceConfirm sheet: Tone,
-  English, 中文, Link, Starts and Ends as a date beside its time, MYT; one
-  saved ends every other of its audience) and `announcement_end(id, on)`;
-  each filed `team.changed` under subject Announcements. A plain line, never
-  a scrolling marquee. No bar is made while upgrade mode's cover is up (a box
-  made after the cover would sit outside its `inert`).
+- Announcements (`js/announce.js`, `2026-10-07-announcements.sql`,
+  `2026-10-07-announcements-several.sql`): one bar under the top bar, the
+  team's on the console (laid like `.upgradebar`) and the clients' on every
+  client page that loads `maintenance.js` (edge to edge under its bar)
+  (`announcements`, RLS on, no policy, no grant). Several may be live for
+  each audience (the user, 2026-10-07: "i want multiples for internal and
+  also clients"): `announcement_now(audience)` answers every live one as a
+  list (started or no start, its end ahead or none, not ended; Important
+  first, then the newest, ten at most), the clients' to anyone and the
+  team's to the team, never who wrote it; asked on load (the console once
+  `me()` answers), every minute while on screen and on return. They share
+  the one bar, never stacked: a slide each, with ‹ n/N › once there are two
+  (the arrows and a swipe, round from the last to the first), the bar as
+  tall as its longest line so moving along never moves the page. Info is
+  the tonal ground, Important the same led by the amber dot; the words
+  follow the page's language (中文 where given); an https link opens in a
+  new tab; the reader's × hides the one on show in this browser
+  (`adspace-ann-hide:{id}:{updated_at}`, so an edit returns it). Team:
+  Announcements (`team.announce`, granted) in the account menu opens the
+  list (`#annSheet`: Team and Clients, each every line, live with Edit /
+  Stop, which asks, stopped or ended with Restore (never asks, while its end
+  is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
+  sheet: Tone, English, 中文, Link, Starts and Ends as a date beside its
+  time, MYT; posting one adds it, never ending another),
+  `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
+  restore; refused `live` until stopped or ended); each filed `team.changed`
+  under subject Announcements. A plain line, never a scrolling marquee. No
+  bar is made while upgrade mode's cover is up (a box made after the cover
+  would sit outside its `inert`).
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
@@ -499,6 +509,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   addresses never change. A refused or slow pass (6s) never holds a page.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
+- `js/grow.js` (`ADspaceGrow.fit(el)`) is the only way a typed box grows
+  (the user, 2026-10-07: "Cell not increasing as i typed? Why still these
+  issues again"): every textarea on a page that loads it (the console, the
+  client portal, the selection page, the creator's page, the review page,
+  `docs/PAGE-TEMPLATE.html`) fits its words as it is typed in, as it comes
+  into view holding words, when a page sets its `value` (the setter is
+  wrapped) and when the width changes, up to 60% of the screen, then
+  scrolls; every scroller around it keeps its place while it is measured.
+  `data-nogrow` keeps one still. No page grows its own (`tests/grow.js`).
 - `js/guide.js` (`ADspaceGuide.offer(key, guide)`, `open`, `leave`, `can`,
   `useServer`) is the only first-visit guide (the user, 2026-10-07: "a one
   time tutorial kind into the entire portal"):
@@ -1059,7 +1078,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     takes `6` in front; a number with no leading zero takes its market's code.
   - Remove is soft, then Delete permanently at Manage.
 - Portal access is one switch per contact (Enable / Revoke in the ⋯, with
-  Undo), shown as a green chip.
+  Undo), shown as Portal access after its green dot.
   - Enabling opens a sheet with **Send invitation email unticked**.
   - Send invitation stays in the ⋯. Undo emails nobody.
 - Services:
@@ -1432,7 +1451,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     one's strip, covers line, progress and posts (`clearPostView`), and a
     read answered for a set already left is thrown away
     (`tests/crswitch.js`).
-  - Publish / Unpublish (warn).
+  - Publish (blue) / Unpublish (tonal).
   - Resend with a note.
   - Drive import with progress (a folder link only).
   - S3 signed PUT.
@@ -1525,7 +1544,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   and `confirm_selection` refuse (`closed`), except backups where opened and
   every slot is taken. The Creators tab folds options and backups under Not
   selected (`#campUnpicked`) while closed.
-- Exactly one blue step on a card: Release to client.
+- The one stage step in blue on a card is Release to client; every other
+  step is tonal.
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
   anything else is a `.filepin-row` line.
@@ -1765,12 +1785,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The outcome or refusal is named under the row (`.task-note`).
   - The stage track is 160px. A narrow row ends with the stage at a stated
     width; `is-tight` gives it its own line.
-- Stage tone by `stage_group`:
-  - not started: mute;
-  - in hand: no paint;
-  - waiting on a person: warn;
+- Stage tone by `stage_group` (the status dot, `STAGE_TONE`):
+  - not started and ready to start: grey;
+  - in hand (in progress, a revision): amber, still running;
+  - waiting on a person: amber;
   - cleared: green;
-  - blocked: `--err`.
+  - blocked: red.
 - The board is one workflow at a time (`#workWf`, filled before the empty
   state; a retired workflow is offered while its tasks are in view).
   - WIP shows `n / wip_guidance`, `.is-over` past it.
@@ -1937,7 +1957,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`taskGone`, `.maybeSingle()`); never the database's words.
 - `derive(t)` is the one source for the head status, the next step and the
   stepper.
-  - Blue only for a hand-off; the ink fill for your own progress.
+  - The next step is the one blue primary, a hand-off (`btn-go`) or your
+    own progress (`btn-primary`) alike (2026-10-07).
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
   - The sheet's and the record's ⋯ are Take or Offer to the team /
@@ -2044,7 +2065,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Its stage is worked out on every load (`engPhase()`), never picked:
     Planning until the ticks are answered and the meeting set (or not
     needed); Ready until the meeting has passed and the month holds a task;
-    In production while any task is open; Ready to close (warn) once every
+    In production while any task is open; Ready to close (amber) once every
     task is finished and one done, where the card asks Add task or Complete
     month. A tick repaints the chip in place. The counts are
     `ops_engagement_counts` (the whole month, whoever asks; a refusal falls
