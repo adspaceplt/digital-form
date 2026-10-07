@@ -2643,14 +2643,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
     Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
-    a field, one sentence a point; and never a word against the creative,
-    copy, plan or targeting we made: a shortfall is read as what the
-    audience showed and what we will test next, a win credits the choice
-    behind it, nobody is blamed (the client, the platform, the season) unless
-    the notes say so, a fall is never spun, and the words in `AVOID` (English
-    and Chinese, each with what to say instead) are never used; the check
-    finds them (the user, 2026-10-07). The ads field `fix` is
-    headed Areas to improve.
+    a field, one sentence a point, and candid both ways (the user,
+    2026-10-07: never "creative is bad", never so protective it reads as if
+    nothing ever goes wrong). The result is judged, never the work we made;
+    a shortfall is said plainly with its figure, how far short and what we
+    will change; a month weaker than the last is called weaker in the
+    summary; a slip on our side the notes name is owned in one sentence; a
+    win credits the choice behind it, with its figure; where the figures
+    show no cause it says so; nobody is blamed without the notes; no result
+    is promised. The words in `AVOID` (English and Chinese: judgements of
+    our work, praise no figure carries, comfort phrases in place of a figure,
+    words that colour a figure) are never used, and the check finds them and
+    a picture brighter than the figures. The ads field `fix` is headed Areas
+    to improve.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`), by subject
     (the report, or any of the same client and kind whose period shares a
