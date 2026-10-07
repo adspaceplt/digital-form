@@ -686,6 +686,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   itself from `public, anon, authenticated` in the file that creates it;
   one used by a policy, a view, a default or an invoker function keeps
   `authenticated`.
+- Function hygiene (`2026-10-07-function-hygiene.sql`, `functions_tidy()`,
+  the owner's alone): every function in public names its search path
+  (`public`), and anon runs a security definer function only where a public
+  page calls it: `open_to_anon`, exactly the functions `schema.sql` grants
+  to anon (`tests/sql.js` holds the two equal). It revokes from `public,
+  anon` and gives `authenticated` and `service_role` back what they had.
+  `schema.sql` ends with `select public.functions_tidy();`, and so does every
+  migration that adds or replaces a function. A new function a public page
+  calls is granted to anon and joins `open_to_anon` in the same push.
 - A catalogue change (for example a rate card revision) ships as a migration
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or
