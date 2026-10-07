@@ -362,16 +362,18 @@
   }
 
   function download(doc, then) {
-    var said = false;
+    var said = false, tab = DOCS.tabFor();
     var say = function (w) { if (said) return; said = true; if (then) then(w); };
     try {
       render(doc).then(function (bytes) {
-        DOCS.save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc));
+        DOCS.save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc), tab);
         say(DOCS.logoWarn());
       }).catch(function (e) {
+        DOCS.shut(tab);
         say('The file could not be drawn: ' + ((e && e.message) || e));
       });
     } catch (e) {
+      DOCS.shut(tab);
       say('The file could not be drawn: ' + ((e && e.message) || e));
     }
   }

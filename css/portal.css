@@ -8477,6 +8477,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-head-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .rp-who h3 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .rp-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+/* The head's facts: each under its label, as wide as its words at a desk,
+   two across in a narrow pane with an odd last one taking the row. */
+.facts.rp-facts { margin: 0; gap: 12px 32px; grid-template-columns: repeat(auto-fit, minmax(96px, max-content)); }
+.is-narrow .facts.rp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.is-narrow .facts.rp-facts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
+/* The Sent fact sets itself: the words keep the label's left edge. */
+.rp-facts .rp-sentfact { font-size: 14px; font-weight: 400; color: var(--ink); margin-inline-start: -8px; }
+.rp-facts .rp-sentfact svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
 .rp-ctl { display: flex; align-items: center; gap: 8px; }
 .rp-ctl .chip { align-self: center; }
 .rp-note { margin: 0; font-size: 13px; color: var(--warn); }

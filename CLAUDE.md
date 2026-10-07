@@ -301,7 +301,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
-  page load that failed. It never caches scripts or styles (the `?v=` stamps
+  page load that failed, and a PDF the console drew, for an hour, at
+  `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
+  `client/sw.js` holds that alone, at `/client/file/`, registered by
+  `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
 - The rail's foot names the build under the Activity record (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
@@ -1108,11 +1111,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
   never stored: a row holds the snapshot and the file is redrawn on Download.
 - Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
-  tab, zh)` under its own file name: on an iPhone or iPad the share sheet
-  with a named File (Safari names a `blob:` address Unknown.pdf), and a
-  share refused for a stale press asks File ready · Save (`ADspaceConfirm`;
-  the client portal loads it); elsewhere the tab opened at the press, else a
-  download (`tests/savename.js`).
+  tab, zh)` under its own file name (Safari names a `blob:` address
+  Unknown.pdf, and names a file after the last part of its address). The
+  page's worker (`js/file-sw.js`, imported by `admin/sw.js` and
+  `client/sw.js`) holds the drawn file an hour at `{scope}file/{id}/{name}`,
+  and a tab opened at the press opens there: every Preview, and on an
+  iPhone or iPad every save (`ADspaceDocs.tabFor()`, which opens no tab at a
+  desk), so Save to Files keeps the name and nothing is asked. A download
+  link never points at the worker's address (Chrome sends a `download` past
+  the worker): a desk downloads the `blob:` under its name. With no tab (a
+  blocked window) an iPhone's save takes the share sheet with a named File,
+  asking File ready · Save (`ADspaceConfirm`; the client portal loads it)
+  only when Safari refuses a stale press (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load).
@@ -2378,8 +2388,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Mark as sent (the head's ⋯ on a published report, Reports at Work;
     `sm_report_sent`, `sm_reports.sent_on` / `sent_by`): one date, today
     by default, never after today nor before the period (`bad-date`);
-    then Change sent date and Mark as not sent; filed from and to. The head
-    reads Sent {day}; a published row reads Sent {day} or Not sent. Once a
+    then Change sent date and Mark as not sent; filed from and to. The head's
+    Sent fact is the control on every step: a Mark as sent button, then the
+    day with its pen, each opening the ⋯'s question; a published row reads
+    Sent {day} or Not sent. Once a
     published report not yet sent has its PDF drawn (Preview PDF or
     Download), a line under the head asks Sent to the client? (`.rp-sentask`:
     Mark as sent, today, and a close mark; kept through a repaint until
@@ -2432,8 +2444,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     in place of the ADspace wordmark (15pt high, two fifths of the line at
     most; the name in the wordmark's face where no logo is held) and a
     published version keeps both. Everything else stays ADspace's (the
-    glossary link, the file's properties). The report head reads
-    `For {brand} · {client} logo`.
+    glossary link, the file's properties). The report head's facts read
+    For {brand} and Logo {client}.
   - An account on a platform the database's list does not hold is kept as
     `other` with `sm_report_platforms.platform_name`
     (`2026-10-06-report-platform-names.sql`, carried forward by
@@ -2490,7 +2502,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
   - The head is the record head: the name, then the state, Preview PDF and
-    the ⋯ at the right edge; the meta under them. On a narrow pane the
+    the ⋯ at the right edge; the meta under them (type · period alone),
+    then the facts each under its label (`.rp-facts`: Version, Client
+    portal, Sent, For, Logo; one left out where it has nothing to say;
+    two across in a narrow pane). On a narrow pane the
     button reads PDF (`.rp-pdf-short`). Preview PDF opens a tab at the
     press (`openTab()`, "Drawing the PDF…") and puts the drawn file in it
     (a `blob:` address), so the browser previews it; where the tab is
@@ -3070,7 +3085,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   a device the service answers 404/410 for (`push_done`) and keeps a month.
 - The VAPID pair is made by `push-send`'s first run and kept in `app_secrets`;
   only `push_public_key()` leaves the database. No key, no control.
-- Each page registers its own worker (`/admin/sw.js`, `/creators/sw.js`,
+- Each page registers its own worker (`/admin/sw.js`, `/client/sw.js` (files only), `/creators/sw.js`,
   `/creator/sw.js`), all importing `js/push-sw.js`. The client pages carry a
   manifest with no `start_url`, so a Home Screen copy opens its own link.
 - Controls:

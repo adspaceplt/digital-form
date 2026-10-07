@@ -209,20 +209,21 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-a="dl"]'), function (b) {
         b.addEventListener('click', function () {
           var id = b.closest('[data-id]').getAttribute('data-id');
+          var tab = window.ADspaceDocs.tabFor();
           b.disabled = true; say(m, 'Drawing the PDF…');
           db.rpc('sm_report_file', { p_id: id }).then(function (x) {
             var got = x.data || {};
             if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
             if (got.snapshot.error) throw new Error(got.snapshot.error);
             /* A published version: the file kept as it went out. */
-            if (!got.version_id) return saveFile(got.snapshot);
+            if (!got.version_id) return saveFile(got.snapshot, tab);
             return versionFile({ id: got.version_id, kept: got.kept === true }, client.id,
               function () { return Promise.resolve(got.snapshot); }, SM() ? SM().fileName(got.snapshot) : 'Report.pdf')
-              .then(function (f) { return handOver(f, null); });
+              .then(function (f) { return handOver(f, tab); });
           }).then(function (warn) {
             b.disabled = false;
             say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
-          }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          }).catch(function (e) { window.ADspaceDocs.shut(tab); b.disabled = false; say(m, said(e), 'err'); });
         });
       });
     });
@@ -624,6 +625,25 @@
     return (STATUS[r.status] || STATUS.draft)[0];
   }
 
+  /* The head says what the report is in one line, then each fact under its
+     own label (the user, 2026-10-07: "So many info here yet only in two
+     sentences"). A fact with nothing to say is left out. */
+  function headFacts(r, live) {
+    var f = [['Version', String(r.version_no)]];
+    if (live) f.push(['Client portal', live.version_no === r.version_no ? 'This version' : 'Version ' + live.version_no]);
+    /* Sent is set where it is read (the user, 2026-10-07: "the mark as sent
+       card is missing?"): Mark as sent, else the day with its pen. */
+    if (r.status === 'published') f.push(['Sent', r.sent_on ? dayWord(r.sent_on) : 'Not sent',
+      !may('work') ? '' : r.sent_on
+        ? '<button class="linkbtn rp-sentfact" type="button" data-a="sentfact" aria-label="Change sent date">' + esc(dayWord(r.sent_on)) + ' ' + PEN_MARK + '</button>'
+        : '<button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>']);
+    if (r.brand_name) f.push(['For', r.brand_name]);
+    if (st.partner) f.push(['Logo', st.partner.name]);
+    return '<dl class="facts rp-facts">' + f.map(function (x) {
+      return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[2] || esc(x[1])) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
   function paintEditor() {
     var r = st.open;
     var box = st.host && st.host.querySelector('.rp-editbox');
@@ -632,14 +652,14 @@
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
     box.innerHTML = '<section class="panel rp-head">' +
       '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
-      '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
-        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + (r.brand_name ? ' · For ' + esc(r.brand_name) : '') + (r.status === 'published' && r.sent_on ? ' · Sent ' + esc(dayWord(r.sent_on)) : '') + (st.partner ? ' · ' + esc(st.partner.name) + ' logo' : '') + '</p></div>' +
+      '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so
            the state, the file and the ⋯ sit beside the name on one line. */
         '<button class="btn btn-sm btn-icon rp-pdf" type="button" data-a="pdf" aria-label="Preview PDF">' +
           '<span class="rp-pdf-long">Preview PDF</span><span class="rp-pdf-short">PDF</span> ' + ICON.out + '</button>' +
         moreMenu(r, live) + '</div></div>' +
+      headFacts(r, live) +
       (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Sent back:</b> ' + esc(r.return_note) + '</p>' : '') +
       '<div class="msg" data-m="head"></div></section>' +
       '<nav class="rp-steps" aria-label="Steps"></nav>' +
@@ -1247,13 +1267,14 @@
         reopen(day ? 'Marked as sent.' : 'Marked as not sent.');
       }).catch(function (e) { say(m, said(e), 'err'); });
     };
-    on('sent', function (b) {
-      b.closest('.kmenu').hidden = true;
+    var askDay = function () {
       var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
       window.ADspaceConfirm.ask({ title: r.sent_on ? 'Change sent date' : 'Mark as sent', go: 'Save',
         fields: [{ name: 'day', label: 'Sent on', type: 'date', value: r.sent_on || today, min: r.period_start, max: today, required: true }] },
         function (v) { sentCall(v && v.day); });
-    });
+    };
+    on('sent', function (b) { b.closest('.kmenu').hidden = true; askDay(); });
+    on('sentfact', function () { askDay(); });
     on('unsent', function (b) { b.closest('.kmenu').hidden = true; sentCall(null); });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
@@ -1323,7 +1344,7 @@
   function downloadPdf(btn, m, save) {
     var r = st.open;
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    var tab = save ? null : openTab();
+    var tab = save ? window.ADspaceDocs.tabFor() : openTab();
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
     /* A published report hands over the file kept as it went out. */
@@ -1371,11 +1392,12 @@
       b.addEventListener('click', function () {
         var v = vers.filter(function (x) { return x.id === b.closest('[data-v]').getAttribute('data-v'); })[0];
         if (!v) return;
+        var tab = window.ADspaceDocs.tabFor();
         b.disabled = true; say(m, 'Drawing the PDF…');
         versionFile(v, r.client_id, function () { return versionSnap(v.id); }, fileNameOf(r, st.client && st.client.name))
-          .then(function (f) { return handOver(f, null); })
+          .then(function (f) { return handOver(f, tab); })
           .then(function (warn) { b.disabled = false; say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok'); })
-          .catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          .catch(function (e) { window.ADspaceDocs.shut(tab); b.disabled = false; say(m, said(e), 'err'); });
       });
     });
     window.ADspaceSheet.show(box, { opener: opener });

@@ -27,6 +27,15 @@
   var CFG = window.ADSPACE_CONFIG || {};
   var DOCS = window.ADspaceDocs;
   var $   = function (id) { return document.getElementById(id); };
+  /* The page's worker holds a drawn PDF under its own name, so an iPhone's
+     Save to Files keeps it (client/sw.js, js/file-sw.js; 2026-10-07). */
+  try {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/client/sw.js', { scope: '/client/' }).catch(function () {});
+      });
+    }
+  } catch (e) { /* no worker: the share sheet stands in */ }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -564,6 +573,7 @@
      table, or the Overview's latest report. */
   function downloadReport(v, where) {
     where = where || 'repMsg';
+    var tab = window.ADspaceDocs.tabFor();
     msg(where, '', '');
     db.rpc('portal_report', { p_version: v.id }).then(function (r) {
       var snap = r.data && r.data.snapshot;
@@ -582,9 +592,10 @@
           }).catch(drawn)
         : drawn();
       return get.then(function (blob) {
-        return window.ADspaceDocs.save(blob, SMR.fileName(snap), null, lang === 'zh');
+        return window.ADspaceDocs.save(blob, SMR.fileName(snap), tab, lang === 'zh');
       });
     }).catch(function () {
+      window.ADspaceDocs.shut(tab);
       msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
     });
   }

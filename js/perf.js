@@ -1614,9 +1614,10 @@
     if (!r || !r.id) return;
     /* The sheet is read again once the file is made, so its History shows
        the download it has just filed. */
+    var D = window.ADspaceDocs;
     draw([r], fileOf(r), btn, function (ok) {
       if (ok && st.rec && st.rec.id === r.id) reread(function () { msg('pvMsg', 'Downloaded.', 'ok'); });
-    });
+    }, D && D.tabFor ? D.tabFor() : null);
   }
   $('perfPrintMonth').addEventListener('click', function () {
     var btn = this;
@@ -1625,6 +1626,7 @@
     });
     if (!people.length) { msg('perfMsg', 'Nothing shared for ' + monthWord(st.period) + '.', 'warn'); return; }
     btn.disabled = true;
+    var D = window.ADspaceDocs, tab = D && D.tabFor ? D.tabFor() : null;
     msg('perfMsg', 'Drawing ' + people.length + (people.length === 1 ? ' record…' : ' records…'));
     var recs = [], left = people.length;
     people.forEach(function (p, i) {
@@ -1633,26 +1635,28 @@
         if (--left) return;
         btn.disabled = false;
         recs = recs.filter(Boolean);
-        if (!recs.length) { msg('perfMsg', 'The records could not be read.', 'err'); return; }
+        if (!recs.length) { if (D && D.shut) D.shut(tab); msg('perfMsg', 'The records could not be read.', 'err'); return; }
         draw(recs, 'Performance-' + st.period.slice(0, 7) + '.pdf', null, function (ok) {
           msg('perfMsg', ok ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' downloaded.' : 'The file could not be drawn.', ok ? 'ok' : 'err');
-        });
+        }, tab);
       });
     });
   });
   function fileOf(r) { return String(r.serial || ('Performance-' + r.period.slice(0, 7))).replace(/\//g, '-') + '.pdf'; }
 
-  function draw(recs, name, btn, then) {
+  function draw(recs, name, btn, then, tab) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) { drawNow(recs, name, btn, then); return; }
-    D.lib().then(function () { drawNow(recs, name, btn, then); }).catch(function (e) {
+    if (!D || !D.lib) { drawNow(recs, name, btn, then, tab); return; }
+    D.lib().then(function () { drawNow(recs, name, btn, then, tab); }).catch(function (e) {
+      if (D.shut) D.shut(tab);
       if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
       if (then) then(false);
     });
   }
-  function drawNow(recs, name, btn, then) {
+  function drawNow(recs, name, btn, then, tab) {
     var PDF = window.PDFLib, D = window.ADspaceDocs;
     var fail = function (e) {
+      if (D && D.shut) D.shut(tab);
       if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
       if (then) then(false);
     };
@@ -1691,7 +1695,7 @@
         pages.forEach(function (pg, i) { p.page = pg; p.footMark(i, pages.length); });
         return pdf.save();
       }).then(function (bytes) {
-        D.save(new Blob([bytes], { type: 'application/pdf' }), name);
+        D.save(new Blob([bytes], { type: 'application/pdf' }), name, tab);
         if (btn) btn.disabled = false;
         if (btn && document.getElementById('pvMsg')) msg('pvMsg', 'Downloaded.', 'ok');
         if (then) then(true);
