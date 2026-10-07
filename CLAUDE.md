@@ -1232,7 +1232,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     its type), the wording, and Fields. Saved by `doc_type_save`, filed
     `team.changed` under Document types from and to.
   - A type's fields are the words its wording holds in braces ({intern
-    name}, {from}); {first name}, {role} and {client} fill themselves.
+    name}, {from}); {first name}, {role} and {client} fill themselves, and
+    on an HR letter {name}, the colleague's full name.
     `doc_types.fields` says how each is asked: Text, Date or Paragraph (a
     name holding "date" is a date until set). Issue groups the kinds
     (Quotation, Client letters, HR letters) and asks for them under Details,

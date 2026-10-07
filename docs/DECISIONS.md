@@ -1116,3 +1116,6 @@ The user sent Supabase's Security Advisor: 0 errors, 430 warnings. Read against 
 
 ### 2026-10-07 · Douyin reads 抖音
 The user: "can you swap Douyin to 抖音", beside 大众点评, which the list already named in Chinese. The word is kept on each account (`platform_name`), and a report past draft refuses row edits, so the saved rows were left as they are and both scripts read the old word as the new (`RENAMED`). The first build named its helper `nameOf`, which `js/reports.js` already declares further down for colleagues' names; the later declaration won and every named platform read Other. The suite caught it, and the helper is `platName`.
+
+### 2026-10-07 · {name} on an HR letter
+The user sent the team's Employment Acknowledgement, which names the colleague in full twice (to a third party, "Dear Sir/Madam"). An HR letter filled only {first name} and {role} by itself, so a full name would have been typed on every issue. {name} now fills itself with the colleague's full name on an HR letter, as {first name} does.
