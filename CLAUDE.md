@@ -2771,6 +2771,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the PDF names the platform otherwise, never the handle).
   - Every emoji is drawn and embedded before any page is laid out
     (`sh.ready()` before `draw`).
+  - A "bold font" letter pasted into a caption (Unicode's mathematical
+    letters, U+1D400 to U+1D7FF: 𝗙𝗿𝗼𝗺) prints as its plain letter, a bold
+    one in the heavier face (`plainOf`, `boldMath`), never as an emoji
+    picture.
   - An accounts report reads: Executive summary; Insights and
     recommendations, one block a platform; each platform's page with its top
     three posts ranked on that platform alone, each with its figures and its

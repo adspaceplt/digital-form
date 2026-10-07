@@ -698,6 +698,23 @@
       (cp >= 0xe0020 && cp <= 0xe007f);
   }
   function isRegional(cp) { return cp >= 0x1f1e6 && cp <= 0x1f1ff; }
+  /* The "bold font" letters captions are pasted with (𝗙𝗿𝗼𝗺, 𝐁𝐨𝐥𝐝, 𝘐𝘵𝘢𝘭𝘪𝘤:
+     Unicode's mathematical letters, U+1D400 to U+1D7FF) are not in the
+     report's face. Drawn as emoji they came out a letter a picture, heavy, off
+     the line, breaking inside a word and unsearchable (2026-10-07). Each is
+     its plain letter, and a bold one is drawn in the heavier face. */
+  function plainOf(cp) {
+    if (cp < 0x1d400 || cp > 0x1d7ff) return '';
+    var s = String.fromCodePoint(cp).normalize('NFKC');
+    return s.length && s.codePointAt(0) !== cp ? s : '';
+  }
+  function boldMath(cp) {
+    var k;
+    if (cp >= 0x1d400 && cp <= 0x1d6a3) { k = Math.floor((cp - 0x1d400) / 52); return k === 0 || k === 2 || k === 4 || k === 7 || k === 9 || k === 11; }
+    if (cp >= 0x1d6a8 && cp <= 0x1d7c9) return Math.floor((cp - 0x1d6a8) / 58) !== 1;
+    if (cp >= 0x1d7ce && cp <= 0x1d7ff) { k = Math.floor((cp - 0x1d7ce) / 10); return k === 0 || k === 3; }
+    return false;
+  }
   function isCjkCp(cp) {
     return (cp >= 0x2e80 && cp <= 0x9fff) || (cp >= 0xac00 && cp <= 0xd7af) || (cp >= 0xf900 && cp <= 0xfaff) ||
       (cp >= 0xff00 && cp <= 0xffef) || (cp >= 0x3000 && cp <= 0x303f) || (cp >= 0x20000 && cp <= 0x2fa1f);
@@ -789,6 +806,12 @@
         var cp = list[i];
         if (cp === 0x20 || cp === 0xa0 || cp === 0x3000) { flush(); atoms.push({ runs: [{ f: 'text', font: face, s: ' ' }], space: true, brk: true }); continue; }
         if (cp < 0x20) continue;
+        var plain = plainOf(cp);
+        if (plain && cps(plain).every(function (q) { return hasGlyph(face, q); })) {
+          var heavy = boldMath(cp) && face === fonts.font ? (fonts.med || fonts.bold || face) : face;
+          latinRun(heavy).s += plain;
+          continue;
+        }
         var f = faceOf(cp, face);
         if (f === null) continue;
         if (f === 'emoji' || (isRegional(cp))) {
