@@ -2428,9 +2428,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An account on a platform the database's list does not hold is kept as
     `other` with `sm_report_platforms.platform_name`
     (`2026-10-06-report-platform-names.sql`, carried forward by
-    `sm_report_create`): the account sheet offers Douyin, Pinterest and
+    `sm_report_create`): the account sheet offers 抖音, Pinterest and
     大众点评 by name, and Other asks for the Platform name (required).
-    `platWord()` (both scripts) names it everywhere; never "Other".
+    `platWord()` (both scripts) names it everywhere; never "Other". An
+    account kept as Douyin before reads 抖音 (`RENAMED`; the user,
+    2026-10-07).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.

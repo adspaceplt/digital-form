@@ -62,14 +62,18 @@
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
                    ['youtube', 'YouTube'], ['linkedin', 'LinkedIn'], ['x', 'X'], ['threads', 'Threads'],
-                   ['douyin', 'Douyin'], ['pinterest', 'Pinterest'], ['dianping', '大众点评'], ['other', 'Other']];
+                   ['douyin', '抖音'], ['pinterest', 'Pinterest'], ['dianping', '大众点评'], ['other', 'Other']];
   var PLATFORM_WORD = {};
   PLATFORMS.forEach(function (p) { PLATFORM_WORD[p[0]] = p[1]; });
   /* A platform the database's list does not hold (2026-10-06): kept as
      `other` with its name in `platform_name`; the list offers the ones the
      team uses by name, and Other asks for the name. */
-  var NAMED = { douyin: 'Douyin', pinterest: 'Pinterest', dianping: '大众点评' };
-  function platWord(a) { return (a && String(a.platform_name || '').trim()) || PLATFORM_WORD[a && a.platform] || (a && a.platform) || ''; }
+  var NAMED = { douyin: '抖音', pinterest: 'Pinterest', dianping: '大众点评' };
+  /* A name kept before it was renamed (2026-10-07: Douyin reads 抖音); a
+     report past draft cannot be edited, so the old word is read as the new. */
+  var RENAMED = { 'Douyin': '抖音' };
+  function platName(a) { var n = String((a && a.platform_name) || '').trim(); return RENAMED[n] || n; }
+  function platWord(a) { return platName(a) || PLATFORM_WORD[a && a.platform] || (a && a.platform) || ''; }
   var METRICS = [['views', 'Views'], ['reach', 'Reach'], ['impressions', 'Impressions'], ['interactions', 'Interactions'],
                  ['engagements', 'Engagements'], ['likes', 'Likes'], ['comments', 'Comments'], ['shares', 'Shares'], ['saves', 'Saves']];
   var METRIC_WORD = {};
@@ -1508,7 +1512,7 @@
        other name shows Other with the name under it. */
     var named = '';
     if (a && a.platform === 'other' && a.platform_name) {
-      Object.keys(NAMED).forEach(function (k) { if (NAMED[k] === a.platform_name) named = k; });
+      Object.keys(NAMED).forEach(function (k) { if (NAMED[k] === platName(a)) named = k; });
     }
     v('rpAccPlatform', a ? (named || a.platform) : 'instagram'); v('rpAccName', a ? a.account_name : handleFor('instagram'));
     v('rpAccPlatName', a && a.platform === 'other' && !named ? a.platform_name : '');
