@@ -10,7 +10,9 @@ The report's figures (the period, the account totals, the previous period
 and each ad's or post's numbers, ad names without the creator code), the
 Notes for the draft the colleague typed, and the commentary of the client's
 last finished report so the draft can follow up on it. The client's name is
-replaced by "the brand" wherever the team's words carry it. No contact,
+replaced by `{brand}` wherever the team's words carry it, and the draft names
+the client by `{brand}`, which the function fills with the brand's own name
+once the answer is back (never 贵公司 or "your company"). No contact,
 handle, billing detail or image is sent. The draft comes back as text and is
 not stored by the function; the notes are kept only in the colleague's
 browser.

@@ -2619,8 +2619,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     in this browser under `adspace-draft-notes:{id}`, never saved with the
     report); the function reads the report as the caller (Reports Work, a
     draft) and sends Claude its figures, the notes and the client's last
-    finished report's commentary, the client's name masked as "the brand",
-    never a contact or image. It writes in a formal, client-facing house
+    finished report's commentary, the client's name (and a white-label
+    brand's) masked as `{brand}`, never a contact or image. The drafts and
+    the check name the client by `{brand}`, filled with the name the report
+    is for once the answer is back (`brandIn`, which also puts 贵公司, 贵司,
+    贵品牌 and the like back to the name); never "your company" or a Chinese
+    honorific (the user, 2026-10-07). It writes in a formal, client-facing house
     style taken from the team's approved reports (`SYSTEM`, `SOCIAL_SYSTEM`),
     held to its fields by structured output: the model in use refuses a
     forced `tool_choice`. An accounts report sends the platforms and top
