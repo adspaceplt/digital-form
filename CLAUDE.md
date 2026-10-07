@@ -178,12 +178,14 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
   opens, the dialog is named, Escape closes, focus returns).
 
-**A section's UX audit** is the `/ux-audit <section | all | changed>` skill
-(`.claude/skills/ux-audit/SKILL.md`, the user, 2026-10-07): it reports and
-never fixes. It measures with `tests/uxsection.js` (what a person faces on
-each screen; never in the gate), walks the key flows, grades A to E, and
-merges each section into `tests/ux-audit/results.json`, which the board mod
-reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
+**A section's UI and UX audit** is the `/ux-audit <section | all | changed>`
+skill (`.claude/skills/ux-audit/SKILL.md`, the user, 2026-10-07): it reports
+and never fixes. It measures with `tests/uxsection.js` (what a person faces
+on each screen, and the interface as the eye meets it; never in the gate),
+walks the key flows with the four walkthrough questions, reads every screen
+against the UI lenses and DESIGN.md §8's theories, grades UX and UI apart (A
+to E), and merges each section into `tests/ux-audit/results.json`, which the
+board mod reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
 `.claude-plugin/marketplace.json`). A section added to one of the three is
 added to all three in the same push.
 
@@ -1193,7 +1195,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   row's ⋯ Share with {first name} / Stop sharing (`document_share`, HR
   Letters at Work, `not-hr`, `no-member`). Shared, the colleague is told once
   (kind `hr.letter`, its kind and never its words; the bell and a push open
-  Letters) and reads it in My HR, Letters (`my_letters()`, behind
+  Letters) and reads it in My Records, Letters (`my_letters()`, behind
   `perf_mine_gate()`, their own alone, a replaced version left out, a voided
   one marked Void), its PDF drawn in their browser: no Documents access is
   needed. Filed under HR with the kind alone.
@@ -2204,7 +2206,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `notified`); unticked, the member is not told and the sheet says so.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
-  themselves on the six scorecard categories in My HR, Reviews (Rate
+  themselves on the six scorecard categories in My Records, Reviews (Rate
   yourself, {Month}), for each month from June 2026 to last month while its
   review is not shared (`perf_self_open`: `bad-month`, `shared`,
   `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
@@ -2240,8 +2242,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 <!-- Performance rewards (2026-09-28) -->
 - Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
   `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
-  - My HR (`?s=mine`, the account menu's first item; never My performance,
-    the user, 2026-10-06: it holds more than reviews) is five views
+  - My Records (`?s=mine`, the account menu's first item; never My
+    performance, the user, 2026-10-06: it holds more than reviews; never My
+    HR, 2026-10-07: it read oddly) is five views
     (`#mineViews`, `view=` in the address, Reviews left out): Reviews,
     Initiatives, Reflection, Letters, Health, all behind the fresh proof
     (`perf_mine_gate()`, the card Your records are locked).

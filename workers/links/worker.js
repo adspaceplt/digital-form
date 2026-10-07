@@ -40,7 +40,7 @@ const SLUG = /^[a-z0-9][a-z0-9._-]{0,79}$/;
    the reader knows who we are. */
 const SAY = {
   missing: ['Link not recognised', 'Please contact your ADspace account manager.'],
-  paused:  ['Link paused', 'Please contact your ADspace account manager.'],
+  paused:  ['Link expired', 'Please contact your ADspace account manager.'],
   revoked: ['Code withdrawn', 'Please contact your ADspace account manager.'],
   failed:  ['Unable to load', 'Please try again in a moment.']
 };

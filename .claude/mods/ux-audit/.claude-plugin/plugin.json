@@ -1,7 +1,7 @@
 {
   "name": "ux-audit",
   "version": "0.1.0",
-  "description": "A board of the ADspace portal's sections: each one's last UX audit grade, whether its code changed since, and one press to audit it.",
+  "description": "A board of the ADspace portal's sections: each one's last UX and UI grades, whether its code changed since, and one press to audit it.",
   "types": "./types/index.d.ts",
   "author": {
     "name": "ADSPACE PLT"

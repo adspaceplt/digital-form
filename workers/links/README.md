@@ -40,7 +40,7 @@ leaves Supabase.
 | Live slug | `302` to the destination, `Cache-Control: no-store` |
 | Live slug, live `?q=` code | the same `302` |
 | Slug we never issued, or a path with more than one segment | `404`, "Link not recognised" |
-| Slug the team has paused | `404`, "Link paused" |
+| Slug the team has paused | `404`, "Link expired" (the console still says Paused, with Resume) |
 | `?q=` code that is revoked, or belongs to another slug | `410`, "Code withdrawn" |
 | The database could not be reached | `502`, "Unable to load" |
 | The bare host | `302` to `HOME_URL` |

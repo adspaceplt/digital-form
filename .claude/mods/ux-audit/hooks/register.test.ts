@@ -4,7 +4,7 @@ import { SECTIONS, boardRows, lineOf } from './register'
 
 const SAVED = {
   clients: { audited: '2026-10-05T10:00:00+08:00', grade: 'B', open: 3, top: [] },
-  work: { audited: '2026-10-07T10:00:00+08:00', grade: 'A', open: 1, top: [] },
+  work: { audited: '2026-10-07T10:00:00+08:00', ux: 'A', ui: 'B', grade: 'B', open: 1, top: [] },
 }
 const CHANGED = {
   clients: '2026-10-06T09:00:00+08:00',
@@ -19,7 +19,7 @@ test('a section is current only when audited after its scripts last changed', ()
   expect(by.work?.state).toBe('current')
   expect(by.overview?.state).toBe('never')
   expect(lineOf(by.clients!)).toBe('Grade B · 3 open · 2026-10-05 · changed since')
-  expect(lineOf(by.work!)).toBe('Grade A · 1 open · 2026-10-07')
+  expect(lineOf(by.work!)).toBe('UX A · UI B · 1 open · 2026-10-07')
   expect(lineOf(by.overview!)).toBe('Not audited')
 })
 

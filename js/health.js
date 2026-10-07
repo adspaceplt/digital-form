@@ -3,7 +3,7 @@
  * colleague's for the holders of Team: Health (2026-10-07).
  *
  * Health is sensitive personal data (PDPA 2010, s.40), so nothing is asked
- * before the colleague agrees, in My HR, Health, and withdrawing takes their
+ * before the colleague agrees, in My Records, Health, and withdrawing takes their
  * answers out of Team: Health. What each reader is sent is the database's
  * decision (`health_*` functions; no table is readable directly): the
  * colleague their own, Team: Health (`team.health`, a granted part, an
@@ -78,8 +78,8 @@
       }).catch(function (e) { back({ error: 'db', message: String((e && e.message) || e) }); });
     } catch (e) { back({ error: 'db', message: String((e && e.message) || e) }); }
   }
-  /* The colleague's own reads go through My HR's call, so a proof gone stale
-     puts the lock back over the whole of My HR. */
+  /* The colleague's own reads go through My Records' call, so a proof gone stale
+     puts the lock back over the whole of My Records. */
   function mineCall(fn, args, then) {
     var P = window.ADspacePerf;
     if (P && P.mineCall) P.mineCall(fn, args, then); else call(fn, args, then);
