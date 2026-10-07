@@ -271,16 +271,18 @@
      after the chain, and a try around the call, because a handler that can
      throw is one whose sibling handler never runs. */
   function download(doc, then) {
-    var said = false;
+    var said = false, tab = tabFor();
     var say = function (w) { if (said) return; said = true; if (then) then(w); };
     try {
       render(doc).then(function (bytes) {
-        save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc));
+        save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc), tab);
         say(logoWarn);
       }).catch(function (e) {
+        shut(tab);
         say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
       });
     } catch (e) {
+      shut(tab);
       say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
     }
   }
@@ -844,18 +846,21 @@
   }
 
   /* Hand the person a file under its own name (the user, 2026-10-07: "when
-     saving / exporting to iphone, the pdf will become unknown.pdf", and
-     "the preview save to files needs to render the correct name ... doesnt
-     need the extra steps"). Safari names a file after the last part of its
-     address, and a blob: address has none; so in the console the drawn file
-     is handed to its service worker and opened at
-     /admin/file/{id}/{its name}.pdf, which the worker answers for an hour.
-     A Preview (a tab opened at the press) opens there; a save downloads from
-     there under its name. Where no worker answers (the client portal, a
-     first visit), an iPhone's save takes the share sheet with a named File,
-     asking File ready · Save only where Safari refuses a share for a stale
-     press; elsewhere the blob: address, as before. `zh` words that question
-     in Chinese on a client page. */
+     saving / exporting to iphone, the pdf will become unknown.pdf"; "the
+     preview save to files needs to render the correct name ... doesnt need
+     the extra steps"; "Client view usually just focus on opening browser
+     then go save to files"). Safari names a file after the last part of its
+     address, and a blob: address has none; so the page's worker
+     (js/file-sw.js, in the console and the client portal) holds the drawn
+     file at {scope}file/{id}/{its name}, and a tab opened at the press opens
+     there. A Preview always has its tab; on an iPhone a save opens one too
+     (`tabFor()`, at the press), so Save to Files keeps the name and nothing
+     is asked. A download link never points at the worker's address (Chrome
+     sends a `download` past the worker), so a desk downloads the blob: under
+     its name. Where no worker answers (a first visit) an iPhone's tab shows
+     the blob:, and a save with no tab takes the share sheet, asking File
+     ready · Save only if Safari refuses a stale press. `zh` words that
+     question in Chinese on a client page. */
   var IOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   function fileOf(blob, name) {
@@ -872,13 +877,17 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
     return url;
   }
+  function scope() {
+    var p = location.pathname;
+    return p.indexOf('/admin/') === 0 ? '/admin/' : p.indexOf('/client/') === 0 ? '/client/' : '';
+  }
   function named(file, name) {
     var sw = navigator.serviceWorker && navigator.serviceWorker.controller;
-    if (!sw || location.pathname.indexOf('/admin/') !== 0 || typeof MessageChannel === 'undefined') return Promise.resolve(null);
+    if (!sw || !scope() || typeof MessageChannel === 'undefined') return Promise.resolve(null);
     var id = (window.crypto && crypto.getRandomValues)
       ? Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(8)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('')
       : String(Date.now());
-    var path = '/admin/file/' + id + '/' + encodeURIComponent(String(name).replace(/[\\/]+/g, '-'));
+    var path = scope() + 'file/' + id + '/' + encodeURIComponent(String(name).replace(/[\\/]+/g, '-'));
     return new Promise(function (ok) {
       var ch = new MessageChannel(), done = false;
       var end = function (v) { if (!done) { done = true; ok(v); } };
@@ -887,6 +896,12 @@
       catch (e) { end(null); }
       setTimeout(function () { end(null); }, 2000);
     });
+  }
+  /* A tab for a save, opened at the press: on an iPhone or iPad alone, where
+     the browser's own viewer is the way to Save to Files. */
+  function tabFor() {
+    if (!IOS) return null;
+    try { return window.open('', '_blank'); } catch (e) { return null; }
   }
   function share(file, name, zh) {
     var go = function () {
@@ -905,18 +920,20 @@
   }
   function save(blob, name, tab, zh) {
     var file = fileOf(blob, name);
-    return named(file, name).then(function (url) {
-      if (tab && !tab.closed) { tab.location.href = url || blobUrl(file); return; }
-      if (url) { anchor(url, name); return; }
-      var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
-        (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
-      if (shareable) return share(file, name, zh);
-      anchor(blobUrl(file), name);
-    });
+    if (tab && !tab.closed) {
+      return named(file, name).then(function (url) { tab.location.href = url || blobUrl(file); });
+    }
+    var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
+      (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+    if (shareable) return share(file, name, zh);
+    anchor(blobUrl(file), name);
+    return Promise.resolve();
   }
+  /* Shut a tab opened at the press when there is nothing to put in it. */
+  function shut(tab) { try { if (tab && !tab.closed) tab.close(); } catch (e) {} }
 
   window.ADspaceDocs = {
-    save: save, ios: IOS,
+    save: save, tabFor: tabFor, shut: shut, ios: IOS,
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,

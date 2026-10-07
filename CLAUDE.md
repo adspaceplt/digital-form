@@ -302,7 +302,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - wordmark icons in `admin/icons/`.
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
-  `/admin/file/` (`adspace-files`; see `ADspaceDocs.save`). It never caches scripts or styles (the `?v=` stamps
+  `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
+  `client/sw.js` holds that alone, at `/client/file/`, registered by
+  `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
 - The rail's foot names the build under the Activity record (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
@@ -1110,14 +1112,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   never stored: a row holds the snapshot and the file is redrawn on Download.
 - Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
   tab, zh)` under its own file name (Safari names a `blob:` address
-  Unknown.pdf, and names a file after the last part of its address): in the
-  console the drawn file goes to `admin/sw.js` and opens at
-  `/admin/file/{id}/{name}`, held an hour, so a Preview (the tab opened at
-  the press) shows it and Save to Files keeps the name, and a save
-  downloads from there, nothing asked. Where no worker answers (the client
-  portal, a first visit) an iPhone's save takes the share sheet with a
-  named File, asking File ready · Save (`ADspaceConfirm`; the client portal
-  loads it) only when Safari refuses a stale press (`tests/savename.js`).
+  Unknown.pdf, and names a file after the last part of its address). The
+  page's worker (`js/file-sw.js`, imported by `admin/sw.js` and
+  `client/sw.js`) holds the drawn file an hour at `{scope}file/{id}/{name}`,
+  and a tab opened at the press opens there: every Preview, and on an
+  iPhone or iPad every save (`ADspaceDocs.tabFor()`, which opens no tab at a
+  desk), so Save to Files keeps the name and nothing is asked. A download
+  link never points at the worker's address (Chrome sends a `download` past
+  the worker): a desk downloads the `blob:` under its name. With no tab (a
+  blocked window) an iPhone's save takes the share sheet with a named File,
+  asking File ready · Save (`ADspaceConfirm`; the client portal loads it)
+  only when Safari refuses a stale press (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load).
@@ -3080,7 +3085,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   a device the service answers 404/410 for (`push_done`) and keeps a month.
 - The VAPID pair is made by `push-send`'s first run and kept in `app_secrets`;
   only `push_public_key()` leaves the database. No key, no control.
-- Each page registers its own worker (`/admin/sw.js`, `/creators/sw.js`,
+- Each page registers its own worker (`/admin/sw.js`, `/client/sw.js` (files only), `/creators/sw.js`,
   `/creator/sw.js`), all importing `js/push-sw.js`. The client pages carry a
   manifest with no `start_url`, so a Home Screen copy opens its own link.
 - Controls:

@@ -209,20 +209,21 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-a="dl"]'), function (b) {
         b.addEventListener('click', function () {
           var id = b.closest('[data-id]').getAttribute('data-id');
+          var tab = window.ADspaceDocs.tabFor();
           b.disabled = true; say(m, 'Drawing the PDF…');
           db.rpc('sm_report_file', { p_id: id }).then(function (x) {
             var got = x.data || {};
             if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
             if (got.snapshot.error) throw new Error(got.snapshot.error);
             /* A published version: the file kept as it went out. */
-            if (!got.version_id) return saveFile(got.snapshot);
+            if (!got.version_id) return saveFile(got.snapshot, tab);
             return versionFile({ id: got.version_id, kept: got.kept === true }, client.id,
               function () { return Promise.resolve(got.snapshot); }, SM() ? SM().fileName(got.snapshot) : 'Report.pdf')
-              .then(function (f) { return handOver(f, null); });
+              .then(function (f) { return handOver(f, tab); });
           }).then(function (warn) {
             b.disabled = false;
             say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
-          }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          }).catch(function (e) { window.ADspaceDocs.shut(tab); b.disabled = false; say(m, said(e), 'err'); });
         });
       });
     });
@@ -1343,7 +1344,7 @@
   function downloadPdf(btn, m, save) {
     var r = st.open;
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    var tab = save ? null : openTab();
+    var tab = save ? window.ADspaceDocs.tabFor() : openTab();
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
     /* A published report hands over the file kept as it went out. */
@@ -1391,11 +1392,12 @@
       b.addEventListener('click', function () {
         var v = vers.filter(function (x) { return x.id === b.closest('[data-v]').getAttribute('data-v'); })[0];
         if (!v) return;
+        var tab = window.ADspaceDocs.tabFor();
         b.disabled = true; say(m, 'Drawing the PDF…');
         versionFile(v, r.client_id, function () { return versionSnap(v.id); }, fileNameOf(r, st.client && st.client.name))
-          .then(function (f) { return handOver(f, null); })
+          .then(function (f) { return handOver(f, tab); })
           .then(function (warn) { b.disabled = false; say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok'); })
-          .catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          .catch(function (e) { window.ADspaceDocs.shut(tab); b.disabled = false; say(m, said(e), 'err'); });
       });
     });
     window.ADspaceSheet.show(box, { opener: opener });
