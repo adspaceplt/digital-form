@@ -178,6 +178,15 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
   opens, the dialog is named, Escape closes, focus returns).
 
+**A section's UX audit** is the `/ux-audit <section | all | changed>` skill
+(`.claude/skills/ux-audit/SKILL.md`, the user, 2026-10-07): it reports and
+never fixes. It measures with `tests/uxsection.js` (what a person faces on
+each screen; never in the gate), walks the key flows, grades A to E, and
+merges each section into `tests/ux-audit/results.json`, which the board mod
+reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
+`.claude-plugin/marketplace.json`). A section added to one of the three is
+added to all three in the same push.
+
 **Also required:**
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
