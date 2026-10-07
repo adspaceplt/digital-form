@@ -120,7 +120,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Money in a row | 13.5px tabular | `.svc-rate` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
-| Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone) | `.state-select` 12.5/500, its dot inside the box (`--sdot`) |
+| Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 160px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
 | Numbers in cells | 17/600/-.02em | `.tally-cell b` |
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |

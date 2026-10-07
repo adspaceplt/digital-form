@@ -1995,8 +1995,10 @@ textarea.input { resize: vertical; max-width: 100%; }
      list is ink and dots, never a wall of tinted pills;
    · a fact about a thing (High, Goodwill, White label, You) is a quiet grey
      tag, the bare `.chip` / `.tone`, and never a status colour.
-   The dot's bottom sits on the word's baseline (`align-items: baseline`), so
-   a status beside text shares its line. */
+   The dot is an empty inline box, whose foot is its baseline, so it sits on
+   the word's baseline and a status beside text shares its line. Never a flex
+   box: a word holding a part of its own (`Changes <span>requested</span>`)
+   would split into pieces a gap apart. */
 .chip, .tone, .chip-state {
   font-size: 11.5px; font-weight: 600; line-height: 1.5;
   padding: 2px 8px; border-radius: 5px; white-space: nowrap;
@@ -2007,15 +2009,15 @@ textarea.input { resize: vertical; max-width: 100%; }
 .chip-state,
 .chip:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off),
 .tone:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off) {
-  display: inline-flex; align-items: baseline; gap: 6px;
+  display: inline-block;
   padding: 2px 0; border-radius: 0; background: none;
   font-size: 12.5px; font-weight: 500; color: var(--ink);
 }
 .chip-state::before,
 .chip:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off)::before,
 .tone:is(.is-ok, .is-live, .is-warn, .is-danger, .is-off)::before {
-  content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--dot-off);
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 6px; background: var(--dot-off);
 }
 :is(.chip, .tone, .chip-state):is(.is-ok, .is-live)::before { background: var(--dot-ok); }
 :is(.chip, .tone, .chip-state).is-warn::before { background: var(--dot-wait); }
@@ -2458,7 +2460,7 @@ body.is-plain .topbar { background: var(--chrome); }
    to read what the section is for sits on the control rather than on a panel
    that opens itself over the command bar. It retires with the line, after
    three visits or on Hide. */
-.console-title.is-new .console-title-info { color: var(--action); }
+.console-title.is-new .console-title-info { color: var(--action-ink); }
 .console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
 /* Every route starts the same distance under the bar. Three sections opened
    with a `.viewhead` and its 24px, three opened straight on a command bar
@@ -4408,7 +4410,7 @@ body > .shell { width: 100%; }
 .rec-name .rec-pen[hidden] { display: none; }
 @media (hover: hover) { .rec-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
 .rec-name .rec-pen:active { transform: scale(.97); }
-.rec-name .rec-pen.is-saving { color: var(--action); }
+.rec-name .rec-pen.is-saving { color: var(--action-ink); }
 .rec-name .rec-pen.is-done { color: var(--ok); background: var(--ok-bg); }
 /* The field takes the heading's size; its box is the small control's, so the
    head grows by as little as a field can when the pen is pressed. */
@@ -4701,9 +4703,12 @@ body > .shell { width: 100%; }
    only what is not a status. */
 .state-select, .select.state-select, .select-sm.state-select {
   width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
-  padding: 0 26px 0 25px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--ink);
+  /* The dot 8px in and the word 6px after it, as a status chip spaces them;
+     the longest stage (Performance review) keeps its whole word in My Work's
+     160px column. */
+  padding: 0 24px 0 22px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--ink);
   background-image: radial-gradient(circle, var(--sdot, var(--dot-off)) 3.5px, transparent 4px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-size: 8px 8px, 13px; background-position: 10px center, right 8px center;
+  background-size: 8px 8px, 13px; background-position: 8px center, right 8px center;
   background-repeat: no-repeat;
   /* A state longer than its column ends in an ellipsis, never a cut: a word
      sliced mid letter reads as a fault, three dots as a name that goes on. */
@@ -6207,6 +6212,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   line-height: 1.3; min-width: 0; overflow-wrap: anywhere;
 }
 .rec-ctl .state-select, .rec-ctl .chip { flex: 0 0 auto; }
+/* The head's state stands alone, in no column, so it is as wide as its
+   longest stage (Proposal sent beside its dot), never cut to an ellipsis. */
+.rec-ctl .state-select { width: auto; min-width: var(--state-w); }
 /* Meta at 12px against a 19px name: the two sizes stand a golden ratio
    apart, which is what keeps the line reading as a note under the name and
    not as a second line of it. */
@@ -6480,7 +6488,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .tl-pen svg { width: 15px; height: 15px; }
 @media (hover: hover) { .tl-pen:hover { background: var(--line-soft); color: var(--ink); } }
-.tl-pen.is-saving { color: var(--action); }
+.tl-pen.is-saving { color: var(--action-ink); }
 /* A stage row ends with its duration and the pen that corrects its date, so
    every pen on the block stands in one column with Client since's. */
 .tl-end { display: inline-flex; align-items: center; gap: 2px; justify-self: end; min-width: 0; }
@@ -7403,7 +7411,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   text-align: left; font: inherit; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--ink);
   cursor: pointer; border-radius: 6px; overflow-wrap: anywhere;
 }
-@media (hover: hover) { .bcard-title:hover { color: var(--action); } }
+@media (hover: hover) { .bcard-title:hover { color: var(--action-ink); } }
 .bcard-meta { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The move is the commonest act on a card as it is on a row, so the card
    carries the same tinted select, at the same place on every card. */
@@ -9402,7 +9410,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop-head { margin-bottom: 6px; }
 .aboutpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
   font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
-.aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action); stroke-width: 2; }
+.aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action-ink); stroke-width: 2; }
 /* The ⓘ card offers the section's guide again (js/guide.js). */
 .aboutpop-guide { align-self: flex-start; margin-top: 10px; }
 .aboutpop.is-dock .aboutpop-guide { width: 100%; min-height: var(--ctl-h); }
@@ -9531,7 +9539,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    line. */
 .lp-go {
   display: inline-flex; align-items: center; gap: 4px; min-height: var(--ctl-h);
-  margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 13.5px; color: var(--action); text-decoration: none;
+  margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 13.5px; color: var(--action-ink); text-decoration: none;
 }
 @media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
 /* The hours on the left; the address and WhatsApp on the right, on the
