@@ -7885,7 +7885,7 @@
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
       if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
       /* A reminder, an initiative decided or a request to talk opens the
-         My HR view it is about (2026-10-07). */
+         My Records view it is about (2026-10-07). */
       var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));

@@ -3,6 +3,9 @@
 export type Saved = {
   audited: string
   commit?: string
+  /* The two grades, A to E, and the lower of them. */
+  ux?: string
+  ui?: string
   grade?: string
   open?: number
   p1?: number
@@ -17,6 +20,8 @@ export type Row = {
   key: string
   name: string
   state: 'never' | 'changed' | 'current'
+  ux?: string
+  ui?: string
   grade?: string
   audited?: string
   open?: number

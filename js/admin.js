@@ -276,7 +276,7 @@
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
   });
 
-  /* My HR is the person's own record, so it opens from who they are rather
+  /* My Records is the person's own record, so it opens from who they are rather
      than from the rail everybody shares. */
   $('myPerf').addEventListener('click', function () {
     shutAcct();
@@ -495,7 +495,7 @@
     db.auth.signOut().then(function () { location.reload(); });
   });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
-  /* A proof of who you are (a passkey on My HR) runs a sign-in, and
+  /* A proof of who you are (a passkey on My Records) runs a sign-in, and
      the library announces the session it makes before the page can check
      whose it is. While one runs the console holds its auth events, and it
      reads the session again once the proof has finished (`hold`). */
@@ -866,7 +866,7 @@
     services: 'Services',
     team: 'Team',
     handbook: 'Handbook',
-    mine: 'My HR'
+    mine: 'My Records'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -893,7 +893,7 @@
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
-    mine:      'Your own performance reviews, initiatives, reflections and HR letters.'
+    mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.'
   };
   var INTRO_SHOWS = 3;
   /* FIRST-VISIT GUIDES (js/guide.js; the user, 2026-10-07: first time users
@@ -938,7 +938,7 @@
     handbook: { name: 'Handbook', steps: [
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
       { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯.' }] },
-    mine: { name: 'My HR', steps: [
+    mine: { name: 'My Records', steps: [
       { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] }
   };
   function offerGuide(name) {

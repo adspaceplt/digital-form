@@ -5,7 +5,7 @@ import type { Row, Saved } from '../types'
 
 /* The board of the ADspace portal's sections for the ux-audit skill
    (.claude/skills/ux-audit/SKILL.md in the portal repo): each section's last
-   grade and open findings, read from the results file the skill writes, and
+   UX and UI grades and open findings, read from the results file the skill writes, and
    whether the section's own scripts changed since that audit (git). A press
    on Audit runs the skill's command; nothing here audits or changes code
    itself. */
@@ -48,7 +48,7 @@ export function boardRows(saved: Record<string, Saved>, changedAt: Record<string
     const moved = ch ? Date.parse(ch) : NaN
     const state: Row['state'] = !r || !Number.isFinite(at) ? 'never'
       : Number.isFinite(moved) && moved > at ? 'changed' : 'current'
-    return { key: s.key, name: s.name, state, grade: r?.grade, audited: r?.audited, open: r?.open, report: r?.report, top: r?.top ?? [] }
+    return { key: s.key, name: s.name, state, ux: r?.ux, ui: r?.ui, grade: r?.grade, audited: r?.audited, open: r?.open, report: r?.report, top: r?.top ?? [] }
   })
 }
 
@@ -57,7 +57,9 @@ export function lineOf(r: Row): string {
   if (r.state === 'never') return 'Not audited'
   const day = r.audited ? r.audited.slice(0, 10) : ''
   const open = typeof r.open === 'number' ? ' · ' + r.open + ' open' : ''
-  return 'Grade ' + (r.grade ?? '?') + open + ' · ' + day + (r.state === 'changed' ? ' · changed since' : '')
+  /* An audit gives a UX and a UI grade; one from before gives a single grade. */
+  const grades = r.ux || r.ui ? 'UX ' + (r.ux ?? '?') + ' · UI ' + (r.ui ?? '?') : 'Grade ' + (r.grade ?? '?')
+  return grades + open + ' · ' + day + (r.state === 'changed' ? ' · changed since' : '')
 }
 
 /* Reads the results file and each section's last change, fills the board and
@@ -89,7 +91,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'ux-board',
-      description: "Show the UX audit board: each portal section's last grade, and which changed since",
+      description: "Show the UI and UX audit board: each portal section's last grades, and which changed since",
     })
     void load($)
     return next(e)
