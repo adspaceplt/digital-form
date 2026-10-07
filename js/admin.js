@@ -321,7 +321,7 @@
   }
   function followBell() {
     var P = window.ADspacePush;
-    if (!P || !me || me.legacy) return;
+    if (!P || !me) return;
     P.setup({ audience: 'team', sw: '/admin/sw.js', scope: '/admin/' }).then(function () {
       return P.state();
     }).then(paintPush).catch(function () {});
@@ -490,6 +490,7 @@
     var out = function () { quiet(function () { db.auth.signOut().then(function () { location.reload(); }); }); };
     if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
+  $('noTeamRetry').addEventListener('click', function () { location.reload(); });
   $('noTeamOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
@@ -600,6 +601,13 @@
         document.body.classList.add('is-plain');
         $('noTeamShell').hidden = false;
         $('noTeamWho').textContent = actor;
+        if (meFailed) {
+          var fail = $('noTeamShell').querySelector('.cover-panel');
+          fail.querySelector('h2').textContent = 'Unable to load';
+          fail.querySelector('p').textContent = 'Please refresh the page.';
+          $('noTeamRetry').hidden = false;
+          return;
+        }
         /* Access that ended on its date says so (TEAM ACCESS EXPIRY). */
         db.rpc('my_access_expired').then(function (r) {
           if (r.error || r.data !== true) return;
@@ -629,29 +637,34 @@
   }
 
   /* The signed-in person's team row, or null if they have a login but no row.
-     A missing me() function (schema not yet applied) is treated as "everyone
-     may do everything", so an older database keeps working. */
+     A sign-in that lapsed while the tab slept answers 401: it is refreshed
+     and asked once more. A read that still fails is said as Unable to load
+     (`meFailed`), never drawn as the whole console nor as Access denied
+     (2026-10-07: the older answer, "everyone may do everything", was for a
+     database without me()). */
   var me = null;
   var meLoaded = false;
+  var meFailed = false;
   function loadMe(then) {
     /* The business figures the team may change (SST, terms, follow-up
        limits; js/money.js) are read beside me(), so no screen draws first. */
     var MON = window.ADspaceMoney, rates = MON && MON.load ? MON.load() : Promise.resolve();
     var go = function () { rates.then(then, then); };
-    db.rpc('me').then(function (r) {
-      if (r.error) {
-        me = { role: 'admin', is_admin: true, legacy: true };
-      } else {
-        me = r.data && r.data.id ? r.data : null;
-        /* First-visit guides (js/guide.js): which this colleague has met,
-           on any device. */
-        if (me && window.ADspaceGuide) window.ADspaceGuide.useServer(function () {
-          return db.rpc('guides_seen').then(function (g) { if (g.error) throw g.error; return g.data || []; });
-        }, function (key) { db.rpc('guide_seen_mark', { p_guide: key }).then(function () {}, function () {}); });
-      }
+    var ask = function () { return db.rpc('me'); };
+    ask().then(function (r) {
+      if (!r.error) return r;
+      return db.auth.refreshSession().then(ask, ask);
+    }).then(function (r) {
+      meFailed = Boolean(r.error);
+      me = !r.error && r.data && r.data.id ? r.data : null;
+      /* First-visit guides (js/guide.js): which this colleague has met,
+         on any device. */
+      if (me && window.ADspaceGuide) window.ADspaceGuide.useServer(function () {
+        return db.rpc('guides_seen').then(function (g) { if (g.error) throw g.error; return g.data || []; });
+      }, function (key) { db.rpc('guide_seen_mark', { p_guide: key }).then(function () {}, function () {}); });
       meLoaded = true;
       go();
-    }, function () { me = null; meLoaded = true; go(); });
+    }).catch(function () { me = null; meFailed = true; meLoaded = true; go(); });
   }
 
   /* Access is a level per section, the same four the database ranks.
@@ -932,7 +945,7 @@
     var G = window.ADspaceGuide;
     if (!G) return;
     G.leave();
-    if (meLoaded && me && !me.legacy && GUIDES[name]) G.offer(name, GUIDES[name]);
+    if (meLoaded && me && GUIDES[name]) G.offer(name, GUIDES[name]);
   }
   function introSeen(name) {
     try { return Number(localStorage.getItem('adspace-hint-intro-' + name) || 0); } catch (e) { return INTRO_SHOWS; }
@@ -1581,14 +1594,6 @@
       return may('activity.' + k, 'view');
     });
     showActivityLink();
-    // An older database without me() still has the viewers list; honour it.
-    if (me && me.legacy && actor) {
-      db.from('activity_viewers').select('email').ilike('email', actor).limit(1)
-        .then(function (r) {
-          maySeeActivity = Boolean(r.data && r.data.length);
-          showActivityLink();
-        }, function () {});
-    }
   }
 
   /* The record covers the whole portal, not one section of it, so it is
