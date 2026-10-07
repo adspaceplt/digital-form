@@ -420,10 +420,11 @@
      in braces ({intern name}, {from}); each is asked for on Issue as its
      type says (text, a date, a paragraph; a name with "date" in it is a date
      until somebody says otherwise) and filled in where it stands. {first
-     name}, {role} and {client} fill themselves and are never asked. */
+     name}, {role} and {client} fill themselves and are never asked, and on
+     an HR letter {name}, the colleague's full name (2026-10-07). */
   var GROUPS = ['quote_cover', 'client', 'hr'];
   var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client letters', hr: 'HR letters' };
-  var SELF = { hr: ['first name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'] };
+  var SELF = { hr: ['first name', 'name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'] };
   var KINDS = [['text', 'Text'], ['date', 'Date'], ['long', 'Paragraph']];
   function fieldKey(k) { return String(k || '').trim().toLowerCase().replace(/\s+/g, ' '); }
   function fieldWord(k) { return k.charAt(0).toUpperCase() + k.slice(1); }
@@ -549,7 +550,7 @@
     if (!t) return vars;
     if (t.family === 'hr') {
       var m = memberOf($('docMember').value);
-      if (m) { vars['first name'] = firstName(m.name); vars['role'] = $('docRole').value.trim() || m.designation || ''; }
+      if (m) { vars['first name'] = firstName(m.name); vars['name'] = m.name || ''; vars['role'] = $('docRole').value.trim() || m.designation || ''; }
     } else {
       var c = (issuing && issuing.client) || clientOf($('docClient').value);
       if (c) { vars['client'] = c.legal_name || c.name; vars['first name'] = firstName(((issuing && issuing.contact) || {}).name); }
@@ -612,6 +613,7 @@
     if (hr && m) {
       $('docRole').value = m.designation || '';
       vars['first name'] = firstName(m.name);
+      vars['name'] = m.name || '';
       vars['role'] = m.designation || '';
     }
     addFieldVars(vars, t);

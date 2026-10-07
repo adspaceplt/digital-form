@@ -686,6 +686,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   itself from `public, anon, authenticated` in the file that creates it;
   one used by a policy, a view, a default or an invoker function keeps
   `authenticated`.
+- Function hygiene (`2026-10-07-function-hygiene.sql`, `functions_tidy()`,
+  the owner's alone): every function in public names its search path
+  (`public`), and anon runs a security definer function only where a public
+  page calls it: `open_to_anon`, exactly the functions `schema.sql` grants
+  to anon (`tests/sql.js` holds the two equal). It revokes from `public,
+  anon` and gives `authenticated` and `service_role` back what they had.
+  `schema.sql` ends with `select public.functions_tidy();`, and so does every
+  migration that adds or replaces a function. A new function a public page
+  calls is granted to anon and joins `open_to_anon` in the same push.
 - A catalogue change (for example a rate card revision) ships as a migration
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or
@@ -1223,7 +1232,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     its type), the wording, and Fields. Saved by `doc_type_save`, filed
     `team.changed` under Document types from and to.
   - A type's fields are the words its wording holds in braces ({intern
-    name}, {from}); {first name}, {role} and {client} fill themselves.
+    name}, {from}); {first name}, {role} and {client} fill themselves, and
+    on an HR letter {name}, the colleague's full name.
     `doc_types.fields` says how each is asked: Text, Date or Paragraph (a
     name holding "date" is a date until set). Issue groups the kinds
     (Quotation, Client letters, HR letters) and asks for them under Details,
@@ -2419,9 +2429,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An account on a platform the database's list does not hold is kept as
     `other` with `sm_report_platforms.platform_name`
     (`2026-10-06-report-platform-names.sql`, carried forward by
-    `sm_report_create`): the account sheet offers Douyin, Pinterest and
+    `sm_report_create`): the account sheet offers 抖音, Pinterest and
     大众点评 by name, and Other asks for the Platform name (required).
-    `platWord()` (both scripts) names it everywhere; never "Other".
+    `platWord()` (both scripts) names it everywhere; never "Other". An
+    account kept as Douyin before reads 抖音 (`RENAMED`; the user,
+    2026-10-07).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
   - Publishing freezes `sm_report_versions.snapshot`.

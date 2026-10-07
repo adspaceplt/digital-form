@@ -275,14 +275,16 @@
   /* A platform kept as `other` carries its own name (2026-10-06: Douyin,
      Pinterest, 大众点评, or one typed); one with no name is named by the
      account, so two never both read Other. */
+  var RENAMED = { 'Douyin': '抖音' };   // 2026-10-07: a name kept before it was renamed
   function platWord(a) {
     a = a || {};
     var own = String(a.platform_name || '').trim();
+    own = RENAMED[own] || own;
     if (own) return own;
     if (a.platform === 'other' && String(a.account_name || '').trim()) return String(a.account_name).trim();
     return PLATFORM_WORD[a.platform] || a.platform || '';
   }
-  var NAME_COLOR = { douyin: '#111111', pinterest: '#E60023', '大众点评': '#FF6633' };
+  var NAME_COLOR = { douyin: '#111111', '抖音': '#111111', pinterest: '#E60023', '大众点评': '#FF6633' };
   var TYPE_WORD = {
     reel: 'Reel', video: 'Video', post: 'Post', photo: 'Photo', carousel: 'Carousel', story: 'Story',
     live: 'Live', short: 'Short', article: 'Article', other: ''
