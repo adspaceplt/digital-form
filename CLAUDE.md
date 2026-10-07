@@ -453,6 +453,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
   - A field marked `half` sits beside the next one (a date and its time).
+  - A field asked for words (no `type`, no `rows`) is a one-line box
+    (`data-oneline`); one whose `match` or seeded `value` is digits stays a
+    field with the number keyboard. Enter answers from any field, never
+    while an input method is composing (pinyin's Enter picks the word).
   - `check(values)` refuses in place what the fields cannot state alone (an
     end before its start): the sheet and what was typed stay.
   - A destructive question opens on Cancel.
@@ -518,6 +522,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   wrapped) and when the width changes, up to 60% of the screen, then
   scrolls; every scroller around it keeps its place while it is measured.
   `data-nogrow` keeps one still. No page grows its own (`tests/grow.js`).
+  - Its handle only makes a box taller (the user, the same day: "couldnt be
+    drag around like a toy"): never sideways, never below the words it holds
+    (its `min-height` is the fitted height), never past 85% of the screen; a
+    height dragged to is kept while typing (`data-floor`) and forgotten when
+    the page sets new words.
+  - A one-line field that may hold more than its width (a title, a link, a
+    next action, a reason, a name typed back) is a textarea marked
+    `data-oneline`: a field's height, its words wrapping onto more lines
+    rather than sliding out of sight, no handle, never a line break (a
+    pasted one becomes a space), Enter submitting its form as a field's
+    would. `ADspaceAsk.rename` opens words in one; a date, a time, a number
+    or a code stays an `input`.
 - `js/guide.js` (`ADspaceGuide.offer(key, guide)`, `open`, `leave`, `can`,
   `useServer`) is the only first-visit guide (the user, 2026-10-07: "a one
   time tutorial kind into the entire portal"):
@@ -759,7 +775,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   every policy's predicate.
   - The page names them No Access, View, Manage, Full Access (`LEVELS` in
     `js/team.js`); the stored keys never move.
-  - Select is view, insert and update are work, delete is manage.
+  - Select is view, insert and update are work, delete is manage, each a
+    policy of its own: never one `for all` policy, since Postgres checks a
+    delete against USING alone (one reading at View let View delete;
+    `2026-10-08-delete-at-its-level.sql`, `tests/sql.js` §DL). A draft
+    report's rows delete at Work, the report's own steps.
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no
@@ -1084,6 +1104,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Services:
   - Quantity × rate × months from a start date.
   - Enquired / To quote / Confirmed.
+  - Remove is soft with Undo; a removed line is listed on asking with
+    Restore (`client.service_restored`), never deleted: a letter may have
+    quoted it (`client_document_services` restricts it).
   - `detail` and `min_months` are seeded from the rate card and stay editable.
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
@@ -1096,7 +1119,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `null` uses the older factor table; only an explicit `false` turns it off.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
-- Calls and visits carry next actions and an Undo. A Meeting entry
+- Calls and visits carry next actions and an Undo; a removed entry is listed
+  on asking with Restore and Delete (Clients: Calls at Manage, asked first,
+  `client.touch_deleted`). A Meeting entry
   (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
   (15 to 240) and a Meet, Zoom or Teams link; while ahead with no link it
   offers Create Google Meet (`meet-create` with `touchId`, Clients: Calls

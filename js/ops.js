@@ -5861,7 +5861,7 @@
         control.replace('>', ' id="' + k + key + '">') + '</div>';
     };
     row.innerHTML =
-      fld('piece-desc', 'desc', 'Content description', '<input class="input" placeholder="Content Post" autocomplete="off">') +
+      fld('piece-desc', 'desc', 'Content description', '<textarea class="input" rows="1" data-oneline placeholder="Content Post" autocomplete="off"></textarea>') +
       fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
       fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
       fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date">') +

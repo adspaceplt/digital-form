@@ -359,8 +359,8 @@
       return mine.map(function (p, i) {
         var id = 'lk_' + pl + '_' + i;
         return '<div class="row"><div><label class="field-label" for="' + id + '">' + esc(PLAT[lang][pl]) + '</label>' +
-          '<input class="input" id="' + id + '" data-plat="' + pl + '" type="url" inputmode="url" autocapitalize="off" ' +
-          'autocomplete="off" spellcheck="false" maxlength="300" placeholder="' + esc(PLACEHOLDER[pl]) + '" value="' + esc(p.url || '') + '"></div></div>';
+          '<textarea class="input" id="' + id + '" data-plat="' + pl + '" rows="1" data-oneline inputmode="url" autocapitalize="off" ' +
+          'autocomplete="off" spellcheck="false" maxlength="300" placeholder="' + esc(PLACEHOLDER[pl]) + '">' + esc(p.url || '') + '</textarea></div></div>';
       }).join('');
     }).join('');
     $('linksFields').innerHTML = html;
@@ -384,7 +384,7 @@
   }
 
   function saveLinks() {
-    var inputs = Array.prototype.slice.call($('linksFields').querySelectorAll('input'));
+    var inputs = Array.prototype.slice.call($('linksFields').querySelectorAll('input, textarea'));
     inputs.forEach(function (i) { i.removeAttribute('aria-invalid'); });
     var urls = inputs.map(function (i) { return i.value.trim(); }).filter(Boolean);
     if (!urls.length) { linksMsg(t().linkNone, 'err'); return; }
@@ -623,7 +623,7 @@
       return '<div class="post-entry" data-plat="' + esc(plat) + '">' +
         '<div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
         '<label class="field-label" for="pl-' + id + '">' + esc(t().postLink) + '</label>' +
-        '<input class="input" id="pl-' + id + '" type="url" inputmode="url" data-k="url" placeholder="https://" value="' + esc(p.post_url || '') + '">' +
+        '<textarea class="input" id="pl-' + id + '" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" data-k="url" placeholder="https://">' + esc(p.post_url || '') + '</textarea>' +
         '<label class="field-label" for="pd-' + id + '">' + esc(t().postedOn) + '</label>' +
         '<input class="input" id="pd-' + id + '" type="date" data-k="published" value="' + esc(p.published_at || '') + '">' +
         (period

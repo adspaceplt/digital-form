@@ -6092,8 +6092,8 @@ language sql immutable parallel safe as $$
     when action in ('client.action_done', 'client.action_reopened', 'client.added',
                     'client.billing', 'client.brand', 'client.deleted', 'client.edited',
                     'client.review_on', 'client.service', 'client.service_changed',
-                    'client.service_removed', 'client.stage', 'client.touch',
-                    'client.touch_edited', 'client.touch_removed',
+                    'client.service_removed', 'client.service_restored', 'client.stage', 'client.touch',
+                    'client.touch_deleted', 'client.touch_edited', 'client.touch_removed',
                     'client.touch_restored', 'contact.added', 'contact.deleted',
                     'contact.edited', 'contact.portal_invite', 'contact.portal_off',
                     'contact.portal_on', 'contact.primary', 'contact.removed',
@@ -34395,6 +34395,209 @@ revoke all on function public.announcement_delete(uuid) from public, anon;
 grant execute on function public.announcement_delete(uuid) to authenticated;
 
 -- END OF SEVERAL ANNOUNCEMENTS ------------------------------------------------
+
+-- ===========================================================================
+-- DELETE AT ITS LEVEL — a row is deleted at the level the page deletes it,
+-- never at View.
+-- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js compares the
+-- two. Holds `drop policy`, so it is run in the SQL Editor (CLAUDE.md §3).
+--
+-- WHAT CHANGED
+--   Six tables carried one policy for every action, reading at View and
+--   writing at Work. A delete is checked against a policy's USING alone, so
+--   anybody who could read a client's service lines, letters and requests,
+--   or a draft report's accounts, posts and ads, could delete them through
+--   the API, although no page offers it (the user's delete audit,
+--   2026-10-07). Each policy is now its four actions, as every other section
+--   table's: select at View, insert and update at Work, and delete at Manage
+--   for the client's lines, letters and requests (the pages remove them
+--   softly or through a function that asks its own level), at Work for a
+--   draft report's rows, which the report's own steps remove (a report
+--   past its draft still refuses them by trigger).
+--
+-- ROLLBACK
+--   Drop the four policies of each table and restore its single one:
+--     create policy client_services_rw on public.client_services for all to authenticated
+--       using (public.allowed('clients.services', 'view')) with check (public.allowed('clients.services', 'work'));
+--     create policy client_documents_rw on public.client_documents for all to authenticated
+--       using (public.allowed('clients.documents', 'view')) with check (public.allowed('clients.documents', 'work'));
+--     create policy client_requests_team on public.client_requests for all to authenticated
+--       using (public.allowed('clients.requests', 'view')) with check (public.allowed('clients.requests', 'work'));
+--     create policy sm_platforms_all on public.sm_report_platforms for all to authenticated
+--       using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
+--     create policy sm_posts_all on public.sm_report_posts for all to authenticated
+--       using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
+--     create policy sm_ads_all on public.sm_report_ads for all to authenticated
+--       using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
+-- ===========================================================================
+
+drop policy if exists client_services_rw on public.client_services;
+drop policy if exists client_services_read on public.client_services;
+drop policy if exists client_services_write on public.client_services;
+drop policy if exists client_services_edit on public.client_services;
+drop policy if exists client_services_del on public.client_services;
+create policy client_services_read on public.client_services for select to authenticated
+  using (public.allowed('clients.services', 'view'));
+create policy client_services_write on public.client_services for insert to authenticated
+  with check (public.allowed('clients.services', 'work'));
+create policy client_services_edit on public.client_services for update to authenticated
+  using (public.allowed('clients.services', 'work')) with check (public.allowed('clients.services', 'work'));
+create policy client_services_del on public.client_services for delete to authenticated
+  using (public.allowed('clients.services', 'manage'));
+
+drop policy if exists client_documents_rw on public.client_documents;
+drop policy if exists client_documents_read on public.client_documents;
+drop policy if exists client_documents_write on public.client_documents;
+drop policy if exists client_documents_edit on public.client_documents;
+drop policy if exists client_documents_del on public.client_documents;
+create policy client_documents_read on public.client_documents for select to authenticated
+  using (public.allowed('clients.documents', 'view'));
+create policy client_documents_write on public.client_documents for insert to authenticated
+  with check (public.allowed('clients.documents', 'work'));
+create policy client_documents_edit on public.client_documents for update to authenticated
+  using (public.allowed('clients.documents', 'work')) with check (public.allowed('clients.documents', 'work'));
+create policy client_documents_del on public.client_documents for delete to authenticated
+  using (public.allowed('clients.documents', 'manage'));
+
+drop policy if exists client_requests_team on public.client_requests;
+drop policy if exists client_requests_read on public.client_requests;
+drop policy if exists client_requests_write on public.client_requests;
+drop policy if exists client_requests_edit on public.client_requests;
+drop policy if exists client_requests_del on public.client_requests;
+create policy client_requests_read on public.client_requests for select to authenticated
+  using (public.allowed('clients.requests', 'view'));
+create policy client_requests_write on public.client_requests for insert to authenticated
+  with check (public.allowed('clients.requests', 'work'));
+create policy client_requests_edit on public.client_requests for update to authenticated
+  using (public.allowed('clients.requests', 'work')) with check (public.allowed('clients.requests', 'work'));
+create policy client_requests_del on public.client_requests for delete to authenticated
+  using (public.allowed('clients.requests', 'manage'));
+
+drop policy if exists sm_platforms_all on public.sm_report_platforms;
+drop policy if exists sm_report_platforms_read on public.sm_report_platforms;
+drop policy if exists sm_report_platforms_write on public.sm_report_platforms;
+drop policy if exists sm_report_platforms_edit on public.sm_report_platforms;
+drop policy if exists sm_report_platforms_del on public.sm_report_platforms;
+create policy sm_report_platforms_read on public.sm_report_platforms for select to authenticated
+  using (public.allowed('reports', 'view'));
+create policy sm_report_platforms_write on public.sm_report_platforms for insert to authenticated
+  with check (public.allowed('reports', 'work'));
+create policy sm_report_platforms_edit on public.sm_report_platforms for update to authenticated
+  using (public.allowed('reports', 'work')) with check (public.allowed('reports', 'work'));
+create policy sm_report_platforms_del on public.sm_report_platforms for delete to authenticated
+  using (public.allowed('reports', 'work'));
+
+drop policy if exists sm_posts_all on public.sm_report_posts;
+drop policy if exists sm_report_posts_read on public.sm_report_posts;
+drop policy if exists sm_report_posts_write on public.sm_report_posts;
+drop policy if exists sm_report_posts_edit on public.sm_report_posts;
+drop policy if exists sm_report_posts_del on public.sm_report_posts;
+create policy sm_report_posts_read on public.sm_report_posts for select to authenticated
+  using (public.allowed('reports', 'view'));
+create policy sm_report_posts_write on public.sm_report_posts for insert to authenticated
+  with check (public.allowed('reports', 'work'));
+create policy sm_report_posts_edit on public.sm_report_posts for update to authenticated
+  using (public.allowed('reports', 'work')) with check (public.allowed('reports', 'work'));
+create policy sm_report_posts_del on public.sm_report_posts for delete to authenticated
+  using (public.allowed('reports', 'work'));
+
+drop policy if exists sm_ads_all on public.sm_report_ads;
+drop policy if exists sm_report_ads_read on public.sm_report_ads;
+drop policy if exists sm_report_ads_write on public.sm_report_ads;
+drop policy if exists sm_report_ads_edit on public.sm_report_ads;
+drop policy if exists sm_report_ads_del on public.sm_report_ads;
+create policy sm_report_ads_read on public.sm_report_ads for select to authenticated
+  using (public.allowed('reports', 'view'));
+create policy sm_report_ads_write on public.sm_report_ads for insert to authenticated
+  with check (public.allowed('reports', 'work'));
+create policy sm_report_ads_edit on public.sm_report_ads for update to authenticated
+  using (public.allowed('reports', 'work')) with check (public.allowed('reports', 'work'));
+create policy sm_report_ads_del on public.sm_report_ads for delete to authenticated
+  using (public.allowed('reports', 'work'));
+
+-- END OF DELETE AT ITS LEVEL ------------------------------------------------
+
+-- ===========================================================================
+-- ACTIVITY FILES A RESTORE AND A DELETE — a service line restored and a call
+-- or visit deleted are each filed as themselves, under Clients.
+-- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/trail.js reads the
+-- map against the console's ACTION_LABEL.
+--
+-- WHAT CHANGED
+--   The delete audit (the user, 2026-10-07) gave a removed service line its
+--   way back after the Undo (Restore, `client.service_restored`, which had
+--   been filed as Service changed) and a removed call or visit its delete at
+--   Manage (`client.touch_deleted`). activity_section() names both, so the
+--   record files them under Clients rather than Other. Nothing else moves.
+--
+-- ROLLBACK
+--   Run the function as the section that last defined it (the activity map
+--   above this banner) defines it.
+-- ===========================================================================
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.service_restored', 'client.stage', 'client.touch',
+                    'client.touch_deleted', 'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF ACTIVITY FILES A RESTORE AND A DELETE -----------------------------
 
 -- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above

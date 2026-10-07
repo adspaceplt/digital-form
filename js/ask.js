@@ -47,8 +47,14 @@
        and the picker needs `2026-06-01`. `opts.value` seeds the field where
        they differ, and is what an unchanged value is compared against. */
     var was = typeof opts.value === 'string' ? opts.value : host.textContent;
-    var field = document.createElement('input');
-    field.type = opts.type || 'text';
+    /* Words are a one-line box that wraps (js/grow.js, `data-oneline`), so a
+       title longer than its line is read whole while it is edited rather
+       than slid out of sight (the user, 2026-10-07); a date is the date
+       field. */
+    var words = !opts.type || opts.type === 'text';
+    var field = document.createElement(words ? 'textarea' : 'input');
+    if (words) { field.rows = 1; field.setAttribute('data-oneline', ''); }
+    else field.type = opts.type;
     field.className = 'input askfield' + (field.type === 'date' ? ' is-date' : '');
     field.value = was;
     /* The field speaks in the value's own type, wherever it is: a title at
@@ -65,7 +71,7 @@
        back, so the line keeps its height on every engine (a date field's
        own line box is taller than text in Chrome and on iOS). */
     var tall = host.getBoundingClientRect().height;
-    if (tall > 0) field.style.height = Math.round(tall + 4) + 'px';
+    if (tall > 0 && !words) field.style.height = Math.round(tall + 4) + 'px';
     field.setAttribute('aria-label', opts.label || 'Name');
     if (window.ADspaceForm && window.ADspaceForm.floor) window.ADspaceForm.floor(field);
     if (opts.max) field.maxLength = opts.max;
@@ -88,7 +94,7 @@
       var v = field.value.trim();
       /* A date outside the portal's range is not saved; js/form.js names
          why under the row. */
-      if (field.type !== 'text' && window.ADspaceForm && !window.ADspaceForm.dateOk(v, field.type)) {
+      if (!words && window.ADspaceForm && !window.ADspaceForm.dateOk(v, field.type)) {
         field.focus(); return;
       }
       /* A name cannot be blank; a description under a code can, because the
@@ -102,6 +108,7 @@
     host._askOpen = true;
     host.hidden = true;
     host.parentNode.insertBefore(field, host);
+    if (words && window.ADspaceGrow) window.ADspaceGrow.fit(field);
     /* The pen becomes a tick: the control that opened the edit is the one
        that closes it, so there is no second button to find and no row that
        grows by one while somebody is typing in it. */
