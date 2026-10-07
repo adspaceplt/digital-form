@@ -1,0 +1,14 @@
+{
+  "name": "adspace-portal",
+  "owner": {
+    "name": "ADSPACE PLT"
+  },
+  "description": "Claude Code add-ons for working on the ADspace Digital Portal.",
+  "plugins": [
+    {
+      "name": "ux-audit",
+      "source": "./.claude/mods/ux-audit",
+      "description": "A board of the ADspace portal's sections: each one's last UX audit grade, whether its code changed since, and one press to audit it."
+    }
+  ]
+}
