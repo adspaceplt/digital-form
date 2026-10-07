@@ -844,53 +844,75 @@
   }
 
   /* Hand the person a file under its own name (the user, 2026-10-07: "when
-     saving / exporting to iphone, the pdf will become unknown.pdf"). An
-     iPhone's or iPad's Safari keeps no name for a `blob:` address, so there
-     the file goes through the share sheet as a named File, whose Save to
-     Files keeps the name; Safari lets a share start only close to a press,
-     so a file drawn too long after one asks for a press of its own (the
-     confirm sheet where the page has it). Everywhere else, a tab opened at
-     the press shows it, else it downloads under its name. `zh` words the
-     question in Chinese on a client page. */
+     saving / exporting to iphone, the pdf will become unknown.pdf", and
+     "the preview save to files needs to render the correct name ... doesnt
+     need the extra steps"). Safari names a file after the last part of its
+     address, and a blob: address has none; so in the console the drawn file
+     is handed to its service worker and opened at
+     /admin/file/{id}/{its name}.pdf, which the worker answers for an hour.
+     A Preview (a tab opened at the press) opens there; a save downloads from
+     there under its name. Where no worker answers (the client portal, a
+     first visit), an iPhone's save takes the share sheet with a named File,
+     asking File ready · Save only where Safari refuses a share for a stale
+     press; elsewhere the blob: address, as before. `zh` words that question
+     in Chinese on a client page. */
   var IOS = /iP(hone|od|ad)/.test(navigator.userAgent) ||
             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   function fileOf(blob, name) {
     try { return new File([blob], name, { type: blob.type || 'application/pdf' }); }
     catch (e) { return blob; }
   }
-  function anchor(file, name) {
-    var url = URL.createObjectURL(file);
+  function anchor(href, name) {
     var a = document.createElement('a');
-    a.href = url; a.download = name;
+    a.href = href; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
+  }
+  function blobUrl(file) {
+    var url = URL.createObjectURL(file);
     setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    return url;
+  }
+  function named(file, name) {
+    var sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+    if (!sw || location.pathname.indexOf('/admin/') !== 0 || typeof MessageChannel === 'undefined') return Promise.resolve(null);
+    var id = (window.crypto && crypto.getRandomValues)
+      ? Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(8)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('')
+      : String(Date.now());
+    var path = '/admin/file/' + id + '/' + encodeURIComponent(String(name).replace(/[\\/]+/g, '-'));
+    return new Promise(function (ok) {
+      var ch = new MessageChannel(), done = false;
+      var end = function (v) { if (!done) { done = true; ok(v); } };
+      ch.port1.onmessage = function (e) { end(e.data && e.data.ok ? path : null); };
+      try { sw.postMessage({ type: 'adspace-file', path: path, name: name, blob: file }, [ch.port2]); }
+      catch (e) { end(null); }
+      setTimeout(function () { end(null); }, 2000);
+    });
+  }
+  function share(file, name, zh) {
+    var go = function () {
+      return navigator.share({ files: [file] }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        throw e;
+      });
+    };
+    return go().catch(function (e) {
+      if (!(e && e.name === 'NotAllowedError')) { anchor(blobUrl(file), name); return; }
+      if (window.ADspaceConfirm) {
+        window.ADspaceConfirm.ask({ title: zh ? '文件已准备好' : 'File ready', body: name,
+          go: zh ? '保存' : 'Save', cancel: zh ? '取消' : 'Cancel' }, function () { go().catch(function () { anchor(blobUrl(file), name); }); });
+      } else anchor(blobUrl(file), name);
+    });
   }
   function save(blob, name, tab, zh) {
     var file = fileOf(blob, name);
-    var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
-      (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
-    if (shareable) {
-      if (tab && !tab.closed) { try { tab.close(); } catch (e) {} }
-      var share = function () {
-        return navigator.share({ files: [file] }).catch(function (e) {
-          if (e && e.name === 'AbortError') return;
-          throw e;
-        });
-      };
-      return share().catch(function (e) {
-        if (!(e && e.name === 'NotAllowedError')) { anchor(file, name); return; }
-        if (window.ADspaceConfirm) {
-          window.ADspaceConfirm.ask({ title: zh ? '文件已准备好' : 'File ready', body: name,
-            go: zh ? '保存' : 'Save', cancel: zh ? '取消' : 'Cancel' }, function () { share().catch(function () { anchor(file, name); }); });
-        } else anchor(file, name);
-      });
-    }
-    if (tab && !tab.closed) {
-      var url = URL.createObjectURL(file);
-      tab.location.href = url;
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    } else anchor(file, name);
-    return Promise.resolve();
+    return named(file, name).then(function (url) {
+      if (tab && !tab.closed) { tab.location.href = url || blobUrl(file); return; }
+      if (url) { anchor(url, name); return; }
+      var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
+        (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+      if (shareable) return share(file, name, zh);
+      anchor(blobUrl(file), name);
+    });
   }
 
   window.ADspaceDocs = {
