@@ -582,11 +582,7 @@
           }).catch(drawn)
         : drawn();
       return get.then(function (blob) {
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = SMR.fileName(snap);
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
+        return window.ADspaceDocs.save(blob, SMR.fileName(snap), null, lang === 'zh');
       });
     }).catch(function () {
       msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');

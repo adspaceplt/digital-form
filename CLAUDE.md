@@ -133,7 +133,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
 | `portal.js` | portal |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
@@ -1107,6 +1107,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
   never stored: a row holds the snapshot and the file is redrawn on Download.
+- Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
+  tab, zh)` under its own file name: on an iPhone or iPad the share sheet
+  with a named File (Safari names a `blob:` address Unknown.pdf), and a
+  share refused for a stale press asks File ready · Save (`ADspaceConfirm`;
+  the client portal loads it); elsewhere the tab opened at the press, else a
+  download (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load).

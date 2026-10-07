@@ -799,14 +799,7 @@
     btn.disabled = true;
     LET.render(doc).then(function (bytes) {
       btn.disabled = false;
-      var url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-      if (tab && !tab.closed) { tab.location.href = url; }
-      else {
-        var link = document.createElement('a');
-        link.href = url; link.download = 'Preview ' + LET.fileName(doc);
-        document.body.appendChild(link); link.click(); link.remove();
-      }
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      window.ADspaceDocs.save(new Blob([bytes], { type: 'application/pdf' }), 'Preview ' + LET.fileName(doc), tab);
     }).catch(function (e) {
       btn.disabled = false;
       if (tab && !tab.closed) tab.close();

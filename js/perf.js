@@ -1691,13 +1691,7 @@
         pages.forEach(function (pg, i) { p.page = pg; p.footMark(i, pages.length); });
         return pdf.save();
       }).then(function (bytes) {
-        var blob = new Blob([bytes], { type: 'application/pdf' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+        D.save(new Blob([bytes], { type: 'application/pdf' }), name);
         if (btn) btn.disabled = false;
         if (btn && document.getElementById('pvMsg')) msg('pvMsg', 'Downloaded.', 'ok');
         if (then) then(true);

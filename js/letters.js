@@ -366,13 +366,7 @@
     var say = function (w) { if (said) return; said = true; if (then) then(w); };
     try {
       render(doc).then(function (bytes) {
-        var blob = new Blob([bytes], { type: 'application/pdf' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName(doc);
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+        DOCS.save(new Blob([bytes], { type: 'application/pdf' }), fileName(doc));
         say(DOCS.logoWarn());
       }).catch(function (e) {
         say('The file could not be drawn: ' + ((e && e.message) || e));
