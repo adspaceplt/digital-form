@@ -76,6 +76,8 @@
           <p class="rec-id-meta" id="campMeta"></p>
         </div>
       </div>
+      <!-- Where the campaign stands: n of N posted, a bar part a creator. -->
+      <div class="cx-standing" id="campStanding" hidden></div>
     </section>
 
     <!-- One summary band, not two cards. What the campaign is and how far the
@@ -141,12 +143,14 @@
 
     <!-- Confirmed bookings and where each has got to. Short chips only: a
          client wants to know whether it is their turn, not our vocabulary. -->
+    <!-- A draft waiting on the client leads the page. -->
+    <div class="cx-needs" id="needBox" hidden></div>
     <section id="bookingWrap" hidden>
       <h2 class="sectionhead" id="bookingHead"></h2>
       <!-- Totals across every live post, the same figures the console adds up. -->
       <section class="rollup-card" id="clientRollup" hidden>
         <div class="rollup-head" id="rollupHead"></div>
-        <div class="tally" id="clientTally"></div>
+        <div class="cx-results" id="clientTally"></div>
       </section>
       <div id="bookingList"></div>
     </section>
@@ -185,6 +189,7 @@
   </div>
 </div>
 
+<script src="/js/icons.js?v=20261008a"></script>
 <script src="/js/media.js?v=20261003b"></script>
 <script src="/js/creators.js?v=20261007n"></script>
 </body>

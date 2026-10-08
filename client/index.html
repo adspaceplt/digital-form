@@ -204,6 +204,12 @@
     <div class="sheet-head">
       <h3 id="reqHeading"></h3>
     </div>
+    <div class="row fgrid req-pick" id="reqPick" hidden>
+      <div><label class="field-label" for="reqKind" id="reqKindLabel">Request</label>
+        <select class="select" id="reqKind"></select></div>
+      <div id="reqLineWrap" hidden><label class="field-label" for="reqLine" id="reqLineLabel">Service</label>
+        <select class="select" id="reqLine"></select></div>
+    </div>
     <dl class="facts" id="reqFacts"></dl>
     <label class="field-label" for="reqNote" id="reqNoteLabel">Note</label>
     <textarea class="input textarea" id="reqNote" rows="4"></textarea>
@@ -216,6 +222,7 @@
 </div>
 
 <script src="/js/confirm.js?v=20261008"></script>
+<script src="/js/icons.js?v=20261008a"></script>
 <script src="/js/portal.js?v=20261007n"></script>
 </body>
 </html>

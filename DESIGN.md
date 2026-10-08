@@ -117,7 +117,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.tnext-title`, `.qnext-title`, `.lockcard-title`) |
 | Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
-| Money in a row | 13.5px tabular | `.svc-rate` |
+| Money in a row | 13.5px tabular, its figure at 600 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
 | Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 160px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
@@ -225,6 +225,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
+| A booking's steps (client pages) | `.cx-journey` (`ADspaceIcons.journey`): a hairline a step with its name under it in 12px, the done steps in the mute ink, the one in hand amber with its name in ink, as Apple tracks an order; never bare bars, never large ringed marks (the user, 2026-10-08) |
+| Where a campaign stands (client page) | `.cx-standing` under the name card: n of N posted, a 6px track a booking in its state's dot colour, a legend, the next shoot |
+| What the client owes (client page) | `.cx-needs`: the booking's own card above the rest, led by the amber dot and Waiting for your approval, the booking leaving the list while it waits |
 | Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |
 
 ## 5. Laws (each broke once; the reasons are in the archive)

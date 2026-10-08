@@ -68,6 +68,7 @@
       signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
+      addCal: 'Add to calendar', monthOf: function (a, b) { return 'Month ' + a + ' of ' + b; }, endsOn: function (d) { return 'ends ' + d; },
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
@@ -88,7 +89,7 @@
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
-      reqTitle: function (k) { return T.en[k]; }, line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
+      reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
       send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
       tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
@@ -105,6 +106,7 @@
       signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
+      addCal: '加入日历', monthOf: function (a, b) { return '第 ' + a + ' 个月，共 ' + b + ' 个月'; }, endsOn: function (d) { return d + ' 结束'; },
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
@@ -125,7 +127,7 @@
       review: '内容审阅', open: '打开', campaign: '博主推广',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
-      reqTitle: function (k) { return T.zh[k]; }, line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
+      reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
       tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
@@ -179,6 +181,7 @@
     return (n > 1 ? t().months(n) : '') + (l.start_on ? ' ' + t().from + ' ' + niceDate(startDay(l.start_on)) : '');
   }
   function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
+  function glyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   function money2(n) { return MON.money2(n, mkt()); }
   function chip(word, tone) { return '<span class="chip-state' + (tone ? ' ' + tone : '') + '">' + esc(word) + '</span>'; }
   function table(head) {
@@ -503,16 +506,41 @@
      held, and the link while the meeting is still ahead. Read from
      `portal_meetings`, which sends nothing else about the month; the section
      is not drawn until there is a meeting. */
+  /* Every meeting is read in Malaysia's clock (MYT, UTC+8, no summer
+     time), whatever the device says, because it is booked in it: a client
+     abroad read their own hour and no zone (the client pages refresh,
+     2026-10-07). A Date shifted eight hours and read in UTC is that clock. */
+  function myt(d) { return new Date(new Date(d).getTime() + 8 * 3600000); }
   function clock(d) {
-    var h = d.getHours(), m = d.getMinutes();
+    var h = d.getUTCHours(), m = d.getUTCMinutes();
     return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
   }
+  var MON_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  var DAY_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var DAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  function meetSpan(v) {
+    var a = myt(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
+    return clock(a) + ' – ' + clock(b);
+  }
   function meetWhen(v) {
-    var a = new Date(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
+    var a = myt(v.at);
     var day = lang === 'zh'
-      ? a.getFullYear() + '年' + (a.getMonth() + 1) + '月' + a.getDate() + '日'
-      : a.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept').replace(',', '');
-    return day + ', ' + clock(a) + ' – ' + clock(b);
+      ? a.getUTCFullYear() + '年' + (a.getUTCMonth() + 1) + '月' + a.getUTCDate() + '日'
+      : DAY_EN[a.getUTCDay()] + ' ' + a.getUTCDate() + ' ' + MON_EN[a.getUTCMonth()] + ' ' + a.getUTCFullYear();
+    return day + ', ' + meetSpan(v);
+  }
+  /* Add to calendar: one event as an .ics file, the time in UTC, the link
+     where it has one. Made in the page; nothing is sent anywhere. */
+  function icsOf(v, title) {
+    var z = function (d) { return new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+    var a = new Date(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
+    var clean = function (x) { return String(x || '').replace(/[\\;,]/g, function (m) { return '\\' + m; }).replace(/\n/g, ' '); };
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ADspace//Client Portal//EN', 'BEGIN:VEVENT',
+      'UID:' + (v.id || z(a)) + '@digital.adspace.me', 'DTSTAMP:' + z(Date.now()), 'DTSTART:' + z(a), 'DTEND:' + z(b),
+      'SUMMARY:' + clean(title)];
+    if (v.link) { lines.push('URL:' + v.link); lines.push('LOCATION:' + clean(v.link)); }
+    lines.push('END:VEVENT', 'END:VCALENDAR');
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
   }
   function meetAgenda(w, per, kind) {
     /* A meeting booked outside a month is simply a meeting. */
@@ -564,9 +592,22 @@
     var v = ahead[0];
     card.hidden = !v;
     if (!v) { box.innerHTML = ''; return; }
-    box.innerHTML = '<p class="cp-line"><b>' + esc(meetWhen(v)) + '</b></p>' +
-      '<p class="cp-sub">' + esc(meetAgenda(w, v.period, v.kind) + ' · ' + (w.channel[v.channel] || w.channel.other)) + '</p>' +
-      (v.link ? '<div class="cp-card-acts"><a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + '</a></div>' : '');
+    /* A date as a calendar leaf, the hour in MYT beside it, Join and Add to
+       calendar under them. */
+    var a = myt(v.at), agenda = meetAgenda(w, v.period, v.kind);
+    var I = window.ADspaceIcons, ic = function (n) { return I ? I.svg(n) : ''; };
+    box.innerHTML = '<div class="cx-meet">' +
+        '<div class="cx-leaf" aria-hidden="true"><span>' + esc(lang === 'zh' ? (a.getUTCMonth() + 1) + '月' : MON_EN[a.getUTCMonth()]) + '</span>' +
+          '<b>' + a.getUTCDate() + '</b><span>' + esc((lang === 'zh' ? DAY_ZH : DAY_EN)[a.getUTCDay()]) + '</span></div>' +
+        '<div class="cx-meet-who"><p class="cp-line"><b>' + esc(meetSpan(v)) + ' MYT</b></p>' +
+          '<p class="cp-sub cx-sr">' + esc(meetWhen(v)) + '</p>' +
+          '<p class="cp-sub">' + esc(agenda) + '</p>' +
+          '<p class="cp-sub cx-chan">' + ic('video') + esc(w.channel[v.channel] || w.channel.other) + '</p></div>' +
+      '</div>' +
+      '<div class="cp-card-acts cx-pair">' +
+        (v.link ? '<a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + ' ' + EXT + '</a>' : '') +
+        '<a class="btn btn-sm" href="' + icsOf(v, agenda) + '" download="meeting.ics">' + ic('calplus') + esc(w.addCal) + '</a>' +
+      '</div>';
   }
 
   /* The failure is said under whichever control asked: the Reports tab's
@@ -598,6 +639,29 @@
       window.ADspaceDocs.shut(tab);
       msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
     });
+  }
+
+  /* Where each confirmed line is in its term: the month it is in, of how
+     many, and when it ends, from its start and its months, both held. A line
+     not started, or of one month, says nothing. */
+  function termsHtml(list, w) {
+    var now = myt(Date.now());
+    var rows = list.map(function (l) {
+      var n = Math.max(1, Number(l.tenure || 1));
+      if (n < 2 || !l.start_on) return '';
+      var st = new Date(startDay(l.start_on) + 'T00:00:00Z');
+      var at = (now.getUTCFullYear() - st.getUTCFullYear()) * 12 + (now.getUTCMonth() - st.getUTCMonth()) + 1;
+      if (now.getUTCDate() < st.getUTCDate()) at -= 1;
+      if (at < 1 || at > n) return '';
+      var end = new Date(Date.UTC(st.getUTCFullYear(), st.getUTCMonth() + n, st.getUTCDate() - 1));
+      var endWord = lang === 'zh' ? end.getUTCFullYear() + '年' + (end.getUTCMonth() + 1) + '月'
+        : MON_EN[end.getUTCMonth()] + ' ' + end.getUTCFullYear();
+      return '<div class="cx-term"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
+        '<div class="cx-term-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + at + '"><i style="width:' +
+          Math.round(at / n * 100) + '%"></i></div>' +
+        '<p class="cp-sub">' + esc(w.monthOf(at, n) + ' · ' + w.endsOn(endWord)) + '</p></div>';
+    }).join('');
+    return rows ? '<div class="cx-terms">' + rows + '</div>' : '';
   }
 
   // ---- Build ---------------------------------------------------------------
@@ -676,8 +740,8 @@
     if (mgr) {
       mgr.hidden = !c.owner;
       $('ovMgrBox').innerHTML = c.owner ? '<p class="cp-person">' + esc(c.owner) + '</p><div class="cp-reach">' +
-        (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + esc(w.whatsapp) + '</a>' : '') +
-        (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + esc(w.email) + '</a>' : '') + '</div>' : '';
+        (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
+        (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + glyph('mail') + esc(w.email) + '</a>' : '') + '</div>' : '';
     }
     /* The registered name, the account manager and the status are on the
        identity line above, so the rail carries what is left rather than
@@ -760,7 +824,7 @@
       obox.innerHTML = '<dl class="cp-lines">' +
         '<div class="is-total"><dt>' + esc(w.confirmedTotal + ' · ' + w.lines(cf.length)) + '</dt><dd>' + esc(money(cf)) + '</dd></div>' +
         (q.length ? '<div><dt>' + esc(w.quotedTotal + ' · ' + w.lines(q.length)) + '</dt><dd>' + esc(money(q)) + '</dd></div>' : '') +
-        (open ? '<div><dt>' + esc(w.openRequests) + '</dt><dd>' + open + '</dd></div>' : '') + '</dl>';
+        (open ? '<div><dt>' + esc(w.openRequests) + '</dt><dd>' + open + '</dd></div>' : '') + '</dl>' + termsHtml(cf, w);
     }
 
     // Requests, once there is one.
@@ -821,12 +885,12 @@
 
     // Engagements: the two client pages, opened with their own links.
     var eng = [];
-    if (feed.review && feed.review.token) eng.push({ name: w.review, url: '/review/?k=' + encodeURIComponent(feed.review.token) });
+    if (feed.review && feed.review.token) eng.push({ name: w.review, glyph: 'image', url: '/review/?k=' + encodeURIComponent(feed.review.token) });
     (feed.campaigns || []).forEach(function (m) {
       var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
       nm = String(nm == null ? '' : nm).trim();
       if (!nm || nm === '0' || nm === 'null' || nm === 'undefined') nm = w.untitled;
-      eng.push({ name: nm, sub: w.campaign + (w.campState[m.state] ? ' · ' + w.campState[m.state] : ''),
+      eng.push({ name: nm, glyph: 'megaphone', sub: w.campaign + (w.campState[m.state] ? ' · ' + w.campState[m.state] : ''),
         url: '/creators/?k=' + encodeURIComponent(m.token) });
     });
     $('engWrap').hidden = !eng.length;
@@ -836,7 +900,7 @@
       eng.forEach(function (e) {
         var row = document.createElement('div');
         row.className = 'svc-row cp-eng-row';
-        row.innerHTML = '<span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + esc(e.sub) + '</small>' : '') + '</span>' +
+        row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + esc(e.sub) + '</small>' : '') + '</span>' +
           '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(w.open) + ' ' + EXT + '</a>';
         etb.appendChild(row);
       });
@@ -879,15 +943,27 @@
 
   // ---- Requests ------------------------------------------------------------
   var req = null;   // { kind, line }
-  function openRequest(kind, line) {
+  /* From a line's ⋯ the request is that line's; from the head's Request
+     change the client says what kind, and which confirmed line for an
+     upgrade, a downgrade or a cancel, as its guide says it does (the client
+     pages audit, PO-1, 2026-10-08). */
+  function openRequest(kind, line, pick) {
     var w = t();
-    req = { kind: kind, line: line || null };
-    $('reqHeading').textContent = w[kind];
-    $('reqFacts').innerHTML = [
-      [w.company, feed.client.name],
-      line ? [w.line, line.label] : null
-    ].filter(Boolean).map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
-    $('reqNoteLabel').textContent = w.noteFor[kind] || w.note;
+    var cf = pick ? (feed.services || []).filter(function (l) { return l.state === 'confirmed'; }) : [];
+    req = { kind: kind, line: line || null, pick: cf.length > 0 };
+    $('reqPick').hidden = !req.pick;
+    if (req.pick) {
+      $('reqKindLabel').textContent = w.reqKind;
+      $('reqLineLabel').textContent = w.line;
+      $('reqKind').innerHTML = ['details', 'upgrade', 'downgrade', 'cancel'].map(function (k) {
+        return '<option value="' + k + '">' + esc(w[k]) + '</option>';
+      }).join('');
+      $('reqKind').value = kind;
+      $('reqLine').innerHTML = cf.map(function (l) {
+        return '<option value="' + esc(String(l.id)) + '">' + esc(l.label) + '</option>';
+      }).join('');
+    }
+    paintRequest();
     $('reqNote').value = '';
     $('reqGo').textContent = w.send;
     $('reqCancel').textContent = w.close;
@@ -895,8 +971,27 @@
     $('reqSheet').hidden = false;
     $('reqNote').focus();
   }
+  function paintRequest() {
+    var w = t();
+    if (req.pick) {
+      req.kind = $('reqKind').value;
+      var id = $('reqLine').value;
+      req.line = req.kind === 'details' ? null
+        : (feed.services || []).filter(function (l) { return String(l.id) === id; })[0] || null;
+      $('reqLineWrap').hidden = req.kind === 'details';
+    }
+    $('reqHeading').textContent = req.pick ? w.requestChange : w[req.kind];
+    $('reqFacts').innerHTML = [
+      [w.company, feed.client.name],
+      !req.pick && req.line ? [w.line, req.line.label] : null
+    ].filter(Boolean).map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
+    $('reqNoteLabel').textContent = w.noteFor[req.kind] || w.note;
+  }
+  ['reqKind', 'reqLine'].forEach(function (id) {
+    $(id).addEventListener('change', function () { if (req) paintRequest(); });
+  });
   function shutRequest() { $('reqSheet').hidden = true; req = null; }
-  $('ovRequest').addEventListener('click', function () { openRequest('details', null); });
+  $('ovRequest').addEventListener('click', function () { openRequest('details', null, true); });
   $('reqCancel').addEventListener('click', shutRequest);
   $('reqSheet').addEventListener('click', function (e) { if (e.target === this) shutRequest(); });
   $('reqGo').addEventListener('click', function () {

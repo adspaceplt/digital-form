@@ -148,7 +148,7 @@
          platform's name alone was "too not obvious"). */
       viewPostOn: function (platform) { return 'View post on ' + platform; },
       captionLabel: 'Caption',
-      openDraft: 'Open the draft ↗',
+      openDraft: 'Open the draft',
       noteLabel: 'Changes required',
       approve: 'Approve',
       askChanges: 'Request changes',
@@ -166,7 +166,13 @@
       resultsHead: 'Campaign results',
       placements: 'Placements', cpe: 'Cost per engagement',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
-      noneYet: 'No creators.'
+      noneYet: 'No creators.',
+      /* The campaign room (2026-10-07, the client pages refresh). */
+      ofPosted: function (a, b) { return a + ' of ' + b + ' posted'; },
+      nextShoot: function (d) { return 'Next shoot ' + d; },
+      waitingYou: 'Waiting for your approval',
+      engRate: 'Engagement rate', perEng: 'Per engagement', viewsWord: 'views',
+      topPost: 'Top post', measuredWord: function (d) { return 'Measured ' + d; }
     },
     zh: {
       kicker: '博主选择',
@@ -240,7 +246,7 @@
       viewPost: '查看帖子',
       viewPostOn: function (platform, key) { return key === 'xhs' ? '查看小红书笔记' : '查看' + platform + '帖子'; },
       captionLabel: '文案',
-      openDraft: '打开初稿 ↗',
+      openDraft: '打开初稿',
       noteLabel: '需要修改的内容',
       approve: '通过',
       askChanges: '需要修改',
@@ -258,7 +264,12 @@
       resultsHead: '合作成效',
       placements: '发布数', cpe: '单次互动成本',
       impressions: '曝光', engagements: '互动', views: '播放',
-      noneYet: '暂无博主。'
+      noneYet: '暂无博主。',
+      ofPosted: function (a, b) { return '已发布 ' + a + '/' + b; },
+      nextShoot: function (d) { return '下次拍摄 ' + d; },
+      waitingYou: '待您确认',
+      engRate: '互动率', perEng: '单次互动成本', viewsWord: '播放',
+      topPost: '表现最佳内容', measuredWord: function (d) { return '统计于 ' + d; }
     }
   });
 
@@ -470,6 +481,9 @@
                 'changes', 'scheduled', 'posted', 'completed'];
 
   function isBooked(o) { return BOOKED.indexOf(o.state) > -1; }
+  /* How many creators are numbered above the list still to choose from, so
+     its numbers carry on rather than start again at 1 (audit SEL-4). */
+  var listedAbove = 0;
 
   function paintBookings() {
     var options = feed.options || [];
@@ -490,11 +504,36 @@
     $('chooseHead').hidden = !rows.length;
     $('chooseHead').textContent = backupStage() ? t().backupsHead : t().stillChoosing;
     $('bookingHead').textContent = t().yourCampaign;
+    paintStanding(booked);
+    listedAbove = rows.length;
+    /* What the client owes leads the page (the client pages refresh,
+       2026-10-07): a draft waiting on them is its own card above the
+       results, and its creator leaves the list below while it waits, so
+       one booking is drawn once (audit SEL-1, 2026-10-08); the list keeps
+       its numbers, the card carrying the one it left. */
+    var owed = booked.filter(owesClient);
+    var need = $('needBox');
+    if (need) {
+      need.innerHTML = '';
+      need.hidden = !owed.length;
+      owed.forEach(function (o) { need.appendChild(bookingRow(o, { need: true, no: rows.indexOf(o) + 1 })); });
+    }
     if (!rows.length) return;
+
+    /* With one post live, the campaign's results are that post's figures:
+       its own table under the booking said them a second time (SEL-3). */
+    var sole = booked.filter(function (o) {
+      return figuresIn((o.posts || []).filter(function (p) { return p.post_url; }));
+    });
+    var soleId = sole.length === 1 && (sole[0].posts || []).filter(function (p) { return p.post_url; }).length === 1
+      ? sole[0].id : null;
 
     var box = $('bookingList');
     box.innerHTML = '';
-    rows.forEach(function (o, i) { box.appendChild(bookingRow(o, i + 1)); });
+    rows.forEach(function (o, i) {
+      if (need && owed.indexOf(o) > -1) return;
+      box.appendChild(bookingRow(o, { no: i + 1, sole: o.id === soleId }));
+    });
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
     var c = feed.campaign || {};
@@ -528,27 +567,107 @@
     this.setAttribute('aria-expanded', String(!shut));
   });
 
+  /* Where the campaign stands, on its own head card: how many of the booked
+     creators are live, one part of the bar a creator in their state's dot
+     colour, the words under it, and the next shoot. Worked out from the
+     bookings on every paint; nothing is stored. */
+  var ORDER = ['confirmed', 'pending_visit', 'pending_draft', 'changes', 'reviewing', 'scheduled', 'posted', 'completed'];
+  var DOT = { 'is-ok': 'ok', 'is-live': 'ok', 'is-warn': 'wait', 'is-danger': 'late', 'is-off': 'off' };
+  function dotOf(state) { return DOT[toneOf(state)] || 'wait'; }
+  function paintStanding(booked) {
+    var box = $('campStanding');
+    if (!box) return;
+    box.hidden = !booked.length;
+    if (!booked.length) { box.innerHTML = ''; return; }
+    var rank = function (o) { var i = ORDER.indexOf(o.state); return i < 0 ? 0 : i; };
+    var bars = booked.slice().sort(function (a, b) { return rank(b) - rank(a); });
+    var live = booked.filter(function (o) { return o.state === 'posted' || o.state === 'completed'; }).length;
+    var counts = [];
+    bars.forEach(function (o) {
+      var w = chipFor(o), hit = counts.filter(function (c) { return c.w === w; })[0];
+      if (hit) hit.n++; else counts.push({ w: w, n: 1, dot: dotOf(o.state) });
+    });
+    var today = new Date().toISOString().slice(0, 10);
+    var shoots = booked.filter(function (o) { return o.visit_date && o.visit_date >= today &&
+      ['confirmed', 'pending_visit'].indexOf(o.state) > -1; })
+      .map(function (o) { return o.visit_date; }).sort();
+    var seeding = (feed.campaign || {}).push_format === 'seeding';
+    box.innerHTML =
+      '<p class="cx-standing-line"><b>' + esc(t().ofPosted(live, booked.length)) + '</b>' +
+        (shoots.length && !seeding ? '<span>' + esc(t().nextShoot(fmtDate(shoots[0]))) + '</span>' : '') + '</p>' +
+      '<div class="cx-track" aria-hidden="true">' + bars.map(function (o) {
+        return '<i class="is-' + dotOf(o.state) + '"></i>'; }).join('') + '</div>' +
+      '<p class="cx-legend">' + counts.map(function (c) {
+        return '<span><i class="cx-dot is-' + c.dot + '"></i>' + esc(c.w) + ' ' + c.n + '</span>'; }).join('') + '</p>';
+  }
+
+  /* A draft the client is asked to decide on: theirs, and only once it has
+     something to open. */
+  function owesClient(o) { return o.state === 'reviewing' && hasDraft(o); }
+
   /* The campaign's numbers, added up the way the console adds them: every
-     post that is live, against what the live creators cost. */
+     post that is live, against what the live creators cost. One figure
+     leads (views, else impressions); the rest sit under it with their
+     glyphs, and the engagement rate is engagements over impressions. Once
+     two posts or more are live, the best of them leads under the figures
+     with its cover; with one, its own card below already shows it. */
   function paintRollup(booked) {
     var live = booked.filter(function (o) { return o.state === 'posted' || o.state === 'completed'; });
     var rows = [];
-    live.forEach(function (o) { (o.posts || []).forEach(function (p) { if (p.post_url) rows.push(p); }); });
-    var hasNums = rows.some(function (p) { return p.impressions != null || p.engagements != null || p.views != null; });
+    live.forEach(function (o) { (o.posts || []).forEach(function (p) { if (p.post_url) rows.push({ p: p, o: o }); }); });
+    var hasNums = rows.some(function (r) { var p = r.p; return p.impressions != null || p.engagements != null || p.views != null; });
     $('clientRollup').hidden = !rows.length || !hasNums;
     if (!rows.length || !hasNums) return;
-    var sum = function (k) { return rows.reduce(function (s, p) { return s + Number(p[k] || 0); }, 0); };
+    var sum = function (k) { return rows.reduce(function (s, r) { return s + Number(r.p[k] || 0); }, 0); };
     var imp = sum('impressions'), eng = sum('engagements'), vie = sum('views');
     var spend = live.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
-    var cell = function (label, value) {
-      return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
+    var I = window.ADspaceIcons;
+    var ic = function (n) { return I ? I.svg(n) : ''; };
+    var fig = function (glyph, label, value) {
+      return '<div><dt>' + ic(glyph) + esc(label) + '</dt><dd>' + esc(String(value)) + '</dd></div>';
     };
-    $('rollupHead').textContent = t().resultsHead;
+    var lead = vie ? ['eye', t().viewsWord, vie] : ['layers', t().impressions, imp];
+    var measured = rows.map(function (r) { return r.p.measured_at; }).filter(Boolean).sort().pop();
+    $('rollupHead').innerHTML = '<span>' + esc(t().resultsHead) + '</span>' +
+      (measured ? '<span class="cx-quiet">' + esc(t().measuredWord(fmtDate(String(measured).slice(0, 10)))) + '</span>' : '');
+    var figs = [];
+    if (vie) figs.push(fig('layers', t().impressions, imp.toLocaleString()));
+    figs.push(fig('heart', t().engagements, eng.toLocaleString()));
+    if (imp && eng) figs.push(fig('percent', t().engRate, (Math.round(eng / imp * 1000) / 10).toFixed(1) + '%'));
+    if (eng) figs.push(fig('tag', t().perEng, money2(spend / eng)));
+    var top = '';
+    if (rows.length > 1) {
+      var best = rows.slice().sort(function (a, b) {
+        return Number(b.p.views || b.p.engagements || 0) - Number(a.p.views || a.p.engagements || 0); })[0];
+      var bp = best.p, cover = coverOf(best.o);
+      top = '<div class="cx-post">' +
+        '<p class="cx-eyebrow">' + esc(t().topPost) + '</p>' +
+        '<div class="cx-post-row' + (cover ? '' : ' is-bare') + '">' + cover +
+          '<div class="cx-post-who"><b>' + esc(best.o.name) + '</b>' +
+            '<span class="cx-plat">' + (I ? I.platform(platKey(bp.platform)) : '') + esc(platWord(bp.platform)) +
+              (bp.published_at ? ' · ' + esc(fmtDate(bp.published_at)) : '') + '</span>' +
+            '<span class="cx-mini">' +
+              (bp.views != null ? '<span>' + ic('eye') + Number(bp.views).toLocaleString() + '</span>' : '') +
+              (bp.engagements != null ? '<span>' + ic('heart') + Number(bp.engagements).toLocaleString() + '</span>' : '') +
+            '</span></div></div>' +
+        '<a class="btn btn-sm cx-postbtn" href="' + esc(absUrl(bp.post_url)) + '" target="_blank" rel="noopener">' +
+          esc(t().viewPostOn(platWord(bp.platform), platKey(bp.platform))) + EXT_ICON + '</a>' +
+      '</div>';
+    }
     $('clientTally').innerHTML =
-      cell(t().impressions, imp.toLocaleString()) +
-      cell(t().engagements, eng.toLocaleString()) +
-      cell(t().views, vie.toLocaleString()) +
-      (eng ? cell(t().cpe, money2(spend / eng)) : '');
+      '<p class="cx-hero"><b>' + esc(Number(lead[2]).toLocaleString()) + '</b><span>' + ic(lead[0]) + esc(lead[1]) + '</span></p>' +
+      '<dl class="cx-figs">' + figs.join('') + '</dl>' + top;
+  }
+
+  /* A booking's picture: the first image the creator handed in, else the
+     first video at its opening frame. Nothing where neither is held. */
+  function coverOf(o) {
+    var files = o.files || [];
+    var img = files.filter(function (f) { return f.kind === 'image'; })[0];
+    if (img) return '<span class="cx-cover"><img src="' + esc(img.url) + '" alt="" loading="lazy"></span>';
+    var vid = files.filter(function (f) { return f.kind === 'video'; })[0];
+    if (vid && window.ADspaceMedia) return '<span class="cx-cover">' + ADspaceMedia.tag(vid.url, 'muted playsinline preload="metadata"') + '</span>';
+    return '';
   }
 
   function chipFor(o) {
@@ -563,12 +682,33 @@
     return window.ADspaceWords.tone(s) || 'is-warn';
   }
 
-  function bookingRow(o, no) {
+  /* The booking's six steps under its creator's name, each named, as the
+     creator's own page draws them (ADspaceIcons.journey). The client's
+     review begins at Reviewing: a draft handed in and still with the team
+     (Submitted) is the Draft step to the client. */
+  var AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
+             scheduled: 4, posted: 5, completed: 6 };
+  function stepsOf(o) {
+    var at = AT[o.state];
+    if (at == null || !window.ADspaceIcons) return '';
+    var words = t().journey.slice();
+    if ((feed.campaign || {}).push_format === 'seeding') words[1] = t().journeyDelivery;
+    return window.ADspaceIcons.journey(words, at);
+  }
+  var FACT_ICON = {};
+
+  function bookingRow(o, opts) {
+    opts = opts || {};
     var c = feed.campaign || {};
     var seeding = c.push_format === 'seeding';
     var row = document.createElement('div');
-    var mine = o.state === 'reviewing';          // the only one that is theirs to act on
-    row.className = 'booking' + (o.state === 'withdrawn' ? ' is-off' : '');
+    /* Theirs to act on: drawn whole in the card at the top of the page,
+       and left out of the list below while it waits. */
+    var mine = opts.need === true;
+    row.className = 'booking' + (mine ? ' cx-need' : '') + (o.state === 'withdrawn' ? ' is-off' : '');
+    var icon = function (n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; };
+    FACT_ICON[t().shootOn] = 'camera'; FACT_ICON[t().deliveryOn] = 'box'; FACT_ICON[t().postedOn] = 'check';
+    FACT_ICON[t().platformsLabel] = 'megaphone'; FACT_ICON[t().goLive] = 'calendar'; FACT_ICON[t().nextLabel] = 'hourglass';
 
     /* One line of small grey text left most of the card empty and made the
        client hunt for the date. The same facts as a labelled grid fill the
@@ -594,32 +734,37 @@
       var plats = platsOf(o);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (o.planned_publish && !live) facts.push([t().goLive, fmtDate(o.planned_publish)]);
-      // The one thing a chip cannot say: what happens after this.
+      // The one thing a chip cannot say: what happens after this. The card
+      // at the top of the page says it in its own heading.
       var next = t().nextUp[o.state];
-      if (next) facts.push([t().nextLabel, next]);
+      if (next && !mine) facts.push([t().nextLabel, next]);
     }
-    var factsHtml = facts.length ? '<dl class="booking-facts">' + facts.map(function (f) {
-      return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+    var factsHtml = facts.length ? '<dl class="booking-facts cx-facts">' + facts.map(function (f) {
+      return '<div><dt>' + icon(FACT_ICON[f[0]]) + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
     }).join('') + '</dl>' : '';
 
     row.innerHTML =
+      (mine ? '<p class="cx-eyebrow"><i class="cx-dot is-wait"></i>' + esc(t().waitingYou) + '</p>' : '') +
       '<div class="booking-head">' +
-        (no ? '<span class="rowno">' + no + '</span>' : '') +
+        /* A creator is known by their number on the call (the user,
+           2026-10-07: "The creator needs numbering not profile photos"). */
+        (opts.no ? '<span class="rowno">' + opts.no + '</span>' : '') +
         '<b>' + esc(o.name) + '</b>' +
         '<span class="chip-state ' + toneOf(o.state) + '">' + esc(chipFor(o)) + '</span>' +
         (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
       '</div>' +
+      (o.state === 'withdrawn' ? '' : stepsOf(o)) +
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       postLinks(posts) +
-      (resultsOf(posts) || '') +
+      (opts.sole ? '' : resultsOf(posts) || '') +
       /* Once the post is out, who approved it is history the console keeps;
          the card leads with the post (the user, 2026-09-27: "Is it necessary
          to keep the approved there"). */
       (live ? '' : decidedLine(o)) +
-      (mine && hasDraft(o) ? draftPreview(o) + decisionBlock(o) : '');
+      (mine ? draftPreview(o) + decisionBlock(o) : '');
 
-    if (mine && hasDraft(o)) wireDecision(row, o);
+    if (mine) wireDecision(row, o);
     return row;
   }
 
@@ -714,7 +859,7 @@
       (o.caption ? '<div class="draft-caption"><span class="field-label">' + esc(t().captionLabel) +
         '</span><p>' + esc(o.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
       (o.draft_url ? '<a class="btn btn-sm" href="' + esc(absUrl(o.draft_url)) +
-        '" target="_blank" rel="noopener">' + esc(t().openDraft) + '</a>' : '') +
+        '" target="_blank" rel="noopener">' + esc(t().openDraft) + EXT_ICON + '</a>' : '') +
       '</div>';
   }
 
@@ -990,7 +1135,7 @@
       var plats = platsOf(o);
 
       row.innerHTML =
-        '<span class="rowno crow-no">' + (idx + 1) + '</span>' +
+        '<span class="rowno crow-no">' + (listedAbove + idx + 1) + '</span>' +
         '<button class="crow-tick' + (full ? ' is-full' : '') + '" type="button"' +
           (full ? ' disabled' : '') + ' aria-pressed="' + (pick === 'selected') + '"' +
           ' title="' + esc(full ? t().full : t().select) + '">' +
