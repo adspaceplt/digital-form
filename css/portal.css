@@ -10368,6 +10368,14 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .wl-brand .team-act { margin-block: -4px; }
 .wl-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
 .wl-brands .wl-add { justify-self: start; margin-top: 8px; }
+/* Meta (2026-10-08): the accounts a client's reports are imported from, read
+   first on the Brand pane; Edit opens the picker sheet. */
+.readgroup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.readgroup-head .fsec-h { margin: 0; }
+.readgroup-head .btn { flex: 0 0 auto; }
+.meta-for { margin: 0 0 12px; font-weight: 600; }
+.meta-accs { display: grid; gap: 4px; max-height: 40dvh; overflow-y: auto; }
+.meta-accs .tickline { min-height: var(--ctl-h); }
 @media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
 #ptLogoOff { margin-top: 8px; }
 
