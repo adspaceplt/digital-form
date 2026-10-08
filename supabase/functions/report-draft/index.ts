@@ -187,6 +187,17 @@ ref: the part it is in. quote: the exact words that are wrong, copied from the p
 The client is named {brand} in the commentary: keep {brand} exactly as it is in a quote and a fix.
 At most 10 findings, the most serious first. No dashes as punctuation, no emoji.`;
 
+/* What a call cost, kept on its own row (`ai_draft_tokens`, 2026-10-08):
+   every token read, cached or not, and every token written, so the AI
+   usage page can price the month. Never fails the answer. */
+// deno-lint-ignore no-explicit-any
+function keepTokens(db: any, id: string, res: Anthropic.Message): Promise<null> {
+  const u = (res && res.usage || {}) as unknown as Record<string, number | null | undefined>;
+  const input = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+  return db.rpc('ai_draft_tokens', { p_id: id, p_in: input, p_out: u.output_tokens || 0, p_model: res.model || null })
+    .then(() => null, () => null);
+}
+
 function num(v: unknown): number | null {
   const n = typeof v === 'number' ? v : v == null || v === '' ? NaN : Number(v);
   return Number.isFinite(n) ? n : null;
@@ -273,6 +284,7 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
       messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
         '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
+    await keepTokens(db, pressId, res);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft check: answer stopped short', res.stop_reason);
       await done(false, null);
@@ -489,6 +501,7 @@ Deno.serve(async (req) => {
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
+    await keepTokens(db, pressId, res);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
       await done(false);
