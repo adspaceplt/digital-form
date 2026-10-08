@@ -8217,11 +8217,17 @@
        most, so a notice marked read is still there to find again (the user,
        2026-10-08: "once marked as read all notifications disappears"). */
     var since = new Date(Date.now() - 7 * 86400000).toISOString();
+    /* The read notices are a second read; one that cannot be built or
+       answered leaves the unread list as it was, never the console. */
+    var earlier;
+    try {
+      earlier = db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+        .gte('created_at', since).not('read_at', 'is', null).order('created_at', { ascending: false }).limit(10);
+    } catch (e) { earlier = Promise.resolve(null); }
     Promise.all([
       db.from('ops_notifications').select('*').eq('team_member_id', me.id)
         .is('read_at', null).order('created_at', { ascending: false }).limit(30),
-      db.from('ops_notifications').select('*').eq('team_member_id', me.id)
-        .not('read_at', 'is', null).gte('created_at', since).order('created_at', { ascending: false }).limit(10)
+      Promise.resolve(earlier).catch(function () { return null; })
     ]).then(function (rs) {
       if (!rs[0] || rs[0].error) return;
       state.notifs = (rs[0].data || []).concat((rs[1] && !rs[1].error && rs[1].data) || []);
