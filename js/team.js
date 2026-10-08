@@ -148,6 +148,8 @@
                 ['perfadmin', 'Performance company figures, settings and removals'],
                 ['settings', 'Business settings'], ['upgrade', 'Upgrade mode'],
                 ['invite', 'Send invitation'], ['handbook', 'Handbook files'], ['announce', 'Announcements'],
+                /* A notice to all colleagues or to those chosen (2026-10-09). */
+                ['notice', 'Notices'],
                 /* Every colleague's health check-ins by name (2026-10-07):
                    an admin's by itself, any other group's once set. */
                 ['health', 'Health check-ins']],
@@ -162,7 +164,7 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
@@ -180,6 +182,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
+    'team.notice': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']

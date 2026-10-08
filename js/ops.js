@@ -257,8 +257,8 @@
     if (err === 'plan-full' || err === 'plan-range' || err === 'extra-range') {
       var pl = d && d.planned ? d.planned : 0, pw = pl === 1 ? ' piece' : ' pieces';
       if (err === 'plan-full') {
-        return d && d.left ? 'Only ' + d.left + ' of the ' + pl + ' planned' + pw + ' left. Choose Ad hoc, Goodwill or Special for the rest.'
-          : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Special.';
+        return d && d.left ? 'Only ' + d.left + ' of the ' + pl + ' planned' + pw + ' left. Choose Ad hoc, Goodwill or Other for the rest.'
+          : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Other.';
       }
       return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
         : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
@@ -372,9 +372,9 @@
     design: 'Design', adhoc: 'Ad-hoc request', graphic: 'Graphic'
   };
   /* What a task is for: engagement work is what a contract pays for, ad hoc
-     is asked for outside it, goodwill is given, special is anything else the
+     is asked for outside it, goodwill is given, Other (key special) is anything else the
      team names. */
-  var TASK_TYPE_WORD = { engagement: 'Retainer', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Special' };
+  var TASK_TYPE_WORD = { engagement: 'Retainer', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Other' };
   /* `simple` is the stored key and Light is the word the team uses for it. */
   var COMPLEX_WORD = { simple: 'Light', standard: 'Standard', complex: 'Complex' };
   /* Priority is how soon, on four words; the fifth level a row written before
@@ -708,7 +708,7 @@
     return Boolean(d && d.getTime() === todayStart().getTime());
   }
   /* Where the msg for an act goes: the drawer's own line while it is open. */
-  function msgHere(fallback) { return state.drawer ? 'dwMsg' : (fallback || 'taskNextMsg'); }
+  function msgHere() { return 'dwMsg'; }
 
   // ---- The queue -----------------------------------------------------------
   /* How far back finished work is read. Never applied to open work. */
@@ -1364,7 +1364,7 @@
     var n = ids.length;
     ADspaceConfirm.ask({
       title: 'Delete ' + n + (n === 1 ? ' task' : ' tasks'),
-      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, comment, link, checklist item and time entry. There is no restore.',
+      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, remark, link, checklist item and time entry. There is no restore.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' },
@@ -2577,7 +2577,7 @@
         if (next === 'complete') {
           state.undone = { id: t.id, back: from === 'complete' ? 'todo' : from, title: t.title };
         } else state.undone = null;
-        if (state.session && state.session.task_id === t.id && next === 'complete') { state.session = null; stopTick(); }
+        if (state.session && state.session.task_id === t.id && next === 'complete') { state.session = null; }
         done();
       }, function (e) { if (ck) ck.disabled = false; rowNote(el, (e && e.message) || String(e)); });
   }
@@ -2786,11 +2786,10 @@
   // ---- The task, opened from a list -----------------------------------------
   /* A task opened from the list, the board, the calendar, the bell or a
      client's Work pane opens here, in the portal's own sheet docked beside
-     the list: what it is and where it stands, the one thing to do next, then
-     the facts, the brief, the checklist, the files, the talk, the time and
-     what happened lately, each in its own card. The list stays where it was.
-     The full record is one press further, for the rare task that needs it,
-     and its address is still what a link to a task opens. */
+     the list: what it is and where it stands, the one thing to do next, who
+     has it, its dates and details, the checklist and the remarks; the brief,
+     the files, the time and what happened lately fold under More. It is the
+     task's one card: there is no full record (the user, 2026-10-09). */
   function openDrawer(id, o) {
     var d = $('taskDrawer');
     if (!d || !id) return;
@@ -2808,7 +2807,10 @@
     $('dwStatus').textContent = '';
     $('dwCtx').textContent = '';
     $('dwCtx').hidden = true;
-    $('dwFacts').innerHTML = '';
+    ['taskPeople', 'taskDates', 'taskFacts', 'taskMore'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
+    ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg'].forEach(function (x) { msg(x, ''); });
+    if ($('dueAsk')) $('dueAsk').hidden = true;
+    if ($('dwReport')) $('dwReport').hidden = true;
     $('dwNextTitle').textContent = '';
     $('dwNextLine').textContent = '';
     $('dwActs').innerHTML = '';
@@ -2834,7 +2836,7 @@
     var dirty = state.drawerDirty, id = state.drawer, from = state.drawerFrom;
     state.drawer = null;
     state.drawerFrom = null;
-    if (!state.openId) state.task = null;
+    state.task = null;
     if (!noReload && dirty) { if (from === 'client') readClientWork(); else load(); }
     if (from === 'work' && bridge.setUrl) bridge.setUrl();
     var opener = state.drawerOpener;
@@ -2849,18 +2851,6 @@
     return ['dwCheckAdd', 'dwLinkUrl', 'dwLinkLabel', 'dwComment', 'dwDescText'].some(function (x) {
       return $(x) && String($(x).value || '').trim();
     });
-  }
-  function openFull(id) {
-    var from = state.drawerFrom;
-    closeDrawer(true);
-    /* From a client's record the full record is My Work's, so the address
-       comes first, the way the bell opens a task. */
-    if (!$('sectionWork') || $('sectionWork').hidden) {
-      history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(id));
-      if (bridge.show) bridge.show('work');
-      return;
-    }
-    openTask(id, true);
   }
 
   function paintDrawer(t) {
@@ -2892,62 +2882,6 @@
 
     paintNext(NEXT_DW(), t, n);
 
-    // The facts a day's work turns on.
-    var who = ownerName(t);
-    var canOwn = mayReassign(t) && !fin;
-    var dueTxt = t.current_final_due_at ? niceDate(t.current_final_due_at) : 'Not set';
-    var over = isLate(t);
-    var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-    var facts =
-      frow('Assigned to', '<span id="dwOwnerName">' + (who ? esc(who) : '<span class="mute">Unassigned</span>') + '</span>',
-        canOwn ? '<button class="linkbtn" id="dwOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '') +
-      frow('Due', work && !fin
-        ? '<button class="tdate' + (over ? ' is-over' : '') + '" id="dwDue" type="button" aria-label="Due ' + esc(dueTxt) + '. Change">' + esc(dueTxt) + pen + '</button>'
-        : '<span class="tdate-read' + (over ? ' is-over' : '') + '">' + esc(dueTxt) + '</span>');
-    /* After approval the dates the step runs on: when it goes out, and when
-       it went live. */
-    var sg = (stageOf(t) || {}).stage_group;
-    var after = sg === 'approved' || sg === 'scheduled' || sg === 'live' || sg === 'performance' || sg === 'taken_down' || t.stage_key === 'completed';
-    if (!every && (t.publish_at || after)) {
-      var pubTxt = t.publish_at ? niceDate(t.publish_at) : 'Not set';
-      facts += frow('Post date', work && !fin && (sg === 'approved' || sg === 'scheduled' || !after)
-        ? '<button class="tdate" id="dwPublish" type="button" aria-label="Post date ' + esc(pubTxt) + '. Change">' + esc(pubTxt) + pen + '</button>'
-        : '<span class="tdate-read">' + esc(pubTxt) + '</span>');
-    }
-    if (t.live_at) facts += frow('Live', esc(niceDate(t.live_at)));
-    facts += frow('Created by', esc(nameOf(t.created_by) || '—'));
-    /* How soon, on four words; a select where the reader may change it. */
-    facts += frow('Priority', work && !fin
-      ? '<select class="select select-sm qpri" id="dwPriority" aria-label="Priority">' +
-          [['1', 'Urgent'], ['2', 'High'], ['3', 'Normal'], ['4', 'Low']].map(function (o) {
-            return '<option value="' + o[0] + '"' + (String(Math.min(4, Number(t.priority_level) || 3)) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
-          }).join('') + '</select>'
-      : esc(PRIORITY_WORD[String(t.priority_level)] || 'Normal'));
-    $('dwFacts').innerHTML = facts;
-    var oc = $('dwOwnerChange');
-    if (oc) oc.addEventListener('click', function () {
-      inlineOwner(t, $('dwFacts'), oc, ownerId(t), function () {
-        state.drawerDirty = true;
-        readTask(t.id, function () { msg('dwMsg', 'Reassigned.', 'ok'); });
-      });
-    });
-    var dd = $('dwDue');
-    if (dd) dd.addEventListener('click', function () {
-      if (t.current_final_due_at) { openDue('final'); return; }
-      inlineDue(t, $('dwFacts'), dd, function () {
-        state.drawerDirty = true;
-        readTask(t.id, function () { msg('dwMsg', state.rowSaid ? state.rowSaid.word : 'Saved.', 'ok'); state.rowSaid = null; });
-      });
-    });
-    var dp = $('dwPublish');
-    if (dp) dp.addEventListener('click', function () { inlinePublish(t, dp); });
-    var dpr = $('dwPriority');
-    if (dpr) dpr.addEventListener('change', function () {
-      var was = String(Math.min(4, Number(t.priority_level) || 3));
-      call('ops_update_task', { p_task: t.id, p_payload: { priority_level: Number(dpr.value) }, p_version: t.version }, 'dwMsg', function () {
-        readTask(t.id, function () { msg('dwMsg', 'Priority saved.', 'ok'); });
-      }, function () { dpr.value = was; });
-    });
     $('dwTitleEdit').hidden = !work || fin;
 
     // The brief
@@ -3018,15 +2952,15 @@
     $('dwLinkOpen').hidden = !work || fin;
     $('dwLinkSec').hidden = !live.length && (!work || fin);
 
-    // Comments, oldest first, as a conversation reads, each as it now stands.
+    // Remarks, oldest first, as a conversation reads, each as it now stands.
     var comments = commentsOf(state.detail.events);
     var me = myId();
     $('dwComments').innerHTML = comments.length ? '<ul class="qcomments">' + comments.map(function (c) {
       var mine = work && (c.actor_id === me || may('ops', 'manage'));
-      var menu = mine ? itemMenu('comment', [['edit', 'Edit'], ['remove', 'Delete', true]]) : '';
+      var menu = mine ? itemMenu('remark', [['edit', 'Edit'], ['remove', 'Delete', true]]) : '';
       return '<li class="qitem" data-comment="' + esc(c.id) + '"><div><p>' + esc(c.body) + '</p>' +
         '<small>' + esc(whoName(c.e)) + ' · ' + esc(niceTime(c.at)) + (c.edited ? ' · edited' : '') + '</small></div>' + menu + '</li>';
-    }).join('') + '</ul>' : (work ? '<p class="qempty">No comments.</p>' : '');
+    }).join('') + '</ul>' : (work ? '<p class="qempty">No remarks.</p>' : '');
     Array.prototype.forEach.call($('dwComments').querySelectorAll('.qitem'), function (row) {
       var c = comments.filter(function (x) { return x.id === row.getAttribute('data-comment'); })[0];
       wireItemMenu(row, function (a) {
@@ -3048,16 +2982,107 @@
     window.ADspaceRecords.paint($('dwLogAll'), rest, { offset: 3, empty: false });
     $('dwLogSec').hidden = !rest.length;
 
-    $('dwFull').href = '/admin/?s=work&task=' + encodeURIComponent(t.id);
+    paintReportRow(t);
 
     // The ⋯: the full record, the rare acts, Delete last. Every stage move
     // is the stage select.
     var menu = $('dwMenu');
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = fin || !mayReassign(t);
+
+    menu.querySelector('[data-a="archive"]').hidden = !t.archived_at || !may('ops', 'manage');
     offerItems(menu, t);
   }
+  /* A REPORT TASK'S OWN REPORT (the user, 2026-10-09: "linkages to the
+     report section"). The month asks for the report, the task stands for
+     it, and the card goes to it: once made, where it stands and Open report;
+     before, Start report makes it on the month's own span (a month starting
+     on the 16th runs to the 15th), as New report in Reports does. */
+  var REPORT_KIND = { report_social: 'social', report_ads: 'ads' };
+  var REPORT_WORD = { social: 'Accounts Report', ads: 'Advertising Report' };
+  var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
+  var REPORT_SAID = {
+    'month-gate': 'Its month in My Work does not ask for this report.',
+    'denied': 'This needs a higher access level for Reports.',
+    'bad-period': 'The month\'s period could not be read.'
+  };
+  function monthSpanOf(e) {
+    var d = Math.max(1, Math.min(28, Number(e.start_day) || 1)), y = Number(e.period.slice(0, 4)), mo = Number(e.period.slice(5, 7));
+    var a = new Date(Date.UTC(y, mo - 1, d)), b = new Date(Date.UTC(y, mo, d) - 864e5);
+    return [a.toISOString().slice(0, 10), b.toISOString().slice(0, 10)];
+  }
+  function spanDates(sp) {
+    var a = new Date(sp[0] + 'T00:00:00Z'), b = new Date(sp[1] + 'T00:00:00Z');
+    return a.getUTCDate() + ' ' + MON_SHORT[a.getUTCMonth()] + ' to ' + b.getUTCDate() + ' ' + MON_SHORT[b.getUTCMonth()];
+  }
+  function openReportRoute(id) {
+    closeDrawer(true);
+    history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(id));
+    if (bridge.show) bridge.show('reports');
+  }
+  var reportSeq = 0;
+  function paintReportRow(t) {
+    var box = $('dwReport');
+    if (!box) return;
+    var kind = REPORT_KIND[t.source_type];
+    var e = state.eng;
+    if (!kind || !t.client_id || !e || e.id !== t.engagement_id || !may('reports', 'view')) { box.hidden = true; return; }
+    var sp = monthSpanOf(e), seq = ++reportSeq;
+    $('dwReportTitle').textContent = REPORT_WORD[kind];
+    db.from('sm_reports').select('id, status, sent_on, version_no, period_start')
+      .eq('client_id', t.client_id).eq('kind', kind).is('brand_id', null)
+      .gte('period_end', sp[0]).lte('period_end', sp[1])
+      .order('period_start', { ascending: false }).limit(1)
+      .then(function (q) {
+        if (seq !== reportSeq || !state.task || state.task.id !== t.id) return;
+        var act = $('dwReportAct'), line = $('dwReportLine');
+        box.hidden = false;
+        msg('dwReportMsg', '');
+        if (q.error) { act.innerHTML = ''; line.textContent = 'Could not load the report.'; return; }
+        var r = (q.data || [])[0];
+        if (r) {
+          line.textContent = [REPORT_STATE[r.status] || r.status, r.version_no > 1 ? 'Version ' + r.version_no : '',
+            r.status === 'published' ? (r.sent_on ? 'Sent ' + niceDate(r.sent_on) : 'Not sent') : ''].filter(Boolean).join(' · ');
+          act.innerHTML = '<button class="btn btn-sm" type="button" id="dwReportOpen">Open report' + CHEV_S + '</button>';
+          $('dwReportOpen').addEventListener('click', function () { openReportRoute(r.id); });
+          return;
+        }
+        line.textContent = 'Not started · ' + spanDates(sp);
+        if (!may('reports', 'work') || isFinished(t)) { act.innerHTML = ''; return; }
+        act.innerHTML = '<button class="btn btn-sm" type="button" id="dwReportStart">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Start report</button>';
+        var b = $('dwReportStart');
+        b.addEventListener('click', function () {
+          b.disabled = true;
+          msg('dwReportMsg', 'Starting…', '');
+          db.rpc('sm_report_create', { p_client: t.client_id, p_start: sp[0], p_end: sp[1], p_kind: kind }).then(function (res) {
+            var d = res.data || {};
+            if (res.error || (d.error && !(d.error === 'exists' && d.id))) {
+              var m = String((res.error && res.error.message) || d.error || '');
+              var key = Object.keys(REPORT_SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
+              b.disabled = false;
+              msg('dwReportMsg', key ? REPORT_SAID[key] : (m || 'Not started.'), 'err');
+              return;
+            }
+            state.drawerDirty = true;
+            if (d.error === 'exists') { openReportRoute(d.id); return; }
+            /* A new report is written in the main contact's preferred
+               language, as New report in Reports does. */
+            db.from('client_contacts').select('lang').eq('client_id', t.client_id).eq('is_primary', true).limit(1).then(function (x) {
+              var c = x && !x.error && (x.data || [])[0];
+              if (!c || c.lang !== 'zh') return null;
+              return db.from('sm_reports').update({ lang: 'zh' }).eq('id', d.id).select('id');
+            }).catch(function () { return null; }).then(function () { openReportRoute(d.id); });
+          }).catch(function (err) {
+            b.disabled = false;
+            msg('dwReportMsg', (err && err.message) || 'Not started.', 'err');
+          });
+        });
+      }).catch(function () {
+        if (seq === reportSeq) { box.hidden = false; $('dwReportAct').innerHTML = ''; $('dwReportLine').textContent = 'Could not load the report.'; }
+      });
+  }
+
   // ---- Changing and taking back what was added --------------------------------
   /* A row the reader may change carries a ⋯ at its end, holding the acts for
      that one thing. It is the row menu every list in this console has. */
@@ -3110,8 +3135,8 @@
       title: 'Rename item', go: 'Save',
       field: { label: 'Item', value: c.label, need: 'Say what needs doing.' }
     }, function (v) {
-      call('ops_edit_checklist_item', { p_item: c.id, p_label: v }, msgHere('taskMsg'), function () {
-        readTask(t.id, function () { msg(msgHere('taskMsg'), 'Item renamed.', 'ok'); });
+      call('ops_edit_checklist_item', { p_item: c.id, p_label: v }, msgHere(), function () {
+        readTask(t.id, function () { msg(msgHere(), 'Item renamed.', 'ok'); });
       });
     });
   }
@@ -3180,20 +3205,20 @@
   function editComment(t, c) {
     if (!c) return;
     ADspaceConfirm.ask({
-      title: 'Edit comment', go: 'Save',
-      field: { label: 'Comment', rows: 3, value: c.body, need: 'A comment cannot be empty.' }
+      title: 'Edit remark', go: 'Save',
+      field: { label: 'Remark', rows: 3, value: c.body, need: 'A remark cannot be empty.' }
     }, function (v) {
-      call('ops_edit_comment', { p_event: c.id, p_body: v }, msgHere('taskMsg'), function () {
-        readTask(t.id, function () { msg(msgHere('taskMsg'), 'Comment edited.', 'ok'); });
+      call('ops_edit_comment', { p_event: c.id, p_body: v }, msgHere(), function () {
+        readTask(t.id, function () { msg(msgHere(), 'Remark edited.', 'ok'); });
       });
     });
   }
   function removeComment(t, c, host) {
     if (!c) return;
-    call('ops_remove_comment', { p_event: c.id, p_on: true }, msgHere('taskMsg'), function () {
+    call('ops_remove_comment', { p_event: c.id, p_on: true }, msgHere(), function () {
       readTask(t.id, function () {
-        undoBar('Comment deleted.', function () {
-          call('ops_remove_comment', { p_event: c.id, p_on: false }, msgHere('taskMsg'), function () { readTask(t.id); });
+        undoBar('Remark deleted.', function () {
+          call('ops_remove_comment', { p_event: c.id, p_on: false }, msgHere(), function () { readTask(t.id); });
         }, host);
       });
     });
@@ -3387,8 +3412,6 @@
   }
   var DW_REF = { kind: 'dwLinkKind', ref: 'dwLinkRef', refField: 'dwLinkRefField',
                  hide: ['dwLinkUrlField', 'dwLinkLabelLab', 'dwLinkLabel'] };
-  var REC_REF = { kind: 'taskLinkKind', ref: 'taskLinkRef', refField: 'taskLinkRefField',
-                  hide: ['taskLinkLabelField', 'taskLinkUrlRow'] };
   function linkRecord(t, pick, where, then) {
     var m = /^(campaign|set):(.+)$/.exec(String(pick || ''));
     if (!m) { msg(where, 'Select a record.', 'err'); return; }
@@ -3463,11 +3486,6 @@
     return { box: $('dwNext'), title: $('dwNextTitle'), line: $('dwNextLine'), list: $('dwNextList'),
              late: $('dwNextLate'), hand: $('dwHand'), tick: $('dwHandTick'), tickWrap: $('dwHandTickWrap'),
              lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw' };
-  }
-  function NEXT_REC() {
-    return { box: $('taskNextStep'), title: $('taskNextTitle'), line: $('taskNextLine'), list: $('taskNextList'),
-             late: $('taskNextLate'), hand: $('taskHand'), tick: $('taskHandTick'), tickWrap: $('taskHandTickWrap'),
-             lab: $('taskHandLab'), to: $('taskHandTo'), acts: $('taskNextActs'), rate: $('taskRate'), msg: 'taskNextMsg', ids: 'task' };
   }
   function paintNext(b, t, n) {
     if (!b.box) return;
@@ -3748,7 +3766,7 @@
     if (state.task && state.task.id === t.id) {
       if (d && d.id) applyTask(d);
       if (state.drawer) state.drawerDirty = true;
-      readTask(t.id, function () { msg(state.drawer ? 'dwMsg' : 'taskNextMsg', 'Moved to ' + labelOfStage(t, c.key) + '.', 'ok'); });
+      readTask(t.id, function () { msg('dwMsg', 'Moved to ' + labelOfStage(t, c.key) + '.', 'ok'); });
       return;
     }
     state.moved = { id: t.id, word: labelOfStage(t, c.key) };
@@ -4070,24 +4088,17 @@
 
   // ---- One task ------------------------------------------------------------
   function showList() {
+    closeDrawer(true);
     state.task = null;
-    state.openId = null;
-    $('workList').hidden = false;
-    $('workRec').hidden = true;
     if (bridge.setUrl) bridge.setUrl();
     load();
   }
 
-  function openTask(id, push) {
-    $('workList').hidden = true;
-    $('workRec').hidden = false;
-    msg('taskMsg', '');
-    /* The address is written before the read comes back, or it is written
-       from a state that does not yet hold the task somebody just opened: a
-       reload would land on the queue rather than on the row they pressed. */
-    state.openId = id;
-    if (push && bridge.pushUrl) bridge.pushUrl();
-    readTask(id);
+  /* A task is one card beside the list (the user, 2026-10-09: "not much
+     usage of the full record"): an older link to a task, a new task and a
+     copy all open it there. */
+  function openTask(id) {
+    openDrawer(id, { from: 'work' });
   }
 
   /* One read of the task and everything hanging off it. The row itself comes
@@ -4122,7 +4133,7 @@
          assignments is named rather than drawn as an unowned task. */
       var bad = r[0].error || (r[5] && r[5].error);
       if (bad) {
-        msg(msgHere('taskMsg'), bad.message || 'That task could not be read.', 'err');
+        msg('dwMsg', bad.message || 'That task could not be read.', 'err');
         return;
       }
       /* No row: the task was deleted (here, in another tab, by somebody
@@ -4138,14 +4149,14 @@
       }
       readDone(r, t, after);
     }).catch(function (e) {
-      msg(msgHere('taskMsg'), (e && e.message) || String(e), 'err');
+      msg('dwMsg', (e && e.message) || String(e), 'err');
     });
   }
   function taskGone(id) {
     var from = state.drawer === id ? state.drawerFrom : null;
     if (state.drawer === id) closeDrawer(true);
     if (from === 'client') { readClientWork(); return; }
-    if (state.openId === id || !$('workRec').hidden) showList(); else load();
+    load();
     msg('workMsg', 'That task is no longer available.', 'warn');
   }
   function readDone(r, t, after) {
@@ -4194,56 +4205,11 @@
   function paintTask() {
     var t = state.task;
     if (!t) return;
-    var n = derive(t);
-    paintIdentity(t, n);
-    paintNextStep(t, n);
-    paintOverview(t);
-    paintChecklist();
-    paintLinks();
-    paintTime();
-    paintLog();
     paintRail(t);
-    paintMenu(t, n);
     paintDrawer(t);
     if (UI.fit) UI.fit();
   }
 
-  function paintIdentity(t, n) {
-    var mark = $('taskMark');
-    /* The task number is what an invoice, a message and a spreadsheet row all
-       name it by, so it heads the record in the token face and copies on a
-       press, the way a serial does on the Register. */
-    if (mark) {
-      mark.textContent = serialOf(t);
-      mark.setAttribute('aria-label', 'Copy ' + serialOf(t));
-    }
-    /* The name is the code and the description. The code is the database's
-       and is drawn in the token face; the description is the team's, edited
-       where it sits, and may be blank on a task that carries a code. A task
-       from before the codes carries its old title as the description. */
-    var code = $('taskCode'), desc = $('taskDesc');
-    if (code) {
-      code.textContent = t.code || '';
-      code.hidden = !t.code;
-    }
-    if (desc) {
-      var d = t.code ? (t.content_desc || '') : (t.content_desc || t.title || 'Untitled task');
-      desc.textContent = d;
-      desc.classList.toggle('is-blank', !d);
-      if (!d) desc.textContent = 'No description';
-    }
-    var pen = $('taskDescEdit');
-    if (pen) pen.hidden = !may('ops', 'work') || isFinished(t);
-    /* Whose it is and what it makes. The owner is the rail's, named once
-       under People, so the head does not say it a second time. */
-    $('taskMeta').textContent = [
-      whoseWord(t),
-      metaFormat(t),
-      TASK_TYPE_WORD[t.task_type] || ''
-    ].filter(Boolean).join(' · ');
-    paintHeadStage($('taskStage'), t, n, $('taskNextActs'), false);
-    paintRun(t);
-  }
   /* The head's stage is the same select as the row's, where the reader may
      move it; a chip where they may not. A refusal or a Why? is drawn inside
      the next step's card, under its button, which is where the move is read. */
@@ -4265,18 +4231,6 @@
     box.textContent = n.status;
   }
 
-  /* The timer is read beside the title while it runs, in minutes, because a
-     second hand on a page somebody is working in is a distraction. */
-  function paintRun(t) {
-    var run = $('taskRun');
-    if (!run) return;
-    var s = state.session;
-    var here = s && t && s.task_id === t.id;
-    run.hidden = !here;
-    run.textContent = here
-      ? 'Working · ' + minutesWord(Math.round((Date.now() - new Date(s.started_at)) / 60000))
-      : '';
-  }
 
   // ---- One derived state ---------------------------------------------------
   /* WHERE THE TASK STANDS, SAID ONCE.
@@ -4447,8 +4401,8 @@
       return n;
     }
     var owner = ownerId(t);
-    var assign = { label: 'Assign', run: function () { factHere('dwOwnerChange', editOwner); } };
-    var setDue = { label: 'Set due date', run: function () { factHere('dwDue', function () { editDate('final'); }); } };
+    var assign = { label: 'Assign', run: function () { editOwner(); } };
+    var setDue = { label: 'Set due date', run: function () { editDate('final'); } };
 
     if (t.stage_key === 'blocked') {
       n.title = 'Blocked';
@@ -4627,7 +4581,7 @@
       if (target === 'published' && !t.publish_at) {
         n.title = 'Schedule the post';
         n.line = 'Set the agreed post date.';
-        if (work) n.go = { label: 'Schedule', run: function () { factHere('dwPublish', function () { editDate('publish'); }); } };
+        if (work) n.go = { label: 'Schedule', run: function () { editDate('publish'); } };
         if (work && hasLink('final')) n.alt = stepAct(t, target);
         return n;
       }
@@ -4684,21 +4638,6 @@
     else if (p === 'review') { n.title = n.title || 'Ready for review'; n.go = go('Move to Done', 'complete'); }
     return n;
   }
-  /* A step that changes a fact uses the control the reader is looking at:
-     the sheet's own row while the sheet is open, the record's otherwise. The
-     step card reached for the record's controls from the sheet, where they
-     are not on the screen, so Assign task owner and Set due date did
-     nothing. A fact the sheet does not draw opens the full record. */
-  function factHere(id, onRecord) {
-    if (!state.drawer) { onRecord(); return; }
-    var b = $(id);
-    if (b) {
-      try { b.scrollIntoView({ block: 'center' }); } catch (e) {}
-      b.click();
-      return;
-    }
-    openFull(state.drawer);
-  }
   /* The two seeded workflows name their working stages `in_progress`; the
      content workflow names its own `active`. Both are the work in hand. */
   function isWork(g) { return g === 'active' || g === 'in_progress'; }
@@ -4733,28 +4672,13 @@
   /* The link a gate asks for is added where the reader is: in the sheet's
      own form, or the record's. */
   function addLinkHere(kind) {
-    if (state.drawer) {
-      openCardForm('dwLinkForm');
-      var k = $('dwLinkKind'), u = $('dwLinkUrl');
-      if (k) k.value = kind;
-      if (u) { try { u.scrollIntoView({ block: 'center' }); } catch (e) {} u.focus(); }
-      return;
-    }
-    openLinkForm(kind);
-  }
-  /* One open session a person across every task: starting here stops the one
-     running elsewhere. */
-  function startWork(t, then) {
-    call('ops_start_work', { p_task: t.id }, msgHere('taskMsg'), function () {
-      loadSession(function () { startTick(); if (then) then(); else paintTask(); });
-    });
+    if ($('dwMore')) $('dwMore').open = true;
+    openCardForm('dwLinkForm');
+    var k = $('dwLinkKind'), u = $('dwLinkUrl');
+    if (k) k.value = kind;
+    if (u) { try { u.scrollIntoView({ block: 'center' }); } catch (e) {} u.focus(); }
   }
 
-  // ---- The next step -------------------------------------------------------
-  function paintNextStep(t, n) {
-    paintSteps(t);
-    paintNext(NEXT_REC(), t, n);
-  }
   /* One filled action and one outlined beside it. Blue only where the move
      hands the work to somebody else; everything the team records about its
      own progress is the ink primary, as Add and Save are. */
@@ -4779,39 +4703,6 @@
     return el;
   }
 
-  /* The workflow as a row of steps: done quiet, current named, next said. Not
-     buttons: moving a stage is the next step's job, and any other move is in
-     the ⋯ where it asks for a reason. */
-  function paintSteps(t) {
-    var box = $('taskSteps');
-    var line = lineOf(t);
-    var here = stageOf(t);
-    var at = -1;
-    if (here) {
-      at = line.map(function (s) { return s.key; }).indexOf(here.key);
-      if (at < 0 && here.stage_group === 'revision') {
-        at = line.map(function (s) { return isWork(s.stage_group); }).indexOf(true);
-      }
-      if (at < 0) {
-        var from = cameFrom(t);
-        at = line.map(function (s) { return s.key; }).indexOf(from);
-      }
-    }
-    if (!line.length || at < 0) { box.innerHTML = ''; box.hidden = true; return; }
-    box.hidden = false;
-    var target = nextOf(t);
-    var done = isFinished(t) && !t.cancelled_at;
-    var word = function (s) { return stepWord(s, state.eng); };
-    box.innerHTML =
-      '<ol class="tsteps-bar" aria-label="Workflow">' + line.map(function (s, i) {
-        var cls = (done || i < at) ? 'is-done' : i === at ? 'is-now' : '';
-        var said = word(s) + ((done || i < at) ? ', done' : i === at ? ', current' : '');
-        return '<li class="' + cls + '"' + (i === at ? ' aria-current="step"' : '') + '><span class="sr">' + esc(said) + '</span></li>';
-      }).join('') + '</ol>' +
-      '<p class="tsteps-word">Step ' + (at + 1) + ' of ' + line.length + ' · <b>' + esc(word(line[at])) + '</b>' +
-        (target && !done && target !== line[at].key
-          ? '<span class="tsteps-next"> · Next: ' + esc(labelForKey(target)) + '</span>' : '') + '</p>';
-  }
   function ownerId(t) {
     var a = (t.assignees || []).filter(function (x) { return x.responsibility === 'owner'; })[0];
     return (a && a.team_member_id) || null;
@@ -4838,199 +4729,11 @@
     return state.detail.links.some(function (l) { return l.kind === kind && !l.archived_at; });
   }
 
-  // ---- Overview ------------------------------------------------------------
-  function factRows(pairs) {
-    var out = pairs.filter(function (p) { return p[1]; }).map(function (p) {
-      return '<div class="ovfact"><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
-    }).join('');
-    return '<dl class="ovfacts">' + (out || '<div class="ovfact"><dd class="mute">Nothing recorded.</dd></div>') + '</dl>';
-  }
 
-  function paintOverview(t) {
-    var box = $('taskOv');
-    if (!box) return;
-    var v = state.detail.video;
-    /* A section with nothing in it is not drawn: an empty brief printed "No
-       brief was written." on every task made from a generated month. */
-    var brief = (t.description || t.remarks)
-      ? '<p class="ovnote">' + esc(t.description || '') + '</p>' +
-        (t.remarks ? '<p class="ovnote mute">' + esc(t.remarks) + '</p>' : '')
-      : '';
 
-    /* Editing is refused while footage is marked not ready, so the mark is a
-       control here rather than a fact somebody has to go and find. */
-    var video = v ? factRows([
-      ['Script', v.script_ready === null ? '<span class="mute">Not said</span>'
-        : v.script_ready ? '<span class="tone is-ok">Ready</span>' : '<span class="tone is-warn">Not ready</span>'],
-      ['Footage', v.footage_ready === null ? '<span class="mute">Not said</span>'
-        : v.footage_ready ? '<span class="tone is-ok">Ready</span>' : '<span class="tone is-warn">Not ready</span>'],
-      ['Shoot', esc(niceTime(v.shoot_at))],
-      ['Output', v.output_duration_seconds ? esc(v.output_duration_seconds + ' seconds') : ''],
-      ['Subtitles', v.subtitle_required ? 'Required' : '']
-    ]) : '';
 
-    var canBrief = may('ops', 'work') && !isFinished(t);
-    box.innerHTML =
-      (brief || canBrief ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Brief</h3>' +
-        (canBrief ? '<button class="btn btn-quiet btn-sm" data-a="brief" type="button">' + (t.description ? PEN_MARK + 'Edit' : PLUS_MARK + 'Add') + '</button>' : '') +
-        '</div>' + (brief || '<p class="qempty">No brief.</p>') + '</section>' : '') +
-      (v ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Video</h3>' +
-        (may('ops', 'work')
-          ? '<button class="btn btn-quiet btn-sm" data-a="footage" type="button">' +
-            (v.footage_ready ? 'Mark footage not ready' : 'Mark footage ready') + '</button>' : '') +
-        '</div>' + video + '</section>' : '');
 
-    var bf = box.querySelector('[data-a="brief"]');
-    if (bf) bf.addEventListener('click', function () {
-      ADspaceConfirm.ask({
-        title: t.description ? 'Edit brief' : 'Add brief', go: 'Save',
-        field: { label: 'Brief', rows: 5, value: t.description || '', required: false }
-      }, function (v) {
-        call('ops_update_task', { p_task: t.id, p_payload: { description: v }, p_version: t.version }, 'taskMsg', function () {
-          readTask(t.id, function () { msg('taskMsg', 'Brief saved.', 'ok'); });
-        });
-      });
-    });
-    var ft = box.querySelector('[data-a="footage"]');
-    if (ft) ft.addEventListener('click', function () {
-      call('ops_set_video', { p_task: t.id, p_payload: { footage_ready: !v.footage_ready } },
-        'taskMsg', function () { readTask(t.id); });
-    });
-  }
 
-  // ---- Checklist -----------------------------------------------------------
-  function paintChecklist() {
-    var box = $('taskCheck');
-    if (!box) return;
-    var items = state.detail.checklist;
-    var sec = $('taskCheckSec');
-    if (sec) sec.hidden = !items.length;
-    if (!items.length) { box.innerHTML = ''; return; }
-    var can = may('ops', 'work');
-    var t0 = state.task;
-    var fin0 = t0 && isFinished(t0);
-    box.innerHTML = '<div class="softpanel">' + items.map(function (c) {
-      return '<div class="qitem qitem-mid" data-row="' + esc(c.id) + '"><label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
-        '<input type="checkbox" data-item="' + esc(c.id) + '"' +
-          (c.completed_at ? ' checked' : '') + (can ? '' : ' disabled') + '>' +
-        '<span class="checkrow-label">' + esc(c.label) +
-          (c.required ? ' <span class="tone">Required</span>' : '') + '</span>' +
-        '<span class="checkrow-when">' + esc(c.completed_at ? niceTime(c.completed_at) : '') + '</span>' +
-        '</label>' + (can && !fin0 && !c.required ? itemMenu(c.label, [['rename', 'Rename'], ['remove', 'Remove', true]]) : '') + '</div>';
-    }).join('') + '</div>';
-    Array.prototype.forEach.call(box.querySelectorAll('.qitem'), function (row) {
-      var c = items.filter(function (x) { return x.id === row.getAttribute('data-row'); })[0];
-      wireItemMenu(row, function (a) {
-        if (a === 'rename') renameItem(state.task, c);
-        if (a === 'remove') removeItem(state.task, c, $('taskCheck'), 'taskMsg');
-      });
-    });
-    /* The row it ticked is updated where it sits, never by repainting the
-       list: a list that redraws under the pointer takes the focus away from
-       somebody working down it with a keyboard, and the tick they just made
-       is the one thing that must not move. */
-    Array.prototype.forEach.call(box.querySelectorAll('[data-item]'), function (cb) {
-      cb.addEventListener('change', function () {
-        var want = cb.checked;
-        var line = cb.closest('.checkrow');
-        call('ops_set_checklist', { p_item: cb.getAttribute('data-item'), p_done: want },
-          'taskMsg', function (row) {
-            if (!row) { cb.checked = !want; return; }
-            state.detail.checklist = state.detail.checklist.map(function (c) {
-              return c.id === row.id ? row : c;
-            });
-            if (line) {
-              line.classList.toggle('is-done', Boolean(row.completed_at));
-              var when = line.querySelector('.checkrow-when');
-              if (when) when.textContent = row.completed_at ? niceTime(row.completed_at) : '';
-            }
-          }, function () { cb.checked = !want; });
-      });
-    });
-  }
-
-  // ---- Links ---------------------------------------------------------------
-  function paintLinks() {
-    var box = $('taskLinks');
-    if (!box) return;
-    var live = state.detail.links.filter(function (l) { return !l.archived_at; });
-    /* A section with nothing says so in one line, because an empty heading
-       reads as a fault; Add link beside the heading is the way in. */
-    if (!live.length) {
-      box.innerHTML = '<p class="ovnote mute">No files or links.</p>';
-      return;
-    }
-    var can = may('ops', 'work');
-    box.innerHTML = '';
-    var table = GRP.table('svc-row tlink-row', ['Link', 'Kind', '']);
-    live.forEach(function (l) {
-      var row = document.createElement('div');
-      var href = l.ref_type ? refHref(l) : safeUrl(l.url);
-      row.className = 'svc-row tlink-row';
-      row.innerHTML =
-        '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (l.ref_type ? '' : '<small>' + esc(l.url) + '</small>') + '</span>' +
-        '<span class="tlink-kind"><span class="tone">' + esc(linkWord(l)) + '</span></span>' +
-        '<span class="team-act">' +
-          /* Open ends on where it goes: the leaving mark for an address that
-             opens in a new tab, the chevron for a console record. */
-          (href ? '<a class="btn btn-sm" href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>Open ' +
-            (l.ref_type ? CHEV_S : OUT_MARK) + '</a>' : '') +
-          /* Correcting and taking off are the row's ⋯, as they are in the
-             sheet: one way to change a link wherever it is drawn. */
-          (can ? itemMenu(l.label || l.url, linkMenu(l)) : '') +
-        '</span>';
-      /* The ⋯ acts on this link. */
-      wireItemMenu(row, function (a) {
-        if (a === 'remove') { removeLink(l.id); return; }
-        if (a !== 'edit') return;
-        openLinkForm(l.kind);
-        recLinkEditing = l.id;
-        $('taskLinkUrl').value = l.url || '';
-        $('taskLinkLabel').value = l.label || '';
-        $('taskLinkSave').textContent = 'Save';
-      });
-      table.appendChild(row);
-    });
-    box.appendChild(table);
-  }
-
-  /* Taking a link off is a soft remove with the way back drawn where the act
-     happened, not at the top of the record: a safeguard nobody can see is not
-     one. Removing a draft link shuts the Client review gate again, which is
-     the reason it is worth undoing. */
-  function removeLink(id) {
-    var l = state.detail.links.filter(function (x) { return x.id === id; })[0];
-    call('ops_set_link_archived', { p_link: id, p_on: true }, 'taskMsg', function (res) {
-      if (res && res.task) applyTask(res.task);
-      state.detail.links = state.detail.links.map(function (x) {
-        return x.id === id ? Object.assign({}, x, { archived_at: new Date().toISOString() }) : x;
-      });
-      paintLinks();
-      paintTask();
-      undoBar((l ? l.label : 'The link') + ' removed.', function () {
-        call('ops_set_link_archived', { p_link: id, p_on: false }, 'taskMsg', function () {
-          readTask(state.task.id);
-        });
-      }, $('taskLinks'));
-    });
-  }
-
-  var recLinkEditing = null;
-  function openLinkForm(kind) {
-    showPane('work', true);
-    recLinkEditing = null;
-    $('taskLinkSave').textContent = 'Save';
-    $('taskLinkForm').hidden = false;
-    refOption($('taskLinkKind'), state.task);
-    if (typeof kind === 'string') $('taskLinkKind').value = kind;
-    else if (state.task && draftDue(state.task)) $('taskLinkKind').value = 'draft';
-    $('taskLinkUrl').value = '';
-    $('taskLinkLabel').value = '';
-    refMode(REC_REF);
-    msg('taskLinkMsg', '');
-    if ($('taskLinkKind').value === 'draft') prefillDraft($('taskLinkUrl'), $('taskLinkLabel'));
-    $('taskLinkUrl').focus();
-  }
 
   // ---- Time ----------------------------------------------------------------
   /* HOW LONG THE WORK SAT IN EACH STAGE.
@@ -5121,52 +4824,6 @@
     return st;
   }
 
-  function paintTime() {
-    var box = $('taskTime');
-    if (!box) return;
-    box.innerHTML = '';
-
-    var spans = stageSpans();
-    if (spans.length) {
-      var head = document.createElement('h3');
-      head.className = 'ovsec-title';
-      head.textContent = 'Time in each stage';
-      box.appendChild(head);
-      box.appendChild(stageTable(spans));
-    }
-
-    var rows = state.detail.sessions;
-    var mins = rows.reduce(function (a, s) { return a + (Number(s.minutes) || 0); }, 0);
-    var h2 = document.createElement('h3');
-    h2.className = 'ovsec-title';
-    h2.textContent = 'Recorded work';
-    box.appendChild(h2);
-    if (!rows.length) {
-      var sub = document.createElement('div');
-      box.appendChild(sub);
-      UI.emptyLine(sub, 'No recorded work.');
-      return;
-    }
-    var table = GRP.table('svc-row tsess-row', ['Session', 'Team member', 'Minutes']);
-    rows.forEach(function (s) {
-      var row = document.createElement('div');
-      row.className = 'svc-row tsess-row';
-      row.innerHTML =
-        '<span class="svc-name"><b>' + esc(niceTime(s.started_at)) + '</b>' +
-          '<small>' + esc(s.ended_at ? 'to ' + niceTime(s.ended_at) : 'running') +
-          (s.corrected_at ? ' · corrected' : '') +
-          (s.note ? ' · ' + s.note : '') + '</small></span>' +
-        '<span class="tsess-who">' + esc((s.team_members && s.team_members.name) || '') + '</span>' +
-        '<span class="tsess-mins">' + esc(s.minutes == null ? '—' : minutesWord(s.minutes)) + '</span>';
-      table.appendChild(row);
-    });
-    var total = document.createElement('div');
-    total.className = 'svc-row tsess-row is-total';
-    total.innerHTML = '<span class="svc-name"><b>Total recorded</b></span>' +
-      '<span class="tsess-who"></span><span class="tsess-mins">' + esc(minutesWord(mins)) + '</span>';
-    table.appendChild(total);
-    box.appendChild(table);
-  }
 
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
@@ -5187,10 +4844,10 @@
     due_declined: 'Extension declined',
     renamed: 'Description changed', code_changed: 'Code changed', stage_skipped: 'Step skipped',
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
-    publish_changed: 'Post date changed', commented: 'Comment',
+    publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed',
-    comment_edited: 'Comment edited', comment_removed: 'Comment deleted', comment_restored: 'Comment restored'
+    comment_edited: 'Remark edited', comment_removed: 'Remark deleted', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
      it; the record printed the key. Named once, with sentence case as the
@@ -5289,14 +4946,6 @@
     return (s && s.label) || String(k || '').replace(/_/g, ' ');
   }
 
-  function paintLog() {
-    var box = $('taskLog');
-    if (!box) return;
-    var rows = taskItems(state.detail.events);
-    if (!rows.length) { UI.emptyLine(box, 'No activity.'); return; }
-    box.innerHTML = '<div class="softpanel recpanel"></div>';
-    window.ADspaceRecords.paint(box.firstChild, rows);
-  }
   /* A task's events as record lines (js/records.js). Created carries the
      first Task Owner, and a finish or a cancel is the one line of its move,
      not a second line a second later saying the same thing. */
@@ -5349,25 +4998,23 @@
     var people = t.assignees || [];
     var who = ownerName(t);
     var made = nameOf(t.created_by);
-    var client = t.clients && t.clients.name;
-    var canOwn = mayReassign(t);
+    var canOwn = mayReassign(t) && !isFinished(t);
     var rows = frow('Assigned to',
       '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
       '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>',
-      canOwn ? '<button class="linkbtn" id="taskOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '');
+      canOwn ? '<button class="linkbtn" id="taskOwnerChange" type="button">' + (who ? 'Reassign' : 'Assign') + '</button>' : '');
     if (made) rows += frow('Created by', esc(made));
-    if (client) {
-      var slug = t.clients.slug;
-      rows += frow(t.scope === 'lead' ? 'Lead' : 'Client',
-        slug ? '<a class="linkbtn tlink" href="/admin/?s=clients&client=' + encodeURIComponent(slug) + '">' + esc(client) + CHEV_S + '</a>' : esc(client));
-    }
     var rev = people.filter(function (a) { return a.responsibility === 'reviewer'; }).map(function (a) { return a.name; }).join(', ');
     var con = people.filter(function (a) { return a.responsibility === 'contributor'; }).map(function (a) { return a.name; }).join(', ');
     if (rev) rows += frow('Reviewer', esc(rev));
     if (con) rows += frow('Contributors', esc(con));
     $('taskPeople').innerHTML = rows;
+    /* One way to change who has the task, on the row where it is read (the
+       user, 2026-10-09: no act twice on one screen): a task held by somebody
+       is handed over with the Reassign sheet, which says what the next
+       person takes on; a task nobody holds is assigned in place. */
     var ch = $('taskOwnerChange');
-    if (ch) ch.addEventListener('click', editOwner);
+    if (ch) ch.addEventListener('click', function () { if (ownerId(t)) openGive(); else editOwner(); });
   }
 
   function editOwner() {
@@ -5431,12 +5078,10 @@
       return '<div data-row="' + r.k + '"><dt>' + esc(r.label) + '</dt><dd>' + inner +
         (moved ? '<small>moved from ' + esc(niceDate(r.from)) + '</small>' : '') + '</dd></div>';
     }).join('');
-    /* The timestamps that end a task are derived from its events, so each
-       points at the Activity pane that holds the event. */
+    /* The days that ended a step, read from its events. */
     [['Draft in', t.first_draft_submitted_at], ['Delivered', t.delivered_at], ['Completed', t.completed_at]]
       .filter(function (p) { return p[1]; }).forEach(function (p) {
-        html += '<div><dt>' + esc(p[0]) + '</dt><dd><button class="tdate-src" data-src type="button">' +
-          esc(niceDate(p[1])) + '</button></dd></div>';
+        html += '<div><dt>' + esc(p[0]) + '</dt><dd><span class="tdate-read">' + esc(niceDate(p[1])) + '</span></dd></div>';
       });
     if (state.eng && state.eng.meeting_at && !state.eng.meeting_na) {
       var ml = monthLink(t);
@@ -5447,9 +5092,6 @@
     $('taskDates').innerHTML = html;
     Array.prototype.forEach.call($('taskDates').querySelectorAll('[data-date]'), function (b) {
       b.addEventListener('click', function () { editDate(b.getAttribute('data-date')); });
-    });
-    Array.prototype.forEach.call($('taskDates').querySelectorAll('[data-src]'), function (b) {
-      b.addEventListener('click', function () { showPane('activity', true); });
     });
     paintDue(t);
   }
@@ -5559,15 +5201,17 @@
           var per = $('taskFacts').querySelector('[data-key="code_period"]').value;
           var wk = $('taskFacts').querySelector('[data-key="code_week"]').value;
           var code = per.slice(2, 4) + per.slice(5, 7) + 'W' + wk + String(t.code_seq || 1).padStart(2, '0');
-          call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, 'taskMsg', function (d) {
-            applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+          call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, 'taskFactsMsg', function (d) {
+            state.drawerDirty = true;
+            applyTask(d); readTask(t.id, function () { msg('taskFactsMsg', 'Saved.', 'ok'); });
           }, back);
           return;
         }
         var payload = {};
         payload[key] = key === 'priority_level' ? Number(sel.value) : (sel.value || null);
-        call('ops_update_task', { p_task: t.id, p_payload: payload, p_version: t.version }, 'taskMsg', function (d) {
-          applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+        call('ops_update_task', { p_task: t.id, p_payload: payload, p_version: t.version }, 'taskFactsMsg', function (d) {
+          state.drawerDirty = true;
+          applyTask(d); readTask(t.id, function () { msg('taskFactsMsg', 'Saved.', 'ok'); });
         }, back);
       });
     });
@@ -5590,7 +5234,7 @@
       more += frow('Content meeting', esc(meetingWord(e)));
     }
     $('taskMore').innerHTML = more;
-    $('taskMoreWrap').hidden = !more;
+    $('dwMoreFacts').hidden = !more;
   }
 
   /* One forward move is the next step, and every other move the workflow
@@ -5674,21 +5318,6 @@
     return (m && m.name) || '';
   }
 
-  /* THE ⋯. Everything off the ordinary path, each item drawn only where the
-     move exists for this task and the reader may make it. The database asks
-     the same question again when the item is pressed. */
-  function paintMenu(t, n) {
-    var menu = $('taskMenu');
-    if (!menu) return;
-    var work = may('ops', 'work');
-    menu.querySelector('[data-a="duplicate"]').hidden = !work;
-    menu.querySelector('[data-a="repeat"]').hidden = !work;
-    menu.querySelector('[data-a="handover"]').hidden = isFinished(t) || !mayReassign(t);
-    /* Archiving is no longer offered; a task archived before keeps its way
-       back. */
-    menu.querySelector('[data-a="archive"]').hidden = !t.archived_at;
-    offerItems(menu, t);
-  }
 
   /* A move. `note` goes on the record with it; `o.assignee` hands the task
      to the next person on the same press, which is one event and one
@@ -5743,21 +5372,6 @@
     meetAfter = function () { readTask(state.task.id); };
   }
 
-  /* A minute, not a second: the number is how long somebody has been at this,
-     and a second hand on a page somebody is working in is a distraction with
-     no answer in it. */
-  function startTick() {
-    if (state.tick) return;
-    state.tick = setInterval(function () {
-      if (!state.task || !state.session) { stopTick(); return; }
-      paintRun(state.task);
-    }, 60000);
-  }
-  function stopTick() {
-    if (!state.tick) return;
-    clearInterval(state.tick);
-    state.tick = null;
-  }
 
   /* `ops_reopen_task` puts a task back at its workflow's Revision stage, so it
      is offered only where the workflow has one. A content task goes back the
@@ -6136,7 +5750,7 @@
     ntPlanGate();
   }
   /* Retainer pieces are the month's plan (2026-10-08): once the plan is
-     taken, Retainer rests and an extra is Ad hoc, Goodwill or Special. The
+     taken, Retainer rests and an extra is Ad hoc, Goodwill or Other. The
      database numbers and refuses the same way (`plan-full`). */
   function ntLeft() {
     var e = $('ntScope') && $('ntScope').value === 'client' ? ntEng() : null;
@@ -6368,25 +5982,16 @@
     }, function () { btn.disabled = false; });
   }
 
-  /* The description is edited where it sits: the pen becomes the tick, the
-     code beside it never changes, and a blank is allowed on a task that has
-     a code because the code is then the name. */
-  function editDesc() { editName($('taskName'), $('taskDescEdit'), 'taskMsg'); }
   function setCode(t, v, offerUndo) {
     var was = t.code;
-    call('ops_set_code', { p_task: t.id, p_code: v, p_version: t.version }, 'taskMsg', function (d) {
+    call('ops_set_code', { p_task: t.id, p_code: v, p_version: t.version }, 'dwMsg', function (d) {
       applyTask(d);
       readTask(t.id, function () {
         if (offerUndo && state.task && state.task.code !== was) {
-          undoBar('Code changed to ' + state.task.code + '.', function () { setCode(state.task, was, false); }, $('taskMsg'));
+          undoBar('Code changed to ' + state.task.code + '.', function () { setCode(state.task, was, false); }, $('dwMsg'));
         }
       });
     }, paintTask);
-  }
-  function copyTitle() {
-    var t = state.task;
-    if (!t || !window.ADspaceCopy) return;
-    window.ADspaceCopy.to($('taskCopyTitle'), t.title || '');
   }
 
   // ---- Duplicate, generate, repeat ---------------------------------------
@@ -7620,15 +7225,9 @@
       var closing = plainOf(t) !== 'done';
       move(closing ? 'complete' : 'todo');
     });
-    var dwf = $('dwFull');
-    if (dwf) dwf.addEventListener('click', function (e) {
-      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-      e.preventDefault();
-      if (state.drawer) openFull(state.drawer);
-    });
     /* The tick keeps the task with its owner and puts the list of people
        away; unticked, the step asks who takes it. */
-    [['dwHandTick', 'dwHandTo', 'dwHandLab'], ['taskHandTick', 'taskHandTo', 'taskHandLab']].forEach(function (x) {
+    [['dwHandTick', 'dwHandTo', 'dwHandLab']].forEach(function (x) {
       var tick = $(x[0]), to = $(x[1]), lab = $(x[2]);
       if (!tick || !to) return;
       tick.addEventListener('change', function () {
@@ -7725,7 +7324,7 @@
       e.preventDefault();
       var t = state.task, body = String($('dwComment').value || '').trim();
       if (!t) return;
-      if (!body) { msg('dwMsg', 'A comment cannot be empty.', 'err'); $('dwComment').focus(); return; }
+      if (!body) { msg('dwMsg', 'A remark cannot be empty.', 'err'); $('dwComment').focus(); return; }
       call('ops_add_comment', { p_task: t.id, p_body: body }, 'dwMsg', function () {
         closeCardForm('dwCommentForm');
         readTask(t.id);
@@ -7733,6 +7332,10 @@
     });
     var dte = $('dwTitleEdit');
     if (dte) dte.addEventListener('click', editSheetTitle);
+    var dct = $('dwCopyTitle');
+    if (dct) dct.addEventListener('click', function () {
+      if (state.task && window.ADspaceCopy) window.ADspaceCopy.to(dct, state.task.title || '');
+    });
     var dmb = $('dwMenuBtn'), dmn = $('dwMenu');
     if (dmb && dmn) {
       dmb.addEventListener('click', function (e) {
@@ -7752,10 +7355,16 @@
         dmb.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
-        if (a === 'handover') openGive();
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
         if (a === 'delete') openDelete();
+        /* A task archived before archiving was retired keeps its way back. */
+        if (a === 'archive') {
+          call('ops_archive_task', { p_task: t.id, p_on: false }, 'dwMsg', function () {
+            state.drawerDirty = true;
+            readTask(t.id, function () { msg('dwMsg', 'Restored.', 'ok'); });
+          });
+        }
         offerAct(a, t, 'dwMsg');
       });
     }
@@ -7773,62 +7382,6 @@
       $('stepHandRow').hidden = stepTick.checked;
       if (!stepTick.checked) $('stepHandTo').focus();
     });
-
-    var back = $('workBack');
-    if (back) back.addEventListener('click', showList);
-    var mk = $('taskMark');
-    if (mk) mk.addEventListener('click', function () {
-      if (window.ADspaceCopy) window.ADspaceCopy.to(mk, mk.textContent);
-    });
-    var pen = $('taskDescEdit');
-    if (pen) pen.addEventListener('click', editDesc);
-    var cpt = $('taskCopyTitle');
-    if (cpt) cpt.addEventListener('click', copyTitle);
-
-    // Panes
-    var tabs = $('taskTabs');
-    if (tabs) tabs.addEventListener('click', function (e) {
-      var tab = e.target.closest('.tab');
-      if (!tab) return;
-      showPane(tab.getAttribute('data-pane'), true);
-    });
-
-    // The record's ⋯
-    var mb = $('taskMenuBtn'), menu = $('taskMenu');
-    if (mb && menu) {
-      mb.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var open = menu.hidden;
-        menu.hidden = !open;
-        mb.setAttribute('aria-expanded', String(open));
-        if (open) window.ADspaceMenu.place(mb, menu);
-      });
-      window.ADspaceMenu.onScroll(function () { menu.hidden = true; mb.setAttribute('aria-expanded', 'false'); });
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest || !e.target.closest('#taskMenuWrap')) {
-          menu.hidden = true;
-          mb.setAttribute('aria-expanded', 'false');
-        }
-      });
-      menu.addEventListener('click', function (e) {
-        var it = e.target.closest('.kmenu-item');
-        if (!it) return;
-        menu.hidden = true;
-        mb.setAttribute('aria-expanded', 'false');
-        var a = it.getAttribute('data-a'), t = state.task;
-        if (!t) return;
-        if (a === 'handover') openGive();
-        if (a === 'duplicate') openDup();
-        if (a === 'repeat') openRec();
-        if (a === 'archive') {
-          call('ops_archive_task', { p_task: t.id, p_on: !t.archived_at }, 'taskMsg', function () {
-            showList();
-          });
-        }
-        if (a === 'delete') openDelete();
-        offerAct(a, t, 'taskMsg');
-      });
-    }
 
     // Deleting the task keyed in twice
     ['tdelClose', 'tdelCancel'].forEach(function (id) {
@@ -7853,46 +7406,11 @@
     });
 
     // Links
-    var la = $('taskLinkAdd');
-    if (la) la.addEventListener('click', openLinkForm);
-    var lc = $('taskLinkCancel');
-    if (lc) lc.addEventListener('click', function () { $('taskLinkForm').hidden = true; });
-    var lk = $('taskLinkKind');
-    if (lk) lk.addEventListener('change', function () {
-      refMode(REC_REF);
-      if (lk.value === 'draft' || lk.value === 'review') prefillDraft($('taskLinkUrl'), $('taskLinkLabel'));
-    });
     var dk = $('dwLinkKind');
     if (dk) dk.addEventListener('change', function () {
       refMode(DW_REF);
       if (dk.value === 'draft' || dk.value === 'review') prefillDraft($('dwLinkUrl'), $('dwLinkLabel'));
     });
-    var ls = $('taskLinkSave');
-    if (ls) ls.addEventListener('click', function () {
-      var t = state.task;
-      if (!t) return;
-      if ($('taskLinkKind').value === 'record' && !recLinkEditing) {
-        linkRecord(t, $('taskLinkRef').value, 'taskLinkMsg', function () {
-          $('taskLinkForm').hidden = true;
-          readTask(t.id);
-        });
-        return;
-      }
-      var url = String($('taskLinkUrl').value || '').trim();
-      if (!url) { msg('taskLinkMsg', 'An address is required.', 'err'); $('taskLinkUrl').focus(); return; }
-      var editing = recLinkEditing;
-      call(editing ? 'ops_update_link' : 'ops_add_link', editing
-        ? { p_link: editing, p_label: String($('taskLinkLabel').value || '').trim(), p_url: url,
-            p_kind: $('taskLinkKind').value, p_version: t.version }
-        : { p_task: t.id, p_kind: $('taskLinkKind').value,
-            p_label: String($('taskLinkLabel').value || '').trim(),
-            p_url: url, p_version: t.version }, 'taskLinkMsg', function () {
-        recLinkEditing = null;
-        $('taskLinkForm').hidden = true;
-        readTask(t.id);
-      });
-    });
-
     /* Approve, decline or take back an open extension, where the rail drew
        one. The buttons are painted by paintDue and wired here once. */
     var da = $('dueAsk');
@@ -8085,31 +7603,15 @@
 
   /* Three panes: the work, what happened to it, and how long it took. An
      address from before, naming Overview, Checklist or Links, opens Work. */
-  var PANES = { work: 1, activity: 1, time: 1 };
-  function showPane(name, push) {
-    state.pane = PANES[name] ? name : 'work';
-    Array.prototype.forEach.call($('taskTabs').querySelectorAll('.tab'), function (b) {
-      var on = b.getAttribute('data-pane') === state.pane;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-selected', String(on));
-    });
-    Array.prototype.forEach.call($('workRec').querySelectorAll('.rec-pane'), function (p) {
-      p.hidden = p.getAttribute('data-pane') !== state.pane;
-    });
-    if (push && bridge.pushUrl) bridge.pushUrl();
-    if (UI.fit) UI.fit();
-  }
 
   // ---- The address ---------------------------------------------------------
   function urlState() {
     var q = {};
-    if (state.openId) q.task = state.openId;
-    if (state.openId && state.pane !== 'work') q.pane = state.pane;
-    if (!state.openId && state.view !== 'list') q.view = state.view;
-    if (!state.openId && state.view === 'months' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
+    if (state.view !== 'list') q.view = state.view;
+    if (state.view === 'months' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
     /* The task open beside the list travels too, so a reload or a copied
        link lands on the list with that task open. */
-    if (!state.openId && state.drawer && state.drawerFrom === 'work') q.open = state.drawer;
+    if (state.drawer && state.drawerFrom === 'work') q.open = state.drawer;
     return q;
   }
 
@@ -8172,26 +7674,16 @@
     showPeriod();
 
     var params = new URLSearchParams(location.search);
-    var want = params.get('task');
-    var peek = params.get('open');
-    var pane = params.get('pane') || 'work';
+    /* `task=` is the address the full record had; it opens the card now. */
+    var peek = params.get('open') || params.get('task');
     state.wcWant = params.get('wc') || null;
     applyView(params.get('view') || 'list');
     load();
-    if (!want) {
-      $('workList').hidden = false;
-      $('workRec').hidden = true;
-      state.openId = null;
-      /* A task named in the address opens beside the list, as it did when
-         the link was copied. */
-      if (peek) loadCatalogue(function () { openDrawer(peek); });
-      else if (bridge.setUrl) bridge.setUrl();
-      return;
-    }
-    loadCatalogue(function () {
-      showPane(pane, false);
-      openTask(want, false);
-    });
+    $('workList').hidden = false;
+    /* A task named in the address opens beside the list, as it did when
+       the link was copied. */
+    if (peek) loadCatalogue(function () { openDrawer(peek); });
+    else if (bridge.setUrl) bridge.setUrl();
   }
 
   // ---- The bell --------------------------------------------------------------
@@ -8226,30 +7718,41 @@
     var since = new Date(Date.now() - 7 * 86400000).toISOString();
     /* The read notices are a second read; one that cannot be built or
        answered leaves the unread list as it was, never the console. */
+    /* A notice withdrawn (js/notice.js, 2026-10-09) leaves every bell:
+       `hidden_at` is asked for until a database without the column refuses
+       it once, and then the bell reads as it did before. */
+    var shown = function (q) { return state.noHidden ? q : q.is('hidden_at', null); };
     var earlier;
     try {
-      earlier = db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+      earlier = shown(db.from('ops_notifications').select('*').eq('team_member_id', me.id))
         .gte('created_at', since).not('read_at', 'is', null).order('created_at', { ascending: false }).limit(10);
     } catch (e) { earlier = Promise.resolve(null); }
     Promise.all([
-      db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+      shown(db.from('ops_notifications').select('*').eq('team_member_id', me.id))
         .is('read_at', null).order('created_at', { ascending: false }).limit(30),
       Promise.resolve(earlier).catch(function () { return null; })
     ]).then(function (rs) {
-      if (!rs[0] || rs[0].error) return;
+      if (!rs[0] || rs[0].error) {
+        if (!state.noHidden && rs[0] && rs[0].error && /hidden_at/.test(String(rs[0].error.message || ''))) { state.noHidden = true; loadNotifs(); }
+        return;
+      }
       state.notifs = (rs[0].data || []).concat((rs[1] && !rs[1].error && rs[1].data) || []);
       paintNotifs();
     }).catch(function () {});
   }
   function notifRow(x) {
     /* Each notice leads with the glyph of the section it opens, the rail's
-       own drawing (2026-10-08). */
+       own drawing (2026-10-08). A notice a colleague sent (2026-10-09) says
+       who sent it, its title wraps, and its message opens whole on a press. */
     var g = bridge.glyph ? bridge.glyph(notifSection(x)) : '';
-    return '<button class="notif-item' + (g ? ' has-tile' : '') + (x.read_at ? ' is-read' : '') + '" type="button" data-id="' + esc(x.id) + '">' +
+    var notice = x.kind === 'notice';
+    return '<button class="notif-item' + (g ? ' has-tile' : '') + (x.read_at ? ' is-read' : '') +
+      (notice ? ' is-notice' + (state.noticeOpen === x.id ? ' is-open' : '') : '') + '" type="button" data-id="' + esc(x.id) + '"' +
+      (notice && x.body ? ' aria-expanded="' + (state.noticeOpen === x.id) + '"' : '') + '>' +
       (g ? '<span class="notif-tile">' + g + '</span>' : '') +
       '<b>' + esc(x.title || '') + '</b>' +
-      (x.body ? '<span>' + esc(x.body) + '</span>' : '') +
-      '<small>' + esc(niceTime(x.created_at)) + '</small></button>';
+      (x.body ? '<span class="notif-msg">' + esc(x.body) + '</span>' : '') +
+      '<small>' + esc((notice && x.from_name ? 'From ' + x.from_name + ' · ' : '') + niceTime(x.created_at)) + '</small></button>';
   }
   function paintNotifs() {
     var unread = state.notifs.filter(function (x) { return !x.read_at; });
@@ -8268,15 +7771,27 @@
   }
   /* The section a notice opens, as openNotif below decides it. */
   function notifSection(x) {
+    if (!x.task_id && x.kind === 'notice') return 'team';
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
     if (!x.task_id && x.report_id) return 'reports';
     return 'work';
   }
-  function markRead(ids) {
+  function markRead(ids, quiet) {
     var now = new Date().toISOString();
     state.notifs.forEach(function (x) { if (ids.indexOf(x.id) > -1 && !x.read_at) x.read_at = now; });
-    paintNotifs();
+    /* `quiet` keeps the list as it is (a notice read in place) and moves
+       only the count; the row joins Earlier on the next read. */
+    if (quiet) {
+      var n = state.notifs.filter(function (x) { return !x.read_at; }).length;
+      if ($('notifCount')) { $('notifCount').hidden = !n; $('notifCount').textContent = n > 30 ? '30+' : String(n); }
+      if ($('notifBtn')) $('notifBtn').setAttribute('aria-label', n ? 'Notifications, ' + n + ' unread' : 'Notifications');
+      if ($('notifAll')) $('notifAll').hidden = !n;
+      ids.forEach(function (id) {
+        var b = document.querySelector('#notifList .notif-item[data-id="' + id + '"]');
+        if (b) b.classList.add('is-read');
+      });
+    } else paintNotifs();
     ids.forEach(function (id) {
       db.from('ops_notifications').update({ read_at: now }).eq('id', id).then(function () {}, function () {});
     });
@@ -8284,6 +7799,20 @@
   function openNotif(id) {
     var x = state.notifs.filter(function (n) { return n.id === id; })[0];
     if (!x) return;
+    /* A notice opens nowhere: a press reads it where it is, its message
+       whole, and marks it read; a second press folds it. */
+    if (x.kind === 'notice' && !x.task_id) {
+      /* In place, never redrawn: a press whose row left the page would read
+         as a press outside the bell and shut it. */
+      state.noticeOpen = state.noticeOpen === id ? null : id;
+      Array.prototype.forEach.call(document.querySelectorAll('#notifList .notif-item.is-notice'), function (b) {
+        var on = b.getAttribute('data-id') === state.noticeOpen;
+        b.classList.toggle('is-open', on);
+        if (b.hasAttribute('aria-expanded')) b.setAttribute('aria-expanded', String(on));
+      });
+      if (!x.read_at) markRead([id], true);
+      return;
+    }
     shutBell();
     markRead([id]);
     /* A performance review is not a task: a released or answered month opens
@@ -8356,7 +7885,6 @@
   }
 
   wire();
-  showPane('overview', false);
   window.ADspaceOps = {
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },

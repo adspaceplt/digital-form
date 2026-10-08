@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009a">
+<link rel="stylesheet" href="/css/portal.css?v=20261009b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -76,6 +76,7 @@
 <script src="/js/api.js?v=20261001a"></script>
 <script src="/js/maintenance.js?v=20261004h"></script>
 <script src="/js/announce.js?v=20261007n"></script>
+<script src="/js/notice.js?v=20261009"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261008p"></script>
 <script src="/js/media.js?v=20261003b"></script>
@@ -261,7 +262,7 @@
            now, like every other surface in this console. -->
       <div class="kmenu aboutpop" id="sectionAbout" hidden role="dialog" aria-labelledby="sectionAboutName">
         <div class="popcard-head aboutpop-head">
-          <span class="aboutpop-name"><svg class="aboutpop-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg><b id="sectionAboutName">Clients</b></span>
+          <span class="aboutpop-name"><svg class="aboutpop-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg><span id="sectionAboutName">Clients</span></span>
           <button class="iconbtn popcard-x" id="sectionAboutHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <p class="aboutpop-text" id="sectionAboutText"></p>
@@ -368,6 +369,11 @@
                by itself. -->
           <button class="kmenu-item" id="acctAnnounce" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4"/><path d="M4 12h2l9 5V7L6 12"/><path d="M18 9a4 4 0 0 1 0 6"/></svg>Announcements
+          </button>
+          <!-- Notices (js/notice.js): a notice to all colleagues or to those
+               chosen, in each bell. Team: Notices, an admin's by itself. -->
+          <button class="kmenu-item" id="acctNotice" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></svg>Notices
           </button>
           <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
@@ -2294,173 +2300,6 @@
         <div id="workReport" hidden></div>
         <div id="workClients" hidden></div>
       </div>
-
-      <!-- One task, on the same workspace shape a client and a campaign use:
-           identity, panes, and a rail carrying what is true in every pane. -->
-      <div id="workRec" data-swipe="taskTabs" hidden>
-        <button class="backlink" id="workBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
-
-        <!-- A compact head on the page ground, not a card: the number, the
-             state and the ⋯ on one line, the name under them, and one line
-             saying whose it is and what it makes. The owner and the dates are
-             the rail's, so the head does not repeat them. -->
-        <header class="thead" id="taskHead">
-          <div class="thead-top">
-            <button class="serial-copy rec-token" id="taskMark" type="button"></button>
-            <div class="thead-ctl">
-              <span class="chip" id="taskStage"></span>
-              <div class="kmenu-wrap" id="taskMenuWrap">
-                <button class="kmenu-btn" id="taskMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-                </button>
-                <!-- The rare acts, Delete last. Every stage move, going back
-                     and cancelling included, is the stage select. -->
-                <div class="kmenu" id="taskMenu" hidden role="menu">
-                  <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
-                  <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
-                  <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:work">Reassign</button>
-                  <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
-                  <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
-                  <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
-                  <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="rec-name">
-            <h2 id="taskName"><span class="task-code" id="taskCode" hidden></span> <span id="taskDesc"></span></h2>
-            <button class="rec-pen" id="taskDescEdit" type="button" aria-label="Edit name" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-            </button>
-            <button class="rec-pen" id="taskCopyTitle" type="button" aria-label="Copy title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
-            </button>
-          </div>
-          <p class="thead-meta"><span id="taskMeta"></span><span class="thead-run" id="taskRun" hidden></span></p>
-          <div class="msg" id="taskMsg"></div>
-        </header>
-        <div class="undobar" id="taskUndo" hidden></div>
-
-        <div class="rec rec-task">
-          <!-- The one thing to do next, derived on every repaint from the task,
-               its links and the month it belongs to, and never stored. Where
-               the workflow is, what it is waiting on, and one action. -->
-          <section class="tnext" id="taskNextStep" aria-labelledby="taskNextTitle">
-            <div class="tsteps" id="taskSteps"></div>
-            <h3 class="tnext-title" id="taskNextTitle"></h3>
-            <p class="tnext-line" id="taskNextLine"></p>
-            <ul class="tnext-list" id="taskNextList" hidden></ul>
-            <p class="tnext-late" id="taskNextLate" hidden></p>
-            <div class="qhand" id="taskHand" hidden>
-              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Keep it assigned to me</span></label>
-              <label class="qhand-lab" id="taskHandLab" for="taskHandTo" hidden>Performance review by</label>
-              <select class="select select-sm" id="taskHandTo" aria-label="Assign to" hidden></select>
-            </div>
-            <div class="tnext-acts" id="taskNextActs"></div>
-            <div class="qrate" id="taskRate" hidden></div>
-            <div class="msg" id="taskNextMsg"></div>
-          </section>
-
-          <nav class="rectabs" id="taskTabs" role="tablist" aria-label="Task">
-            <button class="tab is-on" data-pane="work" type="button" role="tab" aria-selected="true">Work</button>
-            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
-            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time records</button>
-          </nav>
-
-          <div class="rec-pane" data-pane="work">
-            <!-- The brief and the video details, where the task has them. -->
-            <div id="taskOv"></div>
-            <section class="tsec" id="taskCheckSec" hidden>
-              <h3 class="tsec-title">Checklist</h3>
-              <div id="taskCheck"></div>
-            </section>
-            <section class="tsec" id="taskLinkSec">
-              <div class="tsec-head">
-                <h3 class="tsec-title">Files and links</h3>
-                <button class="btn btn-quiet btn-sm" id="taskLinkAdd" type="button" data-need="ops:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
-              </div>
-              <!-- The evidence a stage gate asks for. A draft link is what opens
-                   Client review and a final link is what opens publishing, so
-                   the kind is a field and not a guess. -->
-              <div class="tlinkform" id="taskLinkForm" hidden>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="taskLinkKind">Kind</label>
-                    <select class="select" id="taskLinkKind">
-                      <option value="draft">Draft</option>
-                      <option value="review">Review</option>
-                      <option value="final">Final</option>
-                      <option value="brief">Brief</option>
-                      <option value="asset">Asset</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div class="field" id="taskLinkLabelField">
-                    <label class="field-label" for="taskLinkLabel">Label</label>
-                    <input class="input" id="taskLinkLabel" placeholder="Cut 1" autocomplete="off">
-                  </div>
-                  <!-- A campaign or content set of the task's client, in the
-                       label's place while Kind is Record. -->
-                  <div class="field" id="taskLinkRefField" hidden>
-                    <label class="field-label" for="taskLinkRef">Record</label>
-                    <select class="select" id="taskLinkRef" aria-required="true"></select>
-                  </div>
-                </div>
-                <div class="row" id="taskLinkUrlRow">
-                  <div class="field">
-                    <label class="field-label" for="taskLinkUrl">Address</label>
-                    <textarea class="input" id="taskLinkUrl" aria-required="true" placeholder="https://" autocomplete="off" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off"></textarea>
-                  </div>
-                </div>
-                <div class="row acts">
-                  <button class="btn btn-primary" id="taskLinkSave" type="button">Save</button>
-                  <button class="btn btn-quiet" id="taskLinkCancel" type="button">Cancel</button>
-                </div>
-                <div class="msg" id="taskLinkMsg"></div>
-              </div>
-              <div id="taskLinks"></div>
-            </section>
-          </div>
-
-          <div class="rec-pane" data-pane="activity" hidden>
-            <div id="taskLog"></div>
-          </div>
-
-          <div class="rec-pane" data-pane="time" hidden>
-            <!-- Recorded work only. Nothing here runs without somebody
-                 pressing Start, and nothing records idle time, keystrokes,
-                 screens or location. -->
-            <div id="taskTime"></div>
-          </div>
-
-          <aside class="rec-rail" aria-label="Task facts">
-            <div class="railblock rail-after" id="taskPeopleBlock">
-              <h3 class="railtitle">Assignment</h3>
-              <dl class="tfacts" id="taskPeople"></dl>
-              <div class="msg" id="taskOwnerMsg"></div>
-            </div>
-            <!-- Each date is a row that edits itself: a first date is set from
-                 the picker on the row, and moving a date that is already set
-                 asks for the reason a replan report reads. -->
-            <div class="railblock rail-after" id="taskDatesBlock">
-              <h3 class="railtitle">Dates</h3>
-              <dl class="tfacts" id="taskDates"></dl>
-              <div class="dueask" id="dueAsk" hidden></div>
-              <div class="msg" id="dueAskMsg"></div>
-              <div class="msg" id="taskDatesMsg"></div>
-            </div>
-            <div class="railblock rail-after is-last" id="taskDetailsBlock">
-              <h3 class="railtitle">Details</h3>
-              <dl class="tfacts" id="taskFacts"></dl>
-              <details class="tmore" id="taskMoreWrap">
-                <summary>More details</summary>
-                <dl class="tfacts" id="taskMore"></dl>
-              </details>
-            </div>
-          </aside>
-        </div>
-      </div>
     </div>
 
     <!-- The task sheets sit outside the My Work section, because a task is
@@ -2813,7 +2652,7 @@
                     <option value="engagement">Retainer</option>
                     <option value="adhoc">Ad hoc</option>
                     <option value="goodwill">Goodwill</option>
-                    <option value="special">Special</option>
+                    <option value="special">Other</option>
                   </select>
                 </div>
               </div>
@@ -3088,16 +2927,15 @@
                   <button class="kmenu-btn" id="dwMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                   </button>
-                  <!-- The rare acts, Delete last. The full record is the
-                       sheet's own last line; every stage move is the stage
-                       select beside this. -->
+                  <!-- The rare acts, Delete last; every stage move is the
+                       stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
                     <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
                     <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
                     <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:work">Reassign</button>
                     <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
                     <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
+                    <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                   </div>
                 </span>
@@ -3110,6 +2948,9 @@
               <h2 class="qhead-title" id="dwTitle"></h2>
               <button class="rec-pen" id="dwTitleEdit" type="button" aria-label="Edit name" hidden>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+              <button class="rec-pen" id="dwCopyTitle" type="button" aria-label="Copy title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
               </button>
             </div>
             <p class="qhead-ctx" id="dwCtx"></p>
@@ -3131,27 +2972,31 @@
               <div class="qrate" id="dwRate" hidden></div>
               <div class="msg" id="dwMsg"></div>
             </section>
-            <section class="qcard">
-              <dl class="tfacts" id="dwFacts"></dl>
-            </section>
-            <!-- Each card is a heading, its one quiet action on the right, and
-                 what it holds. The action opens the card's own small form
-                 (the field, then Add and Cancel in the portal's order), so a
-                 card never carries a field and a button nobody asked for. -->
-            <section class="qcard" id="dwDescSec">
+            <!-- A report task's own report (2026-10-09): Start report makes the
+                 month's report with the month's own period; once made, where
+                 it stands and Open report. Drawn only on a report task. -->
+            <section class="qcard qreport" id="dwReport" hidden>
               <div class="qcard-head">
-                <h3 class="qcard-title">Brief</h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwDescEdit" type="button">Edit</button>
+                <h3 class="qcard-title" id="dwReportTitle">Report</h3>
+                <span class="qcard-act" id="dwReportAct"></span>
               </div>
-              <div id="dwDesc"></div>
-              <form class="qform" id="dwDescForm" autocomplete="off" hidden>
-                <label class="field-label" for="dwDescText">Brief</label>
-                <textarea class="input" id="dwDescText" rows="4" maxlength="4000"></textarea>
-                <div class="qform-acts">
-                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
-                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
-                </div>
-              </form>
+              <p class="qreport-line" id="dwReportLine"></p>
+              <div class="msg" id="dwReportMsg"></div>
+            </section>
+            <!-- The one card for the task (the user, 2026-10-09: "not much usage
+                 of the full record"): who, the three dates and the details,
+                 each changed where it is read, never behind a fold. -->
+            <section class="qcard qkey" id="dwKey">
+              <dl class="tfacts" id="taskPeople"></dl>
+              <div class="msg" id="taskOwnerMsg"></div>
+              <h4 class="qkey-h">Dates</h4>
+              <dl class="tfacts" id="taskDates"></dl>
+              <div class="dueask" id="dueAsk" hidden></div>
+              <div class="msg" id="dueAskMsg"></div>
+              <div class="msg" id="taskDatesMsg"></div>
+              <h4 class="qkey-h">Details</h4>
+              <dl class="tfacts" id="taskFacts"></dl>
+              <div class="msg" id="taskFactsMsg"></div>
             </section>
             <section class="qcard" id="dwCheckSec">
               <div class="qcard-head">
@@ -3170,12 +3015,12 @@
             </section>
             <section class="qcard" id="dwCommentSec">
               <div class="qcard-head">
-                <h3 class="qcard-title">Comments</h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add comment</button>
+                <h3 class="qcard-title">Remarks</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add remark</button>
               </div>
               <div id="dwComments"></div>
               <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
-                <label class="field-label" for="dwComment">Comment</label>
+                <label class="field-label" for="dwComment">Remark</label>
                 <textarea class="input" id="dwComment" rows="3" maxlength="2000"></textarea>
                 <div class="qform-acts">
                   <button class="btn btn-sm btn-primary" type="submit" id="dwCommentSave">Post</button>
@@ -3183,12 +3028,27 @@
                 </div>
               </form>
             </section>
-            <!-- What a day's work on the task rarely needs is one line away:
-                 the files and links, the time, the history (the team,
-                 2026-09-25: "make those unnecessary ones folded as More"). -->
+            <!-- What a day's work rarely needs is one line away: the brief (the
+                 content calendar lives in Google Drive), the files and links,
+                 the time, the history and the rest of the details. -->
             <details class="qmore" id="dwMore">
-              <summary>More <span class="qmore-sum" id="dwMoreSum">Files and links, time, activity</span></summary>
+              <summary>More <span class="qmore-sum" id="dwMoreSum">Brief, files and links, time, activity</span></summary>
               <div class="qmore-body">
+            <section class="qcard" id="dwDescSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Brief</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwDescEdit" type="button">Edit</button>
+              </div>
+              <div id="dwDesc"></div>
+              <form class="qform" id="dwDescForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwDescText">Brief</label>
+                <textarea class="input" id="dwDescText" rows="4" maxlength="4000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
             <section class="qcard" id="dwLinkSec">
               <div class="qcard-head">
                 <h3 class="qcard-title">Files and links</h3>
@@ -3197,14 +3057,6 @@
               <div id="dwLinks"></div>
               <form class="qform" id="dwLinkForm" autocomplete="off" hidden>
                 <div class="row">
-                  <div class="field" id="dwLinkUrlField">
-                    <label class="field-label" for="dwLinkUrl">Address</label>
-                    <textarea class="input" id="dwLinkUrl" placeholder="https://" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off"></textarea>
-                  </div>
-                  <div class="field" id="dwLinkRefField" hidden>
-                    <label class="field-label" for="dwLinkRef">Record</label>
-                    <select class="select" id="dwLinkRef" aria-required="true"></select>
-                  </div>
                   <div class="field qform-kind">
                     <label class="field-label" for="dwLinkKind">Kind</label>
                     <select class="select" id="dwLinkKind">
@@ -3216,6 +3068,14 @@
                       <option value="asset">File</option>
                     </select>
                   </div>
+                  <div class="field" id="dwLinkUrlField">
+                    <label class="field-label" for="dwLinkUrl">Address</label>
+                    <textarea class="input" id="dwLinkUrl" placeholder="https://" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off"></textarea>
+                  </div>
+                  <div class="field" id="dwLinkRefField" hidden>
+                    <label class="field-label" for="dwLinkRef">Record</label>
+                    <select class="select" id="dwLinkRef" aria-required="true"></select>
+                  </div>
                 </div>
                 <label class="field-label" for="dwLinkLabel" id="dwLinkLabelLab">Label</label>
                 <input class="input" id="dwLinkLabel" placeholder="Optional" maxlength="120">
@@ -3224,6 +3084,10 @@
                   <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
                 </div>
               </form>
+            </section>
+            <section class="qcard" id="dwMoreFacts">
+              <h3 class="qcard-title">More details</h3>
+              <dl class="tfacts" id="taskMore"></dl>
             </section>
             <section class="qcard" id="dwTimeSec">
               <h3 class="qcard-title">Time records</h3>
@@ -3240,7 +3104,6 @@
             </section>
               </div>
             </details>
-            <a class="linkbtn qfull" id="dwFull" href="#">Open full record<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></a>
           </div>
         </div>
       </div>
@@ -3987,7 +3850,7 @@
             <div><label class="field-label" for="rwMDesc">Description</label><textarea class="input" id="rwMDesc" maxlength="300" autocomplete="off" aria-required="true" rows="1" data-oneline></textarea></div>
           </div>
           <div class="row fgrid-3">
-            <div><label class="field-label" for="rwMMonth">Month invoiced</label><input class="input" id="rwMMonth" type="month" min="2026-06" aria-required="true"></div>
+            <div><label class="field-label" for="rwMMonth">Month invoiced</label><select class="select" id="rwMMonth" aria-required="true"></select></div>
             <div><label class="field-label" for="rwMNet">Net profit (RM)</label><input class="input" id="rwMNet" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
             <div><label class="field-label" for="rwMPct">Commission (%)</label><input class="input" id="rwMPct" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
           </div>
@@ -5095,20 +4958,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009a"></script>
+<script src="/js/admin.js?v=20261009b"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261009a"></script>
+<script src="/js/reports.js?v=20261009b"></script>
 <script src="/js/register.js?v=20261009a"></script>
 <script src="/js/crm.js?v=20261009a"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261009a"></script>
+<script src="/js/team.js?v=20261009b"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/campaigns.js?v=20261009a"></script>
-<script src="/js/ops.js?v=20261009a"></script>
-<script src="/js/perf.js?v=20261009a"></script>
+<script src="/js/ops.js?v=20261009b"></script>
+<script src="/js/perf.js?v=20261009b"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261008c"></script>
 <script src="/js/overview.js?v=20261007i"></script>

@@ -188,7 +188,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
 | Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + view selects + the Filters mark (the filters in `#cmdPop` at a desk, `#cmdSheet` on a phone) + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
-| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name) and a close mark |
+| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`, on `--raised` with its `--line-lift` edge: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb; a head naming what it is about (the purpose card: the ⓘ in the action colour and the section's name at 500, never bold; the user, 2026-10-09) and a close mark |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
@@ -227,6 +227,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), an admin's Upgrade mode as a switch (drawn for an admin alone), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
+| A notice to colleagues (Notices) | `#ntcSheet` (`js/notice.js`): the announcements list's own rows (`.ann-row`, `.ntc-row`: the title, three lines of the message, To · when · by whom; Read by n of N where the state sits, Withdrawn as a chip; Withdraw or Restore); New opens `#ntcNewSheet`: Send to as a segment, the colleagues as a ticked list (`.meta-accs`, its own scroll past 40dvh), Title and Message, the count (`.lpicksum`) beside Send. In the bell a notice wraps its title, shows three lines and opens whole in place |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
 | A booking's steps (client pages) | `.cx-journey` (`ADspaceIcons.journey`): a hairline a step with its name under it in 12px, the done steps in the mute ink, the one in hand amber with its name in ink, as Apple tracks an order; never bare bars, never large ringed marks (the user, 2026-10-08) |
 | Where a campaign stands (client page) | `.cx-standing` under the name card: n of N posted, a 6px track a booking in its state's dot colour, a legend, the next shoot |
@@ -325,6 +326,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A choice and an action never share a row unseparated: the choice carries
   its label at the left, the action sits at the right edge with its count
   just before it (the draft's language beside Write draft).
+- An act is offered once on a screen: a value is changed where it is read
+  (its pen, its row's control), never again from a ⋯ (the user, 2026-10-09:
+  Change sent date beside the Sent pen; Reassign beside Assigned to). The ⋯
+  holds only what nothing on the screen already does.
 - A fact is stated once on a screen. A control that changes it answers
   (`Saved.`), and puts itself back on a refusal.
 - A mark holds real artwork (`logo_url`, falling back to initials only while
@@ -480,6 +485,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - no pinned `style` width survives the phone line.
 
 ## 6. Copy
+- Every word on a screen, and every reply to the user, is proper, formal
+  corporate English (the user, 2026-10-09: "not conversational nor weird
+  language"): complete, plain statements of fact, never shorthand, slang or
+  a phrase coined for the screen ("The portal is covered for the team" read
+  as nonsense; "Everyone but admins sees the upgrade screen" does not).
 - No explanatory copy: no hints, blurbs, notices or role descriptions.
   - The heading and the controls are the explanation.
   - Where a line is unavoidable, one neutral corporate sentence; no "we", no

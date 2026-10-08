@@ -2875,9 +2875,16 @@
       return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
     }).join('');
     $('rwMDesc').value = ''; $('rwMNet').value = ''; $('rwMPct').value = '';
-    var last = addMonths(thisMonth(), -1);
+    /* The month invoiced, named (September 2026) from June 2026 to this
+       month, newest first: Safari at a desk drew a month field as YYYY-MM
+       (the user, 2026-10-09). */
+    var last = addMonths(thisMonth(), -1), mo = [], at = thisMonth();
+    while (at >= '2026-06-01') { mo.push(at.slice(0, 7)); at = addMonths(at, -1); }
+    $('rwMMonth').innerHTML = mo.map(function (k) {
+      return '<option value="' + k + '">' + esc(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(k.slice(5, 7)) - 1] + ' ' + k.slice(0, 4)) + '</option>';
+    }).join('');
     $('rwMMonth').value = (last < '2026-06-01' ? thisMonth() : last).slice(0, 7);
-    $('rwMMonth').max = thisMonth().slice(0, 7);
+    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rwMMonth'));
     comAmount();
     msg('rwMMsg', '');
     window.ADspaceSheet.show($('rwComSheet'), { opener: opener });
