@@ -125,18 +125,16 @@
       '<div class="sheet-head"><h3 id="ntcNewH">New notice</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
-        '<section class="fsec"><h4 class="fsec-h">To</h4>' +
-          '<div class="row"><div><label class="field-label" for="ntcTo">Send to</label>' +
-            '<select class="select" id="ntcTo" data-seg><option value="all">All colleagues</option><option value="some">Selected colleagues</option></select></div></div>' +
-          '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Colleagues</span>' +
-            '<div class="meta-accs ntc-people" id="ntcPeople" role="group" aria-labelledby="ntcPeopleL"></div></div></div>' +
-        '</section>' +
-        '<section class="fsec"><h4 class="fsec-h">Notice</h4>' +
-          '<div class="row"><div><label class="field-label" for="ntcTitle">Title</label>' +
-            '<textarea class="input" id="ntcTitle" data-oneline rows="1" maxlength="' + TITLE_MAX + '" aria-required="true" placeholder="Town hall at 3:00 pm"></textarea></div></div>' +
-          '<div class="row"><div><label class="field-label" for="ntcBody">Message</label>' +
-            '<textarea class="input" id="ntcBody" rows="4" maxlength="' + BODY_MAX + '" placeholder="Optional"></textarea></div></div>' +
-        '</section>' +
+        /* Four fields: one group, no section heads (DESIGN.md: sections from
+           six fields). */
+        '<div class="row"><div><label class="field-label" for="ntcTo">Send to</label>' +
+          '<select class="select" id="ntcTo" data-seg><option value="all">All colleagues</option><option value="some">Selected colleagues</option></select></div></div>' +
+        '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Colleagues</span>' +
+          '<div class="meta-accs ntc-people" id="ntcPeople" role="group" aria-labelledby="ntcPeopleL"></div></div></div>' +
+        '<div class="row"><div><label class="field-label" for="ntcTitle">Title</label>' +
+          '<textarea class="input" id="ntcTitle" data-oneline rows="1" maxlength="' + TITLE_MAX + '" aria-required="true" placeholder="Town hall at 3:00 pm"></textarea></div></div>' +
+        '<div class="row"><div><label class="field-label" for="ntcBody">Message</label>' +
+          '<textarea class="input" id="ntcBody" rows="4" maxlength="' + BODY_MAX + '" placeholder="Optional"></textarea></div></div>' +
         '<p class="msg" id="ntcNewMsg" role="status"></p>' +
       '</div>' +
       '<div class="sheet-foot">' +

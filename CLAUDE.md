@@ -2128,8 +2128,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Client review"); no stage move beside it.
   - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
     apply), Make a copy, Repeat on a schedule, Delete; who has the task is
-    changed on its Assigned to row (Reassign, else Assign), never from the
-    ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
+    changed on its Assigned to row (Reassign), a task nobody holds from the
+    next step's Assign, never from the ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
     shows none, the offer, Delete) and is not drawn when empty. No timer,
     Revert, Move to another stage, Mark blocked or Cancel.
 - The SOP workflow, numbered in this order: Ready to start, In progress, AQC

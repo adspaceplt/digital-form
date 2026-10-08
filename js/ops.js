@@ -5002,19 +5002,19 @@
     var rows = frow('Assigned to',
       '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
       '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>',
-      canOwn ? '<button class="linkbtn" id="taskOwnerChange" type="button">' + (who ? 'Reassign' : 'Assign') + '</button>' : '');
+      canOwn && who ? '<button class="linkbtn" id="taskOwnerChange" type="button">Reassign</button>' : '');
     if (made) rows += frow('Created by', esc(made));
     var rev = people.filter(function (a) { return a.responsibility === 'reviewer'; }).map(function (a) { return a.name; }).join(', ');
     var con = people.filter(function (a) { return a.responsibility === 'contributor'; }).map(function (a) { return a.name; }).join(', ');
     if (rev) rows += frow('Reviewer', esc(rev));
     if (con) rows += frow('Contributors', esc(con));
     $('taskPeople').innerHTML = rows;
-    /* One way to change who has the task, on the row where it is read (the
-       user, 2026-10-09: no act twice on one screen): a task held by somebody
-       is handed over with the Reassign sheet, which says what the next
-       person takes on; a task nobody holds is assigned in place. */
+    /* One way to change who has the task (the user, 2026-10-09: no act
+       twice on one screen): a task held by somebody is handed over from this
+       row with the Reassign sheet, which says what the next person takes
+       on; a task nobody holds is assigned from the next step's Assign. */
     var ch = $('taskOwnerChange');
-    if (ch) ch.addEventListener('click', function () { if (ownerId(t)) openGive(); else editOwner(); });
+    if (ch) ch.addEventListener('click', openGive);
   }
 
   function editOwner() {
