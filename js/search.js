@@ -323,7 +323,7 @@
     groups.forEach(function (g) {
       if (!g.rows.length) return;
       html += '<div class="sgroup" role="group" aria-labelledby="sg-' + g.key + '">' +
-        '<h4 class="sgroup-h" id="sg-' + g.key + '">' + esc(g.head) + '</h4>';
+        '<h4 class="sgroup-h" id="sg-' + g.key + '">' + (bridge.glyph ? bridge.glyph(g.key) : '') + esc(g.head) + '</h4>';
       g.rows.forEach(function (r) {
         var n = shown.length;
         shown.push(r);

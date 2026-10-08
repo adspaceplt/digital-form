@@ -3987,6 +3987,22 @@
     out:    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
   };
 
+  /* The rail's own drawing for a section, for a list that mixes sections
+     (the bell, search, Waiting for you), so a line says where it will take
+     you in the shape the rail already taught (2026-10-08). Read from the
+     rail itself: one copy of every glyph. My Records lives in the account
+     menu, and the Creators List and My Work answer to their rail rows. */
+  var GLYPH_OF = { ops: 'work', creators: 'campaigns' };
+  function sectionGlyph(key) {
+    var el = key === 'mine' ? document.querySelector('#myPerf svg')
+      : document.querySelector('.navitem[data-section="' + (GLYPH_OF[key] || key) + '"] svg');
+    if (!el) return '';
+    var g = el.cloneNode(true);
+    g.removeAttribute('width'); g.removeAttribute('height'); g.removeAttribute('class');
+    g.setAttribute('aria-hidden', 'true');
+    return g.outerHTML;
+  }
+
   /* A round mark with the action named for anyone who cannot see the shape. */
   function iconBtn(name, action, label, tone) {
     return '<button class="iconbtn' + (tone ? ' ' + tone : '') + '" data-a="' + action +
@@ -4053,6 +4069,7 @@
     editSettings: editSettings,
     isAdmin: isAdminMe,
     ICON: ICON,
+    glyph: sectionGlyph,
     hold: hold,
     iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's

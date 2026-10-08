@@ -1187,6 +1187,81 @@
      learned about the ampersand in "Dale & Cecil" and the other did not. */
   function initialsOf(name) { return UI.initials(name); }
 
+  /* THIS MONTH, ONE LINE (2026-10-08, the user: "All yes"). Under the
+     person in charge, how the client's month is going: its tasks done of
+     those it holds, what is past its due date, and the day its report is
+     owed. Read from the month whose span holds today (`start_day`), counted
+     by `ops_engagement_counts` (the whole month, whoever asks) with the open
+     tasks the reader sees; pressed, it opens the month in My Work. A lead, a
+     client with no month now, or a reader without My Work draws nothing. */
+  var MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                    'August', 'September', 'October', 'November', 'December'];
+  var monthSeq = 0;
+  function monthNow() { return new Date(Date.now() + 8 * 3600000); }
+  function monthSpanOf(e) {
+    var y = Number(String(e.period).slice(0, 4)), mo = Number(String(e.period).slice(5, 7)) - 1;
+    var d = Math.max(1, Math.min(28, Number(e.start_day) || 1));
+    var a = new Date(Date.UTC(y, mo, d)), z = new Date(Date.UTC(y, mo + 1, d - 1));
+    return { start: a, end: z, word: MONTH_LONG[mo] };
+  }
+  function paintMonthLine(c) {
+    var meta = $('crmIdMeta'), line = $('crmMonthLine');
+    if (!meta) return;
+    if (!line) {
+      line = document.createElement('button');
+      line.type = 'button'; line.id = 'crmMonthLine'; line.className = 'linkbtn rec-month'; line.hidden = true;
+      meta.parentNode.insertBefore(line, meta.nextSibling);
+    }
+    line.hidden = true;
+    var seq = ++monthSeq;
+    if (!c || !db || !(bridge.may && bridge.may('ops', 'view')) || ['active', 'paused'].indexOf(c.stage) < 0) return;
+    var now = monthNow(), today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    db.from('ops_engagements').select('id, period, start_day, reports, status').eq('client_id', c.id)
+      .then(function (r) {
+        if (seq !== monthSeq || !r || r.error) return null;
+        var e = (r.data || []).filter(function (x) {
+          if (x.status === 'cancelled') return false;
+          var sp = monthSpanOf(x);
+          return sp.start.getTime() <= today && today <= sp.end.getTime();
+        })[0];
+        if (!e) return null;
+        return Promise.all([
+          db.rpc('ops_engagement_counts', { p_engagements: [e.id] }),
+          db.from('ops_tasks').select('id, current_final_due_at').eq('engagement_id', e.id)
+            .is('archived_at', null).is('cancelled_at', null).is('completed_at', null)
+        ]).then(function (both) {
+          if (seq !== monthSeq) return;
+          var counts = (both[0] && !both[0].error && (both[0].data || [])[0]) || null;
+          if (!counts) return;
+          var late = (both[1] && !both[1].error ? both[1].data || [] : []).filter(function (t) {
+            if (!t.current_final_due_at) return false;
+            var d = new Date(new Date(t.current_final_due_at).getTime() + 8 * 3600000);
+            return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) < today;
+          }).length;
+          var sp = monthSpanOf(e), parts = [];
+          var held = Number(counts.content != null ? counts.content : counts.live) || 0;
+          var done = Number(counts.done) || 0;
+          parts.push('<span class="part">' + esc(sp.word + ': ' + Math.min(done, held) + ' of ' + held + ' done') + '</span>');
+          if (late) parts.push('<span class="part"><span aria-hidden="true">· </span><span class="is-err">' + late + ' overdue</span></span>');
+          if ((e.reports || []).length) {
+            var days = window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('report_due_days') : 7;
+            var due = new Date(sp.end.getTime() + (Number(days) || 7) * 86400000);
+            parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + due.getUTCDate() + ' ' +
+              MONTH_LONG[due.getUTCMonth()].slice(0, 3).replace('Sep', 'Sept') + '</span>');
+          }
+          var tone = late ? 'is-late' : (held && done >= held) ? 'is-ok' : 'is-wait';
+          line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
+            '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+          line.setAttribute('aria-label', line.textContent.replace(/\s+/g, ' ').trim() + '. Open the month in My Work');
+          line.onclick = function () {
+            history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
+            if (bridge.show) bridge.show('work');
+          };
+          line.hidden = false;
+        });
+      }).catch(function () {});
+  }
+
   function paintIdentity(c) {
     var mark = $('crmClientMark');
     if (mark) {
@@ -1217,6 +1292,7 @@
       meta.textContent = bits.join('  ·  ');
       meta.hidden = !bits.length;
     }
+    paintMonthLine(c);
   }
 
   /* ---- The record's Overview -------------------------------------------

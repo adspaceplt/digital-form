@@ -469,6 +469,8 @@
     if (!box.querySelector('.crm-table')) UI.skeleton(box, 5);
     state.err = null;
     loadCatalogue(function () {
+      /* The band names who asked, so it waits for the colleagues read. */
+      loadWaiting();
       /* The client's name comes off the join the policy already allows, and
          the owner off the live assignee rows. Neither is a second store: a
          task holds an id and the name is read where it lives.
@@ -966,8 +968,228 @@
          : state.view === 'report' ? rep : list;
   }
 
+  /* WAITING FOR YOU (2026-10-08, the user: "All yes"). Every decision
+     somebody is waiting on this colleague for, gathered from where each one
+     lives, above the day's bands: an extension they decide, a report they
+     review, a draft to check on a campaign they run, and a request or a
+     client's changes on a client they are in charge of. Each read runs under
+     the reader's own access and asks its section first; a refused read drops
+     its own lines and never the band. Late first, then the longest waiting.
+     An extension is decided in its row (its reason beside it, as the task's
+     own sheet allows); every other line opens where the work is. The bell
+     says what happened; this says what still needs you, until it is
+     answered. Drawn only on the list, on your own open work, unsearched. */
+  var WAIT_SEQ = 0;
+  function agoWord(ts) {
+    var ms = Date.now() - new Date(ts).getTime();
+    if (!(ms >= 0)) return '';
+    var h = Math.floor(ms / 3600000);
+    if (h < 1) return 'Just now';
+    if (h < 24) return h + (h === 1 ? ' hour' : ' hours');
+    var d = Math.floor(h / 24);
+    return d + (d === 1 ? ' day' : ' days');
+  }
+  function lateWord(due) {
+    var d = Math.floor((Date.now() - due.getTime()) / 86400000) + 1;
+    return d + (d === 1 ? ' day late' : ' days late');
+  }
+  function settled(p) {
+    return p.then(function (r) { return r && !r.error ? (r.data || []) : null; }, function () { return null; });
+  }
+  function loadWaiting() {
+    var me = bridge.me && bridge.me();
+    if (!me || !me.id) { state.waiting = []; paintWaiting(); return; }
+    var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
+    var jobs = [];
+    // An extension asked of you: you set the date it would move.
+    if (may('ops', 'view')) jobs.push(settled(db.from('ops_due_requests')
+      .select('id, task_id, kind, wants_at, reason, asked_by, asked_at').eq('decider_id', me.id).eq('state', 'asked'))
+      .then(function (asks) {
+        if (!asks || !asks.length) return;
+        var ids = asks.map(function (q) { return q.task_id; });
+        return settled(db.from('ops_tasks').select('id, title, code, content_desc, clients(name)').in('id', ids)).then(function (tasks) {
+          var byId = {};
+          (tasks || []).forEach(function (t) { byId[t.id] = t; });
+          asks.forEach(function (q) {
+            var t = byId[q.task_id] || {};
+            rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at,
+              title: 'Extension · ' + (t.content_desc || t.title || t.code || 'Task'),
+              meta: [nameOf(q.asked_by), 'to ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
+              open: function () { openDrawer(q.task_id); }, request: q.id });
+          });
+        });
+      }));
+    // A report submitted to you to confirm.
+    if (may('reports', 'view')) jobs.push(settled(db.from('sm_reports')
+      .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, clients(name)')
+      .eq('status', 'review').eq('reviewer_id', me.id)).then(function (list) {
+        (list || []).forEach(function (r) {
+          var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;
+          var days = MON && MON.setting ? Number(MON.setting('report_due_days')) || 7 : 7;
+          var due = r.period_end ? new Date(new Date(r.period_end + 'T23:59:59+08:00').getTime() + days * 86400000) : null;
+          var late = due && Date.now() > due.getTime();
+          rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late,
+            age: late ? lateWord(due) : '',
+            title: 'Confirm report · ' + (r.brand_name || (r.clients && r.clients.name) || 'Client'),
+            meta: [SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : '', nameOf(r.submitted_by) ? nameOf(r.submitted_by) + ' submitted' : ''].filter(Boolean).join(' · '),
+            url: '/admin/?s=reports&report=' + encodeURIComponent(r.id) });
+        });
+      }));
+    // A draft handed in on a campaign you run, and a client of yours waiting.
+    if (name) {
+      if (may('campaigns.campaigns', 'view')) jobs.push(settled(db.from('campaigns').select('id, title').eq('owner', name))
+        .then(function (camps) {
+          if (!camps || !camps.length) return;
+          var title = {};
+          camps.forEach(function (c0) { title[c0.id] = c0.title; });
+          return settled(db.from('campaign_options').select('id, campaign_id, submitted_at, revision_round, creators(name)')
+            .in('campaign_id', camps.map(function (c0) { return c0.id; })).eq('state', 'submitted')).then(function (opts) {
+              (opts || []).forEach(function (o) {
+                rows.push({ key: 'qc:' + o.id, section: 'campaigns', at: o.submitted_at,
+                  title: 'Draft to check · ' + ((o.creators && o.creators.name) || 'Creator'),
+                  meta: [title[o.campaign_id], o.revision_round > 1 ? 'Round ' + o.revision_round : ''].filter(Boolean).join(' · '),
+                  url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators' });
+              });
+            });
+        }));
+      if (may('clients', 'view')) jobs.push(settled(db.from('clients').select('id, name, slug').eq('owner', name))
+        .then(function (mine) {
+          if (!mine || !mine.length) return;
+          var byId = {}, ids = mine.map(function (c0) { byId[c0.id] = c0; return c0.id; });
+          var keyOf = function (c0) { return encodeURIComponent((c0 && (c0.slug || c0.id)) || ''); };
+          var sub = [];
+          if (may('clients.requests', 'view')) sub.push(settled(db.from('client_requests')
+            .select('id, client_id, kind, service_label, created_at').in('client_id', ids).eq('state', 'requested').is('withdrawn_at', null))
+            .then(function (reqs) {
+              (reqs || []).forEach(function (q) {
+                var c0 = byId[q.client_id] || {};
+                rows.push({ key: 'req:' + q.id, section: 'clients', at: q.created_at,
+                  title: 'Client request · ' + (c0.name || 'Client'),
+                  meta: [((window.ADspaceWords || {}).en || {}).rqKind ? (window.ADspaceWords.en.rqKind[q.kind] || q.kind) : q.kind, q.service_label].filter(Boolean).join(' · '),
+                  url: '/admin/?client=' + keyOf(c0) + '&tab=requests' });
+              });
+            }));
+          if (may('review.sets', 'view')) sub.push(settled(db.from('batches').select('id, title, client_id')
+            .in('client_id', ids).eq('published', true)).then(function (sets) {
+              if (!sets || !sets.length) return;
+              var setById = {};
+              sets.forEach(function (b) { setById[b.id] = b; });
+              return settled(db.from('posts').select('id, batch_id, round, review_reset_at').in('batch_id', sets.map(function (b) { return b.id; })))
+                .then(function (posts) {
+                  if (!posts || !posts.length) return;
+                  var postById = {};
+                  posts.forEach(function (x) { postById[x.id] = x; });
+                  return settled(db.from('reviews').select('post_id, decision, round, created_at, undone_at')
+                    .in('post_id', posts.map(function (x) { return x.id; })).order('created_at', { ascending: false }))
+                    .then(function (revs) {
+                      /* A post's decision is the newest that stands on its
+                         round on show, the way the set's own page reads it. */
+                      var latest = {};
+                      (revs || []).forEach(function (x) {
+                        var po = postById[x.post_id];
+                        if (!po || x.undone_at || latest[x.post_id]) return;
+                        if ((x.round || 1) !== (po.round || 1)) return;
+                        if (po.review_reset_at && x.created_at <= po.review_reset_at) return;
+                        latest[x.post_id] = x;
+                      });
+                      var perSet = {};
+                      Object.keys(latest).forEach(function (pid) {
+                        var x = latest[pid];
+                        if (x.decision !== 'changes') return;
+                        var b = postById[pid].batch_id;
+                        var cur = perSet[b] || (perSet[b] = { n: 0, at: x.created_at });
+                        cur.n++;
+                        if (x.created_at < cur.at) cur.at = x.created_at;
+                      });
+                      Object.keys(perSet).forEach(function (bid) {
+                        var b = setById[bid], c0 = byId[b.client_id] || {};
+                        rows.push({ key: 'cr:' + bid, section: 'review', at: perSet[bid].at,
+                          title: 'Client changes · ' + (c0.name || 'Client'),
+                          meta: [perSet[bid].n + (perSet[bid].n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
+                          url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid) });
+                      });
+                    });
+                });
+            }));
+          return Promise.all(sub);
+        }));
+    }
+    Promise.all(jobs).then(function () {
+      if (seq !== WAIT_SEQ) return;
+      rows.sort(function (a, b) {
+        if (Boolean(a.late) !== Boolean(b.late)) return a.late ? -1 : 1;
+        return String(a.at || '') < String(b.at || '') ? -1 : 1;
+      });
+      state.waiting = rows;
+      paintWaiting();
+    });
+  }
+  function shortDay(ts) {
+    if (!ts) return '';
+    var d = new Date(new Date(ts).getTime() + 8 * 3600000);
+    return d.getUTCDate() + ' ' + MON_SHORT[d.getUTCMonth()];
+  }
+  function paintWaiting() {
+    var box = $('workWaiting');
+    if (!box) return;
+    var rows = state.waiting || [];
+    var on = state.view === 'list' && state.scope === 'mine' && state.filter === 'day' && !state.find && rows.length;
+    box.hidden = !on;
+    if (!on) { box.innerHTML = ''; return; }
+    box.innerHTML = '';
+    box.appendChild(GRP.section({
+      route: 'work', key: 'waiting', name: 'Waiting for you', count: rows.length, memo: 'waiting',
+      shut: GRP.shut('work', 'waiting', false, true),
+      table: function () {
+        var t = document.createElement('div');
+        t.className = 'crm-table softpanel wfy-table';
+        t.innerHTML = rows.map(function (r, i) {
+          var g = bridge.glyph ? bridge.glyph(r.section) : '';
+          return '<div class="wfy-row" data-i="' + i + '">' +
+            '<span class="wfy-tile">' + g + '</span>' +
+            '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + '</b>' +
+              (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</button>' +
+            '<span class="wfy-acts">' + (r.request && mayDecide()
+              ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
+                '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>' : '') + '</span>' +
+            '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
+          '</div>';
+        }).join('');
+        t.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-a]'), row = e.target.closest('.wfy-row');
+          if (!b || !row) return;
+          var r = rows[Number(row.getAttribute('data-i'))];
+          if (!r) return;
+          var a = b.getAttribute('data-a');
+          if (a === 'open') {
+            if (r.open) { r.open(); return; }
+            history.replaceState(null, '', r.url);
+            if (r.section === 'review' && bridge.restore) bridge.restore();
+            else if (bridge.show) bridge.show(r.section);
+            return;
+          }
+          if (b.disabled) return;
+          Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = true; });
+          call('ops_decide_due_change', { p_request: r.request, p_approve: a === 'yes', p_note: null }, 'workMsg', function () {
+            msg('workMsg', a === 'yes' ? 'Extension approved.' : 'Extension declined.', 'ok');
+            state.waiting = (state.waiting || []).filter(function (x) { return x !== r; });
+            paintWaiting();
+            load();
+          }, function () {
+            Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = false; });
+          });
+        });
+        return t;
+      }
+    }));
+  }
+  /* Deciding a date asks nothing more than My Work at Work; the database
+     asks again whether this colleague is the one asked. */
+  function mayDecide() { return may('ops', 'work'); }
+
   function paint() {
     var box = viewBox();
+    paintWaiting();
     if (!box) return;
     /* The report is the same work asked an aggregate question, so it reads
        its own figures and none of the row filtering below applies to it:
@@ -7872,7 +8094,11 @@
     if ($('notifAll')) $('notifAll').hidden = !n;
     if (!list) return;
     list.innerHTML = n ? state.notifs.map(function (x) {
-      return '<button class="notif-item" type="button" data-id="' + esc(x.id) + '">' +
+      /* Each notice leads with the glyph of the section it opens, the rail's
+         own drawing (2026-10-08). */
+      var g = bridge.glyph ? bridge.glyph(notifSection(x)) : '';
+      return '<button class="notif-item' + (g ? ' has-tile' : '') + '" type="button" data-id="' + esc(x.id) + '">' +
+        (g ? '<span class="notif-tile">' + g + '</span>' : '') +
         '<b>' + esc(x.title || '') + '</b>' +
         (x.body ? '<span>' + esc(x.body) + '</span>' : '') +
         '<small>' + esc(niceTime(x.created_at)) + '</small></button>';
@@ -7880,6 +8106,13 @@
     Array.prototype.forEach.call(list.querySelectorAll('.notif-item'), function (b) {
       b.addEventListener('click', function () { openNotif(b.getAttribute('data-id')); });
     });
+  }
+  /* The section a notice opens, as openNotif below decides it. */
+  function notifSection(x) {
+    if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
+    if (!x.task_id && x.kind === 'hr.letter') return 'mine';
+    if (!x.task_id && x.report_id) return 'reports';
+    return 'work';
   }
   function markRead(ids) {
     var now = new Date().toISOString();
