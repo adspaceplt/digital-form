@@ -1,5 +1,5 @@
 /*
- * meta-import/shape.js — Meta's Graph answers, written as the exports the
+ * meta-import/shape.mjs — Meta's Graph answers, written as the exports the
  * report's own importers already read (2026-10-08).
  *
  * Nothing here calls Meta or the database: each function takes the JSON the

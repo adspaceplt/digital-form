@@ -12,7 +12,7 @@
  *   ads { report_id, account }
  *                        the period's ad-level insights, the account's own
  *                        row (reach counted once) and the ads by age, written
- *                        as Ads Manager's export (shape.js), for the page's
+ *                        as Ads Manager's export (shape.mjs), for the page's
  *                        own importer. Reports at Work, an Advertising Report
  *                        in draft, the account one the report's client (or
  *                        brand) has linked.
@@ -43,7 +43,7 @@
  * about the caller itself.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { adsText, ageText, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.js';
+import { adsText, ageText, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.mjs';
 
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
 function cors(origin: string | null) {
@@ -115,7 +115,7 @@ async function adInsights(act: string, range: string, extra: Record<string, stri
   const ask = (f: string[]) => all(act + '/insights', { level: 'ad', time_range: range, fields: f.join(','), limit: '500', ...extra }, 40);
   try { return await ask(fields.concat(RESULT_FIELDS)); } catch (e) {
     /* An API version that names no `results` field refuses the whole call:
-       the goal's own action stands in (shape.js resultOf). */
+       the goal's own action stands in (shape.mjs resultOf). */
     const b = (e as MetaError).body as Record<string, Record<string, unknown>> | undefined;
     if (b && b.error && Number(b.error.code) === 100 && /result/i.test(String(b.error.message || ''))) return ask(fields);
     throw e;
