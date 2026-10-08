@@ -938,9 +938,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   since `ilike` cannot compare a number.
 
 ### Clients (`js/crm.js`)
-- Three bands:
+- Four bands (the user, 2026-10-08: Paused folds on its own):
   - Leads;
-  - Clients (active and paused);
+  - Clients (active);
+  - Paused;
   - Past clients (shut by default, remembered, keeping their count).
   - Each band draws thirty, then Show N more.
 - Columns: Client, Stage, Industry, Person in charge, Last activity, chevron.
@@ -977,8 +978,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   the answer. `clients.stage_reason` / `stage_note` ride the update and the
   clock keeps them on that move's `stage_log` entry; a move into Paused or
   Past without one is refused (`stage-reason`), and a move anywhere else
-  clears both. The Timeline names the reason under the move; the activity
-  row carries it. `clients_stage_notice` tells each owner of the client's
+  clears both. The Timeline names the reason under the move, a pen at
+  Manage: the reason and note are changed later (`ADspaceConfirm`, that
+  entry of `stage_log`, and `stage_reason` / `stage_note` while it is the
+  stage now; `.select('id')`, filed `client.edited` from and to); the
+  activity row carries it. `clients_stage_notice` tells each owner of the client's
   open work once (`client_left`, "{client} moved to Paused · 3 open tasks to
   deliver", opening My Work).
 - Sales (`js/sales.js`, `view=sales&sp=`): the list's second view, List /
@@ -1262,7 +1266,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   row's ⋯ Share with {first name} / Stop sharing (`document_share`, HR
   Letters at Work, `not-hr`, `no-member`). Shared, the colleague is told once
   (kind `hr.letter`, its kind and never its words; the bell and a push open
-  Letters) and reads it in My Records, Letters (`my_letters()`, behind
+  Letters) and reads it in My records, Letters (`my_letters()`, behind
   `perf_mine_gate()`, their own alone, a replaced version left out, a voided
   one marked Void), its PDF drawn in their browser: no Documents access is
   needed. Filed under HR with the kind alone.
@@ -1322,8 +1326,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     in the bar (behind the ⋯ on a phone), `register.types`
     (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
     My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
-    Name (unique), an HR letter's Reference code (`ADHR/…/{code}{YYMM}`,
-    required, its own among the HR letters offered), To be signed, Offered
+    Name (unique), an HR letter's Reference code (required, its own among
+    the HR letters offered; the sheet and the list spell the whole
+    reference, `ADHR/{Employee ID}/{code}{YYMM}`, never "Code E"), To be signed, Offered
     on Issue (`doc_type_set_active`; never removed, an issued document names
     its type), the wording, and Fields. Saved by `doc_type_save`, filed
     `team.changed` under Document types from and to.
@@ -1888,7 +1893,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
-  its post date shows once. On a phone it lists only the days holding
+  its post date shows once. A day holds five chips (`CAL_SHOW`), each two
+  lines at 11px (`.cal-chip`), then `+N more`. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
@@ -2083,7 +2089,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`#dwMore`, shut each open).
   - The full record is one press further.
 - The record's Details are changed where they are read (2026-10-08): Format,
-  Type, Priority and Complexity as small selects (`ops_update_task`,
+  Type, Priority and Complexity as small selects drawn as the value
+  (`.select.tdetail`: no box, the tonal ground on hover and focus, as
+  `ADspaceAsk`'s field) (`ops_update_task`,
   `2026-10-08-task-details-editable.sql`: `deliverable_type`, `task_type`,
   `complexity`, `estimate_minutes`, each refused by name), and the Month and
   Week where the code may move (`ops_set_code` with the code built from
@@ -2136,9 +2144,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The bell is drawn for every colleague (a row is its reader's own), and
     re-reads every minute while visible, and on return.
   - Each item leads with its section's rail glyph (`.notif-tile`,
-    `ADspaceAdmin.glyph`): My Records for a review, reflection, health or
+    `ADspaceAdmin.glyph`): My records for a review, reflection, health or
     HR letter, Reports for a report, My Work otherwise. The bell lists
-    unread only.
+    unread first, then Earlier (`.notif-earlier`): read notices of the
+    last seven days, ten at most (`.notif-item.is-read`); marking read
+    keeps a notice there, never removes it.
+  - A noon reminder (`2026-10-08-tasks-reminder.sql`,
+    `ops_tasks_remind()`, pg_cron `tasks-reminder` at 12:00 MYT, Monday to
+    Friday): every active colleague but an admin with no open task
+    assigned to them, or who has never added a task, is told once that day
+    (kind `tasks.empty`, opening My Work).
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New
@@ -2332,7 +2347,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `notified`); unticked, the member is not told and the sheet says so.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
-  themselves on the six scorecard categories in My Records, Reviews (Rate
+  themselves on the six scorecard categories in My records, Reviews (Rate
   yourself, {Month}), for each month from June 2026 to last month while its
   review is not shared (`perf_self_open`: `bad-month`, `shared`,
   `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
@@ -2368,7 +2383,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 <!-- Performance rewards (2026-09-28) -->
 - Initiatives and the reflection (`2026-10-04-initiatives-reflection.sql`,
   `perf_initiatives`, `perf_reflections`, RLS on, no policy, no grant):
-  - My Records (`?s=mine`, the account menu's first item; never My
+  - My records (`?s=mine`, the account menu's first item; never My
     performance, the user, 2026-10-06: it holds more than reviews; never My
     HR, 2026-10-07: it read oddly) is five views
     (`#mineViews`, `view=` in the address, Reviews left out): Reviews,
@@ -2522,6 +2537,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /
     `late_reason` and filed. At Work a month not in order rests Submit.
+  - The month's report task follows its report
+    (`2026-10-08-report-tasks-follow.sql`, trigger `sm_reports_task_follow`,
+    the task found as `sm_report_gate` finds it; the user, 2026-10-08): a
+    report made puts it In progress under its maker; in review, confirmed
+    or published and not yet sent, Waiting; marked as sent, Review. Done is
+    the owner's own press: a finished or cancelled task never moves, nothing
+    moves one to Done, and a white-label brand's report leaves it alone.
+    Each move is filed on the task with `report_id`; a fault never fails
+    the report's write.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - Mark as sent (the head's ⋯ on a published report, Reports at Work;
     `sm_report_sent`, `sm_reports.sent_on` / `sent_by`): one date, today
@@ -3395,7 +3419,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   was. There is no path routing on Pages.
 - The URL pushes history only for a record's pane; everything else replaces.
 - A record (client, campaign, report) opens at its top; Back returns to the
-  list's own scroll, and a refresh restores the record's.
+  list's own scroll, and a refresh restores the record's. A list opens at
+  its top on a visit or a refresh; only Back and Forward restore its
+  scroll, and nothing is saved until the person scrolls (`bootScroll`,
+  `personScrolled` in `js/admin.js`: bars drawn above a list while it
+  loaded once saved a lower place each visit).
 
 ### Infrastructure (established; never re-ask)
 - Hosting is GitHub Pages (`digital.adspace.me` CNAME → `adspaceplt.github.io`).

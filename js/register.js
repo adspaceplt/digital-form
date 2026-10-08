@@ -874,9 +874,16 @@
       then(null);
     }).catch(function (e) { then(e || new Error('read')); });
   }
+  /* The whole reference a type's code makes, never the code alone (the
+     user, 2026-10-08: "give the full syntax not shortcuts"). */
+  function hrRef(code) { return 'ADHR/{Employee ID}/' + code + '{YYMM}'; }
+  function showRef() {
+    var out = $('dtCodeRef'), v = ($('dtCode').value || '').trim().toUpperCase();
+    if (out) out.textContent = 'Reference: ' + hrRef(v || '{code}');
+  }
   function typeMeta(t) {
     var n = typeFields(t).length;
-    return [t.family === 'hr' && t.code ? 'Code ' + t.code : '', t.signed === false ? 'Not signed' : 'To be signed',
+    return [t.family === 'hr' && t.code ? hrRef(t.code) : '', t.signed === false ? 'Not signed' : 'To be signed',
       n ? n + (n === 1 ? ' field' : ' fields') : ''].filter(Boolean).join(' · ');
   }
   function paintTypes() {
@@ -978,6 +985,7 @@
     $('dtFamily').disabled = Boolean(t);
     $('dtName').value = t ? t.name : '';
     $('dtCode').value = t ? (t.code || '') : '';
+    showRef();
     $('dtSigned').checked = t ? t.signed !== false : true;
     $('dtActive').checked = t ? t.active !== false : true;
     $('dtTitle').value = t ? (t.title || '') : '';
@@ -1209,6 +1217,7 @@
     on('dtEditCancel', function () { shutTypeEdit(''); });
     on('dtEditClose', function () { $('dtEditCancel').click(); });
     on('dtSave', saveType);
+    if ($('dtCode')) $('dtCode').addEventListener('input', showRef);
     on('dtHintBtn', function () { dtHint($('dtHintText').hidden); });
     if ($('dtFamily')) $('dtFamily').addEventListener('change', dtGroupMoved);
     ['dtTitle', 'dtSal', 'dtClosing', 'dtBodyEn', 'dtBodyZh', 'dtBodyMs'].forEach(function (id) {

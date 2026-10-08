@@ -27,7 +27,7 @@ Each section gets two grades:
 | services | Services | `?s=services` | admin.js | Edit a rate; add a service (admin) | Edit in place |
 | team | Team | `?s=team` | team.js, perf.js, health.js | Add and invite a colleague; change a group's access; set access expiry; release a month's review (admin) | Invite 2 presses |
 | handbook | Handbook | `?s=handbook` | handbook.js | Find and open a file; add a version (colleague, admin) | Open 1 press |
-| mine | My Records | `?s=mine` | perf.js, health.js | Rate yourself; reflect; check in; read a letter (colleague) | Check-in 1 sheet |
+| mine | My records | `?s=mine` | perf.js, health.js | Rate yourself; reflect; check in; read a letter (colleague) | Check-in 1 sheet |
 | portal | Client portal | `/client/` | portal.js | Download the latest report; request a change; join the next meeting (client) | 2 presses each |
 | reviewpage | Content review page | `/review/?k=` | review.js, decide.js, mockups.js | Approve a post; request changes with a caption edit (client) | Approve 2 presses |
 | selection | Creator selection | `/creators/?k=` | creators.js, decide.js | Pick creators and confirm; decide on a draft (client) | Confirm 2 presses |
