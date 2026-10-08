@@ -35856,6 +35856,268 @@ grant execute on function public.ai_draft_set_limit(text, integer) to authentica
 -- END OF CAPTION WRITER AND AI COST -----------------------------------------
 
 -- ===========================================================================
+-- A REPORT BEGINS IN ITS MONTH — a month's report is started from the month
+-- in My Work that asks for it, and a draft taken away puts its task back.
+-- 2026-10-09. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user, 2026-10-09: "if no content month completed, then the option
+--   to create that specific month would be greyed out". The loop is month
+--   (its Reports ticks) → report task → report → the task follows it.
+--   1. `sm_report_months(p_client, p_kind)`: the client's months in My Work
+--      (not cancelled), newest first, each with its span, whether it asks
+--      for the kind, and the report already made for it (no white-label
+--      brand); and whether the reader may start one outside them
+--      (`may_override`: an admin or Reports Full Access). Reports View, in
+--      the colleague's client scope. New report offers these months, the
+--      period being the month's own span (a month starting on the 16th
+--      runs to the 15th), and greys a month that does not ask.
+--   2. Trigger `sm_reports_month_gate` (before insert on `sm_reports`): a
+--      report from October 2026 on, with no white-label brand, is refused
+--      `month-gate` unless a month in My Work whose span holds its last day
+--      asks for its kind, or the colleague is an admin or holds Reports
+--      Full Access (the same people Submit lets past the month's gate). The
+--      SQL editor (no colleague) passes.
+--   3. `sm_reports_task_reset` (after a report row goes): a draft report
+--      taken away puts its month's task back to To do, filed "Report
+--      deleted", unless the task is finished. Its trigger statement names
+--      the event, so it is applied on its own (CLAUDE.md §3).
+--
+-- ROLLBACK
+--   Drop the triggers sm_reports_task_reset and sm_reports_month_gate on
+--   public.sm_reports, then the functions sm_reports_task_reset(),
+--   sm_reports_month_gate() and sm_report_months(uuid, text).
+-- ===========================================================================
+
+create or replace function public.sm_report_months(p_client uuid, p_kind text default 'social')
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.clients;
+begin
+  if me.id is null or not public.allowed('reports', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_kind, '') not in ('social', 'ads') then return jsonb_build_object('error', 'bad-kind'); end if;
+  select * into c from public.clients where id = p_client;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_row_seen(c.stage, c.owner, 'view') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'may_override', coalesce(me.is_admin, false) or me.role = 'admin' or public.allowed('reports', 'manage'),
+    'months', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', e.id, 'period', e.period, 'start_day', e.start_day,
+               'starts', s.starts, 'ends', s.ends, 'status', e.status,
+               'asks', p_kind = any (coalesce(e.reports, '{}'::text[])),
+               'report', (select r.id from public.sm_reports r
+                           where r.client_id = e.client_id and r.kind = p_kind and r.brand_id is null
+                             and r.period_end between s.starts and s.ends
+                           order by r.period_start desc limit 1))
+             order by e.period desc)
+        from public.ops_engagements e
+       cross join lateral public.ops_month_span(e.period, e.start_day) s
+       where e.client_id = p_client and e.status <> 'cancelled'), '[]'::jsonb));
+end $$;
+
+create or replace function public.sm_reports_month_gate()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+begin
+  if new.brand_id is not null or new.period_start < date '2026-10-01' or me.id is null then return new; end if;
+  if coalesce(me.is_admin, false) or me.role = 'admin' or public.allowed('reports', 'manage') then return new; end if;
+  if exists (select 1 from public.ops_engagements e
+              cross join lateral public.ops_month_span(e.period, e.start_day) s
+              where e.client_id = new.client_id and e.status <> 'cancelled'
+                and new.period_end between s.starts and s.ends
+                and new.kind = any (coalesce(e.reports, '{}'::text[]))) then
+    return new;
+  end if;
+  raise exception 'month-gate' using errcode = 'P0001';
+end $$;
+revoke all on function public.sm_reports_month_gate() from public, anon, authenticated;
+
+create or replace trigger sm_reports_month_gate
+  before insert on public.sm_reports
+  for each row execute function public.sm_reports_month_gate();
+
+create or replace function public.sm_reports_task_reset()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  t public.ops_tasks;
+begin
+  if old.brand_id is not null or old.status <> 'draft' then return null; end if;
+  select x.* into t from public.ops_tasks x
+    join public.ops_engagements e on e.id = x.engagement_id
+   cross join lateral public.ops_month_span(e.period, e.start_day) s
+   where e.client_id = old.client_id and e.status <> 'cancelled'
+     and old.period_end between s.starts and s.ends
+     and x.source_type = 'report_' || old.kind
+     and x.cancelled_at is null and x.archived_at is null
+   order by e.period desc, x.created_at desc limit 1
+   for update of x;
+  if t.id is null or t.completed_at is not null or t.stage_key = 'todo' then return null; end if;
+  update public.ops_tasks set stage_key = 'todo', version = version + 1, updated_at = now(),
+         blocked_at = null, blocked_category = null
+   where id = t.id;
+  perform public.ops_log(t.id, 'stage_changed',
+    jsonb_build_object('stage_key', t.stage_key), jsonb_build_object('stage_key', 'todo'),
+    jsonb_build_object('note', 'Report deleted', 'report_id', old.id));
+  return null;
+exception when others then
+  return null;
+end $$;
+revoke all on function public.sm_reports_task_reset() from public, anon, authenticated;
+
+create or replace trigger sm_reports_task_reset
+  after delete on public.sm_reports
+  for each row execute function public.sm_reports_task_reset();
+
+-- END OF A REPORT BEGINS IN ITS MONTH ----------------------------------------
+
+-- ===========================================================================
+-- TEAM NOTICES — a notice to every colleague, or to the colleagues chosen,
+-- in the notification bell and as a push.
+-- 2026-10-09. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user, 2026-10-09: "add the send notice, whereby i can send custom
+--   in-app notifications to all members, or to specific team member(s)".
+--   1. `team_notices` (RLS on, no policy, no grant): the notice, whom it went
+--      to, who sent it, and when it was withdrawn.
+--   2. `ops_notifications.notice_id`, `from_name` and `hidden_at`: each
+--      colleague's copy names its notice and who sent it, and a notice
+--      withdrawn is hidden from every bell.
+--   3. Team: Notices (`team.notice`, a granted part: an admin's by itself,
+--      any other group's once set):
+--      `team_notice_send(p_title, p_body, p_to)` sends to all active
+--      colleagues (`p_to` null) or to those named, never a system account and
+--      never the sender (`bad-title`, `bad-body`, `no-one`);
+--      `team_notices_list()` answers the latest 50, each with whom it went to
+--      and how many have read it;
+--      `team_notice_withdraw(p_id, p_restore)` hides it from every bell (a
+--      push already delivered stays on the device), and with `p_restore`
+--      puts it back.
+--      Each is filed `team.changed` under subject Notices.
+--
+-- ROLLBACK
+--   Nothing reads the table but these functions; leaving them unused sends
+--   nothing. The three columns may stay: the bell reads `hidden_at` only to
+--   leave a withdrawn notice out, and `from_name` only to say who sent it.
+-- ===========================================================================
+
+create table if not exists public.team_notices (
+  id            uuid primary key default gen_random_uuid(),
+  title         text not null,
+  body          text,
+  to_all        boolean not null default false,
+  recipients    uuid[] not null default '{}',
+  sent_by       uuid,
+  sent_by_name  text,
+  created_at    timestamptz not null default now(),
+  withdrawn_at  timestamptz,
+  withdrawn_by  text
+);
+alter table public.team_notices enable row level security;
+revoke all on public.team_notices from public, anon, authenticated;
+
+alter table public.ops_notifications add column if not exists notice_id uuid;
+alter table public.ops_notifications add column if not exists from_name text;
+alter table public.ops_notifications add column if not exists hidden_at timestamptz;
+create index if not exists ops_notif_notice_idx on public.ops_notifications(notice_id) where notice_id is not null;
+
+create or replace function public.team_notice_send(p_title text, p_body text, p_to uuid[])
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_title text := btrim(coalesce(p_title, ''));
+  v_body  text := nullif(btrim(coalesce(p_body, '')), '');
+  v_to    uuid[];
+  v_id    uuid;
+  n       int;
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if v_title = '' or length(v_title) > 120 then return jsonb_build_object('error', 'bad-title'); end if;
+  if v_body is not null and length(v_body) > 1000 then return jsonb_build_object('error', 'bad-body'); end if;
+  select coalesce(array_agg(m.id order by m.name), '{}') into v_to
+    from public.team_members m
+   where m.active and not coalesce(m.system, false) and m.id <> me.id
+     and (p_to is null or m.id = any(p_to));
+  n := coalesce(array_length(v_to, 1), 0);
+  if n = 0 then return jsonb_build_object('error', 'no-one'); end if;
+  insert into public.team_notices (title, body, to_all, recipients, sent_by, sent_by_name)
+  values (v_title, v_body, p_to is null, v_to, me.id, me.name)
+  returning id into v_id;
+  insert into public.ops_notifications (team_member_id, kind, title, body, notice_id, from_name)
+  select x, 'notice', v_title, v_body, v_id, me.name from unnest(v_to) as x;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Notices',
+    'Sent to ' || case when p_to is null then 'all colleagues (' || n || ')'
+                       when n = 1 then '1 colleague' else n || ' colleagues' end || ': ' || v_title);
+  return jsonb_build_object('ok', true, 'id', v_id, 'count', n);
+end $$;
+revoke all on function public.team_notice_send(text, text, uuid[]) from public, anon;
+grant execute on function public.team_notice_send(text, text, uuid[]) to authenticated;
+
+create or replace function public.team_notices_list()
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object('items', coalesce((
+    select jsonb_agg(row_to_json(x) order by x.created_at desc)
+      from (select tn.id, tn.title, tn.body, tn.to_all, tn.sent_by_name, tn.created_at, tn.withdrawn_at,
+                   coalesce(array_length(tn.recipients, 1), 0) as sent,
+                   (select count(*) from public.ops_notifications o
+                     where o.notice_id = tn.id and o.read_at is not null) as read,
+                   (select coalesce(jsonb_agg(m.name order by m.name), '[]'::jsonb) from public.team_members m
+                     where m.id = any(tn.recipients)) as names
+              from public.team_notices tn
+             order by tn.created_at desc
+             limit 50) x), '[]'::jsonb));
+end $$;
+revoke all on function public.team_notices_list() from public, anon;
+grant execute on function public.team_notices_list() to authenticated;
+
+create or replace function public.team_notice_withdraw(p_id uuid, p_restore boolean default false)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v public.team_notices;
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.team_notices tn where tn.id = p_id for update;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if coalesce(p_restore, false) then
+    if v.withdrawn_at is null then return jsonb_build_object('ok', true); end if;
+    update public.team_notices tn set withdrawn_at = null, withdrawn_by = null where tn.id = p_id;
+    update public.ops_notifications o set hidden_at = null where o.notice_id = p_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'team.changed', 'Notices', 'Restored: ' || v.title);
+    return jsonb_build_object('ok', true);
+  end if;
+  if v.withdrawn_at is not null then return jsonb_build_object('ok', true); end if;
+  update public.team_notices tn set withdrawn_at = now(), withdrawn_by = me.name where tn.id = p_id;
+  update public.ops_notifications o set hidden_at = now() where o.notice_id = p_id and o.hidden_at is null;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Notices', 'Withdrawn: ' || v.title);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.team_notice_withdraw(uuid, boolean) from public, anon;
+grant execute on function public.team_notice_withdraw(uuid, boolean) to authenticated;
+
+-- END OF TEAM NOTICES -------------------------------------------------------
+
+-- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above
 -- names its search path, and anon runs only the public pages' functions
 -- (FUNCTION HYGIENE, near the top, says how).

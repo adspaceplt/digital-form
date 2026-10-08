@@ -380,7 +380,10 @@
       $('acctUpgrade').hidden = !admin;
       var ann = may('team.announce', 'work');
       if ($('acctAnnounce')) $('acctAnnounce').hidden = !ann;
-      $('acctUpgradeSep').hidden = !(admin || ann);
+      /* Notices (2026-10-09): Team: Notices, an admin's by itself. */
+      var ntc = may('team.notice', 'work');
+      if ($('acctNotice')) $('acctNotice').hidden = !ntc;
+      $('acctUpgradeSep').hidden = !(admin || ann || ntc);
       $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
       $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
     }
@@ -390,7 +393,7 @@
       $('upgradeOff').hidden = false;
       bar.hidden = !(admin && upgrade.set);
       var w = !M ? '' : upgrade.on
-        ? 'Upgrade mode is on. The portal is covered for the team' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '.'
+        ? 'Upgrade mode is on' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the upgrade screen.'
         : 'Upgrade mode starts ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' and ends ' + M.when(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
@@ -472,6 +475,11 @@
     e.stopPropagation();
     shutAcct();
     if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage($('acctBtn') || this);
+  });
+  if ($('acctNotice')) $('acctNotice').addEventListener('click', function (e) {
+    e.stopPropagation();
+    shutAcct();
+    if (window.ADspaceNotice) window.ADspaceNotice.manage($('acctBtn') || this);
   });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
@@ -721,7 +729,7 @@
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce'],
+    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice'],
     /* White label (2026-10-07): granted like the ones above, so an admin
        holds it and any other group only once it is set. So is every act an
        admin alone could take before (2026-10-07, ADMIN PARTS): task
@@ -733,7 +741,7 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1142,8 +1150,18 @@
   function navItems() {
     return Array.prototype.slice.call(document.querySelectorAll('.navitem[data-section]'));
   }
+  /* A section reached from the rail, or from a link inside the console, is a
+     visit: it opens at its top (the user, 2026-10-09: Clients opened halfway
+     down after Reports was scrolled), and the list's own restore leaves it
+     there. Back from a record still returns to the list's place. */
+  var visitAt = 0;
+  function visitSection(name) {
+    visitAt = Date.now();
+    window.scrollTo(0, 0);
+    showSection(name);
+  }
   navItems().forEach(function (b) {
-    b.addEventListener('click', function () { showSection(b.getAttribute('data-section')); });
+    b.addEventListener('click', function () { visitSection(b.getAttribute('data-section')); });
   });
 
   /* A tab that has been in the background long enough is thrown away by the
@@ -1275,7 +1293,8 @@
   ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach(function (ev) {
     window.addEventListener(ev, function () { personScrolled = true; bootScroll = false; }, { passive: true, capture: true });
   });
-  window.addEventListener('popstate', function () { bootScroll = false; });
+  /* Back and Forward return to the place, even straight after a visit. */
+  window.addEventListener('popstate', function () { bootScroll = false; visitAt = 0; });
   window.addEventListener('scroll', function () {
     if (section === 'review' || !personScrolled) return;
     clearTimeout(scrollSaveTimer);
@@ -1284,7 +1303,7 @@
     }, 200);
   });
   function restoreScroll(record) {
-    if (bootScroll && record !== true) return;
+    if (record !== true && (bootScroll || Date.now() - visitAt < 4000)) return;
     var y = 0;
     try { y = Number(sessionStorage.getItem(SCROLL + location.search) || 0); } catch (e) {}
     if (!y) return;
@@ -4339,7 +4358,7 @@
     me: function () { return me; },
     /* Open a section from outside the rail: the bell opens the task a row
        names, after writing the address the section reads on entry. */
-    show: function (name) { showSection(name); },
+    show: function (name) { visitSection(name); },
     /* ===== Console search (js/search.js) =====
        Land where the address says, the way a reload does: a content set is
        reached through its client, which only this file opens. */

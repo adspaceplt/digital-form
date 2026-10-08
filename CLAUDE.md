@@ -141,6 +141,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
 | `announce.js` | announce, smsql, then `ui` |
+| `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -395,6 +396,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   under subject Announcements. A plain line, never a scrolling marquee. No
   bar is made while upgrade mode's cover is up (a box made after the cover
   would sit outside its `inert`).
+- Notices (`js/notice.js`, `2026-10-09-team-notices.sql`; the user,
+  2026-10-09: "send custom in-app notifications to all members, or to
+  specific team member(s)"): Team: Notices (`team.notice`) in the account
+  menu opens the list (`#ntcSheet`: every notice sent, newest first, To,
+  when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
+  push already on a phone stays) and Restore (never asks)) and New
+  (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
+  colleagues ticked code first, Title (one line, 120) and Message (1,000),
+  the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
+  one `ops_notifications` row (kind `notice`, `notice_id`, `from_name`) to
+  each active colleague but the sender and a system account (`bad-title`,
+  `bad-body`, `no-one`), so it reaches the bell and a push;
+  `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
+  (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
+  grant. Each is filed `team.changed` under subject Notices.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
@@ -829,7 +845,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
   2026-10-07), `register.types` (Document types, 2026-10-07) and
   `team.health` (Health check-ins, every colleague's answers by name,
-  2026-10-07); each offers Manage alone (on or off). A
+  2026-10-07) and `team.notice` (Notices, 2026-10-09); each offers Manage
+  alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
@@ -1985,7 +2002,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Scope change, Internal capacity, Pending assets, Pending confirmation,
   Incorrect date listed.
 - Task fields:
-  - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Special.
+  - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Other (key
+    `special`, 2026-10-09).
   - Format: the rate card's formats, optional.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip,
     Urgent in red.
@@ -2031,7 +2049,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock; the owner or an admin corrects it in place
-    (the name's one pen, in the record and the quick sheet alike, opens the
+    (the name's one pen on the card opens the
     code and the description as one field, each part changed going to its own
     function; `ops_set_code`, `2026-10-08-task-code-editable.sql`:
     its shape kept, `bad-code`; the client's own for the month,
@@ -2108,14 +2126,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     own progress (`btn-primary`) alike (2026-10-07).
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
-  - The sheet's and the record's ⋯ are Take or Offer to the team /
-    Withdraw offer (where they apply), Reassign, Make a copy,
-    Repeat on a schedule, Delete; Open full record is the sheet's last
-    line. The row's ⋯ holds only what the row cannot do (Take where the
-    row shows none, the offer, Delete) and is not drawn when empty. No
-    timer, Revert, Move to another stage, Mark blocked or Cancel.
-  - `factHere()`: a step's fact buttons act on the sheet's row while the sheet
-    is open.
+  - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
+    apply), Make a copy, Repeat on a schedule, Delete; who has the task is
+    changed on its Assigned to row (Reassign), a task nobody holds from the
+    next step's Assign, never from the ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
+    shows none, the offer, Delete) and is not drawn when empty. No timer,
+    Revert, Move to another stage, Mark blocked or Cancel.
 - The SOP workflow, numbered in this order: Ready to start, In progress, AQC
   review, Revision (Internal), Client review, Revision (Client), Approved,
   Scheduled, Live (`ops_mark_live`; a reason where the date differs),
@@ -2130,14 +2146,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   Total row); the sheet shows it open, with Recorded only where there is any.
 - A draft link is optional. Without one the step reads Sent on WhatsApp, and
   the database accepts the link or a note.
-- The quick sheet (`#taskDrawer`, `.sheet-side`, `open=`):
-  - Under the name one line: the client, the format and the month, the month
-    itself opening its Months view (never `content` or `Graphic:`).
-  - Next step, facts, Brief, Checklist and Comments stay open.
-  - Files and links, Time records and Recent activity fold under More
-    (`#dwMore`, shut each open).
-  - The full record is one press further.
-- The record's Details are changed where they are read (2026-10-08): Format,
+- A task is one card beside the list (`#taskDrawer`, `.sheet-side`,
+  `open=`; the user, 2026-10-09: the full record was little used): an
+  older `task=` address, a new task and a copy open it there; there is no
+  full record.
+  - The name with Copy title; under it one line: the client, the format and
+    the month, the month itself opening its Months view (never `content` or
+    `Graphic:`).
+  - Next step, then the report row on a month's report task, then Assigned
+    to, Dates and Details, Checklist and Remarks stay open (Remarks: the
+    comments, Add remark, Post); Brief, Files and links, Time records and
+    Recent activity fold under More (`#dwMore`, shut each open).
+  - A month's report task (`source_type` `report_social` / `report_ads`)
+    carries its report (`paintReportRow`): once made, where it stands and
+    Open report; before, Start report, made on the month's own span (a
+    month starting on the 16th runs to the 15th) as New report does.
+  - A link's Kind select sits left of its Address.
+- The card's Details are changed where they are read (2026-10-08): Format,
   Type, Priority and Complexity as small selects drawn as the value
   (`.select.tdetail`: no box, the tonal ground on hover and focus, as
   `ADspaceAsk`'s field) (`ops_update_task`,
@@ -2197,7 +2222,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     HR letter, Reports for a report, My Work otherwise. The bell lists
     unread first, then Earlier (`.notif-earlier`): read notices of the
     last seven days, ten at most (`.notif-item.is-read`); marking read
-    keeps a notice there, never removes it.
+    keeps a notice there, never removes it. A colleague's notice (kind
+    `notice`) leads with Team's glyph, says From {sender}, wraps its title,
+    shows three lines of its message and opens nowhere: a press reads it
+    whole in place and marks it read, the list left as it is (a row redrawn
+    under the press read as a press outside the bell and shut it); one
+    withdrawn is left out (`hidden_at`, asked for until a database without
+    the column refuses it once).
   - A noon reminder (`2026-10-08-tasks-reminder.sql`,
     `ops_tasks_remind()`, pg_cron `tasks-reminder` at 12:00 MYT, Monday to
     Friday): every active colleague but an admin with no open task
@@ -2594,15 +2625,26 @@ Each line is a rule that broke once. Its reason is in the archive.
     the owner's own press: a finished or cancelled task never moves, nothing
     moves one to Done, and a white-label brand's report leaves it alone.
     Each move is filed on the task with `report_id`; a fault never fails
-    the report's write.
+    the report's write. A draft report deleted puts its unfinished task
+    back to To do, filed Report deleted (`sm_reports_task_reset`,
+    `2026-10-09-report-month-at-start.sql`).
+  - A report begins in its month (the same file; the user, 2026-10-09): a
+    report from October 2026 with no white-label brand is made only for a
+    month in My Work whose span holds its last day and whose Reports ticks
+    ask for its kind (trigger `sm_reports_month_gate`, `month-gate`), unless
+    an admin or Reports Full Access makes it. New report's Month is a select
+    of the client's months (`sm_report_months`) and the last twelve calendar
+    months, newest first, each named as the report will be (a month from the
+    16th by its own span), one that does not ask greyed with Not asked for or
+    Not in My Work; a brand's report, or a read that fails, offers them all
+    and the database decides.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
-  - Mark as sent (the head's ⋯ on a published report, Reports at Work;
-    `sm_report_sent`, `sm_reports.sent_on` / `sent_by`): one date, today
-    by default, never after today nor before the period (`bad-date`);
-    then Change sent date and Mark as not sent; filed from and to. The head's
-    Sent fact is the control on every step: a Mark as sent button, then the
-    day with its pen, each opening the ⋯'s question; a published row reads
-    Sent {day} or Not sent. Once a
+  - Mark as sent (Reports at Work; `sm_report_sent`, `sm_reports.sent_on` /
+    `sent_by`): one date, today by default, never after today nor before
+    the period (`bad-date`); filed from and to. The head's Sent fact is the
+    one control: a Mark as sent button, then the day with its pen; the ⋯
+    holds only Mark as not sent (2026-10-09: it repeated the pen). A
+    published row reads Sent {day} or Not sent. Once a
     published report not yet sent has its PDF drawn (Preview PDF or
     Download), a line under the head asks Sent to the client? (`.rp-sentask`:
     Mark as sent, today, and a close mark; kept through a repaint until
@@ -2908,7 +2950,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     read (`ai_check_done`, `result`, `basis`) and read by anyone at Reports
     View (`ai_check_last`), so the reviewer sees the same check; a
     commentary changed since says so. Filed as `report.ai_drafted` (AI used)
-    with Figures check and the count.
+    with Figures check and the count. A finding is put right where it is
+    found (2026-10-09): on a draft at Work, Apply puts its words in place of
+    the quoted ones (Remove words where it gives none), Apply all does every
+    one still standing, each through the draft's own save with Undo where it
+    happened and filed `report.saved` (Figures check · n corrections
+    applied); a finding whose words are gone and whose fix stands reads
+    Applied.
+  - A draft and its check agree (2026-10-09): Write draft reads its own
+    answer with the check's rules before handing it over and puts right what
+    the check would flag, inside the same press (never one of the day's
+    checks; skipped past 70 seconds), and takes out a word that colours a
+    figure (only, just, 仅, 只有) wherever it still stands; a place among
+    ads or posts (the cheapest, the second most viewed) is said only from
+    the ranks the function works out (`cost_rank`, `rank_views`,
+    `rank_engagements`), never read off the figures; tokens are kept once a
+    press, every call added up.
   - What the AI is told sits apart from the report's own words: one shaded
     block (`.rp-aidraft`, `--sunk`) holds Draft language (the pill) at the
     left and Write draft at the right edge with what is left before it
@@ -3486,8 +3543,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The URL pushes history only for a record's pane; everything else replaces.
 - A record (client, campaign, report) opens at its top; Back returns to the
   list's own scroll, and a refresh restores the record's. A list opens at
-  its top on a visit or a refresh; only Back and Forward restore its
-  scroll, and nothing is saved until the person scrolls (`bootScroll`,
+  its top on a visit or a refresh; a section reached from the rail is a
+  visit, at its top however far its list was scrolled before
+  (`visitSection`; the user, 2026-10-09; `tests/visit.js`); only Back and
+  Forward restore its scroll, and nothing is saved until the person scrolls (`bootScroll`,
   `personScrolled` in `js/admin.js`: bars drawn above a list while it
   loaded once saved a lower place each visit).
 

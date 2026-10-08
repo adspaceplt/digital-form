@@ -98,6 +98,7 @@
     'denied': 'This needs a higher access level for Reports.',
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
+    'month-gate': 'Its month in My Work does not ask for this report.',
     'bad-period': 'The period must end on or after the day it starts.',
     'not-draft': 'Only a draft can be submitted.',
     'no-platforms': 'Add an account before submitting.',
@@ -375,7 +376,12 @@
   };
 
   /* Start a report: the type first, as a segment, then the client and the
-     month (or a custom period). */
+     month (or a custom period). The months are the client's months in My
+     Work, each on its own span (a month starting on the 16th runs to the
+     15th); one whose Reports ticks do not ask for this type is greyed, and
+     the database refuses it (`month-gate`) unless an admin or Reports Full
+     Access starts it (the user, 2026-10-09). A white-label brand's report
+     is not the month's, so every month is offered for it. */
   function newSheet(opener) {
     var box = sheetShell('rpNewSheet', 'New report',
       '<section class="fsec">' +
@@ -387,7 +393,7 @@
         /* A white-label client's report is for the client itself or one of
            its brands (2026-10-07): each its own report a month. */
         '<div class="row" id="rpNewForRow" hidden><div><label class="field-label" for="rpNewFor">For</label><select class="select" id="rpNewFor"></select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" aria-required="true" type="month"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div></details>' +
@@ -410,13 +416,66 @@
         if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpNewFor'));
       }).catch(function () {});
     };
-    $('rpNewClient').onchange = paintFor;
+    /* The months a report may be started for. A refused read (an older
+       database) offers the last twelve calendar months, and the database
+       still decides. */
+    var monSeq = 0, months = [];
+    var spanWord = function (m) {
+      var a = new Date(m.starts + 'T00:00:00'), b = new Date(m.ends + 'T00:00:00');
+      return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()];
+    };
+    var monthWord = function (p) { return MON[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(0, 4); };
+    /* The last twelve calendar months and every month the client has in My
+       Work, newest first; a month in My Work runs on its own span. */
+    var merged = function (mine) {
+      var by = {}, out = [], now = new Date();
+      (mine || []).forEach(function (m) { by[m.period] = m; });
+      for (var i = 0; i < 12; i++) {
+        var d = new Date(now.getFullYear(), now.getMonth() - i, 1), e = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        var key = ymd(d).slice(0, 7);
+        if (!by[key]) by[key] = { period: key, starts: ymd(d), ends: ymd(e), asks: false, cal: true };
+      }
+      Object.keys(by).sort().reverse().forEach(function (k) { out.push(by[k]); });
+      return out;
+    };
+    var paintMonths = function () {
+      var sel = $('rpNewMonth'), cid = $('rpNewClient').value, kind = $('rpNewKind').value || 'social', seq = ++monSeq;
+      var brand = !$('rpNewForRow').hidden && $('rpNewFor').value;
+      var draw = function (list, override, open) {
+        months = list;
+        var today = ymd(new Date()), pick = '', keep = sel.value;
+        var ok = function (m) { return open || brand || override || m.asks; };
+        sel.innerHTML = list.map(function (m) {
+          if (!pick && ok(m) && m.ends < today) pick = m.period;
+          var note = open || brand || m.asks ? '' : m.cal ? ' · Not in My Work' : ' · Not asked for';
+          /* Named as the report will be: September 2026, or the month's
+             own span where it starts mid-month (16 September to 15 October
+             2026). */
+          var name = SM() ? periodWord(m.starts, m.ends) : monthWord(m.period) + (m.starts.slice(8) !== '01' ? ' · ' + spanWord(m) : '');
+          return '<option value="' + esc(m.period) + '"' + (ok(m) ? '' : ' disabled') + '>' + esc(name + note) + '</option>';
+        }).join('');
+        if (keep && list.some(function (m) { return m.period === keep && ok(m); })) pick = keep;
+        if (!pick) pick = (list.filter(ok)[0] || {}).period || '';
+        sel.value = pick;
+        if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
+      };
+      /* Before a client is chosen, and where the months cannot be read (an
+         older database), every month is open and the database decides. */
+      if (!cid) { draw(merged([]), true, true); return; }
+      db.rpc('sm_report_months', { p_client: cid, p_kind: kind }).then(function (q) {
+        if (seq !== monSeq) return;
+        var d = q && q.data;
+        if (q.error || !d || d.error) { draw(merged([]), true, true); return; }
+        draw(merged(d.months), d.may_override, false);
+      }).catch(function () { if (seq === monSeq) draw(merged([]), true, true); });
+    };
+    $('rpNewClient').onchange = function () { paintFor(); paintMonths(); };
+    $('rpNewFor').onchange = paintMonths;
+    $('rpNewKind').onchange = paintMonths;
     paintFor();
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
     if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
-    var now = new Date();
-    var last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    $('rpNewMonth').value = last.getFullYear() + '-' + String(last.getMonth() + 1).padStart(2, '0');
+    paintMonths();
     $('rpNewStart').value = ''; $('rpNewEnd').value = '';
     $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
     /* A month or a custom period, never both: opening Custom period sets the
@@ -452,9 +511,9 @@
         if (!b) { say(sm, 'Choose an end date.', 'err'); $('rpNewEnd').focus(); return; }
         if (b < a) { say(sm, 'The end date is before the start date.', 'err'); $('rpNewEnd').focus(); return; }
       } else {
-        if (!/^\d{4}-\d{2}$/.test(m)) { say(sm, 'Choose a month.', 'err'); return; }
-        var y = Number(m.slice(0, 4)), mo = Number(m.slice(5, 7));
-        a = ymd(new Date(y, mo - 1, 1)); b = ymd(new Date(y, mo, 0));
+        var mon = months.filter(function (x) { return x.period === m; })[0];
+        if (!mon) { say(sm, 'Choose a month.', 'err'); $('rpNewMonth').focus(); return; }
+        a = mon.starts; b = mon.ends;
       }
       go.disabled = true;
       var brand = $('rpNewForRow').hidden ? '' : $('rpNewFor').value;
@@ -859,7 +918,20 @@
   function paintAiCheck(host, r, last, can, said0) {
     if (!last && !can) { host.hidden = true; return; }
     var found = last && last.result && last.result.findings || [];
-    var stale = last && !sameText(last.basis, commentaryNow(r));
+    var now = commentaryNow(r);
+    var stale = last && !sameText(last.basis, now);
+    /* A finding is put right where it is found (the user, 2026-10-09: "it
+       flags issues but doesn't help to rectify it"): Apply puts its words in
+       place of the quoted ones in a draft, Apply all does every one still
+       standing, each saved with Undo. A finding whose words are gone and
+       whose fix stands reads Applied. */
+    var fixable = r.status === 'draft' && may('work');
+    var standing = function (f) {
+      var t = now[f.ref] || '';
+      if (f.quote && t.indexOf(f.quote) > -1) return fixable && (f.fix || f.quote) ? 'open' : 'stands';
+      return f.fix && t.indexOf(f.fix) > -1 ? 'applied' : 'gone';
+    };
+    var openOnes = found.filter(function (f) { return standing(f) === 'open'; });
     var mark = !last ? '' : stale ? ' is-missing' : found.length ? ' is-missing' : ' is-done';
     var meta = !last ? 'Not checked' :
       'Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '') + ' · ' +
@@ -869,18 +941,27 @@
         '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
         '<span class="rp-check-t"><b>Figures check</b><small>' + esc(meta) + '</small></span>' +
         (can ? '<span class="rp-aicheck-acts"><span class="rp-aileft" data-m="cleft" hidden></span>' +
+          (openOnes.length > 1 ? '<button class="btn btn-sm" type="button" data-a="applyall">Apply all</button>' : '') +
           '<button class="btn btn-sm" type="button" data-a="aicheck">' + (checkRun[r.id] ? 'Checking' : last ? 'Check again' : 'Check') + '</button></span>' : '') +
       '</div>' +
       (stale ? '<p class="rp-f-note">The commentary has changed since this check.</p>' : '') +
-      found.map(function (f) {
-        return '<div class="rp-finding"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
+      found.map(function (f, i) {
+        var sx = standing(f);
+        return '<div class="rp-finding' + (sx === 'applied' ? ' is-applied' : '') + '"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
           (f.quote ? '<span class="rp-f-quote">\u201c' + esc(f.quote) + '\u201d</span>' : '') +
           '<span class="rp-f-issue">' + esc(f.issue || '') + '</span>' +
-          (f.fix ? '<span class="rp-f-fix"><span class="rp-f-label">Use</span>' + esc(f.fix) + '</span>' : '') + '</div>';
+          (f.fix ? '<span class="rp-f-fix"><span class="rp-f-label">Use</span>' + esc(f.fix) + '</span>' : '') +
+          (sx === 'open' ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="apply" data-i="' + i + '">' + (f.fix ? 'Apply' : 'Remove words') + '</button></span>'
+            : sx === 'applied' ? '<span class="rp-f-acts"><span class="chip-state is-ok">Applied</span></span>' : '') + '</div>';
       }).join('') +
       '<div class="msg" data-m="cmsg"></div>';
     var m = host.querySelector('[data-m="cmsg"]');
     if (said0) say(m, said0, 'err');
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="apply"]'), function (x) {
+      x.addEventListener('click', function () { applyFindings(host, r, [found[Number(x.getAttribute('data-i'))]], x); });
+    });
+    var all = host.querySelector('[data-a="applyall"]');
+    if (all) all.addEventListener('click', function () { applyFindings(host, r, openOnes, all); });
     var b = host.querySelector('[data-a="aicheck"]');
     if (!b) return;
     if (checkRun[r.id]) b.disabled = true;
@@ -901,6 +982,68 @@
         : 'You have one figures check on this report a day. This uses today\'s, and one of your AI uses' +
           (room ? ' (' + room.person + ' left).' : '.');
       window.ADspaceConfirm.ask({ title: 'Check against the figures?', body: body, go: 'Check' }, function () { runCheck(host, r); });
+    });
+  }
+  /* The findings' words put in place, field by field, through the draft's
+     own save (`storeDraft`), so Undo puts back exactly what was there. */
+  function applyFindings(host, r, list, btn) {
+    var now = commentaryNow(r), next = {}, n = 0;
+    list.forEach(function (f) {
+      var cur = next[f.ref] != null ? next[f.ref] : now[f.ref];
+      if (cur == null || !f.quote || cur.indexOf(f.quote) < 0) return;
+      var t = cur.replace(f.quote, f.fix || '');
+      if (!f.fix) t = t.replace(/[ \t]{2,}/g, ' ').replace(/ ([,.;:\uff0c\u3002\uff1b\uff1a])/g, '$1');
+      next[f.ref] = t; n++;
+    });
+    var m = host.querySelector('[data-m="cmsg"]');
+    if (!n) { say(m, 'The words have changed since this check. Check again.', 'warn'); return; }
+    var dr = { platforms: [], posts: [] }, plats = {};
+    Object.keys(next).forEach(function (ref) {
+      var x;
+      if ((x = /^p:(.+):(summary|worked|improve|actions)$/.exec(ref))) { (plats[x[1]] = plats[x[1]] || { ref: x[1] })[x[2]] = next[ref]; }
+      else if ((x = /^n:(.+)$/.exec(ref))) dr.posts.push({ ref: x[1], remark: next[ref] });
+      else dr[ref] = next[ref];
+    });
+    dr.platforms = Object.keys(plats).map(function (k) { return plats[k]; });
+    if (btn) btn.disabled = true;
+    say(m, 'Saving…');
+    var rid = r.id;
+    var local = function (vals) {
+      if (!st.open || st.open.id !== rid) return;
+      if (typeof vals.intro !== 'undefined') st.open.intro = vals.intro;
+      if (vals.insights) st.open.insights = vals.insights;
+      Object.keys(vals.platforms || {}).forEach(function (id) {
+        (st.platforms || []).forEach(function (p) { if (p.id === id) Object.assign(p, vals.platforms[id]); });
+      });
+      Object.keys(vals.posts || {}).forEach(function (id) {
+        (st.posts || []).forEach(function (p) { if (p.id === id) p.notable = vals.posts[id]; });
+      });
+    };
+    storeDraft(rid, dr).then(function (before) {
+      var ins = Object.assign({}, before.insights || {}), after = { insights: ins, platforms: {}, posts: {} };
+      Object.keys(dr).forEach(function (k) {
+        if (typeof dr[k] !== 'string') return;
+        if (k === 'intro') after.intro = dr[k]; else ins[k] = dr[k];
+      });
+      dr.platforms.forEach(function (pl) { var c = Object.assign({}, pl); delete c.ref; after.platforms[pl.ref] = c; });
+      dr.posts.forEach(function (pp) { after.posts[pp.ref] = pp.remark; });
+      local(after);
+      fileReport('report.saved', 'Figures check · ' + (n === 1 ? 'one correction applied' : n + ' corrections applied'), r, st.client);
+      paintEditor();
+      var card = st.host && st.host.querySelector('[data-m="aicheck"]');
+      undoBar(n === 1 ? 'Correction applied.' : n + ' corrections applied.', card, function () {
+        restoreDraft(rid, before).then(function () {
+          local(before);
+          fileReport('report.saved', 'Figures check · ' + (n === 1 ? 'correction undone' : n + ' corrections undone'), r, st.client);
+          paintEditor();
+        }).catch(function (e) {
+          var c2 = st.host && st.host.querySelector('[data-m="cmsg"]');
+          if (c2) say(c2, said(e), 'err');
+        });
+      });
+    }).catch(function (e) {
+      if (btn) btn.disabled = false;
+      say(m, said(e), 'err');
     });
   }
   function runCheck(host, r) {
@@ -1060,10 +1203,11 @@
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
     if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
-    /* Mark as sent (2026-10-07): a published report's day it went out. */
-    if (r.status === 'published' && may('work')) {
-      items.push('<button class="kmenu-item" type="button" data-a="sent">' + (r.sent_on ? 'Change sent date' : 'Mark as sent') + '</button>');
-      if (r.sent_on) items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
+    /* The sent day is set from the head's Sent fact (Mark as sent, else the
+       day and its pen); the ⋯ holds only its way back (the user, 2026-10-09:
+       the menu repeated the pen). */
+    if (r.status === 'published' && may('work') && r.sent_on) {
+      items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
     }
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');

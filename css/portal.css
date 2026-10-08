@@ -7662,6 +7662,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* What was read stays a week under Earlier, quieter than what is new. */
 .notif-earlier { margin: 6px 10px 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .notif-item.is-read b { font-weight: 500; color: var(--ink-soft); }
+/* A notice a colleague sent (js/notice.js): its title wraps, its message
+   shows three lines and opens whole on a press, as typed. */
+.notif-item.is-notice b { white-space: normal; overflow-wrap: anywhere; }
+.notif-item.is-notice .notif-msg { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  white-space: pre-line; overflow-wrap: anywhere; }
+.notif-item.is-notice.is-open .notif-msg { display: block; -webkit-line-clamp: unset; overflow: visible; }
 
 /* =========================================================================
    THE COMMAND BAR ON A PHONE: ONE ROW, THE FILTERS BEHIND ONE BUTTON.
@@ -7988,8 +7994,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    length, as the sheet's card actions do: a centred word in a 92px box
    stopped short of the longer labels beside it. */
 .tsec-head .btn-quiet { min-width: 0; margin-right: -8px; }
-#taskOv:empty { display: none; }
-#taskOv .tsec:last-child { margin-bottom: 24px; }
 .tlinkform { padding: 12px 0; margin: 0 0 12px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
 .tlinkform[hidden] { display: none; }
 .tlinkform .row:first-child { margin-top: 0; }
@@ -8054,8 +8058,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tdate.is-over, .tdate-read.is-over { color: var(--err); font-weight: 600; }
 .tdate-src { color: var(--ink-soft); }
 .tdate-pick { width: 100%; max-width: 190px; }
-#taskDatesBlock .msg:empty, #taskPeopleBlock .msg:empty { display: none; }
-#taskDatesBlock .msg, #taskPeopleBlock .msg { margin-top: 8px; }
 /* Everything else a reader might look up, behind one fold. */
 .tmore { margin-top: 10px; }
 .tmore[hidden] { display: none; }
@@ -8203,7 +8205,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qmore-sum { margin-left: auto; order: 2; font-size: 12.5px; font-weight: 400; color: var(--ink-mute);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qmore[open] .qmore-sum { visibility: hidden; }
-.qmore-body { display: grid; gap: 16px; margin-top: 8px; }
+/* One column that never grows past the card: a link's long label (one
+   line ending in an ellipsis) held the fold wider than a phone. */
+.qmore-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 8px; }
 .qcard[hidden] { display: none; }
 .qcard-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 /* A card's heading and its one quiet action share a line; the action's 32px
@@ -8225,7 +8229,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The field after a row stands as far from it as the row's own fields
    stand apart (12), not the 6 between a label and its box. */
 .qform > .row + .field-label { margin-top: 6px; }
-.qform-kind { flex: 0 0 132px; }
+.qform .row > .qform-kind { flex: 0 0 132px; }
+/* The box holds its select: a select's own 180px floor ran Kind under
+   the Address beside it. */
+.qform .qform-kind > .select { min-width: 0; }
+.qform .row > .qform-kind + .field { flex: 1 1 0; min-width: 0; }
 .qform-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .qform-acts .btn { flex: 0 0 auto; }
 .qempty { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
@@ -8300,7 +8308,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (hover: hover) { .qstar:hover { background: var(--line-soft); } }
 .qstar:active { transform: scale(.94); }
 .qrate-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
-.qfull { align-self: flex-start; margin-block: 0; margin-left: -8px; font-size: 13px; }
+/* The task's key details, shown, never folded (the user, 2026-10-09): who
+   has it, then its dates and its details, each group under a small heading
+   on the sheet's 13/600 and a hairline, as a form's sections are. */
+.qkey-h { margin: 16px 0 8px; padding-top: 16px; border-top: 1px solid var(--line-soft);
+  font-size: 13px; font-weight: 600; letter-spacing: -.005em; color: var(--ink); }
+.qkey > .tfacts:empty + .msg:empty + .qkey-h { margin-top: 0; padding-top: 0; border-top: 0; }
+.qkey .msg:empty { display: none; }
+.qkey .msg { margin-top: 8px; }
+.qkey .dueask { margin-top: 10px; }
+/* A report task's report: where it stands and the way to it. */
+.qreport-line { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+.qreport .msg:empty { display: none; }
+.qreport .msg { margin-top: 8px; }
+.qreport .qcard-act .btn { min-width: 0; }
 .stephand { margin-top: 12px; }
 .stephand[hidden] { display: none; }
 .stephand .tickline { margin: 0; }
@@ -8327,7 +8348,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
      the label a field's height above its box and let the row wrap sideways,
      Kind past the card's edge (the user's iPhone, 2026-09-27). */
   .qform .row { flex-direction: column; flex-wrap: nowrap; }
-  .qform .row > div, .qform-kind { flex: 0 0 auto; width: 100%; }
+  .qform .row > div, .qform .row > .qform-kind, .qform .row > .qform-kind + .field { flex: 0 0 auto; width: 100%; }
   .qhand .select { max-width: none; }
 }
 
@@ -8844,6 +8865,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-f-issue { font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
 .rp-f-fix { font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
 .rp-f-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin-right: 6px; }
+/* Each finding is put right where it is read: its Apply under the words to
+   use, at its own width; one already applied is faded with its word. */
+.rp-f-acts { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.rp-f-acts .btn { flex: 0 0 auto; min-width: 0; }
+.rp-finding.is-applied > :not(.rp-f-acts) { opacity: .55; }
 .rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--ink-soft); }
 .rp-aicheck > .msg { padding: 0 16px 12px 52px; }
 .rp-aicheck > .msg:empty { display: none; }
@@ -9526,8 +9552,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The card names what it explains: the information mark in the action
    colour and the section's name, then its one sentence. */
 .aboutpop-head { margin-bottom: 6px; }
+/* The name at the body's weight beside its mark (the user, 2026-10-09: the
+   bold heading read heavy in a small card). */
 .aboutpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
-  font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+  font-size: 15px; font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
 .aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action-ink); stroke-width: 2; }
 /* The ⓘ card offers the section's guide again (js/guide.js). */
 .aboutpop-guide { align-self: flex-start; margin-top: 10px; }
@@ -10266,6 +10294,10 @@ body.is-maint { overflow: hidden; }
 .ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
 .ann-acts .btn { flex: 0 0 auto; }
 .ann-none { margin: 0; color: var(--ink-mute); }
+/* Notices (js/notice.js) reuse the list above: the title, the message in
+   three lines, whom it went to; how many have read it where the state sits. */
+.ntc-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+.ntc-read { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---- Pair covers (js/admin.js, 2026-10-03) ---------------------------------
    One card a cover: the cover and the video proposed for it side by side at

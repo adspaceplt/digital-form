@@ -78,7 +78,8 @@ const FIELDS: Record<string, [string, string][]> = {
 const AVOID = `Never said of our creative, design, copy, caption, content plan or targeting: bad, poor, weak, boring, unclear, confusing, failed, flopped, useless or a mistake; never "wasted" of spend. In Chinese: 素材差, 创意差, 文案不吸引, 没有吸引力, 失败, 浪费, 白花. Judge the result instead, with its figure.
 Never as praise: excellent, outstanding, exceptional, remarkable, impressive, amazing, incredible, perfect, flawless, seamless, phenomenal, a huge success, all goals achieved, every ad performed well, no issues, as always, consistently strong. In Chinese: 完美, 卓越, 出色, 优异, 非常成功, 圆满成功, 全面提升, 毫无问题, 零失误, 一如既往, 持续优秀. Give the figure instead.
 Never as comfort in place of a figure: room to grow, valuable insights, valuable learnings, a learning opportunity, a clear signal, laid a strong foundation, positive momentum, despite the challenges. In Chinese: 仍有提升空间, 宝贵经验, 学习机会, 打下坚实基础, 积极势头, 尽管面临挑战. Say what fell short, by how much, and what we will change.
-No word that colours a figure up or down: only, just, a mere, a whopping, unfortunately, sadly, thankfully, encouragingly. In Chinese: 仅仅, 只有, 遗憾, 可惜, 幸好.`;
+No word that colours a figure up or down, before or around it: only, just, merely, a mere, as few as, barely, a whopping, as many as, unfortunately, sadly, thankfully, encouragingly. In Chinese: 仅, 仅仅, 仅有, 只, 只有, 才, 高达, 足足, 竟, 竟然, 遗憾, 可惜, 幸好. Give the figure plainly ("278 views and 10 engagements", "获得278次观看与10次互动").
+A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank), never worked out by reading the figures.`;
 
 /* What every draft keeps to (the user, 2026-10-01): only what a client
    needs, short, and never a word against the work we made for them; nor,
@@ -121,7 +122,7 @@ TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
 
 READING THE FIGURES
-Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
+Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the cheapest; out of ads_in_group), worked out for you: say an ad is the cheapest, the second or the dearest only from it. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
 Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
@@ -156,7 +157,7 @@ TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience or a benchmark. A reason is stated only when the team's notes give it; otherwise describe what the figures show ("suggests", "indicates"). Compare with the previous period only where its figures are given. Recommendations may draw on how each platform works (TikTok rewards watch time and a strong first two seconds; Instagram Reels reach beyond followers while carousels earn saves; rednote rewards saves, searchable titles and an authentic first-person voice; Facebook rewards shares and community conversation), but never present that as a measured result.
 
 READ EACH PLATFORM ON ITS OWN
-Platforms are never ranked against each other and their figures are never added into one judgement: each has its own audience and algorithm. Compare a post only with posts on the same platform.
+Platforms are never ranked against each other and their figures are never added into one judgement: each has its own audience and algorithm. Compare a post only with posts on the same platform. Each post carries its place on its platform, worked out for you: rank_views and rank_engagements (1 is the highest; equal figures share a place) out of posts_on_platform. Say a post's place only from these.
 
 FIELDS
 intro: one paragraph of two or three sentences across the whole report: what the month achieved on each platform in one clause each, the standout result, and the direction for next month.
@@ -177,7 +178,7 @@ const CHECK = `You check the commentary of a monthly social media report that AD
 
 LIST ONLY WHAT IS WRONG
 1. A figure that is not in the data or does not match it: a count, an amount, a percentage, a change against the previous period, a currency, a date or period, an ad or post name.
-2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform.
+2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform, a place (first, second, third, the cheapest) that is not the rank the data gives (rank_views, rank_engagements, cost_rank).
 3. A comparison the figures do not allow: cost per result compared between different result types; platforms ranked against each other or their figures added into one judgement; a post compared with a post on another platform.
 4. A word against our own work: the creatives, copy, captions, content plan, schedule and targeting are ours, so calling any of them bad, poor, weak, unclear, ineffective, a mistake or a problem, or blaming them for a result, is a finding.
 5. A word or phrase from these lists, in English or Chinese; the fix gives the plain words and the figure instead:
@@ -191,14 +192,19 @@ ref: the part it is in. quote: the exact words that are wrong, copied from the p
 The client is named {brand} in the commentary: keep {brand} exactly as it is in a quote and a fix.
 At most 10 findings, the most serious first. No dashes as punctuation, no emoji.`;
 
-/* What a call cost, kept on its own row (`ai_draft_tokens`, 2026-10-08):
-   every token read, cached or not, and every token written, so the AI
-   usage page can price the month. Never fails the answer. */
+/* What a press cost, kept on its own row (`ai_draft_tokens`, 2026-10-08):
+   every token read, cached or not, and every token written, across every
+   call the press made (a draft and its own check), so the AI usage page
+   can price the month. Never fails the answer. */
 // deno-lint-ignore no-explicit-any
-function keepTokens(db: any, id: string, res: Anthropic.Message): Promise<null> {
-  const u = (res && res.usage || {}) as unknown as Record<string, number | null | undefined>;
-  const input = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
-  return db.rpc('ai_draft_tokens', { p_id: id, p_in: input, p_out: u.output_tokens || 0, p_model: res.model || null })
+function keepTokens(db: any, id: string, spent: Anthropic.Message[]): Promise<null> {
+  let input = 0, output = 0;
+  spent.forEach((res) => {
+    const u = (res && res.usage || {}) as unknown as Record<string, number | null | undefined>;
+    input += (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+    output += u.output_tokens || 0;
+  });
+  return db.rpc('ai_draft_tokens', { p_id: id, p_in: input, p_out: output, p_model: spent[0] && spent[0].model || null })
     .then(() => null, () => null);
 }
 
@@ -232,6 +238,45 @@ const LABEL: Record<string, string> = {
 const PLAT: [string, string][] = [['summary', 'Summary line'], ['worked', 'What worked'], ['improve', 'Areas to improve'], ['actions', 'Focus for next month']];
 const PLAT_WORD: Record<string, string> = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', rednote: 'rednote' };
 
+/* The check itself: the parts read against the figures, the findings as
+   the model gives them (ref, quote, issue, fix), or null where no answer
+   came back. Used by Check, and by every draft on its own words before it
+   is returned (the user, 2026-10-09: "draft with AI already should have
+   taken note of" what the check flags). */
+async function askCheck(client: Anthropic, data: Record<string, unknown>, parts: { ref: string; where: string; text: string }[],
+  mask: (s: string) => string, maxTokens: number, spent: Anthropic.Message[]): Promise<Record<string, unknown>[] | null> {
+  const refs = parts.map((p) => p.ref);
+  const str = (d: string) => ({ type: 'string', description: d });
+  const schema = { type: 'object', additionalProperties: false, required: ['findings'], properties: {
+    findings: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['ref', 'quote', 'issue', 'fix'],
+      properties: { ref: { type: 'string', enum: refs }, quote: str('The exact words that are wrong'),
+        issue: str('What the figures show, one sentence'), fix: str('The corrected words, or empty') } } } } };
+  const res = await client.messages.create({
+    model: secret('REPORT_DRAFT_MODEL'),
+    max_tokens: maxTokens,
+    system: CHECK,
+    output_config: { format: { type: 'json_schema', schema } },
+    messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
+      '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
+  } as Anthropic.MessageCreateParamsNonStreaming);
+  spent.push(res);
+  if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') return null;
+  const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+  let got: Record<string, unknown> | null = null;
+  try { got = JSON.parse(text); } catch { got = null; }
+  if (!got || !Array.isArray(got.findings)) return null;
+  return (got.findings as Record<string, unknown>[]).filter((f) => refs.includes(String(f.ref)));
+}
+
+/* A word that colours a figure, taken out where it stands before a figure
+   (仅以278次观看, 只获得1次, only 278 views): the plain figure is the house
+   style, and the check flags the word. Never 不仅 or "not only". */
+function plainFigures(t: string): string {
+  return t
+    .replace(/(?<!不)(仅仅|仅有|仅|只有|只)(?=(?:以|有|获得|取得|录得|收获|带来|吸引|达到|达|为)?\s*[0-9０-９一二两三四五六七八九十])/g, '')
+    .replace(/(?<!\bnot\s)\b(only|just|merely|a mere|a whopping|as few as|barely)\s+(?=(?:RM|S\$)?\s?[0-9])/gi, '');
+}
+
 // deno-lint-ignore no-explicit-any
 async function runCheck(db: any, id: string, kind: string, r: Record<string, unknown>, data: Record<string, unknown>,
   mask: (s: string) => string, origin: string | null, forName: string) {
@@ -263,13 +308,6 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
   const basis: Record<string, string> = {};
   parts.forEach((p) => { basis[p.ref] = p.text; });
 
-  const refs = parts.map((p) => p.ref);
-  const str = (d: string) => ({ type: 'string', description: d });
-  const schema = { type: 'object', additionalProperties: false, required: ['findings'], properties: {
-    findings: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['ref', 'quote', 'issue', 'fix'],
-      properties: { ref: { type: 'string', enum: refs }, quote: str('The exact words that are wrong'),
-        issue: str('What the figures show, one sentence'), fix: str('The corrected words, or empty') } } } } };
-
   const claim = await db.rpc('ai_check_claim', { p_report: id });
   if (claim.error) return json({ error: 'needs-update' }, 200, origin);
   const got = (claim.data || {}) as Record<string, unknown>;
@@ -278,28 +316,17 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
   const done = (ok: boolean, result: unknown) => db.rpc('ai_check_done', { p_id: pressId, p_ok: ok, p_result: result, p_basis: ok ? basis : null })
     .then(() => null, () => null);
 
+  const spent: Anthropic.Message[] = [];
   try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
-    const res = await client.messages.create({
-      model: secret('REPORT_DRAFT_MODEL'),
-      max_tokens: 16000,
-      system: CHECK,
-      output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Check this commentary against the report\'s figures.\n\nFIGURES\n' + JSON.stringify(data) +
-        '\n\nCOMMENTARY\n' + JSON.stringify(parts.map((p) => ({ ref: p.ref, place: p.where, text: mask(p.text) }))) }]
-    } as Anthropic.MessageCreateParamsNonStreaming);
-    await keepTokens(db, pressId, res);
-    if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
-      console.error('report-draft check: answer stopped short', res.stop_reason);
+    const got2 = await askCheck(client, data, parts, mask, 16000, spent);
+    if (!got2) {
+      console.error('report-draft check: no findings came back');
       await done(false, null);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
-    const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
-    let got2: Record<string, unknown> | null = null;
-    try { got2 = JSON.parse(text); } catch { got2 = null; }
-    if (!got2 || !Array.isArray(got2.findings)) { await done(false, null); return json({ error: 'ai-incomplete' }, 200, origin); }
     const clean = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
-    const findings = (got2.findings as Record<string, unknown>[]).filter((f) => refs.includes(String(f.ref))).slice(0, 10)
+    const findings = got2.slice(0, 10)
       .map((f) => ({ ref: String(f.ref), where: parts.find((p) => p.ref === String(f.ref))!.where,
         quote: brandIn(clean(f.quote, 400), forName), issue: brandIn(clean(f.issue, 600), forName), fix: brandIn(clean(f.fix, 1200), forName) }))
       .filter((f) => f.issue);
@@ -319,6 +346,8 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
       : status === 404 || type === 'not_found_error' ? 'ai-model'
       : 'ai-failed';
     return json({ error: code }, 200, origin);
+  } finally {
+    if (spent.length) await keepTokens(db, pressId, spent);
   }
 }
 
@@ -419,7 +448,20 @@ Deno.serve(async (req) => {
           tiktok: { reach: num(tk.prev_reach), impressions: num(tk.prev_impressions), spend: num(tk.prev_spend) } };
       }
     }
-    data.ads = (ads.data as Record<string, unknown>[]).map((a) => ({
+    /* Each ad's place by cost per result among its platform, objective and
+       result type, worked out here so neither the draft nor the check
+       counts it (the user, 2026-10-09). */
+    const adRows = ads.data as Record<string, unknown>[];
+    const cprOf = (a: Record<string, unknown>) => num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? num(a.spend)! / num(a.results)! : null);
+    const groupOf = (a: Record<string, unknown>) => [a.platform || 'meta', a.objective || '', a.result_label || ''].join('|');
+    const rankAd = (a: Record<string, unknown>) => {
+      const mine = cprOf(a);
+      const peers = adRows.filter((b) => groupOf(b) === groupOf(a) && num(b.results) && cprOf(b) !== null);
+      if (mine === null || !num(a.results)) return { cost_rank: null, ads_in_group: peers.length };
+      return { cost_rank: 1 + peers.filter((b) => cprOf(b)! < mine - 0.0001).length, ads_in_group: peers.length };
+    };
+    data.ads = adRows.map((a) => ({
+      ...rankAd(a),
       ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label, audience: a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),
@@ -446,8 +488,21 @@ Deno.serve(async (req) => {
       out.platform = p.group_label || p.platform;
       return out;
     });
-    data.posts = (ps.data as Record<string, unknown>[]).map((p) => {
-      const out: Record<string, unknown> = {};
+    /* Each post's place on its own platform by views and by engagements,
+       worked out here so neither the draft nor the check counts it (the
+       user, 2026-10-09: a draft said second where the figures say third). */
+    const postRows = ps.data as Record<string, unknown>[];
+    const engOf = (p: Record<string, unknown>) => num(p.engagements) ?? num(p.interactions);
+    const placeOf = (p: Record<string, unknown>, f: (x: Record<string, unknown>) => number | null) => {
+      const mine = f(p);
+      if (mine === null) return null;
+      return 1 + postRows.filter((q) => q.platform_id === p.platform_id && (f(q) ?? -1) > mine).length;
+    };
+    data.posts = postRows.map((p) => {
+      const out: Record<string, unknown> = {
+        rank_views: placeOf(p, (x) => num(x.views)), rank_engagements: placeOf(p, engOf),
+        posts_on_platform: postRows.filter((q) => q.platform_id === p.platform_id).length
+      };
       Object.keys(p).forEach((k) => {
         if (k === 'id' || p[k] === null || p[k] === '') return;
         const v = typeof p[k] === 'string' ? mask(p[k] as string) : p[k];
@@ -493,6 +548,8 @@ Deno.serve(async (req) => {
   const pressId = String(got.id || '');
   const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
 
+  const started = Date.now();
+  const spent: Anthropic.Message[] = [];
   try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
     /* The answer is held to the schema by structured output, never a forced
@@ -505,7 +562,7 @@ Deno.serve(async (req) => {
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
-    await keepTokens(db, pressId, res);
+    spent.push(res);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
       await done(false);
@@ -533,6 +590,43 @@ Deno.serve(async (req) => {
       out.posts = (draft.posts as Record<string, unknown>[]).filter((x) => targets.posts.includes(String(x.ref)))
         .map((x) => ({ ref: String(x.ref), remark: clean(x.remark) }));
     }
+    /* The draft is read by the figures check before it is handed over, and
+       what the check would flag is put right in it, so a draft and its check
+       agree (the user, 2026-10-09). Part of the same press, never one of the
+       day's checks; skipped where the draft itself took long, so the press
+       stays inside the function's time. Then the words that colour a figure
+       are taken out wherever they still stand. */
+    const parts: { ref: string; where: string; text: string }[] = [];
+    const put = (ref: string, where: string, v: unknown) => { const t = String(v ?? '').trim(); if (t) parts.push({ ref, where, text: t }); };
+    for (const [k] of fields) put(k, LABEL[k] || k, out[k]);
+    ((out.platforms || []) as Record<string, string>[]).forEach((pl) => PLAT.forEach(([k, w]) => put('p:' + pl.ref + ':' + k, w, pl[k])));
+    ((out.posts || []) as Record<string, string>[]).forEach((pp) => put('n:' + pp.ref, 'Top post', pp.remark));
+    let fixed = 0;
+    if (parts.length && Date.now() - started < 70000) {
+      const found = await askCheck(client, data, parts, mask, 8000, spent).catch((e) => { console.error('report-draft: self-check failed', String(e)); return null; });
+      (found || []).forEach((f) => {
+        const ref = String(f.ref), quote = brandIn(String(f.quote ?? '').trim(), forName), fix = brandIn(String(f.fix ?? '').trim(), forName);
+        if (!quote) return;
+        const swap = (t: string) => {
+          if (t.indexOf(quote) < 0) return t;
+          fixed++;
+          const u = t.replace(quote, fix);
+          return fix ? u : u.replace(/[ \t]{2,}/g, ' ').replace(/ ([,.;:，。；：])/g, '$1');
+        };
+        let m: RegExpExecArray | null;
+        if ((m = /^p:(.+):(summary|worked|improve|actions)$/.exec(ref))) {
+          const pl = ((out.platforms || []) as Record<string, string>[]).find((x) => x.ref === m![1]);
+          if (pl) pl[m[2]] = swap(pl[m[2]]);
+        } else if ((m = /^n:(.+)$/.exec(ref))) {
+          const pp = ((out.posts || []) as Record<string, string>[]).find((x) => x.ref === m![1]);
+          if (pp) pp.remark = swap(pp.remark);
+        } else if (typeof out[ref] === 'string') out[ref] = swap(out[ref] as string);
+      });
+    }
+    for (const [k] of fields) out[k] = plainFigures(String(out[k]));
+    ((out.platforms || []) as Record<string, string>[]).forEach((pl) => PLAT.forEach(([k]) => { pl[k] = plainFigures(pl[k]); }));
+    ((out.posts || []) as Record<string, string>[]).forEach((pp) => { pp.remark = plainFigures(pp.remark); });
+    if (fixed) console.log('report-draft: the self-check put right', fixed, 'points');
     await done(true);
     return json({ draft: out, left: got.left }, 200, origin);
   } catch (e) {
@@ -550,5 +644,7 @@ Deno.serve(async (req) => {
       : status === 404 || type === 'not_found_error' ? 'ai-model'
       : 'ai-failed';
     return json({ error: code }, 200, origin);
+  } finally {
+    if (spent.length) await keepTokens(db, pressId, spent);
   }
 });
