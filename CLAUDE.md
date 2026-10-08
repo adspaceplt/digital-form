@@ -190,6 +190,11 @@ board mod reads (`.claude/mods/ux-audit`, `/ux-board`; listed by
 added to all three in the same push.
 
 **Also required:**
+- Before a push, scan the diff for a number, word, colour, address or id
+  typed into logic (the user, 2026-10-08): a business figure goes to
+  `app_settings` / `perf_settings`, shared words to `js/words.js`, a colour or
+  size to a token, an id or endpoint to `js/config.js`, a secret to Supabase
+  only. The report names what became configurable.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
   carries one.
@@ -479,6 +484,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - There is no sheet in it.
 - `js/decide.js` records a client decision.
   - The name grows out of Approve (`.namebox`), key `adspace_reviewer`.
+  - While a name is held, the review and selection pages' name card ends in
+    one line, Deciding as {name} · Change · Forget (`.decide-as`,
+    `ADspaceDecide.whoLine`, words in `js/words.js`): Change edits it in
+    place, Forget removes it from this device and the name field returns to
+    a request. Decisions already made keep the name they were made under.
   - Request changes steps aside while it asks (`.approve-row.is-asking`).
   - An open note box carries `.changebox-who`.
 - `js/swipe.js` is the only swipe: on touch, a sideways swipe inside a
@@ -504,7 +514,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   It also holds the media pass (`ADspaceMedia.pass(proof)`, 2026-10-03):
   with `ADSPACE_CONFIG.s3.privateMedia` on, a page that has proved its link
   (`{review}`, `{campaign}` with the passcode), a creator's code
-  (`{creator}`) or a sign-in (`{}`) asks `media-pass` for CloudFront's three
+  (`{creator}`) or a sign-in (`{}`: a colleague, or a client contact with
+  live portal access, the client portal asking before it draws; 2026-10-08)
+  asks `media-pass` for CloudFront's three
   signed cookies over `content/*` before it draws a file, set on
   `mediaCookieDomain` (adspace.me) for twelve hours and asked again under two
   left (load, return to the tab). A file under `content/` that fails asks
@@ -855,6 +867,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   address falls back to Overview.
 - `is_team()` gates every team table and edge function. `authenticated` is not
   the team, because clients hold logins.
+- A system account (`team_members.system`, `2026-10-08-system-account.sql`;
+  IT's login, the user, 2026-10-08) is a full admin never offered for work:
+  every colleague picker, the capacity bars, the review list, Health and the
+  report reviewers leave it out (`ADspaceAdmin.isSystem`, one read beside
+  `me()`; `sm_report_may_review`); Set access expiry for everyone skips it.
+  The mark is set only with no sign-in (the connector or the SQL editor);
+  trigger `team_members_system_guard` lets only the account itself change its
+  standing, access date, group, admin mark or email (`system-account`).
+  Team shows it with a System tag and no ⋯ for anyone else.
   - The team list is never derived from `auth.users`. The cutover sweep runs
     only while `team_members` is empty and skips client contacts.
   - A wrong row is stood down (`active = false`), never deleted.

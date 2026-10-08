@@ -369,7 +369,9 @@
   function paintTeam() {
     var d = st.team, box = $('teamHealthBox');
     if (!d || !box) return;
-    var people = d.people || [];
+    /* A system account (2026-10-08) is no colleague to check on. */
+    var S = window.ADspaceAdmin;
+    var people = (d.people || []).filter(function (p) { return !(S && S.isSystem && S.isSystem(p.team_member_id || p.id)); });
     var standing = people.filter(function (p) { return p.consent && !p.consent.withdrawn_at; });
     var done = standing.filter(thisHalf);
     box.innerHTML = '';

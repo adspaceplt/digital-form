@@ -572,7 +572,9 @@
   function openRoster() {
     if (!st.month) return;
     var F = window.ADspaceForm;
-    var people = (st.month.people || []).slice().sort(F.byStaff);
+    /* A system account (2026-10-08) is never put on the review list. */
+    var S = window.ADspaceAdmin;
+    var people = (st.month.people || []).filter(function (p) { return !(S && S.isSystem && S.isSystem(p.team_member_id)); }).sort(F.byStaff);
     $('prList').innerHTML = people.map(function (p) {
       return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.team_member_id) + '"' +
         (p.reviewed ? ' checked' : '') + '> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';

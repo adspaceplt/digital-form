@@ -306,8 +306,18 @@
     if (withPass) $('passInput').focus();
   }
 
+  /* Who this device decides as, with Change and Forget, under the name
+     card (2026-10-08); its words follow the 中文 switch. */
+  var whoAs = null;
+  function whoWords() { var x = t(); return { as: x.decideAs, change: x.decideChange, forget: x.decideForget, save: x.decideSave, cancel: x.decideCancel, name: x.decideName }; }
+  function mountWho() {
+    if (whoAs || !window.ADspaceDecide || !window.ADspaceDecide.whoLine) return;
+    var host = $('campHead');
+    if (host) whoAs = window.ADspaceDecide.whoLine(host, whoWords(), host.querySelector('.rec-id'));
+  }
   function setLang(next) {
     lang = next;
+    if (whoAs) whoAs.words(whoWords());
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     $('langToggle').textContent = t().lang;
     $('kicker').textContent = t().kicker;
@@ -429,6 +439,7 @@
       } else { mark.className = 'rec-mark'; mark.textContent = ini; }
     }
     if ($('campMeta')) $('campMeta').textContent = client.name || '';
+    mountWho();
     var forBar = document.querySelector('.brand-for');
     if (forBar) forBar.hidden = true;
     var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
@@ -903,9 +914,11 @@
           '" placeholder="' + esc(t().needNote) + '"></textarea>' +
         /* Drawn only where we do not already hold the name, so a client who
            has decided on something before is not asked twice. */
-        (window.ADspaceDecide.known() ? '' :
-          '<input class="input changebox-who" type="text" autocomplete="name" aria-label="' +
-            esc(t().nameLabel) + '" placeholder="' + esc(t().namePlaceholder) + '">') +
+        /* Shown only while no name is held (the Request changes press), so
+           Forget on the page brings it back. */
+        '<input class="input changebox-who" type="text" autocomplete="name" aria-label="' +
+          esc(t().nameLabel) + '" placeholder="' + esc(t().namePlaceholder) + '"' +
+          (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
         '<div class="changebox-actions">' +
           '<button class="btn btn-sm btn-primary" type="button" data-act="send">' + esc(t().sendRequest) + '</button>' +
           '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
@@ -946,6 +959,7 @@
     });
     wrap.querySelector('[data-act="changes"]').addEventListener('click', function () {
       asker.close();
+      if (who) who.hidden = Boolean(window.ADspaceDecide.known());
       box.classList.add('is-open');
       note.focus();
     });

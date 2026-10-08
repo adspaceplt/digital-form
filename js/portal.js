@@ -415,8 +415,12 @@
   function load() {
     /* SST and the term percentages are settings (js/money.js): read beside the portal. */
     var rates = MON && MON.load ? MON.load() : Promise.resolve();
+    /* The media pass (js/media.js, 2026-10-08): a logo or a report file kept
+       under content/ opens only with it once CloudFront asks for it. It
+       always resolves, a refused or slow pass never holding the page. */
+    var media = window.ADspaceMedia && window.ADspaceMedia.pass ? window.ADspaceMedia.pass({}) : Promise.resolve();
     db.rpc('get_portal', { p_client: wanted })
-      .then(function (r) { return rates.then(function () { return r; }); }).then(function (r) {
+      .then(function (r) { return Promise.all([rates, media]).then(function () { return r; }, function () { return r; }); }).then(function (r) {
       if (r.error) { showState('fail', r.error.message); return; }
       var d = r.data || {};
       if (d.error === 'no-access' || d.error === 'not-signed-in') { showState('none'); return; }

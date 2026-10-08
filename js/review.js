@@ -562,9 +562,10 @@
         '<textarea class="textarea" data-f="note" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
-        (window.ADspaceDecide.known() ? '' :
-          '<input class="input changebox-who" type="text" autocomplete="name"' +
-            ' aria-label="Your name" placeholder="John Doe">') +
+        /* Shown only while no name is held (`openBox`), so Forget on the
+           page brings it back. */
+        '<input class="input changebox-who" type="text" autocomplete="name"' +
+          ' aria-label="Your name" placeholder="John Doe"' + (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
         '<div class="changebox-actions">' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
           '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
@@ -599,6 +600,7 @@
        Left in place, Request changes read as the send and did nothing (the
        user's iPhone recording, 2026-10-01). */
     function openBox(on) {
+      if (on && who) who.hidden = Boolean(window.ADspaceDecide.known());
       box.classList.toggle('is-open', on);
       wrap.classList.toggle('is-requesting', on);
       if (on) grow(textarea);
@@ -1023,6 +1025,7 @@
   /* The name card: the client's mark, name, handle and what waits on them,
      counted at load as the stage strip is. The bar no longer names the
      client: the card does, once. */
+  var rvWho = null;
   function paintHead(f) {
     var c = f.client || {};
     var mark = $('rvMark');
@@ -1053,6 +1056,12 @@
     st.textContent = pending + ' to review';
     st.className = 'tone is-warn';
     $('rvHead').hidden = false;
+    /* Who this device decides as, with Change and Forget (2026-10-08). */
+    if (!rvWho && window.ADspaceDecide && window.ADspaceDecide.whoLine) {
+      var EN = window.ADspaceWords.en;
+      rvWho = window.ADspaceDecide.whoLine($('rvHead'), { as: EN.decideAs, change: EN.decideChange,
+        forget: EN.decideForget, save: EN.decideSave, cancel: EN.decideCancel, name: EN.decideName }, $('rvHead').querySelector('.rec-id'));
+    }
     var forBar = document.querySelector('.brand-for');
     if (forBar) forBar.hidden = true;
   }

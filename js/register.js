@@ -488,7 +488,7 @@
   }
   function fillMembers() {
     var sel = $('docMember');
-    sel.innerHTML = '<option value="">Choose a colleague</option>' + state.members.filter(function (m) { return m.active !== false; }).sort(F.byStaff).map(function (m) {
+    sel.innerHTML = '<option value="">Choose a colleague</option>' + state.members.filter(function (m) { return m.active !== false && !(window.ADspaceAdmin && window.ADspaceAdmin.isSystem && window.ADspaceAdmin.isSystem(m)); }).sort(F.byStaff).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
     }).join('');
   }

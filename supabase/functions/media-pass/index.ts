@@ -14,7 +14,9 @@
  *   - { review: key, passcode }   a client's Content Review link (get_review_feed)
  *   - { campaign: key, passcode } a client's creator selection link (get_campaign)
  *   - { creator: code }           a creator's code (get_creator)
- *   - nothing, signed in          an active colleague (team_members)
+ *   - nothing, signed in          an active colleague (team_members), or a
+ *                                 client contact with live portal access
+ *                                 (the client portal, 2026-10-08)
  * Nothing here writes a record, and nothing deletes.
  *
  * Keys: the first call makes an RSA pair and keeps both halves in
@@ -149,7 +151,17 @@ Deno.serve(async (req) => {
     if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
     const { data: member } = await admin.from('team_members')
       .select('active').ilike('email', user.email).maybeSingle();
-    if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
+    if (!member || !member.active) {
+      /* A client's contact signed in to the client portal (2026-10-08): their
+         logos and reports sit under content/ too. Live portal access only,
+         as portal_clients() answers it; an address that is also a colleague's
+         was answered above. */
+      if (member) return json({ error: 'not_team' }, 403, origin);
+      const { data: contact } = await admin.from('client_contacts')
+        .select('id').eq('portal_access', true).is('archived_at', null)
+        .ilike('email', user.email.replace(/[\\%_]/g, (c) => '\\' + c)).limit(1);
+      if (!contact || !contact.length) return json({ error: 'not_allowed' }, 403, origin);
+    }
   }
 
   // 2. Not switched on yet: the pages carry on as before.

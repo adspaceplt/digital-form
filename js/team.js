@@ -444,11 +444,16 @@
     if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
+    if (/system-account/.test(t)) return 'This is a system account.';
     return t;
   }
   function memberRow(m) {
     var self = me() && me().id === m.id;
-    var manage = may('team', 'manage');
+    /* A system account (2026-10-08) is IT's: shown with its tag, and only the
+       account itself may change it (the database refuses anyone else), so
+       nobody else is offered a control that would be refused. */
+    var sysRow = Boolean(m.system) && !self;
+    var manage = may('team', 'manage') && !sysRow;
     var el = document.createElement('div');
     el.className = 'team-row' + (m.active ? '' : ' is-off');
     el.innerHTML =
@@ -465,7 +470,8 @@
          whoever typed it. */
       '<span class="team-who"><b>' + esc(m.name) +
         (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
-        (self ? ' <span class="tone">You</span>' : '') + '</b>' +
+        (self ? ' <span class="tone">You</span>' : '') +
+        (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
         (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
@@ -479,7 +485,7 @@
          than a select on every row. A person cannot switch themselves off. */
       rowMenu((manage ? menuItem('edit', 'Edit') : '') +
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
-              (may('team.invite', 'work') && m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
+              (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
               (self || !manage ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
     wireMenu(el);
