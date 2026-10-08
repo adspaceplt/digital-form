@@ -2223,7 +2223,7 @@
       box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmMetaTitle">' +
         '<div class="sheet-head"><h3 id="crmMetaTitle">Meta accounts</h3>' +
         '<button class="iconbtn" id="crmMetaClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
-        '<div class="sheet-body"><p class="meta-for" id="crmMetaFor"></p><div id="crmMetaBody"></div><div class="msg" id="crmMetaMsg"></div></div>' +
+        '<div class="sheet-body"><p class="meta-for" id="crmMetaFor"></p><div class="meta-body" id="crmMetaBody"></div><div class="msg" id="crmMetaMsg"></div></div>' +
         '<div class="sheet-foot"><button class="btn btn-primary" id="crmMetaSave" type="button">Save</button>' +
         '<button class="btn btn-quiet" id="crmMetaCancel" type="button">Cancel</button></div></div>';
       var after = $('crmBrandSheet');

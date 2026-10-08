@@ -2170,6 +2170,8 @@
       return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
     }).join('');
     $('rpPasteSheetTitle').textContent = pre ? 'Import from Meta' : 'Import from spreadsheet';
+    ['rpPasteText', 'rpPasteFile'].forEach(function (k) { $(k).closest('.row').hidden = !!pre; });
+    box.classList.toggle('is-meta', !!pre);
     $('rpPasteText').value = pre ? pre.text : '';
     $('rpPasteFile').value = '';
     /* Meta's posts go to the report's account on their platform. */
@@ -3578,6 +3580,10 @@
         '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
     $('rpPasteAdsSheetTitle').textContent = pre ? 'Import from Meta' : 'Import from Ads Manager';
+    /* From Meta the export is the function's, not typed: the sheet shows
+       what it will do, never the text. */
+    ['rpPAPlat', 'rpPAObj', 'rpPAText'].forEach(function (k) { $(k).closest('.row').hidden = !!pre; });
+    box.classList.toggle('is-meta', !!pre);
     $('rpPAText').value = pre ? pre.text : '';
     /* Meta's age split follows the figures, matched by Ad ID, in the same
        press. */
