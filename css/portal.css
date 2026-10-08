@@ -1569,7 +1569,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 .draft-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .draft-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.draft-top .select { flex: 0 0 auto; }
+.draft-top .select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .draft-top .muted { flex: 1 1 auto; }
 .draft-body .textarea { min-height: 72px; font-size: 13.5px; }
 .draft-body .linkbtn { align-self: flex-start; }
@@ -1813,6 +1813,12 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .saved.is-editing .saved-body { gap: 10px; align-items: stretch; }
 .saved.is-editing .saved-body > .changebox-actions { margin-top: 2px; }
 .saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
+/* Write caption (2026-10-08): under the caption fields at its own width,
+   its answer or refusal one line under it. */
+.capwrite { display: flex; align-items: center; gap: 8px; }
+.capwrite > .btn { flex: 0 0 auto; }
+.msg.capmsg { margin-top: 0; }
+.msg.capmsg:empty { display: none; }
 
 /* Cover image is an asset, not a post, so it gets a neutral frame. It has no
    copy, so its card ends under its decision rather than stretching to the
@@ -10288,6 +10294,8 @@ body.is-maint { overflow: hidden; }
    same figures, Change at the right edge. */
 .aiu-reset { margin: 0 0 12px; color: var(--ink-mute); font-size: 13px; }
 .aiu-list { display: grid; }
+.aiu-acts { display: flex; margin-top: 12px; }
+.aiu-acts > .btn { flex: 0 0 auto; }
 .aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .aiu-row:first-child { border-top: 0; padding-top: 0; }
 /* A colleague's row sets their own limit: the whole row is the button, its

@@ -2110,6 +2110,155 @@
     window.ADspaceCopy.to(this, $('clientLink').value);
   });
 
+  /* ---- Write caption (2026-10-08) ------------------------------------------
+     Beside a post's caption fields (Add assets, and a saved post's Edit), at
+     Content Review: Sets at Work. A short question first: the main language
+     (the main contact's preferred one), 中文 (on where the set or the post
+     holds Chinese), XHS Safe Mode on a rednote post (off until ticked: the
+     user applies it only when confirmed) and notes (kept in this browser,
+     else the brief of a task naming the set). The caption-draft function's
+     words go into the fields; nothing is saved until the post's own Save,
+     and Undo puts the earlier words back. */
+  var CAP_SAID = {
+    'needs-update': 'This needs a database update.',
+    'ai-not-set-up': 'AI needs its key in Supabase.',
+    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
+    'ai-model': 'The caption model name in Supabase is not recognised.',
+    'ai-failed': 'No caption came back. Try again.',
+    'ai-incomplete': 'No caption came back. Try again.',
+    'denied': 'This needs Content Review: Sets at Manage.',
+    'not-found': 'This set no longer exists.'
+  };
+  var CAP_HANDLE = { instagram: 'handle_ig', facebook: 'handle_fb', tiktok: 'handle_tiktok', xhs: 'handle_xhs' };
+  var capKnown = { lang: {}, zh: {}, brief: {} };
+  function capButton() {
+    return may('review.sets', 'work')
+      ? '<div class="capwrite"><button class="btn btn-sm" data-f="capwrite" type="button">Write caption</button></div>' +
+        '<div class="msg capmsg" data-m="cap" role="status"></div>'
+      : '';
+  }
+  function capClock(iso) {
+    var at = new Date(iso);
+    if (isNaN(at.getTime())) return '';
+    return ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
+  }
+  function capLimit(d) {
+    d = d || {};
+    if (d.scope === 'stopped' || d.limit === 0) return 'Write caption is turned off for you. An admin can turn it on.';
+    return 'You have used your ' + (d.limit || 20) + ' captions for today.' + (d.next ? ' Resets at ' + capClock(d.next) + '.' : '');
+  }
+  function capNotes(key, v) {
+    var k = 'adspace-caption-notes:' + key;
+    try {
+      if (v === undefined) return localStorage.getItem(k) || '';
+      if (v) localStorage.setItem(k, v); else localStorage.removeItem(k);
+    } catch (e) {}
+    return '';
+  }
+  /* What the question opens with: the main contact's language, whether the
+     set holds Chinese, and the brief of a task naming the set. Each read is
+     its own; a refused one leaves its default. */
+  function capPrefill(client, set) {
+    var lang = capKnown.lang[client.id] != null ? Promise.resolve(capKnown.lang[client.id])
+      : db.from('client_contacts').select('lang, is_primary').eq('client_id', client.id).is('archived_at', null).then(function (r) {
+          var list = r.error ? [] : (r.data || []);
+          var main = list.filter(function (x) { return x.is_primary; })[0] || list[0];
+          return (capKnown.lang[client.id] = main && main.lang ? main.lang : 'en');
+        }, function () { return 'en'; });
+    var zh = capKnown.zh[set.id] != null ? Promise.resolve(capKnown.zh[set.id])
+      : db.from('posts').select('caption_zh').eq('batch_id', set.id).not('caption_zh', 'is', null).limit(50).then(function (r) {
+          return (capKnown.zh[set.id] = !r.error && (r.data || []).some(function (x) { return String(x.caption_zh || '').trim(); }));
+        }, function () { return false; });
+    var brief = capKnown.brief[set.id] != null ? Promise.resolve(capKnown.brief[set.id])
+      : db.rpc('ops_record_tasks', { p_type: 'set', p_ref: set.id }).then(function (r) {
+          var ids = (!r.error && Array.isArray(r.data) ? r.data : []).map(function (t) { return t.id; }).slice(0, 20);
+          if (!ids.length) return (capKnown.brief[set.id] = '');
+          return db.from('ops_tasks').select('id, description').in('id', ids).then(function (q) {
+            var by = {};
+            (q.error ? [] : (q.data || [])).forEach(function (t) { by[t.id] = String(t.description || '').trim(); });
+            return (capKnown.brief[set.id] = ids.map(function (id) { return by[id] || ''; }).filter(Boolean)[0] || '');
+          });
+        }).then(null, function () { return ''; });
+    return Promise.all([lang, zh, brief]).then(function (a) { return { lang: a[0], zh: a[1], brief: a[2] }; });
+  }
+  /* `o`: { btn, placement, title, notesKey, zh (the post holds Chinese),
+     now: { caption, caption_zh }, put(words) → the row's .capwrite after
+     the words are in the fields }. */
+  function writeCaption(o) {
+    var client = state.client, set = state.batch;
+    if (!client || !set || !may('review.sets', 'work')) return;
+    var say = function (anchor, text, kind) {
+      var m = anchor && anchor.parentNode && anchor.parentNode.querySelector('[data-m="cap"]');
+      if (m) { m.textContent = text || ''; m.className = 'msg capmsg' + (kind ? ' ' + kind : ''); }
+    };
+    var wrapOf = function (b) { return b && b.closest('.capwrite'); };
+    var plat = String(o.placement || 'instagram:feed').split(':')[0];
+    var btn = o.btn;
+    btn.disabled = true;
+    say(wrapOf(btn), '');
+    Promise.all([db.rpc('ai_caption_left'), capPrefill(client, set)]).then(function (a) {
+      btn.disabled = false;
+      var r = a[0], pre = a[1], left = r.data || {};
+      if (r.error || left.error) {
+        say(wrapOf(btn), r.error ? (/function|schema cache/i.test(r.error.message) ? CAP_SAID['needs-update'] : r.error.message)
+          : (CAP_SAID[left.error] || left.error), 'err');
+        return;
+      }
+      if (!left.left) { say(wrapOf(btn), capLimit(left), 'err'); return; }
+      var had = !!(String(o.now.caption || '').trim() || String(o.now.caption_zh || '').trim());
+      var fields = [
+        { name: 'lang', label: 'Caption language', choices: [['en', 'English'], ['ms', 'Bahasa Melayu']], seg: true,
+          value: pre.lang === 'ms' ? 'ms' : 'en' },
+        { name: 'zh', label: '中文 caption', tick: true, value: o.zh || pre.zh || pre.lang === 'zh' }
+      ];
+      if (plat === 'xhs') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
+      fields.push({ name: 'notes', label: 'Notes for the caption', rows: 3, required: false,
+        placeholder: 'What the post is about, the offer, the call to action',
+        value: capNotes(o.notesKey) || pre.brief });
+      window.ADspaceConfirm.ask({
+        title: 'Write caption',
+        body: (had ? 'Replaces the words in the caption fields. ' : '') + left.left + (left.left === 1 ? ' caption' : ' captions') + ' left today.',
+        go: 'Write', fields: fields
+      }, function (v) {
+        capNotes(o.notesKey, String(v.notes || '').trim());
+        btn.disabled = true;
+        btn.textContent = 'Writing';
+        var before = { caption: o.now.caption || '', caption_zh: o.now.caption_zh || '' };
+        db.functions.invoke('caption-draft', { body: {
+          set_id: set.id, placement: o.placement, title: o.title || '', notes: String(v.notes || '').trim(),
+          lang: v.lang === 'ms' ? 'ms' : 'en', zh: v.zh === 'on', safe: plat === 'xhs' && v.safe === 'on'
+        } }).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
+          /* {brand} and {handle} come back as written and are filled here. */
+          var handle = String(client[CAP_HANDLE[plat]] || '').trim().replace(/^@/, '');
+          var fill = function (t) {
+            return String(t || '').replace(/\{\s*brand\s*\}/gi, client.name || '')
+              .replace(/\{\s*handle\s*\}/gi, handle ? '@' + handle : (client.name || ''));
+          };
+          var words = { caption: fill(d.draft.caption), caption_zh: d.draft.caption_zh != null ? fill(d.draft.caption_zh) : before.caption_zh };
+          var at = o.put(words);
+          var b2 = at && at.querySelector('[data-f="capwrite"]');
+          if (b2) { b2.disabled = false; b2.textContent = 'Write caption'; }
+          if (btn !== b2) { btn.disabled = false; btn.textContent = 'Write caption'; }
+          var line = at && at.parentNode && at.parentNode.querySelector('[data-m="cap"]');
+          say(at, '');
+          if (line) undoHere('Caption written. ' + (o.saveWord || 'Save') + ' keeps it.', function () { o.put(before); }, line);
+        }).catch(function (e) {
+          btn.disabled = false;
+          btn.textContent = 'Write caption';
+          say(wrapOf(btn), e && e.message === 'ai-limit' ? capLimit(e.d) : (CAP_SAID[e && e.message] || (e && e.message) || CAP_SAID['ai-failed']), 'err');
+        });
+      });
+    }).catch(function (e) {
+      btn.disabled = false;
+      say(wrapOf(btn), (e && e.message) || String(e), 'err');
+    });
+  }
+
+
   // ---- Content sets -------------------------------------------------------
   function loadBatches() {
     db.from('batches').select('*').eq('client_id', state.client.id)
@@ -3591,7 +3740,7 @@
         '</div>' +
         '<div class="draft-body">' +
           '<div class="draft-top">' +
-            '<select class="select" data-f="placement">' + opts + '</select>' +
+            '<select class="select" data-f="placement" aria-label="Placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(d.media[0])) + '</span>' +
             '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
@@ -3599,11 +3748,12 @@
           (isCoverDraft(d) ? coverForField(d) : '') +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
                    esc(d.title) + '">' : '') +
-          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(d.caption) + '</textarea>' +
           (d.showZh
-            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' + esc(d.caption_zh) + '</textarea>'
+            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' + esc(d.caption_zh) + '</textarea>'
             : '<button class="linkbtn" data-f="addzh" type="button">Add Chinese caption</button>') +
+          capButton() +
         '</div>';
 
       if (d.media.length > 1) {
@@ -3631,6 +3781,20 @@
       if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; queueSave(); });
       var addzh = row.querySelector('[data-f="addzh"]');
       if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
+      var capw = row.querySelector('[data-f="capwrite"]');
+      if (capw) capw.addEventListener('click', function () {
+        writeCaption({ btn: capw, placement: d.placement, title: d.title, notesKey: state.batch.id + ':' + d.key,
+          zh: d.showZh || !!d.caption_zh, now: { caption: d.caption, caption_zh: d.caption_zh }, saveWord: 'Add to set',
+          put: function (w) {
+            d.caption = w.caption || '';
+            d.caption_zh = w.caption_zh || '';
+            if (d.caption_zh) d.showZh = true;
+            var at = state.drafts.indexOf(d);
+            renderDrafts();
+            var nr = at > -1 ? $('drafts').children[at] : null;
+            return nr && nr.querySelector('.capwrite');
+          } });
+      });
       var title = row.querySelector('[data-f="title"]');
       if (title) title.addEventListener('input', function (e) { d.title = e.target.value; queueSave(); });
       var cf = row.querySelector('[data-f="coverfor"]');
@@ -4035,7 +4199,7 @@
      reads the figures again and repaints. `spec`: { title, keys: [[key,
      label, kind]], msg (an element id), done }. Kinds: hours, days, pct
      (0 to 100), adj (-100 to 100). */
-  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false] };
+  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false] };
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
@@ -4652,16 +4816,17 @@
           thumbOf(m) + '</div>' +
         '<div class="saved-body">' +
           '<div class="draft-top">' +
-            '<select class="select" data-f="placement">' + opts + '</select>' +
+            '<select class="select" data-f="placement" aria-label="Placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
           '</div>' +
           (current.indexOf('xhs') === 0
             ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
               esc(p.title || '') + '">' : '') +
-          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(p.caption || '') + '</textarea>' +
-          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' +
+          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' +
             esc(p.caption_zh || '') + '</textarea>' +
+          capButton() +
           /* The revised file goes in here; it stays on this device until
              Save, like every other file picked in this section. */
           '<label class="saved-file"><span>Replace file</span>' +
@@ -4684,6 +4849,20 @@
       row.querySelector('[data-a="cancel"]').addEventListener('click', function () {
         editMedia = null;
         paintRead();
+      });
+      var capw = row.querySelector('[data-f="capwrite"]');
+      if (capw) capw.addEventListener('click', function () {
+        var capEl = row.querySelector('[data-f="caption"]'), zhEl = row.querySelector('[data-f="caption_zh"]');
+        var titleNow = row.querySelector('[data-f="title"]');
+        writeCaption({ btn: capw, placement: row.querySelector('[data-f="placement"]').value,
+          title: titleNow ? titleNow.value : (p.title || ''), notesKey: p.id,
+          zh: !!String(zhEl.value || '').trim(), now: { caption: capEl.value, caption_zh: zhEl.value },
+          put: function (w) {
+            capEl.value = w.caption || '';
+            zhEl.value = w.caption_zh || '';
+            [capEl, zhEl].forEach(function (x) { x.dispatchEvent(new Event('input', { bubbles: true })); });
+            return capw.closest('.capwrite');
+          } });
       });
       row.querySelector('[data-a="save"]').addEventListener('click', function () {
         var parts = row.querySelector('[data-f="placement"]').value.split(':');

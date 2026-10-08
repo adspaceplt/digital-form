@@ -148,6 +148,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `supabase/functions/meta-import/`, Import from Meta | metashape, metaimport, smsql, reports, adsreport |
 | `workers/links/` | links |
+| `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
 | the Short Links route | qr, run |
@@ -454,6 +455,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
   - A field marked `half` sits beside the next one (a date and its time).
+  - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
+    nothing, never required); a `choices` field marked `seg` is a segment.
+    Focus lands on the first typed field, never a segment or a tick.
   - A field asked for words (no `type`, no `rows`) is a one-line box
     (`data-oneline`); one whose `match` or seeded `value` is digits stays a
     field with the number keyboard. Enter answers from any field, never
@@ -1530,6 +1534,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-03-hidden-from-content-review.sql`).
 - Every everyday write leaves an activity row. An edit names the fields it
   changed.
+- Write caption (2026-10-08; the user: "1 2 ok"): under a post's caption
+  fields in Add assets' drafts and a saved post's Edit, at Content Review:
+  Sets at Work (`.capwrite`, `writeCaption()`). It asks first (`ADspaceConfirm`:
+  n captions left today; Caption language English / Bahasa Melayu, a segment
+  from the main contact's preferred language; 中文 caption, ticked where the
+  post or the set holds Chinese or the contact prefers it; XHS Safe Mode on a
+  rednote post alone, unticked until the colleague ticks it; Notes for the
+  caption, kept in this browser under `adspace-caption-notes:{post id}` or
+  `{set id}:{draft key}`, else the brief of a task naming the set), then
+  `caption-draft` (Verify JWT off, as `report-draft`: it asks
+  `allowed('review.sets', 'work')`, reads the set and client as the caller,
+  claims `ai_caption_claim(p_batch)` before Claude, marks `ai_draft_done`,
+  keeps tokens through `ai_draft_tokens`; secrets `ANTHROPIC_API_KEY`,
+  `CAPTION_MODEL`, unset `claude-opus-5-5`; sends the placement, the set's
+  and post's titles, the notes, industry and market, never an image, a
+  contact or the client's name: the name reads `{brand}` and a handle
+  `{handle}`, filled on the page with the name and the platform's `@handle`).
+  The words go into `caption` / `caption_zh` in place, saved only by the
+  post's own Save (Add to set for a draft), with Undo where it happened
+  putting the earlier words back; a refusal is one line under the button.
+  The house style (benefit first, a hook, an emoji and bold title where it
+  suits, one CTA, no dashes, MY/SG context, Chinese written as Chinese, the
+  platform's own voice, brand names exactly) and XHS Safe Mode's rules live
+  in the function's `SYSTEM` and `SAFE`.
 
 ### Creator Campaigns (`js/campaigns.js`), creators, the creator portal
 - Booking steps:
@@ -2881,6 +2909,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     changed goes through `ai_draft_set_limit`, each filed `team.changed`
     under AI from and to. No list of colleagues in a form (the user,
     2026-10-05). No explanatory lines.
+  - Captions (2026-10-08, `2026-10-08-caption-writer.sql`) are their own
+    count (`ai_drafts.purpose` `caption`, with `batch_id`): `caption` (20)
+    a colleague's a day and `caption_admin` (40) an admin's, settings in
+    `ai_draft_limits` read by `ai_caption_claim` / `ai_caption_left`, never
+    counted in the day's report uses. Limits lists Captions, each colleague
+    and Captions, each admin; Edit limits is eight fields in four pairs;
+    Captions today lists the team and each colleague who wrote one.
+  - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
+    `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
+    (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
+    row, from both functions, drafted or failed). This month (MYT) reads the
+    estimated cost in US$, by use (Report drafts, Figures checks, Captions),
+    the tokens and the prices, each row priced at the prices of its own day:
+    `ai_price_in` (4) and `ai_price_out` (20), US$ a million tokens, Business
+    settings (`app_settings_set`, from today; Edit prices, `team.settings`).
+    A use from before tokens were kept is counted as not priced.
   - A draft is paid for once asked, so it is saved to the report as it
     arrives (`storeDraft`), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with
@@ -3390,7 +3434,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     own, since the editor may not alter `storage.objects` and a failure rolls
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
-  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`, `meta-import`) is
+  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
+  `meta-import`, `caption-draft`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
