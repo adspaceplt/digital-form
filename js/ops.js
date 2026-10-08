@@ -155,6 +155,10 @@
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
+    'bad-format': 'Choose a format from the list.',
+    'bad-type': 'Choose a type from the list.',
+    'bad-complexity': 'Choose a complexity from the list.',
+    'bad-estimate': 'Enter an estimate from 0 to 10,000 minutes.',
     'no-code': 'This task has no code to change.',
     'other-client': 'That record belongs to another client.',
     'record-not-found': 'That record is no longer there.',
@@ -5249,6 +5253,11 @@
       var bits = [];
       if ('priority_level' in to) bits.push('Priority ' + (PRIORITY_WORD[String(from.priority_level)] || 'Normal') + ' to ' + (PRIORITY_WORD[String(to.priority_level)] || 'Normal'));
       if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief cleared');
+      var fw = function (k) { return k ? (DELIVER_WORD[k] || sentence(k)) : 'not set'; };
+      if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
+      if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
+      if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
+      if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
     if (e.event_type === 'file_changed') return (to.label || '') + (to.kind && from.kind !== to.kind ? ' · ' + (LINK_WORD[to.kind] || to.kind) : '');
@@ -5477,19 +5486,79 @@
 
   /* DETAILS, and the rest behind a fold: what a reader needs to place the
      task, then everything they might look up. */
+  /* A detail is changed where it is read (the user, 2026-10-08: "allow
+     changes straight from these too"): a select in place of the word for
+     whoever may work the task, saved on change, put back on a refusal. For
+     stays fixed: the client and its scope hang from it. */
+  function detailSelect(key, label, opts, value) {
+    return '<select class="select select-sm tdetail" data-key="' + key + '" aria-label="' + esc(label) + '">' +
+      opts.map(function (o) {
+        return '<option value="' + esc(o[0]) + '"' + (String(value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+      }).join('') + '</select>';
+  }
+  function pairsOf(map) { return Object.keys(map).map(function (k) { return [k, map[k]]; }); }
+  function monthsAround(period) {
+    var m = /^(\d{4})-(\d{2})$/.exec(period || ''), out = [];
+    if (!m) return out;
+    for (var i = -3; i <= 6; i++) {
+      var d = new Date(Number(m[1]), Number(m[2]) - 1 + i, 1);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      out.push([key, monthWord(key)]);
+    }
+    return out;
+  }
   function paintDetails(t) {
-    $('taskFacts').innerHTML = [
-      ['For', t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client'],
-      ['Format', formatWord(t)],
-      ['Month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
-      ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level || '')],
-      ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
-    ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
+    var edit = may('ops', 'work') && !isFinished(t);
+    var forWord = t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client';
+    var rows = [frow('For', esc(forWord))];
+    if (edit) {
+      var fmts = [['', 'Not set']].concat(pairsOf(DELIVER_WORD));
+      if (t.deliverable_type && !DELIVER_WORD[t.deliverable_type]) fmts.push([t.deliverable_type, formatWord(t)]);
+      rows.push(frow('Format', detailSelect('deliverable_type', 'Format', fmts, t.deliverable_type || '')));
+      rows.push(frow('Type', detailSelect('task_type', 'Type', pairsOf(TASK_TYPE_WORD), t.task_type)));
+      if (t.code && t.code_period && mayMove(t)) {
+        rows.push(frow('Month', '<span class="tdetail-pair">' +
+          detailSelect('code_period', 'Month', monthsAround(t.code_period), t.code_period) +
+          detailSelect('code_week', 'Week', [['1', 'Week 1'], ['2', 'Week 2'], ['3', 'Week 3'], ['4', 'Week 4'], ['5', 'Week 5']], t.code_week) +
+          '</span>'));
+      } else if (t.code_period) {
+        rows.push(frow('Month', esc(monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : ''))));
+      }
+      rows.push(frow('Priority', detailSelect('priority_level', 'Priority', [['1', 'Urgent'], ['2', 'High'], ['3', 'Normal'], ['4', 'Low']], String(Math.min(4, Number(t.priority_level) || 3)))));
+      rows.push(frow('Complexity', detailSelect('complexity', 'Complexity', pairsOf(COMPLEX_WORD), t.complexity || 'standard')));
+    } else {
+      [['Format', formatWord(t)], ['Type', TASK_TYPE_WORD[t.task_type] || ''],
+       ['Month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
+       ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level || '')],
+       ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
+      ].forEach(function (p) { if (p[1]) rows.push(frow(p[0], esc(p[1]))); });
+    }
+    $('taskFacts').innerHTML = rows.join('');
+    Array.prototype.forEach.call($('taskFacts').querySelectorAll('select.tdetail'), function (sel) {
+      var was = sel.value;
+      sel.addEventListener('change', function () {
+        var key = sel.getAttribute('data-key');
+        var back = function () { sel.value = was; };
+        if (key === 'code_period' || key === 'code_week') {
+          var per = $('taskFacts').querySelector('[data-key="code_period"]').value;
+          var wk = $('taskFacts').querySelector('[data-key="code_week"]').value;
+          var code = per.slice(2, 4) + per.slice(5, 7) + 'W' + wk + String(t.code_seq || 1).padStart(2, '0');
+          call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, 'taskMsg', function (d) {
+            applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+          }, back);
+          return;
+        }
+        var payload = {};
+        payload[key] = key === 'priority_level' ? Number(sel.value) : (sel.value || null);
+        call('ops_update_task', { p_task: t.id, p_payload: payload, p_version: t.version }, 'taskMsg', function (d) {
+          applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+        }, back);
+      });
+    });
     var wf = state.workflows.filter(function (w) { return w.id === t.workflow_id; })[0];
     var e = state.eng;
     var ml = monthLink(t);
     var more = [
-      ['Type', TASK_TYPE_WORD[t.task_type] || sentence(t.task_type)],
       ['Workflow', (wf && wf.name) || ''],
       ['Languages', (t.language_codes || []).join(', ')],
       ['Estimate', t.estimate_minutes ? minutesWord(t.estimate_minutes) : ''],

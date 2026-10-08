@@ -2064,6 +2064,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Files and links, Time records and Recent activity fold under More
     (`#dwMore`, shut each open).
   - The full record is one press further.
+- The record's Details are changed where they are read (2026-10-08): Format,
+  Type, Priority and Complexity as small selects (`ops_update_task`,
+  `2026-10-08-task-details-editable.sql`: `deliverable_type`, `task_type`,
+  `complexity`, `estimate_minutes`, each refused by name), and the Month and
+  Week where the code may move (`ops_set_code` with the code built from
+  them); each saved on change, put back on a refusal, filed `details_changed`
+  from and to. For stays fixed: the client and its scope hang from it.
 - Everything added can be corrected and taken back:
   - checklist items, links and comments (edit and delete are later events);
   - the brief and the priority (`ops_update_task`).

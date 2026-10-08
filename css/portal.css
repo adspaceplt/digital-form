@@ -7951,6 +7951,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tfacts { display: grid; gap: 8px; margin: 0; }
 .tfacts:empty { display: none; }
 .tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.tfacts > div:has(> dd > .tdetail, > dd > .tdetail-pair) { align-items: center; }
+.tdetail { width: auto; max-width: 100%; }
+.tdetail-pair { display: flex; flex-wrap: wrap; gap: 8px; }
 .tfacts dt { font-size: 13px; color: var(--ink-mute); }
 /* A review's facts sit in a wide card, so the label track is measured
    against the longest label a review prints ("Budget pacing variance") and
