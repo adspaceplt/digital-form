@@ -34906,6 +34906,229 @@ create or replace trigger ops_tasks_code_slot
 -- END OF TASK NUMBERS FOLLOW THE PLAN ---------------------------------------
 
 -- ===========================================================================
+-- REPORT TASKS FOLLOW THEIR REPORT — the month's Accounts report and
+-- Advertising report tasks move with the report they stand for.
+-- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user, 2026-10-08: "could the tasks for advertising report and
+--   accounts report be linked to the stage of the actual report too (report
+--   created, it shifts to in progress assigned to the person who created;
+--   report in review stage it goes to waiting until it is out to publish
+--   stage whereby its marked as sent to client manually for review then move
+--   to reviewing stage.) Done to be marked manually by the assigned users".
+--   Trigger `sm_reports_task_follow` (after insert, or an update of status
+--   or sent_on, on `sm_reports`) finds the report's task as
+--   `sm_report_gate` does (the client's month whose span holds the report's
+--   last day, its live `report_{kind}` task) and moves it on the everyday
+--   workflow, by `sm_report_task_target`:
+--     - a draft: In progress (`doing`); a report just made also makes its
+--       maker the task's owner;
+--     - in review or confirmed, and published but not yet sent: Waiting;
+--     - published and marked as sent: Review.
+--   Done stays the owner's own press: a finished or cancelled task is never
+--   moved, and nothing moves a task to Done. A white-label brand's report
+--   (`brand_id`) leaves the month's task alone. Each move is filed on the
+--   task (`stage_changed`, `report_id`, note "Report …"). A refusal or fault
+--   never fails the report's own write.
+--
+-- ROLLBACK
+--   drop trigger sm_reports_task_follow on public.sm_reports;
+--   drop function public.sm_reports_task_follow();
+--   drop function public.sm_report_task_target(text, date);
+-- ===========================================================================
+
+create or replace function public.sm_report_task_target(p_status text, p_sent date)
+returns text
+language sql immutable set search_path = public as $$
+  select case
+    when p_status = 'draft' then 'doing'
+    when p_status in ('review', 'confirmed') then 'waiting'
+    when p_status = 'published' and p_sent is null then 'waiting'
+    when p_status = 'published' then 'review'
+  end
+$$;
+
+create or replace function public.sm_reports_task_follow()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  e public.ops_engagements;
+  t public.ops_tasks;
+  v_to text;
+  v_was uuid;
+  v_note text;
+begin
+  if new.brand_id is not null then return null; end if;
+  if tg_op = 'UPDATE' and new.status is not distinct from old.status
+     and new.sent_on is not distinct from old.sent_on then
+    return null;
+  end if;
+  v_to := public.sm_report_task_target(new.status, new.sent_on);
+  if v_to is null then return null; end if;
+  select x.* into e from public.ops_engagements x
+   cross join lateral public.ops_month_span(x.period, x.start_day) s
+   where x.client_id = new.client_id and x.status <> 'cancelled'
+     and new.period_end between s.starts and s.ends
+   order by x.period desc limit 1;
+  if e.id is null then return null; end if;
+  select * into t from public.ops_tasks x
+   where x.engagement_id = e.id and x.source_type = 'report_' || new.kind
+     and x.cancelled_at is null and x.archived_at is null
+   order by x.created_at desc limit 1
+   for update;
+  if t.id is null or t.completed_at is not null then return null; end if;
+
+  if tg_op = 'INSERT' and new.created_by is not null then
+    select team_member_id into v_was from public.ops_task_assignees
+     where task_id = t.id and responsibility = 'owner' and ended_at is null;
+    if v_was is distinct from new.created_by then
+      update public.ops_task_assignees set ended_at = now()
+       where task_id = t.id and responsibility = 'owner' and ended_at is null;
+      insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+      values (t.id, new.created_by, 'owner', new.created_by);
+      perform public.ops_log(t.id, 'assignment_changed',
+        jsonb_build_object('owner_id', v_was), jsonb_build_object('owner_id', new.created_by),
+        jsonb_build_object('report', true, 'report_id', new.id, 'stage_key', t.stage_key));
+    end if;
+  end if;
+
+  if t.stage_key is distinct from v_to then
+    v_note := case
+      when tg_op = 'INSERT' then 'Report started'
+      when new.status = 'draft' then 'Report back in draft'
+      when new.status = 'review' then 'Report submitted for review'
+      when new.status = 'confirmed' then 'Report confirmed'
+      when new.sent_on is null then 'Report published'
+      else 'Report sent to the client' end;
+    update public.ops_tasks set stage_key = v_to, version = version + 1, updated_at = now(),
+           completed_at = null, blocked_at = null, blocked_category = null
+     where id = t.id;
+    perform public.ops_log(t.id, 'stage_changed',
+      jsonb_build_object('stage_key', t.stage_key), jsonb_build_object('stage_key', v_to),
+      jsonb_build_object('note', v_note, 'report_id', new.id));
+  elsif tg_op = 'INSERT' then
+    update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
+  end if;
+  return null;
+exception when others then
+  return null;
+end $$;
+revoke all on function public.sm_reports_task_follow() from public, anon, authenticated;
+revoke all on function public.sm_report_task_target(text, date) from public, anon, authenticated;
+
+create or replace trigger sm_reports_task_follow
+  after insert or update of status, sent_on on public.sm_reports
+  for each row execute function public.sm_reports_task_follow();
+
+-- END OF REPORT TASKS FOLLOW THEIR REPORT ------------------------------------
+
+-- ===========================================================================
+-- A NOON REMINDER TO ADD TASKS — on a weekday at 12:00 MYT, a colleague with
+-- no open task, or who has never added one, is reminded to add their work.
+-- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user, 2026-10-08: "if the account has either totally no tasks under
+--   or not created any tasks, sent a reminder daily during weekday at noon to
+--   remind to add tasks (admins excluded)".
+--   1. `ops_tasks_remind(p_today)` (no caller but pg_cron; revoked from every
+--      login): on Monday to Friday (MYT) each active colleague who is not an
+--      admin is told once that day (kind `tasks.empty`, `dedupe_key`
+--      `tasks.remind.{member}.{day}`), when no open task is assigned to
+--      them, or when they have never added a task. Answers how many were
+--      told.
+--   2. pg_cron `tasks-reminder` runs it at 04:00 UTC (12:00 MYT), Monday to
+--      Friday.
+--   3. `ops_notifications_push` opens My Work for `tasks.empty` and tags it
+--      `tasks-empty`, so a second day's reminder replaces the first.
+--
+-- ROLLBACK
+--   select cron.unschedule('tasks-reminder');
+--   drop function public.ops_tasks_remind(date);
+--   (ops_notifications_push: re-run the MY HR REMINDERS section.)
+-- ===========================================================================
+
+create or replace function public.ops_tasks_remind(p_today date default null)
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  v_today date := coalesce(p_today, (now() at time zone 'Asia/Kuala_Lumpur')::date);
+  m record;
+  v_open boolean;
+  v_made boolean;
+  n integer := 0;
+begin
+  if extract(isodow from v_today) > 5 then return 0; end if;
+  for m in select t.id from public.team_members t
+            where t.active and not coalesce(t.is_admin, false) and coalesce(t.role, '') <> 'admin'
+            order by t.id loop
+    v_open := exists (select 1 from public.ops_task_assignees a
+                        join public.ops_tasks k on k.id = a.task_id
+                       where a.team_member_id = m.id and a.responsibility = 'owner' and a.ended_at is null
+                         and k.completed_at is null and k.cancelled_at is null and k.archived_at is null);
+    v_made := exists (select 1 from public.ops_tasks k where k.created_by = m.id);
+    if v_open and v_made then continue; end if;
+    insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
+    values (m.id, null, 'tasks.empty',
+            case when not v_open then 'No open tasks are assigned to you. Add the work you are on in My Work.'
+                 else 'Add the tasks you are working on in My Work.' end,
+            null, 'tasks.remind.' || m.id || '.' || v_today)
+    on conflict (dedupe_key) do nothing;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.ops_tasks_remind(date) from public, anon, authenticated;
+
+create or replace function public.ops_notifications_push()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_title text := coalesce(nullif(btrim(new.title), ''), 'My Work');
+  v_body  text := coalesce(new.body, '');
+begin
+  perform public.push_queue('team', new.team_member_id,
+    jsonb_build_object('en', jsonb_build_object('title', v_title, 'body', v_body),
+                       'zh', jsonb_build_object('title', v_title, 'body', v_body)),
+    case when new.task_id is not null then '/admin/?s=work&open=' || new.task_id::text
+         when new.report_id is not null then '/admin/?s=reports&report=' || new.report_id::text
+         when new.kind in ('client_left', 'tasks.empty') then '/admin/?s=work'
+         when new.kind = 'hr.letter' then '/admin/?s=mine&view=letters'
+         when new.kind = 'perf.disputed' then '/admin/?s=team&tab=performance'
+         when new.kind = 'perf.reflect' then '/admin/?s=mine&view=reflection'
+         when new.kind = 'perf.initiative' then '/admin/?s=mine&view=initiatives'
+         when new.kind like 'health.%' then '/admin/?s=mine&view=health'
+         when new.kind like 'perf.%' then '/admin/?s=mine'
+         else '/admin/' end,
+    case when new.task_id is not null then 'task-' || new.task_id::text
+         when new.report_id is not null then 'report-' || new.report_id::text
+         when new.kind = 'hr.letter' then 'hr-letter'
+         when new.kind in ('perf.remind', 'perf.reflect', 'health.remind') then 'my-hr'
+         when new.kind = 'tasks.empty' then 'tasks-empty'
+         else null end);
+  return new;
+exception when others then
+  return new;
+end $$;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: no task reminders go out until it is.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'tasks-reminder';
+  perform cron.schedule('tasks-reminder', '0 4 * * 1-5', 'select public.ops_tasks_remind()');
+end $$;
+
+-- END OF A NOON REMINDER TO ADD TASKS ----------------------------------------
+
+-- ===========================================================================
 -- CAPTION WRITER AND AI COST — Write caption in Content Review, counted apart
 -- from the reports' AI uses, and every AI call's tokens kept with an
 -- estimated cost a month.
@@ -34940,7 +35163,8 @@ create or replace trigger ops_tasks_code_slot
 --   ai_caption_left() and ai_draft_tokens(uuid, integer, integer, text),
 --   delete the caption rows from ai_drafts and put the purpose check back to
 --   ('draft', 'check'). The columns and the price settings may stay.
--- ====================================================================
+-- ===========================================================================
+
 alter table public.ai_drafts add column if not exists batch_id uuid;
 alter table public.ai_drafts add column if not exists input_tokens integer;
 alter table public.ai_drafts add column if not exists output_tokens integer;
@@ -35376,228 +35600,6 @@ revoke all on function public.ai_draft_set_limit(text, integer) from public, ano
 grant execute on function public.ai_draft_set_limit(text, integer) to authenticated;
 
 -- END OF CAPTION WRITER AND AI COST -----------------------------------------
-=======
--- REPORT TASKS FOLLOW THEIR REPORT — the month's Accounts report and
--- Advertising report tasks move with the report they stand for.
--- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
--- in supabase/schema.sql under the same banner; tests/ops.js compares the
--- two.
---
--- WHAT CHANGED
---   The user, 2026-10-08: "could the tasks for advertising report and
---   accounts report be linked to the stage of the actual report too (report
---   created, it shifts to in progress assigned to the person who created;
---   report in review stage it goes to waiting until it is out to publish
---   stage whereby its marked as sent to client manually for review then move
---   to reviewing stage.) Done to be marked manually by the assigned users".
---   Trigger `sm_reports_task_follow` (after insert, or an update of status
---   or sent_on, on `sm_reports`) finds the report's task as
---   `sm_report_gate` does (the client's month whose span holds the report's
---   last day, its live `report_{kind}` task) and moves it on the everyday
---   workflow, by `sm_report_task_target`:
---     - a draft: In progress (`doing`); a report just made also makes its
---       maker the task's owner;
---     - in review or confirmed, and published but not yet sent: Waiting;
---     - published and marked as sent: Review.
---   Done stays the owner's own press: a finished or cancelled task is never
---   moved, and nothing moves a task to Done. A white-label brand's report
---   (`brand_id`) leaves the month's task alone. Each move is filed on the
---   task (`stage_changed`, `report_id`, note "Report …"). A refusal or fault
---   never fails the report's own write.
---
--- ROLLBACK
---   drop trigger sm_reports_task_follow on public.sm_reports;
---   drop function public.sm_reports_task_follow();
---   drop function public.sm_report_task_target(text, date);
--- ===========================================================================
-
-create or replace function public.sm_report_task_target(p_status text, p_sent date)
-returns text
-language sql immutable set search_path = public as $$
-  select case
-    when p_status = 'draft' then 'doing'
-    when p_status in ('review', 'confirmed') then 'waiting'
-    when p_status = 'published' and p_sent is null then 'waiting'
-    when p_status = 'published' then 'review'
-  end
-$$;
-
-create or replace function public.sm_reports_task_follow()
-returns trigger
-language plpgsql security definer set search_path = public as $$
-declare
-  e public.ops_engagements;
-  t public.ops_tasks;
-  v_to text;
-  v_was uuid;
-  v_note text;
-begin
-  if new.brand_id is not null then return null; end if;
-  if tg_op = 'UPDATE' and new.status is not distinct from old.status
-     and new.sent_on is not distinct from old.sent_on then
-    return null;
-  end if;
-  v_to := public.sm_report_task_target(new.status, new.sent_on);
-  if v_to is null then return null; end if;
-  select x.* into e from public.ops_engagements x
-   cross join lateral public.ops_month_span(x.period, x.start_day) s
-   where x.client_id = new.client_id and x.status <> 'cancelled'
-     and new.period_end between s.starts and s.ends
-   order by x.period desc limit 1;
-  if e.id is null then return null; end if;
-  select * into t from public.ops_tasks x
-   where x.engagement_id = e.id and x.source_type = 'report_' || new.kind
-     and x.cancelled_at is null and x.archived_at is null
-   order by x.created_at desc limit 1
-   for update;
-  if t.id is null or t.completed_at is not null then return null; end if;
-
-  if tg_op = 'INSERT' and new.created_by is not null then
-    select team_member_id into v_was from public.ops_task_assignees
-     where task_id = t.id and responsibility = 'owner' and ended_at is null;
-    if v_was is distinct from new.created_by then
-      update public.ops_task_assignees set ended_at = now()
-       where task_id = t.id and responsibility = 'owner' and ended_at is null;
-      insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
-      values (t.id, new.created_by, 'owner', new.created_by);
-      perform public.ops_log(t.id, 'assignment_changed',
-        jsonb_build_object('owner_id', v_was), jsonb_build_object('owner_id', new.created_by),
-        jsonb_build_object('report', true, 'report_id', new.id, 'stage_key', t.stage_key));
-    end if;
-  end if;
-
-  if t.stage_key is distinct from v_to then
-    v_note := case
-      when tg_op = 'INSERT' then 'Report started'
-      when new.status = 'draft' then 'Report back in draft'
-      when new.status = 'review' then 'Report submitted for review'
-      when new.status = 'confirmed' then 'Report confirmed'
-      when new.sent_on is null then 'Report published'
-      else 'Report sent to the client' end;
-    update public.ops_tasks set stage_key = v_to, version = version + 1, updated_at = now(),
-           completed_at = null, blocked_at = null, blocked_category = null
-     where id = t.id;
-    perform public.ops_log(t.id, 'stage_changed',
-      jsonb_build_object('stage_key', t.stage_key), jsonb_build_object('stage_key', v_to),
-      jsonb_build_object('note', v_note, 'report_id', new.id));
-  elsif tg_op = 'INSERT' then
-    update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
-  end if;
-  return null;
-exception when others then
-  return null;
-end $$;
-revoke all on function public.sm_reports_task_follow() from public, anon, authenticated;
-revoke all on function public.sm_report_task_target(text, date) from public, anon, authenticated;
-
-create or replace trigger sm_reports_task_follow
-  after insert or update of status, sent_on on public.sm_reports
-  for each row execute function public.sm_reports_task_follow();
-
--- END OF REPORT TASKS FOLLOW THEIR REPORT ------------------------------------
-
--- ===========================================================================
--- A NOON REMINDER TO ADD TASKS — on a weekday at 12:00 MYT, a colleague with
--- no open task, or who has never added one, is reminded to add their work.
--- 2026-10-08. Safe to run twice. Rollback at the foot. Mirrored byte for byte
--- in supabase/schema.sql under the same banner; tests/ops.js compares the
--- two.
---
--- WHAT CHANGED
---   The user, 2026-10-08: "if the account has either totally no tasks under
---   or not created any tasks, sent a reminder daily during weekday at noon to
---   remind to add tasks (admins excluded)".
---   1. `ops_tasks_remind(p_today)` (no caller but pg_cron; revoked from every
---      login): on Monday to Friday (MYT) each active colleague who is not an
---      admin is told once that day (kind `tasks.empty`, `dedupe_key`
---      `tasks.remind.{member}.{day}`), when no open task is assigned to
---      them, or when they have never added a task. Answers how many were
---      told.
---   2. pg_cron `tasks-reminder` runs it at 04:00 UTC (12:00 MYT), Monday to
---      Friday.
---   3. `ops_notifications_push` opens My Work for `tasks.empty` and tags it
---      `tasks-empty`, so a second day's reminder replaces the first.
---
--- ROLLBACK
---   select cron.unschedule('tasks-reminder');
---   drop function public.ops_tasks_remind(date);
---   (ops_notifications_push: re-run the MY HR REMINDERS section.)
--- ===========================================================================
-
-create or replace function public.ops_tasks_remind(p_today date default null)
-returns integer
-language plpgsql security definer set search_path = public as $$
-declare
-  v_today date := coalesce(p_today, (now() at time zone 'Asia/Kuala_Lumpur')::date);
-  m record;
-  v_open boolean;
-  v_made boolean;
-  n integer := 0;
-begin
-  if extract(isodow from v_today) > 5 then return 0; end if;
-  for m in select t.id from public.team_members t
-            where t.active and not coalesce(t.is_admin, false) and coalesce(t.role, '') <> 'admin'
-            order by t.id loop
-    v_open := exists (select 1 from public.ops_task_assignees a
-                        join public.ops_tasks k on k.id = a.task_id
-                       where a.team_member_id = m.id and a.responsibility = 'owner' and a.ended_at is null
-                         and k.completed_at is null and k.cancelled_at is null and k.archived_at is null);
-    v_made := exists (select 1 from public.ops_tasks k where k.created_by = m.id);
-    if v_open and v_made then continue; end if;
-    insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
-    values (m.id, null, 'tasks.empty',
-            case when not v_open then 'No open tasks are assigned to you. Add the work you are on in My Work.'
-                 else 'Add the tasks you are working on in My Work.' end,
-            null, 'tasks.remind.' || m.id || '.' || v_today)
-    on conflict (dedupe_key) do nothing;
-    n := n + 1;
-  end loop;
-  return n;
-end $$;
-revoke all on function public.ops_tasks_remind(date) from public, anon, authenticated;
-
-create or replace function public.ops_notifications_push()
-returns trigger
-language plpgsql security definer set search_path = public as $$
-declare
-  v_title text := coalesce(nullif(btrim(new.title), ''), 'My Work');
-  v_body  text := coalesce(new.body, '');
-begin
-  perform public.push_queue('team', new.team_member_id,
-    jsonb_build_object('en', jsonb_build_object('title', v_title, 'body', v_body),
-                       'zh', jsonb_build_object('title', v_title, 'body', v_body)),
-    case when new.task_id is not null then '/admin/?s=work&open=' || new.task_id::text
-         when new.report_id is not null then '/admin/?s=reports&report=' || new.report_id::text
-         when new.kind in ('client_left', 'tasks.empty') then '/admin/?s=work'
-         when new.kind = 'hr.letter' then '/admin/?s=mine&view=letters'
-         when new.kind = 'perf.disputed' then '/admin/?s=team&tab=performance'
-         when new.kind = 'perf.reflect' then '/admin/?s=mine&view=reflection'
-         when new.kind = 'perf.initiative' then '/admin/?s=mine&view=initiatives'
-         when new.kind like 'health.%' then '/admin/?s=mine&view=health'
-         when new.kind like 'perf.%' then '/admin/?s=mine'
-         else '/admin/' end,
-    case when new.task_id is not null then 'task-' || new.task_id::text
-         when new.report_id is not null then 'report-' || new.report_id::text
-         when new.kind = 'hr.letter' then 'hr-letter'
-         when new.kind in ('perf.remind', 'perf.reflect', 'health.remind') then 'my-hr'
-         when new.kind = 'tasks.empty' then 'tasks-empty'
-         else null end);
-  return new;
-exception when others then
-  return new;
-end $$;
-
-do $$
-begin
-  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
-    raise notice 'pg_cron is not enabled: no task reminders go out until it is.';
-    return;
-  end if;
-  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'tasks-reminder';
-  perform cron.schedule('tasks-reminder', '0 4 * * 1-5', 'select public.ops_tasks_remind()');
-end $$;
-
--- END OF A NOON REMINDER TO ADD TASKS ----------------------------------------
 
 -- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above
