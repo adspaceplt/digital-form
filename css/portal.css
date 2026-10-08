@@ -1470,6 +1470,24 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 @media (hover: hover) { .linkbtn.is-danger:hover { color: var(--err-hi); } .linkbtn.is-danger:hover::before { background: var(--err-bg); } }
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 .dangerrow { margin-top: 14px; }
+/* Who this device decides as, under a client page's name card, with Change
+   and Forget (js/decide.js, 2026-10-08). */
+.decide-as {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: 13px; color: var(--ink-mute);
+}
+.decide-as-who { margin-right: auto; }
+.decide-as-who b { color: var(--ink); font-weight: 600; }
+.decide-as .linkbtn { padding: 0 6px; }
+.decide-as-field { flex: 1 1 160px; min-width: 0; max-width: 320px; }
+/* On a phone the name takes the row and Cancel and Save share the next as
+   equal halves, Cancel on the left. */
+@media (max-width: 640px) {
+  .decide-as:has(.decide-as-field) { flex-direction: row-reverse; }
+  .decide-as .decide-as-field { flex: 1 1 100%; max-width: none; order: -1; }
+  .decide-as .btn { flex: 1 1 0; }
+}
 
 
 

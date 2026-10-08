@@ -29,6 +29,58 @@
   }
   function keep(name) {
     try { localStorage.setItem(KEY, name); } catch (e) {}
+    tell();
+  }
+  /* Forget this device's name (2026-10-08): a shared computer, or a name
+     typed wrong, is put right here. Decisions already made keep the name
+     they were made under. */
+  function forget() {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    tell();
+  }
+  var watchers = [];
+  function tell() { watchers.forEach(function (fn) { try { fn(known()); } catch (e) {} }); }
+
+  /* One quiet line naming who this device decides as, with Change and
+     Forget (the user, 2026-10-08: "one wrong typo name can be removed").
+     Drawn only while a name is held; Change opens the name in place. */
+  function whoLine(host, w, after) {
+    if (!host) return;
+    var line = document.createElement('p');
+    line.className = 'decide-as';
+    /* Its own row under the card's head (`after`), the card's full width,
+       so a phone never squeezes it beside the state. */
+    if (after && after.parentNode === host) host.insertBefore(line, after.nextSibling);
+    else host.appendChild(line);
+    function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function paint() {
+      var name = known();
+      line.hidden = !name;
+      if (!name) { line.innerHTML = ''; return; }
+      line.innerHTML = '<span class="decide-as-who">' + esc(w.as) + ' <b>' + esc(name) + '</b></span>' +
+        '<button class="linkbtn" type="button" data-a="change">' + esc(w.change) + '</button>' +
+        '<button class="linkbtn" type="button" data-a="forget">' + esc(w.forget) + '</button>';
+      line.querySelector('[data-a="change"]').addEventListener('click', edit);
+      line.querySelector('[data-a="forget"]').addEventListener('click', function () { forget(); });
+    }
+    function edit() {
+      line.innerHTML = '<input class="input input-sm decide-as-field" type="text" autocomplete="name" aria-label="' + esc(w.name) + '">' +
+        '<button class="btn btn-sm btn-primary" type="button" data-a="save">' + esc(w.save) + '</button>' +
+        '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">' + esc(w.cancel) + '</button>';
+      var f = line.querySelector('input');
+      f.value = known();
+      f.focus(); f.select();
+      function save() { var v = (f.value || '').trim(); if (!v) { f.focus(); return; } keep(v); }
+      line.querySelector('[data-a="save"]').addEventListener('click', save);
+      line.querySelector('[data-a="cancel"]').addEventListener('click', paint);
+      f.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); save(); }
+        else if (e.key === 'Escape') { e.preventDefault(); paint(); }
+      });
+    }
+    watchers.push(paint);
+    paint();
+    return { paint: paint, words: function (nw) { w = nw; paint(); } };
   }
 
   /* Wraps `btn` in a box the field can grow inside, and hands back the two
@@ -108,5 +160,5 @@
     };
   }
 
-  window.ADspaceDecide = { KEY: KEY, known: known, keep: keep, nameBox: nameBox };
+  window.ADspaceDecide = { KEY: KEY, known: known, keep: keep, forget: forget, whoLine: whoLine, nameBox: nameBox };
 })();

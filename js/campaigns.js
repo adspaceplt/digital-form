@@ -938,7 +938,9 @@
 
   function loadTeam(then) {
     db.from('team_members').select('name, staff_code').eq('active', true).order('name').then(function (r) {
-      state.team = (r.data) || [];
+      /* A system account (2026-10-08) never runs a campaign. */
+      var S = window.ADspaceAdmin;
+      state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m.name)); });
       if (then) then();
     }, function () { if (then) then(); });
   }

@@ -33,6 +33,13 @@
   /* Clients and colleagues in a picker lead with their code (js/form.js). */
   var F = window.ADspaceForm;
   function person(m) { return F.named(m.staff_code, m.name); }
+  /* Every colleague who may be offered work: a system account (IT's, never
+     day-to-day work; 2026-10-08) is left out of every picker and the
+     capacity bars, and still named where it already acted. */
+  function pickable() {
+    var S = window.ADspaceAdmin;
+    return (state.members || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });
+  }
   function clientName(c) { return F.named(c.client_code, c.name); }
   var byClient = F.byClient;
   function esc(s) {
@@ -1381,7 +1388,7 @@
       title: 'Reassign',
       body: 'The ' + (ids.length === 1 ? 'task goes' : ids.length + ' tasks go') + ' to one person, with the change on each task\'s record.',
       go: 'Assign',
-      field: { label: 'Assign to', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, person(m)]; })),
+      field: { label: 'Assign to', choices: [['', 'Choose a person']].concat(pickable().map(function (m) { return [m.id, person(m)]; })),
                need: 'Choose a person.' }
     }, function (who) {
       var done = 0, bad = null, i = 0;
@@ -2211,7 +2218,7 @@
         mins[who] = (mins[who] || 0) + (Number(t.estimate_minutes) || 0);
       }
     });
-    var people = state.members.filter(function (m) {
+    var people = pickable().filter(function (m) {
       if (!team) return me && m.id === me.id;
       return m.capacity_minutes_week || mins[m.id] || open[m.id];
     });
@@ -2592,7 +2599,7 @@
     var sel = document.createElement('select');
     sel.className = 'select select-sm tinline-pick';
     sel.setAttribute('aria-label', 'Assigned to, ' + (t.title || 'task'));
-    sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
+    sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     btn.hidden = true;
@@ -3510,7 +3517,7 @@
     if (b.hand.getAttribute('data-key') === key) return;
     b.hand.setAttribute('data-key', key);
     var cur = ownerId(t);
-    b.to.innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
+    b.to.innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
@@ -3644,7 +3651,7 @@
     $('stepHandTick').checked = !perf && !o.assignee && !handsToColleague(key, t);
     $('stepHandRow').hidden = $('stepHandTick').checked;
     $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
-    $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
+    $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
@@ -3786,7 +3793,7 @@
     if (!may('ops', 'work')) return;
     loadEngs(function () {
       var me = bridge.me && bridge.me();
-      $('qkOwner').innerHTML = state.members.map(function (m) {
+      $('qkOwner').innerHTML = pickable().map(function (m) {
         return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
       }).join('');
       $('qkDue').value = dateValue(new Date());
@@ -3948,7 +3955,7 @@
     $('teHead').textContent = row ? 'Edit template' : 'New template';
     $('teName').value = x.name || '';
     $('teTitle').value = x.default_title || '';
-    $('teOwner').innerHTML = '<option value="">Whoever makes it</option>' + state.members.map(function (m) {
+    $('teOwner').innerHTML = '<option value="">Whoever makes it</option>' + pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === x.default_owner_id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     $('teDue').value = x.due_offset_days == null ? '' : String(x.due_offset_days);
@@ -5369,7 +5376,7 @@
     var name = $('taskOwnerName'), sel = $('taskOwner'), ch = $('taskOwnerChange');
     if (!sel) return;
     var was = ownerId(t);
-    sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
+    sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (was === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     name.hidden = true; if (ch) ch.hidden = true;
@@ -5973,7 +5980,7 @@
     if (nk) nk.hidden = Boolean(ntPrefill);
     var ow = $('ntOwner');
     var me = bridge.me && bridge.me();
-    ow.innerHTML = state.members.map(function (m) {
+    ow.innerHTML = pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     /* The content month: this one and the six after it, and the one before
@@ -6398,7 +6405,7 @@
      they choose somebody else. */
   function fillOwners(sel, me) {
     me = me || (bridge.me && bridge.me());
-    sel.innerHTML = state.members.map(function (m) {
+    sel.innerHTML = pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
   }
@@ -7169,7 +7176,7 @@
     fillMonths($('engPeriod'), e ? e.period : null);
     $('engPeriod').disabled = Boolean(e);
     var me = bridge.me && bridge.me();
-    $('engManager').innerHTML = state.members.map(function (m) {
+    $('engManager').innerHTML = pickable().map(function (m) {
       /* A new month, or one nobody manages yet, starts on whoever opens it:
          never the first name in the list by accident. */
       var pick = e && e.manager_id ? m.id === e.manager_id : (me && me.id === m.id);
@@ -7254,7 +7261,7 @@
     $('meetLink').value = e.meeting_link || '';
     $('meetBook').checked = true;
     var me = bridge.me && bridge.me();
-    $('meetOwner').innerHTML = state.members.map(function (m) {
+    $('meetOwner').innerHTML = pickable().map(function (m) {
       var pick = e.meeting_owner_id ? m.id === e.meeting_owner_id : (me && me.id === m.id);
       return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
@@ -7399,7 +7406,7 @@
     var t = state.task;
     if (!t || !mayReassign(t)) return;
     var owner = ownerId(t);
-    $('giveTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
+    $('giveTo').innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return m.id !== owner;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>';

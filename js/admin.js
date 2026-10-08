@@ -643,13 +643,28 @@
      (2026-10-07: the older answer, "everyone may do everything", was for a
      database without me()). */
   var me = null;
+  var SYSTEM = { ids: {}, names: {} };
+  /* A colleague is a system account by its row's own mark, else by its id
+     or name in the console's one read. */
+  function isSystem(m) {
+    if (!m) return false;
+    if (typeof m === 'string') return Boolean(SYSTEM.ids[m] || SYSTEM.names[m]);
+    return Boolean(m.system || SYSTEM.ids[m.id || m.team_member_id] || (m.name && SYSTEM.names[m.name] && !m.id));
+  }
   var meLoaded = false;
   var meFailed = false;
   function loadMe(then) {
     /* The business figures the team may change (SST, terms, follow-up
        limits; js/money.js) are read beside me(), so no screen draws first. */
     var MON = window.ADspaceMoney, rates = MON && MON.load ? MON.load() : Promise.resolve();
-    var go = function () { rates.then(then, then); };
+    /* System accounts (2026-10-08): kept for IT, never offered for work, so
+       every picker asks `isSystem` from this one read. A read that fails
+       leaves the set empty, never the console. */
+    var sys = db.from('team_members').select('id, name').eq('system', true).then(function (r) {
+      SYSTEM = { ids: {}, names: {} };
+      (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; });
+    }, function () {});
+    var go = function () { Promise.all([rates.then(null, function () {}), sys]).then(then, then); };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
       if (!r.error) return r;
@@ -4250,6 +4265,7 @@
     isAdmin: isAdminMe,
     ICON: ICON,
     glyph: sectionGlyph,
+    isSystem: isSystem,
     hold: hold,
     iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's
