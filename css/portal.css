@@ -8662,6 +8662,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-paste { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .rp-paste-sum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .rp-paste-sum.is-warn { color: var(--ink); }
+/* Import from Meta (2026-10-08): the line is the sheet's content. */
+#rpPasteAdsSheet.is-meta .rp-paste-sum { margin: 0; font-size: 14px; color: var(--ink); }
+#rpPasteSheet.is-meta .rp-paste-sum { font-size: 14px; color: var(--ink); }
 .rp-paste-sum.is-warn::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
 .rp-facts dd { white-space: normal; }
 /* A narrow pane: two lines a row. */
@@ -10403,6 +10406,15 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .wl-brand .team-act { margin-block: -4px; }
 .wl-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
 .wl-brands .wl-add { justify-self: start; margin-top: 8px; }
+/* Meta (2026-10-08): the accounts a client's reports are imported from, read
+   first on the Brand pane; Edit opens the picker sheet. */
+.readgroup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.readgroup-head .fsec-h { margin: 0; }
+.readgroup-head .btn { flex: 0 0 auto; }
+.meta-for { margin: 0 0 12px; font-weight: 600; }
+.meta-body > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.meta-accs { display: grid; gap: 4px; max-height: 40dvh; overflow-y: auto; }
+.meta-accs .tickline { min-height: var(--ctl-h); }
 @media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
 #ptLogoOff { margin-top: 8px; }
 

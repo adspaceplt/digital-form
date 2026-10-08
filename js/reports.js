@@ -528,8 +528,9 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames(), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
+      return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
+        st.meta = x[x.length - 2] || null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
@@ -552,6 +553,17 @@
       var bs = (x[1] && x[1].data && x[1].data.brands) || [];
       var b = bs.filter(function (y) { return y.id === brand; })[0];
       return c && c.white_label && !(b && b.logo === 'adspace') ? c : null;
+    }).catch(function () { return null; });
+  }
+  /* The Meta assets the report's client (or its brand) is linked to
+     (2026-10-08), read once a report opens: Import from Meta is drawn only
+     where there is one. A refused read draws no button. */
+  function metaOf(cid, brand) {
+    if (!cid) return Promise.resolve(null);
+    return db.rpc('meta_links_list', { p_client: cid }).then(function (q) {
+      var d = (q && q.data) || {};
+      if ((q && q.error) || d.error) return null;
+      return (d.links || []).filter(function (l) { return (l.brand_id || null) === (brand || null); })[0] || null;
     }).catch(function () { return null; });
   }
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
@@ -717,6 +729,7 @@
     } else if (k === 'posts') {
       box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="pickposts">Select</button>' +
           '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
+          (st.meta && (st.meta.page || st.meta.instagram) ? '<button class="btn btn-sm" type="button" data-a="metaposts">Import from Meta</button>' : '') +
           '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' : '') +
         (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
           ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
@@ -739,6 +752,7 @@
     } else if (k === 'ads') {
       box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pickads">Select</button>' +
           '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
+          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' : '') +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
@@ -755,6 +769,8 @@
     if ((b = box.querySelector('[data-a="paste"]'))) { var pb = b; pb.addEventListener('click', function () { pasteSheet(pb); }); }
     if ((b = box.querySelector('[data-a="addad"]'))) { var ad = b; ad.addEventListener('click', function () { adSheet(null, ad); }); }
     if ((b = box.querySelector('[data-a="pasteads"]'))) { var pa = b; pa.addEventListener('click', function () { pasteAdsSheet(pa); }); }
+    if ((b = box.querySelector('[data-a="metaads"]'))) { var ma = b; ma.addEventListener('click', function () { metaImport('ads', ma); }); }
+    if ((b = box.querySelector('[data-a="metaposts"]'))) { var mp = b; mp.addEventListener('click', function () { metaImport('posts', mp); }); }
     if ((b = box.querySelector('[data-a="pickads"]'))) b.addEventListener('click', function () { st.adPick = {}; paintAds(); });
     if ((b = box.querySelector('[data-a="pickposts"]'))) b.addEventListener('click', function () { st.postPick = {}; paintPosts(); });
   }
@@ -2141,7 +2157,7 @@
     return { rows: out, skipped: skipped, columns: columns, mode: mode, days: days, outside: outside, mdy: mdy };
   }
 
-  function pasteSheet(opener) {
+  function pasteSheet(opener, pre) {
     var box = sheetShell('rpPasteSheet', 'Import from spreadsheet',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPasteText">Copy the rows from your spreadsheet, with the header row, and paste them here</label>' +
@@ -2153,8 +2169,14 @@
     acc.innerHTML = st.platforms.map(function (a) {
       return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
     }).join('');
-    $('rpPasteText').value = '';
+    $('rpPasteSheetTitle').textContent = pre ? 'Import from Meta' : 'Import from spreadsheet';
+    ['rpPasteText', 'rpPasteFile'].forEach(function (k) { $(k).closest('.row').hidden = !!pre; });
+    box.classList.toggle('is-meta', !!pre);
+    $('rpPasteText').value = pre ? pre.text : '';
     $('rpPasteFile').value = '';
+    /* Meta's posts go to the report's account on their platform. */
+    var accOf = pre && st.platforms.filter(function (a) { return a.platform === pre.platform; })[0];
+    if (accOf) acc.value = accOf.id;
     var sum = $('rpPasteSum'), sm = box.querySelector('[data-m="sheet"]');
     sum.textContent = ''; say(sm, '');
     var r0 = st.open, year = Number(String(r0.period_start).slice(0, 4));
@@ -2202,6 +2224,7 @@
       fr.readAsText(f);
     };
     go.disabled = true;
+    if (pre) read();
     go.onclick = function () {
       var out = read();
       if (!out.rows || !out.rows.length) return;
@@ -2227,7 +2250,7 @@
             if (row) st.posts = st.posts.map(function (p) { return p.id === row.id ? row : p; });
           });
           var na = (res.data || []).length, nu = all.length - all.filter(function (x) { return x.error || !(x.data || []).length; }).length;
-          if (na || nu) fileReport('report.saved', [na ? plural(na, 'post') + ' imported' : '', nu ? plural(nu, 'post') + ' updated' : ''].filter(Boolean).join(', ') +
+          if (na || nu) fileReport('report.saved', (pre ? 'From Meta: ' : '') + [na ? plural(na, 'post') + ' imported' : '', nu ? plural(nu, 'post') + ' updated' : ''].filter(Boolean).join(', ') +
             (out.mode === 'lifetime' ? ' (lifetime)' : out.mode ? ' (daily, added up)' : ''));
           sortPosts();
           paintPosts();
@@ -3503,7 +3526,51 @@
     return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary, tiktok: tiktok };
   }
 
-  function pasteAdsSheet(opener) {
+  /* Import from Meta (2026-10-08): the period's figures read from Meta by
+     the `meta-import` function and handed to the importer a paste goes
+     through, as the export it would have been: the sheet opens with them
+     in it, its line says what it will do, and its own button imports. With
+     more than one ad account (or a Page and an Instagram account) it asks
+     which first; the other is imported after. Every figure is Meta's. */
+  var META_SAID = {
+    'not-connected': 'Meta is not connected.',
+    'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
+    'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
+    'rate-limited': 'Meta is busy. Try again in a few minutes.',
+    'no-mapping': 'This account is no longer linked on the client\'s Brand.',
+    'denied': 'This needs Reports at Work.',
+    'not-draft': 'Only a draft takes an import.',
+    'needs-update': 'This needs a database update.'
+  };
+  function metaImport(kind, btn) {
+    var m0 = st.meta || {}, sec = btn.closest('.rp-sec'), head = sec && sec.querySelector('.rp-sec-head');
+    var line = sec && sec.querySelector('[data-m="meta"]');
+    if (!line && head) { line = document.createElement('p'); line.setAttribute('data-m', 'meta'); head.insertAdjacentElement('afterend', line); }
+    say(line, '');
+    var choices = kind === 'ads' ? (m0.ad_accounts || []).map(function (a) { return [a.id, a.name]; })
+      : [m0.page ? ['facebook', 'Facebook Page · ' + m0.page.name] : null, m0.instagram ? ['instagram', 'Instagram · ' + m0.instagram.name] : null].filter(Boolean);
+    if (!choices.length) return;
+    var fetchIt = function (pick) {
+      var was = btn.innerHTML;
+      btn.disabled = true; btn.textContent = 'Reading Meta…';
+      var body = kind === 'ads' ? { action: 'ads', report_id: st.open.id, account: pick } : { action: 'posts', report_id: st.open.id, source: pick };
+      var done = function () { btn.disabled = false; btn.innerHTML = was; };
+      db.functions.invoke('meta-import', { body: body }).then(function (res) {
+        done();
+        var d = (res && res.data) || {};
+        if ((res && res.error) || d.error) { say(line, META_SAID[d.error] || 'Meta did not answer. Try again.', 'err'); return; }
+        if (!d.text) { say(line, kind === 'ads' ? 'Meta has no ads in this period.' : 'Meta has no posts in this period.', 'warn'); return; }
+        if (line && line.parentNode) line.parentNode.removeChild(line);
+        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '' });
+        else pasteSheet(btn, { text: d.text, platform: d.source });
+      }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
+    };
+    if (choices.length === 1) { fetchIt(choices[0][0]); return; }
+    window.ADspaceConfirm.ask({ title: 'Import from Meta', go: 'Import',
+      field: { label: kind === 'ads' ? 'Ad account' : 'Account', choices: choices } }, fetchIt);
+  }
+
+  function pasteAdsSheet(opener, pre) {
     var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg>' +
         AD_PLATS.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></div></div>' +
@@ -3512,7 +3579,17 @@
       '<div class="row"><div><label class="field-label" for="rpPAText">Export from Ads Manager, copy the rows with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
-    $('rpPAText').value = '';
+    $('rpPasteAdsSheetTitle').textContent = pre ? 'Import from Meta' : 'Import from Ads Manager';
+    /* From Meta the export is the function's, not typed: the sheet shows
+       what it will do, never the text. */
+    ['rpPAPlat', 'rpPAObj', 'rpPAText'].forEach(function (k) { $(k).closest('.row').hidden = !!pre; });
+    box.classList.toggle('is-meta', !!pre);
+    $('rpPAText').value = pre ? pre.text : '';
+    /* Meta's age split follows the figures, matched by Ad ID, in the same
+       press. */
+    var ageNext = pre && pre.age ? pre.age : '';
+    var ageOnly = false;
+    var from = pre ? 'Imported from Meta: ' : 'Imported from Ads Manager: ';
     /* The platform follows the paste (TikTok's own headers) until the
        person picks one. */
     var platTouched = false;
@@ -3577,7 +3654,7 @@
         /* A day's or an age group's rows for a name several ads here share
            cannot say which ad they belong to, so they add nothing. */
         if ((r0._daily || out.byAge) && named(r0)) { out.unclear.push(r0); return; }
-        out.fresh.push(r0);
+        if (!ageOnly) out.fresh.push(r0);
       });
       var what = out.rows.some(function (r0) { return r0._daily; }) ? 'take the days they ran'
         : out.byAge ? 'take their age split' : 'take Ads Manager\'s figures';
@@ -3601,7 +3678,8 @@
       if (fk.length) parts.push('the account\'s ' + fk.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' to Step 1');
       if (out.kept.length) parts.push('Step 1 keeps its typed ' + out.kept.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1'));
       sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
-        (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '');
+        (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '') +
+        (ageNext ? ' The age split follows.' : '');
       go.disabled = !(out.fresh.length + out.updates.length + Object.keys(out.fill).length);
       return out;
     };
@@ -3640,13 +3718,18 @@
         if (rows.length) parts.push(rows.length + (rows.length === 1 ? ' ad added' : ' ads added'));
         if (out.updates.length) parts.push(out.updates.length + (out.updates.length === 1 ? ' ad updated' : ' ads updated'));
         if (Object.keys(fill).length) parts.push('account figures filled');
-        fileReport('report.saved', 'Imported from Ads Manager: ' + parts.join(', '));
+        fileReport('report.saved', from + parts.join(', '));
         sortAds();
+        if (ageNext) {
+          var o2 = (function () { $('rpPAText').value = ageNext; ageNext = ''; ageOnly = true; return read(); }());
+          if (o2.updates && o2.updates.length) { go.onclick(); return; }
+        }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals(); paintSteps();
       }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); paintSteps(); say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });
+    if (pre) read();
   }
 
   // ---- Draft with AI usage: an admin's view of every colleague's drafts ------

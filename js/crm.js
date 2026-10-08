@@ -2156,8 +2156,14 @@
       readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
       (c.white_label ? readGroup('Reports', [['White label', 'On'],
         ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) +
-        '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '');
+        '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '') +
+      '<section class="readgroup meta-links" id="crmMetaRead"><div class="readgroup-head"><h4 class="fsec-h">Meta</h4>' +
+        (mayPart('clients', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
+        '</div><div data-m="list"></div></section>';
     if (c.white_label) loadBrands(c);
+    loadMeta(c);
+    var me0 = $('crmMetaRead').querySelector('[data-a="meta"]');
+    if (me0) me0.addEventListener('click', function () { metaSheet(c, null, this); });
   }
   /* The brands a white-label client is serviced for (2026-10-07): each its
      own report a month, picked on New report and in a report's White label.
@@ -2167,7 +2173,7 @@
     var host = $('crmWlBrands');
     if (!host) return;
     var list = host.querySelector('[data-m="list"]'), seq = ++brandSeq;
-    var can = mayPart('reports.whitelabel', 'work');
+    var can = mayPart('reports.whitelabel', 'work'), canMeta = mayPart('clients', 'work');
     db.rpc('client_brands_list', { p_client: c.id }).then(function (q) {
       if (seq !== brandSeq || state.client !== c) return;
       var d = (q && q.data) || {};
@@ -2180,16 +2186,20 @@
         var own = b.logo === 'adspace';
         row.innerHTML = '<span class="wl-brand-name">' + esc(b.name) + (own ? '<span class="chip">ADspace logo</span>' : '') +
           (b.active ? '' : '<span class="chip is-off">Inactive</span>') + '</span>' +
-          (can ? '<span class="team-act">' +
+          (can || canMeta ? '<span class="team-act">' +
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
-              '<button class="kmenu-item" data-a="rename" type="button"><b>Rename</b></button>' +
-              '<button class="kmenu-item" data-a="logo" type="button"><b>' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</b></button>' +
-              '<button class="kmenu-item" data-a="state" type="button"><b>' + (b.active ? 'Set inactive' : 'Set active') + '</b></button>' +
+              (can ? '<button class="kmenu-item" data-a="rename" type="button"><b>Rename</b></button>' : '') +
+              (canMeta ? '<button class="kmenu-item" data-a="meta" type="button"><b>Meta accounts</b></button>' : '') +
+              (can ? '<button class="kmenu-item" data-a="logo" type="button"><b>' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</b></button>' +
+              '<button class="kmenu-item" data-a="state" type="button"><b>' + (b.active ? 'Set inactive' : 'Set active') + '</b></button>' : '') +
             '</div></span>' : '');
         list.appendChild(row);
-        if (!can) return;
+        if (!can && !canMeta) return;
         wireMenu(row);
+        var mItem = row.querySelector('[data-a="meta"]');
+        if (mItem) mItem.addEventListener('click', function () { metaSheet(c, b, row.querySelector('[data-a="menu"]')); });
+        if (!can) return;
         row.querySelector('[data-a="rename"]').addEventListener('click', function () { brandAsk(c, b); });
         /* Whose mark heads the brand's reports (2026-10-07); reversible, so
            it never asks. A published version keeps the mark it went out with. */
@@ -2218,6 +2228,125 @@
         list.appendChild(add);
       }
     }).catch(function () { if (seq === brandSeq) list.innerHTML = '<p class="msg err">Brands could not be read.</p>'; });
+  }
+  /* META (2026-10-08): the ad accounts, Page and Instagram account a
+     client's reports are read from by Import from Meta, picked from what
+     ADspace's system user can see (the `meta-import` function), never typed.
+     A white-label client's brands each link their own, from the brand's ⋯
+     (Meta accounts), read in that sheet. */
+  var metaSeq = 0, metaSheetSeq = 0, metaLinks = [];
+  function metaFacts(l) {
+    var names = function (v) { return Array.isArray(v) ? v.map(function (x) { return esc(x.name); }).join(', ') : v ? esc(v.name) : ''; };
+    return [['Ad accounts', names(l && l.ad_accounts)], ['Facebook Page', names(l && l.page)], ['Instagram', names(l && l.instagram)]];
+  }
+  function loadMeta(c) {
+    var host = $('crmMetaRead');
+    if (!host) return;
+    var list = host.querySelector('[data-m="list"]'), seq = ++metaSeq;
+    db.rpc('meta_links_list', { p_client: c.id }).then(function (q) {
+      if (seq !== metaSeq || state.client !== c) return;
+      var d = (q && q.data) || {};
+      if ((q && q.error) || d.error) {
+        metaLinks = [];
+        list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This needs a database update.' : 'The Meta accounts could not be read.') + '</p>';
+        return;
+      }
+      metaLinks = d.links || [];
+      var own = metaLinks.filter(function (l) { return !l.brand_id; })[0];
+      var dl = function (rows) {
+        return '<dl class="ovfacts">' + rows.map(function (r) {
+          return '<div><dt>' + esc(r[0]) + '</dt>' + (r[1] ? '<dd>' + r[1] + '</dd>' : '<dd class="is-empty">—</dd>') + '</div>';
+        }).join('') + '</dl>';
+      };
+      list.innerHTML = dl(metaFacts(own));
+    }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be read.</p>'; });
+  }
+  var META_SAID = {
+    'not-connected': 'Meta is not connected.',
+    'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
+    'rate-limited': 'Meta is busy. Try again in a few minutes.',
+    'denied': 'This needs Clients at Work.'
+  };
+  function metaSheet(c, b, opener) {
+    var id = 'crmMetaSheet', box = $(id);
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'sheet'; box.id = id; box.hidden = true;
+      box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmMetaTitle">' +
+        '<div class="sheet-head"><h3 id="crmMetaTitle">Meta accounts</h3>' +
+        '<button class="iconbtn" id="crmMetaClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+        '<div class="sheet-body"><p class="meta-for" id="crmMetaFor"></p><div class="meta-body" id="crmMetaBody"></div><div class="msg" id="crmMetaMsg"></div></div>' +
+        '<div class="sheet-foot"><button class="btn btn-primary" id="crmMetaSave" type="button">Save</button>' +
+        '<button class="btn btn-quiet" id="crmMetaCancel" type="button">Cancel</button></div></div>';
+      var after = $('crmBrandSheet');
+      after.parentNode.insertBefore(box, after.nextSibling);
+      $('crmMetaCancel').addEventListener('click', function () { shutSheet(id); });
+      sheetClose('crmMetaClose', 'crmMetaCancel');
+    }
+    var mine = metaLinks.filter(function (l) { return (l.brand_id || null) === (b ? b.id : null); })[0] || {};
+    var body = $('crmMetaBody'), save = $('crmMetaSave'), seq = ++metaSheetSeq;
+    $('crmMetaFor').textContent = b ? b.name : '';
+    $('crmMetaFor').hidden = !b;
+    msg('crmMetaMsg', '');
+    save.disabled = true;
+    skeleton(body, 3);
+    openSheet(id, opener);
+    var load = function () {
+      skeleton(body, 3);
+      db.functions.invoke('meta-import', { body: { action: 'assets' } }).then(function (res) {
+        if (seq !== metaSheetSeq) return;
+        var d = (res && res.data) || {};
+        if ((res && res.error) || d.error) {
+          failLine(body, 'Meta accounts', META_SAID[d.error] || 'Meta did not answer.', load);
+          return;
+        }
+        /* A link Meta no longer shows (an account no longer shared) stays
+           offered, so a save never drops it unseen. */
+        var withHeld = function (list, held) {
+          list = (list || []).slice();
+          [].concat(held || []).forEach(function (h) { if (h && !list.some(function (x) { return x.id === h.id; })) list.push(h); });
+          return list;
+        };
+        var accs = withHeld(d.ad_accounts, mine.ad_accounts), pages = withHeld(d.pages, mine.page), igs = withHeld(d.instagram, mine.instagram);
+        var held = {};
+        (mine.ad_accounts || []).forEach(function (a) { held[a.id] = true; });
+        var opt = function (list, pick) {
+          return '<option value="">None</option>' + list.map(function (x) {
+            return '<option value="' + esc(x.id) + '"' + (pick && pick.id === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>';
+          }).join('');
+        };
+        body.innerHTML =
+          '<section class="fsec"><h4 class="fsec-h">Ad accounts</h4>' +
+            (accs.length ? '<div class="meta-accs" role="group" aria-label="Ad accounts">' + accs.map(function (a) {
+              return '<label class="tickline"><input type="checkbox" value="' + esc(a.id) + '"' + (held[a.id] ? ' checked' : '') + '> <span>' + esc(a.name) + '</span></label>';
+            }).join('') + '</div>' : '<p class="wl-none">No ad accounts.</p>') + '</section>' +
+          '<section class="fsec"><h4 class="fsec-h">Pages</h4><div class="row fgrid">' +
+            '<div><label class="field-label" for="crmMetaPage">Facebook Page</label><select class="select" id="crmMetaPage">' + opt(pages, mine.page) + '</select></div>' +
+            '<div><label class="field-label" for="crmMetaIg">Instagram</label><select class="select" id="crmMetaIg">' + opt(igs, mine.instagram) + '</select></div>' +
+          '</div></section>';
+        save.disabled = false;
+        save.onclick = function () {
+          var pickOf = function (list, v) { return list.filter(function (x) { return x.id === v; })[0] || null; };
+          var ticked = Array.prototype.map.call(body.querySelectorAll('.meta-accs input:checked'), function (x) { return pickOf(accs, x.value); }).filter(Boolean);
+          save.disabled = true;
+          db.rpc('meta_links_save', { p_client: c.id, p_brand: b ? b.id : null, p_ad_accounts: ticked,
+            p_page: pickOf(pages, $('crmMetaPage').value), p_instagram: pickOf(igs, $('crmMetaIg').value) }).then(function (q) {
+            save.disabled = false;
+            var r = (q && q.data) || {};
+            if ((q && q.error) || r.error) {
+              msg('crmMetaMsg', r.error === 'denied' ? 'This needs Clients at Work.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
+                (q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This needs a database update.' : 'Not saved. The database refused the request.', 'err');
+              return;
+            }
+            if (window.ADspaceSheet) window.ADspaceSheet.clean();
+            shutSheet(id);
+            msg('crmBrandNote', 'Saved.', 'ok');
+            loadMeta(c);
+          }).catch(function () { save.disabled = false; msg('crmMetaMsg', 'Not saved. Try again.', 'err'); });
+        };
+      }).catch(function () { if (seq === metaSheetSeq) failLine(body, 'Meta accounts', 'Meta did not answer.', load); });
+    };
+    load();
   }
   var PLUS_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   function brandAsk(c, b) {
