@@ -2859,11 +2859,14 @@
     $('dwTitle').textContent = t.title || 'Untitled task';
     /* One line that places it, and the way to where the rest of it lives:
        the month or the client is its own record, not this sheet's. */
-    var ctx = [engName(t) || whoseWord(t), metaFormat(t)].filter(Boolean).join(' · ');
+    /* The client, the format and the month, the month itself the way to it
+       (the user, 2026-10-08: "so many info here"). */
+    var fmt = metaFormat(t).replace(/^[^:]*:\s*/, '');
+    var ctx = [whoseWord(t), fmt].filter(Boolean).join(' · ');
     var ml = t.engagement_id ? monthLink(t) : null;
     var cl = !ml && t.clients && t.clients.slug
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
-    var link = ml ? { label: 'View month', href: ml.href } : cl;
+    var link = ml ? { label: t.code_period ? monthWord(t.code_period) : 'View month', href: ml.href } : cl;
     $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
@@ -3198,18 +3201,48 @@
   }
   /* The title is edited where it sits, the pen becoming the tick. A task with
      a code keeps its code; what is edited is the words after it. */
-  function editSheetTitle() {
+  function editSheetTitle() { editName($('dwTitle'), $('dwTitleEdit'), 'dwMsg'); }
+  /* One pen edits the whole name (the user, 2026-10-08: "the pen button only
+     allows to edit the content name"): a task with a code opens as the code
+     and its description, and each part that changed goes to its own
+     function; the code keeps its shape and the description may be blank. */
+  function editName(host, pen, msgId) {
     var t = state.task;
     if (!t || !window.ADspaceAsk) return;
-    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
-    window.ADspaceAsk.rename($('dwTitle'), $('dwTitleEdit'), {
-      label: 'Title', saveLabel: 'Save title', value: was,
-      allowEmpty: Boolean(t.code), max: 160,
+    var was = t.code ? (t.code + ' ' + (t.content_desc || '')).trim() : (t.content_desc || t.title || '');
+    window.ADspaceAsk.rename(host, pen, {
+      label: 'Name', saveLabel: 'Save name', value: was, max: 180,
       save: function (v) {
-        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'dwMsg', function (d) {
-          applyTask(d);
-          readTask(t.id, function () { msg('dwMsg', 'Title saved.', 'ok'); });
-        });
+        if (!t.code) {
+          call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, msgId, function (d) {
+            applyTask(d); readTask(t.id, function () { msg(msgId, 'Saved.', 'ok'); });
+          });
+          return;
+        }
+        var m = String(v).trim().match(/^(\d{4}\s*W\s*[1-5]\s*\d{2,3})(?:\s+([\s\S]*))?$/i);
+        if (!m) { msg(msgId, said('bad-code'), 'err'); paintTask(); return; }
+        var code = m[1].replace(/\s/g, '').toUpperCase(), desc = (m[2] || '').trim();
+        var codeWas = t.code;
+        var descStep = function (row) {
+          if (desc === (row.content_desc || '')) {
+            readTask(t.id, function () {
+              msg(msgId, 'Saved.', 'ok');
+              if (row.code !== codeWas) undoBar('Code changed to ' + row.code + '.', function () { setCode(state.task, codeWas, false); }, $(msgId));
+            });
+            return;
+          }
+          call('ops_set_content_desc', { p_task: t.id, p_desc: desc, p_version: row.version }, msgId, function (d) {
+            applyTask(d);
+            readTask(t.id, function () {
+              msg(msgId, 'Saved.', 'ok');
+              if (d.code !== codeWas) undoBar('Code changed to ' + d.code + '.', function () { setCode(state.task, codeWas, false); }, $(msgId));
+            });
+          });
+        };
+        if (code === t.code) { descStep(t); return; }
+        call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, msgId, function (d) {
+          applyTask(d); descStep(d);
+        }, paintTask);
       }
     });
   }
@@ -4181,8 +4214,6 @@
     }
     var pen = $('taskDescEdit');
     if (pen) pen.hidden = !may('ops', 'work') || isFinished(t);
-    var cpen = $('taskCodeEdit');
-    if (cpen) cpen.hidden = !t.code || !may('ops', 'work') || !mayMove(t);
     /* Whose it is and what it makes. The owner is the rail's, named once
        under People, so the head does not say it a second time. */
     $('taskMeta').textContent = [
@@ -6231,34 +6262,7 @@
   /* The description is edited where it sits: the pen becomes the tick, the
      code beside it never changes, and a blank is allowed on a task that has
      a code because the code is then the name. */
-  function editDesc() {
-    var t = state.task;
-    if (!t || !window.ADspaceAsk) return;
-    var host = $('taskDesc'), pen = $('taskDescEdit');
-    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
-    window.ADspaceAsk.rename(host, pen, {
-      label: 'Content description', saveLabel: 'Save description', value: was,
-      allowEmpty: Boolean(t.code), max: 160,
-      save: function (v) {
-        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'taskMsg',
-          function (d) {
-            applyTask(d);
-            readTask(t.id);
-          });
-      }
-    });
-  }
-  /* The code is corrected where it sits (the user, 2026-10-08): the owner or
-     an admin, its shape kept, the client's own for the month; the #WT serial
-     stays the task's identity. Undo puts the code before back. */
-  function editCode() {
-    var t = state.task;
-    if (!t || !t.code || !window.ADspaceAsk) return;
-    window.ADspaceAsk.rename($('taskCode'), $('taskCodeEdit'), {
-      label: 'Code', saveLabel: 'Save code', value: t.code, code: true, max: 12,
-      save: function (v) { setCode(t, v, true); }
-    });
-  }
+  function editDesc() { editName($('taskName'), $('taskDescEdit'), 'taskMsg'); }
   function setCode(t, v, offerUndo) {
     var was = t.code;
     call('ops_set_code', { p_task: t.id, p_code: v, p_version: t.version }, 'taskMsg', function (d) {
@@ -7669,8 +7673,6 @@
     });
     var pen = $('taskDescEdit');
     if (pen) pen.addEventListener('click', editDesc);
-    var cpen = $('taskCodeEdit');
-    if (cpen) cpen.addEventListener('click', editCode);
     var cpt = $('taskCopyTitle');
     if (cpt) cpt.addEventListener('click', copyTitle);
 

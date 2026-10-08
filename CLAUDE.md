@@ -1966,7 +1966,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock; the owner or an admin corrects it in place
-    (the pen beside it, `ops_set_code`, `2026-10-08-task-code-editable.sql`:
+    (the name's one pen, in the record and the quick sheet alike, opens the
+    code and the description as one field, each part changed going to its own
+    function; `ops_set_code`, `2026-10-08-task-code-editable.sql`:
     its shape kept, `bad-code`; the client's own for the month,
     `code-taken` naming the task; filed `code_changed`; Undo where it
     happened). The `#WT` serial stays the identity.
@@ -2056,6 +2058,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A draft link is optional. Without one the step reads Sent on WhatsApp, and
   the database accepts the link or a note.
 - The quick sheet (`#taskDrawer`, `.sheet-side`, `open=`):
+  - Under the name one line: the client, the format and the month, the month
+    itself opening its Months view (never `content` or `Graphic:`).
   - Next step, facts, Brief, Checklist and Comments stay open.
   - Files and links, Time records and Recent activity fold under More
     (`#dwMore`, shut each open).
