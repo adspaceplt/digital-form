@@ -8120,6 +8120,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
 .qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
 .qhead-ctx[hidden] { display: none; }
+.qhead-ctx .linkbtn { padding-inline: 0 4px; font-size: 13px; }
 .sheet-side .qbody {
   flex: 1 1 auto; margin: 0; padding: 16px 16px 24px; overflow-y: auto;
   display: flex; flex-direction: column; gap: 16px; -webkit-overflow-scrolling: touch;
