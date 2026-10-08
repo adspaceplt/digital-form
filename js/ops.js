@@ -2144,20 +2144,20 @@
     var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
       return '<div class="cal-dow">' + d + '</div>';
     }).join('');
-    var held = 0;
+    var held = 0, CAL_SHOW = 5;
     for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       var k = d.getTime(), list = byDay[k] || [];
       var out = d.getMonth() !== m.getMonth();
       if (!out && list.length) held++;
       var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
-      var chips = list.slice(0, 3).map(function (x) {
+      var chips = list.slice(0, CAL_SHOW).map(function (x) {
         var t = x.t, pub = x.kind === 'pub';
         var late = !pub && !isFinished(t) && d < today;
         return '<button class="cal-chip btn-sm ' + (pub ? 'is-pub' : stageTone(t)) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '"' +
           ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + (t.title || '')) + '">' +
           esc(t.title) + '</button>';
-      }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
+      }).join('') + (list.length > CAL_SHOW ? '<span class="cal-more">+' + (list.length - CAL_SHOW) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
         '<span class="cal-num"><small>' + esc(d.toLocaleDateString('en-GB', { weekday: 'short' })) + '</small>' +
           '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' }).replace(/\bSep\b/, 'Sept')) + '</small></span>' +
@@ -5575,7 +5575,9 @@
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
     if (e) {
-      more += frow('Month', esc(monthWord(e.period)) + ' · ' +
+      /* The month itself is named under Details; here, where it stands (a
+         fact stated once, 2026-10-08). */
+      more += frow('Month stage',
         esc(wordOf(ENG_STATE, engPhase(e, checksOf(e, state.engChecks), countFor(e, state.engCounts, [t])))) +
         (ml ? '<i class="tbreak"></i><a class="linkbtn tlink-own" href="' + esc(ml.href) + '">Open the month' + CHEV_S + '</a>' : ''));
       more += frow('Content meeting', esc(meetingWord(e)));
@@ -8211,30 +8213,42 @@
   function loadNotifs() {
     var me = bridge.me && bridge.me();
     if (!me || !me.id) return;
-    db.from('ops_notifications').select('*').eq('team_member_id', me.id)
-      .is('read_at', null).order('created_at', { ascending: false }).limit(30)
-      .then(function (r) {
-        state.notifs = (r && !r.error && r.data) || [];
-        paintNotifs();
-      }, function () {});
+    /* Unread first, then the last week's read ones under Earlier, ten at
+       most, so a notice marked read is still there to find again (the user,
+       2026-10-08: "once marked as read all notifications disappears"). */
+    var since = new Date(Date.now() - 7 * 86400000).toISOString();
+    Promise.all([
+      db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+        .is('read_at', null).order('created_at', { ascending: false }).limit(30),
+      db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+        .not('read_at', 'is', null).gte('created_at', since).order('created_at', { ascending: false }).limit(10)
+    ]).then(function (rs) {
+      if (!rs[0] || rs[0].error) return;
+      state.notifs = (rs[0].data || []).concat((rs[1] && !rs[1].error && rs[1].data) || []);
+      paintNotifs();
+    }).catch(function () {});
+  }
+  function notifRow(x) {
+    /* Each notice leads with the glyph of the section it opens, the rail's
+       own drawing (2026-10-08). */
+    var g = bridge.glyph ? bridge.glyph(notifSection(x)) : '';
+    return '<button class="notif-item' + (g ? ' has-tile' : '') + (x.read_at ? ' is-read' : '') + '" type="button" data-id="' + esc(x.id) + '">' +
+      (g ? '<span class="notif-tile">' + g + '</span>' : '') +
+      '<b>' + esc(x.title || '') + '</b>' +
+      (x.body ? '<span>' + esc(x.body) + '</span>' : '') +
+      '<small>' + esc(niceTime(x.created_at)) + '</small></button>';
   }
   function paintNotifs() {
-    var n = state.notifs.length, count = $('notifCount'), list = $('notifList');
+    var unread = state.notifs.filter(function (x) { return !x.read_at; });
+    var read = state.notifs.filter(function (x) { return x.read_at; });
+    var n = unread.length, count = $('notifCount'), list = $('notifList');
     if (count) { count.hidden = !n; count.textContent = n > 30 ? '30+' : String(n); }
     var btn = $('notifBtn');
     if (btn) btn.setAttribute('aria-label', n ? 'Notifications, ' + n + ' unread' : 'Notifications');
     if ($('notifAll')) $('notifAll').hidden = !n;
     if (!list) return;
-    list.innerHTML = n ? state.notifs.map(function (x) {
-      /* Each notice leads with the glyph of the section it opens, the rail's
-         own drawing (2026-10-08). */
-      var g = bridge.glyph ? bridge.glyph(notifSection(x)) : '';
-      return '<button class="notif-item' + (g ? ' has-tile' : '') + '" type="button" data-id="' + esc(x.id) + '">' +
-        (g ? '<span class="notif-tile">' + g + '</span>' : '') +
-        '<b>' + esc(x.title || '') + '</b>' +
-        (x.body ? '<span>' + esc(x.body) + '</span>' : '') +
-        '<small>' + esc(niceTime(x.created_at)) + '</small></button>';
-    }).join('') : '<p class="notif-empty">Nothing unread.</p>';
+    list.innerHTML = (n ? unread.map(notifRow).join('') : '<p class="notif-empty">Nothing unread.</p>') +
+      (read.length ? '<p class="notif-earlier">Earlier</p>' + read.map(notifRow).join('') : '');
     Array.prototype.forEach.call(list.querySelectorAll('.notif-item'), function (b) {
       b.addEventListener('click', function () { openNotif(b.getAttribute('data-id')); });
     });
@@ -8248,7 +8262,7 @@
   }
   function markRead(ids) {
     var now = new Date().toISOString();
-    state.notifs = state.notifs.filter(function (x) { return ids.indexOf(x.id) < 0; });
+    state.notifs.forEach(function (x) { if (ids.indexOf(x.id) > -1 && !x.read_at) x.read_at = now; });
     paintNotifs();
     ids.forEach(function (id) {
       db.from('ops_notifications').update({ read_at: now }).eq('id', id).then(function () {}, function () {});
@@ -8264,7 +8278,7 @@
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
       if (x.kind === 'perf.disputed' && window.ADspacePerf) { window.ADspacePerf.openTeam(); return; }
       /* A reminder, an initiative decided or a request to talk opens the
-         My Records view it is about (2026-10-07). */
+         My records view it is about (2026-10-07). */
       var mv = x.kind === 'perf.reflect' ? 'reflection' : x.kind === 'perf.initiative' ? 'initiatives'
         : /^health\./.test(x.kind) ? 'health' : 'reviews';
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
@@ -8286,8 +8300,9 @@
       return;
     }
     /* A client paused or ended opens the list, where its open work heads
-       the queue as urgent delivery. */
-    if (!x.task_id && x.kind === 'client_left') {
+       the queue as urgent delivery; the noon reminder to add tasks opens it
+       too. */
+    if (!x.task_id && (x.kind === 'client_left' || x.kind === 'tasks.empty')) {
       history.replaceState(null, '', '/admin/?s=work');
       if (bridge.show) bridge.show('work');
       return;
@@ -8323,7 +8338,7 @@
     });
     var all = $('notifAll');
     if (all) all.addEventListener('click', function () {
-      markRead(state.notifs.map(function (x) { return x.id; }));
+      markRead(state.notifs.filter(function (x) { return !x.read_at; }).map(function (x) { return x.id; }));
     });
   }
 

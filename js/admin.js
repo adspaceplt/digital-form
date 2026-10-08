@@ -276,7 +276,7 @@
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
   });
 
-  /* My Records is the person's own record, so it opens from who they are rather
+  /* My records is the person's own record, so it opens from who they are rather
      than from the rail everybody shares. */
   $('myPerf').addEventListener('click', function () {
     shutAcct();
@@ -495,7 +495,7 @@
     db.auth.signOut().then(function () { location.reload(); });
   });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
-  /* A proof of who you are (a passkey on My Records) runs a sign-in, and
+  /* A proof of who you are (a passkey on My records) runs a sign-in, and
      the library announces the session it makes before the page can check
      whose it is. While one runs the console holds its auth events, and it
      reads the session again once the proof has finished (`hold`). */
@@ -866,7 +866,7 @@
     services: 'Services',
     team: 'Team',
     handbook: 'Handbook',
-    mine: 'My Records'
+    mine: 'My records'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -938,7 +938,7 @@
     handbook: { name: 'Handbook', steps: [
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
       { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯.' }] },
-    mine: { name: 'My Records', steps: [
+    mine: { name: 'My records', steps: [
       { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] }
   };
   function offerGuide(name) {
@@ -1144,7 +1144,7 @@
   window.addEventListener('scroll', function () {
     clearTimeout(scrollTimer);
     scrollTimer = setTimeout(function () {
-      if (!state.client) return;
+      if (!state.client || !personScrolled) return;
       try {
         sessionStorage.setItem(PLACE, JSON.stringify({
           client: clientKey(state.client),
@@ -1246,14 +1246,30 @@
      this is the plain one the other sections use. */
   var SCROLL = 'adspace.admin.scroll:';
   var scrollSaveTimer = null;
+  /* A list opens at its top on a new visit and on a refresh; only Back and
+     Forward return to where it was (the user, 2026-10-08: "it starts at
+     slightly lower every refreshes or new visit"). Bars drawn above the list
+     while it loads (the announcement, upgrade mode) pushed the page down,
+     and that pushed place was saved and restored again, a little lower each
+     time; nothing is saved until the person scrolls. */
+  var navType = (function () {
+    try { var n = performance.getEntriesByType('navigation')[0]; return n ? n.type : ''; } catch (e) { return ''; }
+  })();
+  var bootScroll = navType !== 'back_forward';
+  var personScrolled = false;
+  ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach(function (ev) {
+    window.addEventListener(ev, function () { personScrolled = true; bootScroll = false; }, { passive: true, capture: true });
+  });
+  window.addEventListener('popstate', function () { bootScroll = false; });
   window.addEventListener('scroll', function () {
-    if (section === 'review') return;
+    if (section === 'review' || !personScrolled) return;
     clearTimeout(scrollSaveTimer);
     scrollSaveTimer = setTimeout(function () {
       try { sessionStorage.setItem(SCROLL + location.search, String(window.scrollY)); } catch (e) {}
     }, 200);
   });
-  function restoreScroll() {
+  function restoreScroll(record) {
+    if (bootScroll && record !== true) return;
     var y = 0;
     try { y = Number(sessionStorage.getItem(SCROLL + location.search) || 0); } catch (e) {}
     if (!y) return;
@@ -3990,7 +4006,7 @@
   /* The rail's own drawing for a section, for a list that mixes sections
      (the bell, search, Waiting for you), so a line says where it will take
      you in the shape the rail already taught (2026-10-08). Read from the
-     rail itself: one copy of every glyph. My Records lives in the account
+     rail itself: one copy of every glyph. My records lives in the account
      menu, and the Creators List and My Work answer to their rail rows. */
   var GLYPH_OF = { ops: 'work', creators: 'campaigns' };
   function sectionGlyph(key) {
