@@ -3724,7 +3724,7 @@
         '</div>' +
         '<div class="draft-body">' +
           '<div class="draft-top">' +
-            '<select class="select" data-f="placement">' + opts + '</select>' +
+            '<select class="select" data-f="placement" aria-label="Placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(d.media[0])) + '</span>' +
             '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
@@ -3732,10 +3732,10 @@
           (isCoverDraft(d) ? coverForField(d) : '') +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
                    esc(d.title) + '">' : '') +
-          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(d.caption) + '</textarea>' +
           (d.showZh
-            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' + esc(d.caption_zh) + '</textarea>'
+            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' + esc(d.caption_zh) + '</textarea>'
             : '<button class="linkbtn" data-f="addzh" type="button">Add Chinese caption</button>') +
           capButton() +
         '</div>';
@@ -4800,15 +4800,15 @@
           thumbOf(m) + '</div>' +
         '<div class="saved-body">' +
           '<div class="draft-top">' +
-            '<select class="select" data-f="placement">' + opts + '</select>' +
+            '<select class="select" data-f="placement" aria-label="Placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
           '</div>' +
           (current.indexOf('xhs') === 0
             ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
               esc(p.title || '') + '">' : '') +
-          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(p.caption || '') + '</textarea>' +
-          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' +
+          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' +
             esc(p.caption_zh || '') + '</textarea>' +
           capButton() +
           /* The revised file goes in here; it stays on this device until
