@@ -23,6 +23,10 @@
  * are kept (`ai_check_done`), so the reviewer sees the same check. A report
  * in draft or in review may be checked; nothing in it is changed.
  *
+ * Every call's input and output tokens and model are kept on its own
+ * `ai_drafts` row (`ai_draft_tokens`, 2026-10-08), drafted or failed, so the
+ * AI usage page can price the month.
+ *
  * Secrets: ANTHROPIC_API_KEY and REPORT_DRAFT_MODEL (the model id), set in
  *          the Supabase dashboard (docs/REPORT-DRAFT-SETUP.md), plus the
  *          platform's SUPABASE_URL and SUPABASE_ANON_KEY.
