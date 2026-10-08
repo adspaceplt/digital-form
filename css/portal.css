@@ -2931,6 +2931,9 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .tally-cell.is-total { border-color: var(--ink); }
 .tally-cell.is-total b { color: var(--ink); }
+/* Money and totals in a row at the scale's 600, never the browser's bold
+   700 (the client pages audit, PO-2, 2026-10-08). */
+.svc-amt b, .is-total b, .cp-panes b { font-weight: 600; }
 /* Labelled groups of cells side by side; one under the other on a phone. */
 .tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 0; }
 .tallygroup .tally { margin-top: 6px; }
@@ -3122,7 +3125,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow.is-on .crow-tick { color: var(--on-fill); }
 .crow-tick[disabled] { opacity: .35; }
 
-.crow-name { grid-area: name; min-width: 0; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.crow-name { grid-area: name; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .crow-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 /* Its own line under the name: the meta a row's money is read against. */
 .crow-plat {
@@ -3483,7 +3486,7 @@ body.is-plain .topbar { background: var(--chrome); }
   padding: 14px 16px; margin-bottom: 9px;
 }
 .booking.is-off { opacity: .6; }
-.booking-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.booking-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
 /* The state hangs off the right of the card, not off the end of the name.
    Trailing the name it started at a different x on every card — 恩比 put it at
@@ -3580,7 +3583,7 @@ body.is-plain .topbar { background: var(--chrome); }
    A grid so they fill the width instead of trailing off in one grey line. */
 .booking-facts {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  gap: 10px 20px; margin: 12px 0 0;
+  gap: 12px 24px; margin: 12px 0 0;
 }
 .booking-facts dt {
   font-size: 12px; font-weight: 600; letter-spacing: 0;
@@ -3603,7 +3606,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .booking-facts:has(> :nth-child(5)) > :last-child:nth-child(3n+2) { grid-column: span 2; }
 }
 @media (max-width: 640px) {
-  .booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 14px; }
+  .booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
   .booking-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
@@ -3884,7 +3887,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .crow {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     grid-template-areas: "no tick name rate" "no . plat plat" "no . links backup";
-    gap: 9px 10px; padding: 12px 14px;
+    gap: 8px 10px; padding: 12px 14px;
   }
   /* Four labels over a 358px row is furniture, so the header leaves and the
      placements go back under the name with their label. */
@@ -4745,7 +4748,7 @@ body > .shell { width: 100%; }
 .ring-done circle { fill: var(--ok-solid); }
 .ring-done path { fill: none; stroke: var(--on-ok); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .csv-total {
-  display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
+  display: flex; justify-content: flex-end; gap: 24px; flex-wrap: wrap;
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
 }
 .csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
@@ -5597,6 +5600,12 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 .booking-brand { font-size: 12.5px; color: var(--ink-mute); margin-top: 2px; }
 .booking-next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+/* Where a creator's booking stands, in ink above its facts, where the
+   hand-in stood (the client pages audit, CR-1, 2026-10-08). */
+.booking-next.cx-status { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
+/* The head's Request change: which change, and the confirmed line it is
+   about (PO-1). */
+#reqSheet .req-pick { margin: 0 0 12px; }
 
 /* The brief, and the changes asked for, read as quoted matter rather than as
    more of the card: an inset ground and a rule down the side. */
@@ -6214,7 +6223,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas: "mark who ctl";
 }
-.rec-who { grid-area: who; min-width: 0; display: grid; gap: 3px; }
+.rec-who { grid-area: who; min-width: 0; display: grid; gap: 4px; }
 /* The name and its state share a line; a long name wraps under itself and
    the state follows it down, so nothing here ever pushes the ⋯ off the row. */
 .rec-name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
@@ -10442,3 +10451,135 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
    take the line the position held. */
 .is-narrow .health-who.has-line .health-code { display: none; }
 .is-narrow .crm-head.health-prow { display: none; }
+
+/* ---------- The client pages refresh (2026-10-07) ----------
+   One icon set (`js/icons.js`, `.ic`: 15px outline glyphs in the ink of
+   their line), where the work stands, what the reader owes first, and
+   results led by one figure. Light only, as every client page. */
+.ic { width: 15px; height: 15px; flex: 0 0 auto; vertical-align: -2px; }
+.cx-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-off); flex: 0 0 auto; }
+.cx-dot.is-ok { background: var(--dot-ok); }
+.cx-dot.is-wait { background: var(--dot-wait); }
+.cx-dot.is-late { background: var(--dot-late); }
+.cx-eyebrow { display: flex; align-items: center; gap: 7px; margin: 0 0 12px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.cx-quiet { font-size: 13px; font-weight: 400; color: var(--ink-mute); }
+
+/* Where the campaign stands, under the name card's hairline. */
+.cx-standing { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.cx-standing-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 0 0 10px; }
+.cx-standing-line b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.cx-standing-line span { font-size: 13.5px; color: var(--ink-mute); }
+.cx-track { display: flex; gap: 4px; height: 6px; }
+.cx-track i { flex: 1 1 0; border-radius: 4px; background: var(--line-soft); }
+.cx-track i.is-ok { background: var(--dot-ok); }
+.cx-track i.is-wait { background: var(--dot-wait); }
+.cx-track i.is-late { background: var(--dot-late); }
+.cx-track i.is-off { background: var(--dot-off); }
+.cx-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); }
+.cx-legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* What the client owes, first: the draft's card with its own heading. */
+.cx-needs { margin: 0 0 12px; }
+.cx-needs > .booking { margin-bottom: 12px; }
+.cx-needs > .booking:last-child { margin-bottom: 0; }
+
+/* A creator's row: the number, the name and state, the six named steps
+   (.cx-journey, below), the facts with their glyphs. */
+.cx-facts dt { display: flex; align-items: center; gap: 6px; }
+.cx-facts dt .ic { color: var(--ink-soft); }
+
+/* Results led by one figure. */
+#clientRollup .rollup-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.cx-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 12px 0 0; }
+.cx-hero b { font-size: 32px; font-weight: 600; letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cx-hero span { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-mute); }
+.cx-figs {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px 24px;
+  margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line-soft);
+}
+.cx-figs div { min-width: 0; }
+.cx-figs dt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.cx-figs dd { margin: 3px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.cx-post { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.cx-post .cx-eyebrow { margin-bottom: 10px; }
+.cx-post-row { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 12px; align-items: center; margin-bottom: 12px; }
+.cx-post-row.is-bare { grid-template-columns: minmax(0, 1fr); }
+.cx-cover { display: block; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--line-soft); }
+.cx-cover img, .cx-cover video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cx-post-who { display: grid; gap: 3px; min-width: 0; }
+.cx-post-who b { font-size: 15px; font-weight: 600; }
+.cx-plat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+.cx-mini { display: flex; gap: 14px; font-size: 13px; color: var(--ink-soft); }
+.cx-mini > span { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.cx-postbtn { gap: 7px; }
+.cx-postbtn svg { width: 13px; height: 13px; opacity: .7; }
+@media (max-width: 640px) {
+  .cx-postbtn { display: flex; width: 100%; justify-content: center; }
+  .cx-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* A booking as a journey, each step named (the client's page and the
+   creator's own); on the creator's page the job owed first, a large place
+   to add files, and the act beside the fact. */
+/* The steps as Apple tracks an order: a hairline a step, each named under
+   it in small type (the user, 2026-10-08: "Do you think Apple would put
+   such huge stage status"; and before it, bars with no names could not be
+   read). Done steps in the mute ink, the one in hand amber with its name
+   in ink, what follows on the soft line. */
+.cx-journey { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.cx-journey li { display: grid; gap: 6px; min-width: 0; font-size: 12px; line-height: 1.3; color: var(--ink-mute); }
+.cx-journey li::before { content: ""; height: 3px; border-radius: 2px; background: var(--line-soft); }
+.cx-journey li.is-done::before { background: var(--ink-mute); }
+.cx-journey li.is-now::before { background: var(--dot-wait); }
+.cx-journey li.is-now { color: var(--ink); font-weight: 600; }
+.cx-journey span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.cx-nextup .cx-eyebrow { margin-bottom: 4px; }
+.cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
+.cx-nextup-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+.cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
+.cx-nextup .booking-deliver { border-top: 0; padding-top: 0; }
+.cx-drop {
+  position: relative; display: grid; justify-items: center; gap: 3px; margin-top: 14px; padding: 22px 12px;
+  border-radius: var(--radius-sm); background: var(--tonal); text-align: center; cursor: pointer;
+}
+.cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
+@media (hover: hover) { .cx-drop:hover { background: var(--tonal-hover); } }
+.cx-drop .ic { width: 22px; height: 22px; color: var(--action-ink); margin-bottom: 4px; }
+.cx-drop b { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cx-drop span { font-size: 13px; color: var(--ink-mute); }
+.cx-drop-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cx-chips .plink { gap: 6px; }
+/* A fact that carries its acts takes the row, so its chips sit side by side. */
+.cx-facts > div:has(.cx-chips) { grid-column: 1 / -1; }
+.cx-nextup + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+
+/* The client portal: the next meeting as a calendar leaf, each confirmed
+   line's term, and a glyph a row on the overview. */
+.cx-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cx-meet { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 14px; align-items: center; }
+.cx-meet-who { min-width: 0; display: grid; gap: 2px; }
+.cx-leaf {
+  width: 58px; border-radius: 12px; overflow: hidden; background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line); display: grid; justify-items: center; padding-bottom: 6px;
+}
+.cx-leaf span { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
+.cx-leaf span:first-child { width: 100%; text-align: center; background: var(--tonal); color: var(--ink); padding: 3px 0 2px; }
+.cx-leaf b { font-size: 24px; font-weight: 600; line-height: 1.15; letter-spacing: -.02em; margin-top: 2px; }
+.cx-chan { display: inline-flex; align-items: center; gap: 6px; }
+.cx-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+.cx-pair .btn { gap: 6px; justify-content: center; }
+.cx-pair .btn svg { width: 14px; height: 14px; }
+.cx-terms { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); display: grid; gap: 12px; }
+.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 6px; }
+.cx-term-bar i { display: block; height: 100%; border-radius: 3px; background: var(--fill); }
+.svc-row.cp-eng-row, .is-narrow .svc-row.cp-eng-row {
+  grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "tile name open"; align-items: center;
+}
+.svc-row.cp-eng-row > .cx-tile { grid-area: tile; }
+.svc-row.cp-eng-row > .svc-name { grid-area: name; }
+.svc-row.cp-eng-row > .cp-open { grid-area: open; }
+.cx-tile { width: 40px; height: 40px; border-radius: 11px; background: var(--tonal); display: grid; place-items: center; color: var(--ink); }
+.cx-tile .ic { width: 18px; height: 18px; }
+.cp-reach .plink { gap: 6px; }

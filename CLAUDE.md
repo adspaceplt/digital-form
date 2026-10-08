@@ -513,6 +513,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   addresses never change. A refused or slow pass (6s) never holds a page.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
+- `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
+  `journey(words, at)`) is the client pages' one icon set (outline glyphs at
+  15px, stroke 1.8, in ink; never filled or coloured; a name it does not hold
+  draws nothing) and the booking's one step track (`.cx-journey`), drawn
+  alike on the selection page and the creator's page, its words `W.journey`
+  in `js/words.js` (Booked, Shoot or Delivery, Draft, Review, Post, Results).
 - `js/grow.js` (`ADspaceGrow.fit(el)`) is the only way a typed box grows
   (the user, 2026-10-07: "Cell not increasing as i typed? Why still these
   issues again"): every textarea on a page that loads it (the console, the
@@ -1676,6 +1682,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
     `location.hash`. A lone booking has no queue and runs the page's width.
+  - The open booking (2026-10-08): its six steps by name
+    (`ADspaceIcons.journey`; Submitted and Reviewing are Review); what is
+    owed (Next up: Hand in your draft, or the revision, its countdown, the
+    change note, the files and one large Add photos or videos area, the
+    caption opening two lines) above the facts, else where the booking
+    stands as one line in ink there (`.cx-status`), so after Submit it is read
+    without scrolling; the facts carry their glyphs, the place Directions
+    (Google Maps), the contact WhatsApp and Call.
   - The Draft step's `?` hint opens by itself three times, then retires
     (`hint()`, `bumpHint()`).
   - Sign out is named, and hidden until there is a session.
@@ -1686,6 +1700,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
+  - The campaign room (2026-10-08): under the name card, where it stands (n
+    of N posted, a segment a booking in its state's dot, a legend, the next
+    shoot); a booking waiting on the client (a draft at Reviewing) leads the
+    page in its own card (`#needBox`: Waiting for your approval, the draft and
+    the decision) and leaves the list below while it waits; each booking is
+    numbered, never a photo (the user, 2026-10-07), the numbers carrying on
+    through Available creators, with its six steps by name (a Submitted draft
+    is the client's Draft step); the results lead with one figure (views,
+    else impressions), then impressions, engagements, engagement rate and per
+    engagement, the top post where more than one is live, and a booking's
+    own results table is not drawn while it is the campaign's one live post.
   - A live booking reads View post on {platform} (`.postlink`, one button a
     platform; 查看小红书笔记 in Chinese), each the card's full width on a
     phone, one or several. The results table appears only with
@@ -2905,7 +2930,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
   `.rec-ctl`): the mark, the name over the registered name, the state and
-  Request change.
+  Request change, which asks which change: Change of details, Upgrade,
+  Downgrade or Cancel, the last three against a confirmed line (`#reqPick`);
+  a line's ⋯ asks for that line alone.
 - Under it one tab strip (`#cpTabs`, the view strip, `role="tablist"`, the
   arrows and Home/End move along it) and one pane at a time
   (`.cp-panes`, `data-swipe="cpTabs"`, `data-narrow="640"`). The pane rides in
@@ -2914,12 +2941,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`.cp-card-head`); a table inside a card is the card's rows.
   - Overview: the summary on the left on the record's proportion (one column
     at 900): Services (Confirmed and To quote as lines, open requests),
-    Next content meeting (the soonest ahead, Join), Latest report (Download),
-    Engagements (the token links, Open at the right edge); each summary card's
+    Next content meeting (the soonest ahead: a calendar leaf and the time in
+    MYT, Join and Add to calendar, an .ics), Latest report (Download),
+    Engagements (the token links with a tile, Open at the right edge); each summary card's
     View all opens its tab. On the right: Your account manager (the person in
     charge, WhatsApp and Email) and Company (the facts).
   - Services: confirmed and To quote lines (enquired never shown), with
-    Upgrade / Downgrade / Cancel in a confirmed line's ⋯; then Requests once
+    Upgrade / Downgrade / Cancel in a confirmed line's ⋯ and, for a line of
+    two months or more, where its term is (Month n of N, ending); then Requests once
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
   - Letters: Download redraws the snapshot.

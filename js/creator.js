@@ -58,6 +58,9 @@
       changesHead: 'Changes requested',
       changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
+      nextUpWord: 'Next up', handIn: 'Hand in your draft', handInAgain: 'Hand in the revision',
+      dropTitle: 'Add photos or videos', dropSub: 'Up to 1 GB each',
+      directions: 'Directions', call: 'Call', whatsapp: 'WhatsApp',
       captionHint: 'Caption to publish with this post.',
       submit: 'Submit', submitting: 'Submitting…', update: 'Update submission',
       needFiles: 'Attach at least one file.',
@@ -123,6 +126,9 @@
       changesHead: '需要修改',
       changesBare: '请修改后重新提交。',
       addFiles: '文件', captionLabel: '文案',
+      nextUpWord: '下一步', handIn: '提交草稿', handInAgain: '提交修改稿',
+      dropTitle: '添加照片或视频', dropSub: '每个文件不超过 1 GB',
+      directions: '查看路线', call: '致电', whatsapp: 'WhatsApp',
       captionHint: '将随作品一同发布的文案。',
       submit: '提交', submitting: '提交中…', update: '更新提交',
       needFiles: '请至少上传一个文件。',
@@ -520,6 +526,37 @@
     return t().nextUp[b.state];
   }
 
+  /* The client pages refresh (2026-10-07). The booking as a journey: done
+     steps ticked, the one in hand ringed, what follows waiting. Worked out
+     from the state on every paint. */
+  var AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 3, reviewing: 3,
+             scheduled: 4, posted: 5, completed: 6 };
+  function journeyHtml(b) {
+    var at = AT[b.state];
+    if (at == null || !window.ADspaceIcons) return '';
+    var words = t().journey.slice();
+    if (b.push_format === 'seeding') words[1] = t().journeyDelivery;
+    return window.ADspaceIcons.journey(words, at);
+  }
+  /* A number to reach on the day: WhatsApp and a call. A Malaysian number
+     with a leading zero takes 6 in front, as every wa.me link here does. */
+  function reachHtml(phone) {
+    var d = String(phone || '').replace(/[^0-9+]/g, '').replace(/^\+/, '');
+    if (d.length < 8) return '';
+    if (/^0/.test(d)) d = '6' + d;
+    var I = window.ADspaceIcons;
+    return '<div class="cx-chips">' +
+      '<a class="plink" href="https://wa.me/' + d + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') + esc(t().whatsapp) + '</a>' +
+      '<a class="plink" href="tel:+' + d + '">' + (I ? I.svg('phone') : '') + esc(t().call) + '</a></div>';
+  }
+  function placeHtml(where) {
+    return '<div class="cx-chips"><a class="plink" href="https://www.google.com/maps/search/?api=1&query=' +
+      encodeURIComponent(where) + '" target="_blank" rel="noopener">' + esc(t().directions) +
+      (window.ADspaceIcons ? EXT_MARK : '') + '</a></div>';
+  }
+  var EXT_MARK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+    'stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+
   function bookingCard(b) {
     var card = document.createElement('section');
     var dead = b.state === 'withdrawn' || b.state === 'replaced';
@@ -530,16 +567,26 @@
     var facts = [];
     if (!dead) {
       facts.push([seeding ? t().deliveryOn : t().shootOn,
-        b.visit_date ? fmtDate(b.visit_date) + (b.visit_time ? ', ' + b.visit_time : '') : t().tbc]);
-      if (b.visit_location) facts.push([t().whereAt, b.visit_location]);
-      if (b.visit_pic) facts.push([t().contact, b.visit_pic + (b.visit_pic_phone ? ' · ' + b.visit_pic_phone : '')]);
-      if (b.tracking_no) facts.push([t().tracking, b.tracking_no]);
+        b.visit_date ? fmtDate(b.visit_date) + (b.visit_time ? ', ' + b.visit_time : '') : t().tbc, seeding ? 'box' : 'camera']);
+      if (b.visit_location) facts.push([t().whereAt, b.visit_location, 'pin', seeding ? '' : placeHtml(b.visit_location)]);
+      if (b.visit_pic) facts.push([t().contact, b.visit_pic + (b.visit_pic_phone ? ' · ' + b.visit_pic_phone : ''), 'phone',
+        b.visit_pic_phone ? reachHtml(b.visit_pic_phone) : '']);
+      if (b.tracking_no) facts.push([t().tracking, b.tracking_no, 'box']);
       var plats = platsOf(b.platforms);
-      if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
-      if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish)]);
-      if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due)]);
-
+      if (plats.length) facts.push([t().platformsLabel, plats.join(' · '), 'megaphone']);
+      if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish), 'calendar']);
+      if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due), 'clock']);
     }
+    var icon = function (n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; };
+    /* What is owed leads the card: the hand-in, its countdown and the
+       request it answers, above the facts and the brief. */
+    var owed = !dead && needsCreator(b) && b.can_deliver;
+    var late = b.submission_due && b.submission_due < new Date().toISOString().slice(0, 10);
+    var countdown = b.submission_due && ['pending_draft', 'changes'].indexOf(b.state) > -1
+      ? '<p class="due-countdown' + (late ? ' is-late' : '') + '">' + icon('clock') + esc(dueWord(b.submission_due)) + '</p>' : '';
+    var changeNote = b.state === 'changes' && b.change_note
+      ? '<div class="booking-brief is-warn"><div class="kstep-title">' + esc(t().changesHead) +
+        '</div><p>' + esc(b.change_note) + '</p></div>' : '';
 
     var title = (lang === 'zh' && b.campaign_zh) ? b.campaign_zh : b.campaign;
     var brief = (lang === 'zh' && b.brief_zh) ? b.brief_zh : b.brief;
@@ -548,22 +595,23 @@
       '<div class="booking-head"><b>' + esc(title) + '</b>' + (dead ? '' : chip(b.state)) + '</div>' +
       '<p class="booking-brand">' + esc(b.brand || '') + '</p>' +
       (dead ? '<p class="hint">' + esc(t().ended) + '</p>' :
-        (facts.length ? '<dl class="booking-facts">' + facts.map(function (f) {
-          return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+        journeyHtml(b) +
+        (owed ? '<div class="cx-nextup"><p class="cx-eyebrow cx-quietlabel">' + esc(t().nextUpWord) + '</p>' +
+          '<p class="cx-nextup-title">' + esc(b.state === 'changes' ? t().handInAgain : t().handIn) + '</p>' +
+          countdown + changeNote + filesHtml(b) + deliverHtml(b) + '</div>'
+          /* Where the booking stands sits where the hand-in stood, above the
+             facts: after Submit the creator reads it without scrolling (the
+             client pages audit, CR-1, 2026-10-08). */
+          : (nextLine(b) ? '<p class="booking-next cx-status">' + esc(nextLine(b)) + '</p>' : '') + countdown) +
+        (facts.length ? '<dl class="booking-facts cx-facts">' + facts.map(function (f) {
+          return '<div><dt>' + icon(f[2]) + esc(f[0]) + '</dt><dd>' + esc(f[1]) + (f[3] || '') + '</dd></div>';
         }).join('') + '</dl>' : '') +
-        (nextLine(b) ? '<p class="booking-next">' + esc(nextLine(b)) + '</p>' : '') +
-        (b.submission_due && ['pending_draft', 'changes'].indexOf(b.state) > -1
-          ? '<p class="due-countdown' + (b.submission_due < new Date().toISOString().slice(0, 10) ? ' is-late' : '') + '">' +
-            esc(dueWord(b.submission_due)) + '</p>' : '') +
         (brief ? '<div class="booking-brief"><div class="kstep-title">' + esc(t().briefHead) +
           '</div><p>' + esc(brief).replace(/\n/g, '<br>') + '</p></div>' : '') +
-        (b.state === 'changes' && b.change_note
-          ? '<div class="booking-brief is-warn"><div class="kstep-title">' + esc(t().changesHead) +
-            '</div><p>' + esc(b.change_note) + '</p></div>' : '') +
-        filesHtml(b) +
+        (owed ? '' : changeNote + filesHtml(b)) +
         (b.caption && !b.can_deliver ? '<div class="booking-caption"><div class="kstep-title">' +
           esc(t().captionLabel) + '</div><p>' + esc(b.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
-        (b.can_deliver ? deliverHtml(b) : '') +
+        (b.can_deliver && !owed ? deliverHtml(b) : '') +
         (postsDue(b.state) ? postsHtml(b) : '') +
         (payDue(b.state) ? payHtml() : '') +
         (b.state === 'completed' ? rateHtml(b) : ''));
@@ -824,10 +872,15 @@
 
   function deliverHtml(b) {
     return '<div class="booking-deliver">' +
-      '<div class="kstep-title">' + esc(t().deliverHead) + '</div>' +
-      '<label class="field-label" for="pick-' + esc(b.id) + '">' + esc(t().addFiles) + '</label>' +
-      '<input class="input" type="file" id="pick-' + esc(b.id) + '" multiple ' +
-        'accept="image/*,video/*,.pdf" data-a="pick">' +
+      (needsCreator(b) ? '' : '<div class="kstep-title">' + esc(t().deliverHead) + '</div>') +
+      /* One large area to tap (or drop onto), the file field itself laid
+         over it unseen, so the browser's own picker opens from anywhere on
+         it and the field keeps its name. */
+      '<label class="cx-drop" for="pick-' + esc(b.id) + '">' +
+        (window.ADspaceIcons ? window.ADspaceIcons.svg('upload') : '') +
+        '<b>' + esc(t().dropTitle) + '</b><span>' + esc(t().dropSub) + '</span>' +
+        '<input class="cx-drop-in" type="file" id="pick-' + esc(b.id) + '" multiple ' +
+          'accept="image/*,video/*,.pdf" data-a="pick" aria-label="' + esc(t().addFiles) + '"></label>' +
       '<div class="filegrid" data-held' + ((held[b.id] || []).length ? '' : ' hidden') + '>' +
         heldHtml(b.id) + '</div>' +
       /* The same progress the console draws on Content Review: what is going
@@ -839,7 +892,7 @@
         '<div class="progress-head"><span data-uptext></span><span data-uppct></span></div>' +
         '<div class="progress-track"><div class="progress-fill" data-bar></div></div></div>' +
       '<label class="field-label" for="cap-' + esc(b.id) + '">' + esc(t().captionLabel) + '</label>' +
-      '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="4" data-cap ' +
+      '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="2" data-cap ' +
         'placeholder="' + esc(t().captionHint) + '">' + esc(b.caption || '') + '</textarea>' +
       '<div class="kactions"><button class="btn btn-go" type="button" data-a="submit">' +
         esc(b.state === 'submitted' ? t().update : t().submit) + '</button></div>' +
