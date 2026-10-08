@@ -1972,6 +1972,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     its shape kept, `bad-code`; the client's own for the month,
     `code-taken` naming the task; filed `code_changed`; Undo where it
     happened). The `#WT` serial stays the identity.
+  - NN follows the month's plan (`2026-10-08-task-numbers-planned.sql`,
+    trigger `ops_tasks_code_slot`): a Retainer piece (not a report task)
+    takes the lowest free of 01 to `planned_count`, refused `plan-full` past
+    it; any other task the lowest free after it (a month with no plan from
+    01); a deleted number is used again; a type moved across is numbered
+    again; a typed number keeps its range (`plan-range`, `extra-range`); the
+    code is rebuilt from its month, week and number, so W1 is Week 1. The
+    New sheet rests Retainer once the month's content reaches its plan.
   - The description is edited in place (`ops_set_content_desc`).
   - The number is `#WT00001` (`ops_serial`). The next number is set under `ops.numbering`
     (`ops_set_next_task_no`, refused at or below the highest in use).

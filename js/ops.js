@@ -247,6 +247,15 @@
     if (err === 'tasks-open' && d && d.open) {
       return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
     }
+    if (err === 'plan-full' || err === 'plan-range' || err === 'extra-range') {
+      var pl = d && d.planned ? d.planned : 0, pw = pl === 1 ? ' piece' : ' pieces';
+      if (err === 'plan-full') {
+        return d && d.left ? 'Only ' + d.left + ' of the ' + pl + ' planned' + pw + ' left. Choose Ad hoc, Goodwill or Special for the rest.'
+          : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Special.';
+      }
+      return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
+        : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
+    }
     if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
@@ -5804,6 +5813,8 @@
      what to do instead. */
   function dbWord(m) {
     m = String(m || '');
+    /* A trigger's refusal arrives as the JSON the functions answer with. */
+    if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
     if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be made (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
       ? 'This needs a database update. Ask an admin to run the latest migration.' : m;
@@ -6113,6 +6124,22 @@
     if (ntHeld[e.id] != null) bits.push(ntHeld[e.id] + ' added');
     hint.textContent = bits.join(' \u00b7 ');
     hint.hidden = !bits.length;
+    ntPlanGate();
+  }
+  /* Retainer pieces are the month's plan (2026-10-08): once the plan is
+     taken, Retainer rests and an extra is Ad hoc, Goodwill or Special. The
+     database numbers and refuses the same way (`plan-full`). */
+  function ntLeft() {
+    var e = $('ntScope') && $('ntScope').value === 'client' ? ntEng() : null;
+    if (!e || !e.planned_count || ntHeld[e.id] == null) return null;
+    return Math.max(0, e.planned_count - ntHeld[e.id]);
+  }
+  function ntPlanGate() {
+    var sel = $('ntType'), opt = sel && sel.querySelector('option[value="engagement"]');
+    if (!opt) return;
+    var left = ntLeft(), full = left === 0;
+    if (opt.disabled !== full) opt.disabled = full;
+    if (full && sel.value === 'engagement') { sel.value = 'adhoc'; sel.dispatchEvent(new Event('change')); ntTouched.type = false; }
   }
   function ntEng() {
     var per = $('ntPeriod').value;
@@ -6293,6 +6320,10 @@
         ends_on: $('ntEnds').value || null,
         max_count: Number($('ntMax').value) || null
       };
+    }
+    var left = ntLeft();
+    if ($('ntType').value === 'engagement' && left != null && rows.length > left) {
+      msg('ntMsg', said('plan-full', null, { planned: ntEng().planned_count, left: left }), 'err'); return;
     }
     var payload = {
       scope: scope,
