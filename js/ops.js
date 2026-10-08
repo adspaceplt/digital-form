@@ -155,6 +155,10 @@
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
+    'bad-format': 'Choose a format from the list.',
+    'bad-type': 'Choose a type from the list.',
+    'bad-complexity': 'Choose a complexity from the list.',
+    'bad-estimate': 'Enter an estimate from 0 to 10,000 minutes.',
     'no-code': 'This task has no code to change.',
     'other-client': 'That record belongs to another client.',
     'record-not-found': 'That record is no longer there.',
@@ -242,6 +246,15 @@
   function said(err, t, d) {
     if (err === 'tasks-open' && d && d.open) {
       return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
+    }
+    if (err === 'plan-full' || err === 'plan-range' || err === 'extra-range') {
+      var pl = d && d.planned ? d.planned : 0, pw = pl === 1 ? ' piece' : ' pieces';
+      if (err === 'plan-full') {
+        return d && d.left ? 'Only ' + d.left + ' of the ' + pl + ' planned' + pw + ' left. Choose Ad hoc, Goodwill or Special for the rest.'
+          : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Special.';
+      }
+      return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
+        : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
     }
     if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
@@ -2859,11 +2872,14 @@
     $('dwTitle').textContent = t.title || 'Untitled task';
     /* One line that places it, and the way to where the rest of it lives:
        the month or the client is its own record, not this sheet's. */
-    var ctx = [engName(t) || whoseWord(t), metaFormat(t)].filter(Boolean).join(' · ');
+    /* The client, the format and the month, the month itself the way to it
+       (the user, 2026-10-08: "so many info here"). */
+    var fmt = metaFormat(t).replace(/^[^:]*:\s*/, '');
+    var ctx = [whoseWord(t), fmt].filter(Boolean).join(' · ');
     var ml = t.engagement_id ? monthLink(t) : null;
     var cl = !ml && t.clients && t.clients.slug
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
-    var link = ml ? { label: 'View month', href: ml.href } : cl;
+    var link = ml ? { label: t.code_period ? monthWord(t.code_period) : 'View month', href: ml.href } : cl;
     $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
@@ -3198,18 +3214,48 @@
   }
   /* The title is edited where it sits, the pen becoming the tick. A task with
      a code keeps its code; what is edited is the words after it. */
-  function editSheetTitle() {
+  function editSheetTitle() { editName($('dwTitle'), $('dwTitleEdit'), 'dwMsg'); }
+  /* One pen edits the whole name (the user, 2026-10-08: "the pen button only
+     allows to edit the content name"): a task with a code opens as the code
+     and its description, and each part that changed goes to its own
+     function; the code keeps its shape and the description may be blank. */
+  function editName(host, pen, msgId) {
     var t = state.task;
     if (!t || !window.ADspaceAsk) return;
-    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
-    window.ADspaceAsk.rename($('dwTitle'), $('dwTitleEdit'), {
-      label: 'Title', saveLabel: 'Save title', value: was,
-      allowEmpty: Boolean(t.code), max: 160,
+    var was = t.code ? (t.code + ' ' + (t.content_desc || '')).trim() : (t.content_desc || t.title || '');
+    window.ADspaceAsk.rename(host, pen, {
+      label: 'Name', saveLabel: 'Save name', value: was, max: 180,
       save: function (v) {
-        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'dwMsg', function (d) {
-          applyTask(d);
-          readTask(t.id, function () { msg('dwMsg', 'Title saved.', 'ok'); });
-        });
+        if (!t.code) {
+          call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, msgId, function (d) {
+            applyTask(d); readTask(t.id, function () { msg(msgId, 'Saved.', 'ok'); });
+          });
+          return;
+        }
+        var m = String(v).trim().match(/^(\d{4}\s*W\s*[1-5]\s*\d{2,3})(?:\s+([\s\S]*))?$/i);
+        if (!m) { msg(msgId, said('bad-code'), 'err'); paintTask(); return; }
+        var code = m[1].replace(/\s/g, '').toUpperCase(), desc = (m[2] || '').trim();
+        var codeWas = t.code;
+        var descStep = function (row) {
+          if (desc === (row.content_desc || '')) {
+            readTask(t.id, function () {
+              msg(msgId, 'Saved.', 'ok');
+              if (row.code !== codeWas) undoBar('Code changed to ' + row.code + '.', function () { setCode(state.task, codeWas, false); }, $(msgId));
+            });
+            return;
+          }
+          call('ops_set_content_desc', { p_task: t.id, p_desc: desc, p_version: row.version }, msgId, function (d) {
+            applyTask(d);
+            readTask(t.id, function () {
+              msg(msgId, 'Saved.', 'ok');
+              if (d.code !== codeWas) undoBar('Code changed to ' + d.code + '.', function () { setCode(state.task, codeWas, false); }, $(msgId));
+            });
+          });
+        };
+        if (code === t.code) { descStep(t); return; }
+        call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, msgId, function (d) {
+          applyTask(d); descStep(d);
+        }, paintTask);
       }
     });
   }
@@ -4181,8 +4227,6 @@
     }
     var pen = $('taskDescEdit');
     if (pen) pen.hidden = !may('ops', 'work') || isFinished(t);
-    var cpen = $('taskCodeEdit');
-    if (cpen) cpen.hidden = !t.code || !may('ops', 'work') || !mayMove(t);
     /* Whose it is and what it makes. The owner is the rail's, named once
        under People, so the head does not say it a second time. */
     $('taskMeta').textContent = [
@@ -5218,6 +5262,11 @@
       var bits = [];
       if ('priority_level' in to) bits.push('Priority ' + (PRIORITY_WORD[String(from.priority_level)] || 'Normal') + ' to ' + (PRIORITY_WORD[String(to.priority_level)] || 'Normal'));
       if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief cleared');
+      var fw = function (k) { return k ? (DELIVER_WORD[k] || sentence(k)) : 'not set'; };
+      if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
+      if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
+      if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
+      if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
     if (e.event_type === 'file_changed') return (to.label || '') + (to.kind && from.kind !== to.kind ? ' · ' + (LINK_WORD[to.kind] || to.kind) : '');
@@ -5446,19 +5495,79 @@
 
   /* DETAILS, and the rest behind a fold: what a reader needs to place the
      task, then everything they might look up. */
+  /* A detail is changed where it is read (the user, 2026-10-08: "allow
+     changes straight from these too"): a select in place of the word for
+     whoever may work the task, saved on change, put back on a refusal. For
+     stays fixed: the client and its scope hang from it. */
+  function detailSelect(key, label, opts, value) {
+    return '<select class="select select-sm tdetail" data-key="' + key + '" aria-label="' + esc(label) + '">' +
+      opts.map(function (o) {
+        return '<option value="' + esc(o[0]) + '"' + (String(value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+      }).join('') + '</select>';
+  }
+  function pairsOf(map) { return Object.keys(map).map(function (k) { return [k, map[k]]; }); }
+  function monthsAround(period) {
+    var m = /^(\d{4})-(\d{2})$/.exec(period || ''), out = [];
+    if (!m) return out;
+    for (var i = -3; i <= 6; i++) {
+      var d = new Date(Number(m[1]), Number(m[2]) - 1 + i, 1);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      out.push([key, monthWord(key)]);
+    }
+    return out;
+  }
   function paintDetails(t) {
-    $('taskFacts').innerHTML = [
-      ['For', t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client'],
-      ['Format', formatWord(t)],
-      ['Month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
-      ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level || '')],
-      ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
-    ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
+    var edit = may('ops', 'work') && !isFinished(t);
+    var forWord = t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client';
+    var rows = [frow('For', esc(forWord))];
+    if (edit) {
+      var fmts = [['', 'Not set']].concat(pairsOf(DELIVER_WORD));
+      if (t.deliverable_type && !DELIVER_WORD[t.deliverable_type]) fmts.push([t.deliverable_type, formatWord(t)]);
+      rows.push(frow('Format', detailSelect('deliverable_type', 'Format', fmts, t.deliverable_type || '')));
+      rows.push(frow('Type', detailSelect('task_type', 'Type', pairsOf(TASK_TYPE_WORD), t.task_type)));
+      if (t.code && t.code_period && mayMove(t)) {
+        rows.push(frow('Month', '<span class="tdetail-pair">' +
+          detailSelect('code_period', 'Month', monthsAround(t.code_period), t.code_period) +
+          detailSelect('code_week', 'Week', [['1', 'Week 1'], ['2', 'Week 2'], ['3', 'Week 3'], ['4', 'Week 4'], ['5', 'Week 5']], t.code_week) +
+          '</span>'));
+      } else if (t.code_period) {
+        rows.push(frow('Month', esc(monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : ''))));
+      }
+      rows.push(frow('Priority', detailSelect('priority_level', 'Priority', [['1', 'Urgent'], ['2', 'High'], ['3', 'Normal'], ['4', 'Low']], String(Math.min(4, Number(t.priority_level) || 3)))));
+      rows.push(frow('Complexity', detailSelect('complexity', 'Complexity', pairsOf(COMPLEX_WORD), t.complexity || 'standard')));
+    } else {
+      [['Format', formatWord(t)], ['Type', TASK_TYPE_WORD[t.task_type] || ''],
+       ['Month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
+       ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level || '')],
+       ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
+      ].forEach(function (p) { if (p[1]) rows.push(frow(p[0], esc(p[1]))); });
+    }
+    $('taskFacts').innerHTML = rows.join('');
+    Array.prototype.forEach.call($('taskFacts').querySelectorAll('select.tdetail'), function (sel) {
+      var was = sel.value;
+      sel.addEventListener('change', function () {
+        var key = sel.getAttribute('data-key');
+        var back = function () { sel.value = was; };
+        if (key === 'code_period' || key === 'code_week') {
+          var per = $('taskFacts').querySelector('[data-key="code_period"]').value;
+          var wk = $('taskFacts').querySelector('[data-key="code_week"]').value;
+          var code = per.slice(2, 4) + per.slice(5, 7) + 'W' + wk + String(t.code_seq || 1).padStart(2, '0');
+          call('ops_set_code', { p_task: t.id, p_code: code, p_version: t.version }, 'taskMsg', function (d) {
+            applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+          }, back);
+          return;
+        }
+        var payload = {};
+        payload[key] = key === 'priority_level' ? Number(sel.value) : (sel.value || null);
+        call('ops_update_task', { p_task: t.id, p_payload: payload, p_version: t.version }, 'taskMsg', function (d) {
+          applyTask(d); readTask(t.id, function () { msg('taskMsg', 'Saved.', 'ok'); });
+        }, back);
+      });
+    });
     var wf = state.workflows.filter(function (w) { return w.id === t.workflow_id; })[0];
     var e = state.eng;
     var ml = monthLink(t);
     var more = [
-      ['Type', TASK_TYPE_WORD[t.task_type] || sentence(t.task_type)],
       ['Workflow', (wf && wf.name) || ''],
       ['Languages', (t.language_codes || []).join(', ')],
       ['Estimate', t.estimate_minutes ? minutesWord(t.estimate_minutes) : ''],
@@ -5704,6 +5813,8 @@
      what to do instead. */
   function dbWord(m) {
     m = String(m || '');
+    /* A trigger's refusal arrives as the JSON the functions answer with. */
+    if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
     if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be made (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
       ? 'This needs a database update. Ask an admin to run the latest migration.' : m;
@@ -6013,6 +6124,22 @@
     if (ntHeld[e.id] != null) bits.push(ntHeld[e.id] + ' added');
     hint.textContent = bits.join(' \u00b7 ');
     hint.hidden = !bits.length;
+    ntPlanGate();
+  }
+  /* Retainer pieces are the month's plan (2026-10-08): once the plan is
+     taken, Retainer rests and an extra is Ad hoc, Goodwill or Special. The
+     database numbers and refuses the same way (`plan-full`). */
+  function ntLeft() {
+    var e = $('ntScope') && $('ntScope').value === 'client' ? ntEng() : null;
+    if (!e || !e.planned_count || ntHeld[e.id] == null) return null;
+    return Math.max(0, e.planned_count - ntHeld[e.id]);
+  }
+  function ntPlanGate() {
+    var sel = $('ntType'), opt = sel && sel.querySelector('option[value="engagement"]');
+    if (!opt) return;
+    var left = ntLeft(), full = left === 0;
+    if (opt.disabled !== full) opt.disabled = full;
+    if (full && sel.value === 'engagement') { sel.value = 'adhoc'; sel.dispatchEvent(new Event('change')); ntTouched.type = false; }
   }
   function ntEng() {
     var per = $('ntPeriod').value;
@@ -6194,6 +6321,10 @@
         max_count: Number($('ntMax').value) || null
       };
     }
+    var left = ntLeft();
+    if ($('ntType').value === 'engagement' && left != null && rows.length > left) {
+      msg('ntMsg', said('plan-full', null, { planned: ntEng().planned_count, left: left }), 'err'); return;
+    }
     var payload = {
       scope: scope,
       client_id: scope === 'internal' ? null : $('ntClient').value,
@@ -6231,34 +6362,7 @@
   /* The description is edited where it sits: the pen becomes the tick, the
      code beside it never changes, and a blank is allowed on a task that has
      a code because the code is then the name. */
-  function editDesc() {
-    var t = state.task;
-    if (!t || !window.ADspaceAsk) return;
-    var host = $('taskDesc'), pen = $('taskDescEdit');
-    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
-    window.ADspaceAsk.rename(host, pen, {
-      label: 'Content description', saveLabel: 'Save description', value: was,
-      allowEmpty: Boolean(t.code), max: 160,
-      save: function (v) {
-        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'taskMsg',
-          function (d) {
-            applyTask(d);
-            readTask(t.id);
-          });
-      }
-    });
-  }
-  /* The code is corrected where it sits (the user, 2026-10-08): the owner or
-     an admin, its shape kept, the client's own for the month; the #WT serial
-     stays the task's identity. Undo puts the code before back. */
-  function editCode() {
-    var t = state.task;
-    if (!t || !t.code || !window.ADspaceAsk) return;
-    window.ADspaceAsk.rename($('taskCode'), $('taskCodeEdit'), {
-      label: 'Code', saveLabel: 'Save code', value: t.code, code: true, max: 12,
-      save: function (v) { setCode(t, v, true); }
-    });
-  }
+  function editDesc() { editName($('taskName'), $('taskDescEdit'), 'taskMsg'); }
   function setCode(t, v, offerUndo) {
     var was = t.code;
     call('ops_set_code', { p_task: t.id, p_code: v, p_version: t.version }, 'taskMsg', function (d) {
@@ -7669,8 +7773,6 @@
     });
     var pen = $('taskDescEdit');
     if (pen) pen.addEventListener('click', editDesc);
-    var cpen = $('taskCodeEdit');
-    if (cpen) cpen.addEventListener('click', editCode);
     var cpt = $('taskCopyTitle');
     if (cpt) cpt.addEventListener('click', copyTitle);
 

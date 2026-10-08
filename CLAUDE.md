@@ -1966,10 +1966,20 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock; the owner or an admin corrects it in place
-    (the pen beside it, `ops_set_code`, `2026-10-08-task-code-editable.sql`:
+    (the name's one pen, in the record and the quick sheet alike, opens the
+    code and the description as one field, each part changed going to its own
+    function; `ops_set_code`, `2026-10-08-task-code-editable.sql`:
     its shape kept, `bad-code`; the client's own for the month,
     `code-taken` naming the task; filed `code_changed`; Undo where it
     happened). The `#WT` serial stays the identity.
+  - NN follows the month's plan (`2026-10-08-task-numbers-planned.sql`,
+    trigger `ops_tasks_code_slot`): a Retainer piece (not a report task)
+    takes the lowest free of 01 to `planned_count`, refused `plan-full` past
+    it; any other task the lowest free after it (a month with no plan from
+    01); a deleted number is used again; a type moved across is numbered
+    again; a typed number keeps its range (`plan-range`, `extra-range`); the
+    code is rebuilt from its month, week and number, so W1 is Week 1. The
+    New sheet rests Retainer once the month's content reaches its plan.
   - The description is edited in place (`ops_set_content_desc`).
   - The number is `#WT00001` (`ops_serial`). The next number is set under `ops.numbering`
     (`ops_set_next_task_no`, refused at or below the highest in use).
@@ -2056,10 +2066,19 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A draft link is optional. Without one the step reads Sent on WhatsApp, and
   the database accepts the link or a note.
 - The quick sheet (`#taskDrawer`, `.sheet-side`, `open=`):
+  - Under the name one line: the client, the format and the month, the month
+    itself opening its Months view (never `content` or `Graphic:`).
   - Next step, facts, Brief, Checklist and Comments stay open.
   - Files and links, Time records and Recent activity fold under More
     (`#dwMore`, shut each open).
   - The full record is one press further.
+- The record's Details are changed where they are read (2026-10-08): Format,
+  Type, Priority and Complexity as small selects (`ops_update_task`,
+  `2026-10-08-task-details-editable.sql`: `deliverable_type`, `task_type`,
+  `complexity`, `estimate_minutes`, each refused by name), and the Month and
+  Week where the code may move (`ops_set_code` with the code built from
+  them); each saved on change, put back on a refusal, filed `details_changed`
+  from and to. For stays fixed: the client and its scope hang from it.
 - Everything added can be corrected and taken back:
   - checklist items, links and comments (edit and delete are later events);
   - the brief and the priority (`ops_update_task`).
