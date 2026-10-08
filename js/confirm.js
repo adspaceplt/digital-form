@@ -30,6 +30,10 @@
  *   ADspaceConfirm.ask({ …, field: { …, choices: [['a','A'], …] } }, onYes)
  *   ADspaceConfirm.ask({ …, fields: […], check: function (values) { return 'Why not' or '' } }, onYes)
  *
+ * A field may be `tick: true` (a checkbox with its label, answering 'on' or
+ * '', never required), and a field of two to four `choices` may be
+ * `seg: true` (the segment, js/form.js), as a choice of two reads.
+ *
  * `onYes` is called with the field's value where there is one and with `true`
  * where there is not. Cancel calls nothing: walking away is not a decision.
  */
@@ -155,6 +159,7 @@
   }
 
   function valueOf(r) {
+    if (r.input.type === 'checkbox') return r.input.checked ? 'on' : '';
     var raw = r.input.value == null ? '' : String(r.input.value);
     return r.input.tagName === 'SELECT' ? raw : raw.trim();
   }
@@ -164,7 +169,7 @@
     var i, r, v;
     for (i = 0; i < rows.length; i++) {
       r = rows[i]; v = valueOf(r);
-      if (r.spec.required !== false && !v) {
+      if (r.spec.required !== false && !r.spec.tick && !v) {
         say(r.spec.need || 'This is required.');
         r.input.focus();
         return;
@@ -237,6 +242,20 @@
       var id = 'askSheetField' + n;
       /* `half` sets a field beside the next half one (a date and its time). */
       var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
+      if (f.tick) {
+        var tl = el('label', 'tickline');
+        var tk = el('input');
+        tk.type = 'checkbox';
+        tk.id = id;
+        tk.checked = !!f.value;
+        tl.setAttribute('for', id);
+        tl.appendChild(tk);
+        tl.appendChild(el('span', null, f.label || ''));
+        wrap.appendChild(tl);
+        elFields.appendChild(wrap);
+        rows.push({ spec: f, input: tk });
+        return;
+      }
       var lab = el('label', 'field-label', f.label || 'Reason');
       lab.setAttribute('for', id);
       var input;
@@ -273,6 +292,10 @@
       wrap.appendChild(lab);
       wrap.appendChild(input);
       elFields.appendChild(wrap);
+      if (f.choices && f.seg && window.ADspaceForm && ADspaceForm.segment) {
+        input.setAttribute('data-seg', '');
+        ADspaceForm.segment(input);
+      }
       /* An empty time field says what it wants: Safari otherwise draws the
          clock's own time in grey, which reads as a value already chosen. */
       if (f.hint && window.ADspaceForm && ADspaceForm.hint) {
@@ -287,7 +310,8 @@
        that costs nothing is the one a stray Enter should land on. Where a
        value is wanted the field takes focus, because that is the next thing
        to do either way. */
-    var land = (rows[0] && rows[0].input) || (o.tone === 'danger' ? elCancel : elGo);
+    var typed = rows.filter(function (x) { return !x.spec.tick && !x.spec.seg; })[0];
+    var land = (typed && typed.input) || (o.tone === 'danger' ? elCancel : elGo);
     setTimeout(function () { try { land.focus(); } catch (e) {} }, 0);
   }
 

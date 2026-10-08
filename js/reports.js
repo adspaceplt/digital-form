@@ -3740,7 +3740,15 @@
      pairs; a colleague's own limit is set from their row (empty is the
      standard, 0 stops it; the user, 2026-10-05: no long list). Read
      again on every open. */
-  var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5 };
+  var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40 };
+  /* This month's tokens and what they cost (2026-10-08): each call's tokens
+     are kept on its row and priced at the Business settings of its day. */
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Figures checks', caption: 'Captions' };
+  function aiTokens(n) {
+    n = Number(n) || 0;
+    return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
+  }
+  function aiUsd(n) { return 'US$' + (Number(n) || 0).toFixed(2); }
   function aiClock(iso) {
     var at = new Date(iso);
     if (isNaN(at.getTime())) return '';
@@ -3773,6 +3781,7 @@
       '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
     box.querySelector('.sheet-card').setAttribute('data-narrow', '560');
     var host = box.querySelector('[data-m="aiuse"]'), m = box.querySelector('[data-m="sheet"]');
+    m.id = 'rpAiUseMsg';
     var edit = box.querySelector('[data-a="limits"]');
     var d = null, people = [];
     var paint = function () {
@@ -3787,7 +3796,8 @@
         edit.disabled = false;
         people = (d.people || []).map(function (p) {
           var cap = p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person);
-          return { id: p.id, name: p.name, code: p.code, used: p.day || 0, cap: cap, limit: p.limit, own: p.limit != null, group: p.group || 'No group' };
+          return { id: p.id, name: p.name, code: p.code, used: p.day || 0, cap: cap, limit: p.limit, own: p.limit != null, group: p.group || 'No group',
+            captions: p.captions || 0, capCap: p.caption_cap != null ? p.caption_cap : AI_STD.caption };
         });
         var sum = function (list) {
           return { used: list.reduce(function (t, p) { return t + p.used; }, 0), cap: list.reduce(function (t, p) { return t + p.cap; }, 0) };
@@ -3799,6 +3809,12 @@
         var setting = function (k) { return d[k] != null ? d[k] : AI_STD[k]; };
         var rep = setting('report'), adm = setting('report_admin'), chk = setting('check'), chkA = setting('check_admin'), admDay = setting('admin');
         var dayWord = function (v) { return v === 0 ? 'Stopped' : v + ' a day'; };
+        var capC = setting('caption'), capA = setting('caption_admin');
+        var wrote = people.filter(function (p) { return p.captions > 0; })
+          .sort(function (x, y) { return y.captions - x.captions || String(x.name).localeCompare(String(y.name)); });
+        var cost = d.cost || null;
+        var by = (cost && cost.by) || {};
+        var mayPrice = !!(window.ADspaceAdmin && window.ADspaceAdmin.may && window.ADspaceAdmin.may('team.settings', 'work'));
         host.innerHTML =
           (d.resets_at ? '<p class="aiu-reset">Resets at ' + esc(aiClock(d.resets_at)) + '</p>' : '') +
           '<div class="aiu-list">' + aiUseRow({ name: 'Whole team', used: all.used, cap: all.cap, sum: true }) + '</div>' +
@@ -3815,11 +3831,35 @@
               own: rep !== AI_STD.report || chk !== AI_STD.check, cap: rep }) +
             aiUseRow({ name: 'Each admin, each report', text: adm === 0 && chkA === 0 ? 'Stopped' : adm + (adm === 1 ? ' draft' : ' drafts') + ' and ' + chkA + (chkA === 1 ? ' check' : ' checks') + ' a day',
               own: adm !== AI_STD.report_admin || chkA !== AI_STD.check_admin, cap: adm }) +
+            aiUseRow({ name: 'Captions, each colleague', text: dayWord(capC), own: capC !== AI_STD.caption, cap: capC }) +
+            aiUseRow({ name: 'Captions, each admin', text: dayWord(capA), own: capA !== AI_STD.caption_admin, cap: capA }) +
           '</div></section>';
+        /* Captions are their own count, so they sit apart from the day's AI uses. */
+        host.innerHTML +=
+          '<section class="fsec"><h4 class="fsec-h">Captions today</h4><div class="aiu-list">' +
+            aiUseRow({ name: 'Whole team', sum: true, used: people.reduce(function (t, p) { return t + p.captions; }, 0),
+              cap: people.reduce(function (t, p) { return t + p.capCap; }, 0) }) +
+            wrote.map(function (p) { return aiUseRow({ name: p.name, code: p.code, used: p.captions, cap: p.capCap }); }).join('') +
+          '</div></section>';
+        if (cost) {
+          host.innerHTML +=
+            '<section class="fsec aiu-cost"><h4 class="fsec-h">This month</h4><div class="aiu-list">' +
+              aiUseRow({ name: 'Estimated cost', sum: true, text: aiUsd(cost.usd) }) +
+              ['draft', 'check', 'caption'].map(function (k) {
+                var b = by[k] || { uses: 0, input: 0, output: 0, usd: 0 };
+                return aiUseRow({ name: AI_USE_WORD[k], text: fmt(b.uses) + (b.uses === 1 ? ' use · ' : ' uses · ') + aiUsd(b.usd) });
+              }).join('') +
+              aiUseRow({ name: 'Tokens', text: aiTokens(cost.input) + ' in · ' + aiTokens(cost.output) + ' out' }) +
+              aiUseRow({ name: 'Price a million tokens', text: aiUsd(cost.price_in) + ' in · ' + aiUsd(cost.price_out) + ' out' }) +
+            '</div>' +
+            (cost.untracked ? '<p class="aiu-reset">' + fmt(cost.untracked) + (cost.untracked === 1 ? ' use' : ' uses') + ' from before tokens were kept are not priced.</p>' : '') +
+            (mayPrice ? '<div class="aiu-acts"><button class="btn btn-sm" type="button" data-a="prices">' + PEN_MARK + 'Edit prices</button></div>' : '') +
+            '</section>';
+        }
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
       }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
     };
-    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin'];
+    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin', 'caption', 'caption_admin'];
     var setLimit = function (jobs) {
       var fails = [];
       return jobs.reduce(function (chain, j) {
@@ -3843,7 +3883,8 @@
     edit.onclick = function () {
       if (!d) return;
       var LBL = { person: 'Each colleague', admin: 'Each admin', report: 'Drafts a report', check: 'Checks a report',
-        report_admin: 'Admin drafts a report', check_admin: 'Admin checks a report' };
+        report_admin: 'Admin drafts a report', check_admin: 'Admin checks a report',
+        caption: 'Captions a colleague', caption_admin: 'Captions an admin' };
       var fields = STD_KEYS.map(function (k) {
         return { name: k, label: LBL[k], type: 'number', min: '0', required: false, value: num(d[k] != null ? d[k] : AI_STD[k]), placeholder: String(AI_STD[k]), half: true };
       });
@@ -3861,6 +3902,11 @@
     };
     /* A colleague's own limit, from their row: one value, empty for the standard. */
     host.addEventListener('click', function (e) {
+      if (e.target.closest('[data-a="prices"]')) {
+        window.ADspaceAdmin.editSettings({ title: 'AI prices, US$ a million tokens', msg: 'rpAiUseMsg', done: paint,
+          keys: [['ai_price_in', 'Input', 'usd'], ['ai_price_out', 'Output', 'usd']] }, e.target.closest('[data-a="prices"]'));
+        return;
+      }
       var row = e.target.closest('.aiu-row[data-scope]');
       if (!row || !d) return;
       var p = people.filter(function (x) { return x.id === row.getAttribute('data-scope'); })[0];

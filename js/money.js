@@ -25,7 +25,8 @@
      reads them once per page; `FIRST` is what each held before the setting
      existed (the migration's seed), used only where the read fails. */
   var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_24: -10,
-    lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1 };
+    lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
+    ai_price_in: 4, ai_price_out: 20 };
   var ROWS = [];
   var loading = null;
   function today() {
