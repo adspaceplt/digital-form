@@ -5831,7 +5831,7 @@
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
     return {
-      desc: row.querySelector('.piece-desc input').value,
+      desc: row.querySelector('.piece-desc textarea').value,
       fmt: row.querySelector('.piece-fmt select').value,
       week: row.querySelector('.piece-week select').value,
       draft: row.querySelector('.piece-draft input').value,
@@ -5840,7 +5840,7 @@
     };
   }
   function ntRowSet(row, v) {
-    row.querySelector('.piece-desc input').value = v.desc || '';
+    row.querySelector('.piece-desc textarea').value = v.desc || '';
     row.querySelector('.piece-fmt select').value = v.fmt || '';
     row.querySelector('.piece-week select').value = v.week || '1';
     row.querySelector('.piece-draft input').value = v.draft || '';
@@ -5861,7 +5861,7 @@
         control.replace('>', ' id="' + k + key + '">') + '</div>';
     };
     row.innerHTML =
-      fld('piece-desc', 'desc', 'Content description', '<input class="input" placeholder="Content Post" autocomplete="off">') +
+      fld('piece-desc', 'desc', 'Content description', '<textarea class="input" rows="1" data-oneline placeholder="Content Post" autocomplete="off"></textarea>') +
       fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
       fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
       fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date">') +
@@ -5927,7 +5927,7 @@
     if (scope === 'internal') {
       var blank = pieces.map(function (p, i) { return p.content_desc ? -1 : i; }).filter(function (i) { return i > -1; })[0];
       if (blank != null) {
-        msg('ntMsg', 'A description is required.', 'err'); rows[blank].querySelector('.piece-desc input').focus(); return;
+        msg('ntMsg', 'A description is required.', 'err'); rows[blank].querySelector('.piece-desc textarea').focus(); return;
       }
     }
     if (scope !== 'internal' && !$('ntClient').value) {
@@ -7194,6 +7194,15 @@
     if (qf) qf.addEventListener('submit', function (e) { e.preventDefault(); quickAdd(); });
     var qg = $('qkGo');
     if (qg) qg.addEventListener('click', quickAdd);
+    /* Enter in the title makes the task, as the comment above promises. The
+       form has two typed lines once the due date is a DD/MM/YYYY box, and a
+       form of two makes nothing of a plain Enter by itself. */
+    var qt = $('qkTitle');
+    if (qt) qt.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      quickAdd();
+    });
     ['qkClose', 'qkDone'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', closeQuick);
     });
@@ -7592,7 +7601,7 @@
     if (nadd) nadd.addEventListener('click', function () {
       var row = ntAddPiece();
       if (row && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
-        row.querySelector('.piece-desc input').focus();
+        row.querySelector('.piece-desc textarea').focus();
       }
     });
     var npcs = $('ntPieces');

@@ -1498,16 +1498,16 @@
         '<div><label class="field-label" for="rpAccEnd">At end of period</label><input class="input" id="rpAccEnd" data-num="int" type="text" inputmode="numeric"></div></div>' +
         '<details class="fmore" data-none="Worked out from start and end"><summary>Recorded growth</summary>' +
           '<div class="row fgrid"><div><label class="field-label" for="rpAccGrowth">Growth as reported</label><input class="input" id="rpAccGrowth" data-num="int" type="text" inputmode="numeric"></div>' +
-          '<div><label class="field-label" for="rpAccWhy">Reason</label><input class="input" id="rpAccWhy" type="text" placeholder="Optional"></div></div></details></section>' +
+          '<div><label class="field-label" for="rpAccWhy">Reason</label><textarea class="input" id="rpAccWhy" rows="1" data-oneline placeholder="Optional"></textarea></div></div></details></section>' +
       '<section class="fsec"><h4 class="fsec-h">Figures reported</h4>' +
         '<div class="rp-ticks">' + METRICS.map(function (mm) {
           return '<label class="tickline"><input type="checkbox" data-metric="' + mm[0] + '"> <span>' + esc(mm[1]) + '</span></label>';
         }).join('') + '</div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccBasis">Engagement rate based on</label><select class="select" id="rpAccBasis">' +
           BASIS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>' +
-        '<div><label class="field-label" for="rpAccNote">Metric note</label><input class="input" id="rpAccNote" type="text" placeholder="Optional"></div></div></section>' +
+        '<div><label class="field-label" for="rpAccNote">Metric note</label><textarea class="input" id="rpAccNote" rows="1" data-oneline placeholder="Optional"></textarea></div></div></section>' +
       (remarksHere ? '<details class="fmore" data-none="Optional"><summary>Remarks for this account</summary>' +
-        '<div class="row"><div><label class="field-label" for="rpAccSummary">Summary line</label><input class="input" id="rpAccSummary" type="text"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAccSummary">Summary line</label><textarea class="input" id="rpAccSummary" rows="1" data-oneline></textarea></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccWorked">What worked</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point a line"></textarea></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas to improve</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point a line"></textarea></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccActions">Focus for next month</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></details>' : ''),
@@ -1834,7 +1834,7 @@
       '<section class="fsec"><h4 class="fsec-h">Post</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPostAcc">Account</label><select class="select" id="rpPostAcc"></select></div>' +
         '<div><label class="field-label" for="rpPostDate">Date</label><input class="input" id="rpPostDate" aria-required="true" type="date"></div></div>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpPostTitle">Title</label><input class="input" id="rpPostTitle" type="text" placeholder="Optional"></div>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpPostTitle">Title</label><textarea class="input" id="rpPostTitle" rows="1" data-oneline placeholder="Optional"></textarea></div>' +
         '<div><label class="field-label" for="rpPostFormat">Format</label><select class="select" id="rpPostFormat">' +
           FORMATS.map(function (f) { return '<option value="' + f[0] + '">' + esc(f[1]) + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpPostThumb">Thumbnail</label>' +
@@ -1845,8 +1845,8 @@
         '<div class="row"><div><label class="field-label" for="rpPostNotable">Why it stood out</label><textarea class="input" id="rpPostNotable" rows="2"></textarea></div></div>' +
         '<details class="fmore" data-none="Caption, link, remarks"><summary>More details</summary>' +
           '<div class="row"><div><label class="field-label" for="rpPostCaption">Caption</label><textarea class="input" id="rpPostCaption" rows="3"></textarea></div></div>' +
-          '<div class="row"><div><label class="field-label" for="rpPostUrl">Link</label><input class="input" id="rpPostUrl" type="url" placeholder="https://"></div></div>' +
-          '<div class="row"><div><label class="field-label" for="rpPostObs">Remarks in the appendix</label><input class="input" id="rpPostObs" type="text"></div></div>' +
+          '<div class="row"><div><label class="field-label" for="rpPostUrl">Link</label><textarea class="input" id="rpPostUrl" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://"></textarea></div></div>' +
+          '<div class="row"><div><label class="field-label" for="rpPostObs">Remarks in the appendix</label><textarea class="input" id="rpPostObs" rows="2"></textarea></div></div>' +
         '</details></section>',
       FOOT('Save'));
     box.querySelector('h3').textContent = p ? 'Edit post' : 'Add post';
@@ -2281,7 +2281,7 @@
     var platHtml = groups.map(function (g) {
       var id = g.lead.id;
       return '<section class="fsec rp-plat" data-acc="' + esc(id) + '"><h4 class="fsec-h">' + esc(g.label) + '</h4>' +
-        '<div class="row"><div><label class="field-label" for="rpP_' + id + '_summary">Summary line</label><input class="input" id="rpP_' + id + '_summary" type="text"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpP_' + id + '_summary">Summary line</label><textarea class="input" id="rpP_' + id + '_summary" rows="1" data-oneline></textarea></div></div>' +
         area('rpP_' + id + '_worked', 'What worked', 'One point a line') +
         area('rpP_' + id + '_improve', 'Areas to improve', 'One point a line') +
         area('rpP_' + id + '_actions', 'Focus for next month', 'One point a line') +
@@ -3097,12 +3097,12 @@
       '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
         '<div class="row"><div><label class="field-label" for="rpAdPlat">Platform</label><select class="select" id="rpAdPlat" data-seg>' +
           AD_PLATS.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" aria-required="true" type="text" placeholder="As in Ads Manager"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><textarea class="input" id="rpAdName" aria-required="true" rows="1" data-oneline placeholder="As in Ads Manager"></textarea></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
           OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label class="field-label" for="rpAdResult">Result type</label><input class="input" id="rpAdResult" type="text" list="rpAdResultTypes"></div></div>' +
         '<datalist id="rpAdResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdAud">Audience</label><input class="input" id="rpAdAud" type="text" placeholder="Broad, Interest"></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdAud">Audience</label><textarea class="input" id="rpAdAud" rows="1" data-oneline placeholder="Broad, Interest"></textarea></div>' +
         '<div><label class="field-label" for="rpAdStart">Starts</label><input class="input" id="rpAdStart" type="date"></div>' +
         '<div><label class="field-label" for="rpAdEnd">Ends</label><input class="input" id="rpAdEnd" type="date"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdThumb">Image</label>' +

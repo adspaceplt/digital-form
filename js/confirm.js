@@ -125,8 +125,12 @@
     var pk = document.getElementById('pickerBox');
     if (pk && !pk.hidden && (pk.contains(e.target) || e.key === 'Escape')) return;
     if (e.key === 'Escape') { e.preventDefault(); shut(); return; }
-    if (e.key === 'Enter' && e.target !== elCancel && e.target !== elClose
-        && e.target.tagName !== 'TEXTAREA') {
+    /* Enter answers the question from a field, a one-line box included,
+       but never while an input method is composing: there it picks the
+       word (pinyin's Enter), and sending then sent half a reason. */
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229
+        && e.target !== elCancel && e.target !== elClose
+        && (e.target.tagName !== 'TEXTAREA' || e.target.hasAttribute('data-oneline'))) {
       e.preventDefault(); go(); return;
     }
     if (e.key !== 'Tab') return;
@@ -140,6 +144,14 @@
   function say(text, tone) {
     elMsg.textContent = text || '';
     elMsg.className = 'msg' + (text ? ' ' + (tone || 'err') : '');
+  }
+
+  /* A number asked for as text (a count typed back, the next task number)
+     stays a field, with the number keyboard on a phone. */
+  function numeric(f) {
+    var digits = /^\d+$/;
+    return digits.test(String(f.match == null ? '' : f.match)) ||
+      (f.match == null && digits.test(String(f.value == null ? '' : f.value)));
   }
 
   function valueOf(r) {
@@ -238,11 +250,21 @@
       } else if (f.rows) {
         input = el('textarea', 'input');
         input.rows = f.rows;
+      } else if (!f.type && !numeric(f)) {
+        /* Words (a reason, a name typed back, a link) are a one-line box
+           that wraps (js/grow.js), so a long answer is read whole rather
+           than slid out of sight (the user, 2026-10-07). */
+        input = el('textarea', 'input');
+        input.rows = 1;
+        input.setAttribute('data-oneline', '');
+        input.autocomplete = 'off';
+        input.spellcheck = false;
       } else {
         input = el('input', 'input');
         input.type = f.type || 'text';
         input.autocomplete = 'off';
         input.spellcheck = false;
+        if (numeric(f)) input.inputMode = 'numeric';
         if (f.min) input.min = f.min;
       }
       input.id = id;

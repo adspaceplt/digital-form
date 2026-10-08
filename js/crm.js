@@ -2389,9 +2389,11 @@
     on('portal',   function () { askPortal(ct); });
     on('invite',   function () { sendInvite(ct); });
     on('unportal', function () { setPortal(ct, false); });
-    on('del',     function () { archiveContact(ct, true); });
+    /* One listener for Delete: on a removed contact it was also wired to
+       Remove, which removed it again, filed it and offered an Undo that
+       would bring it back, whatever the question then answered. */
+    on('del',     function () { if (removed) purgeContact(ct); else archiveContact(ct, true); });
     on('restore', function () { archiveContact(ct, false); });
-    if (removed) on('del', function () { purgeContact(ct); });
     return row;
   }
 
@@ -2710,7 +2712,10 @@
       '</div>' +
       '<div class="touch-actions">' +
         (removed
-          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Restore</button>'
+          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Restore</button>' +
+            /* The hard delete once the soft one is made, as a contact's: an
+               entry keyed in error, or one holding what should not be kept. */
+            '<button class="btn btn-quiet btn-sm is-danger" data-a="purge" data-need="clients.calls:manage" type="button">Delete</button>'
           : (open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
             (tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
             '<button class="btn btn-quiet btn-sm" data-a="edit" data-need="clients.calls:work" type="button">Edit</button>' +
@@ -2722,8 +2727,29 @@
     on('undone',  function () { markDone(tc, false); });
     on('del',     function () { archiveTouch(tc, true); });
     on('restore', function () { archiveTouch(tc, false); });
+    on('purge',   function () { purgeTouch(tc); });
     on('meet',    function (ev) { bookMeet(tc, 'create', ev.currentTarget); });
     return row;
+  }
+
+  /* A removed entry goes for good (Clients: Calls at Manage, re-checked by
+     the table's delete policy), asked first, with no restore. */
+  function purgeTouch(tc) {
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: 'This ' + (KIND_WORD[tc.kind] || 'entry').toLowerCase() + ' on ' + niceDate(tc.happened_at) +
+          ' goes from this client for good. There is no restore.',
+      go: 'Delete',
+      tone: 'danger'
+    }, function () {
+      db.from('client_touches').delete().eq('id', tc.id).select('id').then(function (r) {
+        if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('crmWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
+        log('client.touch_deleted', state.client.name, (KIND_WORD[tc.kind] || '') + ' · ' + niceDate(tc.happened_at));
+        msg('crmWorkMsg', 'Deleted.', 'ok');
+        loadTouches();
+      }).catch(function (e) { msg('crmWorkMsg', (e && e.message) || 'Not deleted.', 'err'); });
+    });
   }
 
   /* A meeting booked outside a month (2026-10-05): its time and length, the
@@ -3058,14 +3084,21 @@
   // nothing to explain.
   function adjWord(l) { return MON.termNote(l.tenure, l.term_adjust, l.term_pct); }
 
+  /* A removed line is kept, never deleted (a letter may have quoted it), so
+     its way back outlives the Undo: shown on asking, with Restore, as a
+     removed contact or call is (the user's delete audit, 2026-10-07). */
+  var showRemovedServices = false;
+
   function loadServices() {
     var box = $('crmServices');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
-        .is('archived_at', null).order('created_at').then(function (r) {
+        .order('created_at').then(function (r) {
           if (r.error) { failLine(box, 'Services', r.error.message, loadServices); return; }
-          state.services = r.data || [];
+          var all = r.data || [];
+          state.services = all.filter(function (l) { return !l.archived_at; });
+          state.servicesGone = all.filter(function (l) { return l.archived_at; });
           paintServices();
           paintSummary();
         });
@@ -3075,36 +3108,65 @@
   function paintServices() {
     var box = $('crmServices');
     var rows = state.services;
+    var gone = state.servicesGone || [];
     var c = state.client;
     box.innerHTML = '';
-    if (!rows.length) {
+    if (!rows.length && !(showRemovedServices && gone.length)) {
       // The enquiry as typed at intake stands in until a line is added.
       box.innerHTML = '<div class="empty">' + (c.deal_note ? esc(c.deal_note) : 'No services.') + '</div>';
-      return;
+    } else {
+      var table = document.createElement('div');
+      table.className = 'crm-table';
+      table.innerHTML = '<div class="crm-head svc-row csv-row"><span>Service</span><span class="svc-rate">Qty × rate</span>' +
+        '<span class="svc-rate">Amount</span><span>State</span><span></span></div>';
+      rows.forEach(function (l) { table.appendChild(serviceRow(l)); });
+      if (showRemovedServices) gone.forEach(function (l) { table.appendChild(serviceRow(l, true)); });
+      var sum = function (st) {
+        return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
+      };
+      var quoted = sum('quoted'), confirmed = sum('confirmed');
+      var tot = document.createElement('div');
+      tot.className = 'csv-total';
+      tot.innerHTML =
+        (quoted ? '<span>To quote<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
+        '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, c.market)) + '</b></span>';
+      table.appendChild(tot);
+      box.appendChild(table);
     }
-    var table = document.createElement('div');
-    table.className = 'crm-table';
-    table.innerHTML = '<div class="crm-head svc-row csv-row"><span>Service</span><span class="svc-rate">Qty × rate</span>' +
-      '<span class="svc-rate">Amount</span><span>State</span><span></span></div>';
-    rows.forEach(function (l) { table.appendChild(serviceRow(l)); });
-    var sum = function (st) {
-      return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
-    };
-    var quoted = sum('quoted'), confirmed = sum('confirmed');
-    var tot = document.createElement('div');
-    tot.className = 'csv-total';
-    tot.innerHTML =
-      (quoted ? '<span>To quote<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
-      '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, c.market)) + '</b></span>';
-    table.appendChild(tot);
-    box.appendChild(table);
+    if (gone.length) {
+      var t = document.createElement('button');
+      t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+      t.textContent = (showRemovedServices ? 'Hide ' : 'Show ') + gone.length +
+        ' removed service' + (gone.length === 1 ? '' : 's');
+      t.addEventListener('click', function () { showRemovedServices = !showRemovedServices; paintServices(); });
+      box.appendChild(t);
+    }
   }
 
-  function serviceRow(l) {
+  function serviceRow(l, removed) {
     var c = state.client;
     var w = SV_STATE[l.state] || SV_STATE.enquired;
     var row = document.createElement('div');
-    row.className = 'svc-row csv-row';
+    row.className = 'svc-row csv-row' + (removed ? ' is-off' : '');
+    if (removed) {
+      row.innerHTML =
+        '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
+          (l.note || l.unit ? '<small>' + esc([l.unit, l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+        '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
+          (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
+        '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
+        '<span class="svc-state"><span class="tone is-off">Removed</span></span>' +
+        '<span class="team-act">' +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            '<button class="kmenu-item" data-a="restore" data-need="clients.services:work" type="button"><b>Restore</b></button>' +
+          '</div>' +
+        '</span>';
+      wireMenu(row);
+      var back = row.querySelector('[data-a="restore"]');
+      if (back) back.addEventListener('click', function () { saveService(l, { archived_at: null }, 'restored'); });
+      return row;
+    }
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
         (l.note || l.unit || termWord(l) || adjWord(l)
@@ -3175,10 +3237,10 @@
                moves it. saveService has always called this; the override was
                added without it and left the record showing the old figure. */
             syncValue();
-          }, function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
+          }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
       });
     });
-    on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
+    on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, 'removed'); });
     return row;
   }
 
@@ -3320,16 +3382,18 @@
       syncValue();
     });
   });
-  function saveService(l, patch, removed) {
+  /* `act` names a removal or a restore, so each is filed as itself (a
+     restore had read Service changed). */
+  function saveService(l, patch, act) {
     db.from('client_services').update(patch).eq('id', l.id).select('id').then(function (r) {
       if (r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmServiceMsg', 'Not saved. The database refused the request.', 'err'); return; }
-      log(removed ? 'client.service_removed' : 'client.service_changed', state.client.name,
-          l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
-      if (removed) undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }); });
+      log(act === 'removed' ? 'client.service_removed' : act === 'restored' ? 'client.service_restored' : 'client.service_changed',
+          state.client.name, l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
+      if (act === 'removed') undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }, 'restored'); });
       shutService();
       syncValue();
-    });
+    }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not saved.', 'err'); });
   }
   /* The confirmed total, else the quoted total, is the client's value. */
   function syncValue() {

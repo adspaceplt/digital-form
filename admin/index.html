@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261007n">
+<link rel="stylesheet" href="/css/portal.css?v=20261008">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -58,9 +58,9 @@
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261007n"></script>
 <script src="/js/copy.js?v=20261001a"></script>
-<script src="/js/grow.js?v=20261007n"></script>
-<script src="/js/ask.js?v=20261004a"></script>
-<script src="/js/confirm.js?v=20261004a"></script>
+<script src="/js/grow.js?v=20261008"></script>
+<script src="/js/ask.js?v=20261008"></script>
+<script src="/js/confirm.js?v=20261008"></script>
 <script src="/js/sheet.js?v=20261004a"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261004b"></script>
@@ -864,7 +864,7 @@
                 <h4 class="fsec-h">Website and office</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
-                    <input class="input" id="crmWebsite" type="url" placeholder="https://adspace.me"></div>
+                    <textarea class="input" id="crmWebsite" placeholder="https://adspace.me" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
                     <input class="input" id="crmPhone" type="tel" placeholder="07-123 4567"></div>
                 </div>
@@ -892,7 +892,7 @@
                       <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
-                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png">
+                      <textarea class="input" id="crmLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
                       <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
                       <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
@@ -1000,7 +1000,7 @@
             </div>
             <div class="row">
               <div><label class="field-label" for="svNote">Note</label>
-                <input class="input" id="svNote" placeholder="Note" data-some="Note" data-none="No note"></div>
+                <textarea class="textarea" id="svNote" placeholder="Note" data-some="Note" data-none="No note" rows="2"></textarea></div>
             </div>
           </details>
           
@@ -1031,7 +1031,7 @@
             <div style="flex:0 0 200px"><label class="field-label" for="rqFee">Fee</label>
               <input inputmode="decimal" class="input" id="rqFee" type="number" min="0" step="0.01" placeholder="0.00"></div>
             <div><label class="field-label" for="rqReply">Reply</label>
-              <input class="input" id="rqReply" placeholder="Reply"></div>
+              <textarea class="textarea" id="rqReply" placeholder="Reply" rows="2"></textarea></div>
           </div>
           
           <div class="msg" id="rqMsg"></div>
@@ -1211,7 +1211,7 @@
                   <option value="120">2 hours</option>
                 </select></div>
               <div><label class="field-label" for="tcLink">Link</label>
-                <input class="input" id="tcLink" type="url" inputmode="url" placeholder="Optional"></div>
+                <textarea class="input" id="tcLink" inputmode="url" placeholder="Optional" rows="1" data-oneline spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="tcSummary">Summary</label>
@@ -1222,7 +1222,7 @@
             <h4 class="fsec-h">Next action</h4>
             <div class="row fgrid-3">
               <div class="span-2"><label class="field-label" for="tcNext">Action</label>
-                <input class="input" id="tcNext" placeholder="Next action"></div>
+                <textarea class="input" id="tcNext" placeholder="Next action" rows="1" data-oneline></textarea></div>
               <div><label class="field-label" for="tcNextAt">Due</label>
                 <input class="input" id="tcNextAt" type="date"></div>
             </div>
@@ -1528,8 +1528,7 @@
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
         <div class="linkrow">
-          <input class="input" id="mediaUrl" aria-label="Asset link"
-                 placeholder="Google Drive folder, Drive file, or direct asset link">
+          <textarea class="input" id="mediaUrl" aria-label="Asset link" placeholder="Google Drive folder, Drive file, or direct asset link" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
           <button class="btn btn-primary" id="addMediaUrl" type="button">Add asset</button>
         </div>
         <div class="msg" id="driveMsg"></div>
@@ -1634,7 +1633,7 @@
                 <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
                   <img id="logoPreviewImg" alt="" hidden>
                 </span>
-                <input class="input" id="eLogo" placeholder="https://adspace.me/logo.png">
+                <textarea class="input" id="eLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
                 <button class="btn btn-sm" id="eLogoUp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
                 <input id="eLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft>
               </div>
@@ -1683,7 +1682,7 @@
               <div><label class="field-label" for="campTitle">Campaign name</label>
                 <input class="input" id="campTitle" aria-required="true" placeholder="Product Launch Campaign"></div>
               <div><label class="field-label" for="campPurpose">Campaign purpose</label>
-                <input class="input" id="campPurpose" placeholder="Purpose"></div>
+                <textarea class="input" id="campPurpose" placeholder="Purpose" rows="1" data-oneline></textarea></div>
             </div>
           </section>
           <section class="fsec">
@@ -2111,7 +2110,7 @@
             <summary>More details <span class="fmore-sum"></span></summary>
             <div class="row">
               <div><label class="field-label" for="crNotes">Notes</label>
-                <input class="input" id="crNotes" placeholder="Notes" data-some="Notes" data-none="No notes"></div>
+                <textarea class="textarea" id="crNotes" placeholder="Notes" data-some="Notes" data-none="No notes" rows="2"></textarea></div>
             </div>
           </details>
 
@@ -2405,7 +2404,7 @@
                 <div class="row" id="taskLinkUrlRow">
                   <div class="field">
                     <label class="field-label" for="taskLinkUrl">Address</label>
-                    <input class="input" id="taskLinkUrl" aria-required="true" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+                    <textarea class="input" id="taskLinkUrl" aria-required="true" placeholder="https://" autocomplete="off" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off"></textarea>
                   </div>
                 </div>
                 <div class="row acts">
@@ -2515,7 +2514,7 @@
             <label class="field-label" for="tdelConfirm">Type the task number to confirm</label>
             <input class="input" id="tdelConfirm" autocomplete="off" placeholder="#WT00001">
             <label class="field-label" for="tdelReason" style="margin-top:12px">Reason</label>
-            <input class="input" id="tdelReason" autocomplete="off" placeholder="Optional">
+            <textarea class="textarea" id="tdelReason" autocomplete="off" placeholder="Optional" rows="2"></textarea>
           </div>
           <div class="sheet-foot">
             <button class="btn btn-danger" id="tdelGo" type="button">Delete</button>
@@ -2704,7 +2703,7 @@
                 <div class="piece">
                   <div class="field piece-desc">
                     <label class="field-label" for="ntDesc">Content description</label>
-                    <input class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off">
+                    <textarea class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off" rows="1" data-oneline></textarea>
                   </div>
                   <div class="field piece-fmt">
                     <label class="field-label" for="ntFormat">Format</label>
@@ -2890,7 +2889,7 @@
             <div class="row">
               <div class="field">
                 <label class="field-label" for="engDrive">Drive folder link</label>
-                <input class="input" id="engDrive" type="url" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off">
+                <textarea class="input" id="engDrive" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off"></textarea>
               </div>
             </div>
             <div class="msg" id="engMsg"></div>
@@ -2959,7 +2958,7 @@
               <div class="row" id="meetLinkRow">
                 <div class="field">
                   <label class="field-label" for="meetLink">Meeting link</label>
-                  <input class="input" id="meetLink" type="url" inputmode="url" placeholder="https://meet.google.com/abc-defg-hij">
+                  <textarea class="input" id="meetLink" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://meet.google.com/abc-defg-hij"></textarea>
                 </div>
               </div>
               <label class="tickline" id="meetBookLine"><input type="checkbox" id="meetBook" checked> <span>Create the Google Meet link on the shared calendar</span></label>
@@ -3008,7 +3007,7 @@
               <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content task</button>
             </div>
             <label class="field-label" for="qkTitle">Task</label>
-            <input class="input" id="qkTitle" placeholder="Write September caption" maxlength="200">
+            <textarea class="input" id="qkTitle" placeholder="Write September caption" maxlength="200" rows="1" data-oneline></textarea>
             <div class="row">
               <div class="field">
                 <label class="field-label" for="qkOwner">Assigned to</label>
@@ -3156,7 +3155,7 @@
               <div id="dwChecks"></div>
               <form class="qform" id="dwCheckForm" autocomplete="off" hidden>
                 <label class="field-label" for="dwCheckAdd">Item</label>
-                <input class="input" id="dwCheckAdd" placeholder="What needs doing" maxlength="300">
+                <textarea class="input" id="dwCheckAdd" placeholder="What needs doing" maxlength="300" rows="1" data-oneline></textarea>
                 <div class="qform-acts">
                   <button class="btn btn-sm btn-primary" type="submit">Add</button>
                   <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
@@ -3194,7 +3193,7 @@
                 <div class="row">
                   <div class="field" id="dwLinkUrlField">
                     <label class="field-label" for="dwLinkUrl">Address</label>
-                    <input class="input" id="dwLinkUrl" type="url" placeholder="https://" spellcheck="false">
+                    <textarea class="input" id="dwLinkUrl" placeholder="https://" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off"></textarea>
                   </div>
                   <div class="field" id="dwLinkRefField" hidden>
                     <label class="field-label" for="dwLinkRef">Record</label>
@@ -3263,13 +3262,13 @@
             <div class="row" id="stepWhyRow" hidden>
               <div class="field">
                 <label class="field-label" for="stepWhy" id="stepWhyLabel">Why it differs from the scheduled date</label>
-                <input class="input" id="stepWhy" autocomplete="off" placeholder="Required">
+                <textarea class="textarea" id="stepWhy" autocomplete="off" placeholder="Required" rows="2"></textarea>
               </div>
             </div>
             <div class="row" id="stepLinkRow" hidden>
               <div class="field">
                 <label class="field-label" for="stepLink">Link to the live post</label>
-                <input class="input" id="stepLink" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+                <textarea class="input" id="stepLink" placeholder="https://" autocomplete="off" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off"></textarea>
               </div>
             </div>
             <div class="row" id="stepNoteRow">
@@ -3342,11 +3341,11 @@
               <div class="row fgrid">
                 <div class="field">
                   <label class="field-label" for="teName">Name</label>
-                  <input class="input" id="teName" aria-required="true" placeholder="Monthly social media report" maxlength="120">
+                  <textarea class="input" id="teName" aria-required="true" placeholder="Monthly social media report" maxlength="120" rows="1" data-oneline></textarea>
                 </div>
                 <div class="field">
                   <label class="field-label" for="teTitle">Task title</label>
-                  <input class="input" id="teTitle" placeholder="Same as the name" maxlength="200">
+                  <textarea class="input" id="teTitle" placeholder="Same as the name" maxlength="200" rows="1" data-oneline></textarea>
                 </div>
               </div>
               <div class="row">
@@ -3979,7 +3978,7 @@
             <div><label class="field-label" for="rwMClient">Client</label><select class="select" id="rwMClient"></select></div>
           </div>
           <div class="row">
-            <div><label class="field-label" for="rwMDesc">Description</label><input class="input" id="rwMDesc" maxlength="300" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwMDesc">Description</label><textarea class="input" id="rwMDesc" maxlength="300" autocomplete="off" aria-required="true" rows="1" data-oneline></textarea></div>
           </div>
           <div class="row fgrid-3">
             <div><label class="field-label" for="rwMMonth">Month invoiced</label><input class="input" id="rwMMonth" type="month" min="2026-06" aria-required="true"></div>
@@ -4031,7 +4030,7 @@
             <h4 class="fsec-h">File details</h4>
             <div class="row fgrid">
               <div class="span-all"><label class="field-label" for="hbTitle">Title</label>
-                <input class="input" id="hbTitle" aria-required="true" placeholder="Employee Handbook" autocomplete="off"></div>
+                <textarea class="input" id="hbTitle" aria-required="true" placeholder="Employee Handbook" autocomplete="off" rows="1" data-oneline></textarea></div>
               <div><label class="field-label" for="hbCatPick">Category</label>
                 <select class="select" id="hbCatPick">
                   <option value="handbook">Employee Handbook</option>
@@ -4051,7 +4050,7 @@
             <div class="row" id="hbFileRow"><div><label class="field-label" for="hbFile">File</label>
               <input class="input" id="hbFile" type="file" aria-required="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv"></div></div>
             <div class="row" id="hbLinkRow" hidden><div><label class="field-label" for="hbLink">Link</label>
-              <input class="input" id="hbLink" type="url" inputmode="url" aria-required="true" placeholder="https://adspace.me" autocomplete="off"></div></div>
+              <textarea class="input" id="hbLink" inputmode="url" aria-required="true" placeholder="https://adspace.me" autocomplete="off" rows="1" data-oneline spellcheck="false" autocapitalize="off"></textarea></div></div>
           </section>
         </div>
         <div class="sheet-foot">
@@ -4177,7 +4176,7 @@
         <div class="sheet-body">
           <div class="row"><div class="field">
             <label class="field-label" for="initTitle">Initiative</label>
-            <input class="input" id="initTitle" type="text" maxlength="140" aria-required="true" autocomplete="off" placeholder="Batch the shoots by location">
+            <textarea class="input" id="initTitle" maxlength="140" aria-required="true" autocomplete="off" placeholder="Batch the shoots by location" rows="1" data-oneline></textarea>
           </div></div>
           <div class="row"><div class="field">
             <label class="field-label" for="initImproves">Improves</label>
@@ -4195,7 +4194,7 @@
           </div></div>
           <div class="row"><div class="field">
             <label class="field-label" for="initLink">Link</label>
-            <input class="input" id="initLink" type="url" inputmode="url" autocomplete="off" placeholder="https://adspace.me">
+            <textarea class="input" id="initLink" inputmode="url" autocomplete="off" placeholder="https://adspace.me" rows="1" data-oneline spellcheck="false" autocapitalize="off"></textarea>
           </div></div>
           <div class="msg" id="initMsg"></div>
         </div>
@@ -4542,7 +4541,7 @@
         <div class="row">
           <div>
             <label class="field-label" for="newTarget">Destination</label>
-            <input class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo">
+            <textarea class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
           </div>
         </div>
         
@@ -4815,7 +4814,7 @@ raya-2026        https://example.com/raya"></textarea>
       <h4 class="fsec-h">Letter</h4>
       <div class="row">
         <div><label class="field-label" for="docTitleIn">Title</label>
-          <input class="input" id="docTitleIn" placeholder="Title"></div>
+          <textarea class="input" id="docTitleIn" placeholder="Title" rows="1" data-oneline></textarea></div>
       </div>
       <div class="row">
         <div><label class="field-label" for="docSal">Salutation</label>
@@ -4916,7 +4915,7 @@ raya-2026        https://example.com/raya"></textarea>
         <h4 class="fsec-h">Wording</h4>
         <div class="row">
           <div><label class="field-label" for="dtTitle">Title</label>
-            <input class="input" id="dtTitle" maxlength="200" placeholder="Title"></div>
+            <textarea class="input" id="dtTitle" maxlength="200" placeholder="Title" rows="1" data-oneline></textarea></div>
         </div>
         <div class="row fgrid">
           <div><label class="field-label" for="dtSal">Salutation</label>
@@ -5010,9 +5009,9 @@ raya-2026        https://example.com/raya"></textarea>
         <summary>More details <span class="fmore-sum"></span></summary>
         <div class="row fgrid">
           <div><label class="field-label" for="regAddUrl">File link</label>
-            <input class="input" id="regAddUrl" placeholder="https://drive.google.com/…" data-some="File link" data-none="No file link"></div>
+            <textarea class="input" id="regAddUrl" placeholder="https://drive.google.com/…" data-some="File link" data-none="No file link" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>
           <div><label class="field-label" for="regAddNote">Note</label>
-            <input class="input" id="regAddNote" placeholder="Note" data-some="Note" data-none="No note"></div>
+            <textarea class="textarea" id="regAddNote" placeholder="Note" data-some="Note" data-none="No note" rows="2"></textarea></div>
         </div>
       </details>
       <div class="msg" id="regAddMsg"></div>
@@ -5089,20 +5088,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261007n"></script>
+<script src="/js/admin.js?v=20261008"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261007n"></script>
-<script src="/js/register.js?v=20261007n"></script>
-<script src="/js/crm.js?v=20261007n"></script>
+<script src="/js/reports.js?v=20261008"></script>
+<script src="/js/register.js?v=20261008"></script>
+<script src="/js/crm.js?v=20261008"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261007n"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/campaigns.js?v=20261007n"></script>
-<script src="/js/ops.js?v=20261007n"></script>
-<script src="/js/perf.js?v=20261007n"></script>
+<script src="/js/campaigns.js?v=20261008"></script>
+<script src="/js/ops.js?v=20261008"></script>
+<script src="/js/perf.js?v=20261008"></script>
 <script src="/js/health.js?v=20261007m"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261007i"></script>

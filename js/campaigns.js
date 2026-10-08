@@ -3235,7 +3235,7 @@
         planFacts(o) +
         '<div class="kfields">' +
           '<label class="kfield kfield-wide"><span>Notes</span>' +
-            '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></label>' +
+            '<textarea class="input" data-f="notes" rows="2">' + esc(o.notes || '') + '</textarea></label>' +
         '</div>' +
       '</div>' +
       (drafting ?
@@ -4187,7 +4187,7 @@
             ((byWho || stamp) ? '<span>' + esc([byWho, stamp].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' +
           '<div class="kfields">' +
             '<label class="kfield kfield-wide"><span>Post link</span>' +
-              '<input class="input" data-p="post_url" value="' + esc(p.post_url || '') + '" placeholder="https://"></label>' +
+              '<textarea class="input" data-p="post_url" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://">' + esc(p.post_url || '') + '</textarea></label>' +
             '<label class="kfield"><span>Published</span>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
             '<label class="kfield"><span>Count from</span>' +

@@ -984,7 +984,7 @@
         (b.evidence && manage() ? '<small class="perf-breach-ev">' + esc(b.evidence) + '</small>' : '') +
         (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Withdraw</button>' : '') +
         (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Why is it withdrawn?</label>' +
-          '<input class="input" id="pvVoidWhy" maxlength="300"><div class="qform-acts">' +
+          '<textarea class="input" id="pvVoidWhy" rows="1" data-oneline maxlength="300"></textarea><div class="qform-acts">' +
           '<button class="btn btn-sm btn-warn" type="submit">Withdraw</button><button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>' : '') +
       '</div>';
     }).join('');
@@ -1011,7 +1011,7 @@
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
       '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
       '<label class="field-label" for="pvBWhat">What happened</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
-      '<label class="field-label" for="pvBEv">Reference</label><input class="input" id="pvBEv" maxlength="500" placeholder="Optional">' +
+      '<label class="field-label" for="pvBEv">Reference</label><textarea class="input" id="pvBEv" rows="1" data-oneline maxlength="500" placeholder="Optional"></textarea>' +
       '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Reported late' + less('late') + '</span></label>' +
       '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Add issue</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
@@ -1042,7 +1042,7 @@
       '<div><label class="field-label" for="pvBy">Follow-up date</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div></div>' +
       '<div><label class="field-label" for="pvImp">Improvement</label>' +
       '<textarea class="input" id="pvImp" rows="3" maxlength="4000">' + esc(r.improvement || '') + '</textarea></div>' +
-      '<div><label class="field-label" for="pvStep">Step or reward to apply</label><input class="input" id="pvStep" maxlength="500" value="' + esc(r.reward_step || '') + '"></div>' +
+      '<div><label class="field-label" for="pvStep">Step or reward to apply</label><textarea class="input" id="pvStep" rows="1" data-oneline maxlength="500">' + esc(r.reward_step || '') + '</textarea></div>' +
       (r.status !== 'draft' ? '<div class="qform-acts"><button class="btn btn-sm btn-primary" id="pvPlanSave" type="button">Save</button></div>' : '') +
       '</div>');
   }

@@ -530,6 +530,17 @@ a { color: inherit; }
    it runs the row's width, as every other field does. */
 textarea.input { resize: vertical; max-width: 100%; }
 .row > div > textarea.input { width: 100%; }
+/* Every typed box's handle only makes it taller (js/grow.js keeps it above
+   its words and short of the screen's foot; the user, 2026-10-07: "just
+   expand the textbox input longer larger"). A one-line field that wraps its
+   words instead of hiding them (`data-oneline`: a title, a link, a summary
+   line) reads as a field one line high and carries no handle. */
+textarea { resize: vertical; }
+textarea[data-oneline] {
+  resize: none; overflow: hidden; line-height: 1.45;
+  padding-block: calc((var(--ctl-h) - 2px - 1.45em) / 2);
+}
+textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1.45em) / 2); }
 .input:focus, .select:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
@@ -6506,6 +6517,12 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   border-color: transparent; border-radius: 6px; background-color: var(--tonal);
 }
 .input.askfield:not(.dmy) { background-image: none; }
+/* Words are a one-line box that wraps (js/ask.js): a textarea holds its
+   whole line inside its box, 2px more than a field drew, so it pulls back
+   3px each way, and it hangs from the top of its line rather than standing
+   on the text's baseline (which added the line's descent below it), so the
+   line keeps its height and the words their place. */
+textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align: top; }
 .input.askfield.is-date { flex: 0 0 auto; width: 9.5em; }
 .input.askfield.is-date::-webkit-date-and-time-value { min-height: 0; line-height: inherit; text-align: left; }
 .input.askfield.is-date::-webkit-calendar-picker-indicator { display: none; }

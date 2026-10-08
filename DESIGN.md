@@ -371,12 +371,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `.row > .btn` to the bottom. A field standing alone fills its container.
 - A required field carries a red asterisk from `aria-required`.
 - A typed box (`textarea`) runs its row's width and stretches downwards only
-  (`resize: vertical`): a sideways drag never widens the page. It grows with
-  its words (`js/grow.js`, on every page with a typed box): as it is typed
-  in, as it comes into view holding words, when a page sets its value and
-  when the width changes, up to 60% of the screen, then scrolls; measuring it
-  never moves the page or its sheet. `data-nogrow` keeps one still. No page
-  grows its own (`tests/grow.js`).
+  (`resize: vertical`): a sideways drag never widens the page, and it grows
+  with its words (`CLAUDE.md`, `js/grow.js`). A field that may outrun its
+  width (a title, a link, a reason) is the one-line box: a field's height,
+  its words wrapping onto a second line rather than hidden, no handle.
 - A native field is reskinned to our box:
   - `::file-selector-button` shaded (`--line-soft`), concentric, 13px;
   - a date or time field with `appearance: none`, the value left aligned,

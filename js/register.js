@@ -519,7 +519,9 @@
       var kind = kindOf(t, k), id = 'docF' + i;
       var ctl = kind === 'long'
         ? '<textarea class="input" id="' + id + '" data-key="' + esc(k) + '" rows="3" aria-required="true"></textarea>'
-        : '<input class="input" id="' + id + '" data-key="' + esc(k) + '" type="' + (kind === 'date' ? 'date' : 'text') + '" aria-required="true">';
+        : kind === 'date'
+          ? '<input class="input" id="' + id + '" data-key="' + esc(k) + '" type="date" aria-required="true">'
+          : '<textarea class="input" id="' + id + '" data-key="' + esc(k) + '" rows="1" data-oneline aria-required="true"></textarea>';
       return '<div' + (kind === 'long' ? ' class="span-all"' : '') + '><label class="field-label" for="' + id + '">' + esc(fieldWord(k)) + '</label>' + ctl + '</div>';
     }).join('');
     if (F && F.scan) F.scan(box);
