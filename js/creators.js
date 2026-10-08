@@ -683,14 +683,11 @@
   }
 
   /* The booking's six steps under its creator's name, each named, as the
-     creator's own page draws them (ADspaceIcons.journey). The client's
-     review begins at Reviewing: a draft handed in and still with the team
-     (Submitted) is the Draft step to the client. */
-  var AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
-             scheduled: 4, posted: 5, completed: 6 };
+     creator's own page draws them (ADspaceIcons.journey), placed by the one
+     map the console shares (ADspaceIcons.stepOf). */
   function stepsOf(o) {
-    var at = AT[o.state];
-    if (at == null || !window.ADspaceIcons) return '';
+    var at = window.ADspaceIcons ? window.ADspaceIcons.stepOf(o.state) : null;
+    if (at == null) return '';
     var words = t().journey.slice();
     if ((feed.campaign || {}).push_format === 'seeding') words[1] = t().journeyDelivery;
     return window.ADspaceIcons.journey(words, at);

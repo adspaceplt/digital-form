@@ -3028,6 +3028,18 @@
     return (state.campaign || {}).push_format === 'seeding';
   }
   function visitWord() { return isDelivery() ? 'Delivery' : 'Visit'; }
+  /* The client's six steps under a booked creator (2026-10-08): the same
+     track, words and map the client's own page reads (ADspaceIcons), so a
+     colleague on a call sees what the client sees; the Step column keeps the
+     team's own word. A creator not yet booked, or withdrawn, has none. */
+  function stepsLine(o, dead) {
+    var I = window.ADspaceIcons, words = W && W.en && W.en.journey;
+    var at = I && I.stepOf ? I.stepOf(o.state) : null;
+    if (dead || at == null || !words) return '';
+    words = words.slice();
+    if (isDelivery()) words[1] = W.en.journeyDelivery || words[1];
+    return '<div class="kcard-steps"><span aria-hidden="true"></span>' + I.journey(words, at) + '</div>';
+  }
 
   function nextState(s) {
     // Re-uploaded after edits, which lands with us again and not with the client.
@@ -3211,6 +3223,7 @@
             'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
         '</span>' +
       '</header>' +
+      stepsLine(o, dead) +
       cardMenu(o) +
       '<div class="kcard-body" data-body' + (open ? '' : ' hidden') + '>' +
 

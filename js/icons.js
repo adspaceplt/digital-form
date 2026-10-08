@@ -61,5 +61,13 @@
       return '<li' + (cls ? ' class="' + cls + '"' : '') + (i === at ? ' aria-current="step"' : '') + '><span>' + esc(w) + '</span></li>';
     }).join('') + '</ol>';
   }
-  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, has: function (n) { return !!P[n]; } };
+  /* Where a booking stands on the client's six steps, one map for the
+     client's page and the console's Creators tab (2026-10-08): the client's
+     review begins at Reviewing, so a draft still with the team (Submitted)
+     is the Draft step. Null for a creator not yet booked. The creator's own
+     page keeps its own map: to a creator, a draft handed in is in review. */
+  var CLIENT_AT = { confirmed: 1, pending_visit: 1, pending_draft: 2, changes: 2, submitted: 2, reviewing: 3,
+                    scheduled: 4, posted: 5, completed: 6 };
+  function stepOf(state) { var at = CLIENT_AT[state]; return at == null ? null : at; }
+  window.ADspaceIcons = { svg: svg, platform: platform, journey: journey, stepOf: stepOf, has: function (n) { return !!P[n]; } };
 })();

@@ -215,6 +215,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
+| What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile, the title over its meta, the decision where it is taken in the row (tonal Decline, blue Approve), the age at the right edge (red when late); on a narrow pane the acts take a second line as equal halves |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
 | Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |

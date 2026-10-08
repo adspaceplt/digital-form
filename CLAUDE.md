@@ -124,10 +124,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting |
 | `sales.js` | sales, crm, then `ui` |
-| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
+| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
@@ -926,6 +926,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
 - Groups run in the rail's order (Creators List after Creator Campaigns).
+  Each group's label leads with its rail glyph (`ADspaceAdmin.glyph`).
   A row is the name, its code in the token face, one mute line; the match
   in weight, never colour. No recent searches, no explanatory copy.
 - A result writes the record's address first, then `show()` (a content set
@@ -1030,6 +1031,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `.rec-ctl`: the stage select plus one ⋯ holding Edit and Delete (the item
     carries `data-need="clients:manage"`).
   - Phone (`.is-narrow`): `"mark . ctl" / "who who who"`.
+  - The month line (`#crmMonthLine`, 2026-10-08), under the meta for an
+    Active or Paused client and a reader of My Work: the month whose span
+    holds today, `n of N done` (`ops_engagement_counts`), the overdue count
+    and Report due (the span's end plus `report_due_days`) where the month
+    owes one, led by its dot (red with any overdue, green when all done,
+    else amber); it opens the client's Months view.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
   - Overview, Contacts, Billing, Brand, Services, Documents, Reports, Activity;
   - Requests once a contact has portal access or a request exists.
@@ -1577,6 +1584,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   selected (`#campUnpicked`) while closed.
 - The one stage step in blue on a card is Release to client; every other
   step is tonal.
+- Each booking's card names its step under its head (`.kcard-steps`), the
+  client's six steps as the selection page draws them (`ADspaceIcons.journey`,
+  `stepOf`), a delivery campaign's own; none before the creator is booked.
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
   anything else is a `.filepin-row` line.
@@ -1809,6 +1819,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
+  - Waiting for you (`#workWaiting`, 2026-10-08): above the list on Open,
+    Assigned to me, with no search, one card of what waits on the reader's
+    decision: an extension asked of them (Decline / Approve in the row,
+    `ops_decide_due_change`), a report they review, a booking Submitted on a
+    campaign they run, a client request Requested and a set with Changes
+    requested on a client they hold (Person in charge); each read asks its
+    own `may()`, late first, then oldest, each row opening its record. Drawn
+    only while it holds something.
 - The read is bounded, and open work is not part of the bound. Open work is
   read in full, a thousand rows a page in id order (`readPages`) and put back
   in the final date's order; finished work is read from the period on (three
@@ -1947,7 +1965,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   Report.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
-    once under an advisory lock and never rewritten.
+    once under an advisory lock; the owner or an admin corrects it in place
+    (the pen beside it, `ops_set_code`, `2026-10-08-task-code-editable.sql`:
+    its shape kept, `bad-code`; the client's own for the month,
+    `code-taken` naming the task; filed `code_changed`; Undo where it
+    happened). The `#WT` serial stays the identity.
   - The description is edited in place (`ops_set_content_desc`).
   - The number is `#WT00001` (`ops_serial`). The next number is set under `ops.numbering`
     (`ops_set_next_task_no`, refused at or below the highest in use).
@@ -2084,6 +2106,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Nobody is told about their own act.
   - The bell is drawn for every colleague (a row is its reader's own), and
     re-reads every minute while visible, and on return.
+  - Each item leads with its section's rail glyph (`.notif-tile`,
+    `ADspaceAdmin.glyph`): My Records for a review, reflection, health or
+    HR letter, Reports for a report, My Work otherwise. The bell lists
+    unread only.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New
