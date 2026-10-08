@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261008e">
+<link rel="stylesheet" href="/css/portal.css?v=20261008g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -330,7 +330,7 @@
                letters) are theirs, so they sit with who you are rather than
                among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My Records
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My records
           </button>
           <!-- The person's own card to hand a client (js/namecard.js). -->
           <button class="kmenu-item" id="myCard" type="button">
@@ -1639,6 +1639,10 @@
                 <input id="eLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft>
               </div>
             </div>
+          </div>
+          <!-- The logo's address takes the row's whole width, so it reads as
+               one line beside its picture and Upload (2026-10-08). -->
+          <div class="row">
             <div>
               <label class="field-label" for="ePass">Access code</label>
               <input class="input" id="ePass" placeholder="None">
@@ -3997,7 +4001,7 @@
       </div>
     </div>
 
-    <!-- ---- My Records: the signed-in person's own released months.
+    <!-- ---- My records: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
     <div class="console-body" id="sectionHandbook" hidden>
@@ -4772,7 +4776,7 @@ raya-2026        https://example.com/raya"></textarea>
         <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
           <select class="select" id="docMember" aria-required="true"></select></div>
       </div>
-      <!-- An HR letter is the colleague's to read in My Records (Letters)
+      <!-- An HR letter is the colleague's to read in My records (Letters)
            and they are told; untick for a draft not yet theirs. -->
       <label class="tickline" id="docShareRow" hidden><input type="checkbox" id="docShare" checked> <span id="docShareWord">Share with the colleague</span></label>
       <!-- The fields run in the order the letter prints them: reference and
@@ -4906,7 +4910,8 @@ raya-2026        https://example.com/raya"></textarea>
           <div><label class="field-label" for="dtName">Name</label>
             <input class="input" id="dtName" aria-required="true" maxlength="80" placeholder="Engagement Cover Letter"></div>
           <div id="dtCodeWrap" hidden><label class="field-label" for="dtCode">Reference code</label>
-            <input class="input" id="dtCode" aria-required="true" maxlength="4" autocapitalize="characters" spellcheck="false" placeholder="IC"></div>
+            <input class="input" id="dtCode" aria-required="true" maxlength="4" autocapitalize="characters" spellcheck="false" placeholder="IC" aria-describedby="dtCodeRef">
+            <p class="rw-hint" id="dtCodeRef"></p></div>
         </div>
         <div class="tickstack">
           <label class="tickline"><input type="checkbox" id="dtSigned" checked> <span>To be signed</span></label>
@@ -5090,21 +5095,21 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261008c"></script>
+<script src="/js/admin.js?v=20261008g"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
 <script src="/js/reports.js?v=20261008"></script>
-<script src="/js/register.js?v=20261008"></script>
-<script src="/js/crm.js?v=20261008c"></script>
+<script src="/js/register.js?v=20261008g"></script>
+<script src="/js/crm.js?v=20261008g"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261007n"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/campaigns.js?v=20261008c"></script>
-<script src="/js/ops.js?v=20261008f"></script>
-<script src="/js/perf.js?v=20261008"></script>
-<script src="/js/health.js?v=20261007m"></script>
+<script src="/js/ops.js?v=20261008h"></script>
+<script src="/js/perf.js?v=20261008g"></script>
+<script src="/js/health.js?v=20261008g"></script>
 <script src="/js/search.js?v=20261008c"></script>
 <script src="/js/overview.js?v=20261007i"></script>
 </body>

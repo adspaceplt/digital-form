@@ -5924,7 +5924,12 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .star svg { width: 24px; height: 24px; fill: currentColor; }
 .star.is-on { color: var(--ink); }
-@media (hover: hover) { .star:hover { color: var(--ink); } }
+/* A pointer over the third star fills the first three, as a rating reads
+   (the user, 2026-10-08: it lit one star at a time). */
+@media (hover: hover) {
+  .stars:hover .star { color: var(--ink); }
+  .stars .star:hover ~ .star { color: var(--line-ctl); }
+}
 .star:active { transform: scale(.9); }
 .booking-rate .msg:empty { display: none; }
 
@@ -6502,6 +6507,19 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* Overdue is the one thing anybody scans this block for: the late colour
    and the weight together, so the mark survives greyscale. */
 .tl-span.is-late, .tl-when.is-late { color: var(--err); font-weight: 600; }
+/* The reason a client paused or left is changed where it is read: the word
+   and its pen, the target hugging the line as every value that acts in a
+   line of text does (2026-10-08). */
+.tl-why-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 4px;
+  padding: 0; border: 0; background: none; cursor: pointer; font: inherit;
+  font-size: 12.5px; color: var(--ink-mute); text-align: left;
+}
+.tl-why-btn svg { width: 13px; height: 13px; flex: 0 0 auto; }
+.tl-why-btn::before {
+  content: ''; position: absolute; inset: -3px -6px; border-radius: var(--radius-ctl-sm);
+}
+@media (hover: hover) { .tl-why-btn:hover { color: var(--ink); } .tl-why-btn:hover::before { background: var(--sunk); z-index: -1; } }
 .tl-rule { height: 1px; background: var(--line-soft); }
 /* Who did a report's step, and to whom, on its own line under the date
    (2026-10-06), so two names never push the row past its card. */
@@ -7502,7 +7520,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .calbar .btn-sm.iconbtn { width: var(--ctl-h-sm); min-width: var(--ctl-h-sm); padding: 0; }
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .cal-dow { background: var(--sunk); padding: 8px 8px 6px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
-.cal-day { background: var(--card); min-height: 96px; padding: 6px 6px 8px; display: grid; align-content: start; gap: 4px; min-width: 0; }
+.cal-day { background: var(--card); min-height: 96px; padding: 6px 5px 8px; display: grid; align-content: start; gap: 3px; min-width: 0; }
 .cal-day.is-weekend { background: var(--sunk); }
 /* A day outside the month is quieter than one inside it, and both clear
    4.5:1: `--line-ctl` is a border tone (3:1) and failed as text. */
@@ -7514,10 +7532,14 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cal-day.is-today .cal-num b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: var(--fill); color: var(--on-fill); }
 /* A chip is the task at the size a cell can hold: the tone the stage carries,
    the title truncated, and a press that opens the task. */
-.cal-chip {
-  display: block; width: 100%; min-width: 0; text-align: left; padding: 0 7px; border: 0; border-radius: 5px;
-  background: var(--line-soft); color: var(--ink-soft); font: inherit; font-size: 11.5px; font-weight: 600; line-height: var(--ctl-h-sm);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; min-height: var(--ctl-h-sm);
+/* Two lines of the title in the small face, the target kept, so a day
+   names more of each task and holds five (the user, 2026-10-08: "the text
+   shown is limited due to its size of the font"). */
+.cal-chip, .cal-chip.btn-sm {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  width: 100%; min-width: 0; text-align: left; padding: 3px 6px; border: 0; border-radius: 5px;
+  background: var(--line-soft); color: var(--ink-soft); font: inherit; font-size: 11px; font-weight: 500; line-height: 13px;
+  overflow: hidden; white-space: normal; overflow-wrap: anywhere; cursor: pointer; min-height: var(--ctl-h-sm);
 }
 /* A task's stage is the dot before its title, as Calendar draws an event
    (2026-10-07); the chip stays the quiet ground. */
@@ -7613,6 +7635,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .notif-tile svg { width: 16px; height: 16px; stroke-width: 1.8; }
 .notif-item.has-tile > b:empty { display: none; }
 .notif-empty { padding: 10px; font-size: 12.5px; color: var(--ink-mute); }
+/* What was read stays a week under Earlier, quieter than what is new. */
+.notif-earlier { margin: 6px 10px 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.notif-item.is-read b { font-weight: 500; color: var(--ink-soft); }
 
 /* =========================================================================
    THE COMMAND BAR ON A PHONE: ONE ROW, THE FILTERS BEHIND ONE BUTTON.
@@ -7952,7 +7977,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tfacts:empty { display: none; }
 .tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .tfacts > div:has(> dd > .tdetail, > dd > .tdetail-pair) { align-items: center; }
-.tdetail { width: auto; max-width: 100%; }
+/* A detail changed where it is read keeps the in-place standard (js/ask.js,
+   2026-10-04): the value in its own words with its chevron, no box line,
+   pulled back so it starts where the other values do; the tonal ground only
+   while pointed at or open (the user, 2026-10-08: "the design ui for
+   changes or edits are different from what we last discussed"). */
+.select.tdetail {
+  width: auto; max-width: 100%; border-color: transparent; background-color: transparent;
+  margin-left: -9px; padding-left: 8px; font-size: 13px; color: var(--ink);
+}
+@media (hover: hover) { .select.tdetail:hover { background-color: var(--tonal); } }
+.select.tdetail:focus-visible, .select.tdetail:focus { background-color: var(--tonal); }
 .tdetail-pair { display: flex; flex-wrap: wrap; gap: 8px; }
 .tfacts dt { font-size: 13px; color: var(--ink-mute); }
 /* A review's facts sit in a wide card, so the label track is measured

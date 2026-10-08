@@ -152,7 +152,7 @@
      part the client page has no use for: which group of the list it falls in. */
   var W = window.ADspaceWords;
   var STAGES = [['lead', 'leads'], ['contacted', 'leads'], ['proposal', 'leads'],
-                ['active', 'clients'], ['paused', 'clients'], ['past', 'past']]
+                ['active', 'clients'], ['paused', 'paused'], ['past', 'past']]
     .map(function (g) { return [g[0], W.en.stage[g[0]], W.tone(g[0]), g[1]]; });
   /* Why a client was paused or ended (the user, 2026-10-04: required, so
      the Sales view says why clients leave as well as how many). Stored
@@ -175,6 +175,9 @@
   var GROUPS = [
     ['leads',   'Leads'],
     ['clients', 'Clients'],
+    /* Paused is a band of its own (the user, 2026-10-08), folded open by
+       default: a paused client is still a client, but read apart. */
+    ['paused',  'Paused'],
     ['past',    'Past clients']
   ];
   var SHUT_BY_DEFAULT = { past: true };
@@ -1070,7 +1073,7 @@
     loadWork();
     showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
-    if (restoring) restoreScroll();
+    if (restoring) restoreScroll(true);
   }
 
   /* ---- The record's own panes ------------------------------------------
@@ -1617,7 +1620,11 @@
       return '<div class="tl-row tl-stage' + (s.now ? ' is-now' : '') + '">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(s.word) + '</span>' +
           '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span>' +
-          (s.reason && leaveWord(s.reason) ? '<span class="tl-when tl-why">' + esc(leaveWord(s.reason)) + '</span>' : '') + '</span>' +
+          (s.reason && leaveWord(s.reason)
+            ? (pens
+              ? '<button class="tl-when tl-why tl-why-btn" type="button" data-why-pen="' + s.i + '" aria-label="Change the reason for ' + esc(s.word) + '">' + esc(leaveWord(s.reason)) + PEN + '</button>'
+              : '<span class="tl-when tl-why">' + esc(leaveWord(s.reason)) + '</span>')
+            : '') + '</span>' +
         '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
           esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
           (pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
@@ -1646,6 +1653,7 @@
     box.innerHTML = trip + (trip && dates ? '<div class="tl-rule"></div>' : '') + dates;
     wireSince(c);
     wireStages(c);
+    wireWhy(c);
     block.hidden = false;
   }
 
@@ -1689,6 +1697,50 @@
       log('client.edited', c.name, what);
     });
     return null;
+  }
+  /* The reason a client was paused or ended is corrected where it is read
+     (the user, 2026-10-08: "the reason should be able to change after"): the
+     move's own log entry, and while it is the stage the client is in, the
+     client's reason and note too. No move, so the clock is not touched. */
+  function wireWhy(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTimeline [data-why-pen]'), function (btn) {
+      var i = Number(btn.getAttribute('data-why-pen'));
+      btn.addEventListener('click', function () {
+        var list = logOf(c), was = list[i];
+        if (!was) return;
+        var word = stageWord(was.stage)[1];
+        window.ADspaceConfirm.ask({
+          title: 'Reason for ' + word,
+          go: 'Save',
+          fields: [
+            { name: 'reason', label: 'Reason', choices: LEAVE, value: was.reason || '' },
+            { name: 'note', label: 'Note', required: false, placeholder: 'Optional', value: was.note || '' }
+          ]
+        }, function (v) {
+          var note = String(v.note || '').trim() || null;
+          if (v.reason === was.reason && note === (was.note || null)) return;
+          list[i] = Object.assign({}, was, { reason: v.reason });
+          if (note) list[i].note = note; else delete list[i].note;
+          var row = { stage_log: list };
+          var current = i === list.length - 1 && was.stage === c.stage;
+          if (current) { row.stage_reason = v.reason; row.stage_note = note; }
+          db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+            if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
+            if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            c.stage_log = list;
+            if (current) { c.stage_reason = v.reason; c.stage_note = note; }
+            var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+            if (mine) { mine.stage_log = list; if (current) { mine.stage_reason = v.reason; mine.stage_note = note; } }
+            railDates(c);
+            msg('crmSinceMsg', 'Saved.', 'ok');
+            log('client.edited', c.name, window.ADspaceRecords.changes(
+              { reason: leaveWord(was.reason), note: was.note || '' },
+              { reason: leaveWord(v.reason), note: note || '' },
+              [['reason', 'Reason for ' + word], ['note', word + ' note']]));
+          }).catch(function () { msg('crmSinceMsg', 'Not saved. Please try again.', 'err'); });
+        });
+      });
+    });
   }
   function wireStages(c) {
     Array.prototype.forEach.call(document.querySelectorAll('#crmTimeline [data-stage-pen]'), function (pen) {
