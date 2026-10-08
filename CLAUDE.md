@@ -146,6 +146,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
+| `supabase/functions/meta-import/`, Import from Meta | metashape, metaimport, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
@@ -1118,6 +1119,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     never `*` (refused). A new column is granted by running the CLIENT
     BILLING COLUMNS section again. The stand-in refuses `*` and every
     billing column, top level or embedded.
+- Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
+  policy, no grant): a client, and each white-label brand, links ad accounts
+  (up to 20), one Facebook Page and one Instagram account, each Meta's id and
+  name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients at
+  Work), never typed; a link Meta no longer shows stays offered. Read first
+  on the Brand pane (`#crmMetaRead`, Edit at Clients Work; a brand's from its
+  ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
+  Work, `bad-brand`, `bad-asset`) files `client.brand` from and to, a brand's
+  under its name; `meta_links_list` at Reports or Clients View.
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`;
     each logo field has Upload (`wireLogoUpload`): the picture is drawn down
@@ -2948,6 +2958,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
+- Import from Meta (`meta-import`, `docs/META-SETUP.md`, 2026-10-08): beside
+  Import from Ads Manager (Advertising) and Import from spreadsheet (Accounts),
+  drawn only on a draft at Work whose client (or brand) has a link
+  (`meta_links_list`); with two ad accounts, or a Page and Instagram, it asks
+  which (`ADspaceConfirm`, choices). The function reads Meta with the system
+  user's token (`META_SYSTEM_TOKEN`, Graph `v26.0` unless
+  `META_GRAPH_VERSION`, `appsecret_proof` with `META_APP_SECRET`), as the
+  caller (Reports at Work, the report read under its own policies, the asset
+  one the client linked), writes nothing, and answers Meta's export as text
+  (`shape.mjs`: Ads Manager's with the account's row first and an Age text
+  after; Meta Business Suite's Lifetime export, the Malaysian day). The page
+  opens the existing import sheet (`pasteAdsSheet(opener, pre)`,
+  `pasteSheet(opener, pre)`) named Import from Meta with it in, so one
+  importer, one matching (Ad ID, link) and one summary line; the age split
+  follows the figures in the same press, updating only ads it holds; posts go
+  to the report's account on their platform; filed `Imported from Meta` /
+  `From Meta`. A refusal is one line under the step's head (`META_SAID`:
+  not connected, token, not shared with the system user, busy, link gone),
+  never Meta's words. Every figure is Meta's; none is AI's.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
     margin; no Methodology page. Page titles and the commentary's block
@@ -3327,8 +3356,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the moved key by trigger, so a reset retires every earlier link.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
-  - The Turnstile secret, the Google refresh token and the performance master
-    code live only in Supabase.
+  - The Turnstile secret, the Google refresh token, the Meta system user's
+    token and the performance master code live only in Supabase.
   - The delete code lives in the database.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
   and under `private/` (write and read, for invoices and each published
@@ -3382,7 +3411,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     own, since the editor may not alter `storage.objects` and a failure rolls
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
-  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is
+  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`, `meta-import`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
