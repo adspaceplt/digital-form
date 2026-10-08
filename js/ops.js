@@ -154,6 +154,8 @@
     'not-team': 'Team record not found. Contact an admin.',
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
+    'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
+    'no-code': 'This task has no code to change.',
     'other-client': 'That record belongs to another client.',
     'record-not-found': 'That record is no longer there.',
     'record-link': 'A record link is removed and linked again, not edited.',
@@ -241,6 +243,7 @@
     if (err === 'tasks-open' && d && d.open) {
       return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
     }
+    if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
       var need = [];
@@ -4178,6 +4181,8 @@
     }
     var pen = $('taskDescEdit');
     if (pen) pen.hidden = !may('ops', 'work') || isFinished(t);
+    var cpen = $('taskCodeEdit');
+    if (cpen) cpen.hidden = !t.code || !may('ops', 'work') || !mayMove(t);
     /* Whose it is and what it makes. The owner is the rail's, named once
        under People, so the head does not say it a second time. */
     $('taskMeta').textContent = [
@@ -5129,7 +5134,7 @@
        whether or not an approval was needed. */
     due_requested: 'Extension requested', due_approved: 'Extension approved',
     due_declined: 'Extension declined',
-    renamed: 'Description changed', stage_skipped: 'Step skipped',
+    renamed: 'Description changed', code_changed: 'Code changed', stage_skipped: 'Step skipped',
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
     publish_changed: 'Post date changed', commented: 'Comment',
     live_confirmed: 'Went live', rated: 'Rated',
@@ -5184,6 +5189,7 @@
     if (e.event_type === 'stage_skipped') {
       return labelForKey(from.stage_key) + (d.reason ? ' · ' + d.reason : '');
     }
+    if (e.event_type === 'code_changed') return (from.code || '') + ' to ' + (to.code || '');
     if (e.event_type === 'renamed') {
       return (from.content_desc ? '"' + from.content_desc + '" to ' : '') + '"' + (to.content_desc || '') + '"';
     }
@@ -6241,6 +6247,28 @@
           });
       }
     });
+  }
+  /* The code is corrected where it sits (the user, 2026-10-08): the owner or
+     an admin, its shape kept, the client's own for the month; the #WT serial
+     stays the task's identity. Undo puts the code before back. */
+  function editCode() {
+    var t = state.task;
+    if (!t || !t.code || !window.ADspaceAsk) return;
+    window.ADspaceAsk.rename($('taskCode'), $('taskCodeEdit'), {
+      label: 'Code', saveLabel: 'Save code', value: t.code, code: true, max: 12,
+      save: function (v) { setCode(t, v, true); }
+    });
+  }
+  function setCode(t, v, offerUndo) {
+    var was = t.code;
+    call('ops_set_code', { p_task: t.id, p_code: v, p_version: t.version }, 'taskMsg', function (d) {
+      applyTask(d);
+      readTask(t.id, function () {
+        if (offerUndo && state.task && state.task.code !== was) {
+          undoBar('Code changed to ' + state.task.code + '.', function () { setCode(state.task, was, false); }, $('taskMsg'));
+        }
+      });
+    }, paintTask);
   }
   function copyTitle() {
     var t = state.task;
@@ -7641,6 +7669,8 @@
     });
     var pen = $('taskDescEdit');
     if (pen) pen.addEventListener('click', editDesc);
+    var cpen = $('taskCodeEdit');
+    if (cpen) cpen.addEventListener('click', editCode);
     var cpt = $('taskCopyTitle');
     if (cpt) cpt.addEventListener('click', copyTitle);
 

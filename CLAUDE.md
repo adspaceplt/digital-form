@@ -1965,7 +1965,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   Report.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
-    once under an advisory lock and never rewritten.
+    once under an advisory lock; the owner or an admin corrects it in place
+    (the pen beside it, `ops_set_code`, `2026-10-08-task-code-editable.sql`:
+    its shape kept, `bad-code`; the client's own for the month,
+    `code-taken` naming the task; filed `code_changed`; Undo where it
+    happened). The `#WT` serial stays the identity.
   - The description is edited in place (`ops_set_content_desc`).
   - The number is `#WT00001` (`ops_serial`). The next number is set under `ops.numbering`
     (`ops_set_next_task_no`, refused at or below the highest in use).
