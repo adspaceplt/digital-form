@@ -4,7 +4,7 @@
  *
  * Two readers, one sheet. Management reads everybody's month from Team >
  * Performance, behind the master code; a colleague reads their own released
- * months from My Records in the account menu. What each is sent is the
+ * months from My records in the account menu. What each is sent is the
  * database's decision (`perf_*` functions, no table readable directly), so
  * nothing here withholds anything: it draws what arrived.
  *
@@ -1362,7 +1362,7 @@
     if (window.ADspaceGrow) window.ADspaceGrow.fit($('pvBody'));
   }
 
-  // ---- My Records ----------------------------------------------------------------------------
+  // ---- My records ----------------------------------------------------------------------------
   /* THE EMAIL-CODE LOCK. A member's own reviews open only for a session
      verified by a code emailed to them in the last 15 minutes; the proof is
      the signed token's own claim, so nothing here can fake it. It was a
@@ -2070,7 +2070,7 @@
     var el = document.createElement('div');
     el.className = 'crm-row rw-row ' + cls + ' is-own';
     el.innerHTML = (lead ? Array(lead + 1).join('<span class="rw-c">' + dash() + '</span>') : '') +
-      whoCell(p, 'Your own is in My Records') +
+      whoCell(p, 'Your own is in My records') +
       Array(cells).join('x').split('x').map(function () { return '<span class="rw-c">' + dash() + '</span>'; }).join('') +
       '<span class="rw-sum"></span>';
     var cs = el.querySelectorAll('.rw-c'), last = cs[cs.length - 1];
@@ -2920,7 +2920,7 @@
     });
   });
 
-  // My Records: the member's own rewards ---------------------------------------------------------
+  // My records: the member's own rewards ---------------------------------------------------------
   function loadMineRewards() {
     call('perf_rewards_mine', {}, function (d) {
       if (d.error === 'code-needed') { $('mineRewards').innerHTML = ''; return; }
@@ -3426,7 +3426,7 @@
       if (st.pv === 'initiatives') return { tab: 'performance', view: 'initiatives' };
       return { tab: 'performance', m: st.period.slice(0, 7) };
     },
-    /* My Records: the view, Reviews left out of the address. */
+    /* My records: the view, Reviews left out of the address. */
     mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); },
@@ -3438,7 +3438,7 @@
       if (bridge.show) bridge.show('mine');
     },
     /* The colleague's own call, for js/health.js: a stale proof puts the
-       lock back over My Records. */
+       lock back over My records. */
     mineCall: function (fn, args, then) { mineCall(fn, args, then); },
     showMineLock: function (on) { showMineLock(on); }
   };
