@@ -3046,7 +3046,7 @@
     var sp = monthSpanOf(e), seq = ++reportSeq;
     $('dwReportTitle').textContent = REPORT_WORD[kind];
     db.from('sm_reports').select('id, status, sent_on, version_no, period_start')
-      .eq('client_id', t.client_id).eq('kind', kind).is('brand_id', null)
+      .eq('client_id', t.client_id).eq('kind', kind).is('brand_id', null).eq('on_request', false)
       .gte('period_end', sp[0]).lte('period_end', sp[1])
       .order('period_start', { ascending: false }).limit(1)
       .then(function (q) {

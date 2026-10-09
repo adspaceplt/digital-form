@@ -397,6 +397,11 @@
            its brands (2026-10-07): each its own report a month. */
         '<div class="row" id="rpNewForRow" hidden><div><label class="field-label" for="rpNewFor">For</label><select class="select" id="rpNewFor"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
+        /* A report the client asked for outside the month's own (the user,
+           2026-10-09: "Sometimes we need to create report on demand"): any
+           month, no month in My Work asked, and the month's report task left
+           alone. A custom period is always one. */
+        '<label class="tickline" id="rpNewAskedLine" for="rpNewAsked"><input type="checkbox" id="rpNewAsked"> <span>Requested by the client</span></label>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div></details>' +
@@ -446,6 +451,7 @@
       var brand = !$('rpNewForRow').hidden && $('rpNewFor').value;
       var draw = function (list, override, open) {
         months = list;
+        open = open || $('rpNewAsked').checked;
         var today = ymd(new Date()), pick = '', keep = sel.value;
         var ok = function (m) { return open || brand || override || m.asks; };
         sel.innerHTML = list.map(function (m) {
@@ -475,6 +481,8 @@
     $('rpNewClient').onchange = function () { paintFor(); paintMonths(); };
     $('rpNewFor').onchange = paintMonths;
     $('rpNewKind').onchange = paintMonths;
+    $('rpNewAsked').checked = false;
+    $('rpNewAsked').onchange = paintMonths;
     paintFor();
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
     if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
@@ -489,6 +497,7 @@
     fold.open = false;
     var period = function () {
       $('rpNewMonth').disabled = fold.open;
+      $('rpNewAskedLine').hidden = fold.open;
       if (!fold.open) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd')); }
       if (window.ADspaceForm) { window.ADspaceForm.hint($('rpNewStart')); window.ADspaceForm.hint($('rpNewEnd')); }
     };
@@ -520,8 +529,10 @@
       }
       go.disabled = true;
       var brand = $('rpNewForRow').hidden ? '' : $('rpNewFor').value;
-      (brand ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social', p_brand: brand })
-             : db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social' })).then(function (r) {
+      var asked = fold.open || $('rpNewAsked').checked, kind = $('rpNewKind').value || 'social';
+      (asked ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand || null, p_on_request: true })
+        : brand ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand })
+        : db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: kind })).then(function (r) {
         go.disabled = false;
         var d = r.data || {};
         var id = d.id;
@@ -712,6 +723,7 @@
         ? '<button class="linkbtn rp-sentfact" type="button" data-a="sentfact" aria-label="Change sent date">' + esc(dayWord(r.sent_on)) + ' ' + PEN_MARK + '</button>'
         : '<button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>']);
     if (r.brand_name) f.push(['For', r.brand_name]);
+    if (r.on_request) f.push(['Requested', 'By the client']);
     if (st.partner) f.push(['Logo', st.partner.name]);
     return '<dl class="facts rp-facts">' + f.map(function (x) {
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[2] || esc(x[1])) + '</dd></div>';
@@ -1034,7 +1046,7 @@
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
       reads.forEach(function (rd) {
-        var out = rd.text ? adsPlan(rd.text, { platform: 'meta' }) : null;
+        var out = rd.text ? adsPlan(rd.text, { platform: 'meta', withResults: true }) : null;
         if (!out || out.error) return;
         out.updates.forEach(function (u) {
           var a = u.ad, where = adName(a.name) + ' · ' + (OBJ_WORD[a.objective] || a.objective);
@@ -4304,7 +4316,7 @@
       AD_FIGS.forEach(function (k) { if (r0[k] != null && !(k === 'retention' && !Object.keys(r0[k]).length)) p0[k] = r0[k]; });
       return p0;
     };
-    out.updates = []; out.unclear = []; out.fresh = [];
+    out.updates = []; out.unclear = []; out.fresh = []; out.idle = 0;
     out.rows.forEach(function (r0) {
       var hit = adMatch(list, r0), a = hit.ad;
       if (a) {
@@ -4320,6 +4332,11 @@
          cannot say which ad they belong to, so they add nothing. */
       if ((r0._daily || out.byAge) && list.some(function (x) { return adName(x.name) === r0.name; })) { out.unclear.push(r0); return; }
       if (hit.many) r0._many = true;
+      /* From Meta, an ad with no spend or no results is left out, by the
+         import and the Report audit alike (the user, 2026-10-09: "it
+         automatically imports those with 0 spend or 0 results"). One the
+         report already holds is still read against Meta. */
+      if (o.withResults && !(Number(r0.spend) > 0 && Number(r0.results) > 0)) { if (!o.ageOnly) out.idle++; return; }
       if (!o.ageOnly) out.fresh.push(r0);
     });
     /* The account's figures fill Step 1 where it is empty; a figure the
@@ -4363,7 +4380,7 @@
     sum.textContent = ''; say(sm, '');
     var go = box.querySelector('[data-a="go"]');
     var read = function () {
-      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly });
+      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre });
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
       if (!platTouched && out.platform !== plat()) {
         $('rpPAPlat').value = out.platform;
@@ -4377,6 +4394,7 @@
       if (out.fresh.length && out.byAge) parts.push('the age split gathered from the rows');
       if (out.fresh.some(function (r0) { return r0._daily; })) parts.push('dates from the days each ad delivered');
       if (out.unclear.length) parts.push(out.unclear.length + ' left out: more than one ad here has that name');
+      if (out.idle) parts.push(out.idle + (out.idle === 1 ? ' ad' : ' ads') + ' with no spend or no results left out');
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
       var TW ={ reach: 'reach', impressions: 'impressions', spend: 'amount spent' };
       var fk = Object.keys(out.fill);
@@ -4721,7 +4739,7 @@
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on').order('period_start', { ascending: false }).then(function (r) {
+    db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on, on_request').order('period_start', { ascending: false }).then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
       Promise.all([clientsReady, loadNames()]).then(paintHub);
@@ -4835,6 +4853,7 @@
             b2.innerHTML = (picking ? '<span class="rh-pick"><input class="trow-pick" type="checkbox"' + (hub.pick[r.id] ? ' checked' : '') +
                 ' aria-label="Select ' + esc((wl ? r.brand_name : (c.name || '')) + ' ' + periodWord(r.period_start, r.period_end)) + '"></span>' : '') +
               '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+                (r.on_request ? '<span class="chip rp-wl">On request</span>' : '') +
                 '</b><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
                 (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
@@ -4889,7 +4908,7 @@
   }
   /* Read the list again after an act, keeping the ticks that still stand. */
   function rereadHub() {
-    return db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on')
+    return db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on, on_request')
       .order('period_start', { ascending: false }).then(function (r) {
         if (!r.error) hub.rows = r.data || [];
         paintHub();
