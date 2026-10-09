@@ -384,6 +384,14 @@
     if (!t || !t.deliverable_type) return '';
     return DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type);
   }
+  /* The format in a calendar cell's width: the family's own word, as the
+     templates name it (Static, Carousel, Reel 30s), so the code and the
+     format fit one line. */
+  var FORMAT_SHORT = { static: 'Static', gif: 'GIF', carousel: 'Carousel', reels_30: 'Reel 30s',
+    reels_60: 'Reel 60s', reels_120: 'Reel 120s', account_mgmt: 'Account' };
+  function formatShort(t) {
+    return (t && FORMAT_SHORT[t.deliverable_type]) || formatWord(t);
+  }
   /* The format as a line under a name says it: once. A task made in bulk is
      named for its format, so "Graphic: Static" under "2609W101 Graphic:
      Static" is the same fact twice. */
@@ -2158,12 +2166,19 @@
       if (!out && list.length) held++;
       var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
+      /* A chip names whose work it is and which piece, never the whole
+         description (the user, 2026-10-09: "you dont need show the full card
+         name, but few details needed like client name"): the client over the
+         code and format, each one line cut to the cell; a task with no code
+         reads its name. The press opens the card with the rest. */
       var chips = list.slice(0, CAL_SHOW).map(function (x) {
         var t = x.t, pub = x.kind === 'pub';
         var late = !pub && !isFinished(t) && d < today;
+        var who = whoseWord(t) || 'No client';
+        var what = t.code ? [t.code, formatShort(t)].filter(Boolean).join(' · ') : (t.content_desc || t.title || '');
         return '<button class="cal-chip btn-sm ' + (pub ? 'is-pub' : stageTone(t)) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '"' +
-          ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + (t.title || '')) + '">' +
-          esc(t.title) + '</button>';
+          ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + who + ', ' + (t.title || '')) + '">' +
+          '<span class="cal-chip-who">' + esc(who) + '</span><span class="cal-chip-what">' + esc(what) + '</span></button>';
       }).join('') + (list.length > CAL_SHOW ? '<span class="cal-more">+' + (list.length - CAL_SHOW) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
         '<span class="cal-num"><small>' + esc(d.toLocaleDateString('en-GB', { weekday: 'short' })) + '</small>' +

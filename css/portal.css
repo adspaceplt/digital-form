@@ -7556,24 +7556,29 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cal-day.is-today .cal-num b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 11px; background: var(--fill); color: var(--on-fill); }
 /* A chip is the task at the size a cell can hold: the tone the stage carries,
    the title truncated, and a press that opens the task. */
-/* Two lines of the title in the small face, the target kept, so a day
-   names more of each task and holds five (the user, 2026-10-08: "the text
-   shown is limited due to its size of the font"). */
+/* Two lines in the small face, the target kept, so a day holds five (the
+   user, 2026-10-08: "the text shown is limited due to its size of the
+   font"): whose work it is over which piece (2026-10-09: "you dont need show
+   the full card name"), each line cut to the cell. Each line is its own
+   block, since a button clamps no lines in Safari. */
 .cal-chip, .cal-chip.btn-sm {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  display: grid; align-content: center; gap: 1px;
   width: 100%; min-width: 0; text-align: left; padding: 3px 6px; border: 0; border-radius: 5px;
   background: var(--line-soft); color: var(--ink-soft); font: inherit; font-size: 11px; font-weight: 500; line-height: 13px;
-  overflow: hidden; white-space: normal; overflow-wrap: anywhere; cursor: pointer; min-height: var(--ctl-h-sm);
+  overflow: hidden; white-space: normal; cursor: pointer; min-height: var(--ctl-h-sm);
 }
-/* A task's stage is the dot before its title, as Calendar draws an event
+.cal-chip-who, .cal-chip-what { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cal-chip-who { font-weight: 600; color: var(--ink); }
+.cal-chip.is-pub .cal-chip-who { color: inherit; }
+/* A task's stage is the dot before its client, as Calendar draws an event
    (2026-10-07); the chip stays the quiet ground. */
-.cal-chip:is(.is-ok, .is-warn, .is-danger, .is-off)::before {
+.cal-chip:is(.is-ok, .is-warn, .is-danger, .is-off) .cal-chip-who::before {
   content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
   margin-right: 5px; vertical-align: 1px; background: var(--dot-off);
 }
-.cal-chip.is-ok::before { background: var(--dot-ok); }
-.cal-chip.is-warn::before { background: var(--dot-wait); }
-.cal-chip.is-danger::before { background: var(--dot-late); }
+.cal-chip.is-ok .cal-chip-who::before { background: var(--dot-ok); }
+.cal-chip.is-warn .cal-chip-who::before { background: var(--dot-wait); }
+.cal-chip.is-danger .cal-chip-who::before { background: var(--dot-late); }
 .cal-chip.is-late { box-shadow: inset 3px 0 0 var(--err); }
 /* The publish date is a date of its own kind, so it has a colour of its own,
    used nowhere else: the day a post goes out, beside the day work is owed. */
@@ -7588,7 +7593,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    itself instead. */
 @media (max-width: 479px) {
   .cal-key { display: none; }
-  .cal-chip.is-pub::before { content: "Publish · "; font-weight: 500; }
+  .cal-chip.is-pub .cal-chip-who::before { content: "Post · "; font-weight: 500; }
 }
 .cal-more { font-size: 11.5px; color: var(--ink-mute); padding: 0 7px; }
 .is-narrow .cal { grid-template-columns: minmax(0, 1fr); }
@@ -8856,6 +8861,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    rows under it, each the place, the words, what the figures show and the
    words to use. */
 .rp-aicheck-acts { display: inline-flex; align-items: center; gap: 8px; }
+/* The Report audit (2026-10-09): the card's title and Run audit, then one
+   check row a part (Against Meta, Commentary), each with what it found
+   under it. A part's own act sits at its row's right edge; in a narrow
+   pane it takes the line under the words. */
+.rp-audit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.rp-audit-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.rp-audit-head + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-f-more { padding: 4px 16px 12px 52px; }
+.is-narrow .rp-part { grid-template-columns: 24px minmax(0, 1fr); }
+.is-narrow .rp-part > .rp-aicheck-acts { grid-column: 2; flex-wrap: wrap; }
+.is-narrow .rp-f-more { padding-left: 16px; }
 .rp-finding {
   display: grid; gap: 4px; padding: 12px 16px 12px 52px;
   border-top: 1px solid var(--line-soft);
