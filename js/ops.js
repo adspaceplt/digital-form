@@ -6929,11 +6929,18 @@
   /* The meeting's date and time offer nothing before the next slot. A meeting
      already held keeps its own date: the sheet still opens on it to change the
      note or the link, and only a new time is held to the floor. */
+  /* An on-site meeting may be written down after it was held (the user,
+     2026-10-09), so its date keeps only the portal's own floor. */
+  function meetOnsite() { return $('meetChannel').value === 'onsite'; }
   function meetFloor() {
     var e = meetEditing;
     var held = e && e.meeting_at && new Date(e.meeting_at).getTime() < Date.now();
     var slot = nextSlot();
-    if (held) { $('meetDate').removeAttribute('min'); $('meetTime').removeAttribute('min'); return; }
+    if (held || meetOnsite()) {
+      $('meetDate').removeAttribute('min'); $('meetTime').removeAttribute('min');
+      if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
+      return;
+    }
     $('meetDate').setAttribute('min', dayKey(slot));
     if ($('meetDate').value === dayKey(slot)) {
       $('meetTime').setAttribute('min', String(slot.getHours()).padStart(2, '0') + ':' + String(slot.getMinutes()).padStart(2, '0'));
@@ -6947,9 +6954,9 @@
     var at = e.meeting_at ? new Date(e.meeting_at) : null;
     $('meetDate').value = at ? at.getFullYear() + '-' + String(at.getMonth() + 1).padStart(2, '0') + '-' + String(at.getDate()).padStart(2, '0') : '';
     $('meetTime').value = at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '';
+    $('meetChannel').value = e.meeting_channel || 'google_meet';
     meetFloor();
     if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
-    $('meetChannel').value = e.meeting_channel || 'google_meet';
     $('meetMinutes').value = String(e.meeting_minutes || 30);
     if (!$('meetMinutes').value) $('meetMinutes').value = '30';
     $('meetLink').value = e.meeting_link || '';
@@ -6962,12 +6969,19 @@
     $('meetNote').value = e.meeting_note || '';
     $('meetNa').checked = Boolean(e.meeting_na);
     meetNaChanged();
+    meetChannelChanged();
     msg('meetMsg', '');
     sheet('meetSheet', true);
   }
   function meetNaChanged() {
     var na = $('meetNa').checked;
     ['meetDate', 'meetTime', 'meetMinutes', 'meetChannel', 'meetOwner', 'meetLink', 'meetBook'].forEach(function (id) { $(id).disabled = na; });
+    meetBookShown();
+  }
+  /* A meeting at the client's has no link to ask for. */
+  function meetChannelChanged() {
+    $('meetLinkRow').hidden = meetOnsite();
+    meetFloor();
     meetBookShown();
   }
   /* The calendar is offered only where it can do something: a Google Meet
@@ -7025,8 +7039,8 @@
     if (!e) return;
     var na = $('meetNa').checked;
     var args = { p_engagement: e.id, p_note: String($('meetNote').value || '').trim() || null, p_na: na };
-    var link = String($('meetLink').value || '').trim();
     var channel = $('meetChannel').value || null;
+    var link = channel === 'onsite' ? '' : String($('meetLink').value || '').trim();
     if (!na) {
       if (!$('meetDate').value) { msg('meetMsg', said('no-date'), 'err'); $('meetDate').focus(); return; }
       if (link && !/^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(link)) {
@@ -7036,7 +7050,7 @@
       /* A time before the next free slot is refused unless it is the one the
          meeting already had (a held meeting, opened to change its note). */
       var kept = e.meeting_at && new Date(e.meeting_at).getTime() === when.getTime();
-      if (!kept && when.getTime() < nextSlot().getTime()) {
+      if (!kept && channel !== 'onsite' && when.getTime() < nextSlot().getTime()) {
         msg('meetMsg', 'Choose a time from ' + niceTime(nextSlot()) + '.', 'err');
         $($('meetDate').value < dayKey(nextSlot()) ? 'meetDate' : 'meetTime').focus();
         return;
@@ -7624,9 +7638,10 @@
     if (meetGoBtn) meetGoBtn.addEventListener('click', saveMeet);
     var meetNaTick = $('meetNa');
     if (meetNaTick) meetNaTick.addEventListener('change', meetNaChanged);
-    ['meetChannel', 'meetLink'].forEach(function (id) {
-      var el = $(id); if (el) el.addEventListener(id === 'meetLink' ? 'input' : 'change', meetBookShown);
-    });
+    var meetLinkBox = $('meetLink');
+    if (meetLinkBox) meetLinkBox.addEventListener('input', meetBookShown);
+    var meetChan = $('meetChannel');
+    if (meetChan) meetChan.addEventListener('change', meetChannelChanged);
     var meetDay = $('meetDate');
     if (meetDay) { meetDay.addEventListener('change', meetFloor); meetDay.addEventListener('input', meetFloor); }
     ['giveClose', 'giveCancel'].forEach(function (id) {
@@ -7918,6 +7933,12 @@
     }
     shutBell();
     markRead([id]);
+    /* A notice with a link opens it in a tab of its own: the outstation
+       record after an on-site meeting (2026-10-09). */
+    if (x.link && /^https:\/\//i.test(x.link)) {
+      window.open(x.link, '_blank', 'noopener');
+      return;
+    }
     /* A performance review is not a task: a released or answered month opens
        the person's own record, a dispute opens the team's month. */
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) {
