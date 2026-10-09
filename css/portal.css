@@ -10886,6 +10886,7 @@ button.vs-row { cursor: pointer; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }
+.vs-head .rec-linktools { margin-top: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
 .vs-pdf-short { display: none; }
