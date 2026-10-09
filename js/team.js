@@ -110,7 +110,10 @@
                 /* The lead stages and Past (2026-10-03): No Access, View or
                    Manage on those records, and on everything filed under
                    them in every section (`client_row_seen`). */
-                ['leads', 'Leads'], ['past', 'Past clients']],
+                ['leads', 'Leads'], ['past', 'Past clients'],
+                /* Request feedback on WhatsApp (2026-10-09): a group may
+                   work Clients and still not message a client. */
+                ['whatsapp', 'WhatsApp feedback request']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
@@ -159,7 +162,9 @@
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
-    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits']]
+    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits'],
+                /* Send on WhatsApp (2026-10-09): follows Reports unless shut. */
+                ['whatsapp', 'Send on WhatsApp']]
   };
   /* The parts that are granted rather than inherited: each opens more than
      its section does, so silence means no. The same list the console reads
@@ -185,7 +190,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'],
+    'team.notice': ['work'], 'clients.whatsapp': ['work'], 'reports.whatsapp': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']

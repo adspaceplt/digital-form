@@ -8689,6 +8689,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The Sent fact sets itself: the words keep the label's left edge. */
 .rp-facts .rp-sentfact { font-size: 14px; font-weight: 400; color: var(--ink); margin-inline-start: -8px; }
 .rp-facts .rp-sentfact svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
+/* Mark as sent and Send on WhatsApp: two buttons, 8px apart, wrapping as a
+   pair where the cell is narrow. */
+.rp-facts .rp-sendacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.rp-facts .rp-sendacts > .btn { flex: 0 0 auto; }
 .rp-ctl { display: flex; align-items: center; gap: 8px; }
 .rp-ctl .chip { align-self: center; }
 .rp-note { margin: 0; font-size: 13px; color: var(--ink); }

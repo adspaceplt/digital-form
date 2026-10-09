@@ -3615,10 +3615,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
 - By hand, through `wa-send` as the colleague: Send on WhatsApp beside Mark
-  as sent on a published report not yet sent (Reports Work, the template
-  on; asks; the kept PDF uploaded as the header document, then marked as
-  sent today); Request feedback on WhatsApp in a client's ⋯ (Clients Work,
-  the template on; asks). `wa_report_prepare` / `wa_feedback_prepare`
+  as sent on a published report not yet sent (the template on; asks; the
+  kept PDF uploaded as the header document, then marked as sent today);
+  Request feedback on WhatsApp in a client's ⋯ (the template on; asks).
+  Each is its own part, following its section unless a group shuts it
+  (`reports.whatsapp`, `clients.whatsapp` at Work;
+  `2026-10-09-whatsapp-by-group.sql`: the prepare functions and
+  `wa_record` ask the part). `wa_report_prepare` / `wa_feedback_prepare`
   answer the number, the greeting (`contact_greeting`: "Dato' Lim Wei Ming",
   else the first name) and template; `wa_record` files `wa.sent` under the
   client (Clients in the Activity record). A refusal is one line in the
