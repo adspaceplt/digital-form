@@ -117,6 +117,9 @@
     'month-gate': 'Its month in My Work is not in order: see the checks above.',
     'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
+    'meta-audit': 'The figures must match Meta first: see the Report audit.',
+    'not-linked': 'This client links no Meta accounts.',
+    'not-unavailable': 'Meta answered, so the figures are compared, not passed.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
@@ -854,7 +857,10 @@
     var named = r.status === 'review' && r.reviewer_id;
     var reviewing = named && r.reviewer_id === myId();
     var acts = [], wait = '';
-    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : '') + '>Submit for review</button>');
+    /* While the client links Meta, Submit rests until the Report audit's
+       reading matches (2026-10-09); `holdSubmit` lets it go. */
+    var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
+    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit for review</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
@@ -863,6 +869,7 @@
       acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
+    else if (metaHold && may('work')) wait = 'Match the figures to Meta to submit.';
     else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
@@ -871,7 +878,7 @@
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       '<div class="ovcard rp-aicheck" data-m="aicheck" hidden></div>' +
-      (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
+      (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait"' + (metaHold && !missing.length && may('work') ? ' data-meta="1"' : '') + '>' + esc(wait) + '</span>' : '') + '</div>' : '') +
       '<div class="msg" data-m="check"></div>' + keyDates(r) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
       b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
@@ -881,13 +888,13 @@
     loadCheck(box, r);
   }
 
-  /* The figures check (the user, 2026-10-04): on the last step, the
-     commentary as it stands, drafted or written by hand, is read against
-     the report's own figures, and what does not hold is listed: where it
-     is, the words, what the figures show, and the words to use. Kept with
-     the report, so the reviewer reads the same check; a commentary changed
-     since says so. A report in draft or in review may be checked; it uses
-     one of the colleague's AI uses a day. */
+  /* The Report audit's Commentary part (the user, 2026-10-04, then
+     2026-10-09): on the last step, the commentary as it stands, drafted or
+     written by hand, is read against the report's own figures, and what
+     does not hold is listed: where it is, the words, what the figures show,
+     and the words to use. Kept with the report, so the reviewer reads the
+     same check; a commentary changed since says so. A report in draft or in
+     review may be checked; it uses one of the colleague's AI uses a day. */
   function commentaryNow(r) {
     var out = {}, add = function (k, v) { v = String(v == null ? '' : v).replace(/\r/g, '').trim(); if (v) out[k] = v; };
     var ins = r.insights || {};
@@ -904,84 +911,586 @@
     return ka.join('|') === kb.join('|') && ka.every(function (k) { return String(a[k]).slice(0, 4000) === String(b[k]).slice(0, 4000); });
   }
   var checkRun = {};
+  /* The Report audit (the user, 2026-10-09: "there shouldnt be any
+     mismatches"): one card on Check and submit, in two parts. Against Meta
+     reads Meta's figures for the period and compares every figure the
+     report takes from Meta, exactly; while the client links Meta, Submit
+     and Publish wait on it (the database holds them too, `meta-audit`).
+     The Commentary is the AI's reading of the words against the figures.
+     Run audit runs both; Against Meta also runs by itself when the step
+     opens (no AI use). */
   function loadCheck(box, r) {
     var host = box.querySelector('[data-m="aicheck"]');
     if (!host) return;
     var can = (r.status === 'draft' || r.status === 'review') && may('work');
-    db.rpc('ai_check_last', { p_report: r.id }).then(function (res) {
+    var lastCheck = db.rpc('ai_check_last', { p_report: r.id }).then(function (res) {
       var d = res && res.data;
+      return res.error || !d || d.error || d.none ? null : d;
+    }).catch(function () { return null; });
+    var lastMeta = db.rpc('sm_report_audit_last', { p_id: r.id }).then(function (res) {
+      var d = res && res.data;
+      return res.error || !d || d.error ? null : d;
+    }).catch(function () { return null; });
+    Promise.all([lastCheck, lastMeta]).then(function (got) {
       if (st.open !== r || !host.isConnected) return;
-      if (res.error || !d || d.error) { if (!can) return; d = { none: true }; }
-      paintAiCheck(host, r, d.none ? null : d, can);
-    }).catch(function () { if (can && st.open === r && host.isConnected) paintAiCheck(host, r, null, can); });
+      st.checkLast = got[0];
+      st.audit = metaState(r, got[1]);
+      paintAudit(host, r, can);
+      holdSubmit(box, r);
+      if (metaDue(r)) runMeta(r);
+    });
   }
-  function paintAiCheck(host, r, last, can, said0) {
-    if (!last && !can) { host.hidden = true; return; }
+
+  // ---- Against Meta ---------------------------------------------------------
+  /* What the audit knows of the report open: the last reading filed
+     (`sm_report_audit_last`), and, after a reading on this page, the rows
+     that differ with what puts each right. Kept across a repaint of the
+     same version. */
+  function metaState(r, last) {
+    var keep = st.audit && st.audit.id === r.id && st.audit.version === r.version_no ? st.audit : null;
+    if (keep) { keep.last = last; return keep; }
+    return { id: r.id, version: r.version_no, last: last, rows: null, fixes: null, reads: null, busy: false, all: false };
+  }
+  /* What is read from Meta: every ad account the client (or its brand)
+     links, for an Advertising Report; the linked Page and Instagram
+     account the report holds an account for, for an Accounts Report. */
+  function metaSources(r) {
+    var m0 = st.meta || {};
+    if (r.kind === 'ads') return (m0.ad_accounts || []).map(function (a) { return { action: 'ads', account: a.id }; });
+    return [['facebook', 'page'], ['instagram', 'instagram']].filter(function (s) {
+      return m0[s[1]] && st.platforms.some(function (p) { return p.platform === s[0]; });
+    }).map(function (s) { return { action: 'posts', source: s[0] }; });
+  }
+  /* An Advertising Report is read again in review and before Publish; an
+     Accounts Report in draft alone (a post's figures are lifetime totals
+     that grow by the hour, so the reading it was submitted on stands). */
+  function metaOpen(r) { return r.status === 'draft' || (r.kind === 'ads' && (r.status === 'review' || r.status === 'confirmed')); }
+  function metaCan(r) { return metaSources(r).length > 0 && metaOpen(r) && may('work'); }
+  var metaAuto = {};
+  function metaDue(r) {
+    if (!metaCan(r) || !st.audit || st.audit.busy) return false;
+    var k = r.id + ':' + r.version_no + ':' + r.status;
+    return !metaAuto[k] || Date.now() - metaAuto[k] > 600000;
+  }
+  var META_DOWN = ['not-connected', 'token-refused', 'not-assigned', 'rate-limited', 'meta-failed'];
+  function readMeta(r) {
+    var src = metaSources(r), reads = [];
+    var one = function (i) {
+      if (i >= src.length) return Promise.resolve({ reads: reads });
+      var s = src[i];
+      var body = s.action === 'ads' ? { action: 'ads', report_id: r.id, account: s.account, audit: true }
+        : { action: 'posts', report_id: r.id, source: s.source, audit: true };
+      return db.functions.invoke('meta-import', { body: body }).then(function (res) {
+        var d = (res && res.data) || {};
+        if ((res && res.error) || d.error) {
+          var e = d.error || 'meta-failed';
+          return META_DOWN.indexOf(e) > -1 ? { down: e } : { refused: e };
+        }
+        reads.push({ action: s.action, account: s.account, source: s.source, text: d.text || '', age: d.age || '' });
+        return one(i + 1);
+      }).catch(function () { return { down: 'meta-failed' }; });
+    };
+    return one(0);
+  }
+
+  /* A figure in the words the report prints it in; a value not held reads
+     Not set. */
+  var FIG_WORD = { result_label: 'Result type', results: 'Results', reach: 'Reach', impressions: 'Impressions', spend: 'Amount spent',
+    ctr: 'CTR', cpr: 'Cost per result', hook_rate: 'Hook rate', hold_rate: 'Hold rate', avg_play: 'Average play time',
+    retention: 'Retention', age: 'Age split' };
+  function figText(k, v) {
+    if (v == null || v === '') return 'Not set';
+    if (k === 'retention' || k === 'age') {
+      var ks = Object.keys(v || {}).filter(function (x) { return v[x] != null && v[x] !== ''; });
+      return ks.length ? ks.map(function (x) { return (k === 'retention' ? x.replace(/^p/, '') + '% watched' : x) + ' ' + Number(v[x]) + '%'; }).join(', ') : 'Not set';
+    }
+    if (k === 'result_label') return resultWord(v) || 'Not set';
+    if (k === 'spend' || k === 'cpr') return money2(v);
+    if (k === 'ctr' || k === 'hook_rate' || k === 'hold_rate') return Number(v).toFixed(2) + '%';
+    if (k === 'avg_play') return Number(v) + ' s';
+    return fmt(v);
+  }
+  /* Exact, at the precision the report holds: a figure equals Meta's or it
+     differs; a split equals band by band, to a tenth. */
+  function sameFig(k, a, b) {
+    if (k === 'retention' || k === 'age') {
+      var A = a || {}, B = b || {};
+      var v = function (o, x) { return o[x] == null || o[x] === '' ? null : Math.round(Number(o[x]) * 10) / 10; };
+      return Object.keys(A).concat(Object.keys(B)).every(function (x) { return v(A, x) === v(B, x); });
+    }
+    if (k === 'result_label') return resultWord(a || '') === resultWord(b || '');
+    var na = a == null || a === '', nb = b == null || b === '';
+    if (na || nb) return na && nb;
+    return Number(a) === Number(b);
+  }
+  /* The report against Meta's reading, through the importer's own plan, so
+     what the audit calls a difference is exactly what an import would
+     change. Each row: where it is, the figure, the report's and Meta's;
+     beside it, what puts it right (a figure taken, an ad or post added, or
+     one Meta does not hold removed), or nothing where no one ad answers. */
+  function metaCompare(reads) {
+    var r = st.open, rows = [], fixes = [];
+    var put = function (row, fix) { rows.push(row); fixes.push(fix || null); };
+    if (r.kind === 'ads') {
+      var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
+      reads.forEach(function (rd) {
+        var out = rd.text ? adsPlan(rd.text, { platform: 'meta' }) : null;
+        if (!out || out.error) return;
+        out.updates.forEach(function (u) {
+          var a = u.ad, where = adName(a.name) + ' · ' + (OBJ_WORD[a.objective] || a.objective);
+          seen[a.id] = true;
+          var ids = u.patch.ad_ids ? { ad_ids: u.patch.ad_ids } : {};
+          AD_FIGS.forEach(function (k) {
+            if (!(k in u.patch) || sameFig(k, a[k], u.patch[k])) return;
+            var set = Object.assign({}, ids); set[k] = u.patch[k];
+            put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set });
+          });
+        });
+        out.fresh.forEach(function (r0) {
+          var where = r0.name + ' · ' + (OBJ_WORD[r0.objective] || r0.objective);
+          var row = Object.assign({}, r0); delete row._daily; delete row._many;
+          put({ where: where, field: 'Ad', report: r0._many ? 'More than one ad here matches it' : 'Not in the report',
+                meta: money2(r0.spend) + ' spent' }, r0._many ? null : { t: 'ad-add', row: row });
+        });
+        if (rd.age) {
+          var ag = adsPlan(rd.age, { platform: 'meta', ageOnly: true });
+          if (!ag.error) ag.updates.forEach(function (u) {
+            if (!u.patch || !u.patch.age || sameFig('age', u.ad.age, u.patch.age)) return;
+            put({ where: adName(u.ad.name) + ' · ' + (OBJ_WORD[u.ad.objective] || u.ad.objective), field: FIG_WORD.age,
+                  report: figText('age', u.ad.age), meta: figText('age', u.patch.age) }, { t: 'ad', id: u.ad.id, set: { age: u.patch.age } });
+          });
+        }
+        if (out.summary) {
+          had++;
+          if (out.summary.impressions != null) sum.impressions += out.summary.impressions;
+          if (out.summary.spend != null) sum.spend = Math.round((sum.spend + out.summary.spend) * 100) / 100;
+          if (out.summary.reach != null) reach.push(out.summary.reach);
+        }
+      });
+      /* Step 1's figures: reach only where one ad account answers for the
+         period, since Meta never adds a person across two accounts. */
+      var t0 = r.ads_totals || {}, step = (stepsOf(r).filter(function (s) { return s[0] === 'figures'; })[0] || [0, 'Account figures'])[1];
+      var tot = {};
+      if (had) { tot.impressions = sum.impressions; tot.spend = sum.spend; }
+      if (had === 1 && reach.length === 1) tot.reach = reach[0];
+      ['reach', 'impressions', 'spend'].forEach(function (k) {
+        if (!(k in tot) || sameFig(k, t0[k], tot[k])) return;
+        var set = {}; set[k] = tot[k];
+        put({ where: step, field: FIG_WORD[k], report: figText(k, t0[k]), meta: figText(k, tot[k]) }, { t: 'totals', set: set });
+      });
+      st.ads.forEach(function (a) {
+        if (adPlat(a) !== 'meta' || seen[a.id]) return;
+        if (!['results', 'reach', 'impressions', 'spend'].some(function (k) { return Number(a[k]) > 0; })) return;
+        put({ where: adName(a.name) + ' · ' + (OBJ_WORD[a.objective] || a.objective), field: 'Ad',
+              report: Number(a.spend) > 0 ? money2(a.spend) + ' spent' : fmt(a.impressions) + ' impressions',
+              meta: 'No delivery in this period' }, { t: 'ad-remove', id: a.id });
+      });
+      return { rows: rows, fixes: fixes };
+    }
+    var year = Number(String(r.period_start).slice(0, 4)), period = [String(r.period_start).slice(0, 10), String(r.period_end).slice(0, 10)];
+    reads.forEach(function (rd) {
+      var acc = st.platforms.filter(function (p) { return p.platform === rd.source; })[0];
+      if (!acc) return;
+      var out = rd.text ? parseRows(rd.text, year, period) : { rows: [], columns: [] };
+      if (out.error) return;
+      var cols = out.columns.filter(function (c) { return METRIC_WORD[c]; }), keys = {};
+      out.rows.forEach(function (x) {
+        var k = linkKey(x.url);
+        if (k) keys[k] = true;
+        var p = k ? postByLink(acc.id, x.url) : null;
+        var where = platWord(acc) + ' · ' + postName(p || x);
+        if (!p) {
+          put({ where: where, field: 'Post', report: 'Not in the report', meta: x.views != null ? fmt(x.views) + ' views' : 'In Meta' },
+            { t: 'post-add', row: Object.assign({ platform_id: acc.id }, x) });
+          return;
+        }
+        cols.forEach(function (c) {
+          if (x[c] == null || sameFig(c, p[c], x[c])) return;
+          var set = {}; set[c] = x[c];
+          put({ where: where, field: METRIC_WORD[c], report: figText(c, p[c]), meta: figText(c, x[c]) }, { t: 'post', id: p.id, set: set });
+        });
+      });
+      st.posts.forEach(function (p) {
+        if (p.platform_id !== acc.id || (linkKey(p.url) && keys[linkKey(p.url)])) return;
+        put({ where: platWord(acc) + ' · ' + postName(p), field: 'Post', report: p.url ? 'In the report' : 'In the report, with no link',
+              meta: 'Not in Meta for this period' }, { t: 'post-remove', id: p.id });
+      });
+    });
+    return { rows: rows, fixes: fixes };
+  }
+
+  /* One reading: Meta read, compared, and filed, so the reviewer and the
+     database read the same. Meta not answering is filed too (Submit then
+     waits, unless an admin continues without it, with a reason). */
+  function runMeta(r) {
+    if (!st.audit || st.audit.id !== r.id || st.audit.version !== r.version_no) st.audit = metaState(r, null);
+    var a = st.audit;
+    if (a.busy) return a.p || Promise.resolve({});
+    a.busy = true;
+    metaAuto[r.id + ':' + r.version_no + ':' + r.status] = Date.now();
+    repaintAudit('');
+    a.p = readMeta(r).then(function (got) {
+      if (got.refused) return { said: META_SAID[got.refused] || said(got.refused) };
+      if (got.down) return fileMeta(r, 'unavailable', [], got.down).then(function () { return { outcome: 'unavailable' }; });
+      a.reads = got.reads;
+      var cmp = metaCompare(got.reads);
+      a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false;
+      var outcome = cmp.rows.length ? 'mismatch' : 'match';
+      return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
+    }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
+      a.busy = false; a.p = null;
+      return reloadAudit(r, res.said || '').then(function () { return res; });
+    });
+    return a.p;
+  }
+  function fileMeta(r, outcome, rows, note) {
+    return db.rpc('sm_report_audit_save', { p_id: r.id, p_outcome: outcome, p_rows: rows || [], p_note: note || null }).then(function (res) {
+      var d = (res && res.data) || {};
+      if (res.error || d.error) throw (res.error || d);
+      return d;
+    });
+  }
+  function reloadAudit(r, said0) {
+    return db.rpc('sm_report_audit_last', { p_id: r.id }).then(function (res) {
+      var d = res && res.data;
+      if (st.audit && st.audit.id === r.id && !res.error && d && !d.error) st.audit.last = d;
+    }).catch(function () { /* the card keeps what it had */ }).then(function () { repaintAudit(said0); });
+  }
+  function repaintAudit(said0) {
+    var host = st.host && st.host.querySelector('[data-m="aicheck"]');
+    if (!host || !st.open || !st.audit || st.audit.id !== st.open.id) return;
+    paintAudit(host, st.open, (st.open.status === 'draft' || st.open.status === 'review') && may('work'), said0);
+    holdSubmit(st.host, st.open);
+  }
+  /* Submit waits while Against Meta holds the report: drawn resting from
+     the first paint where the client links Meta, and let go once the
+     reading matches (a rest for another reason stays). */
+  function holdSubmit(box, r) {
+    var sub = box && box.querySelector('[data-a="submit"]');
+    if (!sub || r.status !== 'draft') return;
+    var al = st.audit && st.audit.id === r.id ? st.audit.last : null;
+    var held = al ? !!al.blocks : false;
+    var acts = box.querySelector('.rp-actions'), w = acts && acts.querySelector('.rp-wait');
+    if (held) {
+      if (!sub.disabled) sub.setAttribute('data-meta', '1');
+      sub.disabled = true;
+      if (acts && !w) { w = document.createElement('span'); w.className = 'rp-wait'; acts.appendChild(w); }
+      if (w && (!w.textContent || w.getAttribute('data-meta') === '1')) { w.textContent = 'Match the figures to Meta to submit.'; w.setAttribute('data-meta', '1'); }
+    } else {
+      if (sub.getAttribute('data-meta') === '1') { sub.disabled = false; sub.removeAttribute('data-meta'); }
+      if (w && w.getAttribute('data-meta') === '1') w.parentNode.removeChild(w);
+    }
+  }
+  /* Meta's figures taken where they differ: "Use Meta's figure" on a row,
+     "Update all from Meta" for every row a figure or a missing ad or post
+     answers, through the rows' own writes, with one Undo. A row Meta does
+     not hold leaves only on its own Remove. Then the comparison is read
+     again from the same reading, filed, and the commentary is checked
+     again, since a changed figure can make its words wrong. */
+  function useMeta(list, btn) {
+    var r = st.open, a = st.audit, host = st.host && st.host.querySelector('[data-m="aicheck"]');
+    var m = host && host.querySelector('[data-m="cmsg"]');
+    list = list.filter(Boolean);
+    if (!list.length || !a || !a.reads) return;
+    if (btn) btn.disabled = true;
+    say(m, 'Saving…');
+    var undo = [];
+    applyFixes(r, list, undo).then(function () {
+      return afterFix(r, list.length, undo, false);
+    }).catch(function (e) {
+      if (btn) btn.disabled = false;
+      afterFix(r, 0, undo, true).then(function () {
+        var m2 = st.host && st.host.querySelector('[data-m="aicheck"] [data-m="cmsg"]');
+        say(m2, said(e), 'err');
+      });
+    });
+  }
+  function applyFixes(r, list, undo) {
+    var ads = {}, posts = {}, tot = null, addAds = [], addPosts = [], gone = [];
+    list.forEach(function (f) {
+      if (f.t === 'ad') ads[f.id] = Object.assign(ads[f.id] || {}, f.set);
+      else if (f.t === 'post') posts[f.id] = Object.assign(posts[f.id] || {}, f.set);
+      else if (f.t === 'totals') tot = Object.assign(tot || {}, f.set);
+      else if (f.t === 'ad-add') addAds.push(f.row);
+      else if (f.t === 'post-add') addPosts.push(f.row);
+      else if (f.t === 'ad-remove' || f.t === 'post-remove') gone.push(f);
+    });
+    var refused = function (res) {
+      if (res.error) throw res.error;
+      if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
+      return res.data;
+    };
+    var patch = function (table, key, set) {
+      return Object.keys(set).map(function (id) {
+        var was = st[key].filter(function (x) { return x.id === id; })[0];
+        if (!was) return Promise.resolve();
+        var before = {};
+        Object.keys(set[id]).forEach(function (k) { before[k] = was[k] === undefined ? null : was[k]; });
+        return db.from(table).update(set[id]).eq('id', id).select('*').then(function (res) {
+          var row = refused(res)[0];
+          st[key] = st[key].map(function (x) { return x.id === id ? row : x; });
+          undo.push(function () {
+            return db.from(table).update(before).eq('id', id).select('*').then(function (res2) {
+              var back = refused(res2)[0];
+              st[key] = st[key].map(function (x) { return x.id === id ? back : x; });
+            });
+          });
+        });
+      });
+    };
+    var insert = function (table, key, rows) {
+      if (!rows.length) return Promise.resolve();
+      var n = st[key].length;
+      var body = rows.map(function (x, i) { return Object.assign({}, x, { report_id: r.id, position: n + i + 1 }); });
+      return db.from(table).insert(body).select('*').then(function (res) {
+        var made = refused(res), ids = made.map(function (x) { return x.id; });
+        st[key] = st[key].concat(made);
+        undo.push(function () {
+          return db.from(table).delete().in('id', ids).select('id').then(function (res2) {
+            refused(res2);
+            st[key] = st[key].filter(function (x) { return ids.indexOf(x.id) < 0; });
+          });
+        });
+      });
+    };
+    var jobs = patch('sm_report_ads', 'ads', ads).concat(patch('sm_report_posts', 'posts', posts));
+    jobs.push(insert('sm_report_ads', 'ads', addAds), insert('sm_report_posts', 'posts', addPosts));
+    gone.forEach(function (f) {
+      var table = f.t === 'ad-remove' ? 'sm_report_ads' : 'sm_report_posts', key = f.t === 'ad-remove' ? 'ads' : 'posts';
+      var row = st[key].filter(function (x) { return x.id === f.id; })[0];
+      if (!row) return;
+      jobs.push(db.from(table).delete().eq('id', f.id).select('id').then(function (res) {
+        if (res.error) throw res.error;
+        if (!(res.data || []).length) throw new Error('Not deleted. The database refused the request.');
+        st[key] = st[key].filter(function (x) { return x.id !== f.id; });
+        undo.push(function () {
+          return db.from(table).insert(row).select('*').then(function (res2) { st[key] = st[key].concat(refused(res2)); });
+        });
+      }));
+    });
+    if (tot) {
+      var before = Object.assign({}, r.ads_totals || {});
+      jobs.push(db.from('sm_reports').update({ ads_totals: Object.assign({}, r.ads_totals || {}, tot) }).eq('id', r.id).select('*').then(function (res) {
+        var row = refused(res)[0];
+        Object.assign(st.open, row);
+        undo.push(function () {
+          return db.from('sm_reports').update({ ads_totals: before }).eq('id', r.id).select('*').then(function (res2) { Object.assign(st.open, refused(res2)[0]); });
+        });
+      }));
+    }
+    return Promise.all(jobs);
+  }
+  /* After a fix (or its Undo): the rows read again from the same reading
+     of Meta, the reading filed, the editor repainted, the Undo drawn where
+     it happened, and the commentary checked again where it had been. */
+  function afterFix(r, n, undo, failed) {
+    var a = st.audit;
+    sortAds(); sortPosts();
+    var cmp = metaCompare(a.reads || []);
+    a.rows = cmp.rows; a.fixes = cmp.fixes;
+    var filed = fileMeta(r, cmp.rows.length ? 'mismatch' : 'match', cmp.rows).catch(function () { return null; });
+    if (n) fileReport('report.saved', 'Report audit · ' + (n === 1 ? 'one figure taken from Meta' : n + ' figures taken from Meta'), r, st.client);
+    return filed.then(function () {
+      paintEditor();
+      var card = st.host && st.host.querySelector('[data-m="aicheck"]');
+      if (undo.length && card) {
+        undoBar(failed ? 'Part saved.' : n === 1 ? 'Meta\'s figure taken.' : n + ' figures taken from Meta.', card, function () {
+          var steps = undo.slice().reverse();
+          steps.reduce(function (p, f) { return p.then(f); }, Promise.resolve()).catch(function () { /* named after the repaint */ }).then(function () {
+            fileReport('report.saved', 'Report audit · ' + (n === 1 ? 'Meta\'s figure undone' : n + ' figures from Meta undone'), r, st.client);
+            afterFix(r, 0, [], false);
+          });
+        });
+      }
+      if (!failed && n && st.checkLast) recheckText(r);
+    });
+  }
+  /* The commentary checked again after the figures moved (the user's
+     "Then the commentary part runs again"), where a check is left today;
+     else its line says the figures changed since it. */
+  function recheckText(r) {
+    db.rpc('ai_check_left', { p_report: r.id }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.left || st.open !== r) return;
+      var host = st.host && st.host.querySelector('[data-m="aicheck"]');
+      if (host && !checkRun[r.id] && Object.keys(commentaryNow(r)).length) runCheck(host, r);
+    }).catch(function () { /* the line says it */ });
+  }
+  /* Meta moved after the report left draft: it goes back with the rows
+     that changed as its note, and its submitter takes Meta's figures and
+     submits it to the reviewer again. */
+  function metaBack(r, btn) {
+    var rows = (st.audit && st.audit.rows) || (st.audit && st.audit.last && st.audit.last.last && st.audit.last.last.rows) || [];
+    var lines = rows.slice(0, 8).map(function (x) { return x.where + ', ' + x.field + ': ' + x.report + ' in the report, ' + x.meta + ' in Meta'; });
+    var note = 'Meta\'s figures changed since it was submitted. ' + lines.join('; ') +
+      (rows.length > 8 ? '; and ' + (rows.length - 8) + ' more' : '') + '. Take Meta\'s figures in the Report audit and submit it again.';
+    var m = st.host && st.host.querySelector('[data-m="check"]');
+    window.ADspaceConfirm.ask({ title: 'Send back with Meta\'s changes?', body: 'It returns to draft with the rows that changed as its note. Its submitter takes Meta\'s figures and submits it to the reviewer again.', go: 'Send back' },
+      function () { stepCall('sm_report_return', { p_id: r.id, p_note: note.slice(0, 1800) }, 'Sent back to draft.', btn, m); });
+  }
+  function whenWord(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var h = d.getHours(), mm = String(d.getMinutes()).padStart(2, '0');
+    return d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear() + ', ' + ((h % 12) || 12) + ':' + mm + (h < 12 ? ' am' : ' pm');
+  }
+
+  // ---- The card ---------------------------------------------------------------
+  function paintAudit(host, r, can, said0) {
+    var last = st.checkLast, a = st.audit || {}, al = a.last;
+    /* Against Meta is drawn wherever its reading answers: Not linked is a
+       line of its own, with the way to link the client's accounts. */
+    var srcs = metaSources(r), hasMeta = !!al || (srcs.length > 0 && metaOpen(r));
+    if (!last && !can && !hasMeta && !metaCan(r)) { host.hidden = true; return; }
+    host.hidden = false;
+    var canMeta = metaCan(r), busy = a.busy || checkRun[r.id], draft = r.status === 'draft' && may('work');
+    var head = '<div class="rp-audit-head"><h4 class="rp-audit-title">Report audit</h4>' +
+      (can || canMeta ? '<span class="rp-aicheck-acts"><span class="rp-aileft" data-m="cleft" hidden></span>' +
+        '<button class="btn btn-sm" type="button" data-a="audit"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Running' : 'Run audit') + '</button></span>' : '') +
+      '</div>';
+
+    /* Against Meta. */
+    var meta = '';
+    if (hasMeta || canMeta) {
+      var lst = al && al.last, mark = '', note = '', acts = '', list = '';
+      var rows = a.rows || (lst && lst.outcome === 'mismatch' ? lst.rows || [] : []);
+      var fixes = a.rows ? a.fixes : [];
+      if (al && !al.needed && !lst) {
+        note = 'Not linked';
+        if (bridge.may && bridge.may('clients', 'work') && st.client && st.client.slug && !r.brand_id) acts = '<button class="btn btn-sm" type="button" data-a="metalink">Link accounts' + ICON.go + '</button>';
+      } else if (a.busy) {
+        note = 'Reading Meta…';
+      } else if (!lst) {
+        mark = ' is-missing'; note = 'Not run';
+      } else if (lst.outcome === 'match' || lst.outcome === 'override') {
+        mark = lst.current ? ' is-done' : ' is-missing';
+        note = !lst.current ? 'A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.'
+          : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at)
+          : 'Not checked: Meta unavailable · ' + (lst.by || 'An admin') + ' continued on ' + whenWord(lst.at) + ': ' + (lst.note || '');
+      } else if (lst.outcome === 'mismatch') {
+        mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
+      } else {
+        mark = ' is-missing'; note = 'Not checked: Meta unavailable' + (META_SAID[lst.note] ? ' · ' + META_SAID[lst.note] : '');
+        if (al.may_override && metaOpen(r) && may('work')) acts = '<button class="btn btn-sm" type="button" data-a="metaskip">Continue without Meta</button>';
+      }
+      if (lst && lst.outcome === 'mismatch' && !a.busy) {
+        var fixable = fixes.filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }).length;
+        if (draft && fixable > 1) acts = '<button class="btn btn-sm" type="button" data-a="metaall">Update all from Meta</button>';
+        var mine = r.submitted_by && r.submitted_by === myId(), reviewing = r.reviewer_id && r.reviewer_id === myId();
+        var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
+        if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
+        var show = a.all ? rows : rows.slice(0, 10);
+        list = show.map(function (x, i) {
+          var f = draft ? fixes[i] : null;
+          var word = !f ? '' : f.t === 'ad-add' || f.t === 'post-add' ? 'Add' : f.t === 'ad-remove' || f.t === 'post-remove' ? 'Remove' : 'Use Meta\'s figure';
+          return '<div class="rp-finding rp-metarow"><span class="rp-f-where">' + esc(x.where) + '</span>' +
+            '<span class="rp-f-issue">' + esc(x.field) + '</span>' +
+            '<span class="rp-f-fix"><span class="rp-f-label">Report</span>' + esc(x.report) + '</span>' +
+            '<span class="rp-f-fix"><span class="rp-f-label">Meta</span>' + esc(x.meta) + '</span>' +
+            (word ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button></span>' : '') + '</div>';
+        }).join('') + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
+      }
+      meta = '<div class="rp-check rp-part' + mark + '" data-part="meta">' +
+          '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
+          '<span class="rp-check-t"><b>Against Meta</b><small>' + esc(note) + '</small></span>' +
+          (acts ? '<span class="rp-aicheck-acts">' + acts + '</span>' : '') + '</div>' + list;
+    }
+
+    /* The commentary, read against the figures by the AI. A finding is put
+       right where it is found (the user, 2026-10-09: "it flags issues but
+       doesn't help to rectify it"): Apply puts its words in place of the
+       quoted ones in a draft, Apply all does every one still standing, each
+       saved with Undo. A finding whose words are gone and whose fix stands
+       reads Applied. */
     var found = last && last.result && last.result.findings || [];
     var now = commentaryNow(r);
     var stale = last && !sameText(last.basis, now);
-    /* A finding is put right where it is found (the user, 2026-10-09: "it
-       flags issues but doesn't help to rectify it"): Apply puts its words in
-       place of the quoted ones in a draft, Apply all does every one still
-       standing, each saved with Undo. A finding whose words are gone and
-       whose fix stands reads Applied. */
-    var fixable = r.status === 'draft' && may('work');
+    var moved = last && al && al.print_moved && al.print_since && new Date(last.at) < new Date(al.print_since);
+    var fixable2 = draft;
     var standing = function (f) {
       var t = now[f.ref] || '';
-      if (f.quote && t.indexOf(f.quote) > -1) return fixable && (f.fix || f.quote) ? 'open' : 'stands';
+      if (f.quote && t.indexOf(f.quote) > -1) return fixable2 && (f.fix || f.quote) ? 'open' : 'stands';
       return f.fix && t.indexOf(f.fix) > -1 ? 'applied' : 'gone';
     };
     var openOnes = found.filter(function (f) { return standing(f) === 'open'; });
-    var mark = !last ? '' : stale ? ' is-missing' : found.length ? ' is-missing' : ' is-done';
-    var meta = !last ? 'Not checked' :
-      'Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '') + ' · ' +
-      (found.length ? found.length + (found.length === 1 ? ' point' : ' points') + ' to correct' : 'Matches the figures');
-    host.hidden = false;
-    host.innerHTML = '<div class="rp-check' + mark + '">' +
-        '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
-        '<span class="rp-check-t"><b>Figures check</b><small>' + esc(meta) + '</small></span>' +
-        (can ? '<span class="rp-aicheck-acts"><span class="rp-aileft" data-m="cleft" hidden></span>' +
-          (openOnes.length > 1 ? '<button class="btn btn-sm" type="button" data-a="applyall">Apply all</button>' : '') +
-          '<button class="btn btn-sm" type="button" data-a="aicheck">' + (checkRun[r.id] ? 'Checking' : last ? 'Check again' : 'Check') + '</button></span>' : '') +
+    var tmark = !last ? ' is-missing' : stale || moved || found.length ? ' is-missing' : ' is-done';
+    var tnote = checkRun[r.id] ? 'Checking…' : !last ? 'Not run' :
+      (found.length ? found.length + ' to fix' : 'No issues') + ' · Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '');
+    var text = '<div class="rp-check rp-part' + tmark + '" data-part="text">' +
+        '<span class="rp-check-mark" aria-hidden="true">' + (tmark === ' is-done' ? ICON.tick : '') + '</span>' +
+        '<span class="rp-check-t"><b>Commentary</b><small>' + esc(tnote) + '</small></span>' +
+        (openOnes.length > 1 ? '<span class="rp-aicheck-acts"><button class="btn btn-sm" type="button" data-a="applyall">Apply all</button></span>' : '') +
       '</div>' +
-      (stale ? '<p class="rp-f-note">The commentary has changed since this check.</p>' : '') +
+      (stale ? '<p class="rp-f-note">The commentary has changed since this check.</p>' : moved ? '<p class="rp-f-note">The figures have changed since this check.</p>' : '') +
       found.map(function (f, i) {
         var sx = standing(f);
         return '<div class="rp-finding' + (sx === 'applied' ? ' is-applied' : '') + '"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
-          (f.quote ? '<span class="rp-f-quote">\u201c' + esc(f.quote) + '\u201d</span>' : '') +
+          (f.quote ? '<span class="rp-f-quote">“' + esc(f.quote) + '”</span>' : '') +
           '<span class="rp-f-issue">' + esc(f.issue || '') + '</span>' +
           (f.fix ? '<span class="rp-f-fix"><span class="rp-f-label">Use</span>' + esc(f.fix) + '</span>' : '') +
           (sx === 'open' ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="apply" data-i="' + i + '">' + (f.fix ? 'Apply' : 'Remove words') + '</button></span>'
             : sx === 'applied' ? '<span class="rp-f-acts"><span class="chip-state is-ok">Applied</span></span>' : '') + '</div>';
-      }).join('') +
-      '<div class="msg" data-m="cmsg"></div>';
+      }).join('');
+
+    host.innerHTML = head + meta + text + '<div class="msg" data-m="cmsg"></div>';
     var m = host.querySelector('[data-m="cmsg"]');
     if (said0) say(m, said0, 'err');
-    Array.prototype.forEach.call(host.querySelectorAll('[data-a="apply"]'), function (x) {
-      x.addEventListener('click', function () { applyFindings(host, r, [found[Number(x.getAttribute('data-i'))]], x); });
+    var on = function (k, fn) { Array.prototype.forEach.call(host.querySelectorAll('[data-a="' + k + '"]'), function (x) { x.addEventListener('click', function () { fn(x); }); }); };
+    on('apply', function (x) { applyFindings(host, r, [found[Number(x.getAttribute('data-i'))]], x); });
+    on('applyall', function (x) { applyFindings(host, r, openOnes, x); });
+    on('usemeta', function (x) { useMeta([(a.fixes || [])[Number(x.getAttribute('data-i'))]], x); });
+    on('metaall', function (x) {
+      useMeta((a.fixes || []).filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }), x);
     });
-    var all = host.querySelector('[data-a="applyall"]');
-    if (all) all.addEventListener('click', function () { applyFindings(host, r, openOnes, all); });
-    var b = host.querySelector('[data-a="aicheck"]');
+    on('metamore', function () { a.all = true; repaintAudit(''); });
+    on('metaback', function (x) { metaBack(r, x); });
+    on('metalink', function () {
+      history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(st.client.slug) + '&tab=brand');
+      if (bridge.show) bridge.show('clients');
+    });
+    on('metaskip', function (x) {
+      window.ADspaceConfirm.ask({ title: 'Continue without Meta?', body: 'Meta did not answer, so the figures were not read. The reason is kept with the report and filed.', go: 'Continue',
+        field: { label: 'Reason', rows: 2, need: 'A reason is required.' } }, function (why) {
+        x.disabled = true;
+        fileMeta(r, 'override', [], why).then(function () { return reloadAudit(r, ''); }).catch(function (e) { x.disabled = false; say(m, said(e), 'err'); });
+      });
+    });
+    var b = host.querySelector('[data-a="audit"]');
     if (!b) return;
-    if (checkRun[r.id]) b.disabled = true;
-    /* One check a colleague a report a day (an admin's five), within the
-       colleague's AI uses for the day (2026-10-05). */
-    var left = null, room = null, line = host.querySelector('[data-m="cleft"]');
-    db.rpc('ai_check_left', { p_report: r.id }).then(function (res) {
+    /* One commentary check a colleague a report a day (an admin's five),
+       within the colleague's AI uses for the day (2026-10-05). */
+    var line = host.querySelector('[data-m="cleft"]');
+    st.checkRoom = null;
+    if (can) db.rpc('ai_check_left', { p_report: r.id }).then(function (res) {
       var d = res && res.data;
       if (res.error || !d || d.error || d.left == null || !host.isConnected) return;
-      room = d; left = d.left;
-      line.hidden = false; line.textContent = left + ' left';
-      line.classList.toggle('is-out', !left);
-      if (!left && !checkRun[r.id]) { b.disabled = true; say(m, aiLimit(d), 'warn'); }
+      st.checkRoom = d;
+      line.hidden = false; line.textContent = d.left + ' left';
+      line.classList.toggle('is-out', !d.left);
+      if (!d.left && !checkRun[r.id] && !canMeta) { b.disabled = true; say(m, aiLimit(d), 'warn'); }
     }).catch(function () { /* an older database: no line */ });
-    b.addEventListener('click', function () {
-      var body = room && room.admin
-        ? 'This uses one of your figures checks on this report today and one of your AI uses (' + room.person + ' left).'
-        : 'You have one figures check on this report a day. This uses today\'s, and one of your AI uses' +
-          (room ? ' (' + room.person + ' left).' : '.');
-      window.ADspaceConfirm.ask({ title: 'Check against the figures?', body: body, go: 'Check' }, function () { runCheck(host, r); });
+    b.addEventListener('click', function () { runAudit(host, r, can); });
+  }
+  /* Run audit: Against Meta (no AI use) and the commentary (asked first,
+     as every AI use is). */
+  function runAudit(host, r, can) {
+    var m = host.querySelector('[data-m="cmsg"]');
+    var doMeta = metaCan(r), room = st.checkRoom;
+    var hasText = Object.keys(commentaryNow(r)).length > 0;
+    var doText = can && hasText && !(room && !room.left);
+    if (!doText) {
+      if (doMeta) runMeta(r);
+      if (can && !hasText) say(m, CHECK_SAID['no-text'], 'warn');
+      else if (can && room && !room.left) say(m, aiLimit(room), 'warn');
+      return;
+    }
+    var body = (doMeta ? 'Against Meta reads Meta\'s figures for the period, with no AI use. ' : '') +
+      (room && room.admin
+        ? 'The commentary check uses one of your checks on this report today and one of your AI uses (' + room.person + ' left).'
+        : 'The commentary check uses your one check on this report today and one of your AI uses' + (room ? ' (' + room.person + ' left).' : '.'));
+    window.ADspaceConfirm.ask({ title: 'Run the report audit?', body: body, go: 'Run audit' }, function () {
+      if (doMeta) runMeta(r);
+      runCheck(host, r);
     });
   }
   /* The findings' words put in place, field by field, through the draft's
@@ -1028,13 +1537,13 @@
       dr.platforms.forEach(function (pl) { var c = Object.assign({}, pl); delete c.ref; after.platforms[pl.ref] = c; });
       dr.posts.forEach(function (pp) { after.posts[pp.ref] = pp.remark; });
       local(after);
-      fileReport('report.saved', 'Figures check · ' + (n === 1 ? 'one correction applied' : n + ' corrections applied'), r, st.client);
+      fileReport('report.saved', 'Report audit · Commentary · ' + (n === 1 ? 'one correction applied' : n + ' corrections applied'), r, st.client);
       paintEditor();
       var card = st.host && st.host.querySelector('[data-m="aicheck"]');
       undoBar(n === 1 ? 'Correction applied.' : n + ' corrections applied.', card, function () {
         restoreDraft(rid, before).then(function () {
           local(before);
-          fileReport('report.saved', 'Figures check · ' + (n === 1 ? 'correction undone' : n + ' corrections undone'), r, st.client);
+          fileReport('report.saved', 'Report audit · Commentary · ' + (n === 1 ? 'correction undone' : n + ' corrections undone'), r, st.client);
           paintEditor();
         }).catch(function (e) {
           var c2 = st.host && st.host.querySelector('[data-m="cmsg"]');
@@ -1049,8 +1558,10 @@
   function runCheck(host, r) {
     var rid = r.id;
     checkRun[rid] = true;
-    var b = host.querySelector('[data-a="aicheck"]');
-    if (b) { b.disabled = true; b.textContent = 'Checking'; }
+    var b = host.querySelector('[data-a="audit"]');
+    if (b) { b.disabled = true; b.textContent = 'Running'; }
+    var tl = host.querySelector('[data-part="text"] small');
+    if (tl) tl.textContent = 'Checking…';
     say(host.querySelector('[data-m="cmsg"]'), '');
     var asked = { r: st.open, c: st.client };
     db.functions.invoke('report-draft', { body: { report_id: rid, mode: 'check' } }).then(function (res) {
@@ -1063,8 +1574,7 @@
       delete checkRun[rid];
       var n = out.last ? (out.last.result.findings || []).length : 0;
       fileReport(out.last ? 'report.ai_drafted' : 'report.ai_failed',
-        out.last ? 'Figures check · ' + (n ? n + (n === 1 ? ' point' : ' points') + ' to correct' : 'matches the figures') : 'Figures check · ' + out.said,
-        asked.r, asked.c);
+        'Report audit · Commentary · ' + (out.last ? (n ? n + ' to fix' : 'no issues') : out.said), asked.r, asked.c);
       var box = st.open && st.open.id === rid && st.host && st.host.querySelector('[data-m="aicheck"]');
       if (!box) return;
       if (out.last) { loadCheck(st.host, st.open); return; }
@@ -1075,8 +1585,10 @@
     var r = st.open;
     db.rpc('ai_check_last', { p_report: r.id }).then(function (res) {
       var d = res && res.data;
-      paintAiCheck(host, r, d && !d.error && !d.none ? d : null, true, said0);
-    }).catch(function () { paintAiCheck(host, r, null, true, said0); });
+      st.checkLast = d && !d.error && !d.none ? d : null;
+    }).catch(function () { st.checkLast = null; }).then(function () {
+      paintAudit(host, r, true, said0);
+    });
   }
   var CHECK_SAID = {
     'no-text': 'Write the commentary before checking it.',
@@ -1139,10 +1651,10 @@
       });
       if (!g.ok && !g.may_override) {
         var sub = box.querySelector('[data-a="submit"]');
-        if (sub) sub.disabled = true;
+        if (sub) { sub.disabled = true; sub.removeAttribute('data-meta'); }
         var acts = box.querySelector('.rp-actions'), w = acts && acts.querySelector('.rp-wait');
         if (acts && !w) { w = document.createElement('span'); w.className = 'rp-wait'; acts.appendChild(w); }
-        if (w) w.textContent = 'Put the month in order to submit.';
+        if (w) { w.textContent = 'Put the month in order to submit.'; w.removeAttribute('data-meta'); }
       }
     }).catch(function () { /* an older database: no gate */ });
   }
@@ -1308,20 +1820,39 @@
     on('publish', function (b) {
       window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download it in their portal.', go: 'Publish' },
         function () {
+          /* An Advertising Report is read against Meta again at the press
+             (2026-10-09); it publishes only on a match, or on an admin's
+             reason to continue without Meta given since it was confirmed.
+             An Accounts Report publishes on the reading it was submitted on. */
+          var al = st.audit && st.audit.id === r.id ? st.audit.last : null, lst = al && al.last;
+          var passed = lst && lst.outcome === 'override' && lst.current && new Date(lst.at) >= new Date(r.confirmed_at || 0);
+          if (r.kind !== 'ads' || !metaCan(r) || passed) { publishNow(b); return; }
           b.disabled = true;
-          db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) {
-            b.disabled = false;
-            var d = res.data || {};
-            if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
-            /* The version's PDF is kept as it goes out (2026-10-07). */
-            reopen('Published to the client portal.', function () {
-              keepPublished(d.version_id, r.client_id).catch(function (e) {
-                say(st.host && st.host.querySelector('.rp-head [data-m="head"]'), 'Published to the client portal. PDF not kept: ' + said(e), 'warn');
-              });
-            });
-          }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          var was = b.innerHTML;
+          b.textContent = 'Reading Meta…';
+          runMeta(r).then(function (res) {
+            b.disabled = false; b.innerHTML = was;
+            if (res.outcome === 'match') { publishNow(b); return; }
+            say(m, res.outcome === 'mismatch' ? 'Meta\'s figures changed since the report was submitted. See the Report audit.'
+              : res.outcome === 'unavailable' ? (isAdmin() ? 'Meta did not answer. Continue without Meta in the Report audit, then publish.' : 'Meta did not answer. Try again later, or ask an admin to continue without Meta.')
+              : res.said || 'Meta did not answer. Try again.', 'err');
+          });
         });
     });
+    function publishNow(b) {
+      b.disabled = true;
+      db.rpc('sm_report_publish', { p_id: r.id }).then(function (res) {
+        b.disabled = false;
+        var d = res.data || {};
+        if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+        /* The version's PDF is kept as it goes out (2026-10-07). */
+        reopen('Published to the client portal.', function () {
+          keepPublished(d.version_id, r.client_id).catch(function (e) {
+            say(st.host && st.host.querySelector('.rp-head [data-m="head"]'), 'Published to the client portal. PDF not kept: ' + said(e), 'warn');
+          });
+        });
+      }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+    }
     on('revise', function (b) {
       window.ADspaceConfirm.ask({ title: 'Revise this report?', body: 'Version ' + (r.version_no + 1) + ' starts as a draft. The client keeps version ' + r.version_no + ' until it is published.', go: 'Revise' },
         function () { stepCall('sm_report_revise', { p_id: r.id }, 'Version ' + (r.version_no + 1) + ' is a draft.', b, m); });
@@ -2301,6 +2832,29 @@
     return { rows: out, skipped: skipped, columns: columns, mode: mode, days: days, outside: outside, mdy: mdy };
   }
 
+  /* A post's link as one key (2026-10-09), so the same post is one post
+     however its link was copied: Instagram by its shortcode (a reel and a
+     post read alike), any other by its host and path, without the www., a
+     trailing slash or a tracking query; Facebook's own ids in a query are
+     kept. */
+  function linkKey(u) {
+    var s = String(u || '').trim();
+    if (!s) return '';
+    var ig = /instagram\.com\/(?:[^\/?#]+\/)?(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/i.exec(s);
+    if (ig) return 'ig:' + ig[1];
+    s = s.replace(/^[a-z]+:\/\//i, '').replace(/#.*$/, '');
+    var q = s.indexOf('?'), path = q < 0 ? s : s.slice(0, q), query = q < 0 ? '' : s.slice(q + 1);
+    var cut = path.indexOf('/');
+    var host = (cut < 0 ? path : path.slice(0, cut)).toLowerCase().replace(/^(www|m|web|mbasic)\./, '');
+    var keep = query.split('&').filter(function (kv) { return /^(fbid|story_fbid|id|v)=/i.test(kv); }).sort().join('&');
+    return host + (cut < 0 ? '' : path.slice(cut).replace(/\/+$/, '')) + (keep ? '?' + keep : '');
+  }
+  function postByLink(account, url) {
+    var k = linkKey(url);
+    if (!k) return null;
+    return st.posts.filter(function (p) { return p.platform_id === account && linkKey(p.url) === k; })[0] || null;
+  }
+
   function pasteSheet(opener, pre) {
     var box = sheetShell('rpPasteSheet', 'Import from spreadsheet',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
@@ -2329,10 +2883,7 @@
     var plural = function (n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); };
     /* A post already in this account is matched by its link and refreshed,
        never added twice. */
-    var known = function (r) {
-      if (!r.url) return null;
-      return st.posts.filter(function (p) { return p.platform_id === acc.value && p.url === r.url; })[0] || null;
-    };
+    var known = function (r) { return postByLink(acc.value, r.url); };
     var read = function () {
       var out = parseRows($('rpPasteText').value, year, period);
       if (out.error) { sum.textContent = $('rpPasteText').value.trim() ? out.error : ''; go.disabled = true; return out; }
@@ -2751,7 +3302,7 @@
     e.returnValue = '';
   });
   /* The database counts every press (2026-10-05): a colleague has one draft
-     and one figures check on a report a day, an admin five of each, all
+     and one commentary check on a report a day, an admin five of each, all
      within ten AI uses a day (an admin's twenty), reset at 12:00 am. A
      refusal says which and when the next is free. */
   function aiLimit(d) {
@@ -2764,7 +3315,7 @@
     if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
     var n = d.limit == null ? 1 : d.limit;
     var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
-      : d.scope === 'report_check' ? (n === 0 ? 'Figures checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s figures check' : 'your ' + n + ' figures checks') + ' on this report.')
+      : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
     return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
   }
@@ -3714,6 +4265,74 @@
       field: { label: kind === 'ads' ? 'Ad account' : 'Account', choices: choices } }, fetchIt);
   }
 
+  /* The importer's plan, one copy for a paste, Import from Meta and the
+     Report audit (2026-10-09). A paste naming ads already in this report
+     updates them with what it holds, and adds the rest (the user,
+     2026-10-01): an export by day sets the days each ran; an export by age
+     the age split; an export with neither the figures, reach included,
+     exactly as Ads Manager counts them per ad (reach added up from age rows
+     counts a person once per age group, not once per ad). A paste matches
+     only ads of its own platform. `o`: the platform (else the export's
+     own), the objective for rows that name none, and ageOnly (an age export
+     that follows the figures adds no ad). */
+  var AD_FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
+  function adMatch(list, r0) {
+    /* An ad named by its Ad ID is that row, whatever its name reads. */
+    if (r0.ad_ids) {
+      var byId = list.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
+      if (byId.length === 1) return { ad: byId[0] };
+    }
+    var same = list.filter(function (a) { return adName(a.name) === r0.name; });
+    if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
+    if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
+    if (same.length > 1 && r0.result_label) same = same.filter(function (a) { return resultWord(a.result_label) === r0.result_label; });
+    return same.length === 1 ? { ad: same[0] } : { many: same.length > 1 };
+  }
+  function adsPlan(text, o) {
+    o = o || {};
+    var r = st.open;
+    var out = parseAdRows(text, { year: Number(String(r.period_start).slice(0, 4)), start: r.period_start, end: r.period_end },
+      o.objective || OBJECTIVES[0][0]);
+    if (out.error) return out;
+    out.platform = o.platform || (out.tiktok ? 'tiktok' : 'meta');
+    out.rows.forEach(function (r0) { r0.platform = out.platform; });
+    var list = st.ads.filter(function (a) { return adPlat(a) === out.platform; });
+    var patchOf = function (r0) {
+      if (r0._daily) return { starts_on: r0.starts_on, ends_on: r0.ends_on };
+      if (out.byAge) return Object.keys(r0.age || {}).length ? { age: r0.age } : null;
+      var p0 = {};
+      AD_FIGS.forEach(function (k) { if (r0[k] != null && !(k === 'retention' && !Object.keys(r0[k]).length)) p0[k] = r0[k]; });
+      return p0;
+    };
+    out.updates = []; out.unclear = []; out.fresh = [];
+    out.rows.forEach(function (r0) {
+      var hit = adMatch(list, r0), a = hit.ad;
+      if (a) {
+        var p0 = patchOf(r0);
+        /* A paste carrying Ad IDs a row does not hold yet adds them. */
+        var more = (r0.ad_ids || []).filter(function (x) { return (a.ad_ids || []).indexOf(x) < 0; });
+        if (more.length) { p0 = p0 || {}; p0.ad_ids = (a.ad_ids || []).concat(more); }
+        if (r0.ad_account && !a.ad_account) { p0 = p0 || {}; p0.ad_account = r0.ad_account; }
+        if (p0) out.updates.push({ ad: a, patch: p0 });
+        return;
+      }
+      /* A day's or an age group's rows for a name several ads here share
+         cannot say which ad they belong to, so they add nothing. */
+      if ((r0._daily || out.byAge) && list.some(function (x) { return adName(x.name) === r0.name; })) { out.unclear.push(r0); return; }
+      if (hit.many) r0._many = true;
+      if (!o.ageOnly) out.fresh.push(r0);
+    });
+    /* The account's figures fill Step 1 where it is empty; a figure the
+       team typed is kept. */
+    var t0 = out.platform === 'tiktok' ? (r.ads_totals || {}).tiktok || {} : r.ads_totals || {};
+    out.fill = {}; out.kept = [];
+    if (out.summary) Object.keys(out.summary).forEach(function (k) {
+      if (t0[k] == null || t0[k] === '') out.fill[k] = out.summary[k];
+      else if (Number(t0[k]) !== out.summary[k]) out.kept.push(k);
+    });
+    return out;
+  }
+
   function pasteAdsSheet(opener, pre) {
     var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg>' +
@@ -3742,64 +4361,14 @@
     var plat = function () { return $('rpPAPlat').value === 'tiktok' ? 'tiktok' : 'meta'; };
     var sum = $('rpPASum'), sm = box.querySelector('[data-m="sheet"]');
     sum.textContent = ''; say(sm, '');
-    var year = Number(String(st.open.period_start).slice(0, 4));
     var go = box.querySelector('[data-a="go"]');
-    /* A paste naming ads already in this report updates them with what it
-       holds, and adds the rest (the user, 2026-10-01): an export by day sets
-       the days each ran; an export by age the age split; an export with
-       neither the figures, reach included, exactly as Ads Manager counts
-       them per ad (reach added up from age rows counts a person once per
-       age group, not once per ad). */
-    /* A paste matches only ads of its own platform. */
-    var mine = function () { var pk = plat(); return st.ads.filter(function (a) { return adPlat(a) === pk; }); };
-    var already = function (r0) {
-      var list = mine();
-      /* An ad named by its Ad ID is that row, whatever its name reads. */
-      if (r0.ad_ids) {
-        var byId = list.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
-        if (byId.length === 1) return byId[0];
-      }
-      var same = list.filter(function (a) { return adName(a.name) === r0.name; });
-      if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
-      if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
-      if (same.length > 1 && r0.result_label) same = same.filter(function (a) { return resultWord(a.result_label) === r0.result_label; });
-      return same.length === 1 ? same[0] : null;
-    };
-    var named = function (r0) { return mine().some(function (a) { return adName(a.name) === r0.name; }); };
-    var FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
-    var patchOf = function (r0, out) {
-      if (r0._daily) return { starts_on: r0.starts_on, ends_on: r0.ends_on };
-      if (out.byAge) return Object.keys(r0.age || {}).length ? { age: r0.age } : null;
-      var p0 = {};
-      FIGS.forEach(function (k) { if (r0[k] != null && !(k === 'retention' && !Object.keys(r0[k]).length)) p0[k] = r0[k]; });
-      return p0;
-    };
     var read = function () {
-      var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
+      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly });
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
-      if (!platTouched && (out.tiktok ? 'tiktok' : 'meta') !== plat()) {
-        $('rpPAPlat').value = out.tiktok ? 'tiktok' : 'meta';
+      if (!platTouched && out.platform !== plat()) {
+        $('rpPAPlat').value = out.platform;
         if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpPAPlat'));
       }
-      out.platform = plat();
-      out.rows.forEach(function (r0) { r0.platform = out.platform; });
-      out.updates = []; out.unclear = []; out.fresh = [];
-      out.rows.forEach(function (r0) {
-        var a = already(r0);
-        if (a) {
-          var p0 = patchOf(r0, out);
-          /* A paste carrying Ad IDs a row does not hold yet adds them. */
-          var more = (r0.ad_ids || []).filter(function (x) { return (a.ad_ids || []).indexOf(x) < 0; });
-          if (more.length) { p0 = p0 || {}; p0.ad_ids = (a.ad_ids || []).concat(more); }
-          if (r0.ad_account && !a.ad_account) { p0 = p0 || {}; p0.ad_account = r0.ad_account; }
-          if (p0) out.updates.push({ ad: a, patch: p0 });
-          return;
-        }
-        /* A day's or an age group's rows for a name several ads here share
-           cannot say which ad they belong to, so they add nothing. */
-        if ((r0._daily || out.byAge) && named(r0)) { out.unclear.push(r0); return; }
-        if (!ageOnly) out.fresh.push(r0);
-      });
       var what = out.rows.some(function (r0) { return r0._daily; }) ? 'take the days they ran'
         : out.byAge ? 'take their age split' : 'take Ads Manager\'s figures';
       var parts = [];
@@ -3809,15 +4378,7 @@
       if (out.fresh.some(function (r0) { return r0._daily; })) parts.push('dates from the days each ad delivered');
       if (out.unclear.length) parts.push(out.unclear.length + ' left out: more than one ad here has that name');
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
-      /* The account's figures fill Step 1 where it is empty; a figure the
-         team typed is kept. */
-      var t0 = out.platform === 'tiktok' ? (st.open.ads_totals || {}).tiktok || {} : st.open.ads_totals || {};
-      out.fill = {}; out.kept = [];
-      if (out.summary) Object.keys(out.summary).forEach(function (k) {
-        if (t0[k] == null || t0[k] === '') out.fill[k] = out.summary[k];
-        else if (Number(t0[k]) !== out.summary[k]) out.kept.push(k);
-      });
-      var TW = { reach: 'reach', impressions: 'impressions', spend: 'amount spent' };
+      var TW ={ reach: 'reach', impressions: 'impressions', spend: 'amount spent' };
       var fk = Object.keys(out.fill);
       if (fk.length) parts.push('the account\'s ' + fk.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' to Step 1');
       if (out.kept.length) parts.push('Step 1 keeps its typed ' + out.kept.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1'));
@@ -3835,7 +4396,7 @@
       var fill = out.fill || {};
       if (!out.rows || !(out.fresh.length + out.updates.length + Object.keys(fill).length)) return;
       var n = st.ads.length;
-      var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; return x; });
+      var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; delete x._many; return x; });
       go.disabled = true;
       var ups = out.updates.map(function (u) {
         return db.from('sm_report_ads').update(u.patch).eq('id', u.ad.id).select('*').then(function (res) {
@@ -3887,7 +4448,7 @@
   var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
-  var AI_USE_WORD = { draft: 'Report drafts', check: 'Figures checks', caption: 'Captions' };
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions' };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);

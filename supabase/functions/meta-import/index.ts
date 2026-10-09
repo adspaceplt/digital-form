@@ -21,6 +21,12 @@
  *                        published in the period with their lifetime
  *                        insights, as Meta Business Suite's export. Reports
  *                        at Work, a Social Media Accounts Report in draft.
+ *   `audit: true` on either (the Report audit, 2026-10-09) reads the same for
+ *                        the page to compare, never to import: an Advertising
+ *                        Report in review or confirmed too, since Meta is
+ *                        read again before Publish. An Accounts Report is
+ *                        read in draft alone (a post's figures are lifetime
+ *                        totals; the reading it was submitted on stands).
  *
  * The caller is checked as report-draft checks it: the database is asked as
  * the caller (`allowed`, the report read under its own policies and client
@@ -190,7 +196,8 @@ Deno.serve(async (req) => {
     const rep = await db.from('sm_reports').select('id, kind, status, period_start, period_end, client_id, brand_id').eq('id', id).maybeSingle();
     if (rep.error || !rep.data) return json({ error: 'not-found' }, 200, origin);
     const r = rep.data as Record<string, string | null>;
-    if (r.status !== 'draft') return json({ error: 'not-draft' }, 200, origin);
+    const audit = body.audit === true && action === 'ads' && (r.status === 'review' || r.status === 'confirmed');
+    if (r.status !== 'draft' && !audit) return json({ error: 'not-draft' }, 200, origin);
     if ((action === 'ads') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
     const lk = await db.rpc('meta_links_list', { p_client: r.client_id });
     const ld = (lk.data || {}) as Record<string, unknown>;

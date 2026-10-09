@@ -143,11 +143,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
-| `reports.js`, `smreport.js` | reports, adsreport, smsql |
+| `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
-| `supabase/functions/meta-import/`, Import from Meta | metashape, metaimport, smsql, reports, adsreport |
+| `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
@@ -2927,7 +2927,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     the user: a report left to the last minute waits for the next day):
     `report` a colleague's drafts (1; the same period of the same client is
     the same report, `ai_draft_same`), `report_admin` an admin's (5), both
-    refused `report`; `check` a colleague's figures checks (1; a revision
+    refused `report`; `check` a colleague's commentary checks (1; a revision
     brings none the same day), `check_admin` an admin's (5), both refused
     `report_check`; every refusal names the reset time. There is no team cap: the team's and a group's totals are
     their colleagues' limits added up (`team` refused `bad-scope`). A
@@ -2938,14 +2938,64 @@ Each line is a rule that broke once. Its reason is in the archive.
     lesser of the report's and the colleague's, read without writing); at
     0 the button rests and the line under it says why and when the next
     is free.
-  - The figures check (Check and submit, a `.rp-aicheck` card under the
-    checks; `report-draft` with `mode: 'check'`, `2026-10-04-ai-check.sql`):
+  - The Report audit (2026-10-09; the user: "there shouldnt be any
+    mismatches"; `2026-10-09-report-audit.sql`): one card under Check and
+    submit's checks (`.rp-aicheck`: Report audit, Run audit with the
+    commentary checks left, then a check row a part, `.rp-part`), in two
+    parts, each reading No issues / n to fix / Not run.
+    - Against Meta (no AI use): `meta-import` with `audit: true` reads every
+      ad account the client (or its brand) links, or the linked Page and
+      Instagram account the report holds an account for, and the page runs
+      Meta's export through the importer's own plan (`adsPlan`, `parseRows`,
+      a post matched by `linkKey`: Instagram by its shortcode, else host and
+      path without www., trailing slash or tracking query), so a difference
+      is exactly what an import would change. Exact, at the precision held,
+      no tolerance: each figure Meta gives an ad (by Ad IDs, else name,
+      audience, objective, result type), its age split, Step 1's impressions
+      and amount spent (reach only where one ad account answers), an ad Meta
+      ran that the report lacks (Add), one with figures Meta shows no
+      delivery for (Remove, its own press alone), each post figure and a
+      post on either side. A row reads where, the figure, Report and Meta;
+      Use Meta's figure, Add, Remove, and Update all from Meta (the figures
+      and missing rows, never a Remove) write through the rows' own writes
+      with one Undo, file `report.saved` (Report audit · n figures taken
+      from Meta), file the reading again from the same answer, and check
+      the commentary again where it had been checked and a check is left
+      (else its line says the figures changed since). It runs by itself
+      when the step opens (once in ten minutes a status), at Work.
+    - Each reading is filed (`sm_report_audit_save(p_id, p_outcome,
+      p_rows, p_note)`: `match`, `mismatch`, `unavailable` with Meta's
+      refusal, `override`; `sm_report_audits`, RLS on, no policy, no grant;
+      the figures' print taken by `sm_report_meta_print`; the same reading
+      again refreshes its time; a new outcome filed `report.audited`,
+      Report audit) and read by `sm_report_audit_last` (Reports View). A
+      match reads Matches Meta as of {day, time}; a figure changed after it
+      holds the report again.
+    - The gate (`sm_report_audit_blocks`, `meta-audit`), only where the
+      client links Meta (`sm_report_audit_needed`; else Not linked, with
+      Link accounts opening the client's Brand at Clients Work): Submit
+      waits on a match of the figures as they stand (the page rests it:
+      Match the figures to Meta to submit.); Publish reads an Advertising
+      Report again at the press and needs a match since confirmation, while
+      an Accounts Report publishes on the reading it was submitted on (a
+      post's figures are lifetime totals that grow by the hour; one
+      submitted before the audit is not held). Meta moved since: Send back
+      with Meta's changes (its reviewer, submitter or an admin in review,
+      Manage once confirmed) returns it to draft with the changed rows as
+      its note. Meta not answering (not connected, token, not shared, busy,
+      failed) reads Not checked: Meta unavailable and holds it; an admin
+      alone continues without it (Continue without Meta, a reason, filed),
+      at Publish since confirmation. Reports Select's Publish to client does
+      not read Meta: an Advertising Report it holds is refused by name.
+  - The Commentary (the figures check until 2026-10-09; `report-draft` with
+    `mode: 'check'`, `2026-10-04-ai-check.sql`):
     the commentary as it stands, drafted or written by hand, read against
     the report's figures; it lists only what is wrong (a figure not in the
     data, a claim the figures contradict, a comparison across result types
     or platforms, a word against our own work), each as where it is, the
     words, what the figures show and the words to use (Use). A report in
-    draft or in review, Reports Work, asked first; the colleague's check on
+    draft or in review, Reports Work, asked first (Run audit's question names
+    both parts and the AI use); the colleague's check on
     the report for the day (`check`, an admin's `check_admin`) and one of the
     colleague's AI uses a day (`ai_check_claim`; what is left read by
     `ai_check_left`, the button resting with the reason at 0), never one of
@@ -2954,12 +3004,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     read (`ai_check_done`, `result`, `basis`) and read by anyone at Reports
     View (`ai_check_last`), so the reviewer sees the same check; a
     commentary changed since says so. Filed as `report.ai_drafted` (AI used)
-    with Figures check and the count. A finding is put right where it is
+    with Report audit · Commentary and the count (older rows keep Figures
+    check). A finding is put right where it is
     found (2026-10-09): on a draft at Work, Apply puts its words in place of
     the quoted ones (Remove words where it gives none), Apply all does every
     one still standing, each through the draft's own save with Undo where it
-    happened and filed `report.saved` (Figures check · n corrections
-    applied); a finding whose words are gone and whose fix stands reads
+    happened and filed `report.saved` (Report audit · Commentary · n
+    corrections applied); a finding whose words are gone and whose fix stands reads
     Applied.
   - A draft and its check agree (2026-10-09): Write draft reads its own
     answer with the check's rules before handing it over and puts right what
@@ -2975,7 +3026,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     left and Write draft at the right edge with what is left before it
     (`.rp-airow`; on a phone a line each), then Notes for the draft under a
     hairline; the hint and the fields follow it (the user, 2026-10-05).
-  - The words: Write draft (Commentary), Check (Check and submit), AI usage
+  - The words: Write draft (Commentary), Run audit (Check and submit), AI usage
     (the bar's ⋯), filed under subject AI; never "Draft with AI".
   - AI usage (the Reports bar's ⋯, `reports.ai`;
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
@@ -3002,7 +3053,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
     (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
     row, from both functions, drafted or failed). This month (MYT) reads the
-    estimated cost in US$, by use (Report drafts, Figures checks, Captions),
+    estimated cost in US$, by use (Report drafts, Commentary checks, Captions),
     the tokens and the prices, each row priced at the prices of its own day:
     `ai_price_in` (4) and `ai_price_out` (20), US$ a million tokens, Business
     settings (`app_settings_set`, from today; Edit prices, `team.settings`).

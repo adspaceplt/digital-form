@@ -1502,6 +1502,8 @@
     'handbook.deleted':      ['File deleted', 'is-danger', 'handbook'],
     'report.ai_drafted':     ['AI used', '', 'reports'],
     'report.ai_failed':      ['AI failed', 'is-warn', 'reports'],
+    /* The Report audit's reading of Meta (2026-10-09), filed by the database. */
+    'report.audited':        ['Report audit', '', 'reports'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
     'document.voided':       ['Document voided', 'is-danger', 'register'],
     'document.restored':     ['Document restored', 'is-ok', 'register'],
