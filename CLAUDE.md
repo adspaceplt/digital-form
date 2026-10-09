@@ -143,6 +143,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
+| `js/whatsapp.js`, `supabase/functions/wa-send/`, the WHATSAPP section | whatsapp, smsql, crm, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -3586,6 +3587,43 @@ Each line is a rule that broke once. Its reason is in the archive.
   and file only.
 - `document.*` and `register.*` rows file under Documents.
 
+### WhatsApp (`js/whatsapp.js`, `wa-send`, `2026-10-09-whatsapp.sql`, `docs/WHATSAPP-SETUP.md`)
+- Messages go through the WhatsApp Business Platform (Cloud API), each with a
+  template Meta approved (the user, 2026-10-09: report to client, team
+  reminders, creator updates, a feedback request sent by hand). One template
+  a purpose (`wa_templates`: `report`, `feedback`, `reminder`, `creator`;
+  name and language as Meta holds them, how many body variables, On), set in
+  the account menu's WhatsApp (`team.settings`, `wa_template_save`, filed
+  under WhatsApp from and to); a purpose that is Off sends nothing. The
+  sheet lists the last fifty messages (`wa_recent`, the number cut to its
+  last four).
+- Variables in order: report (first name, client or brand, the report and
+  period; the PDF as the document header), feedback (first name, client),
+  reminder (first name, title, message), creator (first name, campaign,
+  step); a template takes the first n.
+- A number is `wa_number`'s international form (digits; a leading 0 takes
+  60; a Singapore client's eight digits take 65); a `@username` cannot be
+  messaged (`no-number`). A client's main contact's WhatsApp number, else
+  its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
+  Creators List sheet).
+- By hand, through `wa-send` as the colleague: Send on WhatsApp beside Mark
+  as sent on a published report not yet sent (Reports Work, the template
+  on; asks; the kept PDF uploaded as the header document, then marked as
+  sent today); Request feedback on WhatsApp in a client's ⋯ (Clients Work,
+  the template on; asks). `wa_report_prepare` / `wa_feedback_prepare`
+  answer the number and template; `wa_record` files `wa.sent` under the
+  client (Clients in the Activity record). A refusal is one line in the
+  team's words (`SAID` in js/whatsapp.js), never Meta's.
+- Queued by trigger, never failing the write: a reminder in a colleague's
+  bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
+  `health.remind`; `ops_notifications_wa`) and a creator's forward step
+  (booked, changes requested, cleared to post; `campaign_options_wa`) go to
+  `wa_outbox`; `wa_kick` (pg_net) wakes `wa-send`, which claims with the
+  service role (`wa_claim`, `wa_done`; three tries, then Not sent). The
+  queue and its tables are closed to every page.
+- Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`),
+  `META_GRAPH_VERSION`; Verify JWT off (pg_net calls with no session).
+
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
   signed-in colleague (`team`), the selection page a campaign by its token
@@ -3721,7 +3759,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).

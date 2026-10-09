@@ -721,7 +721,8 @@
     if (r.status === 'published') f.push(['Sent', r.sent_on ? dayWord(r.sent_on) : 'Not sent',
       !may('work') ? '' : r.sent_on
         ? '<button class="linkbtn rp-sentfact" type="button" data-a="sentfact" aria-label="Change sent date">' + esc(dayWord(r.sent_on)) + ' ' + PEN_MARK + '</button>'
-        : '<button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>']);
+        : '<span class="rp-sendacts"><button class="btn btn-sm rp-sentnow" type="button" data-a="sentfact">Mark as sent</button>' +
+          '<button class="btn btn-sm rp-wasend" type="button" data-a="wasend" hidden>Send on WhatsApp</button></span>']);
     if (r.brand_name) f.push(['For', r.brand_name]);
     if (r.on_request) f.push(['Requested', 'By the client']);
     if (st.partner) f.push(['Logo', st.partner.name]);
@@ -2007,6 +2008,34 @@
     };
     on('sent', function (b) { b.closest('.kmenu').hidden = true; askDay(); });
     on('sentfact', function () { askDay(); });
+    /* Send on WhatsApp (2026-10-09, js/whatsapp.js): drawn where the report
+       template is on; the kept PDF to the client's main contact, then marked
+       as sent today. */
+    var waBtn = box.querySelector('.rp-head [data-a="wasend"]');
+    if (waBtn && window.ADspaceWhatsApp) window.ADspaceWhatsApp.on('report').then(function (yes) { waBtn.hidden = !yes; });
+    on('wasend', function (b) {
+      var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
+      if (!live) return;
+      window.ADspaceConfirm.ask({ title: 'Send on WhatsApp?', go: 'Send',
+        body: 'The PDF goes to the client\'s main contact on WhatsApp, and the report is marked as sent today.' }, function () {
+        var name = fileNameOf(r, st.client && st.client.name);
+        b.disabled = true;
+        say(m, 'Sending…');
+        window.ADspaceWhatsApp.sendReport({
+          reportId: r.id, filename: name,
+          title: SM() ? SM().titleOf(r) + ', ' + SM().periodWord(r.period_start, r.period_end) : '',
+          pdf: function () { return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, name).then(function (f) { return f.blob; }); }
+        }).then(function (d) {
+          var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function () {
+            reopen('Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.');
+          });
+        }).catch(function (e) {
+          b.disabled = false;
+          say(m, window.ADspaceWhatsApp.said(e), 'err');
+        });
+      });
+    });
     on('unsent', function (b) { b.closest('.kmenu').hidden = true; sentCall(null); });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
