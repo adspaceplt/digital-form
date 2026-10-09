@@ -1314,3 +1314,13 @@ the booking and its state, the steps, then one `--line-soft` hairline with
 16px either side over what is next and the facts, whose rows are 16px apart
 with each value 4px under its label. The client's selection page draws the
 same card and takes the same rule.
+
+### 2026-10-09 · Video Scripts say Publish and offer Preview PDF
+The user, on a script's head: "why do you use different terms, share and
+unshare (all unified terms previously used are Publish; Unpublish), and also
+missing the preview pdf". A script on the client link is now Published
+(Publish in blue, Unpublish asks), the state chip and the activity record
+read Published and Unpublished, and the stored keys (`status` `shared`,
+`script.shared`) stay. The head carries Preview PDF, a tab opened at the
+press with the drawn file in it, and the ⋯ carries Download, as a report's
+head does; both ask one script or the whole month once there are two.

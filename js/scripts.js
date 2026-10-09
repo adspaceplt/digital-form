@@ -1,5 +1,5 @@
 /* Video Scripts (2026-10-09): a client's scripts by content month, one a video,
- * shared with the client on its link and printed for the crew on site.
+ * published to the client on its link and printed for the crew on site.
  *
  * The user: "a script table covers one video, hence there is a # … three
  * different types of script, detailed scenes / products + scenes / story +
@@ -12,7 +12,7 @@
  * client, a row a script. A script opens as a record: its facts in one card,
  * the script in another, and on the day each scene's tick and clip number
  * (VC#). Edit is a page of its own; Add next script makes the next number of
- * the same month with its header copied. Share shows it on the client link
+ * the same month with its header copied. Publish shows it on the client link
  * (`/script/?k=`), where it is read and the clip numbers can be recorded on
  * site; nobody decides on it there. Every write is a function
  * (`video_script_*`); the PDF is drawn here, never stored.
@@ -35,11 +35,10 @@
   var LANGS = ['English', 'Chinese', 'Malay', 'English and Chinese'];
   var DURATIONS = [30, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-  var STATE = { draft: ['Draft', 'is-off'], shared: ['Shared', 'is-live'] };
+  var STATE = { draft: ['Draft', 'is-off'], shared: ['Published', 'is-live'] };
   var ICON = {
     dots: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
-    file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="m9 15 3 3 3-3"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>',
@@ -143,7 +142,7 @@
     });
   }
 
-  /* Where a script stands: a draft, or shared on the client link. */
+  /* Where a script stands: a draft, or published on the client link. */
   function stateOf(s) { return s.status === 'shared' ? 'shared' : 'draft'; }
   function chip(key) {
     var w = STATE[key] || STATE.draft;
@@ -394,13 +393,13 @@
   }
 
   function moreMenu(s) {
-    var items = '';
+    /* Download sits here, Preview PDF in the head, as a report's do. */
+    var items = '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>';
     if (may('work')) {
       items += '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>';
       items += '<button class="kmenu-item" data-a="reset" type="button"><b>Reset client link</b></button>';
     }
     if (may('manage')) items += '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>';
-    if (!items) return '';
     return '<button class="kmenu-btn" id="vsRecMore" type="button" aria-label="More actions" aria-expanded="false">' + ICON.dots + '</button>' +
       '<div class="kmenu" data-menu hidden>' + items + '</div>';
   }
@@ -423,13 +422,13 @@
     });
     var ctl = $('vsRecCtl');
     ctl.innerHTML = chip(key) +
-      '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Download PDF">' + ICON.file + '<span class="vs-pdf-long">Download PDF</span><span class="vs-pdf-short">PDF</span></button>' +
+      '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
       moreMenu(s);
     var acts = '';
     if (may('work')) {
       acts = s.status === 'shared'
-        ? '<button class="btn btn-warn" type="button" data-a="unshare">Unshare</button>'
-        : '<button class="btn btn-go" type="button" data-a="share">Share with client</button>';
+        ? '<button class="btn btn-warn" type="button" data-a="unpublish">Unpublish</button>'
+        : '<button class="btn btn-go" type="button" data-a="publish">Publish</button>';
     }
     $('vsRecActs').innerHTML = acts;
     $('vsRecActs').hidden = !acts;
@@ -461,9 +460,9 @@
   function wireRecord() {
     var on = function (root, a, fn) { var b = root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     var ctl = $('vsRecCtl');
-    on(ctl, 'pdf', function (b) { downloadPdf(b); });
-    on($('vsRecActs'), 'share', function (b) { share(true, b); });
-    on($('vsRecActs'), 'unshare', function (b) { share(false, b); });
+    on(ctl, 'pdf', function (b) { drawPdf(b, false); });
+    on($('vsRecActs'), 'publish', function (b) { publish(true, b); });
+    on($('vsRecActs'), 'unpublish', function (b) { publish(false, b); });
     var mb = $('vsRecMore');
     if (mb) {
       var menu = ctl.querySelector('[data-menu]');
@@ -474,6 +473,7 @@
         mb.setAttribute('aria-expanded', String(open));
         if (open) window.ADspaceMenu.place(mb, menu);
       });
+      on(menu, 'download', function () { shutMenu(); drawPdf(mb, true); });
       on(menu, 'edit', function () { shutMenu(); openEdit(mb); });
       on(menu, 'reset', function () { shutMenu(); resetLink(); });
       on(menu, 'del', function () { shutMenu(); remove(); });
@@ -565,7 +565,7 @@
   $('vsCopy').addEventListener('click', function () {
     if (st.key) window.ADspaceCopy.to($('vsCopy'), clientLink(st.key));
   });
-  function share(on, btn, quiet) {
+  function publish(on, btn, quiet) {
     var m = $('vsRecMsg');
     var go = function () {
       if (btn) btn.disabled = true;
@@ -573,13 +573,13 @@
         return readScript(st.open.id);
       }).then(function () {
         paintRecord();
-        say($('vsRecMsg'), on ? '' : 'Unshared.', 'ok');
-        if (on) undoBar('Shared with the client.', function () { share(false, null, true); }, $('vsRecMsg'));
+        say($('vsRecMsg'), on ? '' : 'Unpublished.', 'ok');
+        if (on) undoBar('Published to the client.', function () { publish(false, null, true); }, $('vsRecMsg'));
       }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e)); });
     };
     if (on || quiet) { go(); return; }
-    window.ADspaceConfirm.ask({ title: 'Unshare?', body: 'The client no longer sees this video. Its decisions are kept.',
-      go: 'Unshare', tone: 'warn' }, go);
+    window.ADspaceConfirm.ask({ title: 'Unpublish?', body: 'The client no longer sees this script on their link. Its clip numbers are kept.',
+      go: 'Unpublish', tone: 'warn' }, go);
   }
   function resetLink() {
     window.ADspaceConfirm.ask({ title: 'Reset client link?',
@@ -927,10 +927,20 @@
   });
 
   /* ---- The PDF, for the crew on site --------------------------------------- */
-  function downloadPdf(btn) {
+  /* Preview PDF opens a tab at the press and puts the drawn file in it;
+     Download (the ⋯) saves it under its own name, as a report's do. With
+     two scripts or more in the month, either asks which. */
+  function openTab() {
+    var tab = null;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    return tab;
+  }
+  function drawPdf(btn, save) {
     var many = st.series.length > 1;
     var go = function (whole) {
       var m = $('vsRecMsg');
+      var tab = save ? (window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null) : openTab();
       btn.disabled = true;
       say(m, 'Drawing the PDF…', 'ok');
       var ids = whole ? st.series.map(function (x) { return x.id; }) : [st.open.id];
@@ -938,17 +948,18 @@
         return window.ADspaceScriptPdf.draw(videos);
       }).then(function (blob) {
         btn.disabled = false;
-        say(m, '');
         var c = (st.open.clients || {}).name || 'Client';
         var name = c + ' Video Script ' + (whole ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(st.open)) + '.pdf';
-        window.ADspaceDocs.save(blob, name.replace(/[\\/:*?"<>|]+/g, ' '), window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null);
+        say(m, save || (tab && !tab.closed) ? '' : 'Downloaded.', 'ok');
+        window.ADspaceDocs.save(blob, name.replace(/[\\/:*?"<>|]+/g, ' '), tab);
       }).catch(function (e) {
         btn.disabled = false;
+        if (window.ADspaceDocs.shut) window.ADspaceDocs.shut(tab);
         say(m, 'Not drawn. ' + said(e));
       });
     };
     if (!many) { go(false); return; }
-    window.ADspaceConfirm.ask({ title: 'Download PDF', go: 'Download',
+    window.ADspaceConfirm.ask({ title: save ? 'Download PDF' : 'Preview PDF', go: save ? 'Download' : 'Preview',
       field: { label: 'Scripts', choices: [['one', label(st.open)], ['all', 'The whole month (' + st.series.length + ' scripts)']], seg: false, value: 'all' }
     }, function (v) { go(v === 'all'); });
   }

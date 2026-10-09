@@ -1044,7 +1044,7 @@
     clients:   'Every client and lead, from first enquiry to active engagement.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
-    scripts:   'Video scripts by content month, shared with the client and used by the crew on the shoot.',
+    scripts:   'Video scripts by content month, published to the client and used by the crew on the shoot.',
     campaigns: 'Creator campaigns, from selection through to posting.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
@@ -1076,7 +1076,7 @@
       { at: '#crFind', text: 'Find a client by name.' }] },
     scripts: { name: 'Video Scripts', steps: [
       { at: '#vsNew', text: 'New script adds a video to a client\'s content month, numbered by month (2610VS01).' },
-      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, share its link with the client and record each clip number on the day.' }] },
+      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, publish it to the client\'s link and record each clip number on the day.' }] },
     campaigns: { name: 'Creator Campaigns', steps: [
       { at: '#showAddCamp', text: 'New campaign starts one for a client, with creators from the Creators List.' },
       { at: '#campSectionTabs', text: 'Campaigns, and the Creators List of every creator and their rates.' },
@@ -1688,8 +1688,8 @@
        ticked on the day. */
     'script.created':        ['Script started', 'is-ok', 'scripts'],
     'script.saved':          ['Script saved', '', 'scripts'],
-    'script.shared':         ['Script shared', 'is-ok', 'scripts'],
-    'script.unshared':       ['Script unshared', 'is-warn', 'scripts'],
+    'script.shared':         ['Script published', 'is-ok', 'scripts'],
+    'script.unshared':       ['Script unpublished', 'is-warn', 'scripts'],
     'script.approved':       ['Script approved', 'is-ok', 'scripts'],
     'script.changes':        ['Changes requested', 'is-warn', 'scripts'],
     'script.shot':           ['Scene shot', '', 'scripts'],
