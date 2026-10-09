@@ -17,6 +17,8 @@
  *   ADspaceMaintenance.watch(d, fn) — calls fn at the state's next change (within a day);
  *                                    answers its timer
  *   ADspaceMaintenance.ask(strict)  — the state now; strict answers null for a failed read
+ *   ADspaceMaintenance.often(key, take, alone, opts)
+ *                                  — joins the page's one check a minute (`page_pulse`)
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -128,12 +130,44 @@
       : Promise.resolve(failed);
   }
 
-  /* Every minute while on screen, and on every return to it. */
-  function often(fn) {
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') fn();
-    });
-    setInterval(function () { if (document.visibilityState === 'visible') fn(); }, EVERY);
+  function norm(d) { return d && (d.on || d.set) ? d : off; }
+
+  /* Every minute while on screen, and on every return to it, one request
+     answers every check the page keeps (`page_pulse`: upgrade mode, the
+     announcements, the bell), each answer handed to the part that joined
+     for it (2026-10-09: an open console made four requests a minute, each a
+     line Supabase logs and meters). `often(key, take, alone, opts)`: `take`
+     is handed the part's answer; `alone` asks by itself, which every part
+     does while the database holds no `page_pulse`. `opts.audience` names
+     the announcements a page shows, `opts.bell` asks for the bell. A read
+     that fails changes nothing. */
+  var parts = [], pulse = { audience: null, bell: false }, alone = false, ticking = false;
+  function tick() {
+    if (document.visibilityState !== 'visible' || !parts.length) return;
+    var each = function () { parts.forEach(function (p) { p.alone(); }); };
+    if (alone || !(API && API.client && API.client.rpc)) { each(); return; }
+    Promise.resolve(API.client.rpc('page_pulse', { p_audience: pulse.audience, p_bell: pulse.bell })).then(function (r) {
+      if (r && r.error) {
+        if (/PGRST202|page_pulse|schema cache/i.test(String(r.error.code || '') + ' ' + String(r.error.message || ''))) {
+          alone = true; each();
+        }
+        return;
+      }
+      var d = r && r.data;
+      if (!d) return;
+      parts.forEach(function (p) {
+        if (Object.prototype.hasOwnProperty.call(d, p.key)) p.take(p.key === 'maintenance' ? norm(d[p.key]) : d[p.key]);
+      });
+    }).catch(function () {});
+  }
+  function often(key, take, ask1, opts) {
+    parts.push({ key: key, take: take || function () {}, alone: ask1 || function () {} });
+    if (opts && opts.audience) pulse.audience = opts.audience;
+    if (opts && opts.bell) pulse.bell = true;
+    if (ticking) return;
+    ticking = true;
+    document.addEventListener('visibilitychange', tick);
+    setInterval(tick, EVERY);
   }
 
   var ready = ask();
@@ -150,7 +184,7 @@
     };
     var again = function () { ask(true).then(settle); };
     ready.then(settle);
-    often(again);
+    often('maintenance', settle, again);
   }
 
   window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch, often: often };

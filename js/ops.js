@@ -7793,10 +7793,24 @@
        while somebody was working never lit the bell until they reloaded. It
        is read again every minute while the tab is on the screen, and the
        moment somebody comes back to it. */
+    /* It rides the page's one check a minute (js/maintenance.js,
+       `page_pulse`, 2026-10-09), which answers upgrade mode and the
+       announcements in the same request. */
     if (!state.notifPoll) {
-      state.notifPoll = setInterval(function () { if (!document.hidden) loadNotifs(); }, 60000);
-      document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
+      var M = window.ADspaceMaintenance;
+      if (M && M.often) {
+        state.notifPoll = true;
+        M.often('bell', takeNotifs, loadNotifs, { bell: true });
+      } else {
+        state.notifPoll = setInterval(function () { if (!document.hidden) loadNotifs(); }, 60000);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
+      }
     }
+  }
+  function takeNotifs(b) {
+    if (!b || !Array.isArray(b.unread)) return;
+    state.notifs = b.unread.concat(Array.isArray(b.earlier) ? b.earlier : []);
+    paintNotifs();
   }
   function loadNotifs() {
     var me = bridge.me && bridge.me();

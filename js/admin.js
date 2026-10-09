@@ -414,7 +414,9 @@
     M.ask(true).then(function (d) { if (d) paintUpgrade(d); });
   }
   if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) {
-    window.ADspaceMaintenance.often(function () { if (meLoaded) readUpgrade(); });
+    window.ADspaceMaintenance.often('maintenance',
+      function (d) { if (meLoaded && me && d) paintUpgrade(d); },
+      function () { if (meLoaded) readUpgrade(); });
   }
   function setUpgrade(args, done) {
     db.rpc('maintenance_set', args).then(function (r) {

@@ -140,18 +140,21 @@
     if (!c || !c.rpc) return Promise.resolve(null);
     return Promise.resolve(c.rpc('announcement_now', { p_audience: audience })).then(function (r) {
       if (!r || r.error) return;               // a read that fails changes nothing
-      /* A list since SEVERAL ANNOUNCEMENTS; the one line the function
-         answered before it, until the migration runs. */
-      var d = r.data;
-      var next = Array.isArray(d) ? d.filter(function (x) { return x && x.id; }) : d && d.id ? [d] : [];
-      var cur = open()[at];
-      shown = next;
-      /* The line in view stays in view when the list is read again. */
-      var keep = cur ? open().map(function (x) { return x.id; }).indexOf(cur.id) : -1;
-      at = keep >= 0 ? keep : 0;
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint, { once: true });
-      else paint();
+      take(r.data);
     }).catch(function () {});
+  }
+  /* A list since SEVERAL ANNOUNCEMENTS; the one line the function answered
+     before it, until the migration runs. Read alone or in the page's one
+     check a minute (js/maintenance.js). */
+  function take(d) {
+    var next = Array.isArray(d) ? d.filter(function (x) { return x && x.id; }) : d && d.id ? [d] : [];
+    var cur = open()[at];
+    shown = next;
+    /* The line in view stays in view when the list is read again. */
+    var keep = cur ? open().map(function (x) { return x.id; }).indexOf(cur.id) : -1;
+    at = keep >= 0 ? keep : 0;
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint, { once: true });
+    else paint();
   }
 
   if (window.MutationObserver) {
@@ -161,7 +164,9 @@
   /* The console asks once the person is known (ADspaceAnnounce.refresh from
      js/admin.js); a client page asks at once. */
   if (!inConsole) refresh();
-  if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) window.ADspaceMaintenance.often(refresh);
+  if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) {
+    window.ADspaceMaintenance.often('announcements', take, refresh, { audience: audience });
+  }
 
   /* ---- The console's list (Team: Announcements) ----------------------------- */
   var NAME = { team: 'Team', clients: 'Clients' };

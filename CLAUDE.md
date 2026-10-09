@@ -374,6 +374,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
     covers itself; switched off, a covered page reloads (to its latest
     version). A read that fails (`ask(true)` answers null) changes nothing.
+  - An open page's minute is one request (`page_pulse(p_audience, p_bell)`,
+    `2026-10-09-one-check-a-minute.sql`, anon too): upgrade mode, the
+    announcements and the bell, each as its own function answers it; a part
+    joins with `often(key, take, alone, opts)`, and on a database without the
+    function every part asks alone (every request is a line Supabase logs and
+    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze).
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Turn off).
@@ -2245,7 +2251,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A new owner is told they were assigned.
   - Nobody is told about their own act.
   - The bell is drawn for every colleague (a row is its reader's own), and
-    re-reads every minute while visible, and on return.
+    re-reads every minute while visible, and on return, in the page's one
+    check (`page_pulse`).
   - Each item leads with its section's rail glyph (`.notif-tile`,
     `ADspaceAdmin.glyph`): My records for a review, reflection, health or
     HR letter, Reports for a report, My Work otherwise. The bell lists

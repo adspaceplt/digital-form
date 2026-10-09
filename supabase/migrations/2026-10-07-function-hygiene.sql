@@ -20,7 +20,8 @@
 --      `open_to_anon` below, exactly the functions this file grants to anon
 --      (tests/sql.js holds the two equal): the review link, the selection and
 --      creator pages, /verify/, a namecard, short links, upgrade mode,
---      announcements, the business figures and notifications. Signed-in
+--      announcements, the business figures, notifications and the
+--      minute's one check (added 2026-10-09). Signed-in
 --      callers (the team, a client's login) and the server keep what they
 --      had. A function named by a policy anon meets stays open.
 --   `functions_tidy()` does both and answers how many it changed; a second
@@ -43,7 +44,7 @@ declare
     'creator_may_upload', 'creator_post_save', 'creator_rate', 'creator_remove_file',
     'creator_set_profiles', 'creator_submit', 'get_campaign', 'get_creator',
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
-    'namecard_get', 'post_link_ok', 'post_platform_key', 'profile_of',
+    'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key', 'profile_of',
     'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'review_draft', 'save_selection', 'submit_review', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
