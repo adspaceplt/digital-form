@@ -224,6 +224,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A read group with its own act (Brand: Meta) | `.readgroup` > `.readgroup-head` (the `fsec-h` title, then a `.btn-sm` with its glyph at the right edge) over its `dl.ovfacts`; its sheet holds a ticked list (`.meta-accs`, its own scroll past 40dvh) and the selects |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
+| Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab the `--line-soft` fill behind its glyph and its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. More opens the rail as a card above the bar (`--raised`, `--line-lift` top edge, the large corner), holding only the sections the bar does not; a sheet covers the bar |
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), an admin's Upgrade mode as a switch (drawn for an admin alone), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
@@ -471,6 +472,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
   the header hides (`Over by | 4 days`).
 - The phone command bar is one row plus the view segment.
+- On a phone (and a touch screen narrower than a desk) the sections are the
+  tab bar at the foot; everything that rises from the foot keeps
+  `--tabbar-space` clear, and a sheet covers the bar.
 - On a phone the bell's panel takes the page gutters
   (`.kmenu.notif-menu`, fixed, 16px each side).
 - The My Work view strip scrolls sideways with faded edges

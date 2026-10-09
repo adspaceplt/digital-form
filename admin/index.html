@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009f">
+<link rel="stylesheet" href="/css/portal.css?v=20261009g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -47,6 +47,9 @@
      white under the sign-in card, and no sign-in bar over a console that is
      about to open. js/admin.js takes the attribute off once it knows. -->
 <script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
+<!-- The phone tab bar's one media query (js/admin.js reads it), so the bar's
+     room and the head without its menu toggle are drawn from first paint. -->
+<script>window.ADSPACE_TABBAR='(max-width: 640px), (pointer: coarse) and (max-width: 1023px)';try{if(window.matchMedia&&matchMedia(window.ADSPACE_TABBAR).matches)document.documentElement.classList.add('has-tabbar');}catch(e){}</script>
 <!-- 2.117 is the first line of the library that signs in with a passkey. The
      console alone takes it; the client pages stay on the version they were
      built and tested against until they need something it adds. -->
@@ -67,7 +70,7 @@
 <script src="/js/form.js?v=20261004b"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
-<script src="/js/menu.js?v=20261001a"></script>
+<script src="/js/menu.js?v=20261009g"></script>
 <script src="/js/guide.js?v=20261007j"></script>
 <script src="/js/cmdbar.js?v=20261005a"></script>
 <script src="/js/records.js?v=20261001b"></script>
@@ -242,6 +245,12 @@
     </div>
 
   </aside>
+
+  <!-- The phone tab bar (2026-10-09): the first four sections this person
+       may open, in the rail's order, and More for the rest. Drawn by
+       js/admin.js once access is known, on a touch screen narrower than a
+       desk and on any window at 640 and under (`:root.has-tabbar`). -->
+  <nav class="tabbar" id="tabBar" aria-label="Sections" hidden></nav>
 
   <div class="console-main">
     <header class="console-head">
@@ -4962,7 +4971,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009e"></script>
+<script src="/js/admin.js?v=20261009g"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>

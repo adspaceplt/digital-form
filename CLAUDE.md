@@ -145,6 +145,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `overview.js` | overview, leave, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
+| the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -319,6 +320,20 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.
+- The phone tab bar (`#tabBar`, js/admin.js; the user, 2026-10-09): on a
+  touch screen narrower than a desk (a foldable open or shut, a tablet
+  upright) and on any window at 640 and under, the one media query
+  `ADSPACE_TABBAR` (the head script, which sets `:root.has-tabbar` before
+  first paint) puts the first four sections the person may open, in the
+  rail's order, at the foot with More (`#tabMore`) opening the rest above
+  it; five or fewer with no Activity record take the bar whole. More lists
+  only what the bar does not (`.is-tabbed`), and the Activity record. The
+  menu toggle gives way to it; the drawer stays for a narrow desk window.
+  What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
+  it through `--tabbar-space`; a sheet covers it; a field taking the
+  keyboard under a finger hides it (`is-typing`). The chosen tab is the
+  fill behind its glyph; a section More holds chooses More
+  (`tests/tabbar.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
   `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
