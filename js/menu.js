@@ -78,7 +78,16 @@
       menu.style.left = (align === 'left'
         ? Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8))
         : Math.max(8, r.right - menu.offsetWidth)) + 'px';
-      menu.style.top = (r.bottom + 4 + h <= window.innerHeight - 8 || r.top - 4 - h < 8)
+      /* The phone tab bar holds the foot of the screen (:root.has-tabbar):
+         a menu outside a sheet keeps above it, and opens upward sooner. A
+         sheet covers the bar, so a menu inside one has the whole height. */
+      var floor = window.innerHeight - 8;
+      var tabbar = document.getElementById('tabBar');
+      if (tabbar && document.documentElement.classList.contains('has-tabbar') && !btn.closest('.sheet')) {
+        var tb = tabbar.getBoundingClientRect();
+        if (tb.height) floor = Math.min(floor, tb.top - 8);
+      }
+      menu.style.top = (r.bottom + 4 + h <= floor || r.top - 4 - h < 8)
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
       /* `position: fixed` is measured from the viewport only while no
@@ -112,6 +121,9 @@
       /* Laid from the page itself: a fixed card inside the bar took the bar
          as its box, and "the foot of the screen" became the bar's foot. */
       if (card.parentNode !== document.body) document.body.appendChild(card);
+      /* Docked from inside a sheet, the card keeps the sheet's foot: the
+         sheet covers the tab bar, so there is no bar to rise above. */
+      card.classList.toggle('is-insheet', Boolean(btn.closest && btn.closest('.sheet')));
       if (phone && phone.matches) {
         card.classList.add('is-dock');
         card.classList.remove('is-up');

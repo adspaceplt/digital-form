@@ -2191,11 +2191,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: flex; align-items: center; gap: 9px; margin-bottom: 4px;
 }
 .panelhead h3 { margin: 0; }
-.panelhead svg {
+/* The head's own mark alone: a button in the head keeps its own ink and
+   size, or the blue primary drew a grey glyph (the user, 2026-10-09). */
+.panelhead > svg {
   width: 17px; height: 17px; flex: 0 0 auto; color: var(--ink-mute);
   stroke-width: 1.7;
 }
-.viewhead svg {
+.viewhead .headmark > svg {
   width: 18px; height: 18px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
 }
 .viewhead .headmark { display: flex; align-items: center; gap: 9px; flex: 1 1 auto; }
@@ -10764,3 +10766,84 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .is-narrow .wfy-age { grid-column: 3; grid-row: 1; padding-top: 10px; }
 .is-narrow .wfy-acts { grid-column: 2 / -1; grid-row: 2; display: grid; grid-template-columns: 1fr 1fr; }
 .is-narrow .wfy-acts:empty { display: none; }
+
+/* ===== The phone tab bar (2026-10-09; the user: "a tab bar below on
+   mobile / pwa", and the foldable iPhone open as well as shut). On a touch
+   screen narrower than a desk, and on any window at 640 and under,
+   `:root.has-tabbar` (js/admin.js, from one media query) puts the sections
+   at the thumb: the first four this person may open, in the rail's order,
+   and More, which opens the rest above the bar. The chosen tab is the fill
+   behind its glyph, as the rail's chosen row is a fill: never blue (the
+   action's), never a weight. What pops up from the foot (a docked card, the
+   More panel, the confirm bar) rises above the bar; a sheet (z-index 85
+   and up) covers it, as an iPhone app's sheet does. `--tabbar-space` is
+   what every surface at the foot keeps clear: the bar and the home bar
+   under it, 0 where there is no bar. ===== */
+:root { --tabbar-h: 56px; --tabbar-space: 0px; }
+:root.has-tabbar { --tabbar-space: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+.tabbar { display: none; }
+:root.has-tabbar .tabbar:not([hidden]) {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+  display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 120px)); justify-content: center;
+  padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px));
+  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--line);
+}
+@media (pointer: coarse) {
+  :root.has-tabbar .tabbar:not([hidden]) { background: var(--chrome-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* The keyboard is up: the bar steps away rather than ride on top of it. */
+:root.has-tabbar body.is-typing .tabbar { display: none; }
+.tabbar-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 0; height: var(--tabbar-h); padding: 5px 2px 4px; border: 0; background: none;
+  color: var(--ink-mute); font: inherit; font-size: 11px; font-weight: 400; line-height: 13px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tabbar-tab svg {
+  box-sizing: content-box; width: 20px; height: 20px; padding: 5px 15px; stroke-width: 1.7;
+  border-radius: 15px; transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.tabbar-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabbar-tab.is-on { color: var(--ink); }
+.tabbar-tab.is-on svg { background: var(--line-soft); }
+@media (hover: hover) { .tabbar-tab:not(.is-on):hover svg { background: var(--sunk); } }
+.tabbar-tab:active svg { transform: scale(.97); }
+.tabbar-tab:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; border-radius: var(--radius-sm); }
+/* The rail's toggle gives way to the bar. */
+:root.has-tabbar .navtoggle { display: none; }
+/* More: the rail as a card risen above the bar, holding the sections the bar
+   does not (each offered once on the screen) and the Activity record. It
+   rises from behind the bar and is taken out of reach while shut. */
+:root.has-tabbar .sidebar {
+  position: fixed; top: auto; left: 0; right: 0; bottom: var(--tabbar-space); z-index: 44;
+  width: auto; height: auto; flex-basis: auto;
+  max-height: calc(100vh - var(--tabbar-space) - var(--head-h) - 16px);
+  padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
+  background: var(--raised); border: 0; border-top: 1px solid var(--line-lift);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-lift);
+  transform: translateY(calc(100% + var(--tabbar-space))); visibility: hidden;
+  transition: transform var(--t-slow) var(--ease), visibility 0s linear var(--t-slow);
+}
+@supports (height: 100dvh) {
+  :root.has-tabbar .sidebar { max-height: calc(100dvh - var(--tabbar-space) - var(--head-h) - 16px); }
+}
+:root.has-tabbar .sidebar.is-open {
+  transform: none; visibility: visible; box-shadow: var(--shadow-lift);
+  transition: transform var(--t-slow) var(--ease);
+}
+:root.has-tabbar .sidebar-brand,
+:root.has-tabbar .navitem.is-tabbed,
+:root.has-tabbar .navgroup.is-tabbed { display: none; }
+:root.has-tabbar .sidebar-foot { margin-top: 4px; }
+:root.has-tabbar .scrim {
+  position: fixed; top: 0; left: 0; right: 0; bottom: var(--tabbar-space); z-index: 43;
+  background: var(--scrim); border: 0; padding: 0;
+}
+/* What sits at the foot keeps clear of the bar. */
+:root.has-tabbar .console-body { padding-bottom: calc(32px + var(--tabbar-space)); }
+:root.has-tabbar .confirmbar { bottom: var(--tabbar-space); }
+:root.has-tabbar .confirmbar-in { padding-bottom: 12px; }
+:root.has-tabbar .popcard.is-dock:not(.is-insheet) { bottom: calc(12px + var(--tabbar-space)); }
+:root.has-tabbar .kmenu.notif-menu { max-height: calc(100vh - var(--head-h) - var(--tabbar-space) - 24px); overflow-y: auto; }
+/* ===== end phone tab bar ===== */

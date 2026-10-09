@@ -414,7 +414,9 @@
     M.ask(true).then(function (d) { if (d) paintUpgrade(d); });
   }
   if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) {
-    window.ADspaceMaintenance.often(function () { if (meLoaded) readUpgrade(); });
+    window.ADspaceMaintenance.often('maintenance',
+      function (d) { if (meLoaded && me && d) paintUpgrade(d); },
+      function () { if (meLoaded) readUpgrade(); });
   }
   function setUpgrade(args, done) {
     db.rpc('maintenance_set', args).then(function (r) {
@@ -840,15 +842,20 @@
     if (window.ADspaceSearch) window.ADspaceSearch.access();
   }
 
-  /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
-     escape, so it can never be left covering the work. */
-  (function () {
+  /* On a narrow desk window the rail is a drawer; under the tab bar it is
+     the panel More opens, holding the sections the bar does not. Either
+     closes on a pick, on the scrim, and on escape, so it can never be left
+     covering the work. */
+  var rail = (function () {
     var bar = $('sidebar');
     var scrim = null;
 
     function shut() {
       bar.classList.remove('is-open');
       if (scrim) { scrim.remove(); scrim = null; }
+      var more = $('tabMore');
+      if (more) more.setAttribute('aria-expanded', 'false');
+      paintTabOn();
     }
     function open() {
       bar.classList.add('is-open');
@@ -858,16 +865,135 @@
       scrim.setAttribute('aria-label', 'Close sections');
       scrim.addEventListener('click', shut);
       document.body.appendChild(scrim);
+      var more = $('tabMore');
+      if (more && document.documentElement.classList.contains('has-tabbar')) more.setAttribute('aria-expanded', 'true');
+      paintTabOn();
     }
 
     $('navToggle').addEventListener('click', function () {
       bar.classList.contains('is-open') ? shut() : open();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') shut();
+      if (e.key === 'Escape' && bar.classList.contains('is-open')) shut();
     });
     bar.addEventListener('click', function (e) {
-      if (e.target.closest('.navitem')) shut();
+      if (e.target.closest('.navitem, .railrow')) shut();
+    });
+    return { open: open, shut: shut, isOpen: function () { return bar.classList.contains('is-open'); } };
+  })();
+
+  /* ===== The phone tab bar (the user, 2026-10-09: "a tab bar below on
+     mobile / pwa"). On a touch screen narrower than a desk, the foldable
+     open as much as shut, and on any window at 640 and under, the rail
+     gives way to a bar at the foot: the first four sections this person may
+     open, in the rail's order, each one press from the thumb, and More,
+     which opens the rest above the bar. Five or fewer with no Activity
+     record take the bar whole, with no More. Each section is offered once:
+     More lists only what the bar does not. A card that pops up (a ⋯ menu,
+     the bell, the account menu, a guide) rises above the bar; a sheet
+     covers it, as an iPhone app's sheet does, so no form is left with the
+     bar under a thumb. The bar steps away while a field takes the keyboard,
+     so it never sits on what is typed. */
+  var TAB_WORD = {
+    overview: 'Overview', work: 'My Work', clients: 'Clients', review: 'Review',
+    campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
+    services: 'Services', team: 'Team', handbook: 'Handbook'
+  };
+  var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
+  var tabMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
+  var tabbed = [];
+  function tabbarOn() { return Boolean(tabMedia && tabMedia.matches); }
+  function paintTabbar() {
+    var bar = $('tabBar');
+    if (!bar) return;
+    document.documentElement.classList.toggle('has-tabbar', tabbarOn());
+    var open = navItems().filter(function (b) { return !b.hidden; });
+    var act = $('activityOpen');
+    var withAct = Boolean(act && !act.hidden);
+    var room = open.length <= 5 && !withAct ? 5 : 4;
+    var tabs = open.slice(0, room);
+    var more = open.length > room || withAct;
+    tabbed = tabs.map(function (b) { return b.getAttribute('data-section'); });
+    navItems().forEach(function (b) {
+      b.classList.toggle('is-tabbed', tabbed.indexOf(b.getAttribute('data-section')) > -1);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.navgroup'), function (g) {
+      g.classList.toggle('is-tabbed', !g.querySelector('.navitem:not([hidden]):not(.is-tabbed)'));
+    });
+    var sign = tabbed.join(',') + (more ? ',more' : '');
+    if (sign === bar.getAttribute('data-sign')) { paintTabOn(); return; }
+    bar.setAttribute('data-sign', sign);
+    bar.innerHTML = tabs.map(function (b) {
+      var name = b.getAttribute('data-section');
+      var glyph = b.querySelector('svg');
+      return '<button class="tabbar-tab" type="button" data-tab="' + esc(name) + '">' +
+        (glyph ? glyph.outerHTML : '') + '<span class="tabbar-word">' + esc(TAB_WORD[name] || name) + '</span></button>';
+    }).join('') + (more
+      ? '<button class="tabbar-tab" id="tabMore" type="button" data-tab="more" aria-haspopup="true" aria-expanded="false" aria-controls="sidebar">' +
+        TAB_MORE + '<span class="tabbar-word">More</span></button>'
+      : '');
+    bar.style.setProperty('--tabs', String(tabs.length + (more ? 1 : 0)));
+    bar.hidden = !tabs.length;
+    paintTabOn();
+  }
+  /* The chosen tab is the section on screen; one the bar does not hold
+     chooses More, as an iPhone app does. My records (the account menu)
+     chooses none. */
+  function paintTabOn() {
+    var bar = $('tabBar');
+    if (!bar) return;
+    var moreOpen = rail && rail.isOpen() && document.documentElement.classList.contains('has-tabbar');
+    var inBar = tabbed.indexOf(section) > -1;
+    Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (t) {
+      var name = t.getAttribute('data-tab');
+      var on = moreOpen ? name === 'more'
+        : name === 'more' ? (!inBar && section !== 'mine' && navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === section; }))
+        : name === section;
+      t.classList.toggle('is-on', on);
+      if (on && name !== 'more') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+    });
+  }
+  (function () {
+    var bar = $('tabBar');
+    if (!bar) return;
+    bar.addEventListener('click', function (e) {
+      var t = e.target.closest('.tabbar-tab');
+      if (!t) return;
+      var name = t.getAttribute('data-tab');
+      if (name === 'more') { rail.isOpen() ? rail.shut() : rail.open(); return; }
+      if (rail.isOpen()) rail.shut();
+      visitSection(name);
+    });
+    function follow() {
+      var was = document.documentElement.classList.contains('has-tabbar');
+      if (was !== tabbarOn() && rail.isOpen()) rail.shut();
+      paintTabbar();
+    }
+    if (tabMedia) {
+      if (tabMedia.addEventListener) tabMedia.addEventListener('change', follow);
+      else if (tabMedia.addListener) tabMedia.addListener(follow);
+    }
+    document.documentElement.classList.toggle('has-tabbar', tabbarOn());
+    /* The keyboard: a field that takes typing hides the bar under a finger,
+       and it returns once nothing is typed in. A select opens the system's
+       own wheel and leaves the bar where it is. */
+    var touch = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+    var typingOff = 0;
+    function typing(el) {
+      if (!el || !el.matches) return false;
+      if (el.isContentEditable || el.matches('textarea')) return true;
+      return el.matches('input') && !/^(button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/i.test(el.type || '');
+    }
+    document.addEventListener('focusin', function (e) {
+      if (!touch || !touch.matches || !typing(e.target)) return;
+      clearTimeout(typingOff);
+      document.body.classList.add('is-typing');
+    });
+    document.addEventListener('focusout', function () {
+      clearTimeout(typingOff);
+      typingOff = setTimeout(function () {
+        if (!typing(document.activeElement)) document.body.classList.remove('is-typing');
+      }, 120);
     });
   })();
 
@@ -1379,8 +1505,54 @@
         return;
       }
       state.reviewClients = r.data || [];
+      state.reviewSets = null;
       paintReviewClients();
       settleScroll();
+      readSets(state.reviewClients);
+    });
+  }
+
+  /* Every client's sets in one read for the whole list, in pages of a
+     thousand. A read a client, again on every paint and every key typed in
+     the search, was a sixth of the portal's API traffic (2026-10-09). */
+  function readSets(list) {
+    var ids = list.map(function (c) { return c.id; });
+    var got = [];
+    function page(from) {
+      db.from('batches').select('id, client_id, published').in('client_id', ids)
+        .order('id').range(from, from + 999).then(function (b) {
+        if (state.reviewClients !== list) return;
+        if (b.error) { state.reviewSets = 'error'; paintSets(); return; }
+        got = got.concat(b.data || []);
+        if ((b.data || []).length === 1000 && from < 19000) { page(from + 1000); return; }
+        var m = {};
+        got.forEach(function (x) {
+          var k = m[x.client_id] || (m[x.client_id] = { n: 0, live: 0 });
+          k.n++; if (x.published) k.live++;
+        });
+        state.reviewSets = m;
+        paintSets();
+      });
+    }
+    if (ids.length) page(0); else state.reviewSets = {};
+  }
+
+  /* A one line answer to "where does this client stand?" A read that failed
+     is not a client with nothing on it: "No content sets" over a fault sends
+     somebody to build a set that is already there. */
+  function setsLine(id) {
+    var s = state.reviewSets;
+    if (!s) return '<span class="muted">Loading…</span>';
+    if (s === 'error') return '<span class="is-warn">Sets unavailable</span>';
+    var k = s[id];
+    if (!k) return '<span class="muted">No sets</span>';
+    return esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published');
+  }
+  function paintSets() {
+    var box = $('clientCards');
+    Array.prototype.forEach.call(box.querySelectorAll('.cr-client-row[data-id]'), function (row) {
+      var sub = row.querySelector('[data-role="sub"]');
+      if (sub) sub.innerHTML = setsLine(row.getAttribute('data-id'));
     });
   }
 
@@ -1419,9 +1591,10 @@
       var row = document.createElement('button');
       row.type = 'button';
       row.className = 'crm-row cr-client-row';
+      row.setAttribute('data-id', c.id);
       row.innerHTML =
         '<span class="crm-c crm-c-name">' + esc(c.name) + '</span>' +
-        '<span class="crm-c crm-c-sets" data-role="sub"><span class="muted">Loading\u2026</span></span>' +
+        '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
         '<span class="crm-c crm-c-code">' + (c.passcode
@@ -1429,19 +1602,6 @@
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
       row.addEventListener('click', function () { openClient(c); });
       table.appendChild(row);
-
-      /* A one line answer to "where does this client stand?" A read that
-         failed is not a client with nothing on it: "No content sets" over a
-         fault sends somebody to build a set that is already there. */
-      db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
-        var sub = row.querySelector('[data-role="sub"]');
-        if (!sub) return;
-        if (b.error) { sub.innerHTML = '<span class="is-warn">Sets unavailable</span>'; return; }
-        if (!b.data.length) { sub.innerHTML = '<span class="muted">No sets</span>'; return; }
-        var live = b.data.filter(function (x) { return x.published; }).length;
-        sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
-          ' \u00b7 ' + live + ' published';
-      });
     });
     box.appendChild(sec);
   }
@@ -1655,6 +1815,9 @@
      actually refuses. */
   function showActivityLink() {
     $('activityOpen').hidden = !maySeeActivity;
+    /* The bar's More holds the Activity record, so the bar is laid once
+       the record's reach is known, and again on every section shown. */
+    if (meLoaded) paintTabbar();
   }
 
   /* The build this console is running, under the Activity record: the

@@ -93,8 +93,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
   - Run only the suites the change touched (the tiers below), before the
-    merge as well. `all` is for a shared script, the stand-in, or a schema
-    change; never for a style, a copy or a one-screen fix (the user,
+    merge as well. A batch never waits on `all` (the user, 2026-10-09: a
+    test that grew from 15 minutes to 90): a shared script, the stand-in or
+    a schema change runs the suites that call what changed (`grep -l` over
+    `tests/` for the function, table or id) plus `ui`, and `all` runs once
+    a day, after the day's merges, its findings the next batch. Never a
+    full gate for a style, a copy or a one-screen fix (the user,
     2026-09-28: a full gate for one border wastes their credits).
   - Never poll with sleep.
   - Never watch suites one by one.
@@ -115,10 +119,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | `all` |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui`; `all` once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a merge | The union of the rows above for everything in the batch; `all` only where a row says so |
+| Before a merge | The union of the rows above for everything in the batch; never `all` |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
@@ -145,6 +149,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `overview.js` | overview, leave, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
+| the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -164,6 +169,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     (`stack`);
   - a card-sized box drawing a visible outline (`outline`); a button drawn
     outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
+    a button's glyph in another ink than its words (`glyphink`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
     floor (`target`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
@@ -319,6 +325,20 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.
+- The phone tab bar (`#tabBar`, js/admin.js; the user, 2026-10-09): on a
+  touch screen narrower than a desk (a foldable open or shut, a tablet
+  upright) and on any window at 640 and under, the one media query
+  `ADSPACE_TABBAR` (the head script, which sets `:root.has-tabbar` before
+  first paint) puts the first four sections the person may open, in the
+  rail's order, at the foot with More (`#tabMore`) opening the rest above
+  it; five or fewer with no Activity record take the bar whole. More lists
+  only what the bar does not (`.is-tabbed`), and the Activity record. The
+  menu toggle gives way to it; the drawer stays for a narrow desk window.
+  What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
+  it through `--tabbar-space`; a sheet covers it; a field taking the
+  keyboard under a finger hides it (`is-typing`). The chosen tab is the
+  fill behind its glyph; a section More holds chooses More
+  (`tests/tabbar.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
   `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
@@ -358,6 +378,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
     covers itself; switched off, a covered page reloads (to its latest
     version). A read that fails (`ask(true)` answers null) changes nothing.
+  - An open page's minute is one request (`page_pulse(p_audience, p_bell)`,
+    `2026-10-09-one-check-a-minute.sql`, anon too): upgrade mode, the
+    announcements and the bell, each as its own function answers it; a part
+    joins with `often(key, take, alone, opts)`, and on a database without the
+    function every part asks alone (every request is a line Supabase logs and
+    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze).
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Turn off).
@@ -938,6 +964,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   All stages, All people, All months, never Every …, Everyone or Everything.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
+- A list reads what its rows show in one request (`.in()`, paged by the
+  thousand), never one a row, and a repaint or a key typed reads nothing
+  again: every request is a logged line Supabase meters (Content Review's
+  read a client was a sixth of the live traffic, 2026-10-09; `tests/sets.js`).
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
   wrap cannot split it. An empty count is not drawn.
 - The rail's order (see `DESIGN.md`) drives `SECTIONS`, the Activity record's
@@ -2225,7 +2255,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A new owner is told they were assigned.
   - Nobody is told about their own act.
   - The bell is drawn for every colleague (a row is its reader's own), and
-    re-reads every minute while visible, and on return.
+    re-reads every minute while visible, and on return, in the page's one
+    check (`page_pulse`).
   - Each item leads with its section's rail glyph (`.notif-tile`,
     `ADspaceAdmin.glyph`): My records for a review, reflection, health or
     HR letter, Reports for a report, My Work otherwise. The bell lists
@@ -3148,7 +3179,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   importer, one matching (Ad ID, link) and one summary line; the age split
   follows the figures in the same press, updating only ads it holds; an ad
   with no spend or no results is left out and counted in the summary line
-  (`adsPlan` `withResults`, the audit alike; the user, 2026-10-09); posts go
+  (`adsPlan` `withResults`, the audit alike; the user, 2026-10-09), and a
+  copy of a creative that never ran is read after the copies that did and
+  never writes over the ad they fed (its result type and zeros); posts go
   to the report's account on their platform; filed `Imported from Meta` /
   `From Meta`. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),

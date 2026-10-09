@@ -4317,9 +4317,19 @@
       return p0;
     };
     out.updates = []; out.unclear = []; out.fresh = []; out.idle = 0;
-    out.rows.forEach(function (r0) {
+    /* From Meta, the copies that delivered are read first, and a copy of the
+       same creative that never ran (no spend or no results, Meta's result
+       type then its default, reach) never writes over the ad they fed (the
+       user, 2026-10-09: an idle copy read the ad as reach with every figure
+       0). */
+    var idleRow = function (r0) { return !(Number(r0.spend) > 0 && Number(r0.results) > 0); };
+    var rowsIn = o.withResults ? out.rows.filter(function (r0) { return !idleRow(r0); }).concat(out.rows.filter(idleRow)) : out.rows;
+    var fed = {};
+    rowsIn.forEach(function (r0) {
       var hit = adMatch(list, r0), a = hit.ad;
+      if (a && o.withResults && idleRow(r0) && fed[a.id]) { if (!o.ageOnly) out.idle++; return; }
       if (a) {
+        fed[a.id] = true;
         var p0 = patchOf(r0);
         /* A paste carrying Ad IDs a row does not hold yet adds them. */
         var more = (r0.ad_ids || []).filter(function (x) { return (a.ad_ids || []).indexOf(x) < 0; });
