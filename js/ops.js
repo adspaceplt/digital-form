@@ -2807,8 +2807,9 @@
     $('dwStatus').textContent = '';
     $('dwCtx').textContent = '';
     $('dwCtx').hidden = true;
-    ['taskPeople', 'taskDates', 'taskFacts', 'taskMore'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
-    ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg'].forEach(function (x) { msg(x, ''); });
+    ['taskPeople', 'taskDates', 'taskFacts', 'taskMore', 'dwSteps', 'dwVideo'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
+    ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg', 'dwVideoMsg'].forEach(function (x) { msg(x, ''); });
+    ['dwSteps', 'dwVideo', 'dwVideoH'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
     if ($('dueAsk')) $('dueAsk').hidden = true;
     if ($('dwReport')) $('dwReport').hidden = true;
     $('dwNextTitle').textContent = '';
@@ -3485,10 +3486,43 @@
   function NEXT_DW() {
     return { box: $('dwNext'), title: $('dwNextTitle'), line: $('dwNextLine'), list: $('dwNextList'),
              late: $('dwNextLate'), hand: $('dwHand'), tick: $('dwHandTick'), tickWrap: $('dwHandTickWrap'),
-             lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw' };
+             lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw',
+             steps: $('dwSteps') };
+  }
+  /* The workflow as a row of steps over the next step (the user, 2026-10-09:
+     the card had lost the full record's strip): done quiet, the current one
+     named, the next said. Not buttons: moving a stage is the next step's
+     job, and any other move asks for a reason from the row's stage select. */
+  function paintSteps(t, box) {
+    if (!box) return;
+    var line = lineOf(t);
+    var here = stageOf(t);
+    var at = -1;
+    if (here) {
+      at = line.map(function (s) { return s.key; }).indexOf(here.key);
+      if (at < 0 && here.stage_group === 'revision') {
+        at = line.map(function (s) { return isWork(s.stage_group); }).indexOf(true);
+      }
+      if (at < 0) at = line.map(function (s) { return s.key; }).indexOf(cameFrom(t));
+    }
+    if (!line.length || at < 0) { box.innerHTML = ''; box.hidden = true; return; }
+    box.hidden = false;
+    var target = nextOf(t);
+    var done = isFinished(t) && !t.cancelled_at;
+    var word = function (s) { return stepWord(s, state.eng); };
+    box.innerHTML =
+      '<ol class="tsteps-bar" aria-label="Workflow">' + line.map(function (s, i) {
+        var cls = (done || i < at) ? 'is-done' : i === at ? 'is-now' : '';
+        var said = word(s) + ((done || i < at) ? ', done' : i === at ? ', current' : '');
+        return '<li class="' + cls + '"' + (i === at ? ' aria-current="step"' : '') + '><span class="sr">' + esc(said) + '</span></li>';
+      }).join('') + '</ol>' +
+      '<p class="tsteps-word">Step ' + (at + 1) + ' of ' + line.length + ' · <b>' + esc(word(line[at])) + '</b>' +
+        (target && !done && target !== line[at].key
+          ? '<span class="tsteps-next"> · Next: ' + esc(labelForKey(target)) + '</span>' : '') + '</p>';
   }
   function paintNext(b, t, n) {
     if (!b.box) return;
+    if (b.steps) paintSteps(t, b.steps);
     b.box.classList.toggle('is-blocked', Boolean(n.blocked));
     b.title.textContent = n.title;
     b.line.textContent = n.line || '';
@@ -4987,6 +5021,46 @@
     paintPeople(t);
     paintDates(t);
     paintDetails(t);
+    paintVideo(t);
+  }
+
+  /* VIDEO, for a task that has video details. Editing is refused while the
+     footage is marked not ready (`footage-not-ready`), so readiness is
+     changed where it is read, never a fact to go and find (the user,
+     2026-10-09: the card had lost the full record's Video block). A mark once
+     given is Ready or Not ready; the database never clears it. */
+  function paintVideo(t) {
+    var v = state.detail.video, box = $('dwVideo'), head = $('dwVideoH');
+    if (!box) return;
+    box.hidden = head.hidden = !v;
+    if (!v) { box.innerHTML = ''; return; }
+    var edit = may('ops', 'work') && !isFinished(t);
+    var ready = function (key, label) {
+      var unset = v[key] === null || v[key] === undefined;
+      if (edit) {
+        return frow(label, detailSelect(key, label,
+          (unset ? [['', 'Not said']] : []).concat([['true', 'Ready'], ['false', 'Not ready']]), unset ? '' : String(v[key])));
+      }
+      return frow(label, unset ? '<span class="mute">Not said</span>' : esc(v[key] ? 'Ready' : 'Not ready'));
+    };
+    var rows = [ready('script_ready', 'Script'), ready('footage_ready', 'Footage')];
+    if (v.shoot_at) rows.push(frow('Shoot', esc(niceTime(v.shoot_at))));
+    if (v.output_duration_seconds) rows.push(frow('Output', esc(v.output_duration_seconds + ' seconds')));
+    if (v.subtitle_required) rows.push(frow('Subtitles', 'Required'));
+    box.innerHTML = rows.join('');
+    Array.prototype.forEach.call(box.querySelectorAll('select.tdetail'), function (sel) {
+      var was = sel.value;
+      sel.addEventListener('change', function () {
+        if (!sel.value) { sel.value = was; return; }
+        var payload = {};
+        payload[sel.getAttribute('data-key')] = sel.value === 'true';
+        call('ops_set_video', { p_task: t.id, p_payload: payload }, 'dwVideoMsg', function (row) {
+          if (!row || !row.task_id) { sel.value = was; return; }
+          state.detail.video = row;
+          readTask(t.id, function () { msg('dwVideoMsg', 'Saved.', 'ok'); });
+        }, function () { sel.value = was; });
+      });
+    });
   }
 
   /* PEOPLE. The Task Owner is named here and nowhere else, with the one

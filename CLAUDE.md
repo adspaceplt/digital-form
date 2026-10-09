@@ -2153,8 +2153,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The name with Copy title; under it one line: the client, the format and
     the month, the month itself opening its Months view (never `content` or
     `Graphic:`).
-  - Next step, then the report row on a month's report task, then Assigned
-    to, Dates and Details, Checklist and Remarks stay open (Remarks: the
+  - Next step, headed by the workflow's strip (`#dwSteps`, `paintSteps`:
+    done quiet, the current step named, the next said; never buttons), then
+    the report row on a month's report task, then Assigned to, Dates and
+    Details (with Video for a task that has video details: Script and
+    Footage readiness as selects saved by `ops_set_video`, since editing
+    waits on footage), Checklist and Remarks stay open (Remarks: the
     comments, Add remark, Post); Brief, Files and links, Time records and
     Recent activity fold under More (`#dwMore`, shut each open).
   - A month's report task (`source_type` `report_social` / `report_ads`)
