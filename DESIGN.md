@@ -408,7 +408,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   mark after anything that opens in a new tab (Preview, Open), the chevron
   after a way to another console page. A form's own commit (Save, Cancel, a
   submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
-  label drawn both ways.
+  label drawn both ways. The glyph is drawn in the button's own ink: a
+  head's rule for its own mark never reaches a button inside it (`uxaudit`
+  `glyphink`).
 - A border inside a border groups nothing, so the inner one is shaded.
 - A word or a value that acts inside a line of text (`.linkbtn`, `.tdate`,
   `.tinline`, `.serial-copy`) keeps its whole target but never shows it: its

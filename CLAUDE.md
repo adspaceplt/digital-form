@@ -165,6 +165,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     (`stack`);
   - a card-sized box drawing a visible outline (`outline`); a button drawn
     outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
+    a button's glyph in another ink than its words (`glyphink`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
     floor (`target`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;

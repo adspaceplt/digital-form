@@ -2191,11 +2191,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: flex; align-items: center; gap: 9px; margin-bottom: 4px;
 }
 .panelhead h3 { margin: 0; }
-.panelhead svg {
+/* The head's own mark alone: a button in the head keeps its own ink and
+   size, or the blue primary drew a grey glyph (the user, 2026-10-09). */
+.panelhead > svg {
   width: 17px; height: 17px; flex: 0 0 auto; color: var(--ink-mute);
   stroke-width: 1.7;
 }
-.viewhead svg {
+.viewhead .headmark > svg {
   width: 18px; height: 18px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
 }
 .viewhead .headmark { display: flex; align-items: center; gap: 9px; flex: 1 1 auto; }
