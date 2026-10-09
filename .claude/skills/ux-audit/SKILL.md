@@ -20,6 +20,7 @@ Each section gets two grades:
 | work | My Work | `?s=work` | ops.js | Add a task; move a task on; find one by number; plan a client's month; ask for an extension (colleague, manager) | 3 presses for a daily act |
 | clients | Clients | `?s=clients` | crm.js, sales.js | Key in a lead; log a call; move to Active through billing; add a service line and issue the Letter of Offer (sales) | Intake 5 visible fields |
 | review | Content Review | `?s=review` | admin.js, mockups.js | New set, add assets, publish; act on a change request; confirm internally (marketing) | Publish 3 presses after upload |
+| scripts | Video Scripts | `?s=scripts` | scripts.js, scriptpdf.js | New script and its scenes; add the next video; share with the client; tick scenes and clip numbers on the day; download the PDF (marketing, crew) | Next video 1 press |
 | campaigns | Creator Campaigns | `?s=campaigns` | campaigns.js | New campaign; add and confirm creators; release a draft through QC; enter results (marketing) | QC 1 sheet |
 | register | Documents | `?s=register` | register.js, documents.js, letters.js | Issue a document with Preview; reissue or void; find by reference (admin, HR) | Issue 1 sheet |
 | reports | Reports | `?s=reports` | reports.js, smreport.js | Start a report; import posts or ads; Write draft and Check; submit, confirm, publish, mark as sent (marketing, reviewer) | One step a screen |
@@ -30,6 +31,7 @@ Each section gets two grades:
 | mine | My records | `?s=mine` | perf.js, health.js | Rate yourself; reflect; check in; read a letter (colleague) | Check-in 1 sheet |
 | portal | Client portal | `/client/` | portal.js | Download the latest report; request a change; join the next meeting (client) | 2 presses each |
 | reviewpage | Content review page | `/review/?k=` | review.js, decide.js, mockups.js | Approve a post; request changes with a caption edit (client) | Approve 2 presses |
+| scriptpage | Video scripts page | `/script/?k=` | script.js, decide.js | Approve a script; request changes with a note (client) | Approve 2 presses |
 | selection | Creator selection | `/creators/?k=` | creators.js, decide.js | Pick creators and confirm; decide on a draft (client) | Confirm 2 presses |
 | creator | Creator page | `/creator/?k=` | creator.js | Hand in a draft; add the post link and results (creator) | Hand in 2 presses after picking |
 | front | Front door | `/` | index.html | Reach WhatsApp; get directions (visitor) | 1 press |

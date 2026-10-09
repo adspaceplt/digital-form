@@ -75,6 +75,9 @@
     ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
     ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
+    /* A shoot's video scripts, approved by the client and ticked on the day
+       (2026-10-09). */
+    ['scripts',   'Video Scripts',     ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
@@ -118,7 +121,7 @@
        which rows arrive: `activity_section()` maps a tag to the section the
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
-                ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
+                ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
                 ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
@@ -774,6 +777,8 @@
                work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
+    scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
+               work: 'Write scripts, share them with the client and tick scenes on the day.', manage: 'Also delete scripts.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
@@ -793,13 +798,13 @@
      letters, performance reviews, Team) are never in a preset below Admin:
      they are opened deliberately, in Advanced. */
   var PRESETS = {
-    manager: { ops: 'manage', clients: 'manage', review: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
+    manager: { ops: 'manage', clients: 'manage', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                'register.hr': 'none' },
-    staff:   { ops: 'work', clients: 'work', review: 'work', campaigns: 'work', register: 'view', reports: 'work',
+    staff:   { ops: 'work', clients: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
-    viewer:  { ops: 'view', clients: 'view', review: 'view', campaigns: 'view', register: 'view', reports: 'view',
+    viewer:  { ops: 'view', clients: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', reports: 'view',
                links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
   };
 

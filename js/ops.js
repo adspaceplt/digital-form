@@ -7893,6 +7893,7 @@
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
     if (!x.task_id && x.report_id) return 'reports';
+    if (!x.task_id && x.script_id) return 'scripts';
     return 'work';
   }
   function markRead(ids, quiet) {
@@ -7963,6 +7964,12 @@
     if (!x.task_id && x.report_id) {
       history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(x.report_id));
       if (bridge.show) bridge.show('reports');
+      return;
+    }
+    /* A client's decision on a video script opens the script. */
+    if (!x.task_id && x.script_id) {
+      history.replaceState(null, '', '/admin/?s=scripts&script=' + encodeURIComponent(x.script_id));
+      if (bridge.show) bridge.show('scripts');
       return;
     }
     /* A client paused or ended opens the list, where its open work heads

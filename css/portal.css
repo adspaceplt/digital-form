@@ -4326,7 +4326,7 @@ body > .shell { width: 100%; }
    at 12.5px, `Performance review` needs 157px and `Changes requested` 155,
    and in 124px they drew as "Performance r" and "Changes requ". A name longer
    than that (a label the team writes) ends in an ellipsis rather than a cut. */
-.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 160px var(--ctl-h); }
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 170px var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -4761,7 +4761,7 @@ body > .shell { width: 100%; }
   width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
   /* The dot 8px in and the word 6px after it, as a status chip spaces them;
      the longest stage (Performance review) keeps its whole word in My Work's
-     160px column. */
+     170px column, measured in the widest system face (Roboto, 120px). */
   padding: 0 24px 0 22px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--ink);
   background-image: radial-gradient(circle, var(--sdot, var(--dot-off)) 3.5px, transparent 4px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-size: 8px 8px, 13px; background-position: 8px center, right 8px center;
@@ -4931,7 +4931,7 @@ body > .shell { width: 100%; }
    zoom, so which rows fitted was decided by the words in them. Now nothing
    on the line wraps: the Task Owner gives way with an ellipsis, the date
    never does, and on a list a phone's width (tight) the stage takes a line
-   of its own on every row instead. 160px is the desk stage track; 200px is
+   of its own on every row instead. 170px is the desk stage track; 200px is
    `Performance review` at 16px. */
 .is-narrow .task-row {
   grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
@@ -4949,11 +4949,11 @@ body > .shell { width: 100%; }
 .is-narrow .is-mine .trow-meta > .task-owner { display: none; }
 .is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
 .is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; display: flex; justify-content: flex-end; }
-.is-narrow .trow-meta .state-select { width: 160px; max-width: 100%; }
+.is-narrow .trow-meta .state-select { width: 170px; max-width: 100%; }
 /* Under a finger the stage is 13.5px, and `Performance review` needs 176px
    with its chevron at that size. */
 @media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 180px; } }
-.is-narrow .trow-meta .task-take { width: 160px; max-width: 100%; }
+.is-narrow .trow-meta .task-take { width: 170px; max-width: 100%; }
 @media (pointer: coarse) { .is-narrow .trow-meta .task-take { width: 180px; } }
 .is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
@@ -5403,10 +5403,11 @@ body > .shell { width: 100%; }
 .permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
 .permsec-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* Four levels across a phone's panel: "Full Access" ran a pixel past its
-   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03). Two
-   pixels back from each side keep every level whole; narrower still, the
-   segment's own measure wraps it into two columns. */
-.permsec .seg-opt { padding: 0 6px; }
+   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03), and again
+   once a finger's options took 14px type (2026-10-09). Four pixels each side
+   keep every level whole; narrower still, the segment's own measure wraps it
+   into two columns. */
+.permsec .seg-opt { padding: 0 4px; }
 /* The fold names what it holds and how many differ from the section; it
    clears the control floor with the negative block margin the ⋯ uses, so the
    head line keeps the name's height. */
@@ -10847,3 +10848,128 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 :root.has-tabbar .popcard.is-dock:not(.is-insheet) { bottom: calc(12px + var(--tabbar-space)); }
 :root.has-tabbar .kmenu.notif-menu { max-height: calc(100vh - var(--head-h) - var(--tabbar-space) - 24px); overflow-y: auto; }
 /* ===== end phone tab bar ===== */
+
+/* =========================================================================
+   VIDEO SCRIPTS (2026-10-09, js/scripts.js): a card a client, a row a video
+   (V1, V2… of its shoot): the video over its type, the shoot, the state. A
+   video is a record: the facts, the script as the client reads it, and on
+   the day each scene's clip number (VC#) and Shot tick; the shoot's other
+   videos in the rail.
+   ========================================================================= */
+.vs-row, .crm-head.vs-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 240px) var(--state-w);
+  width: 100%; padding: 10px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; text-align: left; font: inherit; color: inherit;
+}
+button.vs-row { cursor: pointer; }
+.vs-row:last-child { border-bottom: 0; }
+@media (hover: hover) { button.vs-row:hover { background: var(--sunk); } }
+.vs-c-name { display: grid; gap: 2px; min-width: 0; }
+.vs-c-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-c-name small { font-size: 12.5px; color: var(--ink-mute); }
+.vs-c-shoot { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-c-state { min-width: 0; }
+.is-narrow .crm-head.vs-row { display: none; }
+.is-narrow .vs-row {
+  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-areas: "name state" "shoot state";
+  gap: 2px 10px; padding: 12px 15px; align-items: start;
+}
+.is-narrow .vs-row > .vs-c-name { grid-area: name; }
+.is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; }
+.is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: end; }
+
+.vs-head { display: grid; gap: 12px; }
+.vs-head .msg { margin: 0; }
+.vs-head .msg:empty { display: none; }
+.vs-head .rec-ctl { gap: 8px; }
+.vs-pdf-short { display: none; }
+.is-narrow .vs-head .vs-pdf-long { display: none; }
+.is-narrow .vs-head .vs-pdf-short { display: inline; }
+.vs-rec { margin-top: 0; }
+.vs-sheetview { display: grid; gap: 24px; }
+.facts.vs-facts { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.is-narrow .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vs-block { display: grid; gap: 12px; min-width: 0; }
+.vs-block > .fsec-h { margin: 0; }
+.vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.vs-ref .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-said { margin: 0 0 12px; padding: 12px 15px; border-radius: var(--radius-sm); background: var(--sunk); display: grid; gap: 4px; }
+.vs-said p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.vs-said .vs-note { color: var(--ink); white-space: pre-line; overflow-wrap: anywhere; }
+p.vs-said { display: block; color: var(--ink-soft); font-size: 13px; }
+
+/* A scene: its number, what is seen (and on a detailed script what is
+   said), then the clip number and the tick. */
+.vs-scene, .crm-head.vs-scene {
+  display: grid; align-items: start; gap: 0 12px;
+  grid-template-columns: 32px minmax(0, 1fr) 104px 48px;
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.vs-scenes.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 104px 48px; }
+.vs-scene:last-child { border-bottom: 0; }
+.vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; }
+.vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; }
+.vs-vc .input { width: 100%; }
+.vs-shot { display: flex; justify-content: center; }
+.vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; }
+.vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
+.vs-vo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.vs-vo .input { width: 104px; }
+.is-narrow .crm-head.vs-scene { display: none; }
+.is-narrow .vs-scene, .is-narrow .vs-scenes.is-two .vs-scene {
+  grid-template-columns: 24px minmax(0, 1fr) 104px auto;
+  grid-template-areas: "n text text text" "n line line line" "n . vc shot";
+  gap: 6px 10px; padding: 12px 15px;
+}
+.is-narrow .vs-scene > .vs-n { grid-area: n; }
+.is-narrow .vs-scene > .vs-vis { grid-area: text; }
+.is-narrow .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
+.is-narrow .vs-scene > .vs-vc { grid-area: vc; }
+.is-narrow .vs-scene > .vs-shot { grid-area: shot; }
+
+/* The shoot's videos in the rail, the one open chosen. */
+.vs-vrow { width: 100%; justify-content: flex-start; }
+.vs-vrow.is-on { background: var(--line-soft); }
+.vs-next { margin-top: 8px; }
+
+/* The editor's scenes: a block each, its number and moves on its head. */
+.vs-edit-scene { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.vs-edit-scene:first-child { padding-top: 0; }
+.vs-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.vs-edit-head .field-label { margin: 0; }
+.vs-edit-acts { display: flex; gap: 4px; }
+
+/* The client's Video Scripts page (/script/?k=): a shoot's videos under its
+   heading, each a card: the video and its type over the state, the facts,
+   the script, the decision. */
+.shell-script { max-width: 960px; }
+.shell-script > .rec-head { margin-top: 16px; }
+.shell-script > .rec-head + .stagestrip { margin-top: 0; }
+.vs-shoot { display: grid; gap: 12px; margin-top: 24px; }
+.vs-shoot-head { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.vs-card { display: grid; gap: 16px; padding: 18px 20px; }
+.vs-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.vs-card-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.vs-card-kind { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.vs-card-state { flex: 0 0 auto; }
+.vs-scenes.is-client .vs-scene, .vs-scenes.is-client .crm-head.vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
+.vs-scenes.is-client.is-two .vs-scene, .vs-scenes.is-client.is-two .crm-head.vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr); }
+.vs-decide { margin: 0 -20px -18px; padding: 14px 20px 18px; display: grid; gap: 8px; }
+.vs-decide .changebox { margin-top: 0; }
+.vs-decide.is-requesting .approve-row { display: none; }
+.vs-decided { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.vs-decide > .vs-note { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.vs-decide-msg:empty { display: none; }
+@media (max-width: 640px) {
+  .vs-card { padding: 14px; }
+  .vs-decide { margin: 0 -14px -14px; padding: 12px 14px 14px; }
+  .vs-scenes.is-client.is-two .vs-scene { grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line"; gap: 4px 10px; }
+  .vs-scenes.is-client.is-two .vs-scene > .vs-n { grid-area: n; }
+  .vs-scenes.is-client.is-two .vs-scene > .vs-vis { grid-area: text; }
+  .vs-scenes.is-client.is-two .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
+  .vs-scenes.is-client .crm-head.vs-scene { display: none; }
+  .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
