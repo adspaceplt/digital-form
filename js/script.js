@@ -1,6 +1,6 @@
 /* The client link for Video Scripts (/script/?k=, 2026-10-09).
  *
- * Every script the team has shared, a content month at a time (the newest
+ * Every script the team has published, a content month at a time (the newest
  * first), each one video: its code and title, its facts in one card and its
  * script in the next, as it will be shot. Nobody decides on it here (the
  * user, 2026-10-09: "no need show the approve or changes at client side, the
@@ -237,7 +237,7 @@
       feed.scripts = feed.scripts || [];
       document.title = (feed.client && feed.client.name ? feed.client.name + ' ' : '') + 'Video Scripts by ADspace';
       if ($('clientName') && feed.client) $('clientName').textContent = feed.client.name;
-      if (!feed.scripts.length) { cover('No video scripts', 'Video scripts appear here once they are shared.'); return; }
+      if (!feed.scripts.length) { cover('No video scripts', 'Video scripts appear here once they are published.'); return; }
       $('cover').hidden = true;
       paintHead();
       paintMonths();

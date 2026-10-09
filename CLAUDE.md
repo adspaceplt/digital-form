@@ -3358,12 +3358,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.
 - The list is a card a client, a row a script (code and title over the month
-  and type, the shoot, the state: Draft or Shared), newest month first. A
+  and type, the shoot, the state: Draft or Published), newest month first. A
   script is a record: the head (code and title; client, type and the month,
   which opens the client's Months in My Work where it is there; the state,
-  Download PDF, one ⋯ of Edit, Reset client link, Delete), under it the
+  Preview PDF, one ⋯ of Download, Edit, Reset client link, Delete; the
+  user, 2026-10-09: the portal's words, as a report's), under it the
   client link laid as a campaign's (`.rec-linktools`: the address, Copy
-  link, Preview, then Share with client in blue or Unshare, which asks), the
+  link, Preview, then Publish in blue or Unpublish, which asks), the
   key read once a client and made at Work the first time; then the facts in
   one card (`.vs-factcard`, the reference video with them) and the script in
   the next (the user, 2026-10-09: key information apart from the scenes),
@@ -3396,7 +3397,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `{handle}` filled on the page; Undo where it happened; Save keeps them; an
   answer landing after the editor shut is put in at its next open. The house
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
-- Share (`video_script_share`, Undo where it happened) shows a script on the
+- Publish (`video_script_share`, Undo where it happened) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
   `script_link`; Reset client link asks and retires the old key). The link is
   for the team and the client to read the script and, on site, to record the
@@ -3415,8 +3416,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   each script's title and reference and its script by kind with a VC# column
   (a recorded clip number printed, an empty cell left for the pen), Notes /
   Remarks, PRIVATE & CONFIDENTIAL and the page count. Scripts of a month
-  sharing kind and header share one header table; Download PDF asks one
-  script or the whole month once there are two.
+  sharing kind and header share one header table; Preview PDF (a tab opened
+  at the press) and Download ask one script or the whole month once there
+  are two.
 - Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
