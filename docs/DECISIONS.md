@@ -1305,3 +1305,12 @@ nine or ten digits starting 1 are a Malaysian mobile without its 0. The
 console's wa.me links read numbers the same way. A booked creator's ⋯ sends
 the booking and their link again (a number added later, a failed send, a
 lost link), behind its own part like the other two sends.
+
+### 2026-10-09 · A booking card in three parts on a phone
+The user, on the creator's page: "Do you think this looks very compacted in
+mobile? Maybe some spacings or hairline separation". The steps ran into
+"Your shoot is booked." and the facts. The card now reads as three parts:
+the booking and its state, the steps, then one `--line-soft` hairline with
+16px either side over what is next and the facts, whose rows are 16px apart
+with each value 4px under its label. The client's selection page draws the
+same card and takes the same rule.
