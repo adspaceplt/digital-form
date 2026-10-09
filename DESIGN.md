@@ -87,7 +87,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--head-h` | 64px (56 phone) | The top bar on every page; never wraps; the kicker hides below 640 before anything clips |
 | `--ctl-h` | 38px (44 coarse) | Every button, field, select, icon button, menu row |
 | `--ctl-h-sm` | 32px (38 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
-| `--state-w` | 124px | Status select or chip column (My Work's stage track 160px) |
+| `--state-w` | 124px | Status select or chip column (My Work's stage track 170px) |
 | `--ctl-text` / `--field-text` | 13 / 14px (14 / 15 coarse) | Control label / field text |
 | Button min width | 116px | |
 | Icon | 15px glyph, stroke 1.8; icon box 38 (44 coarse) | Same glyph for the same action; never mix outline and filled |
@@ -120,7 +120,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Money in a row | 13.5px tabular, its figure at 600 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
-| Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 160px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
+| Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 170px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
 | Numbers in cells | 17/600/-.02em | `.tally-cell b` |
 | Floor | 11px | Nothing smaller (the review mockups are exempt) |
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |
@@ -241,7 +241,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Two blocks in a section are always the same distance apart.
 - A column is a column on every row. Every shared track is fixed and measured
   against its worst case (the clients state chip 120px; the Activity `By`
-  150px; the task stage 160px; the schedule shoot 176px). `justify-self:
+  150px; the task stage 170px; the schedule shoot 176px). `justify-self:
   stretch` aligns a cell and does not equalise the track.
 - On a phone the last column is a right edge: the cell stretches and aligns
   right. An empty action cell gives up its track on a phone only.

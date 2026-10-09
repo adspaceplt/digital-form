@@ -4326,7 +4326,7 @@ body > .shell { width: 100%; }
    at 12.5px, `Performance review` needs 157px and `Changes requested` 155,
    and in 124px they drew as "Performance r" and "Changes requ". A name longer
    than that (a label the team writes) ends in an ellipsis rather than a cut. */
-.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 160px var(--ctl-h); }
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 170px var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -4761,7 +4761,7 @@ body > .shell { width: 100%; }
   width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
   /* The dot 8px in and the word 6px after it, as a status chip spaces them;
      the longest stage (Performance review) keeps its whole word in My Work's
-     160px column. */
+     170px column, measured in the widest system face (Roboto, 120px). */
   padding: 0 24px 0 22px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--ink);
   background-image: radial-gradient(circle, var(--sdot, var(--dot-off)) 3.5px, transparent 4px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-size: 8px 8px, 13px; background-position: 8px center, right 8px center;
@@ -4931,7 +4931,7 @@ body > .shell { width: 100%; }
    zoom, so which rows fitted was decided by the words in them. Now nothing
    on the line wraps: the Task Owner gives way with an ellipsis, the date
    never does, and on a list a phone's width (tight) the stage takes a line
-   of its own on every row instead. 160px is the desk stage track; 200px is
+   of its own on every row instead. 170px is the desk stage track; 200px is
    `Performance review` at 16px. */
 .is-narrow .task-row {
   grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
@@ -4949,11 +4949,11 @@ body > .shell { width: 100%; }
 .is-narrow .is-mine .trow-meta > .task-owner { display: none; }
 .is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
 .is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; display: flex; justify-content: flex-end; }
-.is-narrow .trow-meta .state-select { width: 160px; max-width: 100%; }
+.is-narrow .trow-meta .state-select { width: 170px; max-width: 100%; }
 /* Under a finger the stage is 13.5px, and `Performance review` needs 176px
    with its chevron at that size. */
 @media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 180px; } }
-.is-narrow .trow-meta .task-take { width: 160px; max-width: 100%; }
+.is-narrow .trow-meta .task-take { width: 170px; max-width: 100%; }
 @media (pointer: coarse) { .is-narrow .trow-meta .task-take { width: 180px; } }
 .is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }

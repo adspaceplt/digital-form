@@ -1963,7 +1963,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     where that is somebody else) from the row, a board card and the task's
     own button alike; the same move never gives two results.
   - The outcome or refusal is named under the row (`.task-note`).
-  - The stage track is 160px. A narrow row ends with the stage at a stated
+  - The stage track is 170px. A narrow row ends with the stage at a stated
     width; `is-tight` gives it its own line.
 - Stage tone by `stage_group` (the status dot, `STAGE_TONE`):
   - not started and ready to start: grey;
