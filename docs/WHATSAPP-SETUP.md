@@ -8,7 +8,7 @@ Platform (Cloud API), each with a template Meta has approved:
 | Report to client | Send on WhatsApp, on a published report | 1 the contact's first name, 2 the client (or the white-label brand), 3 the report and its period. The PDF is the template's **document header** |
 | Feedback request | Request feedback on WhatsApp, in a client's ⋯ | 1 the contact's first name, 2 the client |
 | Team reminders | Each reminder in a colleague's bell (no open task, the outstation record, self-rating, reflection, health check-in) | 1 the colleague's first name, 2 the notice's title, 3 its message |
-| Creator updates | A creator booked, asked for changes, or cleared to post | 1 the creator's first name, 2 the campaign, 3 the step |
+| Creator updates | A creator's booking confirmed | 1 the creator's first name, 2 the campaign. A **Visit website** button with a dynamic URL, `https://digital.adspace.me/creator/?k={{1}}`, opens the creator's own page |
 
 A template may use fewer variables than listed: set **Variables** to the
 number its body holds, and the first ones are sent. A business-initiated
@@ -80,8 +80,9 @@ On. A purpose that is Off sends nothing.
 - A colleague: their mobile (Team).
 - A creator: their WhatsApp number (the creator's record in the Creators
   List).
-- Malaysian numbers with a leading 0 take 60; a Singapore client's 8-digit
-  number takes 65.
+- Malaysian numbers with a leading 0 take 60. An 8-digit number takes 65
+  for a Singapore client, and for anyone when it starts with 3, 6, 8 or 9
+  (a Malaysian mobile is never 8 digits).
 
 ## 4. What happens
 

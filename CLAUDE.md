@@ -3607,10 +3607,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   last four).
 - Variables in order: report (the greeting, client or brand, the report and
   period; the PDF as the document header), feedback (the greeting, client),
-  reminder (first name, title, message), creator (first name, campaign,
-  step); a template takes the first n.
+  reminder (first name, title, message), creator (first name, campaign; its
+  link button's variable the creator's code, `wa_outbox.button`); a
+  template takes the first n.
 - A number is `wa_number`'s international form (digits; a leading 0 takes
-  60; a Singapore client's eight digits take 65); a `@username` cannot be
+  60; eight digits take 65 for a Singapore client, and anywhere when they
+  start 3, 6, 8 or 9); a `@username` cannot be
   messaged (`no-number`). A client's main contact's WhatsApp number, else
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
@@ -3628,8 +3630,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
   bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
-  `health.remind`; `ops_notifications_wa`) and a creator's forward step
-  (booked, changes requested, cleared to post; `campaign_options_wa`) go to
+  `health.remind`; `ops_notifications_wa`) and a creator's booking
+  confirmed, with their code for the link button (`campaign_options_wa`,
+  `wa_enqueue`; `2026-10-09-whatsapp-creator-link.sql`; changes requested
+  and cleared to post stay on the creator's page and push) go to
   `wa_outbox`; `wa_kick` (pg_net) wakes `wa-send`, which claims with the
   service role (`wa_claim`, `wa_done`; three tries, then Not sent). The
   queue and its tables are closed to every page.

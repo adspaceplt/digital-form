@@ -22,7 +22,7 @@
     report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the contact\'s first name, the client, the report.'],
     feedback: ['Feedback request', 'Sent by hand from the client\'s record. Variables: the contact\'s first name, the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
-    creator: ['Creator updates', 'Booked, changes requested, cleared to post. Variables: the creator\'s first name, the campaign, the step.']
+    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button: https://digital.adspace.me/creator/?k={{1}}, the creator\'s own code.']
   };
   var STATE = { queued: ['Queued', 'is-off'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-ok'], failed: ['Not sent', 'is-danger'] };
   var SAID = {

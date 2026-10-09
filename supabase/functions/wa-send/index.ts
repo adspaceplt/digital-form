@@ -6,7 +6,8 @@
  * Three ways in:
  *   { action: 'drain' }        pg_net after a queued message commits
  *                              (`wa_kick`): the team's reminders and a
- *                              creator's booking steps, claimed with the
+ *                              creator's booking confirmed (with the code
+ *                              for the template's link button), claimed with the
  *                              service role (`wa_claim`) and closed
  *                              (`wa_done`); a refusal is tried again, three
  *                              times in all.
@@ -73,12 +74,14 @@ type Sent = { ok: boolean; id?: string; error?: string };
 
 /* The template, its body variables in order, and a document header where
    one is given. Meta's own refusal is kept for the log, never shown. */
-async function sendTemplate(to: string, name: string, lang: string, params: string[], doc?: { id: string; filename: string }): Promise<Sent> {
+async function sendTemplate(to: string, name: string, lang: string, params: string[], doc?: { id: string; filename: string }, button?: string): Promise<Sent> {
   const components: unknown[] = [];
   if (doc) components.push({ type: 'header', parameters: [{ type: 'document', document: { id: doc.id, filename: doc.filename } }] });
   if (params.length) {
     components.push({ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p || '-').replace(/\s*\n\s*/g, ' ').slice(0, 1000) })) });
   }
+  /* A link button's variable part (a creator's code for their own page). */
+  if (button) components.push({ type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: String(button).slice(0, 200) }] });
   const res = await fetch(await graphUrl('/messages'), {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + TOKEN(), 'Content-Type': 'application/json' },
@@ -136,7 +139,7 @@ Deno.serve(async (req) => {
       const rows = (got.data || []) as Record<string, any>[];
       if (got.error || !rows.length) break;
       for (const r of rows) {
-        const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[]);
+        const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[], undefined, r.button || undefined);
         await svc.rpc('wa_done', { p_id: r.id, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
         if (out.ok) sent++; else { failed++; console.error('wa-send: refused', r.purpose, out.error); }
       }
