@@ -1296,3 +1296,12 @@ dynamic URL takes their code, `wa_outbox.button`); changes requested and
 cleared to post cost a message each and are already on the creator's page
 and its notifications. An 8-digit number starting 3, 6, 8 or 9 is read as
 Singapore for anyone, since a Malaysian mobile never has 8 digits.
+
+### 2026-10-09 · Numbers as the team types them; a creator's booking resent
+The user: "malaysia numbers could be 0123456789 or 01234567890, singapore
+numbers 12345678", then "proceed with your recommendations". A leading 0 is
+Malaysia and any other eight digits Singapore, whatever the client's market;
+nine or ten digits starting 1 are a Malaysian mobile without its 0. The
+console's wa.me links read numbers the same way. A booked creator's ⋯ sends
+the booking and their link again (a number added later, a failed send, a
+lost link), behind its own part like the other two sends.

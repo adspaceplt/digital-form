@@ -3101,6 +3101,9 @@
       items += menuItem('unpick', 'Undo selection');
     }
     if (isLive(o)) {
+      /* Send on WhatsApp (2026-10-09): the booking and the creator's link
+         again; shown once the creator template is on. */
+      if (mayPart('campaigns.whatsapp', 'work')) items += menuItem('wasend', 'Send on WhatsApp');
       items += menuItem('unbook', 'Revert to options');
       items += menuItem('withdraw', 'Withdrawn');
       items += menuItem('replace', 'Replaced', 'is-danger');
@@ -3651,6 +3654,12 @@
     on('unpick',    function () { keyIn(o, 'option'); });
     on('del',       function () { dropOption(o); });
     on('unbook',    function () { unbook(o); });
+    on('wasend',    function () { sendBooking(o); });
+    var waItem = card.querySelector('[data-a="wasend"]');
+    if (waItem) {
+      waItem.hidden = true;
+      if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.on('creator').then(function (yes) { waItem.hidden = !yes; });
+    }
     on('withdraw',  function () { endOption(o, 'withdrawn'); });
     on('replace',   function () { endOption(o, 'replaced'); });
     on('reinstate', function () { reinstate(o); });
@@ -3829,6 +3838,20 @@
 
   /* The booking was made and the client has changed their mind before anything
      was spent. They go back among the options and the slot frees up. */
+  /* The creator's booking sent again on WhatsApp, with their link (a
+     number added later, a send that failed, a creator who lost it). */
+  function sendBooking(o) {
+    var name = (o.creators || {}).name || 'this creator';
+    window.ADspaceConfirm.ask({
+      title: 'Send on WhatsApp?', go: 'Send',
+      body: name + ' receives the booking message again, with the link to their page.'
+    }, function () {
+      window.ADspaceWhatsApp.sendBooking({ optionId: o.id }).then(function () {
+        msg('campWorkMsg', 'Sent on WhatsApp to ' + name + '.', 'ok');
+      }).catch(function (e) { msg('campWorkMsg', window.ADspaceWhatsApp.said(e), 'err'); });
+    });
+  }
+
   function unbook(o) {
     var name = (o.creators || {}).name || 'this creator';
     window.ADspaceConfirm.ask({
