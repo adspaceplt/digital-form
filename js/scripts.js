@@ -1,5 +1,5 @@
-/* Video Scripts (2026-10-09): a shoot's scripts, one a video, read and
- * approved by the client online and printed for the crew on site.
+/* Video Scripts (2026-10-09): a client's scripts by content month, one a video,
+ * shared with the client on its link and printed for the crew on site.
  *
  * The user: "a script table covers one video, hence there is a # … three
  * different types of script, detailed scenes / products + scenes / story +
