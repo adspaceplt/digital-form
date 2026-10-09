@@ -1960,7 +1960,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two
-  lines at 11px (`.cal-chip`), then `+N more`. On a phone it lists only the days holding
+  lines at 11px (`.cal-chip`), each its own block cut to the cell: the
+  client (Internal, Lead · name; the stage dot before it) over the code and
+  the format's short word (`2610W204 · Reel 30s`, `formatShort`), a task
+  with no code its name; never the whole description (the user,
+  2026-10-09). Then `+N more`. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
 - Months view (`view=months&wc=`, the tab named Months): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
