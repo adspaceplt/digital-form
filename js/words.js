@@ -48,6 +48,8 @@
     closedText: 'Please contact your ADspace account manager for any changes.',
     nothing: 'No content pending review',
     nothingText: 'The next content set will appear here when it is ready for review.',
+    noScripts: 'No video scripts',
+    noScriptsText: 'The next video script will appear here when it is published.',
     loading: 'Loading…',
 
     // One status vocabulary, wherever a state is shown.
@@ -124,6 +126,8 @@
     closedText: '如需调整，请联系您的 ADspace 客户经理。',
     nothing: '暂无待审阅内容',
     nothingText: '下一批内容准备好后会显示在这里。',
+    noScripts: '暂无视频脚本',
+    noScriptsText: '下一个视频脚本发布后会显示在这里。',
     loading: '加载中…',
 
     step: {

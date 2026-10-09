@@ -855,7 +855,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `review`, `scripts` (Video Scripts),
-  `campaigns`, `register` (Documents), `reports`, `links`, `services`, `team`, `activity`. The
+  `campaigns`, `reports`, `register` (Documents), `links`, `services`, `team`, `activity`. The
   Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
@@ -1001,7 +1001,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   sequence number throws away a late answer to an older query.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
-- Groups run in the rail's order (Creators List after Creator Campaigns).
+- Groups run in the rail's order (Creators List after Creator Campaigns);
+  Video Scripts by code or title, opening its record (`script=`).
   Each group's label leads with its rail glyph (`ADspaceAdmin.glyph`).
   A row is the name, its code in the token face, one mute line; the match
   in weight, never colour. No recent searches, no explanatory copy.
@@ -1202,8 +1203,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
     `@name` or the number.
-  - One builder for every wa.me link: a Malaysian number with a leading zero
-    takes `6` in front; a number with no leading zero takes its market's code.
+  - One builder for every wa.me link, `ADspaceAPI.waNumber` (the console,
+    the client portal, the creator's page, the namecard), reading a number
+    as `wa_number` does in SQL (WhatsApp, below).
   - Remove is soft, then Delete permanently at Manage.
 - Portal access is one switch per contact (Enable / Revoke in the ⋯, with
   Undo), shown as Portal access after its green dot.
@@ -1879,8 +1881,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   requests, `clients.requests`), Content Review (Sets waiting on the client,
   by `batches.published_at`; Active clients with no set this month),
   Creator Campaigns (Bookings past their date; Waiting for the quality
-  check), Documents (Letters of Offer not yet signed, `clients.documents`),
-  Reports (Waiting for confirmation; Reports for last month), Team (last
+  check), Reports (Waiting for confirmation; Reports for last month),
+  Documents (Letters of Offer not yet signed, `clients.documents`), Team (last
   month's reviews through `perf_overview`: names and steps only).
 - Reports for last month (`sm_reports_owed(p_period)`,
   `2026-10-07-reports-owed.sql`, Reports Full Access, client scope): the
@@ -2051,9 +2053,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip,
     Urgent in red.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
-  - The post date is tentative and never required. It seeds the
-    content month and week until they are touched (`ntTouched`). My Work
-    says post, never publish (Post date, Set the post date).
+  - The post date is required on a new content piece (below). It seeds
+    the content month and week until they are touched (`ntTouched`). My
+    Work says post, never publish (Post date, Set the post date).
 - Duplicate (`ops_duplicate_task`: a new code, none of the history).
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
@@ -2365,11 +2367,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every piece's line carries three dates, typed by whoever plans it and
     never worked out (`2026-10-06-three-dates-a-post.sql`,
     `dates_as_given`: no template offsets): Draft due (ready for AQC
-    review), Due date (for client review) and Post date. A blank one reads
-    Not set; a passed date, a draft due after the due date, or a post date
-    before it is refused on its line. One piece also keeps its brief; with
-    several the button reads Create N tasks. Only a repeat takes a
-    tentative post day inside its week, to count from.
+    review), Due date (for client review) and Post date, each required
+    (the user, 2026-10-09: "to curb delays";
+    `2026-10-09-piece-dates-required.sql`): a line missing one is refused
+    on the page and by `ops_create_pieces` (`dates-required` with the
+    `piece`, "Post 2 needs its Draft due, Due date and Post date."), and
+    nothing is made; a passed date, a draft due after the due date, or a
+    post date before it is refused on its line. A task made before keeps
+    what it has (Not set where blank); Add task, templates, copies, repeats
+    and report tasks are unchanged. One piece also keeps its brief; with
+    several the button reads Create N tasks.
   - A move into Revision (Client) pushes the due date to today (MYT) plus
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
@@ -2647,7 +2654,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Flow:
   - Draft → Submit for review (Work) → Confirm (Manage; never the submitter,
     but an admin may confirm their own after a question saying nobody else
-    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
+    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish
     (Manage).
   - A report is submitted to a named reviewer (`sm_reports.reviewer_id`,
     `2026-10-04-report-reviewer.sql`), asked for in Submit's question from
@@ -2815,7 +2822,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Select reports (the bar's ⋯, Reports View) turns each row of the tab into
   its tick (`.rh-row.is-picking`, the row a `label`) under a bar
   (`#rhBulk`: a tick for the whole tab, `n selected`, Download, Mark as
-  sent on Published at Work, Publish to client on Confirmed at Manage,
+  sent on Published at Work, Publish on Confirmed at Manage,
   Done); changing tab clears the ticks. Each act runs one report after
   another through the function one report uses (`sm_report_sent`,
   `sm_report_publish`), and what is refused is named against its report
@@ -3056,7 +3063,7 @@ Each line is a rule that broke once. Its reason is in the archive.
       its note. Meta not answering (not connected, token, not shared, busy,
       failed) reads Not checked: Meta unavailable and holds it; an admin
       alone continues without it (Continue without Meta, a reason, filed),
-      at Publish since confirmation. Reports Select's Publish to client does
+      at Publish since confirmation. Reports Select's Publish does
       not read Meta: an Advertising Report it holds is refused by name.
   - The Commentary (the figures check until 2026-10-09; `report-draft` with
     `mode: 'check'`, `2026-10-04-ai-check.sql`):
@@ -3123,7 +3130,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
     Captions and Scripts, each colleague and each admin; Edit limits is ten
     fields in five pairs; Captions today and Scripts today list the team and
-    each colleague who wrote one; This month prices Video scripts apart.
+    each colleague who wrote one; This month prices Scripts apart.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
     (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
@@ -3352,24 +3359,35 @@ Each line is a rule that broke once. Its reason is in the archive.
   month (unique), `engagement_id` the client's My Work month where one
   exists (never required). New script asks the client, the month (last
   month, this month and the next six, as My Work offers) and the type
-  (`video_script_new`); Add next script (the rail, the month's scripts)
-  makes the month's next number with the header copied (platform, language,
+  (`video_script_new`); Add script (at the end of the month's tabs) makes
+  the month's next number with the header copied (platform, language,
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.
 - The list is a card a client, a row a script (code and title over the month
   and type, the shoot, the state: Draft or Published), newest month first. A
-  script is a record: the head (code and title; client, type and the month,
-  which opens the client's Months in My Work where it is there; the state,
-  Preview PDF, one ⋯ of Download, Edit, Reset client link, Delete; the
-  user, 2026-10-09: the portal's words, as a report's), under it the
-  client link laid as a campaign's (`.rec-linktools`: the address, Copy
-  link, Preview, then Publish in blue or Unpublish, which asks), the
-  key read once a client and made at Work the first time; then the facts in
-  one card (`.vs-factcard`, the reference video with them) and the script in
-  the next (the user, 2026-10-09: key information apart from the scenes),
-  each scene's VC# (the clip number on the camera) and Shot tick saved as
-  they change and put back on a refusal (`video_script_shot`).
+  script opens in its content month's record (the user, 2026-10-09: one link
+  for the client, the videos as tabs on top): the head names the client and
+  the month (`n scripts · n published`; the month opens the client's Months
+  in My Work where it is there), Preview PDF and one ⋯ of Download and Reset
+  client link, then the client's link once (`.rec-linktools`: the address,
+  Copy link, Preview), the key read once a client and made at Work the first
+  time; under it a tab a script (`#vsTabs`, the view strip, VS01 in number
+  order, the arrows moving along it, `script=` in the address) with Add
+  script at the line's end; then the script on show, its card headed by its
+  code and title over its type with the state, Edit (the pen), Publish in
+  blue or Unpublish (asks) and a ⋯ of Delete at the right edge
+  (`.vs-cardhead`), its facts under it (`.vs-factcard`, the reference video
+  with them), and the script in the next card (the user, 2026-10-09: key
+  information apart from the scenes). A script deleted opens the month's
+  next one, the last one gone the list.
+- On the day, in the console and the installed app alone (the user,
+  2026-10-09: "make it simple to enter"): each scene's VC# (the clip number
+  on the camera) is one field; Enter records it, ticks the scene shot and
+  moves to the next scene's field, and an empty field offers the number
+  after the last one recorded (C0042, then C0043), which Enter takes; a
+  Shot tick is its own press; each saves as it changes and is put back on a
+  refusal (`video_script_shot`).
 - Edit is a page of its own (`#vsEditView`, `edit=1` in the address; the
   user, 2026-10-09: a sheet shut by a stray press would lose a long
   script): the head, the facts card (Video, Shoot), the script card, and
@@ -3399,26 +3417,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
 - Publish (`video_script_share`, Undo where it happened) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
-  `script_link`; Reset client link asks and retires the old key). The link is
-  for the team and the client to read the script and, on site, to record the
-  clip numbers (the user, 2026-10-09: "no need show the approve or changes
-  at client side"): the name card, a tab a content month (drawn where there
-  are two), each script's code and title, its facts card and its script
-  card, each scene's VC# and Shot saved as they change through
-  `script_shot_link` (anon, filed by `Client link`, a refusal put back with
-  `W.notSent`). It reads only `get_scripts` (shared scripts by month, their
-  scenes with clip numbers and ticks; never who ticked, a colleague's name
-  or a version). Nobody decides there: `script_decide` answers `closed`.
-- The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored) is
-  the user's template: the wordmark at each page's head, Video Script, the
+  `script_link`; Reset access link asks and retires the old key). The link is
+  for the client to read the scripts (the user, 2026-10-09: "no need show the
+  approve or changes at client side"; "remove from all client-facing
+  site"): the name card, a tab a content month (drawn where there are two),
+  then the month as a list, a row a script (code and title over its type,
+  the shoot at the right); a row opens its script alone (All scripts, n of
+  N, Previous and Next, a sideways swipe on a phone; `#id` in the address,
+  Back returning to the list), its facts card and its script card. A month
+  of one script opens it. It reads only `get_scripts` (shared scripts by
+  month and their scenes; never a clip number, a tick, who ticked, a
+  colleague's name or a version; `2026-10-09-script-shots-internal.sql`).
+  Nobody decides or records there: `script_decide` and `script_shot_link`
+  answer `closed`.
+- The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored)
+  carries the Reports PDF's furniture and scale (the user, 2026-10-09:
+  "refer back to the Reports style"): the Optima wordmark in ink at the head
+  of every page and the client in small capitals at its right, PRIVATE &
+  CONFIDENTIAL in Slate Medium on the margin's line with the page count, the
+  S(5) margin and S(k) type, white cells under a #f2f2f2 title row. Its
+  content is the user's template: Video Script over its type and month, the
   header table (Video # reads the codes, Platform, Client/Brand, Language,
   Shooting Date & Time, Venue, Est. Shooting Duration, Cast Members/Talent),
-  each script's title and reference and its script by kind with a VC# column
-  (a recorded clip number printed, an empty cell left for the pen), Notes /
-  Remarks, PRIVATE & CONFIDENTIAL and the page count. Scripts of a month
-  sharing kind and header share one header table; Preview PDF (a tab opened
-  at the press) and Download ask one script or the whole month once there
-  are two.
+  each script under its code and title (its reference under it) by kind
+  with a VC# column (a recorded clip number printed, an empty cell left for
+  the pen), and Notes / Remarks as a box with room to write. Scripts of a
+  month sharing kind and header share one header table; Preview PDF (a tab
+  opened at the press) and Download ask one script or the whole month once
+  there are two.
 - Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)

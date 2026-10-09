@@ -1576,7 +1576,7 @@
     play:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 12 7-12 7z"/></svg>'
   };
   function publishMove(s) {
-    if (s === 'draft')      return { to: 'open',  label: 'Publish to client', cls: 'btn-go', icon: STATE_ICON.send };
+    if (s === 'draft')      return { to: 'open',  label: 'Publish', cls: 'btn-go', icon: STATE_ICON.send };
     if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
       ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
         body: 'The client link stops working until this is published again. Selections are kept.' } };

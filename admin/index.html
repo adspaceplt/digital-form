@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009r">
+<link rel="stylesheet" href="/css/portal.css?v=20261009s">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -59,7 +59,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261007a"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261009a"></script>
+<script src="/js/words.js?v=20261009s"></script>
 <script src="/js/icons.js?v=20261008c"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/grow.js?v=20261008"></script>
@@ -76,11 +76,11 @@
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261001a"></script>
+<script src="/js/api.js?v=20261009s"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261009h"></script>
 <script src="/js/notice.js?v=20261009c"></script>
-<script src="/js/whatsapp.js?v=20261009q"></script>
+<script src="/js/whatsapp.js?v=20261009s"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261008p"></script>
 <script src="/js/media.js?v=20261003b"></script>
@@ -204,16 +204,16 @@
         <button class="navitem" data-section="campaigns" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
         </button>
-      </div>
-      <div class="navgroup">
-        <span class="sidebar-label">Records and setup</span>
-        <button class="navitem" data-section="register" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
-        </button>
         <!-- Every client's reports in one place, and where a new one is
              started: the report type, the client, the month. -->
         <button class="navitem" data-section="reports" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
+        </button>
+      </div>
+      <div class="navgroup">
+        <span class="sidebar-label">Internal</span>
+        <button class="navitem" data-section="register" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
         </button>
         <button class="navitem" data-section="links" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
@@ -1844,7 +1844,7 @@
                pane whose own primary is Save. It is on that pane now, under
                the list it confirms. -->
           <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
+            <button class="btn btn-go" id="campPublish" type="button">Publish</button>
           </div>
         </section>
           <p class="camp-next" id="campNext" hidden></p>
@@ -2611,15 +2611,15 @@
                   </div>
                   <div class="field piece-draft">
                     <label class="field-label" for="ntDraft">Draft due</label>
-                    <input class="input" id="ntDraft" type="date">
+                    <input class="input" id="ntDraft" type="date" aria-required="true">
                   </div>
                   <div class="field piece-due">
                     <label class="field-label" for="ntDue">Due date</label>
-                    <input class="input" id="ntDue" type="date">
+                    <input class="input" id="ntDue" type="date" aria-required="true">
                   </div>
                   <div class="field piece-post">
                     <label class="field-label" for="ntPublish">Post date</label>
-                    <input class="input" id="ntPublish" type="date">
+                    <input class="input" id="ntPublish" type="date" aria-required="true">
                   </div>
                   <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -4024,7 +4024,8 @@
              and the ⋯, then the client's link, Copy link and Preview once for
              every script of the month. -->
         <section class="panel rec-head vs-head">
-          <div class="rec-id rec-id-plain">
+          <div class="rec-id">
+            <span class="rec-mark" id="vsRecMark" aria-hidden="true"></span>
             <div class="rec-who">
               <div class="rec-name"><h2 id="vsRecName"></h2></div>
               <p class="rec-id-meta" id="vsRecMeta"></p>
@@ -4066,7 +4067,7 @@
         <section class="panel vs-editform">
           <section class="fsec">
             <h4 class="fsec-h">Video</h4>
-            <div class="row"><div><label class="field-label" for="vsKind">Type of script</label>
+            <div class="row"><div><label class="field-label" for="vsKind">Script type</label>
               <select class="select" id="vsKind">
                 <option value="scenes">Detailed scenes</option>
                 <option value="products">Products and scenes</option>
@@ -4138,7 +4139,7 @@
             <select class="select" id="vsNewClient" aria-required="true"><option value="">Choose a client</option></select></div></div>
           <div class="row"><div><label class="field-label" for="vsNewMonth">Content month</label>
             <select class="select" id="vsNewMonth" aria-required="true"></select></div></div>
-          <div class="row"><div><label class="field-label" for="vsNewKind">Type of script</label>
+          <div class="row"><div><label class="field-label" for="vsNewKind">Script type</label>
             <select class="select" id="vsNewKind">
               <option value="scenes">Detailed scenes</option>
               <option value="products">Products and scenes</option>
@@ -4430,7 +4431,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="pvMenu" hidden role="menu">
-                  <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download PDF</button>
+                  <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download</button>
                   <button class="kmenu-item" data-a="return" type="button" role="menuitem">Revert to draft</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem">Reopen</button>
                   <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem">Delete</button>
@@ -4557,7 +4558,7 @@
           <span class="bulkbar-acts">
             <button class="btn btn-sm" id="rhBulkPdf" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
             <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" disabled hidden>Mark as sent</button>
-            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish to client</button>
+            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="rhBulkDone" type="button">Done</button>
         </div>
@@ -5152,24 +5153,24 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009r"></script>
+<script src="/js/admin.js?v=20261009s"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261009p"></script>
+<script src="/js/reports.js?v=20261009s"></script>
 <script src="/js/register.js?v=20261009a"></script>
-<script src="/js/crm.js?v=20261009q"></script>
+<script src="/js/crm.js?v=20261009s"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261009q"></script>
-<script src="/js/namecard.js?v=20261007h"></script>
+<script src="/js/team.js?v=20261009s"></script>
+<script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261009o"></script>
-<script src="/js/scriptpdf.js?v=20261009m"></script>
-<script src="/js/campaigns.js?v=20261009q"></script>
-<script src="/js/ops.js?v=20261009j"></script>
-<script src="/js/perf.js?v=20261009b"></script>
+<script src="/js/scripts.js?v=20261009s"></script>
+<script src="/js/scriptpdf.js?v=20261009s"></script>
+<script src="/js/campaigns.js?v=20261009s"></script>
+<script src="/js/ops.js?v=20261009s"></script>
+<script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
-<script src="/js/search.js?v=20261008c"></script>
-<script src="/js/overview.js?v=20261007i"></script>
+<script src="/js/search.js?v=20261009s"></script>
+<script src="/js/overview.js?v=20261009s"></script>
 </body>
 </html>

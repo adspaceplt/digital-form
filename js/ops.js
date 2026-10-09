@@ -178,6 +178,7 @@
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
     'draft-not-before-final': 'Draft due must be before the due date.',
+    'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'Move not allowed from this stage.',
     'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
@@ -263,6 +264,7 @@
       return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
         : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
     }
+    if (err === 'dates-required' && d && d.piece) return 'Post ' + d.piece + ' needs its Draft due, Due date and Post date.';
     if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
@@ -5054,9 +5056,9 @@
       var unset = v[key] === null || v[key] === undefined;
       if (edit) {
         return frow(label, detailSelect(key, label,
-          (unset ? [['', 'Not said']] : []).concat([['true', 'Ready'], ['false', 'Not ready']]), unset ? '' : String(v[key])));
+          (unset ? [['', 'Not set']] : []).concat([['true', 'Ready'], ['false', 'Not ready']]), unset ? '' : String(v[key])));
       }
-      return frow(label, unset ? '<span class="mute">Not said</span>' : esc(v[key] ? 'Ready' : 'Not ready'));
+      return frow(label, unset ? '<span class="mute">Not set</span>' : esc(v[key] ? 'Ready' : 'Not ready'));
     };
     var rows = [ready('script_ready', 'Script'), ready('footage_ready', 'Footage')];
     if (v.shoot_at) rows.push(frow('Shoot', esc(niceTime(v.shoot_at))));
@@ -5924,16 +5926,17 @@
        read as one another without their labels. */
     var k = 'ntP' + (rows.length + 1) + '-';
     var fld = function (cls, key, label, control) {
-      return '<div class="field ' + cls + '"><label class="field-label" for="' + k + key + '">' + label + '</label>' +
+      var req = / aria-required="true"/.test(control) ? ' is-req' : '';
+      return '<div class="field ' + cls + '"><label class="field-label' + req + '" for="' + k + key + '">' + label + '</label>' +
         control.replace('>', ' id="' + k + key + '">') + '</div>';
     };
     row.innerHTML =
       fld('piece-desc', 'desc', 'Content description', '<textarea class="input" rows="1" data-oneline placeholder="Content Post" autocomplete="off"></textarea>') +
       fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
       fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
-      fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date">') +
-      fld('piece-due', 'due', 'Due date', '<input class="input" type="date">') +
-      fld('piece-post', 'post', 'Post date', '<input class="input" type="date">') +
+      fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date" aria-required="true">') +
+      fld('piece-due', 'due', 'Due date', '<input class="input" type="date" aria-required="true">') +
+      fld('piece-post', 'post', 'Post date', '<input class="input" type="date" aria-required="true">') +
       '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
@@ -6012,6 +6015,13 @@
     var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
     for (var ri = 0; ri < rows.length; ri++) {
       var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
+      /* Every post its three dates (the user, 2026-10-09: "to curb
+         delays"); the first one missing is named and focused. */
+      ['draft', 'due', 'post'].some(function (k) {
+        if (!rv[k]) { bad = k; said2 = said('dates-required', null, { piece: rows.length > 1 ? ri + 1 : null }); return true; }
+        return false;
+      });
+      if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
       ['draft', 'due', 'post'].some(function (k) {
         if (rv[k] && rv[k] < todayMyt) { bad = k; said2 = 'That ' + DATE_WORD[k] + ' has already passed.'; return true; }
         return false;

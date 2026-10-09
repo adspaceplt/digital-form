@@ -79,6 +79,11 @@
        (2026-10-09). */
     ['scripts',   'Video Scripts',     ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
+    /* Client reports are prepared here and published to the client portal.
+       Their own section (2026-09-25), so a colleague can prepare reports
+       without reading client records; Clients View still reads a client's
+       finished reports on the record. */
+    ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -86,11 +91,6 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
-    /* Client reports are prepared here and published to the client portal.
-       Their own section (2026-09-25), so a colleague can prepare reports
-       without reading client records; Clients View still reads a client's
-       finished reports on the record. */
-    ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
@@ -113,7 +113,7 @@
                 ['leads', 'Leads'], ['past', 'Past clients'],
                 /* Request feedback on WhatsApp (2026-10-09): a group may
                    work Clients and still not message a client. */
-                ['whatsapp', 'WhatsApp feedback request']],
+                ['whatsapp', 'Send on WhatsApp']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
                 /* Send on WhatsApp in a booking's ⋯ (2026-10-09). */
@@ -127,7 +127,7 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['register', 'Documents'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -786,7 +786,7 @@
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
-               work: 'Write scripts, share them with the client and tick scenes on the day.', manage: 'Also delete scripts.' },
+               work: 'Write scripts, publish them to the client and record the clips on the day.', manage: 'Also delete scripts.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',

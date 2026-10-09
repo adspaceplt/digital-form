@@ -366,24 +366,6 @@
         } }
     ] },
 
-    { head: 'Documents', key: 'register', cards: [
-      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
-        all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
-        load: function () {
-          return db.from('client_documents')
-            .select('id, number, issued_at, client_id, clients(id, name, slug)')
-            .in('kind', LETTERS).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
-            .order('issued_at', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (d) {
-                var c = d.clients || {};
-                return { name: c.name || 'Client', meta: d.number, fig: daysWord(daysSince(d.issued_at)) + ' out',
-                         age: 'Issued ' + dateWord(d.issued_at), url: clientUrl(c, 'documents'), section: 'clients' };
-              }) };
-            });
-        } }
-    ] },
-
     { head: 'Reports', key: 'reports', cards: [
       { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports', 'manage'); },
         all: ['/admin/?s=reports', 'reports'], empty: 'No reports waiting.',
@@ -442,6 +424,24 @@
                          section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
               }) };
           });
+        } }
+    ] },
+
+    { head: 'Documents', key: 'register', cards: [
+      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
+        all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
+        load: function () {
+          return db.from('client_documents')
+            .select('id, number, issued_at, client_id, clients(id, name, slug)')
+            .in('kind', LETTERS).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
+            .order('issued_at', { ascending: true }).then(rows).then(function (list) {
+              list = list || [];
+              return { count: list.length, rows: list.map(function (d) {
+                var c = d.clients || {};
+                return { name: c.name || 'Client', meta: d.number, fig: daysWord(daysSince(d.issued_at)) + ' out',
+                         age: 'Issued ' + dateWord(d.issued_at), url: clientUrl(c, 'documents'), section: 'clients' };
+              }) };
+            });
         } }
     ] },
 

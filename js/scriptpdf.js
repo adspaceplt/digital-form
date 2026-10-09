@@ -1,26 +1,32 @@
 /* The Video Script PDF (2026-10-09), for the crew on site: drawn in the
  * browser from the scripts as they stand, never stored.
  *
- * Laid as the user's script template is: the ADspace wordmark at the head of
- * every page, Video Script, the header table (Video #, Platform,
- * Client/Brand, Language, Shooting Date & Time, Venue, Est. Shooting
- * Duration, Cast Members/Talent), then each video: its title and reference,
- * and its script by its kind:
- *   - Detailed scenes: a table of Scene, Visual, Script, VC#;
- *   - Products and scenes: Products/Context, then Scenes, each with VC#;
- *   - Story and voice-over: Hook/Story, Scenes, Script (Read Here), each
- *     with VC#;
- * then Notes / Remarks. A clip number recorded in the portal is printed; an
- * empty VC# cell is left for the crew's pen. Videos of one shoot that share
- * their header and kind share one header table; the foot is PRIVATE &
- * CONFIDENTIAL and the page count. Tables are white cells under a shaded
- * title row, the title row and the grid in one grey (#f2f2f2), as every
- * portal document draws them.
+ * The page furniture and the type are the Reports PDF's (the user,
+ * 2026-10-09: "refer back to the Reports style"; js/smreport.js): the
+ * Optima wordmark in ink at the head of every page and the client's name in
+ * small capitals at its right; PRIVATE & CONFIDENTIAL in Slate Medium at the
+ * foot on the margin's line, the page count at its right; sizes and spaces
+ * on S(k) = 10·φ^(k/2) with the S(5) margin; tables of white cells under a
+ * shaded title row, the title row and the grid in one grey (#f2f2f2), heads
+ * in Slate Regular. The content keeps the user's template: Video Script and
+ * its type and month, the header table (Video #, Platform, Client/Brand,
+ * Language, Shooting Date & Time, Venue, Est. Shooting Duration, Cast
+ * Members/Talent), then each video under its code and title: its script by
+ * its kind, every scene with a VC# cell (a clip number recorded in the
+ * console printed, an empty one left for the crew's pen), and Notes /
+ * Remarks with room to write. Videos of one month that share their header
+ * and kind share one header table.
  */
 (function () {
   'use strict';
   var D = function () { return window.ADspaceDocs; };
-  var W = 595.28, H = 841.89, M = 36, R = W - M, FOOT = 30, TOP = H - M;
+  var W = 595.28, H = 841.89;
+  var PHI = 1.6180339887;
+  var S = function (k) { return 10 * Math.pow(PHI, k / 2); };
+  var M = S(5), R = W - M;            // the Reports PDF's margin, 33.3pt
+  var HEAD_Y = H - M - 11.6;          // the wordmark's baseline
+  var FOOT_Y = M;                     // the foot, on the margin's line
+  var FLOOR = M + S(1) + S(4);        // nothing draws below this
   var CJK = /[⺀-鿿豈-﫿＀-￯]/;
 
   function draw(videos) {
@@ -31,8 +37,12 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        pdf.setTitle('Video Script');
+        var v0 = videos[0] || {};
+        pdf.setTitle([((v0.clients || {}).name || ''), 'Video Script', v0.month_word || ''].filter(Boolean).join(' '));
         pdf.setAuthor('ADspace');
+        pdf.setSubject('Video Script');
+        pdf.setCreator('ADspace Digital Portal');
+        pdf.setProducer('ADspace Digital Portal');
         return docs.embedFonts(pdf, PDF, { cjk: needCjk });
       }).then(function (fonts) {
         if (needCjk && !fonts.cjk) throw new Error('The Chinese typeface could not be loaded.');
@@ -43,10 +53,12 @@
   }
 
   function layout(pdf, PDF, fonts, videos) {
-    var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44);
+    var ink = PDF.rgb(0.251, 0.251, 0.251), mute = PDF.rgb(0.40, 0.40, 0.40);   // the Reports PDF's ink and soft
     var grey = PDF.rgb(0.949, 0.949, 0.949);
+    var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var page = null, y = 0;
-    var body = 9.5, lead = 13;
+    var body = S(0), lead = S(0) * 1.45, small = S(-1);
+    var client = String(((videos[0] || {}).clients || {}).name || '').toUpperCase();
 
     var faceOf = function (s, f) { return fonts.cjk && CJK.test(s || '') ? fonts.cjk : f || fonts.font; };
     var safe = function (s) {
@@ -87,25 +99,27 @@
       return out.length ? out : [''];
     };
 
+    /* The head on every page: the wordmark, and the client in small
+       capitals at the right. */
     var newPage = function () {
       page = pdf.addPage([W, H]);
-      /* The wordmark heads every page, as the template's header does. */
-      text('ADspace', M, TOP - 14, 16, fonts.mark || fonts.bold, mute);
-      y = TOP - 34;
+      text('ADspace', M, HEAD_Y, S(2), mark, ink);
+      if (client) text(client, R - width(client, small, med), HEAD_Y + 0.9, small, med, ink);
+      y = HEAD_Y - S(4);
     };
-    var room = function (h) { if (y - h < FOOT + 18) { newPage(); return true; } return false; };
+    var room = function (h) { if (y - h < FLOOR) { newPage(); return true; } return false; };
 
     var box = function (x, top, w, h, fill) {
       page.drawRectangle({ x: x, y: top - h, width: w, height: h, color: fill || undefined,
         borderColor: grey, borderWidth: 0.8 });
     };
-    var PAD = 6;
+    var PAD = S(-1);
     /* One row of cells: each {w, text, head, size, f, align}. Returns its
        height; draws only where `go`. */
     var rowOf = function (cells, go) {
       var lines = cells.map(function (c) { return wrap(c.text, c.w - PAD * 2, c.size || body, c.f); });
       var hgt = Math.max.apply(null, lines.map(function (l) { return l.length; })) * lead + PAD * 2 - (lead - body) + 2;
-      hgt = Math.max(hgt, 22);
+      hgt = Math.max(hgt, S(4), Math.max.apply(null, cells.map(function (c) { return c.minH || 0; })));
       if (!go) return hgt;
       var x = M;
       cells.forEach(function (c, i) {
@@ -132,13 +146,15 @@
         rowOf(r, true);
       });
     };
-    var line = function (label, value, gap) {
-      var lw = width(label, body + 0.5, fonts.bold) + 6;
-      var ls = wrap(value || '', R - M - lw, body + 0.5);
-      room(ls.length * lead + 4);
-      text(label, M, y - body, body + 0.5, fonts.bold);
-      ls.forEach(function (l, i) { text(l, M + lw, y - body - i * lead, body + 0.5); });
-      y -= ls.length * lead + (gap == null ? 4 : gap);
+    /* A block's head: the code and title in Slate Medium, a line under it
+       in the soft ink where there is one. */
+    var blockHead = function (title, sub) {
+      var ts = wrap(title, R - M, S(1), med);
+      var ss = sub ? wrap(sub, R - M, small) : [];
+      room(ts.length * S(1) * 1.3 + ss.length * small * 1.5 + S(3) + S(4) * 2);
+      ts.forEach(function (l) { text(l, M, y - S(1), S(1), med); y -= S(1) * 1.3; });
+      ss.forEach(function (l) { text(l, M, y - small - 2, small, book, mute); y -= small * 1.5; });
+      y -= S(-1) + 4;
     };
 
     var full = R - M;
@@ -146,29 +162,29 @@
     var header = function (group) {
       var v = group[0];
       var nos = group.map(function (x) { return x.code; }).join(', ');
-      var L = function (t) { return { w: labW, text: t, head: true, f: fonts.bold, size: 9 }; };
+      var L = function (t) { return { w: labW, text: t, head: true, f: reg }; };
       var V = function (t) { return { w: valW, text: t || '' }; };
-      room(140);
-      text('Video Script', M, y - 18, 18, fonts.med || fonts.bold);
-      text(v.kind_word || '', R - width(v.kind_word || '', 9.5), y - 16, 9.5, fonts.font, mute);
-      y -= 32;
+      room(S(5) + S(4) * 5);
+      /* The page title on the Reports PDF's title step, its type and month
+         under it. */
+      y = HEAD_Y - S(5);
+      text('Video Script', M, y, S(3), med);
+      y -= S(2) + 2;
+      text([v.kind_word, v.month_word].filter(Boolean).join(' · '), M, y, small, book, mute);
+      y -= S(3);
       [[L('Video #'), V(nos), L('Platform'), V(v.platform)],
-       [L('Client/Brand'), V((v.clients || {}).name), L('Language'), V(v.language)],
+       [L('Client/Brand'), V((v.clients || {}).name), L('Language'), V(v.language === 'Malay' ? 'Bahasa Melayu' : v.language)],
        [L('Shooting Date & Time'), V(v.when), L('Venue'), V(v.venue)],
        [L('Est. Shooting Duration'), V(v.duration), L('Cast Members/Talent'), V(v.cast_names)]]
         .forEach(function (r) { room(rowOf(r, false)); rowOf(r, true); });
-      y -= 16;
+      y -= S(4);
     };
 
-    var vcW = 70, noW = 40;
-    var video = function (v, many) {
-      var tag = many ? v.code + ' ' : '';
-      room(60);
-      line(tag + (v.kind === 'scenes' ? 'Title:' : 'Title/Theme:'), v.title || '');
-      if (v.reference_url) line('Reference:', v.reference_url);
-      y -= 6;
-      var H2 = function (t, w) { return { w: w, text: t, head: true, f: fonts.bold, size: 9 }; };
-      var VC = function (t, head) { return head ? { w: vcW, text: 'VC#', head: true, f: fonts.bold, size: 9, align: 'center' } : { w: vcW, text: t || '', align: 'center' }; };
+    var vcW = S(9), noW = S(6);
+    var video = function (v) {
+      blockHead(v.code + (v.title ? ' · ' + v.title : ''), v.reference_url ? 'Reference: ' + v.reference_url : '');
+      var H2 = function (t, w) { return { w: w, text: t, head: true, f: reg }; };
+      var VC = function (t, head) { return head ? { w: vcW, text: 'VC#', head: true, f: reg, align: 'center' } : { w: vcW, text: t || '', align: 'center' }; };
       if (v.kind === 'scenes') {
         var vis = (full - noW - vcW) / 2;
         table([H2('Scene', noW), H2('Visual', vis), H2('Script', vis), VC('', true)],
@@ -180,24 +196,26 @@
         var wide = full - vcW;
         table([H2(v.kind === 'products' ? 'Products/Context' : 'Hook/Story', wide), VC('', true)],
           [[{ w: wide, text: v.context || '' }, VC('')]]);
-        y -= 10;
+        y -= S(2);
         table([H2('Scenes', wide), VC('', true)],
           (v.scenes.length ? v.scenes : [{}]).map(function (sc, i) {
             return [{ w: wide, text: (v.scenes.length ? (i + 1) + '.  ' : '') + (sc.visual || '') }, VC(sc.vc)];
           }));
         if (v.kind === 'story') {
-          y -= 10;
+          y -= S(2);
           table([H2('Script (Read Here)', wide), VC('', true)], [[{ w: wide, text: v.vo || '' }, VC(v.vo_vc)]]);
         }
       }
-      y -= 18;
+      y -= S(4);
     };
     var notes = function (group) {
       var many = group.length > 1;
       var parts = group.filter(function (v) { return (v.remarks || '').trim(); })
         .map(function (v) { return (many ? v.code + ': ' : '') + v.remarks; });
-      room(40);
-      line('Notes / Remarks:', parts.join('\n') || '', 8);
+      /* A box to write in on the day: the notes typed, then room below. */
+      var noteRows = parts.length ? [[{ w: full, text: parts.join('\n') }]] : [];
+      noteRows.push([{ w: full, text: '', minH: S(8) }]);
+      table([{ w: full, text: 'Notes / Remarks', head: true, f: reg }], noteRows);
     };
 
     /* Scripts of one month that share their kind and header read under one
@@ -213,16 +231,16 @@
     groups.forEach(function (g) {
       newPage();
       header(g);
-      g.forEach(function (v) { video(v, g.length > 1); });
+      g.forEach(function (v) { video(v); });
       notes(g);
     });
 
     var pages = pdf.getPages();
     pages.forEach(function (pg, i) {
       page = pg;
-      text('PRIVATE & CONFIDENTIAL', M, FOOT - 8, 7.5, fonts.font, mute);
+      text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, small, med, ink);
       var t = 'Page ' + (i + 1) + ' of ' + pages.length;
-      text(t, R - width(t, 7.5), FOOT - 8, 7.5, fonts.font, mute);
+      text(t, R - width(t, small, book), FOOT_Y, small, book, ink);
     });
   }
 

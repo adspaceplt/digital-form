@@ -8,10 +8,10 @@
  * open (#id), so Back returns to the list and a refresh lands on it. Nobody decides on it here (the
  * user, 2026-10-09: "no need show the approve or changes at client side, the
  * public link … is for us and or client to view how the video script is
- * like digitally; and on the spot digital use for entering VC#"): on the day
- * each scene's clip number (VC#) and Shot tick are recorded here, saved as
- * they change through `script_shot_link` and put back on a refusal. It reads
- * only through `get_scripts`; a client page never shows a database message.
+ * like digitally"). The crew's clip numbers (VC#) and Shot ticks are the
+ * team's, recorded in the console (the user, 2026-10-09: "remove from all
+ * client-facing site"), and `get_scripts` sends none. It reads only through
+ * `get_scripts`; a client page never shows a database message.
  */
 (function () {
   'use strict';
@@ -26,9 +26,9 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var GUIDE = { name: 'Video Scripts', steps: [
     { at: '#vsStages', text: 'Each content month has its own tab.' },
-    { at: '.vs-pick', text: 'Open a script to read it.' },
-    { at: '.vs-scene .vs-vc input', text: 'On the day, type each scene\'s clip number (VC#) and tick Shot once it is filmed.' }] };
+    { at: '.vs-pick', text: 'Open a script to read it, with its scenes as they will be shot.' }] };
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
 
   function esc(s) {
@@ -137,13 +137,6 @@
   });
 
   function inMonth() { return feed.scripts.filter(function (s) { return s.period === month; }); }
-  /* Where the crew stands on a script: scenes shot of the scenes, the
-     voice-over counted as one. */
-  function shotWord(s) {
-    var n = s.scenes.length + (s.kind === 'story' ? 1 : 0);
-    var done = s.scenes.filter(function (x) { return x.shot; }).length + (s.kind === 'story' && s.vo_shot ? 1 : 0);
-    return n ? done + ' of ' + n + ' shot' : '';
-  }
   /* The month: its scripts as a list; one opens on its own. A month of one
      script opens it straight away. */
   function paintList() {
@@ -161,11 +154,10 @@
     var el = document.createElement('section');
     el.className = 'panel vs-index';
     el.innerHTML = list.map(function (s) {
-      var sub = [KIND_WORD[s.kind], [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
-      var shot = shotWord(s);
+      var when = [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ');
       return '<button class="vs-pick" type="button" data-id="' + esc(s.id) + '">' +
-        '<span class="vs-pick-name"><b>' + esc(label(s)) + '</b><small>' + esc(sub) + '</small></span>' +
-        '<span class="vs-pick-state">' + esc(shot) + '</span>' + CHEV + '</button>';
+        '<span class="vs-pick-name"><b>' + esc(label(s)) + '</b><small>' + esc(KIND_WORD[s.kind] || '') + '</small></span>' +
+        '<span class="vs-pick-state">' + (when ? esc(when) : '<span class="mute">Not set</span>') + '</span>' + CHEV + '</button>';
     }).join('');
     Array.prototype.forEach.call(el.querySelectorAll('.vs-pick'), function (b) {
       b.addEventListener('click', function () { show(b.getAttribute('data-id'), true); });
@@ -221,35 +213,26 @@
   });
 
   function factsOf(s) {
-    var f = [['Platform', s.platform], ['Language', s.language],
+    var f = [['Platform', s.platform], ['Language', s.language === 'Malay' ? 'Bahasa Melayu' : s.language],
              ['Shooting date', [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')],
              ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]];
     var ref = s.reference_url
       ? '<div class="vs-ref"><dt>Reference video</dt><dd><a class="plink" href="' + esc(s.reference_url) +
-        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + '</a></dd></div>'
+        '" target="_blank" rel="noopener">' + '<span class="vs-ref-url">' + esc(s.reference_url.replace(/^https:\/\//, '')) + '</span>' + OUT + '</a></dd></div>'
       : '';
     return '<dl class="facts vs-facts">' + f.map(function (x) {
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
     }).join('') + ref + '</dl>';
   }
-  function vcCell(id, vc, n) {
-    return '<span class="vs-vc"><input class="input input-sm" type="text" maxlength="40" value="' + esc(vc || '') +
-      '" aria-label="Clip number for ' + esc(n) + '" placeholder="VC#" data-vc="' + esc(id) + '"></span>';
-  }
-  function shotCell(id, on, n) {
-    return '<span class="vs-shot"><input type="checkbox"' + (on ? ' checked' : '') + ' aria-label="' + esc(n) + ' shot" data-shot="' + esc(id) + '"></span>';
-  }
   function scenesOf(s) {
     var two = s.kind === 'scenes';
     var head = '<div class="crm-head vs-scene"><span>#</span><span>' + (two ? 'Visual' : 'Scene') + '</span>' +
-      (two ? '<span>Script</span>' : '') + '<span>VC#</span><span>Shot</span></div>';
+      (two ? '<span>Script</span>' : '') + '</div>';
     return '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' +
-      '<div class="crm-table vs-scenes' + (two ? ' is-two' : '') + '">' + head +
+      '<div class="crm-table vs-scenes is-read' + (two ? ' is-two' : '') + '">' + head +
       (s.scenes.length ? s.scenes.map(function (sc, i) {
-        var n = 'scene ' + (i + 1);
         return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span><span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
-          (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
-          vcCell(sc.id, sc.vc, n) + shotCell(sc.id, sc.shot, 'Scene ' + (i + 1)) + '</div>';
+          (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') + '</div>';
       }).join('') : '<p class="vs-empty">No scenes.</p>') + '</div></section>';
   }
 
@@ -268,46 +251,12 @@
     body += scenesOf(s);
     if (s.kind === 'story') {
       body += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4><p class="vs-prose">' +
-        (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p>' +
-        '<div class="vs-vo"><span class="field-label">VC#</span>' + vcCell('vo', s.vo_vc, 'the voice-over') +
-        '<label class="tickline"><input type="checkbox"' + (s.vo_shot ? ' checked' : '') + ' data-shot="vo"> <span>Shot</span></label></div></section>';
+        (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p></section>';
     }
     if (s.remarks) body += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' + esc(s.remarks) + '</p></section>';
-    html += '<div class="panel vs-card">' + body + '<p class="msg vs-shot-msg" role="status"></p></div>';
+    html += '<div class="panel vs-card">' + body + '</div>';
     el.innerHTML = html;
-    wire(s, el);
     return el;
-  }
-
-  /* On the day: a clip number or a tick, saved as it changes, put back on a
-     refusal with one line in the reader's words. */
-  function wire(s, el) {
-    var msg = el.querySelector('.vs-shot-msg');
-    var say = function (t, bad) { msg.textContent = t || ''; msg.className = 'msg vs-shot-msg' + (t ? (bad ? ' err' : ' ok') : ''); };
-    var scene = function (key) { return key === 'vo' ? null : s.scenes.filter(function (x) { return x.id === key; })[0]; };
-    var save = function (key, on, vc, input) {
-      say('');
-      API.client.rpc('script_shot_link', { p_token: token, p_script: s.id, p_scene: key === 'vo' ? null : key, p_on: on, p_vc: vc })
-        .then(function (r) {
-          if (r.error || (r.data && r.data.error)) throw new Error('refused');
-          var sc = scene(key);
-          if (sc) { if (on != null) sc.shot = on; if (vc != null) sc.vc = vc.trim() || null; }
-          else { if (on != null) s.vo_shot = on; if (vc != null) s.vo_vc = vc.trim() || null; }
-          say('Saved.');
-        })
-        .catch(function () {
-          var sc = scene(key);
-          if (input.type === 'checkbox') input.checked = !input.checked;
-          else input.value = (sc ? sc.vc : s.vo_vc) || '';
-          say(W.notSent, true);
-        });
-    };
-    Array.prototype.forEach.call(el.querySelectorAll('[data-vc]'), function (i) {
-      i.addEventListener('change', function () { save(i.getAttribute('data-vc'), null, i.value, i); });
-    });
-    Array.prototype.forEach.call(el.querySelectorAll('[data-shot]'), function (i) {
-      i.addEventListener('change', function () { save(i.getAttribute('data-shot'), i.checked, null, i); });
-    });
   }
 
   function load() {
@@ -320,7 +269,7 @@
       feed.scripts = feed.scripts || [];
       document.title = (feed.client && feed.client.name ? feed.client.name + ' ' : '') + 'Video Scripts by ADspace';
       if ($('clientName') && feed.client) $('clientName').textContent = feed.client.name;
-      if (!feed.scripts.length) { cover('No video scripts', 'Video scripts appear here once they are published.'); return; }
+      if (!feed.scripts.length) { cover(W.noScripts, W.noScriptsText); return; }
       $('cover').hidden = true;
       var id = location.hash.replace(/^#/, '');
       var at = id && feed.scripts.filter(function (x) { return x.id === id; })[0];

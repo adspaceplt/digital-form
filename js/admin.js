@@ -706,7 +706,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -726,7 +726,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -1177,7 +1177,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1556,6 +1556,9 @@
         });
         state.reviewSets = m;
         paintSets();
+      }).catch(function () {
+        if (state.reviewClients !== list) return;
+        state.reviewSets = 'error'; paintSets();
       });
     }
     if (ids.length) page(0); else state.reviewSets = {};

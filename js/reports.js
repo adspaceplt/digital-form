@@ -15,7 +15,7 @@
  *
  *   Draft      Submit for review            reports Work
  *   In review  Confirm / Send back          the named reviewer, or an admin
- *   Confirmed  Publish to client / Send back Manage
+ *   Confirmed  Publish / Send back Manage
  *   Published  Revise, Unpublish            Work / Manage
  *
  * The PDF is drawn in the browser by js/smreport.js from the database's own
@@ -119,7 +119,7 @@
     'not-confirmed': 'Confirm the report before publishing it.',
     'meta-audit': 'The figures must match Meta first: see the Report audit.',
     'not-linked': 'This client links no Meta accounts.',
-    'not-unavailable': 'Meta answered, so the figures are compared, not passed.',
+    'not-unavailable': 'Meta is answering, so the figures must match it. Run the audit again.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
@@ -133,7 +133,7 @@
     var m = String((e && (e.error || e.message)) || e || '');
     var key = Object.keys(SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
     if (key) return SAID[key];
-    if (/function .* does not exist|schema cache/i.test(m)) return 'Reports need a database update. Run the 2026-09-25 report builder migration.';
+    if (/function .* does not exist|schema cache/i.test(m)) return 'This needs a database update.';
     return m || 'Not saved.';
   }
 
@@ -875,7 +875,7 @@
     var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
     if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit for review</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
-    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
+    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     var mayReturn = named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine);
     if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
@@ -1763,7 +1763,7 @@
     if (r.status === 'published' && may('work') && r.sent_on) {
       items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
     }
-    if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
+    if (live && may('manage')) items.push('<button class="kmenu-item" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false" data-a="more">' + ICON.more + '</button>' +
@@ -1779,7 +1779,7 @@
       var d = res.data || {};
       if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
       reopen(done);
-    });
+    }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e), 'err'); });
   }
   function reopen(done, after) {
     var id = st.open.id;
@@ -2029,8 +2029,11 @@
           pdf: function () { return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, name).then(function (f) { return f.blob; }); }
         }).then(function (d) {
           var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function () {
-            reopen('Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.');
+          var sent = 'Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.';
+          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
+            var no = res.error || (res.data && res.data.error ? res.data : null);
+            if (no) { b.disabled = false; say(m, sent + ' It was not marked as sent: ' + said(no), 'warn'); return; }
+            reopen(sent);
           });
         }).catch(function (e) {
           b.disabled = false;
@@ -4537,7 +4540,7 @@
     script: 10, script_admin: 20 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
-  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Video scripts' };
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Scripts' };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);

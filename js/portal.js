@@ -765,7 +765,7 @@
       contacts.forEach(function (k) {
         var row = document.createElement('div');
         row.className = 'svc-row ct-row is-read';
-        var wa = String(k.phone || '').replace(/[^0-9]/g, '');
+        var wa = window.ADspaceAPI.waNumber(k.phone);
         row.innerHTML =
           /* The name with Main contact at the right of its line, as every card
              puts its chip; the role under it. Who signs in is the Portal

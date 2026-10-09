@@ -520,6 +520,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     Pre-advertising Checklist.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
+- One word per act, everywhere (the user, 2026-10-09: "why do you use
+  different terms"): Publish / Unpublish (never Share, Unshare or Publish to
+  client), Download (never Download PDF), Preview PDF beside it where a
+  record draws one, Add for the next of a series (Add script). `tests/words.js`
+  fails a retired word.
 - One vocabulary:
   - Creator steps: Confirmed, Pending visit, Pending draft, Submitted,
     Reviewing, Changes requested, Scheduled, Posted, Completed, Withdrawn.
@@ -593,9 +598,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Video Scripts, Creator
-    Campaigns.
-  - **Records and setup**: Documents, Reports, Short Links, Services, Team,
-    Handbook.
+    Campaigns, Reports (the user, 2026-10-09: reports are client work).
+  - **Internal**: Documents, Short Links, Services, Team, Handbook.
   - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
     not a section).
   - A chunk whose every route is withheld hides its label.

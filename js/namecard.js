@@ -24,13 +24,7 @@
      012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;
      60187625233 → +60 18-762 5233; 07-123 4567 → +60 7-123 4567;
      a Singapore eight → +65 8123 4567. Anything else keeps its digits. */
-  function digits(raw) {
-    var d = String(raw || '').replace(/\D/g, '');
-    if (!d) return '';
-    if (/^0\d/.test(d)) d = '6' + d;
-    else if (/^[689]\d{7}$/.test(d)) d = '65' + d;
-    return d;
-  }
+  function digits(raw) { return window.ADspaceAPI.waNumber(raw); }
   function phone(raw) {
     var d = digits(raw);
     if (!d) return '';

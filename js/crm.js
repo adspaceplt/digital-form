@@ -1407,7 +1407,7 @@
       return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
-    var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
+    var rows = [['Main contact', '<b>' + esc((m.salutation ? m.salutation + ' ' : '') + (m.name || '')) + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     var mUser = waHandle(m.whatsapp);
     if (m.phone) {
@@ -2588,17 +2588,10 @@
      A number already carrying its country code is left exactly as it is, and
      one with no leading zero takes its client's market, because a Singapore
      mobile has eight digits and no national prefix to replace. */
-  function waNumber(raw, market) {
-    var d = String(raw || '').replace(/\D/g, '');
-    if (!d) return '';
-    /* As the team types numbers (the user, 2026-10-09): a leading 0 is
-       Malaysia, eight digits Singapore, nine or ten starting 1 a Malaysian
-       mobile without its 0; anything else already carries its country code
-       (`wa_number` reads them the same way). */
-    if (d.charAt(0) === '0') return '6' + d;
-    if (d.length === 8) return '65' + d;
-    if ((d.length === 9 || d.length === 10) && d.charAt(0) === '1') return '60' + d;
-    return d;
+  function waNumber(raw) {
+    /* As the team types numbers (the user, 2026-10-09): the one reading is
+       `ADspaceAPI.waNumber`, which `wa_number` matches in SQL. */
+    return window.ADspaceAPI.waNumber(raw);
   }
   /* WhatsApp lets a person hide their number behind a username, and some
      contacts now reach us that way only: `wa.me/@name` opens the chat where

@@ -7993,7 +7993,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tsteps-bar { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
 .tsteps-bar li { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--line); }
 .tsteps-bar li.is-done { background: var(--line-ctl); }
-.tsteps-bar li.is-now { background: var(--action); }
+.tsteps-bar li.is-now { background: var(--fill); }
 .tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .tsteps-word b { color: var(--ink); font-weight: 600; }
 .tnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
@@ -10941,7 +10941,8 @@ button.vs-row { cursor: pointer; }
 .vs-block > .fsec-h { margin: 0; }
 .vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.vs-ref .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-ref .plink { max-width: 100%; min-width: 0; }
+.vs-ref-url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* A scene: its number, what is seen (and on a detailed script what is
    said), then the clip number and the tick. */
@@ -10955,8 +10956,7 @@ button.vs-row { cursor: pointer; }
 .vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; }
 .vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; }
 .vs-vc .input { width: 100%; }
-.vs-shot { display: flex; justify-content: center; }
-.vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; }
+.vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; accent-color: var(--accent); }
 .vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
 .vs-vo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .vs-vo .input { width: 104px; }
@@ -10971,6 +10971,20 @@ button.vs-row { cursor: pointer; }
 .is-narrow .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
 .is-narrow .vs-scene > .vs-vc { grid-area: vc; }
 .is-narrow .vs-scene > .vs-shot { grid-area: shot; }
+/* The client reads the script alone: the scene and, on a detailed script,
+   its words, and no clip number or tick (the user, 2026-10-09). */
+.vs-scenes.is-read .vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
+.vs-scenes.is-read.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr); }
+.is-narrow .vs-scenes.is-read .vs-scene, .is-narrow .vs-scenes.is-read.is-two .vs-scene {
+  grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line";
+}
+/* On the day (the console and the installed app): the clip number field is
+   the row's one stop, Enter records it, ticks Shot and moves to the next
+   scene; Shot is a full-size target. */
+.vs-shot { display: flex; justify-content: center; }
+.vs-shot label { display: inline-flex; align-items: center; justify-content: center; width: var(--ctl-h-sm); height: var(--ctl-h-sm); cursor: pointer; }
+.vs-shot label input { margin: 0; }
+@media (pointer: coarse) { .vs-shot label { width: var(--ctl-h); height: var(--ctl-h); margin: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) 0; } }
 
 /* A content month's record (the user, 2026-10-09): the head with the
    client's link once, a tab a script with Add script at the line's end,
@@ -11016,7 +11030,8 @@ button.vs-row { cursor: pointer; }
 .vs-editfoot {
   position: sticky; bottom: var(--tabbar-space); z-index: 5;
   display: grid; gap: 8px; padding: 12px 0 max(12px, env(safe-area-inset-bottom, 0px));
-  background: var(--page); border-top: 1px solid var(--line);
+  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--line);
 }
 .vs-editfoot .msg { margin: 0; }
 .vs-editfoot .msg:empty { display: none; }
