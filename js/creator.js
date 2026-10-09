@@ -544,6 +544,7 @@
     var d = String(phone || '').replace(/[^0-9+]/g, '').replace(/^\+/, '');
     if (d.length < 8) return '';
     if (/^0/.test(d)) d = '6' + d;
+    else if (d.length === 8) d = '65' + d;
     var I = window.ADspaceIcons;
     return '<div class="cx-chips">' +
       '<a class="plink" href="https://wa.me/' + d + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') + esc(t().whatsapp) + '</a>' +

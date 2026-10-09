@@ -2591,9 +2591,14 @@
   function waNumber(raw, market) {
     var d = String(raw || '').replace(/\D/g, '');
     if (!d) return '';
-    if (d.indexOf('60') === 0 || d.indexOf('65') === 0) return d;
+    /* As the team types numbers (the user, 2026-10-09): a leading 0 is
+       Malaysia, eight digits Singapore, nine or ten starting 1 a Malaysian
+       mobile without its 0; anything else already carries its country code
+       (`wa_number` reads them the same way). */
     if (d.charAt(0) === '0') return '6' + d;
-    return (market === 'SG' ? '65' : '60') + d;
+    if (d.length === 8) return '65' + d;
+    if ((d.length === 9 || d.length === 10) && d.charAt(0) === '1') return '60' + d;
+    return d;
   }
   /* WhatsApp lets a person hide their number behind a username, and some
      contacts now reach us that way only: `wa.me/@name` opens the chat where

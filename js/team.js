@@ -115,7 +115,9 @@
                    work Clients and still not message a client. */
                 ['whatsapp', 'WhatsApp feedback request']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
-    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
+    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
+                /* Send on WhatsApp in a booking's ⋯ (2026-10-09). */
+                ['whatsapp', 'Send on WhatsApp']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
@@ -191,6 +193,7 @@
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
     'team.notice': ['work'], 'clients.whatsapp': ['work'], 'reports.whatsapp': ['work'],
+    'campaigns.whatsapp': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']

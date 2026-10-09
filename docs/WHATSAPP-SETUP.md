@@ -80,9 +80,12 @@ On. A purpose that is Off sends nothing.
 - A colleague: their mobile (Team).
 - A creator: their WhatsApp number (the creator's record in the Creators
   List).
-- Malaysian numbers with a leading 0 take 60. An 8-digit number takes 65
-  for a Singapore client, and for anyone when it starts with 3, 6, 8 or 9
-  (a Malaysian mobile is never 8 digits).
+- Numbers are read as the team types them: a leading 0 is Malaysia
+  (`0123456789`, `01234567890` take 60), any other 8 digits Singapore
+  (`12345678` takes 65), 9 or 10 digits starting 1 a Malaysian mobile typed
+  without its 0, and a number typed with its country code is kept.
+- A booked creator's ⋯ in the campaign has Send on WhatsApp, to send the
+  booking and their link again.
 
 ## 4. What happens
 

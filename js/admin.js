@@ -1769,6 +1769,7 @@
     'campaign.task_unlinked': ['Task unlinked', '', 'campaigns'],
     'campaign.unbooked':     ['Back to options', 'is-warn', 'campaigns'],
     'campaign.withdrawn':    ['Creator withdrawn', 'is-danger', 'campaigns'],
+    'campaign.whatsapp':     ['Sent on WhatsApp', '', 'campaigns'],
     'campaign.confirmed':    ['Selection confirmed', 'is-ok', 'campaigns'],
     'campaign.submitted':    ['Draft submitted', '', 'campaigns'],
     'campaign.rated':        ['Booking rated', '', 'campaigns'],

@@ -32,7 +32,9 @@
     'bad-params': 'A template takes 0 to 5 variables.',
     'wa-off': 'Turn this template on in WhatsApp settings first.',
     'no-number': 'The main contact has no WhatsApp number. Add one in Contacts.',
+    'no-creator-number': 'This creator has no WhatsApp number. Add one on their Creators List record.',
     'not-published': 'Publish the report first.',
+    'not-booked': 'Only a booked creator can be sent their booking.',
     'not-found': 'This record is no longer available.',
     'wa-not-set-up': 'WhatsApp needs its Phone number ID and token in Supabase.',
     'wa-token': 'The WhatsApp token was refused. Check it in Supabase.',
@@ -218,6 +220,15 @@
   }
   /* o: { clientId } */
   function sendFeedback(o) { return invoke({ action: 'feedback', client_id: o.clientId }); }
+  /* A creator's booking again, queued as its confirmation is. o: { optionId } */
+  function sendBooking(o) {
+    return db().rpc('wa_creator_send', { p_option: o.optionId }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r && r.error) throw r.error;
+      if (d.error) throw d.error === 'no-number' ? 'no-creator-number' : d.error;
+      return d;
+    });
+  }
 
-  window.ADspaceWhatsApp = { manage: manage, on: on, sendReport: sendReport, sendFeedback: sendFeedback, said: said };
+  window.ADspaceWhatsApp = { manage: manage, on: on, sendReport: sendReport, sendFeedback: sendFeedback, sendBooking: sendBooking, said: said };
 })();

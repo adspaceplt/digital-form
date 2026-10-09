@@ -3610,9 +3610,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   reminder (first name, title, message), creator (first name, campaign; its
   link button's variable the creator's code, `wa_outbox.button`); a
   template takes the first n.
-- A number is `wa_number`'s international form (digits; a leading 0 takes
-  60; eight digits take 65 for a Singapore client, and anywhere when they
-  start 3, 6, 8 or 9); a `@username` cannot be
+- A number is `wa_number`'s international form, read as the team types it
+  (`2026-10-09-whatsapp-numbers-resend.sql`): a leading 0 is Malaysia (60
+  for the 0), any other eight digits Singapore (65), nine or ten starting 1
+  a Malaysian mobile without its 0 (60), else as typed with its country
+  code; the console's wa.me links read them alike; a `@username` cannot be
   messaged (`no-number`). A client's main contact's WhatsApp number, else
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
@@ -3626,7 +3628,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `wa_record` ask the part). `wa_report_prepare` / `wa_feedback_prepare`
   answer the number, the greeting (`contact_greeting`: "Dato' Lim Wei Ming",
   else the first name) and template; `wa_record` files `wa.sent` under the
-  client (Clients in the Activity record). A refusal is one line in the
+  client (Clients in the Activity record). A booked creator's ⋯ in the
+  campaign holds Send on WhatsApp (shown once the creator template is on;
+  asks; `wa_creator_send`, part `campaigns.whatsapp`, queued as the
+  confirmation is with the creator's code for the button, filed
+  `campaign.whatsapp` under the campaign). A refusal is one line in the
   team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
   bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
