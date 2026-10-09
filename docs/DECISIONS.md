@@ -1270,3 +1270,11 @@ refusal; a purpose with no template asks for one first ("Save and turn on").
 Edit asks the name, language and variables only. The switch is a component
 of its own (DESIGN.md §4), for any later setting that takes effect at the
 press.
+
+### 2026-10-09 · A contact's salutation, and the WhatsApp greeting
+The user: "could you add the salutation under clients > contact (doesnt look
+good to just call the name)" after the first feedback message read "Hi QR".
+`client_contacts.salutation` is a select before the name. The greeting is the
+salutation and the whole name ("Dato' Lim Wei Ming"), never the salutation
+and one word: a Chinese name puts the surname first and a Malay name has
+none, so any cut guesses wrong. Without a salutation the first word stays.

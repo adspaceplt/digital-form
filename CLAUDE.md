@@ -1193,6 +1193,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Both screens re-read the row on open, keeping any field already changed.
 - Contacts:
   - A table, with `.plink` reach links.
+  - Salutation (`client_contacts.salutation`, `2026-10-09-contact-salutation.sql`;
+    the user, 2026-10-09): a select before the name (Mr, Ms, Mrs, Mdm, Dr,
+    Prof, Dato', Datin, Datuk, Dato' Sri, Datin Sri, Tan Sri, Puan Sri, Tun,
+    Tuan, Puan, Encik, Cik, or None), shown before the name on the row and
+    filed from and to. `contact_greeting(salutation, name)` greets with the
+    salutation and the whole name, else the first word of the name.
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
     `@name` or the number.
@@ -3599,8 +3605,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   with no template asks for one first); a purpose that is Off sends nothing. The
   sheet lists the last fifty messages (`wa_recent`, the number cut to its
   last four).
-- Variables in order: report (first name, client or brand, the report and
-  period; the PDF as the document header), feedback (first name, client),
+- Variables in order: report (the greeting, client or brand, the report and
+  period; the PDF as the document header), feedback (the greeting, client),
   reminder (first name, title, message), creator (first name, campaign,
   step); a template takes the first n.
 - A number is `wa_number`'s international form (digits; a leading 0 takes
@@ -3613,7 +3619,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   on; asks; the kept PDF uploaded as the header document, then marked as
   sent today); Request feedback on WhatsApp in a client's ⋯ (Clients Work,
   the template on; asks). `wa_report_prepare` / `wa_feedback_prepare`
-  answer the number and template; `wa_record` files `wa.sent` under the
+  answer the number, the greeting (`contact_greeting`: "Dato' Lim Wei Ming",
+  else the first name) and template; `wa_record` files `wa.sent` under the
   client (Clients in the Activity record). A refusal is one line in the
   team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
