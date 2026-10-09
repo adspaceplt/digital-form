@@ -18,12 +18,50 @@ message must use an approved template; free text is not allowed.
 
 | Secret | Value |
 |---|---|
-| `WHATSAPP_PHONE_ID` | The **Phone number ID** (WhatsApp Manager → Phone numbers, or the app's WhatsApp → API Setup). It is not the phone number itself. |
-| `WHATSAPP_TOKEN` | A **system user** token with `whatsapp_business_messaging` (and `whatsapp_business_management`), assigned the WhatsApp Business Account. Unset, the Meta system user's `META_SYSTEM_TOKEN` is used, once that system user has the WhatsApp account assigned. |
+| `WHATSAPP_PHONE_ID` | The **Phone number ID** (below). It is not the phone number itself, and not the WhatsApp Business Account ID. |
+| `META_SYSTEM_TOKEN` | Already set for Import from Meta. The sender uses it when the same system user holds the WhatsApp permissions and the WhatsApp Business Account (below). |
+| `WHATSAPP_TOKEN` | Optional. Set only to send WhatsApp with a different token from Import from Meta. |
+| `META_APP_SECRET` | Already set for Import from Meta where the app requires the app secret; each WhatsApp call then carries the same proof. |
 | `META_GRAPH_VERSION` | Optional; `v26.0` unless set. |
 
-The token is a secret: it goes into Supabase only, never into the chat or the
-repository. The WhatsApp Business Account ID is not needed by the sender.
+A token is a secret: it goes into Supabase only, never into the chat or the
+repository.
+
+### Where to find the Phone number ID
+
+Either place shows it:
+
+- **WhatsApp Manager**: business.facebook.com → WhatsApp Manager (All tools →
+  WhatsApp Manager) → **Phone numbers** → the business number → the
+  **Phone number ID** (a long number, often starting `1`).
+- **Meta for Developers**: developers.facebook.com → My Apps → the app used
+  for Import from Meta → **WhatsApp → API Setup** → under **From**, choose the
+  business number; the **Phone number ID** is shown beneath it.
+
+The number must show **Connected** on the Cloud API, with a display name
+Meta approved. A number still on the WhatsApp Business app must be moved to
+the Cloud API first.
+
+### Using the Meta system token for WhatsApp
+
+The token Import from Meta uses works for WhatsApp when all three hold:
+
+1. **The app has the WhatsApp product.** Meta for Developers → the app →
+   Add product → WhatsApp (already done where API Setup shows the number).
+2. **The system user holds the WhatsApp Business Account.** Business
+   settings → Users → **System users** → the system user → **Assign assets**
+   → WhatsApp accounts → the account → **Full control** (Manage WhatsApp
+   account).
+3. **The token carries both WhatsApp permissions.** Business settings →
+   System users → the system user → **Generate new token** → the same app →
+   tick `whatsapp_business_messaging` and `whatsapp_business_management`
+   beside the Page and ads permissions Import from Meta already uses → never
+   expires. A token generated before the WhatsApp account was assigned does
+   not reach it: generate it again and replace `META_SYSTEM_TOKEN` in
+   Supabase with the new one (Import from Meta keeps working on it).
+
+Meta's Access Token Debugger (developers.facebook.com/tools/debug/accesstoken)
+lists a token's permissions, to confirm both WhatsApp permissions are on it.
 
 ## 2. Templates (WhatsApp Manager → Message templates)
 

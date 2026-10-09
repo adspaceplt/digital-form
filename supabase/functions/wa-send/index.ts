@@ -23,7 +23,8 @@
  *
  * Secrets: WHATSAPP_PHONE_ID (the Phone number ID), WHATSAPP_TOKEN (a system
  *          user's token with whatsapp_business_messaging; unset, the Meta
- *          system user's META_SYSTEM_TOKEN), META_GRAPH_VERSION (unset v26.0),
+ *          system user's META_SYSTEM_TOKEN), META_APP_SECRET (optional: each
+ *          call then carries appsecret_proof), META_GRAPH_VERSION (unset v26.0),
  *          plus the platform's SUPABASE_URL, SUPABASE_ANON_KEY and
  *          SUPABASE_SERVICE_ROLE_KEY. docs/WHATSAPP-SETUP.md.
  *
@@ -51,6 +52,23 @@ const GRAPH = () => 'https://graph.facebook.com/' + (secret('META_GRAPH_VERSION'
 const TOKEN = () => secret('WHATSAPP_TOKEN') || secret('META_SYSTEM_TOKEN');
 const PHONE = () => secret('WHATSAPP_PHONE_ID');
 
+/* With "Require app secret" on in the Meta app, every Graph call carries
+   appsecret_proof (HMAC-SHA256 of the token keyed by META_APP_SECRET), as
+   meta-import's do. Unset, nothing is added. */
+async function proof(): Promise<string> {
+  const s = secret('META_APP_SECRET');
+  if (!s) return '';
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(s), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(TOKEN()));
+  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function graphUrl(path: string): Promise<string> {
+  const url = new URL(GRAPH() + '/' + PHONE() + path);
+  const p = await proof();
+  if (p) url.searchParams.set('appsecret_proof', p);
+  return url.toString();
+}
+
 type Sent = { ok: boolean; id?: string; error?: string };
 
 /* The template, its body variables in order, and a document header where
@@ -61,7 +79,7 @@ async function sendTemplate(to: string, name: string, lang: string, params: stri
   if (params.length) {
     components.push({ type: 'body', parameters: params.map((p) => ({ type: 'text', text: String(p || '-').replace(/\s*\n\s*/g, ' ').slice(0, 1000) })) });
   }
-  const res = await fetch(GRAPH() + '/' + PHONE() + '/messages', {
+  const res = await fetch(await graphUrl('/messages'), {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + TOKEN(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template',
@@ -81,7 +99,7 @@ async function uploadPdf(b64: string, filename: string): Promise<{ id?: string; 
   form.append('messaging_product', 'whatsapp');
   form.append('type', 'application/pdf');
   form.append('file', new Blob([bytes], { type: 'application/pdf' }), filename);
-  const res = await fetch(GRAPH() + '/' + PHONE() + '/media', {
+  const res = await fetch(await graphUrl('/media'), {
     method: 'POST', headers: { 'Authorization': 'Bearer ' + TOKEN() }, body: form
   }).catch(() => null);
   if (!res) return { error: 'upload' };

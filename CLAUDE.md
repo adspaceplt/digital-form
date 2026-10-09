@@ -3621,8 +3621,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `wa_outbox`; `wa_kick` (pg_net) wakes `wa-send`, which claims with the
   service role (`wa_claim`, `wa_done`; three tries, then Not sent). The
   queue and its tables are closed to every page.
-- Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`),
-  `META_GRAPH_VERSION`; Verify JWT off (pg_net calls with no session).
+- Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`,
+  the user's choice, 2026-10-09: one system user holds both), `META_APP_SECRET`
+  (`appsecret_proof` on every call, as `meta-import`), `META_GRAPH_VERSION`;
+  Verify JWT off (pg_net calls with no session).
 
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
