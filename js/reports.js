@@ -929,8 +929,9 @@
      report takes from Meta, exactly; while the client links Meta, Submit
      and Publish wait on it (the database holds them too, `meta-audit`).
      The Commentary is the AI's reading of the words against the figures.
-     Run audit runs both; Against Meta also runs by itself when the step
-     opens (no AI use). */
+     Both run only when Run audit is pressed (the user, 2026-10-09: it ran
+     by itself on every page that opened the step, each filing a reading);
+     an Advertising Report is also read at Publish. */
   function loadCheck(box, r) {
     var host = box.querySelector('[data-m="aicheck"]');
     if (!host) return;
@@ -949,7 +950,6 @@
       st.audit = metaState(r, got[1]);
       paintAudit(host, r, can);
       holdSubmit(box, r);
-      if (metaDue(r)) runMeta(r);
     });
   }
 
@@ -978,11 +978,29 @@
      that grow by the hour, so the reading it was submitted on stands). */
   function metaOpen(r) { return r.status === 'draft' || (r.kind === 'ads' && (r.status === 'review' || r.status === 'confirmed')); }
   function metaCan(r) { return metaSources(r).length > 0 && metaOpen(r) && may('work'); }
-  var metaAuto = {};
-  function metaDue(r) {
-    if (!metaCan(r) || !st.audit || st.audit.busy) return false;
-    var k = r.id + ':' + r.version_no + ':' + r.status;
-    return !metaAuto[k] || Date.now() - metaAuto[k] > 600000;
+  /* The figures as they stand, read again before Meta is compared with
+     them: a page opened before a colleague took Meta's figures held the old
+     ones, and compared and filed them as differences (2026-10-09). Answers
+     whether anything the page held had moved. */
+  function freshFigures(r) {
+    var id = r.id;
+    var asks = [
+      db.from('sm_reports').select('*').eq('id', id).maybeSingle(),
+      db.from('sm_report_platforms').select('*').eq('report_id', id).order('position', { ascending: true }),
+      db.from('sm_report_posts').select('*').eq('report_id', id).order('posted_on', { ascending: true }).order('position', { ascending: true })
+    ];
+    if (r.kind === 'ads') asks.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
+    return Promise.all(asks).then(function (got) {
+      var bad = got.filter(function (x) { return x.error; })[0];
+      if (bad) throw bad.error;
+      if (!got[0].data) throw 'not-found';
+      var was = JSON.stringify([st.open, st.platforms, st.posts, st.ads]);
+      Object.assign(st.open, got[0].data);
+      st.platforms = got[1].data || [];
+      st.posts = got[2].data || []; sortPosts();
+      if (got[3]) { st.ads = got[3].data || []; sortAds(); }
+      return was !== JSON.stringify([st.open, st.platforms, st.posts, st.ads]);
+    });
   }
   var META_DOWN = ['not-connected', 'token-refused', 'not-assigned', 'rate-limited', 'meta-failed'];
   function readMeta(r) {
@@ -1139,9 +1157,16 @@
     var a = st.audit;
     if (a.busy) return a.p || Promise.resolve({});
     a.busy = true;
-    metaAuto[r.id + ':' + r.version_no + ':' + r.status] = Date.now();
     repaintAudit('');
-    a.p = readMeta(r).then(function (got) {
+    var moved = false;
+    a.p = freshFigures(r).then(function (m0) {
+      moved = m0;
+      /* Moved on since the page drew it (another version, or past what
+         Meta is read for): nothing is read, and the page is drawn again. */
+      if (st.open.version_no !== a.version || !metaOpen(st.open)) return { stale: true };
+      return readMeta(r);
+    }).then(function (got) {
+      if (got.stale) return { said: '' };
       if (got.refused) return { said: META_SAID[got.refused] || said(got.refused) };
       if (got.down) return fileMeta(r, 'unavailable', [], got.down).then(function () { return { outcome: 'unavailable' }; });
       a.reads = got.reads;
@@ -1151,6 +1176,10 @@
       return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
     }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
       a.busy = false; a.p = null;
+      /* Figures a colleague changed are drawn as they now stand. */
+      if (moved && st.open && st.open.id === r.id) {
+        return reloadAudit(r, res.said || '').then(function () { paintEditor(); return res; });
+      }
       return reloadAudit(r, res.said || '').then(function () { return res; });
     });
     return a.p;
