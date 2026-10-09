@@ -2360,8 +2360,8 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (hover: hover) {
   .navitem:hover { background: var(--sunk); color: var(--ink); }
 }
-.navitem.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
-.navitem.is-on svg { color: var(--ink); }
+.navitem.is-on, .railfoot.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
+.navitem.is-on svg, .railfoot.is-on svg { color: var(--ink); }
 
 /* Who you are, the register you read in and the way out. Three things
    touched a few times a year each, which took a 150px block at the foot of
@@ -10431,7 +10431,7 @@ button.aiu-row:first-child::before { content: none; }
    own pill. */
 .tab, .tab.is-on, .rectabs .tab, .rectabs .tab.is-on, .tabrow .tab, .tabrow .tab.is-on,
 .cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
-.seg-opt, .seg-opt.is-on, .navitem.is-on, .picker-opt.is-on { font-weight: 400; }
+.seg-opt, .seg-opt.is-on, .navitem.is-on, .railfoot.is-on, .picker-opt.is-on { font-weight: 400; }
 
 /* =========================================================================
    SALES (js/sales.js, ?s=clients&view=sales, 2026-10-05)
@@ -10996,7 +10996,7 @@ button.vs-row { cursor: pointer; }
 .vs-tabline > .vs-next { flex: 0 0 auto; }
 .vs-rec { display: grid; gap: 12px; min-width: 0; }
 .vs-rec > .panel { margin: 0; }
-.vs-factcard { display: grid; gap: 16px; }
+.vs-factcard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .vs-factcard > .msg { margin: 0; }
 .vs-factcard > .msg:empty { display: none; }
 .vs-factcard > .undobar-here { margin: 0; }
@@ -11013,6 +11013,10 @@ button.vs-row { cursor: pointer; }
    halves between the state and the ⋯. */
 .is-narrow .vs-cardctl { flex: 1 1 100%; }
 .is-narrow .vs-cardctl > .btn { flex: 1 1 0; min-width: 0; }
+/* Tight (a phone at 320 to 460), the state takes its own line above the
+   acts, so Edit, Publish and the ⋯ keep their words whole. */
+.is-tight .vs-cardctl { flex-wrap: wrap; row-gap: 8px; }
+.is-tight .vs-cardctl > .chip-state { flex: 1 0 100%; margin-right: 0; }
 .vs-sheetview .vs-shot-msg { margin: 0; }
 .vs-sheetview .vs-shot-msg:empty { display: none; }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
@@ -11091,3 +11095,17 @@ button.vs-row { cursor: pointer; }
   .vs-card { padding: 14px; gap: 20px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Settings (js/settings.js, 2026-10-10): a card a group, a row a setting.
+   The name over its value as it stands, the control at the right edge (a
+   switch, Edit or Open), one row's height whatever the control. */
+.set-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
+  padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
+}
+.set-row:last-child { border-bottom: 0; }
+.set-what { min-width: 0; }
+.set-name { margin: 0; font-weight: 500; color: var(--ink); }
+.set-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.set-ctl { display: flex; align-items: center; justify-content: flex-end; }
+.set-ctl .btn { flex: 0 0 auto; }

@@ -1426,11 +1426,13 @@
   /* THE NEXT NUMBER. What the next task will be called, and the place to set
      it, for an admin: the database refuses a number already used and files
      the change in the activity record. */
-  function openNumbering() {
+  function openNumbering(where) {
     if (!may('ops.numbering', 'work')) return;
+    /* Said where it was asked: My Work's line, or the Settings page's. */
+    where = where || 'workMsg';
     db.rpc('ops_next_task_no').then(function (r) {
       var d = r.data;
-      if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
+      if (r.error || (d && d.error)) { msg(where, r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
         title: 'Task numbering',
         body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number.'),
@@ -1438,14 +1440,14 @@
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
       }, function (v) {
         var want = Math.floor(Number(String(v).replace(/[^0-9]/g, '')));
-        if (!want) { msg('workMsg', said('bad-number'), 'err'); return; }
+        if (!want) { msg(where, said('bad-number'), 'err'); return; }
         db.rpc('ops_set_next_task_no', { p_next: want }).then(function (q) {
           var e = q.data;
           if (q.error || (e && e.error)) {
-            msg('workMsg', q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
+            msg(where, q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
             return;
           }
-          msg('workMsg', 'The next task is ' + e.serial + '.', 'ok');
+          msg(where, 'The next task is ' + e.serial + '.', 'ok');
         });
       });
     });
@@ -8029,7 +8031,7 @@
   window.ADspaceOps = {
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
-    enter: enter, urlState: urlState, signedIn: signedIn,
+    enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
     /* Which task is open, and a re-read of it. The record is otherwise only
        reachable through a press, so a change made to the row underneath it
        has no way to reach the screen. */

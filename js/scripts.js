@@ -796,7 +796,8 @@
     var ub = $('vsWriteMsg').parentNode.querySelector(':scope > .undobar-here');
     if (ub) ub.parentNode.removeChild(ub);
     $('vsWrite').disabled = st.writing === s.id;
-    $('vsWrite').textContent = st.writing === s.id ? 'Writing' : 'Write script';
+    writeWord(st.writing === s.id);
+    st.ai = null;
     st.editing = s.id;
     showEditor();
     window.scrollTo(0, 0);
@@ -858,6 +859,15 @@
   });
   $('vsCancel').addEventListener('click', function () { leaveEditor(); });
   $('vsSave').addEventListener('click', function () {
+    /* A script written with AI is declared read before it is kept
+       (2026-10-10). */
+    if (st.ai && st.open && st.ai === st.open.id && window.ADspaceConfirm.ai) {
+      window.ADspaceConfirm.ai.declare('script', 'Confirm and save', function () { saveScript(true); });
+      return;
+    }
+    saveScript(false);
+  });
+  function saveScript(declared) {
     var m = $('vsMsg'), btn = $('vsSave'), s = st.open;
     var ref = $('vsRef').value.trim().replace(/^https:\/\//i, 'https://');
     if (ref && !/^https:\/\//.test(ref)) { say(m, SAID['bad-link']); $('vsRef').focus(); return; }
@@ -876,6 +886,11 @@
     say(m, '');
     rpc('video_script_save', { p_id: s.id, p_head: head, p_scenes: scenes, p_version: s.version }).then(function (d) {
       btn.disabled = false;
+      if (declared) {
+        st.ai = null;
+        if (bridge.log) bridge.log('script.saved', ((s.clients || {}).name || '') + ' · ' + codeOf(s),
+          'Script written with AI, read and confirmed');
+      }
       closeEditor();
       return readScript(s.id).then(function () {
         paintRecord();
@@ -889,7 +904,7 @@
       }
       say(m, said(e));
     });
-  });
+  }
 
   /* ---- Write script (AI) ------------------------------------------------------ */
   /* The sheet's script drafted by `script-draft` from the colleague's notes
@@ -925,7 +940,7 @@
   }
   function writeLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Write script is turned off for you. An admin can turn it on.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Scripts with AI are turned off for you. An admin can turn them on.';
     var n = d.limit || 10;
     return 'You have used your ' + n + (n === 1 ? ' script' : ' scripts') + ' for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
   }
@@ -974,10 +989,14 @@
     m.textContent = text || '';
     m.className = 'msg capmsg' + (text ? ' err' : '');
   }
+  /* The AI mark and the act's one word (2026-10-10): Write with AI. */
+  var AI_GLYPH = (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '';
+  function writeWord(busy) { $('vsWrite').innerHTML = AI_GLYPH + (busy ? 'Writing' : 'Write with AI'); }
   function showWritten(w, before) {
     putWords(w);
+    st.ai = st.editing;
     sayWrite('');
-    undoBar('Script written. Save keeps it.', function () { putWords(before); }, $('vsWriteMsg'));
+    undoBar('Written by AI. Read before saving.', function () { putWords(before); st.ai = null; }, $('vsWriteMsg'));
   }
   $('vsWrite').addEventListener('click', function () {
     var btn = $('vsWrite'), s = st.open;
@@ -995,7 +1014,7 @@
         placeholder: 'What the video is for, the product or offer, the call to action',
         value: keep('adspace-script-notes:' + s.id) });
       window.ADspaceConfirm.ask({
-        title: 'Write script',
+        title: 'Write with AI',
         body: (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
@@ -1006,11 +1025,11 @@
         var cur = sheetWords();
         var settle = function () {
           st.writing = null;
-          if (st.open && st.open.id === s.id) { btn.disabled = false; btn.textContent = 'Write script'; }
+          if (st.open && st.open.id === s.id) { btn.disabled = false; writeWord(false); }
         };
         st.writing = s.id;
         btn.disabled = true;
-        btn.textContent = 'Writing';
+        writeWord(true);
         db.functions.invoke('script-draft', { body: {
           script_id: s.id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
           length: Number(v.length) || 30, venue: $('vsVenue').value.trim(),
@@ -1074,7 +1093,7 @@
   function gather(ids) {
     return Promise.all([
       db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
-      db.from('video_script_scenes').select('script_id, position, visual, line, vc').in('script_id', ids).order('position')
+      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       var by = {};

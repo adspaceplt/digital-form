@@ -1391,3 +1391,64 @@ task), templates, copies, repeats and a month's report tasks are untouched:
 a report task has one date by the user's choice of 2026-10-05, and a repeat
 counts from its first piece, which now always has a post date.
 
+
+### 2026-10-10 · Words written by AI are declared read before they are saved
+The user, 2026-10-09: "Write caption, Write draft is not clear that this is
+going to be written by AI", and "a warning dialog for all AI assisted write
+out (if its manually written 100% then no need) ... they declare that the
+contents are read and confirmed ... Should there have any critical issues it
+could affect your performance". Every writer now reads Write with AI with
+the AI mark before it, Writing while it runs, and its Undo line says Written
+by AI. Read before saving (submitting, on a report). Saving a caption or a
+script whose words came from Write with AI, or submitting a report whose
+commentary did, asks once, in the same sheet as the save or the submit: the
+words were written with AI, read in full and checked for facts, figures,
+names, prices and claims; the person who confirms is responsible, and an
+error may be raised as an issue in their performance review; a tick that
+refuses until ticked. Words typed by hand ask nothing. A report's answer
+comes from the database (`ai_written`), so a reload never loses it; a
+caption's and a script's from the page, which holds the words until they are
+saved. The declaration is filed with the save under the act's own tag, so
+the Activity record map did not change.
+
+### 2026-10-10 · One caption a post, with a language choice
+The user: "one post only allowed one caption ... make it as a language
+option"; the 中文 caption field was unused (0 of 42 live posts held one).
+Write with AI asks Language (English, Bahasa Melayu, 中文, English and 中文)
+and writes one caption; English and 中文 is both in the one caption, English
+first, each composed in its own language. A post already holding Chinese
+keeps its field until it is emptied.
+
+### 2026-10-10 · Meta checks behind a setting and a part
+The user: Import from Meta "has quite a number of bugs and the numbers not
+really tally with actual Meta records ... hidden from all team members at
+this moment, without compromising the usage of manual input", and "agility
+and not hardcoded". `meta_checks` is a Business setting (0 or 1, from a
+day), switched on the Settings page; `reports.meta` is a granted part. Both
+must hold for the import buttons, `meta-import`'s ads and posts, and the
+Report audit's Meta part; while either does not, `sm_report_audit_needed`
+answers false, so Submit and Publish never wait on Meta. The setting starts
+at 0 on the live database; the importer, the audit and their tests stay as
+they are for the day it returns.
+
+### 2026-10-10 · Settings at the rail's foot
+The user: the account menu "below the user Name, business settings are
+getting longer", and AI usage "hidden under Reports while the AI usage
+covers multiple other sections". One page, Settings, sits above the
+Activity record for a colleague holding any of its parts: Portal (Upgrade
+mode, Announcements, Notices), Business figures (Follow-up limits, Tax and
+terms, Due dates, AI prices, Meta checks), AI (AI usage and limits) and
+Records (Document types, Task numbering). Each row opens the sheet that
+already edited it, so nothing is built twice; the bars that held Follow-up
+limits, Tax and terms, Due dates, Document types and Task numbering keep
+them where the work is. The account menu keeps the person's own items, and
+WhatsApp until it becomes its own section.
+
+### 2026-10-10 · The script PDF for the crew
+The user found the script PDF "very not user friendly". On a shoot day the
+crew reads one sheet and ticks it by pen: every scene now has a Shot box
+beside its VC# cell (ticked and numbered where the console recorded it), the
+words said are set heavier than what is seen so the talent finds their line,
+each script ends in its own Notes / Remarks, and a month's scripts sharing
+one shoot share one header table whatever their kind. The context box
+carries no VC#, which it never had a use for.

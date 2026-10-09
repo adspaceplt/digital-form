@@ -342,6 +342,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   keyboard under a finger hides it (`is-typing`). The chosen tab is the
   fill behind its glyph; a section More holds chooses More
   (`tests/tabbar.js`).
+- Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
+  2026-10-09: the account menu grew long and AI usage hid under Reports):
+  a `.railfoot` row above the Activity record (`#settingsOpen`), offered to
+  a colleague holding any of `team.upgrade`, `team.announce`,
+  `team.notice`, `team.settings`, `reports.ai`, `register.types`,
+  `ops.numbering`; its address falls back for anyone else. A card a group
+  (Portal: Upgrade mode, Announcements, Notices; Business figures:
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks; AI:
+  AI usage and limits; Records: Document types, Task numbering), each row
+  drawn only for its part, its value under its name, a switch, Edit or Open
+  at the right edge opening the one sheet that already edits it. The
+  account menu keeps what is the person's own (My records, My namecard,
+  Passkeys, Notifications, Refresh app, Sign out); the Reports bar holds no
+  AI usage. It joins the tab bar's More (`tests/adminparts.js`,
+  `tests/tabbar.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
   `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
@@ -390,8 +405,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Turn off).
-    The switch is the account menu's Upgrade mode (`role="switch"`, Off /
-    On / Set, `team.upgrade`): on asks for Starts, Ends (each a date beside
+    The switch is the Settings page's Upgrade mode (`button.switch`, its
+    value Off / On until … / Starts … under the name, `team.upgrade`): on asks for Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's) and a note, refusing in the sheet a window that does not end
     after its start and now; off never
@@ -414,7 +429,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   follow the page's language (中文 where given); an https link opens in a
   new tab; the reader's × hides the one on show in this browser
   (`adspace-ann-hide:{id}:{updated_at}`, so an edit returns it). Team:
-  Announcements (`team.announce`, granted) in the account menu opens the
+  Announcements (`team.announce`, granted) on the Settings page opens the
   list (`#annSheet`: Team and Clients, each every line, live with Edit /
   Stop, which asks, stopped or ended with Restore (never asks, while its end
   is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
@@ -427,8 +442,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   would sit outside its `inert`).
 - Notices (`js/notice.js`, `2026-10-09-team-notices.sql`; the user,
   2026-10-09: "send custom in-app notifications to all members, or to
-  specific team member(s)"): Team: Notices (`team.notice`) in the account
-  menu opens the list (`#ntcSheet`: every notice sent, newest first, To,
+  specific team member(s)"): Team: Notices (`team.notice`) on the Settings
+  page opens the list (`#ntcSheet`: every notice sent, newest first, To,
   when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
   push already on a phone stays) and Restore (never asks)) and New
   (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
@@ -874,7 +889,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
   2026-10-07), `register.types` (Document types, 2026-10-07) and
   `team.health` (Health check-ins, every colleague's answers by name,
-  2026-10-07) and `team.notice` (Notices, 2026-10-09); each offers Manage
+  2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
+  (Meta import and audit, 2026-10-10); each offers Manage
   alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1613,12 +1629,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-03-hidden-from-content-review.sql`).
 - Every everyday write leaves an activity row. An edit names the fields it
   changed.
-- Write caption (2026-10-08; the user: "1 2 ok"): under a post's caption
-  fields in Add assets' drafts and a saved post's Edit, at Content Review:
-  Sets at Work (`.capwrite`, `writeCaption()`). It asks first (`ADspaceConfirm`:
-  n captions left today; Caption language English / Bahasa Melayu, a segment
-  from the main contact's preferred language; 中文 caption, ticked where the
-  post or the set holds Chinese or the contact prefers it; XHS Safe Mode on a
+- Write with AI (2026-10-08, one caption from 2026-10-10; the user: "one
+  post only allowed one caption"): under a post's caption field in Add
+  assets' drafts and a saved post's Edit, at Content Review: Sets at Work
+  (`.capwrite`, `writeCaption()`, the AI mark before the words). A post has
+  one caption; the 中文 field is drawn only on a saved post that already
+  holds Chinese. It asks first (`ADspaceConfirm`: n captions left today;
+  Language, a select of English, Bahasa Melayu, 中文, English and 中文
+  (`CAP_LANGS`; both languages in the one caption, English first), from the
+  main contact's preferred language; XHS Safe Mode on a
   rednote post alone, unticked until the colleague ticks it; Notes for the
   caption, kept in this browser under `adspace-caption-notes:{post id}` or
   `{set id}:{draft key}`, else the brief of a task naming the set), then
@@ -1630,9 +1649,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   and post's titles, the notes, industry and market, never an image, a
   contact or the client's name: the name reads `{brand}` and a handle
   `{handle}`, filled on the page with the name and the platform's `@handle`).
-  The words go into `caption` / `caption_zh` in place, saved only by the
-  post's own Save (Add to set for a draft), with Undo where it happened
-  putting the earlier words back; a refusal is one line under the button.
+  The words go into `caption` in place, saved only by the post's own Save
+  (Add to set for a draft), with Undo where it happened (Written by AI. Read
+  before saving.) putting the earlier words back; a refusal is one line
+  under the button. Saving words written with AI asks the declaration
+  first (`ADspaceConfirm.ai.declare`: Written with AI, read in full, the
+  person who confirms is responsible and an error may be raised in their
+  performance review; a tick that refuses until ticked), filed with the
+  save (… written with AI, read and confirmed). Words typed by hand ask
+  nothing.
   The house style (benefit first, a hook, an emoji and bold title where it
   suits, one CTA, no dashes, MY/SG context, Chinese written as Chinese, the
   platform's own voice, brand names exactly) and XHS Safe Mode's rules live
@@ -2942,7 +2967,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF
     (`ADspaceSmReport.adName`).
-  - Draft with AI on the Commentary step of both kinds (`report-draft` edge
+  - Write with AI on the Commentary step of both kinds (`report-draft` edge
     function, secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
     `docs/REPORT-DRAFT-SETUP.md`): sends the report id and Notes for the
     draft (`#rpAiNotes`: reasons, changes, goal, next month's budget; kept
@@ -3104,9 +3129,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     left and Write draft at the right edge with what is left before it
     (`.rp-airow`; on a phone a line each), then Notes for the draft under a
     hairline; the hint and the fields follow it (the user, 2026-10-05).
-  - The words: Write draft (Commentary), Run audit (Check and submit), AI usage
-    (the bar's ⋯), filed under subject AI; never "Draft with AI".
-  - AI usage (the Reports bar's ⋯, `reports.ai`;
+  - The words: Write with AI (Commentary, Write caption and Write script
+    alike, the AI mark before the words; 2026-10-10, the user: "not clear
+    that this is going to be written by AI"), Writing while it runs, Written
+    by AI. Read before submitting. on the Undo line; Run audit (Check and
+    submit); AI usage (the Settings page); filed under subject AI; never
+    "Draft with AI" or "Write draft".
+  - Commentary written with AI is declared read at Submit (2026-10-10):
+    `ai_written(p_report)` (`2026-10-10-ai-written.sql`, Reports View)
+    answers whether Write with AI drafted the report; where it did, Submit's
+    question carries the declaration (`ADspaceConfirm.ai`: the line and a
+    tick that refuses until ticked), and the submit files `report.saved`
+    Commentary written with AI, read and confirmed.
+  - AI usage (the Settings page, `reports.ai`;
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
@@ -3196,6 +3231,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
+- Meta checks (2026-10-10, `2026-10-10-meta-checks-switch.sql`; the user,
+  2026-10-09: the imported figures did not tally with Meta, so hide it
+  without touching manual entry, and keep it a setting): Import from Meta
+  and the Report audit's Meta part run only while `meta_checks_on()`: the
+  setting `meta_checks` is 1 (Business settings, the Settings page's switch,
+  from today; 0 from the start) and the colleague holds `reports.meta` at
+  Work (granted). Off, the import buttons are not drawn, `meta-import`
+  answers `meta-off` for ads and posts, `sm_report_audit_needed` answers
+  false so Submit and Publish never wait on Meta, and every manual import
+  (spreadsheet, Ads Manager export) is untouched. The stand-in seeds it on.
 - Import from Meta (`meta-import`, `docs/META-SETUP.md`, 2026-10-08): beside
   Import from Ads Manager (Advertising) and Import from spreadsheet (Accounts),
   drawn only on a draft at Work whose client (or brand) has a link
@@ -3397,7 +3442,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   ("Save or cancel the changes first."), and closing the tab asks
   (`beforeunload`). Saved by `video_script_save` (from and to, `stale` with
   the row).
-- Write script (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
+- Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
   Safe Mode on a rednote script alone, unticked; Notes for the script, kept
@@ -3412,8 +3457,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ai_script_left`), and answers the type's fields by structured output
   (secrets `ANTHROPIC_API_KEY`, `SCRIPT_MODEL`, unset `claude-opus-5-5`;
   Verify JWT off). The words fill the fields in place, `{brand}` and
-  `{handle}` filled on the page; Undo where it happened; Save keeps them; an
-  answer landing after the editor shut is put in at its next open. The house
+  `{handle}` filled on the page; Undo where it happened (Written by AI.
+  Read before saving.); Save asks the declaration first (as Write caption,
+  2026-10-10) and files `script.saved` Script written with AI, read and
+  confirmed; an answer landing after the editor shut is put in at its next
+  open. The house
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
 - Publish (`video_script_share`, Undo where it happened) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
@@ -3436,13 +3484,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   of every page and the client in small capitals at its right, PRIVATE &
   CONFIDENTIAL in Slate Medium on the margin's line with the page count, the
   S(5) margin and S(k) type, white cells under a #f2f2f2 title row. Its
-  content is the user's template: Video Script over its type and month, the
-  header table (Video # reads the codes, Platform, Client/Brand, Language,
-  Shooting Date & Time, Venue, Est. Shooting Duration, Cast Members/Talent),
-  each script under its code and title (its reference under it) by kind
-  with a VC# column (a recorded clip number printed, an empty cell left for
-  the pen), and Notes / Remarks as a box with room to write. Scripts of a
-  month sharing kind and header share one header table; Preview PDF (a tab
+  content is the user's template: Video Script over its month (its type, or
+  the count of scripts), the header table (Video # reads the codes,
+  Platform, Client/Brand, Language, Shooting Date & Time, Venue, Est.
+  Shooting Duration, Cast Members/Talent), each script under its code and
+  title (its type and reference under it) by kind, every scene numbered
+  with a Shot box and a VC# cell (a tick and a clip number recorded in the
+  console printed, empty ones left for the pen; the context box has
+  neither), the words said in Slate Regular and what is seen in Slate Book,
+  and its own Notes / Remarks with room to write (2026-10-10: the crew reads
+  one sheet a shoot day). Scripts of a month sharing their header share one
+  header table, whatever their kind; Preview PDF (a tab
   opened at the press) and Download ask one script or the whole month once
   there are two.
 - Delete is Full Access, the title typed back (else the code).

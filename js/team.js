@@ -165,6 +165,10 @@
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
     reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits'],
+                /* Import from Meta and the audit against Meta (2026-10-10):
+                   granted, an admin's by itself, and read only while the
+                   Business setting Meta checks is On. */
+                ['meta', 'Meta import and audit'],
                 /* Send on WhatsApp (2026-10-09): follows Reports unless shut. */
                 ['whatsapp', 'Send on WhatsApp']]
   };
@@ -174,7 +178,7 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
@@ -192,7 +196,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'clients.whatsapp': ['work'], 'reports.whatsapp': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'clients.whatsapp': ['work'], 'reports.whatsapp': ['work'],
     'campaigns.whatsapp': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */

@@ -12,10 +12,12 @@
  * its type and month, the header table (Video #, Platform, Client/Brand,
  * Language, Shooting Date & Time, Venue, Est. Shooting Duration, Cast
  * Members/Talent), then each video under its code and title: its script by
- * its kind, every scene with a VC# cell (a clip number recorded in the
- * console printed, an empty one left for the crew's pen), and Notes /
+ * its kind, every scene with a Shot box and a VC# cell (a tick and a clip
+ * number recorded in the console printed, empty ones left for the crew's
+ * pen), the words said set heavier than what is seen, and its own Notes /
  * Remarks with room to write. Videos of one month that share their header
- * and kind share one header table.
+ * share one header table, whatever their kind (2026-10-10: the crew
+ * reads one sheet a shoot day).
  */
 (function () {
   'use strict';
@@ -124,6 +126,16 @@
       var x = M;
       cells.forEach(function (c, i) {
         box(x, y, c.w, hgt, c.head ? grey : null);
+        /* A Shot box: a square to tick by pen, ticked where the console
+           recorded the scene as shot. */
+        if (c.tick != null) {
+          var q = S(1), bx = x + (c.w - q) / 2, by = y - PAD - q;
+          page.drawRectangle({ x: bx, y: by, width: q, height: q, borderColor: mute, borderWidth: 0.8 });
+          if (c.tick) {
+            page.drawLine({ start: { x: bx + q * 0.2, y: by + q * 0.5 }, end: { x: bx + q * 0.42, y: by + q * 0.25 }, thickness: 1.2, color: ink });
+            page.drawLine({ start: { x: bx + q * 0.42, y: by + q * 0.25 }, end: { x: bx + q * 0.82, y: by + q * 0.78 }, thickness: 1.2, color: ink });
+          }
+        }
         var yy = y - PAD - (c.size || body);
         lines[i].forEach(function (ln) {
           var tx = c.align === 'center' ? x + (c.w - width(ln, c.size || body, c.f)) / 2 : x + PAD;
@@ -170,7 +182,7 @@
       y = HEAD_Y - S(5);
       text('Video Script', M, y, S(3), med);
       y -= S(2) + 2;
-      text([v.kind_word, v.month_word].filter(Boolean).join(' · '), M, y, small, book, mute);
+      text([v.month_word, group.length > 1 ? group.length + ' scripts' : v.kind_word].filter(Boolean).join(' · '), M, y, small, book, mute);
       y -= S(3);
       [[L('Video #'), V(nos), L('Platform'), V(v.platform)],
        [L('Client/Brand'), V((v.clients || {}).name), L('Language'), V(v.language === 'Malay' ? 'Bahasa Melayu' : v.language)],
@@ -180,48 +192,52 @@
       y -= S(4);
     };
 
-    var vcW = S(9), noW = S(6);
-    var video = function (v) {
-      blockHead(v.code + (v.title ? ' · ' + v.title : ''), v.reference_url ? 'Reference: ' + v.reference_url : '');
-      var H2 = function (t, w) { return { w: w, text: t, head: true, f: reg }; };
-      var VC = function (t, head) { return head ? { w: vcW, text: 'VC#', head: true, f: reg, align: 'center' } : { w: vcW, text: t || '', align: 'center' }; };
+    var vcW = S(9), noW = S(6), shotW = S(6);
+    var H2 = function (t, w, align) { return { w: w, text: t, head: true, f: reg, align: align }; };
+    var VC = function (t) { return { w: vcW, text: t || '', align: 'center' }; };
+    var SHOT = function (on) { return { w: shotW, text: '', tick: Boolean(on) }; };
+    var NO = function (i) { return { w: noW, text: String(i + 1), align: 'center' }; };
+    var tail = [H2('Shot', shotW, 'center'), H2('VC#', vcW, 'center')];
+    /* Each script's own notes: what the team typed, then room to write on
+       the day. */
+    var notes = function (v) {
+      var rows = (v.remarks || '').trim() ? [[{ w: full, text: v.remarks }]] : [];
+      rows.push([{ w: full, text: '', minH: S(7) }]);
+      table([{ w: full, text: 'Notes / Remarks', head: true, f: reg }], rows);
+    };
+    var video = function (v, many) {
+      var sub = [many ? v.kind_word : '', v.reference_url ? 'Reference: ' + v.reference_url : ''].filter(Boolean).join(' · ');
+      blockHead(v.code + (v.title ? ' · ' + v.title : ''), sub);
+      var list = v.scenes.length ? v.scenes : [{}];
       if (v.kind === 'scenes') {
-        var vis = (full - noW - vcW) / 2;
-        table([H2('Scene', noW), H2('Visual', vis), H2('Script', vis), VC('', true)],
-          (v.scenes.length ? v.scenes : [{}]).map(function (sc, i) {
-            return [{ w: noW, text: String(i + 1), align: 'center' }, { w: vis, text: sc.visual || '' },
-                    { w: vis, text: sc.line || '' }, VC(sc.vc)];
+        /* What is seen in the book face; the words said in the heavier one,
+           so the talent finds their line at a glance. */
+        var vis = (full - noW - vcW - shotW) / 2;
+        table([H2('Scene', noW, 'center'), H2('Visual', vis), H2('Script', vis)].concat(tail),
+          list.map(function (sc, i) {
+            return [NO(i), { w: vis, text: sc.visual || '' }, { w: vis, text: sc.line || '', f: reg }, SHOT(sc.shot_at), VC(sc.vc)];
           }));
       } else {
-        var wide = full - vcW;
-        table([H2(v.kind === 'products' ? 'Products/Context' : 'Hook/Story', wide), VC('', true)],
-          [[{ w: wide, text: v.context || '' }, VC('')]]);
+        table([H2(v.kind === 'products' ? 'Products/Context' : 'Hook/Story', full)], [[{ w: full, text: v.context || '' }]]);
         y -= S(2);
-        table([H2('Scenes', wide), VC('', true)],
-          (v.scenes.length ? v.scenes : [{}]).map(function (sc, i) {
-            return [{ w: wide, text: (v.scenes.length ? (i + 1) + '.  ' : '') + (sc.visual || '') }, VC(sc.vc)];
-          }));
+        var wide = full - noW - vcW - shotW;
+        table([H2('Scene', noW, 'center'), H2('Visual', wide)].concat(tail),
+          list.map(function (sc, i) { return [NO(i), { w: wide, text: sc.visual || '' }, SHOT(sc.shot_at), VC(sc.vc)]; }));
         if (v.kind === 'story') {
           y -= S(2);
-          table([H2('Script (Read Here)', wide), VC('', true)], [[{ w: wide, text: v.vo || '' }, VC(v.vo_vc)]]);
+          var vo = full - vcW - shotW;
+          table([H2('Script (Read Here)', vo)].concat(tail), [[{ w: vo, text: v.vo || '', f: reg }, SHOT(v.vo_shot_at), VC(v.vo_vc)]]);
         }
       }
+      y -= S(2);
+      notes(v);
       y -= S(4);
     };
-    var notes = function (group) {
-      var many = group.length > 1;
-      var parts = group.filter(function (v) { return (v.remarks || '').trim(); })
-        .map(function (v) { return (many ? v.code + ': ' : '') + v.remarks; });
-      /* A box to write in on the day: the notes typed, then room below. */
-      var noteRows = parts.length ? [[{ w: full, text: parts.join('\n') }]] : [];
-      noteRows.push([{ w: full, text: '', minH: S(8) }]);
-      table([{ w: full, text: 'Notes / Remarks', head: true, f: reg }], noteRows);
-    };
 
-    /* Scripts of one month that share their kind and header read under one
-       header table; any other starts its own page. */
+    /* Scripts of one month that share their header read under one header
+       table, whatever their kind; any other starts its own page. */
     var key = function (v) {
-      return [v.client_id, v.period, v.kind, v.platform, v.language, v.when, v.venue, v.duration, v.cast_names].join('\u0001');
+      return [v.client_id, v.period, v.platform, v.language, v.when, v.venue, v.duration, v.cast_names].join('\u0001');
     };
     var groups = [];
     videos.forEach(function (v) {
@@ -231,8 +247,7 @@
     groups.forEach(function (g) {
       newPage();
       header(g);
-      g.forEach(function (v) { video(v); });
-      notes(g);
+      g.forEach(function (v) { video(v, g.length > 1); });
     });
 
     var pages = pdf.getPages();
