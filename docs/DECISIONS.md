@@ -1286,3 +1286,13 @@ group?" Each message costs money, so who may send is a group's choice:
 feedback on WhatsApp) follow their section unless the group's panel sets
 No Access, and the database asks the part as well as the page. The pair
 of buttons on the report head also gained its 8px gap ("sticked together").
+
+### 2026-10-09 · The creator's WhatsApp is the booking, with their link
+The user: "creator - new job confirmed for them and their link for them for
+full details", after reading every template as "very weird"; and "does the
+whatsapp number supports singapore number?". A creator is messaged once, when
+a booking is confirmed, with a link button to their own page (the template's
+dynamic URL takes their code, `wa_outbox.button`); changes requested and
+cleared to post cost a message each and are already on the creator's page
+and its notifications. An 8-digit number starting 3, 6, 8 or 9 is read as
+Singapore for anyone, since a Malaysian mobile never has 8 digits.
