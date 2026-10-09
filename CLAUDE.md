@@ -2166,7 +2166,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     comments, Add remark, Post); Brief, Files and links, Time records and
     Recent activity fold under More (`#dwMore`, shut each open).
   - A month's report task (`source_type` `report_social` / `report_ads`)
-    carries its report (`paintReportRow`): once made, where it stands and
+    carries its report (`paintReportRow`; the month's own, never one on
+    request): once made, where it stands and
     Open report; before, Start report, made on the month's own span (a
     month starting on the 16th runs to the 15th) as New report does.
   - A link's Kind select sits left of its Address.
@@ -2646,6 +2647,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     16th by its own span), one that does not ask greyed with Not asked for or
     Not in My Work; a brand's report, or a read that fails, offers them all
     and the database decides.
+  - On request (`2026-10-09-reports-on-request.sql`, `sm_reports.on_request`;
+    the user, 2026-10-09: "Sometimes we need to create report on demand"):
+    New report's Requested by the client tick (`#rpNewAsked`, every month
+    open), and every custom period, makes a report the client asked for, on
+    any period (`sm_report_create_for(…, p_on_request)`, filed On request).
+    No month gate, no month rows under Check and submit (`sm_report_gate`
+    answers `applies` false), the month's report task never moved or reset
+    by it, never the month's report in `sm_report_months` or
+    `sm_reports_owed`; a month's report never carries on from one, and an
+    Advertising Report asked for compares with the same length just before
+    it. The list marks it On request; the head reads Requested, By the
+    client.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - Mark as sent (Reports at Work; `sm_report_sent`, `sm_reports.sent_on` /
     `sent_by`): one date, today by default, never after today nor before
@@ -2957,7 +2970,8 @@ Each line is a rule that broke once. Its reason is in the archive.
       no tolerance: each figure Meta gives an ad (by Ad IDs, else name,
       audience, objective, result type), its age split, Step 1's impressions
       and amount spent (reach only where one ad account answers), an ad Meta
-      ran that the report lacks (Add), one with figures Meta shows no
+      ran with spend and results that the report lacks (Add; one with no
+      spend or no results is never asked for), one with figures Meta shows no
       delivery for (Remove, its own press alone), each post figure and a
       post on either side. A row reads where, the figure, Report and Meta;
       Use Meta's figure, Add, Remove, and Update all from Meta (the figures
@@ -3132,7 +3146,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   opens the existing import sheet (`pasteAdsSheet(opener, pre)`,
   `pasteSheet(opener, pre)`) named Import from Meta with it in, so one
   importer, one matching (Ad ID, link) and one summary line; the age split
-  follows the figures in the same press, updating only ads it holds; posts go
+  follows the figures in the same press, updating only ads it holds; an ad
+  with no spend or no results is left out and counted in the summary line
+  (`adsPlan` `withResults`, the audit alike; the user, 2026-10-09); posts go
   to the report's account on their platform; filed `Imported from Meta` /
   `From Meta`. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),
