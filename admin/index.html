@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009g">
+<link rel="stylesheet" href="/css/portal.css?v=20261009j">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -196,6 +196,9 @@
         </button>
         <button class="navitem" data-section="review" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
+        </button>
+        <button class="navitem" data-section="scripts" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="1.8"/><path d="M3 9 19.5 4.6a1 1 0 0 1 1.2.7l.5 1.9"/><path d="m8 7.7 2.4 1.3M13.4 6.3l2.4 1.3"/><path d="M7 14h10M7 17.5h6"/></svg><span>Video Scripts</span>
         </button>
         <button class="navitem" data-section="campaigns" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
@@ -3973,6 +3976,132 @@
       </div>
     </div>
 
+    <!-- Video Scripts (2026-10-09): a card a client, a row a video (V1, V2…
+         in its shoot). A video opens as a record: its facts, the script as the
+         client reads it, and on the day each scene's Shot tick and clip number
+         (VC#). js/scripts.js. -->
+    <div class="console-body" id="sectionScripts" hidden>
+      <div id="vsListView">
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="vsFind" type="search" placeholder="Search scripts" aria-label="Search Video Scripts" autocomplete="off">
+          </span>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="vsCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="vsNew" type="button" data-need="scripts:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New script</button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="vsListMsg"></div>
+        <div id="vsList" data-narrow="760"></div>
+      </div>
+
+      <div id="vsRecord" hidden>
+        <button class="backlink" id="vsBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <section class="panel rec-head vs-head">
+          <div class="rec-id rec-id-plain">
+            <div class="rec-who">
+              <div class="rec-name"><h2 id="vsRecName"></h2></div>
+              <p class="rec-id-meta" id="vsRecMeta"></p>
+            </div>
+            <div class="rec-ctl" id="vsRecCtl"></div>
+          </div>
+          <div class="setbar-actions" id="vsRecActs" hidden></div>
+          <div class="msg" id="vsRecMsg"></div>
+        </section>
+        <div class="cr-rec vs-rec">
+          <div class="cr-main" id="vsRecBody"></div>
+          <aside class="cr-rail">
+            <div class="railblock" id="vsSeries"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet" id="vsNewSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsNewTitle">
+        <div class="sheet-head">
+          <h3 id="vsNewTitle">New script</h3>
+          <button class="iconbtn" id="vsNewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div><label class="field-label" for="vsNewClient">Client</label>
+            <select class="select" id="vsNewClient" aria-required="true"><option value="">Choose a client</option></select></div></div>
+          <div class="row"><div><label class="field-label" for="vsNewKind">Type of script</label>
+            <select class="select" id="vsNewKind" data-seg>
+              <option value="scenes">Detailed scenes</option>
+              <option value="products">Products and scenes</option>
+              <option value="story">Story and voice-over</option>
+            </select></div></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="vsNewGo" type="button">Create</button>
+          <button class="btn btn-quiet" id="vsNewCancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="vsNewMsg"></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="vsSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsSheetTitle">
+        <div class="sheet-head">
+          <h3 id="vsSheetTitle">Edit</h3>
+          <button class="iconbtn" id="vsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <section class="fsec">
+            <h4 class="fsec-h">Video</h4>
+            <div class="row"><div><label class="field-label" for="vsKind">Type of script</label>
+              <select class="select" id="vsKind" data-seg>
+                <option value="scenes">Detailed scenes</option>
+                <option value="products">Products and scenes</option>
+                <option value="story">Story and voice-over</option>
+              </select></div></div>
+            <div class="row"><div><label class="field-label" for="vsTitle">Title</label>
+              <textarea class="input" id="vsTitle" rows="1" data-oneline maxlength="200" placeholder="Optional" autocomplete="off"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsRef">Reference video</label>
+              <textarea class="input" id="vsRef" rows="1" data-oneline inputmode="url" placeholder="https://adspace.me" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div></div>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsPlatform">Platform</label><select class="select" id="vsPlatform"></select></div>
+              <div><label class="field-label" for="vsLang">Language</label><select class="select" id="vsLang"></select></div>
+            </div>
+          </section>
+          <section class="fsec">
+            <h4 class="fsec-h">Shoot</h4>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsDate">Shooting date</label><input class="input" id="vsDate" type="date"></div>
+              <div><label class="field-label" for="vsTime">Time</label><input class="input" id="vsTime" type="time" step="300"></div>
+            </div>
+            <div class="row"><div><label class="field-label" for="vsVenue">Venue</label>
+              <textarea class="input" id="vsVenue" rows="1" data-oneline maxlength="200" placeholder="Optional" autocomplete="off"></textarea></div></div>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsDur">Estimated duration</label><select class="select" id="vsDur"></select></div>
+              <div><label class="field-label" for="vsCast">Cast</label>
+                <textarea class="input" id="vsCast" rows="1" data-oneline maxlength="300" placeholder="John Doe, Jane Doe" autocomplete="off"></textarea></div>
+            </div>
+          </section>
+          <section class="fsec">
+            <h4 class="fsec-h">Script</h4>
+            <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
+              <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
+            <div id="vsScenes"></div>
+            <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add scene</button></div></div>
+            <div class="row" id="vsVoRow" hidden><div><label class="field-label" for="vsVo">Script (read here)</label>
+              <textarea class="input" id="vsVo" rows="4" maxlength="4000"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsNotes">Notes</label>
+              <textarea class="input" id="vsNotes" rows="2" maxlength="4000" placeholder="Optional"></textarea></div></div>
+          </section>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="vsSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="vsMsg"></div>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionMine" hidden>
       <!-- A member's own reviews open only for a session verified by a code
            emailed to them in the last 15 minutes. -->
@@ -4572,6 +4701,7 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
       <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
       <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
+      <button class="acttab btn-sm" data-af="scripts" data-need="activity.scripts:view" type="button" aria-pressed="false">Video Scripts</button>
       <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
       <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
       <button class="acttab btn-sm" data-af="reports" data-need="activity.reports:view" type="button" aria-pressed="false">Reports</button>
@@ -4971,7 +5101,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009h"></script>
+<script src="/js/admin.js?v=20261009j"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
@@ -4979,11 +5109,13 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/register.js?v=20261009a"></script>
 <script src="/js/crm.js?v=20261009a"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261009b"></script>
+<script src="/js/team.js?v=20261009j"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
+<script src="/js/scripts.js?v=20261009j"></script>
+<script src="/js/scriptpdf.js?v=20261009j"></script>
 <script src="/js/campaigns.js?v=20261009a"></script>
-<script src="/js/ops.js?v=20261009i"></script>
+<script src="/js/ops.js?v=20261009j"></script>
 <script src="/js/perf.js?v=20261009b"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261008c"></script>

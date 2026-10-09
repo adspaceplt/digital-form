@@ -698,7 +698,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -718,7 +718,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -896,7 +896,7 @@
      so it never sits on what is typed. */
   var TAB_WORD = {
     overview: 'Overview', work: 'My Work', clients: 'Clients', review: 'Review',
-    campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
+    scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
@@ -1008,6 +1008,7 @@
     clients: 'Clients',
     work: 'My Work',
     review: 'Content Review',
+    scripts: 'Video Scripts',
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
     register: 'Documents',
@@ -1035,6 +1036,7 @@
     clients:   'Every client and lead, from first enquiry to active engagement.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
+    scripts:   'Video scripts for client approval and for the crew on the shoot.',
     campaigns: 'Creator campaigns, from selection through to posting.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
@@ -1064,6 +1066,9 @@
     review: { name: 'Content Review', steps: [
       { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
       { at: '#crFind', text: 'Find a client by name.' }] },
+    scripts: { name: 'Video Scripts', steps: [
+      { at: '#vsNew', text: 'New script starts a shoot\'s first video. Add next video makes V2, V3 and on.' },
+      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a video to write it, share it with the client and tick each scene on the day.' }] },
     campaigns: { name: 'Creator Campaigns', steps: [
       { at: '#showAddCamp', text: 'New campaign starts one for a client, with creators from the Creators List.' },
       { at: '#campSectionTabs', text: 'Campaigns, and the Creators List of every creator and their rates.' },
@@ -1164,7 +1169,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1179,6 +1184,7 @@
     $('sectionClients').hidden   = name !== 'clients';
     $('sectionWork').hidden      = name !== 'work';
     $('sectionReview').hidden    = name !== 'review';
+    $('sectionScripts').hidden   = name !== 'scripts';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
     $('sectionRegister').hidden  = name !== 'register';
@@ -1261,6 +1267,13 @@
       if (!window.ADspaceHandbook) { enterLater = 'handbook'; return; }
       window.ADspaceHandbook.enter();
       setUrl();
+      return;
+    }
+    /* Video Scripts reads the address before it writes it: a video open on a
+       reload is named only there. */
+    if (name === 'scripts') {
+      if (!window.ADspaceScripts) { enterLater = 'scripts'; return; }
+      window.ADspaceScripts.enter();
       return;
     }
     setUrl();
@@ -1383,6 +1396,9 @@
     } else if (section === 'team' && window.ADspacePerf) {
       var pf = window.ADspacePerf.urlState();
       Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });
+    } else if (section === 'scripts' && window.ADspaceScripts) {
+      var vs = window.ADspaceScripts.urlState();
+      Object.keys(vs).forEach(function (k) { if (vs[k]) q.push(k + '=' + encodeURIComponent(vs[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
@@ -1660,6 +1676,17 @@
     'handbook.archived':     ['File archived', 'is-warn', 'handbook'],
     'handbook.restored':     ['File restored', '', 'handbook'],
     'handbook.deleted':      ['File deleted', 'is-danger', 'handbook'],
+    /* Video Scripts (2026-10-09): written, shared, decided by the client,
+       ticked on the day. */
+    'script.created':        ['Script started', 'is-ok', 'scripts'],
+    'script.saved':          ['Script saved', '', 'scripts'],
+    'script.shared':         ['Script shared', 'is-ok', 'scripts'],
+    'script.unshared':       ['Script unshared', 'is-warn', 'scripts'],
+    'script.approved':       ['Script approved', 'is-ok', 'scripts'],
+    'script.changes':        ['Changes requested', 'is-warn', 'scripts'],
+    'script.shot':           ['Scene shot', '', 'scripts'],
+    'script.link':           ['Script link reset', 'is-warn', 'scripts'],
+    'script.deleted':        ['Script deleted', 'is-danger', 'scripts'],
     'report.ai_drafted':     ['AI used', '', 'reports'],
     'report.ai_failed':      ['AI failed', 'is-warn', 'reports'],
     /* The Report audit's reading of Meta (2026-10-09), filed by the database. */
@@ -1785,7 +1812,7 @@
      Everything leads, being the view somebody lands on. */
   var ACT_SECTION = { all: 'Everything',
                       ops: 'My Work', clients: 'Clients',
-                      review: 'Content Review', campaigns: 'Creator Campaigns',
+                      review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
                       register: 'Documents', reports: 'Reports', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
@@ -4498,6 +4525,11 @@
       if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
       enterLater = '';
       window.ADspacePerf.enterTeam();
+    },
+    scriptsReady: function () {
+      if (enterLater !== 'scripts' || section !== 'scripts') return;
+      enterLater = '';
+      window.ADspaceScripts.enter();
     },
     handbookReady: function () {
       if (enterLater !== 'handbook' || section !== 'handbook') return;

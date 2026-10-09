@@ -7,7 +7,7 @@ Static site, vanilla ES5 IIFE scripts, no build step, no framework, served by
 GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
-`verify/` (public reference check), `card/` (a colleague's namecard), `/` and
+`script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -141,6 +141,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
+| `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -851,8 +852,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   per-person switches. A policy on `team_members` never queries itself.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
-- Sections: `ops` (My Work), `clients`, `review`, `campaigns`, `register`
-  (Documents), `reports`, `links`, `services`, `team`, `activity`. The
+- Sections: `ops` (My Work), `clients`, `review`, `scripts` (Video Scripts),
+  `campaigns`, `register` (Documents), `reports`, `links`, `services`, `team`, `activity`. The
   Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
@@ -2259,7 +2260,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     check (`page_pulse`).
   - Each item leads with its section's rail glyph (`.notif-tile`,
     `ADspaceAdmin.glyph`): My records for a review, reflection, health or
-    HR letter, Reports for a report, My Work otherwise. The bell lists
+    HR letter, Reports for a report, Video Scripts for a script, My Work
+    otherwise. The bell lists
     unread first, then Earlier (`.notif-earlier`): read notices of the
     last seven days, ten at most (`.notif-item.is-read`); marking read
     keeps a notice there, never removes it. A colleague's notice (kind
@@ -3325,6 +3327,50 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A short link never takes a colleague's card slug (`links_card_clash`,
   named `/{slug} is a colleague's namecard.`).
 
+### Video Scripts (`js/scripts.js`, `js/scriptpdf.js`, `?s=scripts`; `script/`, `js/script.js`)
+- A shoot's scripts, one a video (the user, 2026-10-09: "a script table
+  covers one video"), its own section on the ladder (`scripts`, every group
+  starting at its Content Review level; `2026-10-09-video-scripts.sql`), in
+  the Work chunk after Content Review. Three kinds, picked first: Detailed
+  scenes (Visual and Script a scene), Products and scenes (Products and
+  context, then the scenes), Story and voice-over (Hook and story, the
+  scenes, Script (read here)). V1, V2… number the videos of one shoot
+  (`series_id`, `video_no`); Add next video (the rail's This shoot) makes
+  the next with the header copied (platform, language, shooting date and
+  time, venue, duration, cast) and the script empty.
+- The list is a card a client, a row a video (the video over its type, the
+  shoot, the state: Draft, With client, Approved, Changes requested). A
+  video is a record: the head (name, client and type, the state, Download
+  PDF, one ⋯ of Edit, Unshare, Reset client link, Delete), Share with client
+  (blue) or Copy client link, the client's word on the round on show (or the
+  request this round answers), the facts three across, the script as the
+  client reads it, and on the day each scene's VC# (the clip number on the
+  camera) and Shot tick, saved as they change and put back on a refusal
+  (`video_script_shot`, never a round). Edit is one sheet (Video, Shoot,
+  Script: the scenes added, moved and removed in place) saved by
+  `video_script_save` (from and to, `stale` with the row; a change to what
+  the client decides on after their decision is the next round).
+- Share (`video_script_share`, Undo where it happened) shows a video on the
+  client's page, `/script/?k=` on the client's own key (`clients.script_key`,
+  `script_link`; Reset client link asks and retires the old key). The page
+  reads only `get_scripts` (shared videos by shoot, never a clip number, a
+  tick, a version or a colleague's name), the review page's stage strip (To
+  review, Changes requested, Approved, All) and name card, and decides
+  through `script_decide` (Approve with the name asked once, js/decide.js;
+  Request changes needs a note), which tells the colleague who made the
+  video (kind `script`, the bell and a push opening it). Both functions are
+  anon's (`open_to_anon`).
+- The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored) is
+  the user's template: the wordmark at each page's head, Video Script, the
+  header table (Video #, Platform, Client/Brand, Language, Shooting Date &
+  Time, Venue, Est. Shooting Duration, Cast Members/Talent), each video's
+  title and reference and its script by kind with a VC# column (a recorded
+  clip number printed, an empty cell left for the pen), Notes / Remarks,
+  PRIVATE & CONFIDENTIAL and the page count. Videos of a shoot sharing kind
+  and header share one header table; Download PDF asks one video or the
+  whole shoot once there are two.
+- Delete is Full Access, the title typed back (else V and the number).
+
 ### Handbook (`js/handbook.js`, `?s=handbook`)
 - The company's internal files: Employee Handbook, SOPs, Policies, Templates
   and forms, Other (`handbook_docs`, `handbook_versions`,
@@ -3449,7 +3495,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   the two.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
-  `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
+  `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
   `.handbook`). The link
   draws where any tab is readable.
 - Reports files a report's steps (`report.*`: started, submitted, returned,

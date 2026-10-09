@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" data-face="client">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>ADspace Video Scripts</title>
+<!-- What a link unfurls to: the half that is true of every client, since a
+     crawler runs no scripts; the page puts the client's name in front once
+     it loads. -->
+<meta name="description" content="Video scripts prepared by ADspace, ready for your review.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ADspace">
+<meta property="og:title" content="Video Scripts by ADspace">
+<meta property="og:description" content="Each video's script as it will be shot. Approve, or tell us what to change.">
+<meta property="og:image" content="https://digital.adspace.me/img/share-1200.png?v=20261001a">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ADspace Digital Portal">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Video Scripts by ADspace">
+<meta name="twitter:description" content="Each video's script as it will be shot. Approve, or tell us what to change.">
+<meta name="twitter:image" content="https://digital.adspace.me/img/share-1200.png?v=20261001a">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20261009j">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js?v=20261007a"></script>
+<script src="/js/words.js?v=20261009a"></script>
+<script src="/js/grow.js?v=20261008"></script>
+<script src="/js/decide.js?v=20261009a"></script>
+<script src="/js/state.js?v=20261001a"></script>
+<script src="/js/form.js?v=20261004b"></script>
+<script src="/js/menu.js?v=20261009g"></script>
+<script src="/js/api.js?v=20261001a"></script>
+<script src="/js/maintenance.js?v=20261009h"></script>
+<script src="/js/announce.js?v=20261009h"></script>
+</head>
+<body>
+
+<!-- Header and footer come from the shared chrome. -->
+<script src="/js/chrome.js?v=20261001a" data-kicker="Video Scripts" data-for></script>
+
+<main class="shell shell-script">
+  <!-- Who the page is for, as the review page says it: the mark, the name,
+       how many videos and how many wait on the reader. -->
+  <section class="panel rec-head" id="vsHead" hidden>
+    <div class="rec-id">
+      <span class="rec-mark" id="vsMark" aria-hidden="true"></span>
+      <div class="rec-who">
+        <div class="rec-name"><h2 id="vsName"></h2></div>
+        <p class="rec-id-meta" id="vsMeta"></p>
+      </div>
+      <div class="rec-ctl"><span class="tone is-warn" id="vsState" hidden></span></div>
+    </div>
+  </section>
+  <nav class="tabrow stagestrip" id="vsStages" role="tablist" aria-label="Review stage" hidden></nav>
+  <div id="vsContent" data-swipe="vsStages"></div>
+  <p class="stage-empty" id="vsEmpty" hidden>No videos.</p>
+
+  <section class="cover" id="cover" hidden>
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2 id="coverTitle">Video Scripts</h2>
+        <p id="coverBody"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/js/swipe.js?v=20261001a"></script>
+<script src="/js/script.js?v=20261009j"></script>
+</body>
+</html>

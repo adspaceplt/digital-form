@@ -591,7 +591,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   a group that manages a section (`CLAUDE.md`).
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
-  - **Work**: My Work, Clients, Content Review, Creator Campaigns.
+  - **Work**: My Work, Clients, Content Review, Video Scripts, Creator
+    Campaigns.
   - **Records and setup**: Documents, Reports, Short Links, Services, Team,
     Handbook.
   - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
