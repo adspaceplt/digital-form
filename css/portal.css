@@ -10740,6 +10740,16 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips) { grid-column: 1 / -1; }
 .cx-nextup + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+/* A booking card in three parts, never run together on a phone (the user,
+   2026-10-09: "looks very compacted in mobile"): who and where it stands,
+   the steps, then what is next and the facts under one hairline, 16px
+   either side; the facts' rows 16px apart and each value 4px under its
+   label. */
+.cx-journey + .cx-status,
+.cx-journey + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.cx-status ~ .cx-facts { margin-top: 16px; }
+.cx-facts { row-gap: 16px; }
+.cx-facts dd { margin-top: 4px; }
 
 /* The client portal: the next meeting as a calendar leaf, each confirmed
    line's term, and a glyph a row on the overview. */
