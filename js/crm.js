@@ -2634,7 +2634,7 @@
          as every card head reads. Green is the live state, and on this row
          the live thing is the sign-in: main contact is a designation, so it
          reads neutral and the accent is spent once. */
-      '<span class="svc-name"><span class="ct-top"><b>' + esc(ct.name) + '</b>' +
+      '<span class="svc-name"><span class="ct-top"><b>' + esc((ct.salutation ? ct.salutation + ' ' : '') + ct.name) + '</b>' +
         (removed ? '<span class="tone is-off">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
@@ -2797,6 +2797,7 @@
     openSheet('crmContactBox');
     $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
     $('ctSave').textContent = 'Save';
+    $('ctSalutation').value = ct ? (ct.salutation || '') : '';
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
     $('ctPhone').value = ct ? (ct.phone || '') : '';
@@ -2822,6 +2823,7 @@
       $('ctWa').focus(); return;
     }
     var row = {
+      salutation: $('ctSalutation').value || null,
       name: name, role: val('ctRole') || null, phone: phone || null,
       whatsapp: waU ? '@' + waU : (phone || null),
       email: val('ctEmail') || null, lang: $('ctLang').value,
@@ -2831,7 +2833,7 @@
       if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('ctMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
-        editingContact ? changed(editingContact, row, [['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
+        editingContact ? changed(editingContact, row, [['salutation', 'Salutation'], ['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
           ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
       shutContact();
       loadContacts();
