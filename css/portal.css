@@ -10918,7 +10918,7 @@ button.vs-row { cursor: pointer; }
 }
 .is-narrow .vs-row > .vs-c-name { grid-area: name; }
 .is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; }
-.is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: end; }
+.is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }
