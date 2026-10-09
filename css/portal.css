@@ -10888,7 +10888,6 @@ button.vs-row { cursor: pointer; }
 .vs-head .msg { margin: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
-.vs-head .rec-linktools { margin-top: 2px; }
 .vs-pdf-short { display: none; }
 .is-narrow .vs-head .vs-pdf-long { display: none; }
 .is-narrow .vs-head .vs-pdf-short { display: inline; }
