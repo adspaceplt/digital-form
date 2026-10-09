@@ -2323,7 +2323,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     only). It is booked no earlier than the next half hour (`nextSlot()`: at
     3:00pm or 3:10pm the first slot is 3:30pm); the date and time fields
     start there and an earlier time is refused on the sheet. A meeting
-    already held keeps its time when its sheet is opened.
+    already held keeps its time when its sheet is opened. An On site
+    meeting asks for no link and may be written down after the day
+    (`2026-10-09-on-site-meetings.sql`; the user, 2026-10-09); once it has
+    ended, whoever led it (else the month's manager) is told once to submit
+    the outstation record (`ops_outstation_remind()`, pg_cron
+    `outstation-reminder` every fifteen minutes, kind `outstation`,
+    `outstation_told_at`; a moved meeting is told again), the notice
+    carrying the form's address in `ops_notifications.link` (https only),
+    which the bell and a push open in place of a console page.
   - The card (`engCard`) never repeats its heading: the month is named by the
     card above it, whose state chip (`.eng-mark`) shows only while shut. The
     meeting, link and message are `.eng-row`s (label, value, controls at the
