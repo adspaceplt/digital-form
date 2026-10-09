@@ -3018,8 +3018,12 @@ Each line is a rule that broke once. Its reason is in the archive.
       with one Undo, file `report.saved` (Report audit · n figures taken
       from Meta), file the reading again from the same answer, and check
       the commentary again where it had been checked and a check is left
-      (else its line says the figures changed since). It runs by itself
-      when the step opens (once in ten minutes a status), at Work.
+      (else its line says the figures changed since). It runs only when
+      Run audit is pressed (and an Advertising Report at Publish), never by
+      itself (the user, 2026-10-09: every open page filed a reading), and
+      reads the report's figures again at the press (`freshFigures`), so a
+      page opened before a colleague took Meta's figures never files them
+      as differences.
     - Each reading is filed (`sm_report_audit_save(p_id, p_outcome,
       p_rows, p_note)`: `match`, `mismatch`, `unavailable` with Meta's
       refusal, `override`; `sm_report_audits`, RLS on, no policy, no grant;
