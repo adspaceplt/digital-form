@@ -495,7 +495,7 @@ and kept in `app_secrets`; it never leaves the database.
 
 ### 6b. Require the pass under `content/`
 
-Only once Claude confirms the pages carry the pass:
+Done 2026-10-09. Only once Claude confirms the pages carry the pass:
 
 1. CloudFront → the distribution behind `mycdn.adspace.me` → **Behaviors**.
    If a behaviour for `content/*` exists, **Edit** it; otherwise **Create

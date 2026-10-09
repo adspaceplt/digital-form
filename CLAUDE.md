@@ -3519,7 +3519,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   and under `private/` (write and read, for invoices and each published
   report's kept PDF) once §5 is done;
   `private/` is closed to CloudFront by the bucket policy. `content/` is
-  served only with the media pass once §6 is done (`media-pass` signs with a
+  served only with the media pass (§6 done; CloudFront's `content/*`
+  behaviour requires it since 2026-10-09) (`media-pass` signs with a
   key it made and keeps in `app_secrets`, `cf_media_private`; CloudFront's
   ID for it is `cf_media_key_id`, and until it is stored the function
   answers `{ off: true }`).

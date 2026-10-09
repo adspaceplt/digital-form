@@ -605,8 +605,8 @@ section holds only what is true of the project as a whole.
     Download); each published version of a report keeps its PDF as it went
     out (2026-10-07), read back only through `sign-download`. Content Review media and creator drafts open only with
     the media pass (`media-pass`, twelve hours, 2026-10-03), carried by the
-    pages since 2026-10-03; required by CloudFront once the user has done
-    `docs/S3-STORAGE.md` §6b.
+    pages since 2026-10-03; required by CloudFront since 2026-10-09
+    (`docs/S3-STORAGE.md` §6b done by the user).
   - The ALP checklists as forms.
 - Access: client scope (built 2026-10-03) leaves the Activity record
   unscoped.
