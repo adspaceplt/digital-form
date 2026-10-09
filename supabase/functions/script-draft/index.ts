@@ -1,15 +1,15 @@
 /*
  * script-draft — writes a video's script for Video Scripts (2026-10-09).
  *
- * Write script in the script's Edit sheet (js/scripts.js) posts the video's
+ * Write script in the script's editor (js/scripts.js) posts the video's
  * id, the type of script and the facts the sheet holds (title, platform,
  * language, venue, how many in the cast), the video's length, the
  * colleague's notes for the script and whatever script the sheet already
  * holds. The function reads the video and its client as the caller, under
  * the caller's own access (Video Scripts at Work, a client the colleague
  * works on), and sends Claude only what a script needs: the type, the
- * platform, the length, the language, the notes, the other videos' titles in
- * the same shoot, and the client's industry and market. Never a cast
+ * platform, the length, the language, the notes, the other scripts' titles in
+ * the same content month, and the client's industry and market. Never a cast
  * member's name, a contact or the client's name: the name reads {brand} and
  * a handle {handle} wherever the team's words carry them, and the page fills
  * both back in.
@@ -18,7 +18,7 @@
  * (`ai_script_claim`: the colleague's scripts a day, apart from the reports'
  * and the captions'), marked done or failed after (`ai_draft_done`), and what
  * the call cost is kept on its row (`ai_draft_tokens`). Nothing is saved
- * here: the page puts the words in the sheet and the script's own Save keeps
+ * here: the page puts the words in the editor and the script's own Save keeps
  * them.
  *
  * Secrets: ANTHROPIC_API_KEY, and SCRIPT_MODEL (the model id; unset, it is
@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
   const may = await db.rpc('allowed', { p_section: 'scripts', p_level: 'work' });
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
 
-  const vid = await db.from('video_scripts').select('id, client_id, series_id, video_no').eq('id', scriptId).maybeSingle();
+  const vid = await db.from('video_scripts').select('id, client_id, period').eq('id', scriptId).maybeSingle();
   if (vid.error || !vid.data) return json({ error: 'not-found' }, 200, origin);
   const cl = await db.from('clients')
     .select('name, industry, market, handle_ig, handle_fb, handle_tiktok, handle_xhs')
@@ -153,8 +153,9 @@ Deno.serve(async (req) => {
   const c = cl.data as Record<string, unknown>;
   const ownHandle = String(c[({ Instagram: 'handle_ig', TikTok: 'handle_tiktok', Facebook: 'handle_fb', rednote: 'handle_xhs' } as
     Record<string, string>)[platform] || ''] || '').trim().replace(/^@/, '');
-  const sibs = await db.from('video_scripts').select('video_no, title')
-    .eq('series_id', vid.data.series_id as string).neq('id', scriptId).order('video_no');
+  /* The month's other scripts for this client (scripts-by-month). */
+  const sibs = await db.from('video_scripts').select('code, title')
+    .eq('client_id', vid.data.client_id as string).eq('period', vid.data.period as string).neq('id', scriptId).order('seq');
 
   /* The client's name and handles never leave: they read {brand} and
      {handle}, longest first, so a handle holding the name is masked whole. */
@@ -185,8 +186,8 @@ Deno.serve(async (req) => {
     venue: venue ? mask(venue) : null,
     cast: cast || null,
     notes: notes ? mask(notes) : null,
-    other_videos_in_this_shoot: (sibs.data || []).map((x: Record<string, unknown>) =>
-      'V' + x.video_no + (x.title ? ' · ' + mask(String(x.title)) : '')),
+    other_videos_this_month: (sibs.data || []).map((x: Record<string, unknown>) =>
+      String(x.code || '') + (x.title ? ' · ' + mask(String(x.title)) : '')),
     draft_so_far: Object.keys(draft).length ? draft : null
   };
 
