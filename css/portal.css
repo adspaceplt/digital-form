@@ -2448,9 +2448,10 @@ body.is-plain .topbar { background: var(--chrome); }
 /* A switch (`button.switch`, role="switch", aria-checked): a setting that
    takes effect at the press, drawn as the iPhone draws one, a track with a
    thumb that slides; off is the control's grey, on the green of live. The
-   button is the control's height and the track sits inside it. */
+   button is a full control's height (its target, 38 or 44 under a finger)
+   and the track sits inside it. */
 .switch {
-  position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h-sm);
+  position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h);
   padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer;
 }
 .switch::before {

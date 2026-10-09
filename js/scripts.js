@@ -29,6 +29,8 @@
   var UI = window.ADspaceState;
 
   var KINDS = [['scenes', 'Detailed scenes'], ['products', 'Products and scenes'], ['story', 'Story and voice-over']];
+  /* Unpublish carries the mark it carries on a campaign (one glyph an act). */
+  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>';
   var KIND_WORD = {};
   KINDS.forEach(function (k) { KIND_WORD[k[0]] = k[1]; });
   var CONTEXT_WORD = { products: 'Products and context', story: 'Hook and story' };
@@ -512,7 +514,7 @@
     if (may('work')) {
       acts += '<button class="btn btn-sm btn-icon" type="button" data-a="edit">' + ICON.pen + 'Edit</button>';
       acts += s.status === 'shared'
-        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">Unpublish</button>'
+        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">' + EYE_OFF + 'Unpublish</button>'
         : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
     }
     $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' +
