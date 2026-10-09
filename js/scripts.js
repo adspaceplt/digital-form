@@ -419,7 +419,6 @@
     var items = '';
     if (may('work')) {
       items += '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>';
-      if (s.status === 'shared') items += '<button class="kmenu-item" data-a="unshare" type="button"><b>Unshare</b></button>';
       items += '<button class="kmenu-item" data-a="reset" type="button"><b>Reset client link</b></button>';
     }
     if (may('manage')) items += '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>';
@@ -441,11 +440,12 @@
     var acts = '';
     if (may('work')) {
       acts = s.status === 'shared'
-        ? '<button class="btn btn-sm" type="button" data-a="copy">' + ICON.copy + 'Copy client link</button>'
-        : '<button class="btn btn-sm btn-primary" type="button" data-a="share">Share with client</button>';
+        ? '<button class="btn btn-warn" type="button" data-a="unshare">Unshare</button>'
+        : '<button class="btn btn-go" type="button" data-a="share">Share with client</button>';
     }
     $('vsRecActs').innerHTML = acts;
     $('vsRecActs').hidden = !acts;
+    paintLink();
     $('vsRecBody').innerHTML = decisionLine(s) + '<section class="panel vs-sheetview">' + facts(s) + scriptBody(s) + '</section>';
     paintSeries();
     wireRecord();
@@ -474,7 +474,7 @@
     var ctl = $('vsRecCtl');
     on(ctl, 'pdf', function (b) { downloadPdf(b); });
     on($('vsRecActs'), 'share', function (b) { share(true, b); });
-    on($('vsRecActs'), 'copy', function (b) { copyLink(b); });
+    on($('vsRecActs'), 'unshare', function (b) { share(false, b); });
     var mb = $('vsRecMore');
     if (mb) {
       var menu = ctl.querySelector('[data-menu]');
@@ -486,7 +486,6 @@
         if (open) window.ADspaceMenu.place(mb, menu);
       });
       on(menu, 'edit', function () { shutMenu(); openEdit(mb); });
-      on(menu, 'unshare', function () { shutMenu(); share(false); });
       on(menu, 'reset', function () { shutMenu(); resetLink(); });
       on(menu, 'del', function () { shutMenu(); remove(); });
     }
@@ -550,15 +549,33 @@
 
   function clientLink(key) { return location.origin + '/script/?k=' + key; }
   function withKey(reset) {
-    return rpc('script_link', { p_client: st.open.client_id, p_reset: Boolean(reset) }).then(function (d) {
+    var cid = st.open.client_id;
+    return rpc('script_link', { p_client: cid, p_reset: Boolean(reset) }).then(function (d) {
       st.key = d.key;
+      st.keyFor = cid;
       return d.key;
     });
   }
-  function copyLink(btn) {
-    withKey(false).then(function (k) { window.ADspaceCopy.to(btn, clientLink(k)); })
-      .catch(function (e) { say($('vsRecMsg'), said(e)); });
+  /* The client's link, one for all its videos: read once a client (made the
+     first time by a colleague at Work), drawn as a campaign's. At View with
+     none made, the address is left out. */
+  function paintLink() {
+    var s = st.open;
+    var show = function () {
+      if (!st.open || st.open.id !== s.id) return;
+      var has = Boolean(st.key && st.keyFor === s.client_id);
+      $('vsLinkBox').hidden = !has;
+      if (has) { $('vsLink').value = clientLink(st.key); $('vsOpen').href = clientLink(st.key); }
+      $('vsLinkTools').hidden = !has && $('vsRecActs').hidden;
+    };
+    show();
+    if (st.keyFor === s.client_id || st.keyTried === s.client_id) return;
+    st.keyTried = s.client_id;
+    withKey(false).then(show).catch(show);
   }
+  $('vsCopy').addEventListener('click', function () {
+    if (st.key) window.ADspaceCopy.to($('vsCopy'), clientLink(st.key));
+  });
   function share(on, btn, quiet) {
     var m = $('vsRecMsg');
     var go = function () {
@@ -578,7 +595,7 @@
   function resetLink() {
     window.ADspaceConfirm.ask({ title: 'Reset client link?',
       body: 'The link the client holds stops working. Send them the new one.', go: 'Reset', tone: 'warn' }, function () {
-      withKey(true).then(function () { say($('vsRecMsg'), 'Link reset. Copy the new link for the client.', 'ok'); })
+      withKey(true).then(function () { paintLink(); say($('vsRecMsg'), 'Link reset. Copy the new link for the client.', 'ok'); })
         .catch(function (e) { say($('vsRecMsg'), said(e)); });
     });
   }

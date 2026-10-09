@@ -6643,18 +6643,22 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 .rec-pane { grid-area: pane; min-width: 0; }
 .pane-form { padding: 12px 0 0; }
 .pane-form-head { margin: 0 0 12px; }
-.camp-client-tools {
+/* A record's client link and the act that hands it over (a campaign, a
+   video script): the address, Copy link and Preview, then the act at the
+   right edge. */
+.camp-client-tools, .rec-linktools {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px;
   align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft);
 }
 .camp-client-tools .panelhead { display: none; }
-.camp-client-tools .linkbox { min-width: 0; }
-.camp-client-tools > .row { margin: 0 !important; flex-wrap: nowrap; }
+.camp-client-tools .linkbox, .rec-linktools .linkbox { min-width: 0; }
+.camp-client-tools > .row, .rec-linktools > .row { margin: 0 !important; flex-wrap: nowrap; }
+.rec-linktools > .row:only-child { grid-column: 1 / -1; justify-content: flex-end; }
 .finance-total { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .finance-total .railmoney { max-width: 420px; }
 @media (max-width: 760px) {
-  .camp-client-tools { grid-template-columns: minmax(0, 1fr); }
-  .camp-client-tools > .row { flex-wrap: wrap; }
+  .camp-client-tools, .rec-linktools { grid-template-columns: minmax(0, 1fr); }
+  .camp-client-tools > .row, .rec-linktools > .row { flex-wrap: wrap; }
 }
 /* The first block in a pane sits as far from the tabs as two blocks sit from
    each other: the law of the stack does not stop at a tab strip. THE STEP IS
@@ -10884,6 +10888,7 @@ button.vs-row { cursor: pointer; }
 .vs-head .msg { margin: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
+.vs-head .rec-linktools { margin-top: 2px; }
 .vs-pdf-short { display: none; }
 .is-narrow .vs-head .vs-pdf-long { display: none; }
 .is-narrow .vs-head .vs-pdf-short { display: inline; }

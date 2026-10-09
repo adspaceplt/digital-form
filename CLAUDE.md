@@ -3341,8 +3341,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The list is a card a client, a row a video (the video over its type, the
   shoot, the state: Draft, With client, Approved, Changes requested). A
   video is a record: the head (name, client and type, the state, Download
-  PDF, one ⋯ of Edit, Unshare, Reset client link, Delete), Share with client
-  (blue) or Copy client link, the client's word on the round on show (or the
+  PDF, one ⋯ of Edit, Reset client link, Delete), under it the client link
+  laid as a campaign's (`.rec-linktools`: the address, Copy link, Preview,
+  then Share with client in blue or Unshare, which asks; the user,
+  2026-10-09), the key read once a client and made at Work the first time,
+  the client's word on the round on show (or the
   request this round answers), the facts three across, the script as the
   client reads it, and on the day each scene's VC# (the clip number on the
   camera) and Shot tick, saved as they change and put back on a refusal

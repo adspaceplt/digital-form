@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009j">
+<link rel="stylesheet" href="/css/portal.css?v=20261009l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4008,7 +4008,17 @@
             </div>
             <div class="rec-ctl" id="vsRecCtl"></div>
           </div>
-          <div class="setbar-actions" id="vsRecActs" hidden></div>
+          <!-- The client link and the act that hands this video to the client,
+               laid as a campaign's: the address, Copy link and Preview, then
+               Share with client / Unshare at the right edge. -->
+          <div class="rec-linktools" id="vsLinkTools" hidden>
+            <div class="linkbox" id="vsLinkBox" hidden>
+              <input class="input readfield" id="vsLink" readonly aria-label="Client link">
+              <button class="btn btn-icon" id="vsCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+              <a class="btn btn-icon" id="vsOpen" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+            </div>
+            <div class="row" id="vsRecActs" hidden></div>
+          </div>
           <div class="msg" id="vsRecMsg"></div>
         </section>
         <div class="cr-rec vs-rec">
@@ -5112,7 +5122,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/team.js?v=20261009j"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261009j"></script>
+<script src="/js/scripts.js?v=20261009l"></script>
 <script src="/js/scriptpdf.js?v=20261009j"></script>
 <script src="/js/campaigns.js?v=20261009a"></script>
 <script src="/js/ops.js?v=20261009j"></script>
