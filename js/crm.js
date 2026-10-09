@@ -1012,9 +1012,9 @@
     $('crmEdit').hidden = !canWork;
     $('crmBrandEdit').hidden = !canWork;
     /* Request feedback on WhatsApp (2026-10-09, js/whatsapp.js): where the
-       feedback template is on, at Clients Work. */
+       feedback template is on, at Clients Work and its WhatsApp part. */
     $('crmFeedback').hidden = true;
-    if (canWork && window.ADspaceWhatsApp) {
+    if (canWork && mayPart('clients.whatsapp', 'work') && window.ADspaceWhatsApp) {
       var fbFor = c.id;
       window.ADspaceWhatsApp.on('feedback').then(function (yes) {
         if (state.client && state.client.id === fbFor) $('crmFeedback').hidden = !yes;

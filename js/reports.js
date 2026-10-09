@@ -2009,10 +2009,12 @@
     on('sent', function (b) { b.closest('.kmenu').hidden = true; askDay(); });
     on('sentfact', function () { askDay(); });
     /* Send on WhatsApp (2026-10-09, js/whatsapp.js): drawn where the report
-       template is on; the kept PDF to the client's main contact, then marked
-       as sent today. */
+       template is on and the group's Send on WhatsApp part allows it; the
+       kept PDF to the client's main contact, then marked as sent today. */
     var waBtn = box.querySelector('.rp-head [data-a="wasend"]');
-    if (waBtn && window.ADspaceWhatsApp) window.ADspaceWhatsApp.on('report').then(function (yes) { waBtn.hidden = !yes; });
+    if (waBtn && window.ADspaceWhatsApp && bridge.may && bridge.may('reports.whatsapp', 'work')) {
+      window.ADspaceWhatsApp.on('report').then(function (yes) { waBtn.hidden = !yes; });
+    }
     on('wasend', function (b) {
       var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
       if (!live) return;

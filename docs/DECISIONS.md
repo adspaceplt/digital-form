@@ -1278,3 +1278,11 @@ good to just call the name)" after the first feedback message read "Hi QR".
 salutation and the whole name ("Dato' Lim Wei Ming"), never the salutation
 and one word: a Chinese name puts the surname first and a Malay name has
 none, so any cut guesses wrong. Without a salutation the first word stays.
+
+### 2026-10-09 · Sending on WhatsApp is a part a group can shut
+The user: "can we hide the sent via whatsapp button from certain team
+group?" Each message costs money, so who may send is a group's choice:
+`reports.whatsapp` (Send on WhatsApp) and `clients.whatsapp` (Request
+feedback on WhatsApp) follow their section unless the group's panel sets
+No Access, and the database asks the part as well as the page. The pair
+of buttons on the report head also gained its 8px gap ("sticked together").
