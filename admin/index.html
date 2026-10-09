@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009l">
+<link rel="stylesheet" href="/css/portal.css?v=20261009m">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4028,47 +4028,30 @@
           </aside>
         </div>
       </div>
-    </div>
 
-    <div class="sheet" id="vsNewSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsNewTitle">
-        <div class="sheet-head">
-          <h3 id="vsNewTitle">New script</h3>
-          <button class="iconbtn" id="vsNewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-        </div>
-        <div class="sheet-body">
-          <div class="row"><div><label class="field-label" for="vsNewClient">Client</label>
-            <select class="select" id="vsNewClient" aria-required="true"><option value="">Choose a client</option></select></div></div>
-          <div class="row"><div><label class="field-label" for="vsNewKind">Type of script</label>
-            <select class="select" id="vsNewKind" data-seg>
-              <option value="scenes">Detailed scenes</option>
-              <option value="products">Products and scenes</option>
-              <option value="story">Story and voice-over</option>
-            </select></div></div>
-        </div>
-        <div class="sheet-foot">
-          <button class="btn btn-primary" id="vsNewGo" type="button">Create</button>
-          <button class="btn btn-quiet" id="vsNewCancel" type="button">Cancel</button>
-        </div>
-        <div class="msg" id="vsNewMsg"></div>
-      </div>
-    </div>
-
-    <div class="sheet" id="vsSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsSheetTitle">
-        <div class="sheet-head">
-          <h3 id="vsSheetTitle">Edit</h3>
-          <button class="iconbtn" id="vsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-        </div>
-        <div class="sheet-body">
+      <!-- The script's editor is a page of its own (the user, 2026-10-09: a
+           sheet shut by a stray press lost a long script). Leaving it with
+           changes unsaved asks first. -->
+      <div class="vs-edit" id="vsEditView" hidden>
+        <section class="panel rec-head vs-edithead">
+          <div class="rec-id rec-id-plain">
+            <div class="rec-who">
+              <div class="rec-name"><h2 id="vsSheetTitle">Edit</h2></div>
+              <p class="rec-id-meta" id="vsEditMeta"></p>
+            </div>
+          </div>
+        </section>
+        <section class="panel vs-editform">
           <section class="fsec">
             <h4 class="fsec-h">Video</h4>
             <div class="row"><div><label class="field-label" for="vsKind">Type of script</label>
-              <select class="select" id="vsKind" data-seg>
+              <select class="select" id="vsKind">
                 <option value="scenes">Detailed scenes</option>
                 <option value="products">Products and scenes</option>
                 <option value="story">Story and voice-over</option>
               </select></div></div>
+            <div class="row"><div><label class="field-label" for="vsMonth">Content month</label>
+              <select class="select" id="vsMonth"></select></div></div>
             <div class="row"><div><label class="field-label" for="vsTitle">Title</label>
               <textarea class="input" id="vsTitle" rows="1" data-oneline maxlength="200" placeholder="Optional" autocomplete="off"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsRef">Reference video</label>
@@ -4092,6 +4075,8 @@
                 <textarea class="input" id="vsCast" rows="1" data-oneline maxlength="300" placeholder="John Doe, Jane Doe" autocomplete="off"></textarea></div>
             </div>
           </section>
+        </section>
+        <section class="panel vs-editform vs-editscript">
           <section class="fsec">
             <!-- Write script (2026-10-09): AI drafts the script into these
                  fields from the colleague's notes; Save keeps it. -->
@@ -4109,12 +4094,40 @@
             <div class="row"><div><label class="field-label" for="vsNotes">Notes</label>
               <textarea class="input" id="vsNotes" rows="2" maxlength="4000" placeholder="Optional"></textarea></div></div>
           </section>
+        </section>
+        <div class="vs-editfoot">
+          <div class="msg" id="vsMsg"></div>
+          <div class="row acts">
+            <button class="btn btn-primary" id="vsSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet" id="vsNewSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsNewTitle">
+        <div class="sheet-head">
+          <h3 id="vsNewTitle">New script</h3>
+          <button class="iconbtn" id="vsNewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div><label class="field-label" for="vsNewClient">Client</label>
+            <select class="select" id="vsNewClient" aria-required="true"><option value="">Choose a client</option></select></div></div>
+          <div class="row"><div><label class="field-label" for="vsNewMonth">Content month</label>
+            <select class="select" id="vsNewMonth" aria-required="true"></select></div></div>
+          <div class="row"><div><label class="field-label" for="vsNewKind">Type of script</label>
+            <select class="select" id="vsNewKind">
+              <option value="scenes">Detailed scenes</option>
+              <option value="products">Products and scenes</option>
+              <option value="story">Story and voice-over</option>
+            </select></div></div>
         </div>
         <div class="sheet-foot">
-          <button class="btn btn-primary" id="vsSave" type="button">Save</button>
-          <button class="btn btn-quiet" id="vsCancel" type="button">Cancel</button>
+          <button class="btn btn-primary" id="vsNewGo" type="button">Create</button>
+          <button class="btn btn-quiet" id="vsNewCancel" type="button">Cancel</button>
         </div>
-        <div class="msg" id="vsMsg"></div>
+        <div class="msg" id="vsNewMsg"></div>
       </div>
     </div>
 
@@ -5121,15 +5134,15 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261009k"></script>
+<script src="/js/reports.js?v=20261009m"></script>
 <script src="/js/register.js?v=20261009a"></script>
 <script src="/js/crm.js?v=20261009a"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261009j"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261009l"></script>
-<script src="/js/scriptpdf.js?v=20261009j"></script>
+<script src="/js/scripts.js?v=20261009m"></script>
+<script src="/js/scriptpdf.js?v=20261009m"></script>
 <script src="/js/campaigns.js?v=20261009a"></script>
 <script src="/js/ops.js?v=20261009j"></script>
 <script src="/js/perf.js?v=20261009b"></script>

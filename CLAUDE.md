@@ -142,6 +142,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
+| `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -3109,9 +3110,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     count (`ai_drafts.purpose` `caption`, with `batch_id`): `caption` (20)
     a colleague's a day and `caption_admin` (40) an admin's, settings in
     `ai_draft_limits` read by `ai_caption_claim` / `ai_caption_left`, never
-    counted in the day's report uses. Limits lists Captions, each colleague
-    and Captions, each admin; Edit limits is eight fields in four pairs;
-    Captions today lists the team and each colleague who wrote one.
+    counted in the day's report uses. Scripts (Video Scripts' Write script,
+    2026-10-09) are a count of their own the same way (`script` 10,
+    `script_admin` 20, `ai_drafts.script_id`); the reports' limits count
+    drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
+    Captions and Scripts, each colleague and each admin; Edit limits is ten
+    fields in five pairs; Captions today and Scripts today list the team and
+    each colleague who wrote one; This month prices Video scripts apart.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
     (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
@@ -3328,51 +3333,84 @@ Each line is a rule that broke once. Its reason is in the archive.
   named `/{slug} is a colleague's namecard.`).
 
 ### Video Scripts (`js/scripts.js`, `js/scriptpdf.js`, `?s=scripts`; `script/`, `js/script.js`)
-- A shoot's scripts, one a video (the user, 2026-10-09: "a script table
-  covers one video"), its own section on the ladder (`scripts`, every group
-  starting at its Content Review level; `2026-10-09-video-scripts.sql`), in
-  the Work chunk after Content Review. Three kinds, picked first: Detailed
-  scenes (Visual and Script a scene), Products and scenes (Products and
-  context, then the scenes), Story and voice-over (Hook and story, the
-  scenes, Script (read here)). V1, V2… number the videos of one shoot
-  (`series_id`, `video_no`); Add next video (the rail's This shoot) makes
-  the next with the header copied (platform, language, shooting date and
-  time, venue, duration, cast) and the script empty.
-- The list is a card a client, a row a video (the video over its type, the
-  shoot, the state: Draft, With client, Approved, Changes requested). A
-  video is a record: the head (name, client and type, the state, Download
-  PDF, one ⋯ of Edit, Reset client link, Delete), under it the client link
-  laid as a campaign's (`.rec-linktools`: the address, Copy link, Preview,
-  then Share with client in blue or Unshare, which asks; the user,
-  2026-10-09), the key read once a client and made at Work the first time,
-  the client's word on the round on show (or the
-  request this round answers), the facts three across, the script as the
-  client reads it, and on the day each scene's VC# (the clip number on the
-  camera) and Shot tick, saved as they change and put back on a refusal
-  (`video_script_shot`, never a round). Edit is one sheet (Video, Shoot,
-  Script: the scenes added, moved and removed in place) saved by
-  `video_script_save` (from and to, `stale` with the row; a change to what
-  the client decides on after their decision is the next round).
-- Share (`video_script_share`, Undo where it happened) shows a video on the
-  client's page, `/script/?k=` on the client's own key (`clients.script_key`,
-  `script_link`; Reset client link asks and retires the old key). The page
-  reads only `get_scripts` (shared videos by shoot, never a clip number, a
-  tick, a version or a colleague's name), the review page's stage strip (To
-  review, Changes requested, Approved, All) and name card, and decides
-  through `script_decide` (Approve with the name asked once, js/decide.js;
-  Request changes needs a note), which tells the colleague who made the
-  video (kind `script`, the bell and a push opening it). Both functions are
-  anon's (`open_to_anon`).
+- One script is one full video (the user, 2026-10-09), its own section on
+  the ladder (`scripts`, every group starting at its Content Review level;
+  `2026-10-09-video-scripts.sql`), in the Work chunk after Content Review.
+  Three kinds: Detailed scenes (Visual and Script a scene), Products and
+  scenes (Products and context, then the scenes), Story and voice-over (Hook
+  and story, the scenes, Script (read here)).
+- A script is a client's content month's (`2026-10-09-scripts-by-month.sql`;
+  the user: "we are working on content month, monthly basis"): `period`,
+  `seq` and `code` YYMMVSNN (`2610VS01`), NN the lowest free a client a
+  month (unique), `engagement_id` the client's My Work month where one
+  exists (never required). New script asks the client, the month (last
+  month, this month and the next six, as My Work offers) and the type
+  (`video_script_new`); Add next script (the rail, the month's scripts)
+  makes the month's next number with the header copied (platform, language,
+  shooting date and time, venue, duration, cast) and the script empty; the
+  editor's Content month moves it, taking that month's number (filed with
+  both codes). `series_id` / `video_no` are no longer read.
+- The list is a card a client, a row a script (code and title over the month
+  and type, the shoot, the state: Draft or Shared), newest month first. A
+  script is a record: the head (code and title; client, type and the month,
+  which opens the client's Months in My Work where it is there; the state,
+  Download PDF, one ⋯ of Edit, Reset client link, Delete), under it the
+  client link laid as a campaign's (`.rec-linktools`: the address, Copy
+  link, Preview, then Share with client in blue or Unshare, which asks), the
+  key read once a client and made at Work the first time; then the facts in
+  one card (`.vs-factcard`, the reference video with them) and the script in
+  the next (the user, 2026-10-09: key information apart from the scenes),
+  each scene's VC# (the clip number on the camera) and Shot tick saved as
+  they change and put back on a refusal (`video_script_shot`).
+- Edit is a page of its own (`#vsEditView`, `edit=1` in the address; the
+  user, 2026-10-09: a sheet shut by a stray press would lose a long
+  script): the head, the facts card (Video, Shoot), the script card, and
+  Save / Cancel at the foot of the screen (`.vs-editfoot`, sticky above the
+  tab bar). Cancel with changes asks (Discard changes?); with changes held,
+  Back, the rail and a return to the section bring the editor back as it was
+  ("Save or cancel the changes first."), and closing the tab asks
+  (`beforeunload`). Saved by `video_script_save` (from and to, `stale` with
+  the row).
+- Write script (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
+  on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
+  It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
+  Safe Mode on a rednote script alone, unticked; Notes for the script, kept
+  in this browser under `adspace-script-notes:{id}`; n scripts left today;
+  Replaces the script in these fields where it holds words), then sends the
+  type, title, platform, language, length, venue, how many in the cast (never
+  their names), the notes and the script so far; the function reads the
+  script, the client (industry, market) and the month's other titles as the
+  caller, masks the client's name `{brand}` and handles `{handle}`, claims
+  `ai_script_claim` before Claude (`script` 10 a colleague, `script_admin`
+  20 an admin, a day from midnight MYT, settings in `ai_draft_limits`;
+  `ai_script_left`), and answers the type's fields by structured output
+  (secrets `ANTHROPIC_API_KEY`, `SCRIPT_MODEL`, unset `claude-opus-5-5`;
+  Verify JWT off). The words fill the fields in place, `{brand}` and
+  `{handle}` filled on the page; Undo where it happened; Save keeps them; an
+  answer landing after the editor shut is put in at its next open. The house
+  style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
+- Share (`video_script_share`, Undo where it happened) shows a script on the
+  client link, `/script/?k=` on the client's own key (`clients.script_key`,
+  `script_link`; Reset client link asks and retires the old key). The link is
+  for the team and the client to read the script and, on site, to record the
+  clip numbers (the user, 2026-10-09: "no need show the approve or changes
+  at client side"): the name card, a tab a content month (drawn where there
+  are two), each script's code and title, its facts card and its script
+  card, each scene's VC# and Shot saved as they change through
+  `script_shot_link` (anon, filed by `Client link`, a refusal put back with
+  `W.notSent`). It reads only `get_scripts` (shared scripts by month, their
+  scenes with clip numbers and ticks; never who ticked, a colleague's name
+  or a version). Nobody decides there: `script_decide` answers `closed`.
 - The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored) is
   the user's template: the wordmark at each page's head, Video Script, the
-  header table (Video #, Platform, Client/Brand, Language, Shooting Date &
-  Time, Venue, Est. Shooting Duration, Cast Members/Talent), each video's
-  title and reference and its script by kind with a VC# column (a recorded
-  clip number printed, an empty cell left for the pen), Notes / Remarks,
-  PRIVATE & CONFIDENTIAL and the page count. Videos of a shoot sharing kind
-  and header share one header table; Download PDF asks one video or the
-  whole shoot once there are two.
-- Delete is Full Access, the title typed back (else V and the number).
+  header table (Video # reads the codes, Platform, Client/Brand, Language,
+  Shooting Date & Time, Venue, Est. Shooting Duration, Cast Members/Talent),
+  each script's title and reference and its script by kind with a VC# column
+  (a recorded clip number printed, an empty cell left for the pen), Notes /
+  Remarks, PRIVATE & CONFIDENTIAL and the page count. Scripts of a month
+  sharing kind and header share one header table; Download PDF asks one
+  script or the whole month once there are two.
+- Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
 - The company's internal files: Employee Handbook, SOPs, Policies, Templates

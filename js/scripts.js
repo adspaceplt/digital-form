@@ -6,14 +6,16 @@
  * VO. VC# is the video clip number on camera … one digital similar as content
  * review able to view online, another is export pdf for on-site use."
  *
- * The list is a card a client, a row a video (V1, V2… in its shoot). A video
- * opens as a record: the header facts, the script as the client reads it,
- * and on the day each scene's tick and clip number (VC#). Edit opens the
- * whole script in a sheet; Add next video makes the next number of the same
- * shoot with its header copied. Share shows it on the client's page
- * (`/script/?k=`), where it is approved or changes are asked for under a
- * typed name. Every write is a function (`video_script_*`,
- * 2026-10-09-video-scripts.sql); the PDF is drawn here, never stored.
+ * One script is one full video, made in a client's content month and
+ * numbered in it, YYMMVSNN (2026-10-09-scripts-by-month.sql; the user: "we
+ * are working on content month, monthly basis"). The list is a card a
+ * client, a row a script. A script opens as a record: its facts in one card,
+ * the script in another, and on the day each scene's tick and clip number
+ * (VC#). Edit is a page of its own; Add next script makes the next number of
+ * the same month with its header copied. Share shows it on the client link
+ * (`/script/?k=`), where it is read and the clip numbers can be recorded on
+ * site; nobody decides on it there. Every write is a function
+ * (`video_script_*`); the PDF is drawn here, never stored.
  */
 (function () {
   'use strict';
@@ -33,10 +35,7 @@
   var LANGS = ['English', 'Chinese', 'Malay', 'English and Chinese'];
   var DURATIONS = [30, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-  var STATE = {
-    draft: ['Draft', 'is-off'], shared: ['With client', 'is-warn'],
-    approved: ['Approved', 'is-ok'], changes: ['Changes requested', 'is-warn']
-  };
+  var STATE = { draft: ['Draft', 'is-off'], shared: ['Shared', 'is-live'] };
   var ICON = {
     dots: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
@@ -49,8 +48,8 @@
     out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>'
   };
 
-  var st = { list: [], decided: {}, clients: [], loaded: false, open: null, scenes: [], reviews: [],
-             series: [], key: null, draft: [], idem: null, find: '' };
+  var st = { list: [], clients: [], loaded: false, open: null, scenes: [],
+             series: [], key: null, draft: [], idem: null, find: '', editing: null, base: '' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -80,8 +79,32 @@
     var h = Math.floor(n / 60), m = n % 60;
     return (h ? h + (h === 1 ? ' hour' : ' hours') : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
   }
-  function label(s) { return 'V' + s.video_no + (s.title ? ' · ' + s.title : ''); }
-  function typedName(s) { return s.title ? s.title : 'V' + s.video_no; }
+  function codeOf(s) { return s.code || 'V' + s.video_no; }
+  function label(s) { return codeOf(s) + (s.title ? ' · ' + s.title : ''); }
+  function typedName(s) { return s.title ? s.title : codeOf(s); }
+  /* A content month: `2026-10` reads Oct 2026. */
+  function monthWord(p) {
+    var m = /^(\d{4})-(\d{2})$/.exec(p || '');
+    return m ? MON[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  /* The months a script is made in: last month, this month and the next
+     six (MYT), as My Work offers them, and the month it holds. */
+  function monthsAround(cur) {
+    var now = new Date(Date.now() + 8 * 36e5), y = now.getUTCFullYear(), mo = now.getUTCMonth();
+    var out = [];
+    for (var i = -1; i <= 6; i++) {
+      var d = new Date(Date.UTC(y, mo + i, 1));
+      out.push(d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'));
+    }
+    if (cur && out.indexOf(cur) < 0) { out.push(cur); out.sort(); }
+    return out;
+  }
+  function thisMonth() { return monthsAround()[1]; }
+  function fillMonth(sel, cur) {
+    sel.innerHTML = monthsAround(cur).map(function (p) {
+      return '<option value="' + p + '"' + (p === cur ? ' selected' : '') + '>' + esc(monthWord(p)) + '</option>';
+    }).join('');
+  }
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return 'x' + Date.now() + Math.random().toString(16).slice(2);
@@ -93,12 +116,13 @@
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.',
     'bad-kind': 'Choose the type of script.',
+    'bad-period': 'Choose the content month.',
     'bad-title': 'A title is 200 characters at most.',
     'bad-link': 'A reference link starts with https://.',
     'bad-duration': 'Choose a duration between 5 minutes and 24 hours.',
     'bad-date': 'Choose a date from 14 Aug 2023.',
     'too-long': 'A field is too long to save.',
-    'too-many': 'A script holds 60 scenes at most.',
+    'too-many': 'A month holds 99 scripts, and a script 60 scenes, at most.',
     'bad-scenes': 'The scenes could not be read.',
     stale: 'Somebody changed this script. It has been read again; make the change once more.',
     name: 'The name does not match.'
@@ -119,12 +143,8 @@
     });
   }
 
-  /* Where a video stands: a draft, with the client, or the client's decision
-     on the round on show. */
-  function stateOf(s, decision) {
-    if (s.status !== 'shared') return 'draft';
-    return decision ? decision.decision : 'shared';
-  }
+  /* Where a script stands: a draft, or shared on the client link. */
+  function stateOf(s) { return s.status === 'shared' ? 'shared' : 'draft'; }
   function chip(key) {
     var w = STATE[key] || STATE.draft;
     return '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>';
@@ -135,25 +155,11 @@
     var box = $('vsList');
     if (!st.loaded) UI.skeleton(box, 4);
     return db.from('video_scripts')
-      .select('id, client_id, series_id, video_no, kind, title, status, round, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
-      .order('created_at', { ascending: false })
+      .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
+      .order('period', { ascending: false }).order('seq')
       .then(function (r) {
         if (r.error) throw r.error;
         st.list = r.data || [];
-        var ids = st.list.map(function (s) { return s.id; });
-        /* The decisions for every video listed, in one read. */
-        return ids.length
-          ? db.from('video_script_reviews').select('script_id, round, decision, reviewer, note, created_at')
-              .in('script_id', ids).order('created_at', { ascending: false })
-          : { data: [] };
-      }).then(function (r) {
-        if (r.error) throw r.error;
-        st.decided = {};
-        var rnd = {};
-        st.list.forEach(function (s) { rnd[s.id] = s.round; });
-        (r.data || []).forEach(function (d) {
-          if (d.round === rnd[d.script_id] && !st.decided[d.script_id]) st.decided[d.script_id] = d;
-        });
         st.loaded = true;
         paint();
       }).catch(function (e) {
@@ -165,7 +171,7 @@
     var q = st.find.trim().toLowerCase();
     if (!q) return st.list;
     return st.list.filter(function (s) {
-      return [s.title, s.venue, s.clients && s.clients.name, s.clients && s.clients.client_code, 'v' + s.video_no]
+      return [s.title, s.venue, s.clients && s.clients.name, s.clients && s.clients.client_code, s.code, monthWord(s.period)]
         .join(' ').toLowerCase().indexOf(q) > -1;
     });
   }
@@ -176,7 +182,7 @@
     var list = shown();
     var all = st.list.length;
     $('vsCount').textContent = !all ? '' : list.length !== all ? list.length + ' of ' + all
-      : all + (all === 1 ? ' video' : ' videos');
+      : all + (all === 1 ? ' script' : ' scripts');
     box.innerHTML = '';
     if (!all) {
       UI.emptyLine(box, 'No scripts.', may('work') ? 'New script' : '', function () { openNew($('vsNew')); });
@@ -198,16 +204,15 @@
     });
     order.forEach(function (cid) {
       var rows = byClient[cid].slice().sort(function (a, b) {
-        var da = a.shoot_on || '9999', dbb = b.shoot_on || '9999';
-        return dbb.localeCompare(da) || String(a.series_id).localeCompare(String(b.series_id)) || a.video_no - b.video_no;
+        return String(b.period || '').localeCompare(String(a.period || '')) || (a.seq || 0) - (b.seq || 0);
       });
       var c = rows[0].clients || {};
       box.appendChild(GRP.section({
         route: 'scripts', key: cid, name: c.name || 'Client', count: rows.length,
         shut: !st.find && GRP.shut('scripts', cid, false, rows.length === list.length),
         table: function () {
-          var table = GRP.table('vs-row', ['Video', 'Shoot', 'State']);
-          GRP.more(table, rows, 30, 'videos', rowOf);
+          var table = GRP.table('vs-row', ['Script', 'Shoot', 'State']);
+          GRP.more(table, rows, 30, 'scripts', rowOf);
           return table;
         }
       }));
@@ -221,9 +226,9 @@
     row.setAttribute('data-id', s.id);
     var shoot = [dayWord(s.shoot_on), s.venue].filter(Boolean).join(' · ');
     row.innerHTML =
-      '<span class="vs-c-name"><b>' + esc(label(s)) + '</b><small>' + esc(KIND_WORD[s.kind] || '') + '</small></span>' +
+      '<span class="vs-c-name"><b>' + esc(label(s)) + '</b><small>' + esc([monthWord(s.period), KIND_WORD[s.kind]].filter(Boolean).join(' · ')) + '</small></span>' +
       '<span class="vs-c-shoot">' + (shoot ? esc(shoot) : '<span class="mute">Not set</span>') + '</span>' +
-      '<span class="vs-c-state">' + chip(stateOf(s, st.decided[s.id])) + '</span>';
+      '<span class="vs-c-state">' + chip(stateOf(s)) + '</span>';
     row.addEventListener('click', function () { openScript(s.id, true); });
     return row;
   }
@@ -251,6 +256,7 @@
     st.idem = uuid();
     var sel = $('vsNewClient');
     sel.innerHTML = '<option value="">Loading…</option>';
+    fillMonth($('vsNewMonth'), thisMonth());
     window.ADspaceSheet.show($('vsNewSheet'), { opener: opener || null });
     loadClients().then(function (list) {
       var F = window.ADspaceForm;
@@ -270,7 +276,7 @@
     var client = $('vsNewClient').value;
     if (!client) { say(m, 'Choose a client.'); $('vsNewClient').focus(); return; }
     btn.disabled = true;
-    rpc('video_script_create', { p_client: client, p_kind: $('vsNewKind').value, p_from: null, p_idem: st.idem })
+    rpc('video_script_new', { p_client: client, p_period: $('vsNewMonth').value, p_kind: $('vsNewKind').value, p_from: null, p_idem: st.idem })
       .then(function (d) {
         btn.disabled = false;
         window.ADspaceSheet.clean();
@@ -290,7 +296,7 @@
     UI.skeleton($('vsRecBody'), 3);
     return readScript(id).then(function () {
       paintRecord();
-      if (edit && may('work')) openEdit($('vsRecMore'));
+      if (edit && may('work')) openEdit($('vsRecMore'), push);
     }).catch(function (e) {
       if (e && e.message === 'not-found') {
         backToList();
@@ -301,29 +307,20 @@
     });
   }
   function readScript(id) {
-    return db.from('video_scripts').select('*, clients(name, client_code)').eq('id', id).maybeSingle().then(function (r) {
+    return db.from('video_scripts').select('*, clients(name, client_code, slug)').eq('id', id).maybeSingle().then(function (r) {
       if (r.error) throw r.error;
       if (!r.data) throw new Error('not-found');
       st.open = r.data;
       return Promise.all([
         db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by').eq('script_id', id).order('position'),
-        db.from('video_script_reviews').select('id, round, decision, note, reviewer, created_at').eq('script_id', id).order('created_at', { ascending: false }),
-        db.from('video_scripts').select('id, video_no, title, status, round').eq('series_id', st.open.series_id).order('video_no')
+        db.from('video_scripts').select('id, code, seq, video_no, title, status').eq('client_id', st.open.client_id)
+          .eq('period', st.open.period).order('seq')
       ]);
     }).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       st.scenes = rs[0].data || [];
-      st.reviews = rs[1].data || [];
-      st.series = rs[2].data || [];
+      st.series = rs[1].data || [];
     });
-  }
-  function decisionOf(s) {
-    s = s || st.open;
-    return st.reviews.filter(function (r) { return r.round === s.round; })[0] || null;
-  }
-  function askedOf(s) {
-    s = s || st.open;
-    return st.reviews.filter(function (r) { return r.round === s.round - 1 && r.decision === 'changes'; })[0] || null;
   }
   function backToList() {
     st.open = null;
@@ -342,28 +339,13 @@
     f.push(['Venue', s.venue || '']);
     f.push(['Estimated duration', durWord(s.duration_minutes)]);
     f.push(['Cast', s.cast_names || '']);
+    var ref = s.reference_url
+      ? '<div class="vs-ref"><dt>Reference video</dt><dd><a class="plink" href="' + esc(s.reference_url) +
+        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + ' ' + ICON.out + '</a></dd></div>'
+      : '';
     return '<dl class="facts vs-facts">' + f.map(function (x) {
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
-    }).join('') + '</dl>';
-  }
-
-  /* The client's word on the round on show, or the request this round
-     answers. */
-  function decisionLine(s) {
-    var d = decisionOf(s), a = askedOf(s);
-    if (s.status !== 'shared') return '';
-    if (d && d.decision === 'approved') {
-      return '<p class="vs-said"><span class="chip-state is-ok">Approved</span> by ' + esc(d.reviewer) + ' · ' + esc(dayWord(d.created_at)) + '</p>';
-    }
-    if (d && d.decision === 'changes') {
-      return '<div class="vs-said is-ask"><p><span class="chip-state is-warn">Changes requested</span> by ' + esc(d.reviewer) + ' · ' + esc(dayWord(d.created_at)) + '</p>' +
-        '<p class="vs-note">' + esc(d.note || '') + '</p></div>';
-    }
-    if (a) {
-      return '<div class="vs-said"><p>Round ' + s.round + ' answers the request by ' + esc(a.reviewer) + ' · ' + esc(dayWord(a.created_at)) + '</p>' +
-        '<p class="vs-note">' + esc(a.note || '') + '</p></div>';
-    }
-    return '';
+    }).join('') + ref + '</dl>';
   }
 
   /* The script as the client reads it, with the crew's tick and clip number
@@ -391,10 +373,6 @@
   }
   function scriptBody(s) {
     var out = '';
-    if (s.reference_url) {
-      out += '<p class="vs-ref"><span class="field-label">Reference</span> <a class="plink" href="' + esc(s.reference_url) +
-        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + ' ' + ICON.out + '</a></p>';
-    }
     if (CONTEXT_WORD[s.kind]) {
       out += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4>' +
         '<p class="vs-prose">' + (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
@@ -430,9 +408,19 @@
   function paintRecord() {
     var s = st.open;
     var c = s.clients || {};
-    var key = stateOf(s, decisionOf(s));
+    var key = stateOf(s);
     $('vsRecName').textContent = label(s);
-    $('vsRecMeta').textContent = [c.name, KIND_WORD[s.kind]].filter(Boolean).join(' · ');
+    /* The content month, opening the client's Months in My Work where the
+       month is there and the colleague reads My Work. */
+    var month = monthWord(s.period);
+    var toMonth = s.engagement_id && c.slug && bridge.may && bridge.may('ops', 'view');
+    $('vsRecMeta').innerHTML = esc([c.name, KIND_WORD[s.kind]].filter(Boolean).join(' · ')) +
+      (month ? ' · ' + (toMonth ? '<button class="linkbtn" type="button" data-a="month">' + esc(month) + '</button>' : esc(month)) : '');
+    var mb2 = $('vsRecMeta').querySelector('[data-a="month"]');
+    if (mb2) mb2.addEventListener('click', function () {
+      history.pushState(null, '', '?s=work&view=months&wc=' + encodeURIComponent(c.slug));
+      if (bridge.restore) bridge.restore();
+    });
     var ctl = $('vsRecCtl');
     ctl.innerHTML = chip(key) +
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Download PDF">' + ICON.file + '<span class="vs-pdf-long">Download PDF</span><span class="vs-pdf-short">PDF</span></button>' +
@@ -446,20 +434,21 @@
     $('vsRecActs').innerHTML = acts;
     $('vsRecActs').hidden = !acts;
     paintLink();
-    $('vsRecBody').innerHTML = decisionLine(s) + '<section class="panel vs-sheetview">' + facts(s) + scriptBody(s) + '</section>';
+    $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' + facts(s) + '</section>' +
+      '<section class="panel vs-sheetview">' + scriptBody(s) + '</section>';
     paintSeries();
     wireRecord();
   }
 
-  /* The other videos of the shoot, and Add next video. */
+  /* The client's other scripts of the content month, and Add next script. */
   function paintSeries() {
     var box = $('vsSeries');
-    box.innerHTML = '<h3 class="railtitle">This shoot</h3>' + st.series.map(function (x) {
+    box.innerHTML = '<h3 class="railtitle">' + esc(monthWord(st.open.period) || 'This month') + '</h3>' + st.series.map(function (x) {
       var on = x.id === st.open.id;
       return '<button class="railrow vs-vrow' + (on ? ' is-on' : '') + '" type="button" data-v="' + esc(x.id) + '"' +
         (on ? ' aria-current="page"' : '') + '><span>' + esc(label(x)) + '</span></button>';
     }).join('') +
-      (may('work') ? '<button class="btn btn-sm vs-next" type="button" id="vsNextVideo">' + ICON.plus + 'Add next video</button>' : '');
+      (may('work') ? '<button class="btn btn-sm vs-next" type="button" id="vsNextVideo">' + ICON.plus + 'Add next script</button>' : '');
     Array.prototype.forEach.call(box.querySelectorAll('[data-v]'), function (b) {
       b.addEventListener('click', function () {
         var id = b.getAttribute('data-v');
@@ -616,7 +605,7 @@
   }
   function nextVideo(btn) {
     btn.disabled = true;
-    rpc('video_script_create', { p_client: st.open.client_id, p_kind: st.open.kind, p_from: st.open.id, p_idem: uuid() })
+    rpc('video_script_new', { p_client: st.open.client_id, p_period: st.open.period, p_kind: st.open.kind, p_from: st.open.id, p_idem: uuid() })
       .then(function (d) { btn.disabled = false; openScript(d.id, true, true); })
       .catch(function (e) { btn.disabled = false; say($('vsRecMsg'), said(e)); });
   }
@@ -638,10 +627,46 @@
   }
   $('vsKind').addEventListener('change', kindPaint);
 
-  function openEdit(opener) {
+  /* ---- Edit: the whole script on a page of its own ------------------------- */
+  /* What the editor holds, to know whether anything changed. */
+  function snapshot() {
+    return JSON.stringify([$('vsKind').value, $('vsMonth').value, $('vsTitle').value, $('vsRef').value,
+      $('vsPlatform').value, $('vsLang').value, $('vsDate').value, $('vsTime').value, $('vsVenue').value,
+      $('vsDur').value, $('vsCast').value, $('vsContext').value, $('vsVo').value, $('vsNotes').value,
+      st.draft.map(function (x) { return [x.visual, x.line]; })]);
+  }
+  function dirty() { return Boolean(st.editing) && snapshot() !== st.base; }
+  function showEditor() {
+    $('vsListView').hidden = true;
+    $('vsRecord').hidden = true;
+    $('vsEditView').hidden = false;
+  }
+  function closeEditor() {
+    st.editing = null;
+    st.base = '';
+    $('vsEditView').hidden = true;
+    $('vsRecord').hidden = false;
+    if (bridge.setUrl) bridge.setUrl();
+  }
+  /* Cancel with changes asks first; nothing else leaves the page with them
+     (the section's own address and Back bring the editor back). */
+  function leaveEditor() {
+    if (!dirty()) { closeEditor(); return; }
+    window.ADspaceConfirm.ask({ title: 'Discard changes?', body: 'The changes to ' + label(st.open) + ' are not saved.',
+      go: 'Discard', tone: 'warn' }, function () { closeEditor(); paintRecord(); });
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (!dirty()) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  function openEdit(opener, push) {
     var s = st.open;
     say($('vsMsg'), '');
     $('vsSheetTitle').textContent = 'Edit ' + label(s);
+    $('vsEditMeta').textContent = [(s.clients || {}).name, monthWord(s.period)].filter(Boolean).join(' · ');
+    fillMonth($('vsMonth'), s.period);
     $('vsKind').value = s.kind;
     $('vsKind').dispatchEvent(new Event('change', { bubbles: true }));
     $('vsTitle').value = s.title || '';
@@ -664,7 +689,14 @@
     if (ub) ub.parentNode.removeChild(ub);
     $('vsWrite').disabled = st.writing === s.id;
     $('vsWrite').textContent = st.writing === s.id ? 'Writing' : 'Write script';
-    window.ADspaceSheet.show($('vsSheet'), { opener: opener || null });
+    st.editing = s.id;
+    showEditor();
+    window.scrollTo(0, 0);
+    if (push !== false && bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl();
+    st.base = snapshot();
+    if (window.ADspaceGrow && window.ADspaceGrow.fit) {
+      Array.prototype.forEach.call($('vsEditView').querySelectorAll('textarea'), function (t) { window.ADspaceGrow.fit(t); });
+    }
     if (st.kept && st.kept.id === s.id) {
       var held = st.kept.words;
       st.kept = null;
@@ -716,8 +748,7 @@
     var last = $('vsV' + (st.draft.length - 1));
     if (last) last.focus();
   });
-  $('vsCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('vsClose').addEventListener('click', function () { $('vsCancel').click(); });
+  $('vsCancel').addEventListener('click', function () { leaveEditor(); });
   $('vsSave').addEventListener('click', function () {
     var m = $('vsMsg'), btn = $('vsSave'), s = st.open;
     var ref = $('vsRef').value.trim().replace(/^https:\/\//i, 'https://');
@@ -729,7 +760,7 @@
       duration_minutes: $('vsDur').value, cast_names: $('vsCast').value.trim(),
       context: CONTEXT_WORD[$('vsKind').value] ? $('vsContext').value.trim() : s.context || '',
       vo: $('vsKind').value === 'story' ? $('vsVo').value.trim() : s.vo || '',
-      remarks: $('vsNotes').value.trim()
+      remarks: $('vsNotes').value.trim(), period: $('vsMonth').value
     };
     var scenes = st.draft.filter(function (x) { return x.visual.trim() || x.line.trim(); })
       .map(function (x) { return { id: x.id, visual: x.visual.trim(), line: $('vsKind').value === 'scenes' ? x.line.trim() : '' }; });
@@ -737,11 +768,11 @@
     say(m, '');
     rpc('video_script_save', { p_id: s.id, p_head: head, p_scenes: scenes, p_version: s.version }).then(function (d) {
       btn.disabled = false;
-      window.ADspaceSheet.clean();
-      window.ADspaceSheet.close();
+      closeEditor();
       return readScript(s.id).then(function () {
         paintRecord();
-        say($('vsRecMsg'), !d.changed ? 'No changes.' : d.round > s.round ? 'Saved. The client is asked again (round ' + d.round + ').' : 'Saved.', 'ok');
+        if (bridge.setUrl) bridge.setUrl();
+        say($('vsRecMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
       });
     }).catch(function (e) {
       btn.disabled = false;
@@ -884,7 +915,7 @@
           if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
           settle();
           var w = written(s, kind, d);
-          var open = !$('vsSheet').hidden && st.open && st.open.id === s.id;
+          var open = !$('vsEditView').hidden && st.editing === s.id;
           if (open) showWritten(w, before);
           else st.kept = { id: s.id, words: w };
         }).catch(function (e) {
@@ -909,7 +940,7 @@
         btn.disabled = false;
         say(m, '');
         var c = (st.open.clients || {}).name || 'Client';
-        var name = c + ' Video Script ' + (whole ? 'V1-V' + st.series[st.series.length - 1].video_no : 'V' + st.open.video_no) + '.pdf';
+        var name = c + ' Video Script ' + (whole ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(st.open)) + '.pdf';
         window.ADspaceDocs.save(blob, name.replace(/[\\/:*?"<>|]+/g, ' '), window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null);
       }).catch(function (e) {
         btn.disabled = false;
@@ -918,12 +949,12 @@
     };
     if (!many) { go(false); return; }
     window.ADspaceConfirm.ask({ title: 'Download PDF', go: 'Download',
-      field: { label: 'Videos', choices: [['one', label(st.open)], ['all', 'The whole shoot (' + st.series.length + ' videos)']], seg: false, value: 'all' }
+      field: { label: 'Scripts', choices: [['one', label(st.open)], ['all', 'The whole month (' + st.series.length + ' scripts)']], seg: false, value: 'all' }
     }, function (v) { go(v === 'all'); });
   }
   function gather(ids) {
     return Promise.all([
-      db.from('video_scripts').select('*, clients(name)').in('id', ids).order('video_no'),
+      db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
       db.from('video_script_scenes').select('script_id, position, visual, line, vc').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
@@ -941,13 +972,27 @@
   }
 
   /* ---- The address -------------------------------------------------------- */
-  function urlState() { return st.open && st.open.id ? { script: st.open.id } : {}; }
+  function urlState() {
+    if (!st.open || !st.open.id) return {};
+    return st.editing === st.open.id ? { script: st.open.id, edit: '1' } : { script: st.open.id };
+  }
   function enter() {
     say($('vsListMsg'), '');
     say($('vsRecMsg'), '');
-    var id = new URLSearchParams(location.search).get('script');
-    if (id) { openScript(id, false); return; }
+    /* An editor holding changes is never left by an address: Back, the rail
+       or a refresh-free return brings it back as it was. */
+    if (dirty()) {
+      showEditor();
+      if (bridge.setUrl) bridge.setUrl();
+      say($('vsMsg'), 'Save or cancel the changes first.', 'warn');
+      return;
+    }
+    var q = new URLSearchParams(location.search);
+    var id = q.get('script');
+    if (st.editing) closeEditor();
+    if (id) { openScript(id, false, q.get('edit') === '1' && may('work')); return; }
     st.open = null;
+    $('vsEditView').hidden = true;
     $('vsRecord').hidden = true;
     $('vsListView').hidden = false;
     if (bridge.setUrl) bridge.setUrl();

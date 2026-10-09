@@ -1,12 +1,14 @@
-/* The client's Video Scripts page (/script/?k=, 2026-10-09).
+/* The client link for Video Scripts (/script/?k=, 2026-10-09).
  *
- * Every video the team has shared, by shoot, newest first: its facts, its
- * script as it will be shot (never the crew's clip numbers or ticks), and
- * the decision on it: Approve, or Request changes with a note, under the
- * name the reader types once (js/decide.js). A video changed after a
- * decision comes back to be decided again, heading the request it answers.
- * It reads only through `get_scripts` and writes only through
- * `script_decide`; a client page never shows a database message.
+ * Every script the team has shared, a content month at a time (the newest
+ * first), each one video: its code and title, its facts in one card and its
+ * script in the next, as it will be shot. Nobody decides on it here (the
+ * user, 2026-10-09: "no need show the approve or changes at client side, the
+ * public link … is for us and or client to view how the video script is
+ * like digitally; and on the spot digital use for entering VC#"): on the day
+ * each scene's clip number (VC#) and Shot tick are recorded here, saved as
+ * they change through `script_shot_link` and put back on a refusal. It reads
+ * only through `get_scripts`; a client page never shows a database message.
  */
 (function () {
   'use strict';
@@ -14,15 +16,14 @@
   var W = window.ADspaceWords.en;
   var $ = function (id) { return document.getElementById(id); };
   var token = new URLSearchParams(location.search).get('k') || '';
-  var feed = null, stage = null;
+  var feed = null, month = null;
 
   var KIND_WORD = { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' };
   var CONTEXT_WORD = { products: 'Products and context', story: 'Hook and story' };
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-  var STAGES = [['pending', 'To review'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
   var GUIDE = { name: 'Video Scripts', steps: [
-    { at: '#vsStages', text: 'Videos waiting for your decision are under To review.' },
-    { at: '.vs-card .approve-row', text: 'Approve a script, or request changes with a note for the team.' }] };
+    { at: '#vsStages', text: 'Each content month has its own tab.' },
+    { at: '.vs-scene .vs-vc input', text: 'On the day, type each scene\'s clip number (VC#) and tick Shot once it is filmed.' }] };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -46,14 +47,16 @@
     var h = Math.floor(n / 60), m = n % 60;
     return (h ? h + (h === 1 ? ' hour' : ' hours') : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
   }
-  function label(s) { return 'V' + s.video_no + (s.title ? ' · ' + s.title : ''); }
-  function stageOf(s) { return s.decision ? s.decision.decision : 'pending'; }
+  function monthWord(p) {
+    var m = /^(\d{4})-(\d{2})$/.exec(p || '');
+    return m ? MON[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  function label(s) { return (s.code || '') + (s.title ? ' · ' + s.title : ''); }
 
   function cover(title, body) {
     $('vsHead').hidden = true;
     $('vsStages').hidden = true;
     $('vsContent').innerHTML = '';
-    $('vsEmpty').hidden = true;
     $('cover').hidden = false;
     document.body.classList.add('is-plain');
     $('coverTitle').textContent = title;
@@ -77,41 +80,32 @@
     }
     $('vsName').textContent = c.name || '';
     var n = feed.scripts.length;
-    var pending = feed.scripts.filter(function (s) { return stageOf(s) === 'pending'; }).length;
-    $('vsMeta').textContent = n + (n === 1 ? ' video' : ' videos');
-    $('vsState').hidden = !pending;
-    $('vsState').textContent = pending + ' to review';
+    $('vsMeta').textContent = n + (n === 1 ? ' video script' : ' video scripts');
     $('vsHead').hidden = false;
-    if (!$('vsHead').querySelector('.decide-as') && window.ADspaceDecide.whoLine) {
-      window.ADspaceDecide.whoLine($('vsHead'), { as: W.decideAs, change: W.decideChange, forget: W.decideForget,
-        save: W.decideSave, cancel: W.decideCancel, name: W.decideName }, $('vsHead').querySelector('.rec-id'));
-    }
   }
 
-  /* The strip counts each stage as the page loaded, as the review page does:
-     a decision repaints its card and moves it on the next load. */
-  var TONE = { pending: 'is-warn', changes: 'is-err', approved: 'is-ok' };
-  function paintStages() {
-    var strip = $('vsStages');
-    var count = { pending: 0, changes: 0, approved: 0 };
-    feed.scripts.forEach(function (s) { count[stageOf(s)]++; });
-    count.all = feed.scripts.length;
-    if (!stage) stage = count.pending ? 'pending' : 'all';
-    /* The review page's strip: on a phone the longest stage reads Changes,
-       so all four share the column's width. */
-    strip.innerHTML = STAGES.map(function (t) {
-      var on = t[0] === stage;
-      var word = t[0] === 'changes' ? '<span class="tab-long">' + t[1] + '</span><span class="tab-short">Changes</span>' : t[1];
-      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + t[0] + '" aria-selected="' + on +
-        '" tabindex="' + (on ? 0 : -1) + '">' + word + ' <span class="tab-n' + (count[t[0]] && TONE[t[0]] ? ' ' + TONE[t[0]] : '') + '">' +
-        count[t[0]] + '</span></button>';
-    }).join('');
-    strip.hidden = false;
+  /* The months the scripts belong to, newest first; a tab each, drawn only
+     where there are two. */
+  function months() {
+    var out = [];
+    feed.scripts.forEach(function (s) { if (out.indexOf(s.period) < 0) out.push(s.period); });
+    return out.sort().reverse();
   }
-  function pickStage(to) {
-    stage = to;
+  function paintMonths() {
+    var list = months(), strip = $('vsStages');
+    if (!month || list.indexOf(month) < 0) month = list[0];
+    strip.hidden = list.length < 2;
+    strip.innerHTML = list.map(function (p) {
+      var on = p === month;
+      var n = feed.scripts.filter(function (s) { return s.period === p; }).length;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-month="' + esc(p) + '" aria-selected="' + on +
+        '" tabindex="' + (on ? 0 : -1) + '">' + esc(monthWord(p)) + ' <span class="tab-n">' + n + '</span></button>';
+    }).join('');
+  }
+  function pickMonth(to) {
+    month = to;
     Array.prototype.forEach.call(document.querySelectorAll('#vsStages .tab'), function (b) {
-      var on = b.getAttribute('data-stage') === to;
+      var on = b.getAttribute('data-month') === to;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-selected', String(on));
       b.tabIndex = on ? 0 : -1;
@@ -120,7 +114,7 @@
   }
   $('vsStages').addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.tab');
-    if (b) pickStage(b.getAttribute('data-stage'));
+    if (b) pickMonth(b.getAttribute('data-month'));
   });
   /* A tab list: the arrows move along it, Home and End to its ends. */
   $('vsStages').addEventListener('keydown', function (e) {
@@ -132,164 +126,105 @@
     e.preventDefault();
     to = (to + tabs.length) % tabs.length;
     tabs[to].focus();
-    pickStage(tabs[to].getAttribute('data-stage'));
+    pickMonth(tabs[to].getAttribute('data-month'));
   });
 
   function paintList() {
     var box = $('vsContent');
     box.innerHTML = '';
-    var list = feed.scripts.filter(function (s) { return stage === 'all' || stageOf(s) === stage; });
-    $('vsEmpty').hidden = list.length > 0;
-    var shoots = [], by = {};
-    list.forEach(function (s) {
-      if (!by[s.series_id]) { by[s.series_id] = []; shoots.push(s.series_id); }
-      by[s.series_id].push(s);
-    });
-    shoots.forEach(function (sid) {
-      var vids = by[sid], first = vids[0];
-      var sec = document.createElement('section');
-      sec.className = 'vs-shoot';
-      var when = [day(first.shoot_on), time(first.shoot_time)].filter(Boolean).join(', ');
-      sec.innerHTML = '<h3 class="vs-shoot-head">' + esc(['Shoot', when, first.venue].filter(Boolean).join(' · ')) + '</h3>';
-      vids.forEach(function (s) { sec.appendChild(card(s)); });
-      box.appendChild(sec);
-    });
-    if (window.ADspaceGuide && list.length) window.ADspaceGuide.offer('script', GUIDE);
+    feed.scripts.filter(function (s) { return s.period === month; }).forEach(function (s) { box.appendChild(video(s)); });
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+    if (window.ADspaceGuide) window.ADspaceGuide.offer('script', GUIDE);
   }
 
   function factsOf(s) {
     var f = [['Platform', s.platform], ['Language', s.language],
              ['Shooting date', [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')],
-             ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]]
-      .filter(function (x) { return x[1]; });
-    if (!f.length) return '';
+             ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]];
+    var ref = s.reference_url
+      ? '<div class="vs-ref"><dt>Reference video</dt><dd><a class="plink" href="' + esc(s.reference_url) +
+        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + '</a></dd></div>'
+      : '';
     return '<dl class="facts vs-facts">' + f.map(function (x) {
-      return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
-    }).join('') + '</dl>';
+      return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
+    }).join('') + ref + '</dl>';
+  }
+  function vcCell(id, vc, n) {
+    return '<span class="vs-vc"><input class="input input-sm" type="text" maxlength="40" value="' + esc(vc || '') +
+      '" aria-label="Clip number for ' + esc(n) + '" placeholder="VC#" data-vc="' + esc(id) + '"></span>';
+  }
+  function shotCell(id, on, n) {
+    return '<span class="vs-shot"><input type="checkbox"' + (on ? ' checked' : '') + ' aria-label="' + esc(n) + ' shot" data-shot="' + esc(id) + '"></span>';
   }
   function scenesOf(s) {
     var two = s.kind === 'scenes';
-    if (!s.scenes.length) return '';
+    var head = '<div class="crm-head vs-scene"><span>#</span><span>' + (two ? 'Visual' : 'Scene') + '</span>' +
+      (two ? '<span>Script</span>' : '') + '<span>VC#</span><span>Shot</span></div>';
     return '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' +
-      '<div class="crm-table vs-scenes is-client' + (two ? ' is-two' : '') + '">' +
-      '<div class="crm-head vs-scene"><span>#</span><span>' + (two ? 'Visual' : 'Scene') + '</span>' + (two ? '<span>Script</span>' : '') + '</div>' +
-      s.scenes.map(function (sc, i) {
+      '<div class="crm-table vs-scenes' + (two ? ' is-two' : '') + '">' + head +
+      (s.scenes.length ? s.scenes.map(function (sc, i) {
+        var n = 'scene ' + (i + 1);
         return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span><span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
-          (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') + '</div>';
-      }).join('') + '</div></section>';
-  }
-  function chipOf(k) {
-    var w = { pending: ['To review', 'is-warn'], changes: ['Changes requested', 'is-warn'], approved: ['Approved', 'is-ok'] }[k];
-    return '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>';
+          (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
+          vcCell(sc.id, sc.vc, n) + shotCell(sc.id, sc.shot, 'Scene ' + (i + 1)) + '</div>';
+      }).join('') : '<p class="vs-empty">No scenes.</p>') + '</div></section>';
   }
 
-  function card(s) {
-    var el = document.createElement('article');
-    el.className = 'panel vs-card';
+  /* One video: its head, its facts card, its script card. */
+  function video(s) {
+    var el = document.createElement('section');
+    el.className = 'vs-video';
     el.setAttribute('data-id', s.id);
-    var html =
-      '<header class="vs-card-head"><div><h3>' + esc(label(s)) + '</h3><p class="vs-card-kind">' + esc(KIND_WORD[s.kind] || '') + '</p></div>' +
-        '<span class="vs-card-state">' + chipOf(stageOf(s)) + '</span></header>';
-    if (s.asked && !s.decision) {
-      html += '<div class="vs-said"><p class="reask-head">Changes requested by ' + esc(s.asked.reviewer) + ' · ' + esc(day(s.asked.at)) + '</p>' +
-        '<p class="vs-note">' + esc(s.asked.note || '') + '</p></div>';
+    var html = '<header class="vs-video-head"><h3>' + esc(label(s)) + '</h3><p>' + esc(KIND_WORD[s.kind] || '') + '</p></header>' +
+      '<div class="panel vs-card">' + factsOf(s) + '</div>';
+    var body = '';
+    if (CONTEXT_WORD[s.kind]) {
+      body += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4><p class="vs-prose">' +
+        (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
     }
-    html += factsOf(s);
-    if (s.reference_url) {
-      html += '<p class="vs-ref"><span class="field-label">Reference</span> <a class="plink" href="' + esc(s.reference_url) +
-        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + '</a></p>';
+    body += scenesOf(s);
+    if (s.kind === 'story') {
+      body += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4><p class="vs-prose">' +
+        (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p>' +
+        '<div class="vs-vo"><span class="field-label">VC#</span>' + vcCell('vo', s.vo_vc, 'the voice-over') +
+        '<label class="tickline"><input type="checkbox"' + (s.vo_shot ? ' checked' : '') + ' data-shot="vo"> <span>Shot</span></label></div></section>';
     }
-    if (CONTEXT_WORD[s.kind] && s.context) {
-      html += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4><p class="vs-prose">' + esc(s.context) + '</p></section>';
-    }
-    html += scenesOf(s);
-    if (s.kind === 'story' && s.vo) {
-      html += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4><p class="vs-prose">' + esc(s.vo) + '</p></section>';
-    }
-    if (s.remarks) html += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' + esc(s.remarks) + '</p></section>';
+    if (s.remarks) body += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' + esc(s.remarks) + '</p></section>';
+    html += '<div class="panel vs-card">' + body + '<p class="msg vs-shot-msg" role="status"></p></div>';
     el.innerHTML = html;
-    el.appendChild(decision(s, el));
+    wire(s, el);
     return el;
   }
 
-  /* The decision: Approve, or Request changes with a note; the name asked in
-     place, once (js/decide.js). Approved reads its line; Changes requested
-     reads the note and may still be approved as it is. */
-  function decision(s, cardEl) {
-    var wrap = document.createElement('div');
-    wrap.className = 'approve vs-decide';
-    var d = s.decision;
-    var line = '';
-    if (d) {
-      line = '<p class="vs-decided">' + (d.decision === 'approved' ? 'Approved' : 'Changes requested') + ' by ' +
-        esc(d.reviewer) + ' · ' + esc(day(d.at)) + '</p>' + (d.note ? '<p class="vs-note">' + esc(d.note) + '</p>' : '');
-    }
-    var approved = d && d.decision === 'approved';
-    wrap.innerHTML = line + (approved ? '' :
-      '<div class="approve-row">' +
-        '<button class="btn btn-approve" type="button">' + (d ? 'Approve as it is' : 'Approve') + '</button>' +
-        (d ? '' : '<button class="btn btn-changes" type="button">Request changes</button>') +
-      '</div>' +
-      '<div class="changebox">' +
-        '<textarea class="textarea" data-f="note" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
-        '<input class="input changebox-who" type="text" autocomplete="name" aria-label="Your name" placeholder="John Doe">' +
-        '<div class="changebox-actions">' +
-          '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
-          '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
-        '</div>' +
-      '</div>') +
-      '<p class="msg vs-decide-msg"></p>';
-    if (approved) return wrap;
-    var msg = wrap.querySelector('.vs-decide-msg');
-    var say = function (t, bad) { msg.textContent = t || ''; msg.className = 'msg vs-decide-msg' + (t ? (bad ? ' err' : ' ok') : ''); };
-    var approveBtn = wrap.querySelector('.btn-approve');
-    var asker = window.ADspaceDecide.nameBox(approveBtn, {
-      label: 'Your name', placeholder: 'John Doe', needed: 'A name is required to record this decision.'
-    }, function (t) { say(t, true); });
-    var send = function (decision, name, note, btns) {
-      btns.forEach(function (b) { b.disabled = true; });
-      API.client.rpc('script_decide', { p_token: token, p_script: s.id, p_decision: decision, p_name: name, p_note: note || null })
+  /* On the day: a clip number or a tick, saved as it changes, put back on a
+     refusal with one line in the reader's words. */
+  function wire(s, el) {
+    var msg = el.querySelector('.vs-shot-msg');
+    var say = function (t, bad) { msg.textContent = t || ''; msg.className = 'msg vs-shot-msg' + (t ? (bad ? ' err' : ' ok') : ''); };
+    var scene = function (key) { return key === 'vo' ? null : s.scenes.filter(function (x) { return x.id === key; })[0]; };
+    var save = function (key, on, vc, input) {
+      say('');
+      API.client.rpc('script_shot_link', { p_token: token, p_script: s.id, p_scene: key === 'vo' ? null : key, p_on: on, p_vc: vc })
         .then(function (r) {
           if (r.error || (r.data && r.data.error)) throw new Error('refused');
-          s.decision = { decision: decision, note: note || null, reviewer: name, at: new Date().toISOString() };
-          var fresh = card(s);
-          cardEl.parentNode.replaceChild(fresh, cardEl);
-          var m = fresh.querySelector('.vs-decide-msg');
-          if (m) { m.textContent = decision === 'approved' ? 'Approved.' : 'Request sent.'; m.className = 'msg vs-decide-msg ok'; }
-          paintHead();
+          var sc = scene(key);
+          if (sc) { if (on != null) sc.shot = on; if (vc != null) sc.vc = vc.trim() || null; }
+          else { if (on != null) s.vo_shot = on; if (vc != null) s.vo_vc = vc.trim() || null; }
+          say('Saved.');
         })
         .catch(function () {
-          btns.forEach(function (b) { b.disabled = false; });
+          var sc = scene(key);
+          if (input.type === 'checkbox') input.checked = !input.checked;
+          else input.value = (sc ? sc.vc : s.vo_vc) || '';
           say(W.notSent, true);
         });
     };
-    approveBtn.addEventListener('click', function () {
-      asker.need(function (name) { send('approved', name, null, [approveBtn]); });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-vc]'), function (i) {
+      i.addEventListener('change', function () { save(i.getAttribute('data-vc'), null, i.value, i); });
     });
-    var reqBtn = wrap.querySelector('.btn-changes');
-    var box = wrap.querySelector('.changebox');
-    var note = box.querySelector('textarea'), who = box.querySelector('.changebox-who');
-    if (reqBtn) reqBtn.addEventListener('click', function () {
-      asker.close();
-      box.classList.add('is-open');
-      wrap.classList.add('is-requesting');
-      who.hidden = Boolean(window.ADspaceDecide.known());
-      note.focus();
+    Array.prototype.forEach.call(el.querySelectorAll('[data-shot]'), function (i) {
+      i.addEventListener('change', function () { save(i.getAttribute('data-shot'), i.checked, null, i); });
     });
-    box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
-      box.classList.remove('is-open');
-      wrap.classList.remove('is-requesting');
-      say('');
-    });
-    box.querySelector('[data-act="send"]').addEventListener('click', function () {
-      var text = note.value.trim();
-      var name = window.ADspaceDecide.known() || who.value.trim();
-      if (!text) { say('Describe the changes required.', true); note.focus(); return; }
-      if (!name) { say('A name is required to record this decision.', true); who.hidden = false; who.focus(); return; }
-      if (!window.ADspaceDecide.known()) window.ADspaceDecide.keep(name);
-      send('changes', name, text, [box.querySelector('[data-act="send"]')]);
-    });
-    return wrap;
   }
 
   function load() {
@@ -302,10 +237,10 @@
       feed.scripts = feed.scripts || [];
       document.title = (feed.client && feed.client.name ? feed.client.name + ' ' : '') + 'Video Scripts by ADspace';
       if ($('clientName') && feed.client) $('clientName').textContent = feed.client.name;
-      if (!feed.scripts.length) { cover('No scripts to review', 'The next video script will appear here when it is ready for review.'); return; }
+      if (!feed.scripts.length) { cover('No video scripts', 'Video scripts appear here once they are shared.'); return; }
       $('cover').hidden = true;
       paintHead();
-      paintStages();
+      paintMonths();
       paintList();
     }).catch(function () { cover(W.failTitle, W.failText); });
   }
