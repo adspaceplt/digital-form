@@ -47,6 +47,7 @@
     var d = dayStart(String(v).length === 10 ? v + 'T00:00:00' : v);
     return isNaN(d.getTime()) ? 0 : Math.max(0, Math.round((today() - d) / 86400000));
   }
+  var RESTRICT_WORD = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', other: 'Other account' };
   function daysWord(n) { return n === 1 ? '1 day' : n + ' days'; }
   function sinceWord(v) { var n = daysSince(v); return n ? daysWord(n) : 'Today'; }
   function dateWord(v) {
@@ -236,6 +237,21 @@
               series: [{ label: 'New leads' }, { label: 'Became active', tone: 'ok' }],
               fmt: function (v) { return String(v); } };
           });
+        } },
+      /* A client's social account restricted by its platform (2026-10-10;
+         the user: "account restricted"), the longest first. */
+      { key: 'restricted', title: 'Restricted accounts', can: function () { return may('clients', 'manage'); },
+        all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No accounts restricted.',
+        load: function () {
+          return db.from('clients').select('id, name, slug, stage, owner, restricted_platform, restricted_since, restricted_note')
+            .not('restricted_since', 'is', null).order('restricted_since', { ascending: true }).then(rows).then(function (list) {
+              list = list || [];
+              return { count: list.length, rows: list.map(function (c) {
+                return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', c.restricted_note].filter(Boolean).join(' · '),
+                         fig: 'Restricted', figTone: 'err', age: sinceWord(c.restricted_since),
+                         url: clientUrl(c), section: 'clients' };
+              }) };
+            });
         } },
       { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests', 'manage'); },
         all: ['/admin/?s=clients', 'clients'], empty: 'No requests waiting.',

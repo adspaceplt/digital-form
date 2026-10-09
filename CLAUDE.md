@@ -1199,6 +1199,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
   Work, `bad-brand`, `bad-asset`) files `client.brand` from and to, a brand's
   under its name; `meta_links_list` at Reports or Clients View.
+- The content brief (`clients.brief`, `2026-10-10-client-brief.sql`; the
+  user, 2026-10-09: "content not interesting"): one object of short texts
+  (audience, pains, pillars, tone, avoid, competitors, hooks; 8,000
+  characters in all), read with the record alone, read first on the Brand
+  pane (Content brief) and edited in the Brand profile (Audience and pillars;
+  Voice and references), sent only where a part changed, filed
+  `client.brand` by the parts' names. Write with AI reads it and the brand
+  notes for captions and scripts, masked as the rest (`{brand}`,
+  `{handle}`); never a competitor named back.
+- A restricted account (`2026-10-10-account-restricted.sql`; the user: "account
+  restricted"): `clients.restricted_platform` (Instagram, Facebook, TikTok,
+  rednote, Other account), `restricted_since` and `restricted_note`, all or
+  none, read with the record alone. The record's ⋯ Mark account restricted
+  (Clients Work; asks the platform, since when, a note) and the rail's red
+  block (`#crmRestrict`, `.railgate.is-restricted`) with Clear (never asks,
+  Undo where it happened), each filed `client.edited` from and to. Overview's
+  Clients tab lists them (Restricted accounts, the longest first).
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`;
     each logo field has Upload (`wireLogoUpload`): the picture is drawn down
@@ -2211,6 +2228,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ops_workflow_stages.retired`): the month holds planning and the meeting.
   On hold and Cancelled are reachable from every open stage on the line.
   General and Video are retired for new tasks.
+- Results (`2026-10-10-post-results.sql`; the user, 2026-10-09: "doesn't
+  have high views"): a client's task gone live records its views and
+  engagements (`ops_set_results`, My Work at Work, `not-live`,
+  `bad-number`; stamped `result_at` / `result_by`; filed `results_set` from
+  and to) from the card's Details (Results, Not recorded until then), the
+  week after it went live at Performance review. A month in Planning or
+  Ready lists last month's best and weakest posts by views
+  (`lastMonthRows`, three each), worked out on the page.
+- Checklists for reach (`2026-10-10-checklists-for-reach.sql`, with its
+  preview): Reels gains four checks (the hook in the first 3 seconds,
+  licensed music, original footage, no absolute claims) and Graphics three,
+  appended once each where the template holds them nowhere; the team edits
+  them in Templates as any other.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
 - Time records: one stage table in workflow order (Stage, Visits, Time, a
   Total row); the sheet shows it open, with Recorded only where there is any.

@@ -77,7 +77,7 @@ rednote: soft selling and authentic discovery in a first person, benefit led, tr
 
 TRUTH
 Say only what the notes, the titles and the client's industry support. Never invent a price, an offer, a date, an address, an award, a figure or a claim. Where the notes give no offer, the call to action invites the reader to find out more.
-Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
+Where a brief is given, write for its audience and their pain points, keep to its pillars and tone, never use what it lists to avoid, never name a competitor, and let a hook that worked shape the opening without copying it; the brand notes are the client's own words on how it speaks. Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
 These brand names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, ADspace.
 
 LANGUAGE
@@ -151,8 +151,22 @@ Deno.serve(async (req) => {
   ].sort((a, b) => b[0].length - a[0].length);
   const mask = (s: string) => masks.reduce((t, [re, to]) => t.replace(new RegExp(re, 'gi'), to), s);
 
+  /* The client's content brief and brand notes (2026-10-10), masked as
+     the rest; read apart so a database without the column still drafts. */
+  const br = await db.from('clients').select('brief, brand_notes').eq('id', set.data.client_id as string).maybeSingle();
+  const briefIn = (!br.error && br.data) ? (br.data as Record<string, unknown>) : {};
+  const brief: Record<string, string> = {};
+  const rawBrief = (briefIn.brief && typeof briefIn.brief === 'object') ? briefIn.brief as Record<string, unknown> : {};
+  for (const k of ['audience', 'pains', 'pillars', 'tone', 'avoid', 'competitors', 'hooks']) {
+    const v = String(rawBrief[k] ?? '').trim();
+    if (v) brief[k] = mask(v).slice(0, 1000);
+  }
+  const brandNotes = String(briefIn.brand_notes ?? '').trim();
+
   const data: Record<string, unknown> = {
     platform, format,
+    brief: Object.keys(brief).length ? brief : null,
+    brand_notes: brandNotes ? mask(brandNotes).slice(0, 1500) : null,
     market: String(c.market || '').toUpperCase() === 'SG' ? 'Singapore' : 'Malaysia',
     industry: String(c.industry || '').trim() || null,
     set: mask(String(set.data.title || '')),

@@ -684,6 +684,7 @@
                   <button class="kmenu-item" id="crmTake" type="button" role="menuitem" data-a="take" hidden>Take lead</button>
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-a="edit">Edit</button>
                   <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-a="feedback" hidden>Request feedback on WhatsApp</button>
+                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-a="restrict" hidden>Mark account restricted</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
               </div>
@@ -925,6 +926,42 @@
                 <div class="row">
                   <div><label class="field-label" for="crmNotes">Brand notes</label>
                     <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
+                </div>
+              </section>
+              <!-- The content brief (2026-10-10): what the content is for and how it
+                   speaks; Write with AI reads it for captions and scripts. -->
+              <section class="fsec">
+                <h4 class="fsec-h">Audience and pillars</h4>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrAudience">Audience</label>
+                    <textarea class="input textarea" id="crmBrAudience" rows="2" maxlength="1000" placeholder="Who the content speaks to"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrPains">Pain points</label>
+                    <textarea class="input textarea" id="crmBrPains" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrPillars">Content pillars</label>
+                    <textarea class="input textarea" id="crmBrPillars" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Voice and references</h4>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrTone">Tone of voice</label>
+                    <textarea class="input textarea" id="crmBrTone" rows="2" maxlength="1000" placeholder="Optional"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrAvoid">Topics and words to avoid</label>
+                    <textarea class="input textarea" id="crmBrAvoid" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrRivals">Competitors</label>
+                    <textarea class="input textarea" id="crmBrRivals" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrHooks">Hooks that worked</label>
+                    <textarea class="input textarea" id="crmBrHooks" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
                 </div>
               </section>
               <section class="fsec" id="crmWlSec">
@@ -1300,6 +1337,14 @@
             <span id="crmGateText"></span>
             <svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
           </button>
+          <!-- A social account its platform has restricted (2026-10-10): red,
+               because posting waits on it; Clear is the way back. -->
+          <div class="railgate is-restricted" id="crmRestrict" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+            <b id="crmRestrictWord"></b>
+            <span id="crmRestrictText"></span>
+            <button class="btn btn-sm railgate-act" id="crmRestrictClear" type="button">Clear</button>
+          </div>
           <!-- How much of the record is filled in, and the one line saying
                what is missing. A bar rather than a number, because the useful
                question is "is this nearly done" and not "is this 62%". -->

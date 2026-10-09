@@ -162,6 +162,8 @@
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
+    'not-live': 'Results are recorded once the post is live.',
+    'bad-number': 'Enter whole numbers, 0 or more.',
     'bad-format': 'Choose a format from the list.',
     'bad-type': 'Choose a type from the list.',
     'bad-complexity': 'Choose a complexity from the list.',
@@ -4899,7 +4901,7 @@
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
     publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
-    details_changed: 'Details changed', file_changed: 'Link changed',
+    details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
     comment_edited: 'Remark edited', comment_removed: 'Remark deleted', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
@@ -4985,6 +4987,10 @@
       if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
       if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
+    }
+    if (e.event_type === 'results_set') {
+      var rw = function (x) { return x && x.views != null ? numWord(x.views) + ' views, ' + numWord(x.engagements) + ' engagements' : 'not recorded'; };
+      return rw(from) + ' to ' + rw(to);
     }
     if (e.event_type === 'file_changed') return (to.label || '') + (to.kind && from.kind !== to.kind ? ' · ' + (LINK_WORD[to.kind] || to.kind) : '');
     if (e.event_type === 'blocked') return d.category ? String(d.category).replace(/_/g, ' ') : '';
@@ -5258,6 +5264,22 @@
     }
     return out;
   }
+  function numWord(n) { return Number(n || 0).toLocaleString('en-MY'); }
+  function askResults(t) {
+    var whole = function (x) { var v = String(x == null ? '' : x).replace(/[,\s]/g, ''); return /^\d+$/.test(v) ? Number(v) : null; };
+    ADspaceConfirm.ask({
+      title: 'Results', go: 'Save',
+      body: 'The post\'s own figures, a week after it went live.',
+      fields: [{ name: 'views', label: 'Views', value: t.result_views != null ? String(t.result_views) : '', type: 'number', min: '0', half: true },
+               { name: 'eng', label: 'Engagements', value: t.result_engagements != null ? String(t.result_engagements) : '', type: 'number', min: '0', half: true }],
+      check: function (v) { return whole(v.views) == null || whole(v.eng) == null ? said('bad-number') : ''; }
+    }, function (v) {
+      call('ops_set_results', { p_task: t.id, p_views: whole(v.views), p_engagements: whole(v.eng) }, 'taskFactsMsg', function (d) {
+        state.drawerDirty = true;
+        applyTask(d); readTask(t.id, function () { msg('taskFactsMsg', 'Saved.', 'ok'); });
+      });
+    });
+  }
   function paintDetails(t) {
     var edit = may('ops', 'work') && !isFinished(t);
     var forWord = t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client';
@@ -5284,7 +5306,18 @@
        ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
       ].forEach(function (p) { if (p[1]) rows.push(frow(p[0], esc(p[1]))); });
     }
+    /* Results (2026-10-10): a client's post records its views and
+       engagements a week after it went live (Performance review), so the
+       next month is planned from what worked. */
+    if (t.live_at && t.scope === 'client') {
+      var resWord = t.result_views != null ? numWord(t.result_views) + ' views · ' + numWord(t.result_engagements) + ' engagements' : 'Not recorded';
+      rows.push(frow('Results', may('ops', 'work')
+        ? '<button class="tinline" type="button" data-a="results" aria-label="Results, ' + esc(resWord) + '. Record">' + esc(resWord) + '</button>'
+        : esc(resWord)));
+    }
     $('taskFacts').innerHTML = rows.join('');
+    var resBtn = $('taskFacts').querySelector('[data-a="results"]');
+    if (resBtn) resBtn.addEventListener('click', function () { askResults(t); });
     Array.prototype.forEach.call($('taskFacts').querySelectorAll('select.tdetail'), function (sel) {
       var was = sel.value;
       sel.addEventListener('change', function () {
@@ -6732,6 +6765,24 @@
   /* THE ENGAGEMENT CARD: the month's facts, the meeting, the readiness
      list. Everything in it is a control where the person may work the
      section and a fact where they may not. */
+  function lastMonthRows(e) {
+    var m = /^(\d{4})-(\d{2})/.exec(e.period || '');
+    if (!m) return '';
+    var d = new Date(Number(m[1]), Number(m[2]) - 2, 1);
+    var prev = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var done = cw.tasks.filter(function (t) { return cwPeriodOf(t) === prev && t.result_views != null; })
+      .sort(function (a, b) { return b.result_views - a.result_views; });
+    if (!done.length) return '';
+    var line = function (t) {
+      return '<span class="eng-post">' + esc([t.code || serialOf(t), formatWord(t)].filter(Boolean).join(' · ')) +
+        ' <span class="eng-fig">' + esc(numWord(t.result_views) + ' views') + '</span></span>';
+    };
+    var best = done.slice(0, 3), rest = done.slice(3), weak = rest.slice(-3).reverse();
+    return '<div class="eng-row eng-results"><span class="eng-lab">Best in ' + esc(monthWord(prev)) + '</span>' +
+        '<span class="eng-val">' + best.map(line).join('') + '</span></div>' +
+      (weak.length ? '<div class="eng-row eng-results"><span class="eng-lab">Weakest in ' + esc(monthWord(prev)) + '</span>' +
+        '<span class="eng-val">' + weak.map(line).join('') + '</span></div>' : '');
+  }
   function engCard(e) {
     var can = may('ops', 'work');
     var el = document.createElement('section');
@@ -6786,6 +6837,14 @@
         done.disabled = true;
         setStatus(e, 'completed', el, function () { done.disabled = false; });
       });
+    }
+    /* While the month is planned, last month's best and weakest posts by
+       views (2026-10-10; the user: "content not interesting"), from the
+       results recorded a week after each went live. */
+    if (phase === 'planning' || phase === 'ready') {
+      var lastRows = lastMonthRows(e);
+      var facts0 = el.querySelector('.eng-facts');
+      if (lastRows && facts0) facts0.insertAdjacentHTML('beforeend', lastRows);
     }
     var ctl = el.querySelector('.eng-ctl');
     if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {

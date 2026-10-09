@@ -1452,3 +1452,17 @@ words said are set heavier than what is seen so the talent finds their line,
 each script ends in its own Notes / Remarks, and a month's scripts sharing
 one shoot share one header table whatever their kind. The context box
 carries no VC#, which it never had a use for.
+
+### 2026-10-10 · Views, restrictions and interest, answered inside the work
+The user asked how the portal could help with low views, restricted
+accounts, content that is not interesting and delays. Four answers, each
+inside a step the team already takes rather than a new screen: Reels and
+Graphics checklists gain checks against the commonest causes of low reach
+and restrictions (the hook, licensed music, original footage, no absolute
+claims); a client's content brief on its Brand pane (audience, pain points,
+pillars, tone, what to avoid, competitors, hooks that worked) is read by
+both AI writers; a post gone live records its views and engagements a week
+later, and a month being planned lists last month's best and weakest posts;
+a restricted account is marked on the client, red in its rail and listed on
+the Overview. Delays were answered on 2026-10-09 by the three required
+dates; the WhatsApp approval chaser waits on the WhatsApp section.

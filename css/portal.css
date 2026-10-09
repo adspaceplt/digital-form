@@ -6436,6 +6436,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railgate > .ovgo-chev { grid-column: 3; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--err); }
 /* Without a Billing pane to open there is nothing to press. */
 .railgate:not([data-go]) { cursor: default; }
+/* A restricted account (2026-10-10): the same red block, its Clear at the
+   right edge in place of the chevron. */
+.railgate.is-restricted { cursor: default; }
+.railgate > .railgate-act { grid-column: 3; grid-row: 1 / -1; flex: 0 0 auto; }
 .railgate:not([data-go]) > .ovgo-chev { display: none; }
 @media (hover: hover) { .railgate[data-go]:hover { filter: brightness(.985); } }
 /* A next action is a thing to go and do, so the whole block is the control
@@ -11109,3 +11113,9 @@ button.vs-row { cursor: pointer; }
 .set-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .set-ctl { display: flex; align-items: center; justify-content: flex-end; }
 .set-ctl .btn { flex: 0 0 auto; }
+
+/* A month being planned lists last month's best and weakest posts by views
+   (js/ops.js, 2026-10-10): a line a post, its figure in the soft ink. */
+.eng-results .eng-val { display: grid; gap: 2px; }
+.eng-post { display: block; }
+.eng-fig { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
