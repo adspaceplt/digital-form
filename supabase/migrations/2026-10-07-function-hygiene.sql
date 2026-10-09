@@ -47,7 +47,7 @@ declare
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'review_draft', 'save_selection', 'script_decide', 'submit_review', 'verify_serial'];
+    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;

@@ -659,7 +659,17 @@
     st.draft = st.scenes.map(function (x) { return { id: x.id, visual: x.visual || '', line: x.line || '' }; });
     if (!st.draft.length) st.draft.push({ id: null, visual: '', line: '' });
     kindPaint();
+    sayWrite('');
+    var ub = $('vsWriteMsg').parentNode.querySelector(':scope > .undobar-here');
+    if (ub) ub.parentNode.removeChild(ub);
+    $('vsWrite').disabled = st.writing === s.id;
+    $('vsWrite').textContent = st.writing === s.id ? 'Writing' : 'Write script';
     window.ADspaceSheet.show($('vsSheet'), { opener: opener || null });
+    if (st.kept && st.kept.id === s.id) {
+      var held = st.kept.words;
+      st.kept = null;
+      showWritten(held, sheetWords());
+    }
   }
 
   function paintDraftScenes() {
@@ -740,6 +750,149 @@
       }
       say(m, said(e));
     });
+  });
+
+  /* ---- Write script (AI) ------------------------------------------------------ */
+  /* The sheet's script drafted by `script-draft` from the colleague's notes
+     and what the sheet holds (2026-10-09). It asks first, counts against the
+     colleague's scripts a day, and puts the words in the fields with Undo
+     where it happened; Save keeps them. An answer that lands after the sheet
+     was shut is held for that video and put in when it is next edited. */
+  var WRITE_SAID = {
+    'needs-update': 'This needs a database update.',
+    'ai-not-set-up': 'AI needs its key in Supabase.',
+    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
+    'ai-model': 'The script model name in Supabase is not recognised.',
+    'ai-failed': 'No script came back. Try again.',
+    'ai-incomplete': 'No script came back. Try again.',
+    denied: 'This needs Video Scripts at Work.',
+    'client-scope': 'This client is outside your access.',
+    'not-found': 'This script is no longer available.'
+  };
+  var LENGTHS = [['15', '15s'], ['30', '30s'], ['60', '60s'], ['120', '120s']];
+  function keep(key, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(key) || '';
+      if (v) localStorage.setItem(key, v); else localStorage.removeItem(key);
+    } catch (e) {}
+    return '';
+  }
+  function writeClock(iso) {
+    var at = new Date(iso);
+    if (isNaN(at.getTime())) return '';
+    return ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
+  }
+  function writeLimit(d) {
+    d = d || {};
+    if (d.scope === 'stopped' || d.limit === 0) return 'Write script is turned off for you. An admin can turn it on.';
+    var n = d.limit || 10;
+    return 'You have used your ' + n + (n === 1 ? ' script' : ' scripts') + ' for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
+  }
+  function writeSaid(e) {
+    var m = String((e && e.message) || '');
+    if (m === 'ai-limit') return writeLimit(e.data || e.d);
+    if (WRITE_SAID[m]) return WRITE_SAID[m];
+    if (/function .* does not exist|schema cache|PGRST20[25]/i.test(m)) return WRITE_SAID['needs-update'];
+    return m || WRITE_SAID['ai-failed'];
+  }
+  function sheetWords() {
+    return {
+      kind: $('vsKind').value, context: $('vsContext').value, vo: $('vsVo').value,
+      scenes: st.draft.map(function (x) { return { id: x.id, visual: x.visual, line: x.line }; })
+    };
+  }
+  function putWords(w) {
+    if ($('vsKind').value !== w.kind) {
+      $('vsKind').value = w.kind;
+      $('vsKind').dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    $('vsContext').value = w.context || '';
+    $('vsVo').value = w.vo || '';
+    st.draft = w.scenes.length ? w.scenes.map(function (x) { return { id: x.id || null, visual: x.visual || '', line: x.line || '' }; })
+      : [{ id: null, visual: '', line: '' }];
+    paintDraftScenes();
+  }
+  function hasWords(kind) {
+    return st.draft.some(function (x) { return x.visual.trim() || (kind === 'scenes' && x.line.trim()); }) ||
+      (CONTEXT_WORD[kind] && $('vsContext').value.trim()) || (kind === 'story' && $('vsVo').value.trim());
+  }
+  /* The answer, filled: {brand} with the client's name and {handle} with the
+     platform's handle (else the name). */
+  function written(s, kind, d) {
+    var nm = (s.clients || {}).name || '';
+    var fill = function (t) {
+      return String(t || '').replace(/\{\s*brand\s*\}/gi, nm).replace(/\{\s*handle\s*\}/gi, d.handle || nm);
+    };
+    return {
+      kind: kind, context: fill(d.draft.context), vo: fill(d.draft.vo),
+      scenes: (d.draft.scenes || []).map(function (x) { return { id: null, visual: fill(x.visual), line: fill(x.line) }; })
+    };
+  }
+  function sayWrite(text) {
+    var m = $('vsWriteMsg');
+    m.textContent = text || '';
+    m.className = 'msg capmsg' + (text ? ' err' : '');
+  }
+  function showWritten(w, before) {
+    putWords(w);
+    sayWrite('');
+    undoBar('Script written. Save keeps it.', function () { putWords(before); }, $('vsWriteMsg'));
+  }
+  $('vsWrite').addEventListener('click', function () {
+    var btn = $('vsWrite'), s = st.open;
+    if (!s || !may('work')) return;
+    sayWrite('');
+    btn.disabled = true;
+    rpc('ai_script_left', {}).then(function (left) {
+      btn.disabled = false;
+      if (!left.left) { sayWrite(writeLimit(left)); return; }
+      var kind = $('vsKind').value, plat = $('vsPlatform').value;
+      var fields = [{ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
+        value: keep('adspace-script-length:' + s.id) || '30' }];
+      if (plat === 'rednote') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
+      fields.push({ name: 'notes', label: 'Notes for the script', rows: 4, required: false,
+        placeholder: 'What the video is for, the product or offer, the call to action',
+        value: keep('adspace-script-notes:' + s.id) });
+      window.ADspaceConfirm.ask({
+        title: 'Write script',
+        body: (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
+        go: 'Write', fields: fields
+      }, function (v) {
+        var notes = String(v.notes || '').trim();
+        keep('adspace-script-notes:' + s.id, notes);
+        keep('adspace-script-length:' + s.id, String(v.length || '30'));
+        var before = sheetWords();
+        var cur = sheetWords();
+        var settle = function () {
+          st.writing = null;
+          if (st.open && st.open.id === s.id) { btn.disabled = false; btn.textContent = 'Write script'; }
+        };
+        st.writing = s.id;
+        btn.disabled = true;
+        btn.textContent = 'Writing';
+        db.functions.invoke('script-draft', { body: {
+          script_id: s.id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
+          length: Number(v.length) || 30, venue: $('vsVenue').value.trim(),
+          cast: $('vsCast').value.split(/[,，;\n]+/).filter(function (x) { return x.trim(); }).length,
+          notes: notes, safe: plat === 'rednote' && v.safe === 'on',
+          current: { context: CONTEXT_WORD[kind] ? cur.context : '', vo: kind === 'story' ? cur.vo : '',
+                     scenes: cur.scenes.map(function (x) { return { visual: x.visual, line: kind === 'scenes' ? x.line : '' }; }) }
+        } }).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
+          settle();
+          var w = written(s, kind, d);
+          var open = !$('vsSheet').hidden && st.open && st.open.id === s.id;
+          if (open) showWritten(w, before);
+          else st.kept = { id: s.id, words: w };
+        }).catch(function (e) {
+          settle();
+          if (st.open && st.open.id === s.id) sayWrite(writeSaid(e));
+        });
+      });
+    }).catch(function (e) { btn.disabled = false; sayWrite(writeSaid(e)); });
   });
 
   /* ---- The PDF, for the crew on site --------------------------------------- */

@@ -709,7 +709,7 @@ declare
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'review_draft', 'save_selection', 'script_decide', 'submit_review', 'verify_serial'];
+    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -37990,6 +37990,869 @@ $$;
 grant execute on function public.activity_section(text) to authenticated;
 
 -- END OF VIDEO SCRIPTS -------------------------------------------------------
+
+-- ===========================================================================
+-- SCRIPT WRITER — Write script in Video Scripts: a video's script drafted by
+-- AI from the colleague's notes, counted apart from the reports' and the
+-- captions' AI uses.
+-- 2026-10-09. Safe to run twice. Rollback below. Mirrored byte for byte in
+-- supabase/schema.sql under the same banner; tests/smsql.js compares the two.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "go ahead and write script")
+--   1. `ai_drafts.purpose` takes `script`; a script's row names its video
+--      (`script_id`) and client.
+--   2. `ai_script_claim(p_script)`: Video Scripts at Work, a video on a client
+--      the colleague works on. Counted by the colleague a day, from midnight
+--      MYT: `script` (10) a colleague's, `script_admin` (20) an admin's, both
+--      settings in `ai_draft_limits`; 0 stops it. `ai_script_left()` reads
+--      what is left without writing.
+--   3. The reports' limits count report drafts and commentary checks alone
+--      (`purpose in ('draft', 'check')`), so neither a caption nor a script
+--      takes from them.
+--   4. `ai_draft_usage()` adds the script limits and each colleague's scripts
+--      today, and lists a colleague at Video Scripts Work;
+--      `ai_draft_set_limit` names `script` and `script_admin`.
+--
+-- ROLLBACK
+--   Run the CAPTION WRITER AND AI COST section again; then, in the SQL
+--   Editor, drop ai_script_claim(uuid) and ai_script_left(), delete the
+--   script rows from ai_drafts and put the purpose check back to
+--   ('draft', 'check', 'caption'). The column may stay.
+-- ===========================================================================
+
+alter table public.ai_drafts add column if not exists script_id uuid;
+alter table public.ai_drafts drop constraint if exists ai_drafts_purpose;
+alter table public.ai_drafts add constraint ai_drafts_purpose check (purpose in ('draft', 'check', 'caption', 'script'));
+
+-- A script: the colleague's own count a day, apart from the reports' and the
+-- captions'.
+create or replace function public.ai_script_claim(p_script uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  v public.video_scripts;
+  since timestamptz := public.ai_draft_day();
+  n_used integer;
+  lim integer;
+  new_id uuid;
+begin
+  if not public.allowed('scripts', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.video_scripts x where x.id = p_script;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(v.client_id, 'work') then return jsonb_build_object('error', 'client-scope'); end if;
+  -- One count at a time, with the drafts, so the last script is taken once.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  lim := case when coalesce(m.is_admin, false) or m.role = 'admin'
+              then public.ai_draft_limit('script_admin', 20) else public.ai_draft_limit('script', 10) end;
+  if lim = 0 then return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0); end if;
+  select count(*) into n_used from public.ai_drafts d
+   where d.team_member_id = m.id and d.purpose = 'script' and d.created_at >= since and d.outcome <> 'failed';
+  if n_used >= lim then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'script', 'limit', lim, 'next', since + interval '1 day');
+  end if;
+  insert into public.ai_drafts (team_member_id, client_id, script_id, purpose)
+  values (m.id, v.client_id, v.id, 'script') returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim - n_used - 1, 'limit', lim);
+end $$;
+
+-- What Write script has left today, read without writing.
+create or replace function public.ai_script_left()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := public.ai_draft_day();
+  lim integer;
+  l_left integer;
+begin
+  if not public.allowed('scripts', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  lim := case when coalesce(m.is_admin, false) or m.role = 'admin'
+              then public.ai_draft_limit('script_admin', 20) else public.ai_draft_limit('script', 10) end;
+  l_left := greatest(0, lim - (select count(*) from public.ai_drafts d
+    where d.team_member_id = m.id and d.purpose = 'script' and d.created_at >= since and d.outcome <> 'failed')::integer);
+  return jsonb_build_object('left', l_left, 'limit', lim, 'scope', case when lim = 0 then 'stopped' else 'script' end,
+    'next', case when l_left > 0 or lim = 0 then null else since + interval '1 day' end);
+end $$;
+
+revoke all on function public.ai_script_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_script_left() from public, anon, authenticated;
+grant execute on function public.ai_script_claim(uuid) to authenticated;
+grant execute on function public.ai_script_left() to authenticated;
+
+create or replace function public.ai_draft_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := public.ai_draft_day();
+  n_report integer;
+  n_member integer;
+  lim_member integer;
+  lim_report integer;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  -- One count at a time, so two presses together cannot both take the last draft.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  select * into r from public.sm_reports where id = p_report;
+  lim_member := public.ai_day_cap(m);
+  if lim_member = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
+  end if;
+  lim_report := case when coalesce(m.is_admin, false) then public.ai_draft_limit('report_admin', 5)
+                     else public.ai_draft_limit('report', 1) end;
+  select count(*) into n_report from public.ai_draft_same(p_report) s
+   where s.team_member_id = m.id and s.created_at >= since;
+  if n_report >= lim_report then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', lim_report, 'next', since + interval '1 day');
+  end if;
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed' and d.purpose in ('draft', 'check');
+  if n_member >= lim_member then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', lim_member, 'next', since + interval '1 day');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end, version_no)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end, r.version_no) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim_member - n_member - 1);
+end $$;
+
+create or replace function public.ai_draft_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := public.ai_draft_day();
+  is_adm boolean;
+  n_member integer;
+  l_report integer; l_member integer; l_min integer;
+  lim_member integer;
+  lim_report integer;
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  is_adm := coalesce(m.is_admin, false);
+  lim_member := public.ai_day_cap(m);
+  lim_report := case when is_adm then public.ai_draft_limit('report_admin', 5) else public.ai_draft_limit('report', 1) end;
+  l_report := greatest(0, lim_report - (select count(*) from public.ai_draft_same(p_report) s
+    where s.team_member_id = m.id and s.created_at >= since)::integer);
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed' and d.purpose in ('draft', 'check');
+  l_member := greatest(0, lim_member - n_member);
+  l_min := least(l_report, l_member);
+  v_scope := case when lim_member = 0 then 'stopped' when l_min = l_report then 'report' else 'person' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope,
+    'limit', case v_scope when 'stopped' then 0 when 'report' then lim_report else lim_member end,
+    'report', l_report, 'person', l_member, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope = 'stopped' then null else since + interval '1 day' end);
+end $$;
+
+create or replace function public.ai_check_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := public.ai_draft_day();
+  n_member integer;
+  lim_member integer;
+  lim_check integer;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_report;
+  if r.id is null or not public.client_seen(r.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status not in ('draft', 'review') then return jsonb_build_object('error', 'not-open'); end if;
+  -- One count at a time, with the drafts, so the last use is taken once.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  lim_member := public.ai_day_cap(m);
+  if lim_member = 0 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'stopped', 'limit', 0);
+  end if;
+  lim_check := case when coalesce(m.is_admin, false) then public.ai_draft_limit('check_admin', 5)
+                    else public.ai_draft_limit('check', 1) end;
+  if (select count(*) from public.ai_drafts d
+       where d.report_id = p_report and d.purpose = 'check' and d.outcome <> 'failed'
+         and d.team_member_id = m.id and d.created_at >= since) >= lim_check then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report_check', 'limit', lim_check, 'next', since + interval '1 day');
+  end if;
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed' and d.purpose in ('draft', 'check');
+  if n_member >= lim_member then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', lim_member, 'next', since + interval '1 day');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id, client_id, kind, period_start, period_end, purpose, version_no)
+  values (p_report, m.id, r.client_id, r.kind, r.period_start, r.period_end, 'check', r.version_no) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', lim_member - n_member - 1);
+end $$;
+
+create or replace function public.ai_check_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  r public.sm_reports;
+  since timestamptz := public.ai_draft_day();
+  is_adm boolean;
+  n_member integer;
+  l_report integer; l_member integer; l_min integer;
+  lim_member integer;
+  lim_check integer;
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_report;
+  if r.id is null or not public.client_seen(r.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  is_adm := coalesce(m.is_admin, false);
+  lim_member := public.ai_day_cap(m);
+  lim_check := case when is_adm then public.ai_draft_limit('check_admin', 5) else public.ai_draft_limit('check', 1) end;
+  l_report := greatest(0, lim_check - (select count(*) from public.ai_drafts d
+    where d.report_id = p_report and d.purpose = 'check' and d.outcome <> 'failed'
+      and d.team_member_id = m.id and d.created_at >= since)::integer);
+  select count(*) into n_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at >= since and d.outcome <> 'failed' and d.purpose in ('draft', 'check');
+  l_member := greatest(0, lim_member - n_member);
+  l_min := least(l_report, l_member);
+  v_scope := case when lim_member = 0 then 'stopped' when l_min = l_report then 'report_check' else 'person' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope, 'version', r.version_no,
+    'limit', case v_scope when 'stopped' then 0 when 'report_check' then lim_check else lim_member end,
+    'report', l_report, 'person', l_member, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope = 'stopped' then null else since + interval '1 day' end);
+end $$;
+
+revoke all on function public.ai_draft_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_draft_left(uuid) from public, anon, authenticated;
+revoke all on function public.ai_check_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_check_left(uuid) from public, anon, authenticated;
+grant execute on function public.ai_draft_claim(uuid) to authenticated;
+grant execute on function public.ai_draft_left(uuid) to authenticated;
+grant execute on function public.ai_check_claim(uuid) to authenticated;
+grant execute on function public.ai_check_left(uuid) to authenticated;
+
+create or replace function public.ai_draft_usage()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_day timestamptz := public.ai_draft_day();
+  v_month timestamptz := now() - interval '30 days';
+  -- This calendar month in Malaysia, for what the calls cost.
+  v_cal timestamptz := date_trunc('month', now() at time zone 'Asia/Kuala_Lumpur') at time zone 'Asia/Kuala_Lumpur';
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+begin
+  if not public.ops_granted('reports.ai', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'person', public.ai_draft_limit('person', 10),
+    'admin', public.ai_draft_limit('admin', 20),
+    'report', public.ai_draft_limit('report', 1),
+    'report_admin', public.ai_draft_limit('report_admin', 5),
+    'check', public.ai_draft_limit('check', 1),
+    'check_admin', public.ai_draft_limit('check_admin', 5),
+    'caption', public.ai_draft_limit('caption', 20),
+    'caption_admin', public.ai_draft_limit('caption_admin', 40),
+    'script', public.ai_draft_limit('script', 10),
+    'script_admin', public.ai_draft_limit('script_admin', 20),
+    'cost', (select jsonb_build_object(
+        'since', v_cal,
+        'price_in', public.app_setting('ai_price_in', v_today),
+        'price_out', public.app_setting('ai_price_out', v_today),
+        'uses', count(*),
+        'untracked', count(*) filter (where c.input_tokens is null),
+        'input', coalesce(sum(c.input_tokens), 0),
+        'output', coalesce(sum(c.output_tokens), 0),
+        'usd', round(coalesce(sum(c.usd), 0), 2),
+        'by', coalesce((select jsonb_object_agg(p.purpose, p.x) from (
+            select c2.purpose, jsonb_build_object('uses', count(*), 'input', coalesce(sum(c2.input_tokens), 0),
+                     'output', coalesce(sum(c2.output_tokens), 0), 'usd', round(coalesce(sum(c2.usd), 0), 2)) as x
+              from (select d.purpose, d.input_tokens, d.output_tokens,
+                           (coalesce(d.input_tokens, 0) * public.app_setting('ai_price_in', (d.created_at at time zone 'Asia/Kuala_Lumpur')::date)
+                          + coalesce(d.output_tokens, 0) * public.app_setting('ai_price_out', (d.created_at at time zone 'Asia/Kuala_Lumpur')::date)) / 1000000.0 as usd
+                      from public.ai_drafts d where d.created_at >= v_cal and (d.outcome <> 'failed' or d.input_tokens is not null)) c2
+             group by c2.purpose) p), '{}'::jsonb))
+      from (select d.input_tokens, d.output_tokens,
+                   (coalesce(d.input_tokens, 0) * public.app_setting('ai_price_in', (d.created_at at time zone 'Asia/Kuala_Lumpur')::date)
+                  + coalesce(d.output_tokens, 0) * public.app_setting('ai_price_out', (d.created_at at time zone 'Asia/Kuala_Lumpur')::date)) / 1000000.0 as usd
+              from public.ai_drafts d where d.created_at >= v_cal and (d.outcome <> 'failed' or d.input_tokens is not null)) c),
+    'resets_at', v_day + interval '1 day',
+    'people', coalesce((select jsonb_agg(s.x order by s.x ->> 'name') from (
+      select jsonb_build_object(
+        'id', t.id, 'name', t.name, 'code', t.staff_code, 'group', g.name, 'group_slug', t.role,
+        'admin', coalesce(t.is_admin, false) or t.role = 'admin',
+        'day', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at >= v_day and d.outcome <> 'failed' and d.purpose in ('draft', 'check')),
+        'captions', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at >= v_day and d.outcome <> 'failed' and d.purpose = 'caption'),
+        'caption_cap', case when coalesce(t.is_admin, false) or t.role = 'admin'
+                            then public.ai_draft_limit('caption_admin', 40) else public.ai_draft_limit('caption', 20) end,
+        'scripts', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at >= v_day and d.outcome <> 'failed' and d.purpose = 'script'),
+        'script_cap', case when coalesce(t.is_admin, false) or t.role = 'admin'
+                           then public.ai_draft_limit('script_admin', 20) else public.ai_draft_limit('script', 10) end,
+        'month', (select count(*) from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month and d.outcome <> 'failed'),
+        'limit', (select l.daily from public.ai_draft_limits l where l.scope = t.id::text),
+        'cap', public.ai_day_cap(t)) as x
+        from public.team_members t
+        left join public.team_roles g on g.slug = t.role
+       where t.active
+         and (coalesce(t.is_admin, false) or t.role = 'admin'
+              or public.level_rank(coalesce(t.access ->> 'reports', 'none')) >= public.level_rank('work')
+              or public.level_rank(coalesce(t.access ->> 'review', 'none')) >= public.level_rank('work')
+              or public.level_rank(coalesce(t.access ->> 'scripts', 'none')) >= public.level_rank('work')
+              or exists (select 1 from public.ai_drafts d where d.team_member_id = t.id and d.created_at > v_month))
+    ) s), '[]'::jsonb));
+end $$;
+revoke all on function public.ai_draft_usage() from public, anon, authenticated;
+grant execute on function public.ai_draft_usage() to authenticated;
+
+create or replace function public.ai_draft_set_limit(p_scope text, p_daily integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_who text;
+  v_name text;
+  v_was integer;
+  v_def integer;
+  v_unit text := ' a day';
+  v_scope text := btrim(coalesce(p_scope, ''));
+  t public.team_members;
+begin
+  if not public.ops_granted('reports.ai', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_daily is not null and (p_daily < 0 or p_daily > 500) then
+    return jsonb_build_object('error', 'bad-limit');
+  end if;
+  if v_scope = 'person' then
+    v_name := 'Each colleague'; v_def := 10;
+  elsif v_scope = 'admin' then
+    v_name := 'Each admin'; v_def := 20;
+  elsif v_scope = 'report' then
+    v_name := 'Drafts per report, each colleague'; v_def := 1;
+  elsif v_scope = 'report_admin' then
+    v_name := 'Drafts per report, each admin'; v_def := 5;
+  elsif v_scope = 'check' then
+    v_name := 'Figures checks per report, each colleague'; v_def := 1;
+  elsif v_scope = 'check_admin' then
+    v_name := 'Figures checks per report, each admin'; v_def := 5;
+  elsif v_scope = 'caption' then
+    v_name := 'Captions, each colleague'; v_def := 20;
+  elsif v_scope = 'caption_admin' then
+    v_name := 'Captions, each admin'; v_def := 40;
+  elsif v_scope = 'script' then
+    v_name := 'Scripts, each colleague'; v_def := 10;
+  elsif v_scope = 'script_admin' then
+    v_name := 'Scripts, each admin'; v_def := 20;
+  elsif v_scope = 'team' then
+    return jsonb_build_object('error', 'bad-scope');
+  else
+    select * into t from public.team_members x where x.id::text = v_scope;
+    if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+    v_name := t.name;
+    v_def := case when coalesce(t.is_admin, false) or t.role = 'admin'
+                  then public.ai_draft_limit('admin', 20) else public.ai_draft_limit('person', 10) end;
+  end if;
+  select l.daily into v_was from public.ai_draft_limits l where l.scope = v_scope;
+  if v_was is not distinct from p_daily then return jsonb_build_object('ok', true, 'same', true); end if;
+  select coalesce(x.name, x.email) into v_who from public.team_members x
+   where lower(x.email) = lower(auth.jwt() ->> 'email') and x.active limit 1;
+  insert into public.ai_draft_limits (scope, daily, set_by, set_at)
+  values (v_scope, p_daily, v_who, now())
+  on conflict (scope) do update set daily = excluded.daily, set_by = excluded.set_by, set_at = excluded.set_at;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_who, 'admin'), 'team.changed', 'AI',
+          v_name || ': ' ||
+          case when v_was is null then 'standard, ' || v_def || v_unit when v_was = 0 then 'stopped' else v_was || v_unit end ||
+          ' → ' ||
+          case when p_daily is null then 'standard, ' || v_def || v_unit when p_daily = 0 then 'stopped' else p_daily || v_unit end);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.ai_draft_set_limit(text, integer) from public, anon, authenticated;
+grant execute on function public.ai_draft_set_limit(text, integer) to authenticated;
+
+-- END OF SCRIPT WRITER --------------------------------------------------------
+
+-- ===========================================================================
+-- SCRIPTS BY MONTH — a video script belongs to a client's content month and
+-- is numbered in it (YYMMVSNN), the client link is for reading the script
+-- and recording the clip numbers on site, and the client no longer decides
+-- on it.
+-- 2026-10-09. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/vssql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   The user (2026-10-09): "we are working on content month, monthly basis
+--   … the default for video script can be YYMMVSNN (VS is video script
+--   meaning) NN is the number of script … one script is for one full video
+--   … no need show the approve or changes at client side, the public link …
+--   is for us and or client to view how the video script is like digitally;
+--   and on the spot digital use for entering VC#." The user's answers: VC#
+--   in the console and on the link; a month picked, linked where My Work
+--   holds it; the link shows shared scripts only; NN counted per client a
+--   month.
+--   1. `video_scripts.period` (YYYY-MM), `seq` (1 to 99) and `code`
+--      (`2610VS01`, kept from the two), unique a client a month;
+--      `engagement_id` names the client's My Work month for the period
+--      where one exists (set on create and on a move, never required).
+--      Every script before this file takes the month of its shooting date,
+--      else of the day it was made, numbered in the order it was made.
+--      `series_id` and `video_no` stay unread.
+--   2. `video_script_new(p_client, p_period, p_kind, p_from, p_idem)` makes
+--      a script in a month at the lowest free number; with `p_from` (Add next
+--      script) the client and month are its, the header copied, the script
+--      empty. `video_script_create` (the pages before this file) makes it in
+--      its first video's month, else this month (MYT).
+--   3. `video_script_save` takes `period` in the head: the script moves to
+--      that month at its lowest free number, filed with both codes.
+--      Deleting asks for the title typed back, else the code.
+--   4. `script_shot_link(p_token, p_script, p_scene, p_on, p_vc)` (anon,
+--      joins `open_to_anon`): the client link records a shared script's clip
+--      numbers and Shot ticks on site, filed under the client by `Client
+--      link`, as the console's `video_script_shot` does.
+--   5. `get_scripts` sends each shared script's code, its scenes with their
+--      ids, clip numbers and Shot ticks (never who ticked), the voice-over's,
+--      and no decision. `script_decide` answers `closed` and writes nothing.
+--
+-- ROLLBACK
+--   Pages first, then re-run VIDEO SCRIPTS (2026-10-09-video-scripts.sql) for
+--   video_script_label, video_script_create, video_script_save,
+--   video_script_delete, get_scripts and script_decide, and in the SQL
+--   Editor drop script_shot_link and video_script_new. The columns may stay.
+-- ===========================================================================
+
+alter table public.video_scripts add column if not exists period text;
+alter table public.video_scripts add column if not exists seq integer;
+alter table public.video_scripts add column if not exists engagement_id uuid references public.ops_engagements(id) on delete set null;
+
+update public.video_scripts s
+   set period = to_char(coalesce(s.shoot_on, (s.created_at at time zone 'Asia/Kuala_Lumpur')::date), 'YYYY-MM')
+ where s.period is null;
+with n as (
+  select s.id, row_number() over (partition by s.client_id, s.period order by s.created_at, s.video_no)
+         + coalesce((select max(t.seq) from public.video_scripts t
+                      where t.client_id = s.client_id and t.period = s.period and t.seq is not null), 0) as k
+    from public.video_scripts s where s.seq is null)
+update public.video_scripts s set seq = n.k from n where s.id = n.id;
+update public.video_scripts s set engagement_id = e.id
+  from public.ops_engagements e
+ where s.engagement_id is null and e.client_id = s.client_id and e.period = s.period;
+
+alter table public.video_scripts alter column period set not null;
+alter table public.video_scripts alter column seq set not null;
+alter table public.video_scripts add column if not exists code text
+  generated always as (substr(period, 3, 2) || substr(period, 6, 2) || 'VS' || lpad(seq::text, 2, '0')) stored;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'video_scripts_period_shape') then
+    alter table public.video_scripts add constraint video_scripts_period_shape
+      check (period ~ '^\d{4}-(0[1-9]|1[0-2])$' and seq between 1 and 99);
+  end if;
+end $$;
+create unique index if not exists video_scripts_month_seq_idx on public.video_scripts(client_id, period, seq);
+
+-- 2610VS01 · Title, as every screen and the activity record name a script.
+create or replace function public.video_script_label(p public.video_scripts)
+returns text language sql immutable set search_path = public as $$
+  select substr(p.period, 3, 2) || substr(p.period, 6, 2) || 'VS' || lpad(p.seq::text, 2, '0')
+         || coalesce(' · ' || nullif(btrim(p.title), ''), '')
+$$;
+revoke all on function public.video_script_label(public.video_scripts) from public, anon, authenticated;
+
+create or replace function public.video_script_new(p_client uuid, p_period text, p_kind text default null,
+                                                   p_from uuid default null, p_idem text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  f      public.video_scripts;
+  v_cl   public.clients;
+  v_kind text;
+  v_per  text;
+  v_seq  integer;
+  v_eng  uuid;
+  v_id   uuid;
+  v_new  public.video_scripts;
+begin
+  if me.id is null or not public.allowed('scripts', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if nullif(btrim(coalesce(p_idem, '')), '') is not null then
+    select s.id into v_id from public.video_scripts s where s.idem_key = p_idem;
+    if v_id is not null then return jsonb_build_object('ok', true, 'id', v_id, 'again', true); end if;
+  end if;
+  if p_from is not null then
+    select * into f from public.video_scripts s where s.id = p_from;
+    if f.id is null or (p_client is not null and p_client <> f.client_id) then
+      return jsonb_build_object('error', 'not-found');
+    end if;
+  end if;
+  select * into v_cl from public.clients c where c.id = coalesce(f.client_id, p_client);
+  if v_cl.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(v_cl.id, 'work') then return jsonb_build_object('error', 'client-scope'); end if;
+  v_per := coalesce(nullif(btrim(coalesce(p_period, '')), ''), f.period);
+  if v_per is null or v_per !~ '^\d{4}-(0[1-9]|1[0-2])$' or v_per not between '2023-08' and '2099-12' then
+    return jsonb_build_object('error', 'bad-period');
+  end if;
+  v_kind := coalesce(nullif(btrim(coalesce(p_kind, '')), ''), f.kind, 'scenes');
+  if v_kind not in ('scenes', 'products', 'story') then return jsonb_build_object('error', 'bad-kind'); end if;
+  perform pg_advisory_xact_lock(hashtext('video_script:' || v_cl.id::text || ':' || v_per));
+  select min(g) into v_seq from generate_series(1, 99) g
+   where not exists (select 1 from public.video_scripts s where s.client_id = v_cl.id and s.period = v_per and s.seq = g);
+  if v_seq is null then return jsonb_build_object('error', 'too-many'); end if;
+  select e.id into v_eng from public.ops_engagements e where e.client_id = v_cl.id and e.period = v_per limit 1;
+  insert into public.video_scripts (client_id, period, seq, engagement_id, kind, platform, language, shoot_on,
+                                    shoot_time, venue, duration_minutes, cast_names, idem_key,
+                                    created_by, created_by_name, updated_by_name)
+  values (v_cl.id, v_per, v_seq, v_eng, v_kind, f.platform, f.language, f.shoot_on, f.shoot_time, f.venue,
+          f.duration_minutes, f.cast_names, nullif(btrim(coalesce(p_idem, '')), ''), me.id, me.name, me.name)
+  returning * into v_new;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'script.created', v_cl.name,
+          public.video_script_label(v_new) || ' · '
+          || case v_kind when 'scenes' then 'Detailed scenes' when 'products' then 'Products and scenes'
+                         else 'Story and voice-over' end
+          || case when f.id is not null then ' · header from ' || f.code else '' end);
+  return jsonb_build_object('ok', true, 'id', v_new.id, 'code', v_new.code, 'period', v_per, 'seq', v_seq);
+end $$;
+revoke all on function public.video_script_new(uuid, text, text, uuid, text) from public, anon;
+grant execute on function public.video_script_new(uuid, text, text, uuid, text) to authenticated;
+
+-- The pages before this file: the first video's month, else this month.
+create or replace function public.video_script_create(p_client uuid, p_kind text, p_from uuid default null,
+                                                      p_idem text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  return public.video_script_new(p_client,
+    coalesce((select s.period from public.video_scripts s where s.id = p_from),
+             to_char((now() at time zone 'Asia/Kuala_Lumpur')::date, 'YYYY-MM')),
+    p_kind, p_from, p_idem);
+end $$;
+revoke all on function public.video_script_create(uuid, text, uuid, text) from public, anon;
+grant execute on function public.video_script_create(uuid, text, uuid, text) to authenticated;
+
+/* One save for the whole script: the header facts named in `p_head` (a key
+   left out keeps its value; `period` moves it to that month at its lowest
+   free number) and, where `p_scenes` is given, the scene rows in order ({id,
+   visual, line}; a row named by its id keeps its clip number and its tick).
+   Files what changed, from and to for a short value, by name for the long
+   ones. */
+create or replace function public.video_script_save(p_id uuid, p_head jsonb, p_scenes jsonb, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me        public.team_members := public.ops_me();
+  v         public.video_scripts;
+  n         public.video_scripts;
+  v_client  text;
+  h         jsonb := coalesce(p_head, '{}'::jsonb);
+  v_moves   text[] := '{}';
+  v_creat   boolean := false;
+  v_old_sc  jsonb;
+  v_new_sc  jsonb;
+  v_row     jsonb;
+  v_pos     integer := 0;
+  v_keep    uuid[] := '{}';
+  v_sid     uuid;
+  v_kindw   text;
+begin
+  if me.id is null or not public.allowed('scripts', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v from public.video_scripts s where s.id = p_id for update;
+  if v.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(v.client_id, 'work') then return jsonb_build_object('error', 'client-scope'); end if;
+  if p_version is not null and p_version <> v.version then
+    return jsonb_build_object('error', 'stale', 'row', to_jsonb(v));
+  end if;
+  n := v;
+  if h ? 'kind' then n.kind := h ->> 'kind'; end if;
+  if h ? 'title' then n.title := btrim(coalesce(h ->> 'title', '')); end if;
+  if h ? 'reference_url' then n.reference_url := nullif(btrim(coalesce(h ->> 'reference_url', '')), ''); end if;
+  if h ? 'platform' then n.platform := nullif(btrim(coalesce(h ->> 'platform', '')), ''); end if;
+  if h ? 'language' then n.language := nullif(btrim(coalesce(h ->> 'language', '')), ''); end if;
+  if h ? 'shoot_on' then n.shoot_on := nullif(h ->> 'shoot_on', '')::date; end if;
+  if h ? 'shoot_time' then n.shoot_time := nullif(h ->> 'shoot_time', '')::time; end if;
+  if h ? 'venue' then n.venue := nullif(btrim(coalesce(h ->> 'venue', '')), ''); end if;
+  if h ? 'duration_minutes' then n.duration_minutes := nullif(h ->> 'duration_minutes', '')::integer; end if;
+  if h ? 'cast_names' then n.cast_names := nullif(btrim(coalesce(h ->> 'cast_names', '')), ''); end if;
+  if h ? 'context' then n.context := nullif(btrim(coalesce(h ->> 'context', '')), ''); end if;
+  if h ? 'vo' then n.vo := nullif(btrim(coalesce(h ->> 'vo', '')), ''); end if;
+  if h ? 'remarks' then n.remarks := nullif(btrim(coalesce(h ->> 'remarks', '')), ''); end if;
+  if h ? 'period' and nullif(btrim(coalesce(h ->> 'period', '')), '') is not null then
+    n.period := btrim(h ->> 'period');
+  end if;
+
+  if n.kind not in ('scenes', 'products', 'story') then return jsonb_build_object('error', 'bad-kind'); end if;
+  if n.period !~ '^\d{4}-(0[1-9]|1[0-2])$' or n.period not between '2023-08' and '2099-12' then
+    return jsonb_build_object('error', 'bad-period');
+  end if;
+  if length(n.title) > 200 then return jsonb_build_object('error', 'bad-title'); end if;
+  if n.reference_url is not null and (n.reference_url !~ '^https://' or length(n.reference_url) > 1000) then
+    return jsonb_build_object('error', 'bad-link');
+  end if;
+  if n.duration_minutes is not null and n.duration_minutes not between 5 and 1440 then
+    return jsonb_build_object('error', 'bad-duration');
+  end if;
+  if n.shoot_on is not null and n.shoot_on not between date '2023-08-14' and date '2099-12-31' then
+    return jsonb_build_object('error', 'bad-date');
+  end if;
+  if greatest(length(coalesce(n.platform, '')), length(coalesce(n.language, '')), length(coalesce(n.venue, ''))) > 200
+     or greatest(length(coalesce(n.cast_names, '')), length(coalesce(n.context, '')),
+                 length(coalesce(n.vo, '')), length(coalesce(n.remarks, ''))) > 4000 then
+    return jsonb_build_object('error', 'too-long');
+  end if;
+  if p_scenes is not null then
+    if jsonb_typeof(p_scenes) <> 'array' then return jsonb_build_object('error', 'bad-scenes'); end if;
+    if jsonb_array_length(p_scenes) > 60 then return jsonb_build_object('error', 'too-many'); end if;
+    if exists (select 1 from jsonb_array_elements(p_scenes) e
+                where length(coalesce(e.value ->> 'visual', '')) > 2000
+                   or length(coalesce(e.value ->> 'line', '')) > 2000) then
+      return jsonb_build_object('error', 'too-long');
+    end if;
+  end if;
+
+  if n.period is distinct from v.period then
+    perform pg_advisory_xact_lock(hashtext('video_script:' || v.client_id::text || ':' || n.period));
+    select min(g) into n.seq from generate_series(1, 99) g
+     where not exists (select 1 from public.video_scripts s where s.client_id = v.client_id and s.period = n.period and s.seq = g);
+    if n.seq is null then return jsonb_build_object('error', 'too-many'); end if;
+    select e.id into n.engagement_id from public.ops_engagements e where e.client_id = v.client_id and e.period = n.period limit 1;
+    v_moves := v_moves || ('Month: ' || replace(to_char(to_date(v.period, 'YYYY-MM'), 'Mon YYYY'), 'Sep ', 'Sept ')
+                           || ' → ' || replace(to_char(to_date(n.period, 'YYYY-MM'), 'Mon YYYY'), 'Sep ', 'Sept ')
+                           || ' · ' || v.code || ' → ' || substr(n.period, 3, 2) || substr(n.period, 6, 2) || 'VS' || lpad(n.seq::text, 2, '0'));
+  end if;
+  v_kindw := case n.kind when 'products' then 'Products and context' when 'story' then 'Hook and story' else 'Context' end;
+  if n.kind is distinct from v.kind then
+    v_creat := true;
+    v_moves := v_moves || ('Kind: ' || case v.kind when 'scenes' then 'Detailed scenes' when 'products' then 'Products and scenes' else 'Story and voice-over' end
+                           || ' → ' || case n.kind when 'scenes' then 'Detailed scenes' when 'products' then 'Products and scenes' else 'Story and voice-over' end);
+  end if;
+  if n.title is distinct from v.title then
+    v_creat := true;
+    v_moves := v_moves || ('Title: ' || coalesce(nullif(v.title, ''), 'not set') || ' → ' || coalesce(nullif(n.title, ''), 'not set'));
+  end if;
+  if n.reference_url is distinct from v.reference_url then
+    v_creat := true;
+    v_moves := v_moves || ('Reference: ' || coalesce(v.reference_url, 'not set') || ' → ' || coalesce(n.reference_url, 'not set'));
+  end if;
+  if n.platform is distinct from v.platform then
+    v_moves := v_moves || ('Platform: ' || coalesce(v.platform, 'not set') || ' → ' || coalesce(n.platform, 'not set'));
+  end if;
+  if n.language is distinct from v.language then
+    v_moves := v_moves || ('Language: ' || coalesce(v.language, 'not set') || ' → ' || coalesce(n.language, 'not set'));
+  end if;
+  if n.shoot_on is distinct from v.shoot_on then
+    v_moves := v_moves || ('Shooting date: '
+      || coalesce(replace(to_char(v.shoot_on, 'FMDD Mon YYYY'), 'Sep ', 'Sept '), 'not set') || ' → '
+      || coalesce(replace(to_char(n.shoot_on, 'FMDD Mon YYYY'), 'Sep ', 'Sept '), 'not set'));
+  end if;
+  if n.shoot_time is distinct from v.shoot_time then
+    v_moves := v_moves || ('Shooting time: ' || coalesce(to_char(v.shoot_time, 'FMHH12:MI am'), 'not set')
+                           || ' → ' || coalesce(to_char(n.shoot_time, 'FMHH12:MI am'), 'not set'));
+  end if;
+  if n.venue is distinct from v.venue then
+    v_moves := v_moves || ('Venue: ' || coalesce(v.venue, 'not set') || ' → ' || coalesce(n.venue, 'not set'));
+  end if;
+  if n.duration_minutes is distinct from v.duration_minutes then
+    v_moves := v_moves || ('Duration: ' || coalesce(v.duration_minutes || ' min', 'not set') || ' → '
+                           || coalesce(n.duration_minutes || ' min', 'not set'));
+  end if;
+  if n.cast_names is distinct from v.cast_names then v_moves := v_moves || 'Cast'::text; end if;
+  if n.context is distinct from v.context then v_creat := true; v_moves := v_moves || v_kindw; end if;
+  if n.vo is distinct from v.vo then v_creat := true; v_moves := v_moves || 'Script (read here)'::text; end if;
+  if n.remarks is distinct from v.remarks then v_moves := v_moves || 'Notes'::text; end if;
+
+  if p_scenes is not null then
+    select coalesce(jsonb_agg(jsonb_build_object('visual', coalesce(sc.visual, ''), 'line', coalesce(sc.line, ''))
+                              order by sc.position), '[]'::jsonb)
+      into v_old_sc from public.video_script_scenes sc where sc.script_id = p_id;
+    select coalesce(jsonb_agg(jsonb_build_object('visual', btrim(coalesce(e.value ->> 'visual', '')),
+                                                 'line', btrim(coalesce(e.value ->> 'line', '')))
+                              order by e.ord), '[]'::jsonb)
+      into v_new_sc from jsonb_array_elements(p_scenes) with ordinality as e(value, ord);
+    if v_new_sc is distinct from v_old_sc then
+      v_creat := true;
+      v_moves := v_moves || ('Scenes' || case when jsonb_array_length(v_old_sc) <> jsonb_array_length(v_new_sc)
+                                              then ': ' || jsonb_array_length(v_old_sc) || ' → ' || jsonb_array_length(v_new_sc)
+                                              else '' end);
+      for v_row in select e.value from jsonb_array_elements(p_scenes) e loop
+        v_pos := v_pos + 1;
+        v_sid := null;
+        if coalesce(v_row ->> 'id', '') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+          select sc.id into v_sid from public.video_script_scenes sc
+           where sc.id = (v_row ->> 'id')::uuid and sc.script_id = p_id;
+        end if;
+        if v_sid is null then
+          insert into public.video_script_scenes (script_id, position, visual, line)
+          values (p_id, v_pos, nullif(btrim(coalesce(v_row ->> 'visual', '')), ''),
+                  nullif(btrim(coalesce(v_row ->> 'line', '')), ''))
+          returning id into v_sid;
+        else
+          update public.video_script_scenes sc
+             set position = v_pos,
+                 visual = nullif(btrim(coalesce(v_row ->> 'visual', '')), ''),
+                 line = nullif(btrim(coalesce(v_row ->> 'line', '')), '')
+           where sc.id = v_sid;
+        end if;
+        v_keep := v_keep || v_sid;
+      end loop;
+      delete from public.video_script_scenes sc where sc.script_id = p_id and not (sc.id = any (v_keep));
+    end if;
+  end if;
+
+  if coalesce(array_length(v_moves, 1), 0) = 0 then
+    return jsonb_build_object('ok', true, 'version', v.version, 'round', v.round, 'changed', false);
+  end if;
+  update public.video_scripts s
+     set kind = n.kind, title = n.title, reference_url = n.reference_url, platform = n.platform,
+         language = n.language, shoot_on = n.shoot_on, shoot_time = n.shoot_time, venue = n.venue,
+         duration_minutes = n.duration_minutes, cast_names = n.cast_names, context = n.context,
+         vo = n.vo, remarks = n.remarks, period = n.period, seq = n.seq, engagement_id = n.engagement_id,
+         version = v.version + 1, updated_at = now(), updated_by_name = me.name
+   where s.id = p_id;
+  select c.name into v_client from public.clients c where c.id = v.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'script.saved', v_client,
+          public.video_script_label(n) || ' · ' || array_to_string(v_moves, '; '));
+  return jsonb_build_object('ok', true, 'version', v.version + 1, 'round', v.round, 'changed', true,
+    'code', substr(n.period, 3, 2) || substr(n.period, 6, 2) || 'VS' || lpad(n.seq::text, 2, '0'));
+end $$;
+revoke all on function public.video_script_save(uuid, jsonb, jsonb, integer) from public, anon;
+grant execute on function public.video_script_save(uuid, jsonb, jsonb, integer) to authenticated;
+
+create or replace function public.video_script_delete(p_id uuid, p_typed text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me   public.team_members := public.ops_me();
+  s    public.video_scripts;
+  v_cl text;
+begin
+  if me.id is null or not public.allowed('scripts', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into s from public.video_scripts x where x.id = p_id for update;
+  if s.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(s.client_id, 'manage') then return jsonb_build_object('error', 'client-scope'); end if;
+  if lower(btrim(coalesce(p_typed, ''))) <> lower(coalesce(nullif(btrim(s.title), ''), s.code)) then
+    return jsonb_build_object('error', 'name');
+  end if;
+  select c.name into v_cl from public.clients c where c.id = s.client_id;
+  delete from public.video_scripts x where x.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'script.deleted', v_cl, public.video_script_label(s));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.video_script_delete(uuid, text) from public, anon;
+grant execute on function public.video_script_delete(uuid, text) to authenticated;
+
+/* On site, from the client link: a shared script's scene ticked shot and
+   its clip number (VC#); with no scene, the voice-over's. Filed under the
+   client by `Client link`. */
+create or replace function public.script_shot_link(p_token text, p_script uuid, p_scene uuid, p_on boolean,
+                                                   p_vc text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_cl   public.clients;
+  s      public.video_scripts;
+  sc     public.video_script_scenes;
+  v_was  boolean;
+begin
+  select * into v_cl from public.clients c
+   where c.script_key = p_token and p_token is not null and c.active;
+  if v_cl.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  select * into s from public.video_scripts x
+   where x.id = p_script and x.client_id = v_cl.id and x.status = 'shared' for update;
+  if s.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if p_vc is not null and length(p_vc) > 40 then return jsonb_build_object('error', 'too-long'); end if;
+  if p_scene is null then
+    v_was := s.vo_shot_at is not null;
+    update public.video_scripts x
+       set vo_shot_at = case when p_on is null then x.vo_shot_at when p_on then coalesce(x.vo_shot_at, now()) end,
+           vo_shot_by = case when p_on is null then x.vo_shot_by when p_on then coalesce(x.vo_shot_by, 'Client link') end,
+           vo_vc = case when p_vc is null then x.vo_vc else nullif(btrim(p_vc), '') end
+     where x.id = p_script;
+    if p_on is not null and p_on <> v_was then
+      insert into public.activity_log (actor, action, subject, detail)
+      values ('Client link', 'script.shot', v_cl.name, public.video_script_label(s) || ' · Script (read here) '
+              || case when p_on then 'shot' else 'not shot' end);
+    end if;
+    return jsonb_build_object('ok', true);
+  end if;
+  select * into sc from public.video_script_scenes y where y.id = p_scene and y.script_id = p_script for update;
+  if sc.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  v_was := sc.shot_at is not null;
+  update public.video_script_scenes y
+     set shot_at = case when p_on is null then y.shot_at when p_on then coalesce(y.shot_at, now()) end,
+         shot_by = case when p_on is null then y.shot_by when p_on then coalesce(y.shot_by, 'Client link') end,
+         vc = case when p_vc is null then y.vc else nullif(btrim(p_vc), '') end
+   where y.id = p_scene;
+  if p_on is not null and p_on <> v_was then
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Client link', 'script.shot', v_cl.name, public.video_script_label(s) || ' · Scene ' || sc.position || ' '
+            || case when p_on then 'shot' else 'not shot' end);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.script_shot_link(text, uuid, uuid, boolean, text) from public;
+grant execute on function public.script_shot_link(text, uuid, uuid, boolean, text) to anon;
+grant execute on function public.script_shot_link(text, uuid, uuid, boolean, text) to authenticated;
+
+/* The client link: the shared scripts, newest month first, each with its
+   code, its scenes, their clip numbers and Shot ticks. Never a colleague's
+   name, who ticked, a version or a decision. */
+create or replace function public.get_scripts(p_token text)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_cl public.clients;
+begin
+  select * into v_cl from public.clients c
+   where c.script_key = p_token and p_token is not null and c.active;
+  if v_cl.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  return jsonb_build_object(
+    'client', jsonb_build_object('name', v_cl.name, 'logo_url', v_cl.logo_url),
+    'scripts', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', s.id, 'code', s.code, 'period', s.period, 'kind', s.kind,
+               'title', s.title, 'reference_url', s.reference_url, 'platform', s.platform,
+               'language', s.language, 'shoot_on', s.shoot_on, 'shoot_time', s.shoot_time,
+               'venue', s.venue, 'duration_minutes', s.duration_minutes, 'cast_names', s.cast_names,
+               'context', s.context, 'vo', s.vo, 'vo_vc', s.vo_vc, 'vo_shot', s.vo_shot_at is not null,
+               'remarks', s.remarks, 'shared_at', s.shared_at, 'updated_at', s.updated_at,
+               'scenes', coalesce((select jsonb_agg(jsonb_build_object('id', sc.id, 'position', sc.position,
+                                                     'visual', sc.visual, 'line', sc.line, 'vc', sc.vc,
+                                                     'shot', sc.shot_at is not null)
+                                                     order by sc.position)
+                                     from public.video_script_scenes sc where sc.script_id = s.id), '[]'::jsonb))
+             order by s.period desc, s.seq)
+        from public.video_scripts s
+       where s.client_id = v_cl.id and s.status = 'shared'), '[]'::jsonb));
+end $$;
+revoke all on function public.get_scripts(text) from public;
+grant execute on function public.get_scripts(text) to anon;
+grant execute on function public.get_scripts(text) to authenticated;
+
+-- The client no longer decides on a script (the user, 2026-10-09).
+create or replace function public.script_decide(p_token text, p_script uuid, p_decision text,
+                                                p_name text, p_note text default null)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('error', 'closed')
+$$;
+revoke all on function public.script_decide(text, uuid, text, text, text) from public;
+grant execute on function public.script_decide(text, uuid, text, text, text) to anon;
+grant execute on function public.script_decide(text, uuid, text, text, text) to authenticated;
+
+-- END OF SCRIPTS BY MONTH -----------------------------------------------------
 
 -- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above

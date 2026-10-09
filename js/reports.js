@@ -4498,14 +4498,15 @@
   /* Like a usage page (the user, 2026-10-04): when it resets, then used
      today over the limit with a bar, for the whole team, each group and
      each colleague (a group's and the team's are their colleagues' added
-     up), then the limits. Edit limits holds the six standards in three
+     up), then the limits. Edit limits holds the ten standards in five
      pairs; a colleague's own limit is set from their row (empty is the
      standard, 0 stops it; the user, 2026-10-05: no long list). Read
      again on every open. */
-  var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40 };
+  var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40,
+    script: 10, script_admin: 20 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
-  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions' };
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Video scripts' };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
@@ -4559,7 +4560,8 @@
         people = (d.people || []).map(function (p) {
           var cap = p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person);
           return { id: p.id, name: p.name, code: p.code, used: p.day || 0, cap: cap, limit: p.limit, own: p.limit != null, group: p.group || 'No group',
-            captions: p.captions || 0, capCap: p.caption_cap != null ? p.caption_cap : AI_STD.caption };
+            captions: p.captions || 0, capCap: p.caption_cap != null ? p.caption_cap : AI_STD.caption,
+            scripts: p.scripts || 0, scrCap: p.script_cap != null ? p.script_cap : AI_STD.script };
         });
         var sum = function (list) {
           return { used: list.reduce(function (t, p) { return t + p.used; }, 0), cap: list.reduce(function (t, p) { return t + p.cap; }, 0) };
@@ -4574,6 +4576,9 @@
         var capC = setting('caption'), capA = setting('caption_admin');
         var wrote = people.filter(function (p) { return p.captions > 0; })
           .sort(function (x, y) { return y.captions - x.captions || String(x.name).localeCompare(String(y.name)); });
+        var scrC = setting('script'), scrA = setting('script_admin');
+        var scripted = people.filter(function (p) { return p.scripts > 0; })
+          .sort(function (x, y) { return y.scripts - x.scripts || String(x.name).localeCompare(String(y.name)); });
         var cost = d.cost || null;
         var by = (cost && cost.by) || {};
         var mayPrice = !!(window.ADspaceAdmin && window.ADspaceAdmin.may && window.ADspaceAdmin.may('team.settings', 'work'));
@@ -4595,19 +4600,27 @@
               own: adm !== AI_STD.report_admin || chkA !== AI_STD.check_admin, cap: adm }) +
             aiUseRow({ name: 'Captions, each colleague', text: dayWord(capC), own: capC !== AI_STD.caption, cap: capC }) +
             aiUseRow({ name: 'Captions, each admin', text: dayWord(capA), own: capA !== AI_STD.caption_admin, cap: capA }) +
+            aiUseRow({ name: 'Scripts, each colleague', text: dayWord(scrC), own: scrC !== AI_STD.script, cap: scrC }) +
+            aiUseRow({ name: 'Scripts, each admin', text: dayWord(scrA), own: scrA !== AI_STD.script_admin, cap: scrA }) +
           '</div></section>';
-        /* Captions are their own count, so they sit apart from the day's AI uses. */
+        /* Captions and scripts are their own counts, so they sit apart from the
+           day's AI uses. */
         host.innerHTML +=
           '<section class="fsec"><h4 class="fsec-h">Captions today</h4><div class="aiu-list">' +
             aiUseRow({ name: 'Whole team', sum: true, used: people.reduce(function (t, p) { return t + p.captions; }, 0),
               cap: people.reduce(function (t, p) { return t + p.capCap; }, 0) }) +
             wrote.map(function (p) { return aiUseRow({ name: p.name, code: p.code, used: p.captions, cap: p.capCap }); }).join('') +
+          '</div></section>' +
+          '<section class="fsec"><h4 class="fsec-h">Scripts today</h4><div class="aiu-list">' +
+            aiUseRow({ name: 'Whole team', sum: true, used: people.reduce(function (t, p) { return t + p.scripts; }, 0),
+              cap: people.reduce(function (t, p) { return t + p.scrCap; }, 0) }) +
+            scripted.map(function (p) { return aiUseRow({ name: p.name, code: p.code, used: p.scripts, cap: p.scrCap }); }).join('') +
           '</div></section>';
         if (cost) {
           host.innerHTML +=
             '<section class="fsec aiu-cost"><h4 class="fsec-h">This month</h4><div class="aiu-list">' +
               aiUseRow({ name: 'Estimated cost', sum: true, text: aiUsd(cost.usd) }) +
-              ['draft', 'check', 'caption'].map(function (k) {
+              ['draft', 'check', 'caption', 'script'].map(function (k) {
                 var b = by[k] || { uses: 0, input: 0, output: 0, usd: 0 };
                 return aiUseRow({ name: AI_USE_WORD[k], text: fmt(b.uses) + (b.uses === 1 ? ' use · ' : ' uses · ') + aiUsd(b.usd) });
               }).join('') +
@@ -4621,7 +4634,7 @@
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
       }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
     };
-    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin', 'caption', 'caption_admin'];
+    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin', 'caption', 'caption_admin', 'script', 'script_admin'];
     var setLimit = function (jobs) {
       var fails = [];
       return jobs.reduce(function (chain, j) {
@@ -4641,12 +4654,13 @@
       return bad.length ? 'A limit is a whole number from 0 to 500.' : '';
     };
     var num = function (v) { return v == null ? '' : String(v); };
-    /* The six standards, a day each, in three pairs: one form, one Save. */
+    /* The standards, a day each, in pairs: one form, one Save. */
     edit.onclick = function () {
       if (!d) return;
       var LBL = { person: 'Each colleague', admin: 'Each admin', report: 'Drafts a report', check: 'Checks a report',
         report_admin: 'Admin drafts a report', check_admin: 'Admin checks a report',
-        caption: 'Captions a colleague', caption_admin: 'Captions an admin' };
+        caption: 'Captions a colleague', caption_admin: 'Captions an admin',
+        script: 'Scripts a colleague', script_admin: 'Scripts an admin' };
       var fields = STD_KEYS.map(function (k) {
         return { name: k, label: LBL[k], type: 'number', min: '0', required: false, value: num(d[k] != null ? d[k] : AI_STD[k]), placeholder: String(AI_STD[k]), half: true };
       });

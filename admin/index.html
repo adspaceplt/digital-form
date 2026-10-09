@@ -4093,7 +4093,13 @@
             </div>
           </section>
           <section class="fsec">
-            <h4 class="fsec-h">Script</h4>
+            <!-- Write script (2026-10-09): AI drafts the script into these
+                 fields from the colleague's notes; Save keeps it. -->
+            <div class="readgroup-head vs-writehead">
+              <h4 class="fsec-h">Script</h4>
+              <button class="btn btn-sm" id="vsWrite" type="button">Write script</button>
+            </div>
+            <div class="msg capmsg" id="vsWriteMsg" role="status"></div>
             <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
               <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
             <div id="vsScenes"></div>
