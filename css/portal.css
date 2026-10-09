@@ -6588,7 +6588,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .tl-pen {
   justify-self: end; width: var(--ctl-h); height: var(--ctl-h);
   margin-block: calc((20px - var(--ctl-h)) / 2);
-  border: 0; background: none; color: var(--ink-mute);
+  border: 0; border-radius: var(--radius-sm); background: none; color: var(--ink-mute);
 }
 .tl-pen svg { width: 15px; height: 15px; }
 @media (hover: hover) { .tl-pen:hover { background: var(--line-soft); color: var(--ink); } }
@@ -10923,13 +10923,17 @@ button.vs-row { cursor: pointer; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }
-.vs-head .rec-linktools { margin-top: 0; }
+.vs-head .rec-linktools { margin-top: 0; grid-template-columns: minmax(0, 1fr); }
+.vs-head .linkbox { flex-wrap: nowrap; }
+.vs-head .linkbox .input { min-width: 0; }
+.is-narrow .vs-head .linkbox { flex-wrap: wrap; }
+.is-narrow .vs-head .linkbox .input { flex: 1 1 100%; }
+.is-narrow .vs-head .linkbox .btn { flex: 1 1 0; min-width: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
 .vs-pdf-short { display: none; }
 .is-narrow .vs-head .vs-pdf-long { display: none; }
 .is-narrow .vs-head .vs-pdf-short { display: inline; }
-.vs-rec { margin-top: 0; }
 .vs-sheetview { display: grid; gap: 24px; }
 .facts.vs-facts { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .is-narrow .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -10968,14 +10972,35 @@ button.vs-row { cursor: pointer; }
 .is-narrow .vs-scene > .vs-vc { grid-area: vc; }
 .is-narrow .vs-scene > .vs-shot { grid-area: shot; }
 
-/* The shoot's videos in the rail, the one open chosen. */
-.vs-vrow { width: 100%; justify-content: flex-start; }
-.vs-vrow.is-on { background: var(--line-soft); }
-.vs-next { margin-top: 8px; }
-
-/* A script's record: its facts in one card, the script in the next (the
-   user, 2026-10-09: key information apart from the scenes). */
-.vs-rec > .cr-main { display: grid; gap: 12px; align-content: start; }
+/* A content month's record (the user, 2026-10-09): the head with the
+   client's link once, a tab a script with Add script at the line's end,
+   then the script on show: its own head (code and title over the type; the
+   state, Edit, Publish and the ⋯ at the right edge) over its facts, and the
+   script in the next card. */
+.vs-tabline { margin: 0 0 12px; }
+.vs-tabline > .rectabs { margin: 0; flex: 1 1 auto; min-width: 0; }
+.vs-tabline > .vs-next { flex: 0 0 auto; }
+.vs-rec { display: grid; gap: 12px; min-width: 0; }
+.vs-rec > .panel { margin: 0; }
+.vs-factcard { display: grid; gap: 16px; }
+.vs-factcard > .msg { margin: 0; }
+.vs-factcard > .msg:empty { display: none; }
+.vs-factcard > .undobar-here { margin: 0; }
+.vs-cardhead {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
+}
+.vs-cardwho { min-width: 0; flex: 1 1 240px; }
+.vs-cardwho h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.vs-cardwho p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.vs-cardctl { position: relative; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.vs-cardctl > .chip-state { margin-right: 4px; }
+/* Narrow, the acts take the line under the name, Edit and Publish as equal
+   halves between the state and the ⋯. */
+.is-narrow .vs-cardctl { flex: 1 1 100%; }
+.is-narrow .vs-cardctl > .btn { flex: 1 1 0; min-width: 0; }
+.vs-sheetview .vs-shot-msg { margin: 0; }
+.vs-sheetview .vs-shot-msg:empty { display: none; }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
 .facts.vs-facts .vs-ref dd { min-width: 0; }
 
@@ -10988,11 +11013,6 @@ button.vs-row { cursor: pointer; }
 .vs-editform > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .vs-editform :where(.row) { margin-top: 16px; row-gap: 16px; }
 .vs-editform .fsec > .fsec-h + .row, .vs-editform .vs-writehead + .msg + .row { margin-top: 0; }
-.vs-rec > .cr-main > .panel { margin: 0; }
-/* Narrow, the month's other scripts follow the script, never come before it. */
-@media (max-width: 1100px) {
-  .vs-rec > .cr-rail { order: 1; margin: 12px 0 0; }
-}
 .vs-editfoot {
   position: sticky; bottom: var(--tabbar-space); z-index: 5;
   display: grid; gap: 8px; padding: 12px 0 max(12px, env(safe-area-inset-bottom, 0px));
@@ -11018,7 +11038,30 @@ button.vs-row { cursor: pointer; }
 .shell-script { max-width: 960px; }
 .shell-script > .rec-head { margin-top: 16px; }
 .shell-script > .rec-head + .stagestrip { margin-top: 0; }
-#vsContent { display: grid; gap: 32px; margin-top: 12px; }
+#vsContent { display: grid; gap: 12px; margin-top: 12px; }
+/* A month is a list, a row a script (the user, 2026-10-09: "if i have 30
+   videos = one whole long page"): the code and title over the type and the
+   shoot, where the crew stands at the right, a chevron. One script opens on
+   its own under a line holding the way back to the list, where it stands in
+   the month, and Previous and Next. */
+.vs-index { padding: 0; overflow: hidden; }
+.vs-pick {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; align-items: center; gap: 4px 12px;
+  width: 100%; padding: 14px 20px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.vs-pick:last-child { border-bottom: 0; }
+@media (hover: hover) { .vs-pick:hover { background: var(--sunk); } }
+.vs-pick-name { display: grid; gap: 2px; min-width: 0; }
+.vs-pick-name b { font-weight: 600; overflow-wrap: anywhere; }
+.vs-pick-name small { font-size: 13px; color: var(--ink-mute); }
+.vs-pick-state { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.vs-pick > svg { width: 16px; height: 16px; color: var(--ink-mute); }
+.vs-open { display: grid; gap: 12px; min-width: 0; }
+.vs-openbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.vs-openbar .backlink { margin: 0; }
+.vs-steps { display: flex; align-items: center; gap: 8px; }
+.vs-pos { margin-right: 4px; font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
 .vs-video { display: grid; gap: 12px; min-width: 0; }
 .vs-video-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .vs-video-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
@@ -11027,6 +11070,9 @@ button.vs-row { cursor: pointer; }
 .vs-shot-msg { margin: 0; }
 .vs-shot-msg:empty { display: none; }
 @media (max-width: 640px) {
+  .vs-pick { padding: 12px 14px; }
+  .vs-steps { flex: 1 1 100%; }
+  .vs-steps > .btn { flex: 1 1 0; min-width: 0; }
   .vs-card { padding: 14px; gap: 20px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

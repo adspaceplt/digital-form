@@ -4019,6 +4019,10 @@
 
       <div id="vsRecord" hidden>
         <button class="backlink" id="vsBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <!-- A client's content month (the user, 2026-10-09: one link for the
+             client, not one a video): the client and the month, Preview PDF
+             and the ⋯, then the client's link, Copy link and Preview once for
+             every script of the month. -->
         <section class="panel rec-head vs-head">
           <div class="rec-id rec-id-plain">
             <div class="rec-who">
@@ -4027,25 +4031,24 @@
             </div>
             <div class="rec-ctl" id="vsRecCtl"></div>
           </div>
-          <!-- The client link and the act that hands this video to the client,
-               laid as a campaign's: the address, Copy link and Preview, then
-               Publish / Unpublish at the right edge. -->
           <div class="rec-linktools" id="vsLinkTools" hidden>
-            <div class="linkbox" id="vsLinkBox" hidden>
+            <div class="linkbox" id="vsLinkBox">
               <input class="input readfield" id="vsLink" readonly aria-label="Client link">
               <button class="btn btn-icon" id="vsCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
               <a class="btn btn-icon" id="vsOpen" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
             </div>
-            <div class="row" id="vsRecActs" hidden></div>
           </div>
           <div class="msg" id="vsRecMsg"></div>
         </section>
-        <div class="cr-rec vs-rec">
-          <div class="cr-main" id="vsRecBody"></div>
-          <aside class="cr-rail">
-            <div class="railblock" id="vsSeries"></div>
-          </aside>
+        <!-- A tab a script of the month, in number order, and Add script at
+             the line's end. -->
+        <div class="tabline vs-tabline">
+          <nav class="rectabs" id="vsTabs" role="tablist" aria-label="Scripts of the month"></nav>
+          <button class="btn btn-sm vs-next" id="vsNextVideo" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add script</button>
         </div>
+        <!-- The script on show: its own head (the state, Edit, Publish or
+             Unpublish, and the ⋯) over its facts, then the script. -->
+        <div class="vs-rec" id="vsRecBody" data-swipe="vsTabs"></div>
       </div>
 
       <!-- The script's editor is a page of its own (the user, 2026-10-09: a

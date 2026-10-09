@@ -9,10 +9,12 @@
  * One script is one full video, made in a client's content month and
  * numbered in it, YYMMVSNN (2026-10-09-scripts-by-month.sql; the user: "we
  * are working on content month, monthly basis"). The list is a card a
- * client, a row a script. A script opens as a record: its facts in one card,
- * the script in another, and on the day each scene's tick and clip number
- * (VC#). Edit is a page of its own; Add next script makes the next number of
- * the same month with its header copied. Publish shows it on the client link
+ * client, a row a script. A script opens in its content month's record:
+ * the client and the month with the client's link once, a tab a script, and
+ * the script on show with its own head (state, Edit, Publish), its facts in
+ * one card, the script in another, and on the day each scene's tick and clip
+ * number (VC#). Edit is a page of its own; Add script makes the next number
+ * of the same month with its header copied. Publish shows it on the client link
  * (`/script/?k=`), where it is read and the clip numbers can be recorded on
  * site; nobody decides on it there. Every write is a function
  * (`video_script_*`); the PDF is drawn here, never stored.
@@ -295,7 +297,7 @@
     UI.skeleton($('vsRecBody'), 3);
     return readScript(id).then(function () {
       paintRecord();
-      if (edit && may('work')) openEdit($('vsRecMore'), push);
+      if (edit && may('work')) openEdit($('vsRecBody').querySelector('[data-a="edit"]'), push);
     }).catch(function (e) {
       if (e && e.message === 'not-found') {
         backToList();
@@ -376,7 +378,8 @@
       out += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4>' +
         '<p class="vs-prose">' + (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
     }
-    out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) + '</section>';
+    out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) +
+      '<p class="msg vs-shot-msg" id="vsShotMsg" role="status"></p></section>';
     if (s.kind === 'story') {
       var work = may('work');
       out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4>' +
@@ -392,93 +395,125 @@
     return out;
   }
 
-  function moreMenu(s) {
-    /* Download sits here, Preview PDF in the head, as a report's do. */
-    var items = '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>';
-    if (may('work')) {
-      items += '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>';
-      items += '<button class="kmenu-item" data-a="reset" type="button"><b>Reset client link</b></button>';
-    }
-    if (may('manage')) items += '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>';
-    return '<button class="kmenu-btn" id="vsRecMore" type="button" aria-label="More actions" aria-expanded="false">' + ICON.dots + '</button>' +
+  /* The month's ⋯: Download, and Reset client link at Work (Preview PDF
+     sits in the head, as a report's). A script's ⋯: Delete at Full Access. */
+  function menuOf(id, items) {
+    if (!items) return '';
+    return '<button class="kmenu-btn" id="' + id + '" type="button" aria-label="More actions" aria-expanded="false">' + ICON.dots + '</button>' +
       '<div class="kmenu" data-menu hidden>' + items + '</div>';
   }
 
+  /* THE RECORD IS THE CLIENT'S CONTENT MONTH (the user, 2026-10-09: "show
+     similar link in one card for different videos?", "why is the tab
+     selection of each video below?"): the head names the client and the
+     month and holds the client's link once; a tab a script runs under it;
+     the script on show carries its own head, with its state, Edit and
+     Publish. */
   function paintRecord() {
     var s = st.open;
     var c = s.clients || {};
-    var key = stateOf(s);
-    $('vsRecName').textContent = label(s);
+    $('vsRecName').textContent = c.name || 'Client';
     /* The content month, opening the client's Months in My Work where the
        month is there and the colleague reads My Work. */
     var month = monthWord(s.period);
     var toMonth = s.engagement_id && c.slug && bridge.may && bridge.may('ops', 'view');
-    $('vsRecMeta').innerHTML = esc([c.name, KIND_WORD[s.kind]].filter(Boolean).join(' · ')) +
-      (month ? ' · ' + (toMonth ? '<button class="linkbtn" type="button" data-a="month">' + esc(month) + '</button>' : esc(month)) : '');
+    var n = st.series.length, pub = st.series.filter(function (x) { return x.status === 'shared'; }).length;
+    $('vsRecMeta').innerHTML = (month ? (toMonth ? '<button class="linkbtn" type="button" data-a="month">' + esc(month) + '</button>' : esc(month)) + ' · ' : '') +
+      esc(n + (n === 1 ? ' script' : ' scripts') + (pub ? ' · ' + pub + ' published' : ''));
     var mb2 = $('vsRecMeta').querySelector('[data-a="month"]');
     if (mb2) mb2.addEventListener('click', function () {
       history.pushState(null, '', '?s=work&view=months&wc=' + encodeURIComponent(c.slug));
       if (bridge.restore) bridge.restore();
     });
-    var ctl = $('vsRecCtl');
-    ctl.innerHTML = chip(key) +
+    $('vsRecCtl').innerHTML =
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
-      moreMenu(s);
+      menuOf('vsRecMore', '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
+        (may('work') ? '<button class="kmenu-item" data-a="reset" type="button"><b>Reset client link</b></button>' : ''));
+    paintLink();
+    paintTabs();
+    paintScript();
+  }
+
+  /* A tab a script of the month, its number within the month (VS01). */
+  function tabWord(x) { var c = codeOf(x); return /VS\d+$/.test(c) ? c.replace(/^\d{4}/, '') : c; }
+  function paintTabs() {
+    var strip = $('vsTabs');
+    strip.innerHTML = st.series.map(function (x) {
+      var on = x.id === st.open.id;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-v="' + esc(x.id) + '" aria-selected="' + on +
+        '" tabindex="' + (on ? 0 : -1) + '" aria-label="' + esc(label(x)) + '">' + esc(tabWord(x)) + '</button>';
+    }).join('');
+    $('vsNextVideo').hidden = !may('work');
+    var cur = strip.querySelector('.is-on');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  $('vsTabs').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tab');
+    if (b && st.open && b.getAttribute('data-v') !== st.open.id) openScript(b.getAttribute('data-v'), true);
+  });
+  /* A tab list: the arrows move along it, Home and End to its ends. */
+  $('vsTabs').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    tabs[to].focus();
+    openScript(tabs[to].getAttribute('data-v'), true);
+  });
+  $('vsNextVideo').addEventListener('click', function () { nextVideo($('vsNextVideo')); });
+
+  /* The script on show: its head (code and title over its type; the state,
+     Edit, Publish or Unpublish and the ⋯ at the right edge), its facts, then
+     the script. */
+  function paintScript() {
+    var s = st.open;
+    var key = stateOf(s);
     var acts = '';
     if (may('work')) {
-      acts = s.status === 'shared'
-        ? '<button class="btn btn-warn" type="button" data-a="unpublish">Unpublish</button>'
-        : '<button class="btn btn-go" type="button" data-a="publish">Publish</button>';
+      acts += '<button class="btn btn-sm btn-icon" type="button" data-a="edit">' + ICON.pen + 'Edit</button>';
+      acts += s.status === 'shared'
+        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">Unpublish</button>'
+        : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
     }
-    $('vsRecActs').innerHTML = acts;
-    $('vsRecActs').hidden = !acts;
-    paintLink();
-    $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' + facts(s) + '</section>' +
+    $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' +
+        '<div class="vs-cardhead"><div class="vs-cardwho"><h3 id="vsScriptName">' + esc(label(s)) + '</h3>' +
+          '<p>' + esc(KIND_WORD[s.kind] || '') + '</p></div>' +
+          '<div class="vs-cardctl">' + chip(key) + acts +
+            menuOf('vsCardMore', may('manage') ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
+          '</div></div>' +
+        '<div class="msg" id="vsCardMsg" role="status"></div>' +
+        facts(s) + '</section>' +
       '<section class="panel vs-sheetview">' + scriptBody(s) + '</section>';
-    paintSeries();
     wireRecord();
   }
 
-  /* The client's other scripts of the content month, and Add next script. */
-  function paintSeries() {
-    var box = $('vsSeries');
-    box.innerHTML = '<h3 class="railtitle">' + esc(monthWord(st.open.period) || 'This month') + '</h3>' + st.series.map(function (x) {
-      var on = x.id === st.open.id;
-      return '<button class="railrow vs-vrow' + (on ? ' is-on' : '') + '" type="button" data-v="' + esc(x.id) + '"' +
-        (on ? ' aria-current="page"' : '') + '><span>' + esc(label(x)) + '</span></button>';
-    }).join('') +
-      (may('work') ? '<button class="btn btn-sm vs-next" type="button" id="vsNextVideo">' + ICON.plus + 'Add next script</button>' : '');
-    Array.prototype.forEach.call(box.querySelectorAll('[data-v]'), function (b) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-v');
-        if (id !== st.open.id) openScript(id, true);
-      });
-    });
-    if ($('vsNextVideo')) $('vsNextVideo').addEventListener('click', function () { nextVideo($('vsNextVideo')); });
-  }
-
   function wireRecord() {
-    var on = function (root, a, fn) { var b = root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
-    var ctl = $('vsRecCtl');
+    var on = function (root, a, fn) { var b = root && root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
+    var ctl = $('vsRecCtl'), body = $('vsRecBody');
     on(ctl, 'pdf', function (b) { drawPdf(b, false); });
-    on($('vsRecActs'), 'publish', function (b) { publish(true, b); });
-    on($('vsRecActs'), 'unpublish', function (b) { publish(false, b); });
-    var mb = $('vsRecMore');
-    if (mb) {
-      var menu = ctl.querySelector('[data-menu]');
+    on(body, 'edit', function (b) { openEdit(b); });
+    on(body, 'publish', function (b) { publish(true, b); });
+    on(body, 'unpublish', function (b) { publish(false, b); });
+    [['vsRecMore', ctl], ['vsCardMore', body]].forEach(function (pair) {
+      var mb = $(pair[0]);
+      if (!mb) return;
+      var menu = mb.parentNode.querySelector('[data-menu]');
       mb.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = menu.hidden;
+        shutMenu();
         menu.hidden = !open;
         mb.setAttribute('aria-expanded', String(open));
         if (open) window.ADspaceMenu.place(mb, menu);
       });
       on(menu, 'download', function () { shutMenu(); drawPdf(mb, true); });
-      on(menu, 'edit', function () { shutMenu(); openEdit(mb); });
       on(menu, 'reset', function () { shutMenu(); resetLink(); });
       on(menu, 'del', function () { shutMenu(); remove(); });
-    }
-    Array.prototype.forEach.call($('vsRecBody').querySelectorAll('[data-scene]'), function (row) {
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-scene]'), function (row) {
       var id = row.getAttribute('data-scene');
       var vc = row.querySelector('[data-vc]'), shot = row.querySelector('[data-shot]');
       if (vc) vc.addEventListener('change', function () { tick(id, null, vc.value, vc); });
@@ -488,12 +523,11 @@
     if ($('vsVoShot')) $('vsVoShot').addEventListener('change', function () { tick(null, $('vsVoShot').checked, null, $('vsVoShot')); });
   }
   function shutMenu() {
-    var m = $('vsRecCtl').querySelector('[data-menu]'), b = $('vsRecMore');
-    if (m) m.hidden = true;
-    if (b) b.setAttribute('aria-expanded', 'false');
+    Array.prototype.forEach.call(document.querySelectorAll('#vsRecord [data-menu]'), function (m) { m.hidden = true; });
+    ['vsRecMore', 'vsCardMore'].forEach(function (id) { if ($(id)) $(id).setAttribute('aria-expanded', 'false'); });
   }
   document.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('#vsRecCtl .kmenu, #vsRecMore')) shutMenu();
+    if (!e.target.closest || !e.target.closest('#vsRecord .kmenu, #vsRecMore, #vsCardMore')) shutMenu();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenu(); });
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutMenu);
@@ -501,7 +535,7 @@
   /* On the day: a tick or a clip number, saved as it changes, put back on a
      refusal. */
   function tick(sceneId, on, vc, el) {
-    var m = $('vsRecMsg');
+    var m = $('vsShotMsg');
     say(m, '');
     rpc('video_script_shot', { p_script: st.open.id, p_scene: sceneId, p_on: on, p_vc: vc }).then(function () {
       var sc = sceneId && st.scenes.filter(function (x) { return x.id === sceneId; })[0];
@@ -553,9 +587,8 @@
     var show = function () {
       if (!st.open || st.open.id !== s.id) return;
       var has = Boolean(st.key && st.keyFor === s.client_id);
-      $('vsLinkBox').hidden = !has;
       if (has) { $('vsLink').value = clientLink(st.key); $('vsOpen').href = clientLink(st.key); }
-      $('vsLinkTools').hidden = !has && $('vsRecActs').hidden;
+      $('vsLinkTools').hidden = !has;
     };
     show();
     if (st.keyFor === s.client_id || st.keyTried === s.client_id) return;
@@ -566,15 +599,15 @@
     if (st.key) window.ADspaceCopy.to($('vsCopy'), clientLink(st.key));
   });
   function publish(on, btn, quiet) {
-    var m = $('vsRecMsg');
+    var m = $('vsCardMsg');
     var go = function () {
       if (btn) btn.disabled = true;
       rpc('video_script_share', { p_ids: [st.open.id], p_on: on }).then(function () {
         return readScript(st.open.id);
       }).then(function () {
         paintRecord();
-        say($('vsRecMsg'), on ? '' : 'Unpublished.', 'ok');
-        if (on) undoBar('Published to the client.', function () { publish(false, null, true); }, $('vsRecMsg'));
+        say($('vsCardMsg'), on ? '' : 'Unpublished.', 'ok');
+        if (on) undoBar('Published to the client.', function () { publish(false, null, true); }, $('vsCardMsg'));
       }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e)); });
     };
     if (on || quiet) { go(); return; }
@@ -593,14 +626,21 @@
     var nm = typedName(s);
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: label(s) + ', its scenes and the client\'s decisions will be deleted. There is no restore.',
+      body: label(s) + ', its scenes and their clip numbers will be deleted. There is no restore.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Type ' + (s.title ? 'the title' : nm) + ' to confirm', match: nm, mismatch: 'The name does not match.' }
     }, function (typed) {
       rpc('video_script_delete', { p_id: s.id, p_typed: typed }).then(function () {
+        /* The month's next script opens in its place; the last one gone,
+           the list. */
+        var rest = st.series.filter(function (x) { return x.id !== s.id; });
+        if (rest.length) {
+          openScript(rest[0].id, false).then(function () { say($('vsRecMsg'), label(s) + ' deleted.', 'ok'); });
+          return;
+        }
         backToList();
         say($('vsListMsg'), 'Deleted.', 'ok');
-      }).catch(function (e) { say($('vsRecMsg'), said(e)); });
+      }).catch(function (e) { say($('vsCardMsg'), said(e)); });
     });
   }
   function nextVideo(btn) {
@@ -772,7 +812,7 @@
       return readScript(s.id).then(function () {
         paintRecord();
         if (bridge.setUrl) bridge.setUrl();
-        say($('vsRecMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
+        say($('vsCardMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
       });
     }).catch(function (e) {
       btn.disabled = false;
