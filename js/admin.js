@@ -1503,8 +1503,54 @@
         return;
       }
       state.reviewClients = r.data || [];
+      state.reviewSets = null;
       paintReviewClients();
       settleScroll();
+      readSets(state.reviewClients);
+    });
+  }
+
+  /* Every client's sets in one read for the whole list, in pages of a
+     thousand. A read a client, again on every paint and every key typed in
+     the search, was a sixth of the portal's API traffic (2026-10-09). */
+  function readSets(list) {
+    var ids = list.map(function (c) { return c.id; });
+    var got = [];
+    function page(from) {
+      db.from('batches').select('id, client_id, published').in('client_id', ids)
+        .order('id').range(from, from + 999).then(function (b) {
+        if (state.reviewClients !== list) return;
+        if (b.error) { state.reviewSets = 'error'; paintSets(); return; }
+        got = got.concat(b.data || []);
+        if ((b.data || []).length === 1000 && from < 19000) { page(from + 1000); return; }
+        var m = {};
+        got.forEach(function (x) {
+          var k = m[x.client_id] || (m[x.client_id] = { n: 0, live: 0 });
+          k.n++; if (x.published) k.live++;
+        });
+        state.reviewSets = m;
+        paintSets();
+      });
+    }
+    if (ids.length) page(0); else state.reviewSets = {};
+  }
+
+  /* A one line answer to "where does this client stand?" A read that failed
+     is not a client with nothing on it: "No content sets" over a fault sends
+     somebody to build a set that is already there. */
+  function setsLine(id) {
+    var s = state.reviewSets;
+    if (!s) return '<span class="muted">Loading…</span>';
+    if (s === 'error') return '<span class="is-warn">Sets unavailable</span>';
+    var k = s[id];
+    if (!k) return '<span class="muted">No sets</span>';
+    return esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published');
+  }
+  function paintSets() {
+    var box = $('clientCards');
+    Array.prototype.forEach.call(box.querySelectorAll('.cr-client-row[data-id]'), function (row) {
+      var sub = row.querySelector('[data-role="sub"]');
+      if (sub) sub.innerHTML = setsLine(row.getAttribute('data-id'));
     });
   }
 
@@ -1543,9 +1589,10 @@
       var row = document.createElement('button');
       row.type = 'button';
       row.className = 'crm-row cr-client-row';
+      row.setAttribute('data-id', c.id);
       row.innerHTML =
         '<span class="crm-c crm-c-name">' + esc(c.name) + '</span>' +
-        '<span class="crm-c crm-c-sets" data-role="sub"><span class="muted">Loading\u2026</span></span>' +
+        '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
         '<span class="crm-c crm-c-code">' + (c.passcode
@@ -1553,19 +1600,6 @@
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
       row.addEventListener('click', function () { openClient(c); });
       table.appendChild(row);
-
-      /* A one line answer to "where does this client stand?" A read that
-         failed is not a client with nothing on it: "No content sets" over a
-         fault sends somebody to build a set that is already there. */
-      db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
-        var sub = row.querySelector('[data-role="sub"]');
-        if (!sub) return;
-        if (b.error) { sub.innerHTML = '<span class="is-warn">Sets unavailable</span>'; return; }
-        if (!b.data.length) { sub.innerHTML = '<span class="muted">No sets</span>'; return; }
-        var live = b.data.filter(function (x) { return x.published; }).length;
-        sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
-          ' \u00b7 ' + live + ' published';
-      });
     });
     box.appendChild(sec);
   }

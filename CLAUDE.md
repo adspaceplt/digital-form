@@ -954,6 +954,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   All stages, All people, All months, never Every …, Everyone or Everything.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
+- A list reads what its rows show in one request (`.in()`, paged by the
+  thousand), never one a row, and a repaint or a key typed reads nothing
+  again: every request is a logged line Supabase meters (Content Review's
+  read a client was a sixth of the live traffic, 2026-10-09; `tests/sets.js`).
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
   wrap cannot split it. An empty count is not drawn.
 - The rail's order (see `DESIGN.md`) drives `SECTIONS`, the Activity record's
