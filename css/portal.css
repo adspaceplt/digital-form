@@ -5403,10 +5403,11 @@ body > .shell { width: 100%; }
 .permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
 .permsec-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* Four levels across a phone's panel: "Full Access" ran a pixel past its
-   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03). Two
-   pixels back from each side keep every level whole; narrower still, the
-   segment's own measure wraps it into two columns. */
-.permsec .seg-opt { padding: 0 6px; }
+   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03), and again
+   once a finger's options took 14px type (2026-10-09). Four pixels each side
+   keep every level whole; narrower still, the segment's own measure wraps it
+   into two columns. */
+.permsec .seg-opt { padding: 0 4px; }
 /* The fold names what it holds and how many differ from the section; it
    clears the control floor with the negative block margin the ⋯ uses, so the
    head line keeps the name's height. */
@@ -10868,7 +10869,7 @@ button.vs-row { cursor: pointer; }
 .vs-c-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vs-c-name small { font-size: 12.5px; color: var(--ink-mute); }
 .vs-c-shoot { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vs-c-state { justify-self: start; }
+.vs-c-state { min-width: 0; }
 .is-narrow .crm-head.vs-row { display: none; }
 .is-narrow .vs-row {
   grid-template-columns: minmax(0, 1fr) 120px;
