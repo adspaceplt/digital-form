@@ -6,7 +6,7 @@
  *
  *   ADspaceWhatsApp.manage(btn)        — Business settings: the four
  *                                        templates (name, language, how many
- *                                        variables, on or off) and the last
+ *                                        variables; on or off by the row's switch) and the last
  *                                        fifty messages
  *   ADspaceWhatsApp.sendReport(o)      — a published report's PDF to the
  *                                        client's main contact
@@ -109,37 +109,59 @@
       box.innerHTML = '<div class="ann-rows">' + k.list.map(function (t) {
         var w = PURPOSE[t.purpose] || [t.purpose, ''];
         var live = t.active && t.name;
-        return '<div class="ann-row wa-row" data-p="' + esc(t.purpose) + '">' +
+        return '<div class="ann-row wa-row' + (live ? '' : ' is-off') + '" data-p="' + esc(t.purpose) + '">' +
           '<div class="ann-what"><p class="ann-text">' + esc(w[0]) + '</p>' +
             '<p class="ann-meta">' + esc(t.name ? t.name + ' · ' + t.lang + ' · ' + t.params + (t.params === 1 ? ' variable' : ' variables') : 'No template') + '</p></div>' +
-          '<div class="ann-ctl"><span class="chip-state ' + (live ? 'is-ok' : 'is-off') + '">' + (live ? 'On' : 'Off') + '</span></div>' +
+          '<div class="ann-ctl"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
+            ' aria-label="' + esc(w[0]) + '" data-a="on"></button></div>' +
           '<div class="ann-acts"><button class="btn btn-sm" type="button" data-a="edit">Edit</button></div></div>';
       }).join('') + '</div>';
       Array.prototype.forEach.call(box.querySelectorAll('.wa-row'), function (rw) {
         var t = k.list.filter(function (x) { return x.purpose === rw.getAttribute('data-p'); })[0];
         rw.querySelector('[data-a="edit"]').addEventListener('click', function () { edit(t); });
+        rw.querySelector('[data-a="on"]').addEventListener('click', function () { flip(t, rw, this); });
       });
     });
   }
-  function edit(t) {
+  /* The switch: on or off at the press, put back on a refusal. A purpose
+     with no template yet asks for one first, and is turned on with it. */
+  function flip(t, rw, sw) {
+    if (!t.name) { edit(t, true); return; }
+    var to = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', to ? 'true' : 'false');
+    sw.disabled = true;
+    db().rpc('wa_template_save', { p_purpose: t.purpose, p_name: t.name, p_lang: t.lang, p_params: t.params, p_active: to }).then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) throw (r && r.error) || d.error;
+      t.active = to; known = null;
+      sw.disabled = false;
+      rw.classList.toggle('is-off', !to);
+      msg('Saved.', 'ok');
+    }).catch(function (e) {
+      sw.setAttribute('aria-checked', to ? 'false' : 'true');
+      sw.disabled = false;
+      msg(said(e), 'err');
+    });
+  }
+  function edit(t, turnOn) {
     var w = PURPOSE[t.purpose] || [t.purpose, ''];
     window.ADspaceConfirm.ask({
-      title: w[0], body: w[1], go: 'Save',
+      title: w[0], body: w[1], go: turnOn ? 'Save and turn on' : 'Save',
       fields: [
-        { name: 'name', label: 'Template name', value: t.name || '', placeholder: 'monthly_report', required: false },
+        { name: 'name', label: 'Template name', value: t.name || '', placeholder: 'monthly_report', required: Boolean(turnOn) },
         { name: 'lang', label: 'Language', value: t.lang || 'en', placeholder: 'en', half: true },
-        { name: 'params', label: 'Variables', type: 'number', min: '0', value: String(t.params || 0), half: true },
-        { name: 'active', label: 'On', tick: true, value: Boolean(t.active) }
+        { name: 'params', label: 'Variables', type: 'number', min: '0', value: String(t.params || 0), half: true }
       ],
       check: function (v) {
-        if (v.active === 'on' && !String(v.name || '').trim()) return 'Enter the template name to turn it on.';
+        if (turnOn && !String(v.name || '').trim()) return 'Enter the template name to turn it on.';
         var n = Number(v.params);
         if (!(n >= 0 && n <= 5 && n === Math.floor(n))) return SAID['bad-params'];
         return '';
       }
     }, function (v) {
-      db().rpc('wa_template_save', { p_purpose: t.purpose, p_name: String(v.name || '').trim(), p_lang: String(v.lang || '').trim(),
-        p_params: Number(v.params), p_active: v.active === 'on' }).then(function (r) {
+      var name = String(v.name || '').trim();
+      db().rpc('wa_template_save', { p_purpose: t.purpose, p_name: name, p_lang: String(v.lang || '').trim(),
+        p_params: Number(v.params), p_active: Boolean(name) && (turnOn || Boolean(t.active)) }).then(function (r) {
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) { msg(said(r.error || d.error), 'err'); return; }
         msg(d.same ? 'No change.' : 'Saved.', 'ok');

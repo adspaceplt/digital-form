@@ -3594,7 +3594,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   a purpose (`wa_templates`: `report`, `feedback`, `reminder`, `creator`;
   name and language as Meta holds them, how many body variables, On), set in
   the account menu's WhatsApp (`team.settings`, `wa_template_save`, filed
-  under WhatsApp from and to); a purpose that is Off sends nothing. The
+  under WhatsApp from and to): Edit asks the name, language and variables,
+  and each row's switch (`.switch`) turns it on or off at the press (one
+  with no template asks for one first); a purpose that is Off sends nothing. The
   sheet lists the last fifty messages (`wa_recent`, the number cut to its
   last four).
 - Variables in order: report (first name, client or brand, the report and

@@ -1260,3 +1260,13 @@ The user, on the first build: scripts numbered V1, V2 by shoot did not fit a tea
 
 ### 2026-10-09 · WhatsApp through the Cloud API
 The user: "Have you built the whatsapp send? … What i mean is the whatsapp api", then chose Report to client, Team reminders, Creator updates and "Manually send with button a feedback approved template on whatsapp". The WhatsApp Business ID and phone number the user said they had sent were not in any record this session could reach (nor in the database), so the sender reads `WHATSAPP_PHONE_ID` and `WHATSAPP_TOKEN` from Supabase's secrets and the screens stay quiet until a template is set. A business-initiated WhatsApp message must use a template Meta approved, so every purpose names its template in Business settings, with how many variables it takes, rather than words typed in the code. Reports and the feedback request are sent at the press as the colleague (the report's kept PDF uploaded as the header document, then marked as sent); reminders and creator steps are queued by trigger beside the push ones (separate triggers, so nothing existing was redefined) and sent with the service role, tried three times. Creators had no phone number at all; a WhatsApp number joined their record. The 6 Oct decision not to build a Share button stands: that was about handing a file to a chosen group from the browser, which WhatsApp's links cannot do.
+
+### 2026-10-09 · WhatsApp templates turn on and off with a switch
+The user, on the WhatsApp sheet: "why is on button not a slider on/off its a
+tick, which is weird not universal style". On was a tick inside Edit's
+question. It is now `button.switch` on each template's row, a track with a
+sliding thumb as the iPhone draws one, saved at the press and put back on a
+refusal; a purpose with no template asks for one first ("Save and turn on").
+Edit asks the name, language and variables only. The switch is a component
+of its own (DESIGN.md §4), for any later setting that takes effect at the
+press.

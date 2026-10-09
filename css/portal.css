@@ -114,6 +114,7 @@
      more transparent, similar as apple"): 72% over a 20px blur. */
   --chrome:     rgba(255,255,255,.72);   /* the translucent sticky bar */
   --veil:       rgba(255,255,255,.88);   /* a label or a question laid over a thumbnail, kept legible */
+  --knob:       #ffffff;                 /* a switch's thumb, white on its track in both themes */
   --chrome-solid: #ffffff;               /* the same bar, opaque, where a phone's status bar takes its colour */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
      finger operates, 14px on a bounded section, 18px on a sheet. A table at
@@ -2444,6 +2445,28 @@ body.is-plain .topbar { background: var(--chrome); }
 .acct-x { display: none; }
 /* Three groups (you, this device, the way out), each set off by a hairline. */
 .acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
+/* A switch (`button.switch`, role="switch", aria-checked): a setting that
+   takes effect at the press, drawn as the iPhone draws one, a track with a
+   thumb that slides; off is the control's grey, on the green of live. The
+   button is the control's height and the track sits inside it. */
+.switch {
+  position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h-sm);
+  padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer;
+}
+.switch::before {
+  content: ''; position: absolute; left: 2px; right: 2px; top: 50%; height: 26px; margin-top: -13px;
+  border-radius: 13px; background: var(--line-ctl); transition: background var(--t) var(--ease);
+}
+.switch::after {
+  content: ''; position: absolute; left: 4px; top: 50%; width: 22px; height: 22px; margin-top: -11px;
+  border-radius: 50%; background: var(--knob); transition: transform var(--t) var(--ease);
+}
+.switch[aria-checked="true"]::before { background: var(--ok-solid); }
+.switch[aria-checked="true"]::after { transform: translateX(16px); }
+.switch:disabled { cursor: default; }
+.switch:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+.switch:active::after { width: 26px; }
+.switch[aria-checked="true"]:active::after { transform: translateX(12px); }
 /* A switch's state at the row's right edge, read in the mute ink. */
 .acct-menu .kmenu-item .acct-val { font-size: 13px; color: var(--ink-mute); }
 
