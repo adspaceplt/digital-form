@@ -74,6 +74,9 @@
        parts under it are the exception to the rule below. */
     ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
     ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
+    /* WhatsApp (2026-10-10): View reads the messages sent, Manage sends,
+       Full Access chooses the templates. */
+    ['whatsapp',  'WhatsApp',          ['none', 'view', 'work', 'manage']],
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     /* A shoot's video scripts, approved by the client and ticked on the day
        (2026-10-09). */
@@ -110,14 +113,12 @@
                 /* The lead stages and Past (2026-10-03): No Access, View or
                    Manage on those records, and on everything filed under
                    them in every section (`client_row_seen`). */
-                ['leads', 'Leads'], ['past', 'Past clients'],
-                /* Request feedback on WhatsApp (2026-10-09): a group may
-                   work Clients and still not message a client. */
-                ['whatsapp', 'WhatsApp feedback request']],
+                ['leads', 'Leads'], ['past', 'Past clients']],
+    /* Each send from a record follows WhatsApp or is shut (2026-10-10):
+       they replaced the Clients, Reports and Creator Campaigns parts. */
+    whatsapp:  [['report', 'Send a published report'], ['feedback', 'Feedback request'], ['booking', 'Booking message']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
-    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
-                /* Send on WhatsApp in a booking's ⋯ (2026-10-09). */
-                ['whatsapp', 'Send on WhatsApp']],
+    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
@@ -125,7 +126,7 @@
        every letter with it. Each tab is a part, and the database decides
        which rows arrive: `activity_section()` maps a tag to the section the
        console files it under, and the read policy asks the part. */
-    activity:  [['ops', 'My Work'], ['clients', 'Clients'],
+    activity:  [['ops', 'My Work'], ['clients', 'Clients'], ['whatsapp', 'WhatsApp'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
                 ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
@@ -164,9 +165,7 @@
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
-    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits'],
-                /* Send on WhatsApp (2026-10-09): follows Reports unless shut. */
-                ['whatsapp', 'Send on WhatsApp']]
+    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits']]
   };
   /* The parts that are granted rather than inherited: each opens more than
      its section does, so silence means no. The same list the console reads
@@ -176,7 +175,11 @@
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
-  var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
+  /* A part that follows its section or is shut, and nothing between: the
+     three My Work views, and each WhatsApp send (2026-10-10), which asks
+     the section at Manage as well as itself. */
+  var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
+    'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
      checks (2026-09-24, the user found a select offering levels that did
@@ -192,8 +195,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'clients.whatsapp': ['work'], 'reports.whatsapp': ['work'],
-    'campaigns.whatsapp': ['work'],
+    'team.notice': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -783,6 +785,8 @@
            work: 'Also create tasks and add months.', manage: 'Also reassign and delete tasks.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
                work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
+    whatsapp: { none: 'WhatsApp is hidden, and no record offers it.', view: 'Read every message sent and its status.',
+                work: 'Send messages from WhatsApp and from records.', manage: 'Also choose the templates and turn them on or off.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
@@ -806,13 +810,13 @@
      letters, performance reviews, Team) are never in a preset below Admin:
      they are opened deliberately, in Advanced. */
   var PRESETS = {
-    manager: { ops: 'manage', clients: 'manage', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
+    manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                'register.hr': 'none' },
-    staff:   { ops: 'work', clients: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', reports: 'work',
+    staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
-    viewer:  { ops: 'view', clients: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', reports: 'view',
+    viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', reports: 'view',
                links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
   };
 

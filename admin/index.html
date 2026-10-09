@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009r">
+<link rel="stylesheet" href="/css/portal.css?v=20261010a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -80,7 +80,7 @@
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261009h"></script>
 <script src="/js/notice.js?v=20261009c"></script>
-<script src="/js/whatsapp.js?v=20261009q"></script>
+<script src="/js/whatsapp.js?v=20261010a"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261008p"></script>
 <script src="/js/media.js?v=20261003b"></script>
@@ -194,6 +194,12 @@
         </button>
         <button class="navitem" data-section="clients" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+        </button>
+        <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
+             sent with Meta's delivery status, the composer, and the
+             templates. After Clients, whose contacts it messages. -->
+        <button class="navitem" data-section="whatsapp" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>WhatsApp</span>
         </button>
         <button class="navitem" data-section="review" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
@@ -382,11 +388,6 @@
                by itself. -->
           <button class="kmenu-item" id="acctAnnounce" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4"/><path d="M4 12h2l9 5V7L6 12"/><path d="M18 9a4 4 0 0 1 0 6"/></svg>Announcements
-          </button>
-          <!-- WhatsApp (js/whatsapp.js): the templates each message is sent
-               with and the last fifty messages. Business settings. -->
-          <button class="kmenu-item" id="acctWhatsApp" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/></svg>WhatsApp
           </button>
           <!-- Notices (js/notice.js): a notice to all colleagues or to those
                chosen, in each bell. Team: Notices, an admin's by itself. -->
@@ -3995,6 +3996,89 @@
       </div>
     </div>
 
+    <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
+         sent, with what Meta reports of it (Sent, Delivered, Read, Failed
+         and why), the month's count by category above the list, and New
+         message. At Full Access, Templates: each purpose's template chosen
+         from Meta's approved list, its switch, and the queue. -->
+    <div class="console-body" id="sectionWhatsApp" data-swipe="waTabs" hidden>
+      <div class="tabline">
+        <div class="tabrow" id="waTabs" role="tablist" aria-label="WhatsApp" hidden>
+          <button class="tab is-on" id="waTabMessages" data-tab="messages" type="button" role="tab" aria-selected="true" aria-controls="waMessagesPane">Messages</button>
+          <button class="tab" id="waTabTemplates" data-tab="templates" type="button" role="tab" aria-selected="false" aria-controls="waTemplatesPane" tabindex="-1">Templates</button>
+        </div>
+      </div>
+      <div id="waMessagesPane" role="tabpanel" aria-labelledby="waTabMessages">
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="waFind" type="search" placeholder="Search name, client or number" aria-label="Search messages" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="waMonth" aria-label="Month" data-nofilter></select>
+          <select class="select select-sm" id="waPurpose" aria-label="Type"></select>
+          <select class="select select-sm" id="waStatus" aria-label="Status"></select>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="waCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="waNew" type="button" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New message</span></button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="waListMsg" role="status"></div>
+        <div class="tally wam-heads" id="waHeads" hidden></div>
+        <div id="waList" data-narrow="760"></div>
+      </div>
+      <div id="waTemplatesPane" role="tabpanel" aria-labelledby="waTabTemplates" hidden>
+        <div class="msg" id="waTplMsg" role="status"></div>
+        <div class="tally wam-heads" id="waQueue" hidden></div>
+        <div id="waTplList" data-narrow="560"></div>
+      </div>
+    </div>
+
+    <!-- The composer (js/whatsapp.js): one sheet every record shares. To is
+         a client contact or a creator, the number as it will be sent; the
+         template one Meta approved; each variable prefilled from the record;
+         a report's kept PDF where the template has a Document header. -->
+    <div class="sheet" id="waCompose" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="waComposeTitle" data-narrow="560">
+        <div class="sheet-head">
+          <h3 id="waComposeTitle">New message</h3>
+          <button class="iconbtn" id="waComposeClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <section class="fsec">
+            <h4 class="fsec-h">Recipient</h4>
+            <div class="row"><div><label class="field-label" for="waTo">To</label>
+              <select class="select" id="waTo" aria-required="true" data-nodraft></select></div></div>
+            <div class="row" id="waNumberRow" hidden><div><label class="field-label" for="waNumber">Number</label>
+              <input class="input readfield" id="waNumber" readonly data-nodraft></div></div>
+            <p class="msg" id="waToNote" role="status" hidden></p>
+          </section>
+          <section class="fsec">
+            <h4 class="fsec-h">Template</h4>
+            <div class="row"><div><label class="field-label" for="waTpl">Template</label>
+              <select class="select" id="waTpl" aria-required="true" data-nodraft></select></div></div>
+            <div class="row" id="waReportRow" hidden><div><label class="field-label" for="waReport">Report</label>
+              <select class="select" id="waReport" aria-required="true" data-nodraft></select></div></div>
+            <p class="msg" id="waTplNote" role="status" hidden></p>
+          </section>
+          <section class="fsec" id="waFillSec" hidden>
+            <h4 class="fsec-h">Variables</h4>
+            <div id="waFields"></div>
+          </section>
+          <section class="fsec" id="waPreviewSec" hidden>
+            <h4 class="fsec-h">Preview</h4>
+            <div class="wa-preview" id="waPreview"></div>
+          </section>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="waSend" type="button">Send</button>
+          <button class="btn btn-quiet" id="waComposeCancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="waComposeMsg" role="status"></div>
+      </div>
+    </div>
+
     <!-- Video Scripts (2026-10-09): a card a client, a row a video (V1, V2…
          in its shoot). A video opens as a record: its facts, the script as the
          client reads it, and on the day each scene's Shot tick and clip number
@@ -4748,6 +4832,7 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="acttab btn-sm is-on" data-af="all" type="button" aria-pressed="true">Everything</button>
       <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
       <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
+      <button class="acttab btn-sm" data-af="whatsapp" data-need="activity.whatsapp:view" type="button" aria-pressed="false">WhatsApp</button>
       <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
       <button class="acttab btn-sm" data-af="scripts" data-need="activity.scripts:view" type="button" aria-pressed="false">Video Scripts</button>
       <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
@@ -5149,20 +5234,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009r"></script>
+<script src="/js/admin.js?v=20261010a"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261009p"></script>
+<script src="/js/reports.js?v=20261010a"></script>
 <script src="/js/register.js?v=20261009a"></script>
-<script src="/js/crm.js?v=20261009q"></script>
+<script src="/js/crm.js?v=20261010a"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261009q"></script>
+<script src="/js/team.js?v=20261010a"></script>
 <script src="/js/namecard.js?v=20261007h"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/scripts.js?v=20261009o"></script>
 <script src="/js/scriptpdf.js?v=20261009m"></script>
-<script src="/js/campaigns.js?v=20261009q"></script>
+<script src="/js/campaigns.js?v=20261010a"></script>
 <script src="/js/ops.js?v=20261009j"></script>
 <script src="/js/perf.js?v=20261009b"></script>
 <script src="/js/health.js?v=20261009a"></script>
