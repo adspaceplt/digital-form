@@ -93,8 +93,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
   - Run only the suites the change touched (the tiers below), before the
-    merge as well. `all` is for a shared script, the stand-in, or a schema
-    change; never for a style, a copy or a one-screen fix (the user,
+    merge as well. A batch never waits on `all` (the user, 2026-10-09: a
+    test that grew from 15 minutes to 90): a shared script, the stand-in or
+    a schema change runs the suites that call what changed (`grep -l` over
+    `tests/` for the function, table or id) plus `ui`, and `all` runs once
+    a day, after the day's merges, its findings the next batch. Never a
+    full gate for a style, a copy or a one-screen fix (the user,
     2026-09-28: a full gate for one border wastes their credits).
   - Never poll with sleep.
   - Never watch suites one by one.
@@ -115,10 +119,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | `all` |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui`; `all` once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a merge | The union of the rows above for everything in the batch; `all` only where a row says so |
+| Before a merge | The union of the rows above for everything in the batch; never `all` |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
@@ -3175,7 +3179,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   importer, one matching (Ad ID, link) and one summary line; the age split
   follows the figures in the same press, updating only ads it holds; an ad
   with no spend or no results is left out and counted in the summary line
-  (`adsPlan` `withResults`, the audit alike; the user, 2026-10-09); posts go
+  (`adsPlan` `withResults`, the audit alike; the user, 2026-10-09), and a
+  copy of a creative that never ran is read after the copies that did and
+  never writes over the ad they fed (its result type and zeros); posts go
   to the report's account on their platform; filed `Imported from Meta` /
   `From Meta`. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),
