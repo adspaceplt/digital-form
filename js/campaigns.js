@@ -677,6 +677,7 @@
     $('saveCreator').textContent = c ? 'Save' : 'Create';
     $('crName').value = c ? c.name : '';
     $('crRate').value = c && c.client_rate != null ? c.client_rate : '';
+    $('crWhatsapp').value = (c && c.whatsapp) || '';
     $('crNotes').value = c ? (c.notes || '') : '';
     var rows = $('profRows');
     rows.innerHTML = '';
@@ -833,6 +834,7 @@
       name: name,
       client_rate: $('crRate').value ? Number($('crRate').value) : null,
       notes: ($('crNotes').value || '').trim() || null,
+      whatsapp: ($('crWhatsapp').value || '').trim() || null,
       created_by: who() || null
     };
 
@@ -842,7 +844,7 @@
        with the set before it, which is what Link history restores. */
     var ed = state.editing;
     var fieldsMoved = !ed || ed.name !== body.name || (ed.client_rate == null ? null : Number(ed.client_rate)) !== body.client_rate ||
-      (ed.notes || null) !== body.notes;
+      (ed.notes || null) !== body.notes || (ed.whatsapp || null) !== body.whatsapp;
     var done = function (id, created) {
       db.rpc('creator_save_profiles', { p_creator: id, p_profiles: raw }).then(function (res) {
         var d = (res && res.data) || {};

@@ -383,7 +383,10 @@
       /* Notices (2026-10-09): Team: Notices, an admin's by itself. */
       var ntc = may('team.notice', 'work');
       if ($('acctNotice')) $('acctNotice').hidden = !ntc;
-      $('acctUpgradeSep').hidden = !(admin || ann || ntc);
+      /* WhatsApp (2026-10-09): its templates are Business settings. */
+      var wa = may('team.settings', 'work');
+      if ($('acctWhatsApp')) $('acctWhatsApp').hidden = !wa;
+      $('acctUpgradeSep').hidden = !(admin || ann || ntc || wa);
       $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
       $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
     }
@@ -477,6 +480,11 @@
     e.stopPropagation();
     shutAcct();
     if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage($('acctBtn') || this);
+  });
+  if ($('acctWhatsApp')) $('acctWhatsApp').addEventListener('click', function (e) {
+    e.stopPropagation();
+    shutAcct();
+    if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage($('acctBtn') || this);
   });
   if ($('acctNotice')) $('acctNotice').addEventListener('click', function (e) {
     e.stopPropagation();
@@ -1704,6 +1712,7 @@
     'service.on':            ['Rate line active', 'is-ok', 'services'],
     'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
     'client.touch':          ['Call/visit logged', '', 'clients'],
+    'wa.sent':               ['Sent on WhatsApp', '', 'clients'],
     'client.review_on':      ['Added to review', 'is-ok', 'clients'],
     'contact.portal_on':     ['Portal enabled', 'is-ok', 'clients'],
     'contact.portal_off':    ['Portal revoked', 'is-warn', 'clients'],

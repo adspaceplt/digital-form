@@ -6643,18 +6643,22 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 .rec-pane { grid-area: pane; min-width: 0; }
 .pane-form { padding: 12px 0 0; }
 .pane-form-head { margin: 0 0 12px; }
-.camp-client-tools {
+/* A record's client link and the act that hands it over (a campaign, a
+   video script): the address, Copy link and Preview, then the act at the
+   right edge. */
+.camp-client-tools, .rec-linktools {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px;
   align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft);
 }
 .camp-client-tools .panelhead { display: none; }
-.camp-client-tools .linkbox { min-width: 0; }
-.camp-client-tools > .row { margin: 0 !important; flex-wrap: nowrap; }
+.camp-client-tools .linkbox, .rec-linktools .linkbox { min-width: 0; }
+.camp-client-tools > .row, .rec-linktools > .row { margin: 0 !important; flex-wrap: nowrap; }
+.rec-linktools > .row:only-child { grid-column: 1 / -1; justify-content: flex-end; }
 .finance-total { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
 .finance-total .railmoney { max-width: 420px; }
 @media (max-width: 760px) {
-  .camp-client-tools { grid-template-columns: minmax(0, 1fr); }
-  .camp-client-tools > .row { flex-wrap: wrap; }
+  .camp-client-tools, .rec-linktools { grid-template-columns: minmax(0, 1fr); }
+  .camp-client-tools > .row, .rec-linktools > .row { flex-wrap: wrap; }
 }
 /* The first block in a pane sits as far from the tabs as two blocks sit from
    each other: the law of the stack does not stop at a tab strip. THE STEP IS
@@ -10882,6 +10886,7 @@ button.vs-row { cursor: pointer; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }
+.vs-head .rec-linktools { margin-top: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
 .vs-pdf-short { display: none; }
@@ -10896,10 +10901,6 @@ button.vs-row { cursor: pointer; }
 .vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .vs-ref .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vs-said { margin: 0 0 12px; padding: 12px 15px; border-radius: var(--radius-sm); background: var(--sunk); display: grid; gap: 4px; }
-.vs-said p { margin: 0; font-size: 13px; color: var(--ink-soft); }
-.vs-said .vs-note { color: var(--ink); white-space: pre-line; overflow-wrap: anywhere; }
-p.vs-said { display: block; color: var(--ink-soft); font-size: 13px; }
 
 /* A scene: its number, what is seen (and on a detailed script what is
    said), then the clip number and the tick. */
@@ -10935,6 +10936,38 @@ p.vs-said { display: block; color: var(--ink-soft); font-size: 13px; }
 .vs-vrow.is-on { background: var(--line-soft); }
 .vs-next { margin-top: 8px; }
 
+/* A script's record: its facts in one card, the script in the next (the
+   user, 2026-10-09: key information apart from the scenes). */
+.vs-rec > .cr-main { display: grid; gap: 12px; align-content: start; }
+.facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
+.facts.vs-facts .vs-ref dd { min-width: 0; }
+
+/* The editor is a page (2026-10-09): the head, the facts card, the script
+   card, and Save at the foot of the screen, always in reach. */
+.vs-edit { display: grid; gap: 12px; }
+.vs-edit > .rec-head { margin: 0; }
+.vs-edit .vs-editform { margin: 0; }
+.vs-edit > .panel + .panel { margin-top: 0; }
+.vs-editform > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.vs-editform :where(.row) { margin-top: 16px; row-gap: 16px; }
+.vs-editform .fsec > .fsec-h + .row, .vs-editform .vs-writehead + .msg + .row { margin-top: 0; }
+.vs-rec > .cr-main > .panel { margin: 0; }
+/* Narrow, the month's other scripts follow the script, never come before it. */
+@media (max-width: 1100px) {
+  .vs-rec > .cr-rail { order: 1; margin: 12px 0 0; }
+}
+.vs-editfoot {
+  position: sticky; bottom: var(--tabbar-space); z-index: 5;
+  display: grid; gap: 8px; padding: 12px 0 max(12px, env(safe-area-inset-bottom, 0px));
+  background: var(--page); border-top: 1px solid var(--line);
+}
+.vs-editfoot .msg { margin: 0; }
+.vs-editfoot .msg:empty { display: none; }
+.vs-editfoot > .row { margin: 0; flex-wrap: nowrap; }
+@media (max-width: 640px) {
+  .vs-editfoot > .row > .btn { flex: 1 1 0; min-width: 0; }
+}
+
 /* The editor's scenes: a block each, its number and moves on its head. */
 .vs-edit-scene { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
 .vs-edit-scene:first-child { padding-top: 0; }
@@ -10942,34 +10975,21 @@ p.vs-said { display: block; color: var(--ink-soft); font-size: 13px; }
 .vs-edit-head .field-label { margin: 0; }
 .vs-edit-acts { display: flex; gap: 4px; }
 
-/* The client's Video Scripts page (/script/?k=): a shoot's videos under its
-   heading, each a card: the video and its type over the state, the facts,
-   the script, the decision. */
+/* The client link for Video Scripts (/script/?k=): a tab a content month,
+   then each video: its code and type, its facts in one card and its script
+   in the next, each scene's VC# and Shot recorded on site. */
 .shell-script { max-width: 960px; }
 .shell-script > .rec-head { margin-top: 16px; }
 .shell-script > .rec-head + .stagestrip { margin-top: 0; }
-.vs-shoot { display: grid; gap: 12px; margin-top: 24px; }
-.vs-shoot-head { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.vs-card { display: grid; gap: 16px; padding: 18px 20px; }
-.vs-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.vs-card-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.vs-card-kind { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
-.vs-card-state { flex: 0 0 auto; }
-.vs-scenes.is-client .vs-scene, .vs-scenes.is-client .crm-head.vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
-.vs-scenes.is-client.is-two .vs-scene, .vs-scenes.is-client.is-two .crm-head.vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr); }
-.vs-decide { margin: 0 -20px -18px; padding: 14px 20px 18px; display: grid; gap: 8px; }
-.vs-decide .changebox { margin-top: 0; }
-.vs-decide.is-requesting .approve-row { display: none; }
-.vs-decided { margin: 0; font-size: 13px; color: var(--ink-soft); }
-.vs-decide > .vs-note { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
-.vs-decide-msg:empty { display: none; }
+#vsContent { display: grid; gap: 32px; margin-top: 12px; }
+.vs-video { display: grid; gap: 12px; min-width: 0; }
+.vs-video-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.vs-video-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.vs-video > .panel { margin: 0; }
+.vs-card { display: grid; gap: 24px; padding: 18px 20px; }
+.vs-shot-msg { margin: 0; }
+.vs-shot-msg:empty { display: none; }
 @media (max-width: 640px) {
-  .vs-card { padding: 14px; }
-  .vs-decide { margin: 0 -14px -14px; padding: 12px 14px 14px; }
-  .vs-scenes.is-client.is-two .vs-scene { grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line"; gap: 4px 10px; }
-  .vs-scenes.is-client.is-two .vs-scene > .vs-n { grid-area: n; }
-  .vs-scenes.is-client.is-two .vs-scene > .vs-vis { grid-area: text; }
-  .vs-scenes.is-client.is-two .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
-  .vs-scenes.is-client .crm-head.vs-scene { display: none; }
+  .vs-card { padding: 14px; gap: 20px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

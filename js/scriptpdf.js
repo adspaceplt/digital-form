@@ -145,7 +145,7 @@
     var labW = 118, valW = (full - labW * 2) / 2;
     var header = function (group) {
       var v = group[0];
-      var nos = group.map(function (x) { return 'V' + x.video_no; }).join(', ');
+      var nos = group.map(function (x) { return x.code; }).join(', ');
       var L = function (t) { return { w: labW, text: t, head: true, f: fonts.bold, size: 9 }; };
       var V = function (t) { return { w: valW, text: t || '' }; };
       room(140);
@@ -162,7 +162,7 @@
 
     var vcW = 70, noW = 40;
     var video = function (v, many) {
-      var tag = many ? 'V' + v.video_no + ' ' : '';
+      var tag = many ? v.code + ' ' : '';
       room(60);
       line(tag + (v.kind === 'scenes' ? 'Title:' : 'Title/Theme:'), v.title || '');
       if (v.reference_url) line('Reference:', v.reference_url);
@@ -195,15 +195,15 @@
     var notes = function (group) {
       var many = group.length > 1;
       var parts = group.filter(function (v) { return (v.remarks || '').trim(); })
-        .map(function (v) { return (many ? 'V' + v.video_no + ': ' : '') + v.remarks; });
+        .map(function (v) { return (many ? v.code + ': ' : '') + v.remarks; });
       room(40);
       line('Notes / Remarks:', parts.join('\n') || '', 8);
     };
 
-    /* Videos of one shoot that share their kind and header read under one
+    /* Scripts of one month that share their kind and header read under one
        header table; any other starts its own page. */
     var key = function (v) {
-      return [v.series_id, v.kind, v.platform, v.language, v.when, v.venue, v.duration, v.cast_names].join('\u0001');
+      return [v.client_id, v.period, v.kind, v.platform, v.language, v.when, v.venue, v.duration, v.cast_names].join('\u0001');
     };
     var groups = [];
     videos.forEach(function (v) {

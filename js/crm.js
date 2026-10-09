@@ -1011,6 +1011,15 @@
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
     $('crmBrandEdit').hidden = !canWork;
+    /* Request feedback on WhatsApp (2026-10-09, js/whatsapp.js): where the
+       feedback template is on, at Clients Work. */
+    $('crmFeedback').hidden = true;
+    if (canWork && window.ADspaceWhatsApp) {
+      var fbFor = c.id;
+      window.ADspaceWhatsApp.on('feedback').then(function (yes) {
+        if (state.client && state.client.id === fbFor) $('crmFeedback').hidden = !yes;
+      });
+    }
     $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
@@ -1917,6 +1926,7 @@
         var a = it.getAttribute('data-a');
         if (a === 'delclient') { openClientDelete(); return; }
         if (a === 'take') { takeLead(state.client); return; }
+        if (a === 'feedback') { askFeedback(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);
@@ -1972,6 +1982,16 @@
 
   /* Take a lead nobody is in charge of: Person in charge becomes the person
      pressing, filed as any other edit of it. */
+  /* The feedback template to the client's main contact, asked first. */
+  function askFeedback(c) {
+    window.ADspaceConfirm.ask({ title: 'Request feedback?', go: 'Send',
+      body: 'The feedback message goes to ' + c.name + '\'s main contact on WhatsApp.' }, function () {
+      msg('crmWorkMsg', 'Sending…');
+      window.ADspaceWhatsApp.sendFeedback({ clientId: c.id }).then(function (d) {
+        msg('crmWorkMsg', 'Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.', 'ok');
+      }).catch(function (e) { msg('crmWorkMsg', window.ADspaceWhatsApp.said(e), 'err'); });
+    });
+  }
   function takeLead(c) {
     var me = bridge.me && bridge.me();
     if (!c || !me || !me.name) return;
