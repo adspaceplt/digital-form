@@ -3,9 +3,9 @@
  *
  * A client's monthly report is started, entered, checked and published here,
  * in its own section (`?s=reports`), so a colleague can prepare reports
- * without reading client records. The client record's Reports tab lists the
- * finished reports only (confirmed or published), the way its Documents tab
- * lists the letters.
+ * without reading client records. The client record lists a client's reports
+ * by content month on its Engagements pane (js/engage.js), and downloads a
+ * finished one through `clientFile` here.
  *
  * A report is entered in four steps: its figures, its rows (accounts and
  * posts, or ads), the commentary, then Check and submit. The steps and who
@@ -185,55 +185,26 @@
      report's client, read with the report. */
   var st = { host: null, client: null, open: null, platforms: [], posts: [], ads: [], busy: false, step: '' };
 
-  // ---- The client record's Reports tab: the finished reports only ------------
-  function clientPane(host, client) {
-    if (!host || !client) return;
-    var canOpen = may('view');
-    host.innerHTML = '<div class="viewhead rp-viewhead"><h3>Reports</h3>' +
-      (canOpen ? '<button class="btn btn-sm" type="button" data-a="hub">Open in Reports</button>' : '') +
-      '</div><div class="rp-outbox"></div><div class="msg" data-m="out"></div>';
-    var hubBtn = host.querySelector('[data-a="hub"]');
-    if (hubBtn) hubBtn.addEventListener('click', function () { goReport(''); });
-    var box = host.querySelector('.rp-outbox');
-    UI.skeleton(box, 2);
-    db.rpc('sm_client_reports', { p_client: client.id }).then(function (r) {
-      var d = r.data || {};
-      if (r.error || d.error) { UI.failLine(box, 'reports', said(r.error || d), function () { clientPane(host, client); }); return; }
-      var rows = d.reports || [];
-      if (!rows.length) { UI.emptyLine(box, 'No finished reports.'); return; }
-      box.innerHTML = '<div class="crm-table softpanel rp-out-table">' +
-        '<div class="crm-head rp-out-row"><span>Report</span><span>Status</span><span>Version</span><span></span></div>' +
-        rows.map(function (x) {
-          var live = x.live_version != null;
-          return '<div class="crm-row rp-out-row" data-id="' + esc(x.id) + '">' +
-            '<span class="rp-name"><b>' + esc(periodWord(x.period_start, x.period_end)) + '</b><small>' + esc(TYPE_WORD[x.kind] || '') + '</small></span>' +
-            '<span class="rp-state">' + chip(live ? 'published' : 'confirmed') + '</span>' +
-            '<span class="rp-ver">' + (live ? 'Version ' + x.live_version + ', ' + esc(stampWord(x.published_at))
-                                             : 'Version ' + x.version_no + ', not published') + '</span>' +
-            '<span class="rp-out-act"><button class="btn btn-sm" type="button" data-a="dl">' + ICON.file + 'Download</button></span></div>';
-        }).join('') + '</div>';
-      var m = host.querySelector('[data-m="out"]');
-      Array.prototype.forEach.call(box.querySelectorAll('[data-a="dl"]'), function (b) {
-        b.addEventListener('click', function () {
-          var id = b.closest('[data-id]').getAttribute('data-id');
-          var tab = window.ADspaceDocs.tabFor();
-          b.disabled = true; say(m, 'Drawing the PDF…');
-          db.rpc('sm_report_file', { p_id: id }).then(function (x) {
-            var got = x.data || {};
-            if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
-            if (got.snapshot.error) throw new Error(got.snapshot.error);
-            /* A published version: the file kept as it went out. */
-            if (!got.version_id) return saveFile(got.snapshot, tab);
-            return versionFile({ id: got.version_id, kept: got.kept === true }, client.id,
-              function () { return Promise.resolve(got.snapshot); }, SM() ? SM().fileName(got.snapshot) : 'Report.pdf')
-              .then(function (f) { return handOver(f, tab); });
-          }).then(function (warn) {
-            b.disabled = false;
-            say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
-          }).catch(function (e) { window.ADspaceDocs.shut(tab); b.disabled = false; say(m, said(e), 'err'); });
-        });
-      });
-    });
+  // ---- A finished report's file, for the client record --------------------------
+  /* The client record's Engagements pane (2026-10-10) lists a client's
+     reports by content month; a colleague at Clients View without Reports
+     reads the finished ones there (`sm_client_reports`) and downloads each
+     through this: the version the client reads, kept as it went out, else
+     the confirmed report drawn from its snapshot. Called at the press, so
+     the tab an iPhone saves into opens with it. Resolves with any warning
+     the engine raised; rejects with the refusal in the team's words. */
+  function clientFile(id, clientId) {
+    var tab = window.ADspaceDocs.tabFor();
+    return db.rpc('sm_report_file', { p_id: id }).then(function (x) {
+      var got = x.data || {};
+      if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
+      if (got.snapshot.error) throw new Error(got.snapshot.error);
+      /* A published version: the file kept as it went out. */
+      if (!got.version_id) return saveFile(got.snapshot, tab);
+      return versionFile({ id: got.version_id, kept: got.kept === true }, clientId,
+        function () { return Promise.resolve(got.snapshot); }, SM() ? SM().fileName(got.snapshot) : 'Report.pdf')
+        .then(function (f) { return handOver(f, tab); });
+    }).catch(function (e) { window.ADspaceDocs.shut(tab); throw new Error(said(e)); });
   }
 
   /* Draw a snapshot and hand the browser the file. Resolves with any warning
@@ -5135,7 +5106,7 @@
   }
 
   window.ADspaceReports = {
-    clientPane: clientPane, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows,
+    clientFile: clientFile, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows,
     openId: function () { return st.open && st.open.id ? st.open.id : ''; },
     /* The address while the section is open: the report, and the step where
        it is not the one the report would open on anyway. */
