@@ -11084,6 +11084,9 @@ button.vs-row { cursor: pointer; }
 .wat-name b { font-weight: 600; }
 .wat-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .wat-on { display: flex; align-items: center; }
+/* Standing alone in its cell (not a menu row), the switch is its own
+   target: the control's full height, the track centred in it. */
+.wat-on .switch { height: var(--ctl-h); }
 .wat-act { display: flex; justify-content: flex-end; }
 .wat-act .btn { flex: 0 0 auto; }
 .is-narrow .crm-head.wat-row { display: none; }
