@@ -4,7 +4,8 @@
  * Team: Notices (`team.notice`, granted: an admin's by itself, any other
  * group's once set) opens the list from the account menu: every notice sent,
  * newest first, whom it went to and how many have read it, with Withdraw
- * (asked; it leaves every bell) and Restore (never asks). New opens the
+ * (asked; it leaves every bell) and Restore (never asks); a withdrawn one's
+ * ⋯ holds Delete (asked, no restore). New opens the
  * second sheet: To (All colleagues, Selected colleagues), the colleagues
  * ticked, Title and Message.
  *
@@ -13,6 +14,7 @@
 (function () {
   var API = window.ADspaceAPI;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var TITLE_MAX = 120, BODY_MAX = 1000;
 
@@ -31,7 +33,8 @@
     'bad-title': 'Enter a title of 120 characters at most.',
     'bad-body': 'Enter a message of 1,000 characters at most.',
     'no-one': 'Choose at least one colleague.',
-    'not-found': 'That notice is no longer there.'
+    'not-found': 'That notice is no longer there.',
+    live: 'Withdraw the notice before it is deleted.'
   };
   function said(e) {
     if (!e) return 'Not sent.';
@@ -91,8 +94,14 @@
             '<p class="ann-meta">' + esc(['To ' + toWord(n), when(n.created_at), 'By ' + (n.sent_by_name || '')].join(' · ')) + '</p></div>' +
           '<div class="ann-ctl">' + (off ? '<span class="chip is-off">Withdrawn</span>'
             : '<span class="ntc-read">Read by ' + n.read + ' of ' + n.sent + '</span>') + '</div>' +
+          /* Withdraw is the soft remove; once withdrawn the row keeps
+             Restore, and its ⋯ holds Delete, which cannot be taken back. */
           '<div class="ann-acts">' + (off
-            ? '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>'
+            ? '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>' +
+              '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+                '<div class="kmenu" data-menu hidden role="menu">' +
+                  '<button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delete">Delete</button>' +
+                '</div></span>'
             : '<button class="btn btn-sm btn-warn" type="button" data-a="withdraw">Withdraw</button>') + '</div></div>';
       }).join('') + '</div>';
       Array.prototype.forEach.call(box.querySelectorAll('.ntc-row'), function (rw) {
@@ -104,8 +113,36 @@
         });
         var rs = rw.querySelector('[data-a="restore"]');
         if (rs) rs.addEventListener('click', function () { end(n, true); });
+        var mb = rw.querySelector('[data-a="menu"]'), mn = rw.querySelector('[data-menu]');
+        if (mb) mb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = mn.hidden;
+          shutMenus();
+          mn.hidden = !open;
+          mb.setAttribute('aria-expanded', String(open));
+          if (open) window.ADspaceMenu.place(mb, mn);
+        });
+        var dl = rw.querySelector('[data-a="delete"]');
+        if (dl) dl.addEventListener('click', function () {
+          shutMenus();
+          window.ADspaceConfirm.ask({ title: 'Delete this notice?',
+            body: '\u201c' + n.title + '\u201d is removed from every colleague\u2019s bell for good. There is no restore.',
+            go: 'Delete', tone: 'danger' }, function () { drop(n); });
+        });
       });
     }).catch(function (e) { if (S && S.failLine) S.failLine(box, 'Notices', said(e), load); });
+  }
+  function shutMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#ntcList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#ntcList [data-a="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function drop(n) {
+    db().rpc('team_notice_delete', { p_id: n.id }).then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) { msg(said(r.error || d.error), 'err'); return; }
+      msg('Deleted.', 'ok');
+      load();
+    }).catch(function (e) { msg(said(e), 'err'); });
   }
   function end(n, back) {
     db().rpc('team_notice_withdraw', { p_id: n.id, p_restore: back }).then(function (r) {

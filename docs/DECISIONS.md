@@ -1775,3 +1775,14 @@ CloudFront's own configuration is read and the pass is tested against it.
 A suite written for F6 and F7 (`tests/fileworker.js`, ten checks failing on
 main) found the console worker's own clean-up deleting every cache but its
 own whenever it updated; it now clears only the console's older stores.
+
+### 2026-10-10 · A withdrawn notice can be deleted
+
+The user, from the Notices list: "why notices cannot be deleted?" Notices were
+built with Withdraw and Restore alone; nothing decided against a delete, and
+announcements had gained one on the same question on 2026-10-07. A withdrawn
+notice's row now keeps Restore and gains a ⋯ holding Delete, asked with the
+notice named and no restore; `team_notice_delete` removes the notice and every
+colleague's copy, refuses one still live (Withdraw first, so nothing leaves a
+bell unseen), and files it under Notices. A push already on a phone stays.
+

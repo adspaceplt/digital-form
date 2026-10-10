@@ -484,7 +484,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   specific team member(s)"): Team: Notices (`team.notice`) on the Settings
   page opens the list (`#ntcSheet`: every notice sent, newest first, To,
   when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
-  push already on a phone stays) and Restore (never asks)) and New
+  push already on a phone stays) and Restore (never asks), and once
+  withdrawn the row's ⋯ Delete (asked, no restore; `team_notice_delete`,
+  refused `live` until withdrawn, the notice and every copy;
+  `2026-10-10-notice-delete.sql`, run in the SQL Editor)) and New
   (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
   colleagues ticked code first, Title (one line, 120) and Message (1,000),
   the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
