@@ -340,10 +340,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
   it; five or fewer with no Activity record take the bar whole. More lists
-  only what the bar does not (`.is-tabbed`), then its foot as one line of
-  marks named for a screen reader (Arrange sections, Settings, the Activity
-  record; the user, 2026-10-10: "just use icons") with the build at its
-  right end. The
+  only what the bar does not (`.is-tabbed`), then the rail's foot. The
+  rail's foot, at a desk as under the bar, is one line of marks named for a
+  screen reader and on hover (Arrange sections, Settings, the Activity
+  record; the user, 2026-10-10: "just use icons"), the build under them at a
+  desk and at the line's right end under the bar. The
   menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; a sheet covers it; a field taking the

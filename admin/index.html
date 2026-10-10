@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010zf">
+<link rel="stylesheet" href="/css/portal.css?v=20261010zh">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -250,15 +250,15 @@
     <div class="sidebar-foot">
       <!-- Arrange sections (2026-10-10): the colleague's own order of the
            rail, which the phone tab bar follows. -->
-      <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" hidden>
+      <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" title="Arrange sections" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg><span>Arrange sections</span>
       </button>
       <!-- Settings (js/settings.js, 2026-10-10): what changes the portal for
            everybody, for the colleagues holding one of its parts. -->
-      <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" hidden>
+      <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span>
       </button>
-      <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" hidden>
+      <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
       </button>
       <!-- The build this console is running, from /version.json. -->
