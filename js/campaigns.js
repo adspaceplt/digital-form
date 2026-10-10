@@ -1605,21 +1605,26 @@
     play:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 12 7-12 7z"/></svg>'
   };
   function publishMove(s) {
+    /* A closed selection with a slot free is reopened by the team, whatever
+       the campaign's state: every booking reverted puts the campaign back to
+       Open with the selection still closed, and the client's page then hid
+       every creator with no way back on this screen (the user, 2026-10-10). */
+    var cc = state.campaign;
+    if ((s === 'open' || s === 'production') && cc && cc.selection_closed_at && freeSlots(cc)) {
+      var n = freeSlots(cc);
+      return { to: 'open', reopen: true, label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
+        ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
+          body: 'The client can choose ' + n + (n === 1 ? ' more creator' : ' more creators') +
+            '. Bookings already in production are kept.' } };
+    }
     if (s === 'draft')      return { to: 'open',  label: 'Publish', cls: 'btn-go', icon: STATE_ICON.send };
     if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
       ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
         body: 'The client link stops working until this is published again. Selections are kept.' } };
     /* In production the client keeps choosing while a slot is free; once the
        slots have filled, a slot freed later is offered again only here. */
-    if (s === 'production') {
-      var c = state.campaign;
-      if (!selectionClosed(c) || !freeSlots(c)) return null;
-      var n = freeSlots(c);
-      return { to: 'open', reopen: true, label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
-        ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
-          body: 'The client can choose ' + n + (n === 1 ? ' more creator' : ' more creators') +
-            '. Bookings already in production are kept.' } };
-    }
+    // In production with nothing to reopen: no move.
+    if (s === 'production') return null;
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
       ask: { title: 'Resume the campaign', go: 'Resume',
         body: 'Selection closes and the bookings go back into production.' } };

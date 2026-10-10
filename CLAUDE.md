@@ -1982,7 +1982,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Publish share a line.
 - The client's selection closes by trigger the moment the bookings fill the
   slots (`campaigns.selection_closed_at`); only Reopen selection clears it,
-  offered only while closed with a free slot. While closed, `save_selection`
+  offered only while closed with a free slot, whether the campaign is Open
+  or In production (every booking reverted puts it back to Open, still
+  closed; 2026-10-10). While closed, `save_selection`
   and `confirm_selection` refuse (`closed`), except backups where opened and
   every slot is taken. The Creators tab folds options and backups under Not
   selected (`#campUnpicked`) while closed.
