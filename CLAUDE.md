@@ -159,6 +159,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
+| `supabase/functions/brand-analysis/`, the Brand pane's analysis, the BRAND ANALYSIS section | analysis, smsql, caption, crm, then `ui` |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
 | the Short Links route | qr, run |
@@ -1224,6 +1225,35 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client.brand` by the parts' names. Write with AI reads it and the brand
   notes for captions and scripts, masked as the rest (`{brand}`,
   `{handle}`); never a competitor named back.
+- Brand analysis (`2026-10-10-brand-analysis.sql`, `brand-analysis`; the
+  user, 2026-10-10: "deep analysis of this clients … target audiences,
+  SWOTs, advantages disadvantages, ads targetting"; "anyone could run it"):
+  the Brand pane's last read group (`#crmAnalysis`), Run analysis then Run
+  again (the AI mark; asks first: what it reads, analyses left today, notes
+  kept under `adspace-analysis-notes:{client id}`), for any colleague at
+  Clients View on a client in scope. It reads as the caller the record
+  (brief, notes, services), published reports, My Work's post results and,
+  where `meta_checks_on()` and the client links Meta, six months of
+  Instagram and Facebook posts, Instagram followers by age, gender and city
+  and the ad accounts by objective and age, with Claude's web search
+  (`web_search_20260209`, eight at most) on the brand's own pages and its
+  competitors'; sections Brand positioning, Target audiences, SWOT,
+  Content, Ad targeting, Sources (pages the search returned only), "A
+  starting hypothesis to test" where the client has no reports, results or
+  Meta posts. **The brand name goes to Claude for this function alone (the
+  user, 2026-10-10, for the web research); never a contact, and an email or
+  number typed into the words is masked.** `brand_analyses` (RLS on, no
+  policy, no grant) keeps every run as the next version
+  (`brand_analysis_save`, filed `client.brand`), listed newest first with
+  who ran it (`brand_analyses_list`); a draft until Confirm asks the AI
+  declaration (`brand_analysis_confirm`, Undo, then Withdraw confirmation in
+  the ⋯). Only the latest confirmed one reaches Write with AI
+  (`brand_analysis_brief`: positioning, audiences' pains and motivations,
+  pillars) for captions, scripts and report drafts, masked as the rest.
+  Counted apart (`ai_analysis_claim`: `analysis` 3, `analysis_admin` 10),
+  its web searches kept (`ai_drafts.web_searches`) and priced at
+  `ai_price_search` (US$10 a thousand, a Business setting). The response is
+  streamed with a space every 8 seconds while it runs (140 seconds at most).
 - A restricted account (`2026-10-10-account-restricted.sql`; the user: "account
   restricted"): `clients.restricted_platform` (Instagram, Facebook, TikTok,
   rednote, Other account), `restricted_since` and `restricted_note`, all or
@@ -3247,7 +3277,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     count (`ai_drafts.purpose` `caption`, with `batch_id`): `caption` (20)
     a colleague's a day and `caption_admin` (40) an admin's, settings in
     `ai_draft_limits` read by `ai_caption_claim` / `ai_caption_left`, never
-    counted in the day's report uses. Scripts (Video Scripts' Write script,
+    counted in the day's report uses. Brand analyses (2026-10-10) are their
+    own count too (`analysis` 3, `analysis_admin` 10, `purpose`
+    `analysis`), listed under Brand analyses today and priced with their web
+    searches. Scripts (Video Scripts' Write script,
     2026-10-09) are a count of their own the same way (`script` 10,
     `script_admin` 20, `ai_drafts.script_id`); the reports' limits count
     drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
@@ -4012,7 +4045,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).

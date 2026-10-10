@@ -200,6 +200,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (`is-danger` red on the item itself) |
 | An act with a consequence | `ADspaceConfirm` sheet (`.askcard`, 440px); a field may be a tick (`.tickline`) or a segment (`seg`) |
 | A caption written by AI | `.capwrite`: Write with AI (the AI mark first), `.btn-sm` at its own width under the caption field, its question an `ADspaceConfirm` sheet, its answer or refusal one `.msg.capmsg` line under it, Undo where it happened |
+| An AI analysis read first (a client's Brand analysis) | `.readgroup.ba`: the head's acts at the right (`.ba-acts`: blue Confirm while a draft, then Run analysis / Run again with the AI mark, a ⋯ once confirmed), State, Version and Read from as `.ovfacts`, a section a question (`.ba-sec`, its `fsec-h`, points as `.ba-list`), sources as `.plink`s, other versions as `.linkbtn`s; a line of parts holds each part whole (`.ba-part`) |
 | One value | `ADspaceAsk` rename / inline / note |
 | Add or edit a record | A sheet: `.sheet` > `.sheet-card.formsheet` (620px; 780 for a picker) with a head and close mark, a scrolling `.sheet-body`, and `.sheet-foot` |
 | A form of more than five fields | `section.fsec` > `h4.fsec-h` (13/600 ink), 2 to 5 fields each, divided by a `--line-soft` hairline and a 24px step |
