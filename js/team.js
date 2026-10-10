@@ -62,6 +62,13 @@
   var LEVEL_WORD = { view: 'View', work: 'Manage', manage: 'Full Access' };
   var SCOPE_WORD = { all: 'All clients', own: 'Own clients only' };
   function readScope() { var el = document.getElementById('grScope'); return el && el.value === 'own' ? 'own' : 'all'; }
+  var SCOPE_CLASH = 'Own clients only cannot be given with the Activity record, which shows every client. Set the Activity record to No Access, or choose All clients.';
+  function scopeClash(access, scope, admin) {
+    if (scope !== 'own' || admin) return false;
+    return Object.keys(access || {}).some(function (k) {
+      return (k === 'activity' || k.indexOf('activity.') === 0) && access[k] && access[k] !== 'none';
+    });
+  }
 
   /* Each section offers the levels that mean something in it. The activity
      record is a log, so it is read or not read; administering the team is one
@@ -771,7 +778,7 @@
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
     db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
-      if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
+      if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); load(); return; }
       if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
@@ -1256,6 +1263,10 @@
     // Only an exception is stored; Same as section is the absence of a key,
     // and so is a part set to exactly what its section already gives.
     var access = readAccess();
+    /* The Activity record is not scoped, so a group seeing only its own
+       clients holds none of it (the database's `team_roles_scope_guard`). */
+    var admin = 'is_admin' in flags ? flags.is_admin : Boolean(state.editing && state.editing.is_admin);
+    if (scopeClash(access, readScope(), admin)) { msg('grMsg', SCOPE_CLASH, 'err'); return; }
     if (state.editing) {
       var r = state.editing;
       var patch = {};
@@ -1273,7 +1284,7 @@
     var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope() };
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
-      if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
+      if (q.error) { msg('grMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); return; }
       log('team.group_added', name, '');
       shutGroupBox();
       msg('groupMsg', name + ' added.', 'ok');

@@ -1925,14 +1925,13 @@
           '. This is immediate and cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
       }, function (v) {
-        var name = c.name;
         return db.rpc('delete_client', { p_client: c.id, p_code: codeNeeded ? v.code : null }).then(function (r) {
           if (r.error) return r.error.message;
           var out = r.data;
           if (out === 'wrong-code') return 'That delete code is not right.';
           if (out === 'not-found') return 'That client is no longer there.';
           if (out !== 'deleted') return String(out || 'Unable to delete.');
-          log('client.deleted', name, '');
+          /* `delete_client` files the deletion itself (audit R1). */
           state.client = null;
           showList();
           return '';

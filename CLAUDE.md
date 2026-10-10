@@ -147,8 +147,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
-| `team.js` | team, perms, levels, card, scope, perfui, viewonly |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql |
+| `team.js` | team, perms, levels, card, scope, perfui, viewonly, lettersql |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
@@ -1032,7 +1032,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
     the admin tools for every group, read only.
   - Clients they see (`#grScope`, All clients / Own clients only) sits in the
-    Clients fold; Own makes the preset Custom.
+    Clients fold; Own makes the preset Custom. Own clients only is never
+    given with any Activity record access, a section or a tab (the record is
+    not scoped): the sheet refuses it and trigger `team_roles_scope_guard`
+    (`scope-activity`) holds it for every group but an admin's
+    (`2026-10-10-letters-held-to-their-lines.sql`).
   - No preset below Admin opens Team, HR letters or performance reviews.
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
   Members, Performance and Health (`tab=health`, `team.health` alone); the
@@ -1437,7 +1441,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Delete client:
   - in the record's ⋯, as a sheet counting from the loaded record;
   - the name typed back, plus the delete code where `delete_code_set()`;
-  - `delete_client` re-checks at the press.
+  - `delete_client` re-checks at the press and files `client.deleted`
+    itself, in the transaction that deletes (audit R1); the page files
+    nothing.
   - Paused and Past are the everyday exits.
 - Person in charge (`owner` holds a name as text):
   - Changed from one colleague to another only at Clients Full Access, or by
@@ -1496,7 +1502,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Only To quote lines.
   - Priced by the month when every line shares a term ("Payable monthly"; the
     commitment stated in TERMS). Otherwise Total.
-  - `priceOf()` computes the snapshot and the drawing.
+  - `priceOf()` computes the snapshot and the drawing. `issue_letter` works
+    the same price from the stored lines (the term's rate rounded to the
+    cent, by the month where every line shares a term, SST at today's rate
+    unless exempt) and keeps the page's figures only within a sen, else
+    refuses `stale` with its own (audit S4, 2026-10-10).
+  - `verify_letter` confirms only the lines as printed: a line removed since
+    (`archived-line`) or one whose quantity, rate, term or adjustment moved
+    since the letter (`changed-terms`) is refused, and the letter reissued.
+  - `client_documents` keeps its read policy alone: every write is a letter
+    or register function.
   - `legalName` is resolved once.
   - Every line wraps.
 - Letter layout:

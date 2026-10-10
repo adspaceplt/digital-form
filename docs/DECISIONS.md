@@ -1880,3 +1880,23 @@ Access; before approval Remove and Delete work as before). A request is
 written only over the request as it was read. The guard trigger runs as the
 caller: a security definer trigger sees its owner as `current_user`, so it
 could never tell a page's write from a function's.
+
+### 2026-10-10 · Letters held to their lines
+
+The audit's fourth batch (S2, S4, R1). A Letter of Offer's totals were the
+browser's: the database stored what the page sent, so a page could print one
+figure and file another, and a line repriced while the sheet was open went
+out at the old price. `issue_letter` now works the price from the stored
+lines by the letter's own rule and keeps the page's figures only within a
+sen (the browser's rounding), refusing anything further with its own. A
+letter could also be verified after a line it printed was repriced or
+removed, confirming terms the client never signed; `verify_letter` now
+refuses both and the letter is reissued. `delete_client` left its record to
+the page after the answer, so a lost reply left none; it files the deletion
+itself. `client_documents` kept insert, update and delete policies no page
+used; only the read stays.
+
+The Activity record is not scoped by client, so the user's rule until it is:
+a group seeing its own clients only holds no Activity access, refused in the
+Team panel and by a trigger. Offboarding a colleague, a client's contact and
+a client is written down in docs/OFFBOARDING.md.

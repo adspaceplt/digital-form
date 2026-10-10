@@ -565,11 +565,6 @@ section holds only what is true of the project as a whole.
 ### Open security findings
 - From the audit of 2026-10-10 (the user's decisions recorded; each is
   closed by its batch and the entry removed then):
-  - S2: direct write policies no page uses. S4: totals taken from the
-    browser, and a letter verified after its terms changed. R1:
-    `delete_client` logged by the browser after the delete. The Team panel
-    must refuse Own clients only together with any Activity access until
-    the Activity record is scoped. Batch 4.
   - F3: the media pass opens every file under `content/`, so a file name is
     the only boundary; a pass per client follows (CloudFront's `content/*`
     behaviour is restricted and refuses a direct or encoded address, read
@@ -620,7 +615,8 @@ section holds only what is true of the project as a whole.
     (`docs/S3-STORAGE.md` §6b done by the user).
   - The ALP checklists as forms.
 - Access: client scope (built 2026-10-03) leaves the Activity record
-  unscoped.
+  unscoped, so a group seeing its own clients only holds no Activity access
+  (refused by the Team panel and the database, 2026-10-10).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
   references only: not briefs, notes, comments or a document's body.
 - Performance rewards are worked out and confirmed in the portal; the
