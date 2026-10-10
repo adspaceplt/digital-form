@@ -106,6 +106,10 @@
       db.functions.invoke('media-pass', { body: proof }).then(function (r) {
         var d = r && r.data;
         var passes = d && d.passes;
+        /* The function before passes per folder answered one pass over the
+           whole of content/ on the root; it is set as it always was, so a
+           page served before the function is deployed keeps its media. */
+        if (d && !passes && d.signature) passes = [{ path: '/', policy: d.policy, signature: d.signature }];
         if (!r || r.error || !d || d.off || !passes || !passes.length) { resolve(false); return; }
         var age = Math.max(60, d.expires - Math.floor(Date.now() / 1000));
         /* A pass for the whole of content/ left on the root by an earlier
@@ -115,7 +119,7 @@
         }
         passes.forEach(function (x) {
           // Only a folder under content/, never another path on adspace.me.
-          if (!/^\/content\/((creator\/)?[A-Za-z0-9-]{1,64}\/)?$/.test(String(x.path || ''))) return;
+          if (x.path !== '/' && !/^\/content\/((creator\/)?[A-Za-z0-9-]{1,64}\/)?$/.test(String(x.path || ''))) return;
           put('CloudFront-Policy', x.policy, age, x.path);
           put('CloudFront-Signature', x.signature, age, x.path);
           put('CloudFront-Key-Pair-Id', d.keyPairId, age, x.path);

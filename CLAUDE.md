@@ -92,14 +92,32 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
-  - Run only the suites the change touched (the tiers below), before the
-    merge as well. A batch never waits on `all` (the user, 2026-10-09: a
-    test that grew from 15 minutes to 90): a shared script, the stand-in or
-    a schema change runs the suites that call what changed (`grep -l` over
-    `tests/` for the function, table or id) plus `ui`, and `all` runs once
-    a day, after the day's merges, its findings the next batch. Never a
-    full gate for a style, a copy or a one-screen fix (the user,
-    2026-09-28: a full gate for one border wastes their credits).
+  - Proportionate testing (the user, 2026-10-10): while building, the
+    changed behaviour's suites and what depends on it; before release, the
+    required regression coverage (the tiers below) against the final
+    candidate; after a fix, the failed and affected suites again, and the
+    whole gate again only where the fix invalidates its broader results. A
+    shared script, the stand-in or a schema change runs the suites that
+    call what changed (`grep -l` over `tests/` for the function, table or
+    id). `all` runs once a day, after the day's merges, its findings the
+    next batch, and never stands in for a release's own checks. Never
+    weaken an assertion or change an expectation merely to pass.
+  - Visual checks follow rendered impact, never every gate by default:
+    SQL or backend alone takes functional, database and authorization
+    suites and no layout walk; copy, markup a script draws, visibility, an
+    error or an interaction state takes screenshots of the touched screens
+    and the suites that walk them; shared layout, navigation, CSS or a
+    component takes `ui` (uxaudit and matrix). The report names the checks
+    chosen and why any was left out.
+  - uxaudit and matrix run side by side only where their browser
+    profiles, mutable fixtures, output files and server are shown to be
+    their own; both exit codes are read and either failing fails the gate;
+    else they run one after the other. A run stops only the processes it
+    started, never a server it did not.
+  - Evidence: every result names the application commit, the tests commit
+    and the configuration. A result is reused only where nothing since
+    touches what it covers, said in one line. Mocked suites prove nothing
+    about the live database, the CDN or a physical device.
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
@@ -127,11 +145,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 |---|---|
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
-| CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui`; `all` once a day after the merges |
+| Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
+| Shared layout, navigation, `css/portal.css`, a component | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change) |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui` where what it draws changed; `all` once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a merge | The union of the rows above for everything in the batch; never `all` |
+| Before a release | The union of the rows above for everything in it, against the final candidate; never `all` |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
@@ -223,7 +242,7 @@ added to all three in the same push.
   only. The report names what became configurable.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
-  carries one.
+  carries one, never inside `.claude/` (agents' worktrees live there).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
@@ -646,7 +665,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   drafts alone, a client's contact each client they hold access at, a
   colleague the whole of `content/` (path `/content/`). A client page's pass
   takes away a root pass left by an earlier page, and is fresh only for the
-  proof it was asked with (`adspace-media-for`). A file under `content/` that fails asks
+  proof it was asked with (`adspace-media-for`). An answer in the earlier
+  shape (one pass over `content/`, no `passes`) is set on the root as before,
+  so a page served before `media-pass` is deployed keeps its media. A file under `content/` that fails asks
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.
@@ -4234,7 +4255,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 ## 3. Workflow and constraints
 
 ### Git and delivery
-- Branch `cl/exciting-mayer-fvg0dc`; one PR per batch, squash-merged by Claude.
+- Branch `cl/exciting-mayer-fvg0dc`; squash-merged by Claude. Releases are
+  grouped by risk (the user, 2026-10-10): related batches share one PR and
+  one deploy where the combined diff, the migration sequence and the
+  rollback stay understandable; unrelated or independently risky changes
+  go apart.
+- A release with a migration or a function states its order (pages,
+  each migration, each function), what an old open tab meets at every
+  intermediate state, what a failed step leaves and which steps reverse.
+  No order is assumed safe. The full schema file is never run on
+  production.
 - After a merge, reset the branch onto `origin/main`
   (`git checkout -B … origin/main`, force-with-lease push). Never stack on
   merged history.
@@ -4247,10 +4277,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
 - A migration is applied by Claude through the Supabase connector (project
-  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), once the merge's Pages
-  deploy has succeeded (the page must stop asking before the database stops
-  answering), and verified on the live database afterwards. The report
-  names what was applied.
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), in the order the release
+  states (commonly after the Pages deploy, so the page stops asking before
+  the database stops answering), and verified on the live database
+  afterwards. The report names what was applied.
   - The connector holds any statement holding `drop` or `delete` (a function
     body included) for a confirmation it cannot show, and times out: apply
     the rest in small `execute_sql` pieces (`create or replace trigger`, a
