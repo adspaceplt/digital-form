@@ -2495,6 +2495,19 @@ body.is-plain .topbar { background: var(--chrome); }
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
 }
+/* The client pages keep their glass under a finger (the user, 2026-10-10:
+   "a bit of glass feel"). The canvas behind the status bar is painted white
+   (the root's own background; the body keeps the grey page over the whole
+   window), so Safari, passing over a translucent bar, takes white rather
+   than the grey band. Confirmed on an iPhone, since Safari cannot run in the
+   sandbox. The console keeps its solid head. */
+@media (pointer: coarse) {
+  :root[data-face="client"] { background: var(--card); }
+  :root[data-face="client"] .topbar {
+    background: var(--chrome);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  }
+}
 /* The page label is what gives way when the bar runs out of room, never the
    controls: it clips to an ellipsis rather than pushing a target under 44px. */
 /* It is a control, because the section's name is what explains the section:

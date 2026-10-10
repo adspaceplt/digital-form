@@ -1474,3 +1474,14 @@ account menu when Settings took Upgrade mode, Announcements and Notices.
 It is now the Settings page's WhatsApp card (Templates and recent messages,
 Open, `team.settings`), opening the same sheet; the account menu holds no
 WhatsApp item.
+
+### 2026-10-10 · Client pages keep their glass on a phone
+The user: "The client facing sites header is no longer translucent? Abit of
+glass feel". At a desk it still was; under a finger every bar had been opaque
+since 2026-09-26, because iPhone Safari takes the status bar's colour from
+an opaque bar and, passing over a translucent one, showed the grey page as
+a band. The client pages' bar is glass under a finger again, and their root
+is painted white (the body keeps the grey page over the whole window), so
+Safari passing over the glass should take white. Not measurable in the
+sandbox: the user confirms on an iPhone, and the band returning reverts it.
+The console's head stays solid.

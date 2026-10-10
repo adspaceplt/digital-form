@@ -321,9 +321,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   keeps pinch).
   - Never on Android.
   - Never `user-scalable=no`.
-- Under a coarse pointer `.console-head` and `.topbar` take `--chrome-solid`
-  with no backdrop filter, because Safari colours the status bar from an opaque
-  bar. The `theme-color` meta follows the console's own theme (the head script
+- Under a coarse pointer `.console-head` takes `--chrome-solid` with no
+  backdrop filter, because Safari colours the status bar from an opaque bar.
+  A client page's `.topbar` keeps its glass there (2026-10-10), the root
+  painted `--card` so the status bar takes white, never the grey page. The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;

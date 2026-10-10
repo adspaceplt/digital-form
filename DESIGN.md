@@ -46,7 +46,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
-| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
+| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
