@@ -1882,16 +1882,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     the decision) and leaves the list below while it waits; each booking is
     numbered, never a photo (the user, 2026-10-07), the numbers carrying on
     through Available creators, with its six steps by name (a Submitted draft
-    is the client's Draft step); the results lead with one figure (views,
-    else impressions), then impressions, engagements, engagement rate and per
-    engagement, the top post where more than one is live, and a booking's
-    own results table is not drawn while it is the campaign's one live post.
-  - A live booking reads View post on {platform} (`.postlink`, one button a
-    platform; 查看小红书笔记 in Chinese), each the card's full width on a
-    phone, one or several. The results table appears only with
-    figures, and dates each post only where they went out on different
-    days (then the card's own Posted leaves). The approval line leaves once
-    the post is out.
+    is the client's Draft step; none once Completed, 2026-10-10); the results
+    lead with one figure (views, else impressions), then impressions,
+    engagements, engagement rate and per engagement, and the top post where
+    more than one is live.
+  - Each live post on a booking reads as the Top post does (`postRows`,
+    `.cx-post-item`; the user, 2026-10-10): the booking's picture, the
+    platform and its day, views (else impressions) and engagements as glyphs
+    named for a screen reader, Measured {day}, and View post on {platform}
+    (`.postlink`; 查看小红书笔记 in Chinese) at the row's right edge at a
+    desk, the card's full width on a phone. Never a results table. The
+    campaign's one live post keeps its figures in the results card alone.
+    The card's Posted and Posting on facts leave once a post row says them;
+    the approval line leaves once the post is out.
   - A draft is decided on the card (`draftPreview`).
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.

@@ -3578,53 +3578,12 @@ body.is-plain .topbar { background: var(--chrome); }
    shape and the tones are stated once, up by `.chip`. */
 .booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
 
-/* Results as a table: one row per platform, the post link in the first
-   column, the date the numbers were taken beside the numbers. */
-.results-wrap { margin-top: 12px; overflow-x: auto; }
-.results { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.results th {
-  text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-soft);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute); white-space: nowrap;
-}
-.results td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); white-space: nowrap; }
-.results tr:last-child td { border-bottom: 0; }
-.results th:last-child, .results td:last-child { padding-right: 0; }
-.results .num { text-align: right; font-variant-numeric: tabular-nums; }
-.results-plat { font-weight: 600; color: var(--ink); }
-/* The live post, one button a platform, named for where it opens (the user,
-   2026-09-27: the platform's name alone in a table was "too not obvious").
-   Each keeps its own width and they wrap; the mark says it leaves the page. */
-.postlinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* A live post's button (`.postlink`, inside `.cx-post-item`), named for
+   where it opens (the user, 2026-09-27: the platform's name alone was "too
+   not obvious"); the mark says it leaves the page. On a phone it runs the
+   card's width (`.cx-postbtn`), every card alike. */
 .postlink { gap: 7px; }
 .postlink svg { width: 13px; height: 13px; flex: 0 0 auto; opacity: .7; }
-/* On a phone every post button runs the card's width, each on its line, one
-   or several: a lone one kept its own width and read as a different button
-   from the card beside it (the user, 2026-09-27: "Why are the buttons
-   different"). */
-@media (max-width: 640px) {
-  .postlinks > .postlink { flex: 1 1 100%; justify-content: center; }
-}
-/* On a phone the table becomes one block per platform: the link on top, the
-   figures two abreast under their labels. Nothing scrolls sideways. */
-@media (max-width: 640px) {
-  .results-wrap { overflow: visible; }
-  .results thead { display: none; }
-  .results, .results tbody { display: block; }
-  .results tr {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px;
-    padding: 10px 0; border-bottom: 1px solid var(--line-soft);
-  }
-  .results tr:last-child { border-bottom: 0; }
-  .results td { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; white-space: normal; }
-  .results td::before {
-    content: attr(data-l); font-size: 12px; font-weight: 600; letter-spacing: 0;
-    color: var(--ink-mute);
-  }
-  .results td:first-child { grid-column: 1 / -1; }
-  .results td:first-child::before { display: none; }
-  .results .num { text-align: left; }
-}
 /* One placement's results on the Results step, a hairline between two. */
 .postrow + .postrow { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 12px; }
 .postrow-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
@@ -10715,6 +10674,17 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .cx-plat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
 .cx-mini { display: flex; gap: 14px; font-size: 13px; color: var(--ink-soft); }
 .cx-mini > span { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+/* Each live post on a booking's card reads as the Top post does
+   (2026-10-10), one under another with a hairline between. */
+.cx-posts { display: grid; gap: 12px; margin-top: 12px; }
+.cx-post-item + .cx-post-item { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.cx-measured { font-size: 12px; color: var(--ink-mute); }
+/* At a desk the post's button stands at the row's right edge, beside what
+   it opens; on a phone it runs the card's width under it. */
+@media (min-width: 641px) {
+  .cx-post-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+  .cx-post-item .cx-post-row { margin-bottom: 0; }
+}
 .cx-postbtn { gap: 7px; }
 .cx-postbtn svg { width: 13px; height: 13px; opacity: .7; }
 @media (max-width: 640px) {

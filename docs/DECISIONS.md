@@ -1485,3 +1485,15 @@ is painted white (the body keeps the grey page over the whole window), so
 Safari passing over the glass should take white. Not measurable in the
 sandbox: the user confirms on an iPhone, and the band returning reverts it.
 The console's head stays solid.
+
+### 2026-10-10 · Every creator's post reads as the Top post
+The user, from the campaign room on a phone: "I like this view possible to
+enhance for the all creators … way better for clients to view the results",
+then "once completed the progress bar got not much usage". Each live post
+on a booking now reads as the Top post card does: the booking's picture,
+the platform and its day, views (else impressions) and engagements as
+glyphs, when they were measured, and the button to the post. The per-booking
+results table (Measured, Impressions, Engagements, Views as labelled cells)
+is gone, with its styles. The card's Posted and Posting on facts leave once
+a post row states them, and a completed booking draws no step track: every
+step is behind it and its Completed chip says so.
