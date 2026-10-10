@@ -229,6 +229,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
 | Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab the `--line-soft` fill behind its glyph and its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. More opens the rail as a card above the bar (`--raised`, `--line-lift` top edge, the large corner), holding only the sections the bar does not; a sheet covers the bar |
+| A colleague's own order of the sections | `#railSheet` (Arrange sections, `js/admin.js`): a `.formsheet` of the rail's groups, each an `.fsec` list of `.ro-row`s (the rail glyph, the name, a grey `Tab bar` chip where the phone's bar will hold it, the grip as an icon button at the right edge, 44px under a finger); the row in hand takes `--sunk`; Save, Reset order, Cancel in the foot. The rail and the tab bar follow it |
 | What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen`, a `.railfoot` row above the Activity record: one `ADspaceGroup.section` card a group, a `.set-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch`, Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
 | Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet, as its own shaded block after the question's fields (`.askentry.is-declare`: the AI mark and the line naming the person's responsibility, then a `.tickline` that refuses until ticked), never run on into the question's words. Never asked of words typed by hand |
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), Sign out; what changes the portal for everybody is the Settings page, never the menu. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
@@ -618,9 +619,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   a group that manages a section (`CLAUDE.md`).
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
-  - **Work**: My Work, Clients, WhatsApp, Content Review, Video Scripts,
-    Creator Campaigns, Reports (the user, 2026-10-09: reports are client
-    work).
+  - **Work**: My Work, Clients, Content Review, Video Scripts, Creator
+    Campaigns, Reports, WhatsApp (the user, 2026-10-09: reports are client
+    work; 2026-10-10: WhatsApp last). A colleague may arrange their own
+    order within each chunk (Arrange sections), which the tab bar follows;
+    everything else keeps this one.
   - **Internal**: Documents, Short Links, Services, Team, Handbook.
   - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
     not a section).

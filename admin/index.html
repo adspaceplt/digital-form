@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010zd">
+<link rel="stylesheet" href="/css/portal.css?v=20261010ze">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -81,7 +81,7 @@
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261010zc"></script>
 <script src="/js/notice.js?v=20261009c"></script>
-<script src="/js/whatsapp.js?v=20261010zd"></script>
+<script src="/js/whatsapp.js?v=20261010ze"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261010zc"></script>
 <script src="/js/media.js?v=20261003b"></script>
@@ -196,12 +196,6 @@
         <button class="navitem" data-section="clients" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
         </button>
-        <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
-             sent with Meta's delivery status, the composer, and the
-             templates. After Clients, whose contacts it messages. -->
-        <button class="navitem" data-section="whatsapp" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>WhatsApp</span>
-        </button>
         <button class="navitem" data-section="review" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
         </button>
@@ -215,6 +209,12 @@
              started: the report type, the client, the month. -->
         <button class="navitem" data-section="reports" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
+        </button>
+        <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
+             sent with Meta's delivery status, the composer, and the
+             templates. Last in Work (the user, 2026-10-10). -->
+        <button class="navitem" data-section="whatsapp" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>WhatsApp</span>
         </button>
       </div>
       <div class="navgroup">
@@ -248,6 +248,11 @@
          a *section*: that class carries wiring, and borrowing it for the
          shape alone broke the console for everybody who is not an admin. -->
     <div class="sidebar-foot">
+      <!-- Arrange sections (2026-10-10): the colleague's own order of the
+           rail, which the phone tab bar follows. -->
+      <button class="railrow railfoot" id="railEdit" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg><span>Arrange sections</span>
+      </button>
       <!-- Settings (js/settings.js, 2026-10-10): what changes the portal for
            everybody, for the colleagues holding one of its parts. -->
       <button class="railrow railfoot" id="settingsOpen" type="button" hidden>
@@ -4827,12 +4832,12 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="acttab btn-sm is-on" data-af="all" type="button" aria-pressed="true">Everything</button>
       <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
       <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
-      <button class="acttab btn-sm" data-af="whatsapp" data-need="activity.whatsapp:view" type="button" aria-pressed="false">WhatsApp</button>
       <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
       <button class="acttab btn-sm" data-af="scripts" data-need="activity.scripts:view" type="button" aria-pressed="false">Video Scripts</button>
       <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
-      <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
       <button class="acttab btn-sm" data-af="reports" data-need="activity.reports:view" type="button" aria-pressed="false">Reports</button>
+      <button class="acttab btn-sm" data-af="whatsapp" data-need="activity.whatsapp:view" type="button" aria-pressed="false">WhatsApp</button>
+      <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
       <button class="acttab btn-sm" data-af="links" data-need="activity.links:view" type="button" aria-pressed="false">Short Links</button>
       <button class="acttab btn-sm" data-af="services" data-need="activity.services:view" type="button" aria-pressed="false">Services</button>
       <button class="acttab btn-sm" data-af="team" data-need="activity.team:view" type="button" aria-pressed="false">Team</button>
@@ -5207,7 +5212,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261010zc"></script>
+<script src="/js/admin.js?v=20261010ze"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
@@ -5216,7 +5221,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/crm.js?v=20261010zc"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261010zc"></script>
+<script src="/js/team.js?v=20261010ze"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/scripts.js?v=20261010zc"></script>

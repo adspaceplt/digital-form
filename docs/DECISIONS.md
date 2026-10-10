@@ -1708,3 +1708,30 @@ Days now count Malaysian calendar days (`myDay`, `daysBetween` in
 `js/crm.js`), so a stage begun late yesterday reads 1 day at any hour, and a
 stage left the day it began is filed "after the same day" rather than
 "after Today". Entries filed before keep their words.
+
+
+### 2026-10-10 · One order for the rail and the tab bar; WhatsApp last in Work
+
+The user asked first for the phone tab bar to be rearranged per person, then
+for the web and the phone to follow one edit. Three readings were put to
+them (order the whole rail; a pinned group on top; a free order with no
+groups); they chose ordering the whole rail. Each colleague drags the
+sections into their own order within Work and within Internal, the Overview
+staying first; the web rail shows that order and the tab bar takes the
+first sections of it, so one arrangement serves both. A section in Internal
+reaches the bar only where Work leaves room, which the sheet shows by the
+Tab bar mark on the rows the bar will hold. The order is kept in the
+database (`rail_orders`, one row a colleague, through two functions) so it
+follows the person to every device, with a copy in the browser for the
+first paint. The Activity record's tabs, the Team panel and search keep the
+standard order: they are lists of the portal, not the person's way in.
+
+The same day the user moved WhatsApp to the end of Work. The Activity
+record's tabs were also put in the rail's order (Reports had stayed after
+Documents since Reports joined Work).
+
+The approval reminder's link was a body variable, on the reasoning that its
+two pages (a set's review page, a campaign's selection page) could not share
+a button. They can: a link button's base `https://digital.adspace.me/{{1}}`
+takes `review/?k=…` or `creators/?k=…`, which reads cleaner for the client.
+The composer now fills either shape, and the setup guide shows the button.

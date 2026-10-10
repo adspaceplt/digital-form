@@ -836,7 +836,7 @@
      Work. Only the screen changed: the stored map, `adds()`, `offered()`,
      `PART_LEVELS` and every database check are as they were. */
   var CHUNKS = [
-    ['Work', ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports']],
+    ['Work', ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp']],
     ['Internal', ['register', 'links', 'services', 'team', 'activity']]
   ];
   /* Each is on or off, and each is an admin's alone until a group is given

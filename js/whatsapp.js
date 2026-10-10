@@ -37,7 +37,7 @@
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
     creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
-    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits, the link to approve it.']
+    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.']
   };
   /* What each message in the list was. */
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder', message: 'Message' };
@@ -485,7 +485,7 @@
           if (t.purpose !== 'report' && x.header === 'DOCUMENT') return 'A template with a Document header sends a report alone.';
           if (x.header_var) return 'The portal cannot fill this template\'s header.';
           if (x.body_vars.length > 5) return SAID['bad-params'];
-          if (t.purpose !== 'creator' && x.button_var) return 'Only the creator template takes a link button with a variable.';
+          if (t.purpose !== 'creator' && t.purpose !== 'approval' && x.button_var) return 'Only the creator and approval reminder templates take a link button with a variable.';
           return '';
         }
       }, function (v) {
@@ -659,7 +659,18 @@
     if (!r) return '';
     var o = cx.o, kind = key.charAt(0), v = key.slice(2), low = v.toLowerCase();
     var rep = reportWord();
-    if (kind === 'u') return r.kind === 'creator' ? (r.code || '') : '';
+    /* A link button's variable: a creator's code; on the approval
+       reminder, the link to approve past the button's own fixed base
+       (`https://digital.adspace.me/{{1}}` takes `review/?k=…` or
+       `creators/?k=…`). */
+    if (kind === 'u') {
+      if (approving(r)) {
+        var base = String((t.button_var && t.button_var.url) || '').split('{{')[0];
+        var link = String(o.link || '');
+        return base && link.indexOf(base) === 0 ? link.slice(base.length) : '';
+      }
+      return r.kind === 'creator' ? (r.code || '') : '';
+    }
     if (kind === 'h') return '';
     if (/^\d+$/.test(v)) {
       if (v === '1') return r.greeting || r.name || '';

@@ -11315,3 +11315,25 @@ button.vs-row { cursor: pointer; }
 .eng-results .eng-val { display: grid; gap: 2px; }
 .eng-post { display: block; }
 .eng-fig { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Arrange sections (js/admin.js, #railSheet, 2026-10-10): the rail's groups
+   as lists, a row a section (its rail glyph, the name, Tab bar where the
+   phone's bar will hold it, the grip at the right edge). The row a hand
+   carries takes the sunk ground. */
+.ro-list { display: grid; }
+.ro-row {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) auto var(--ctl-h);
+  grid-template-areas: "glyph name tab grip"; align-items: center; gap: 0 12px;
+  min-height: var(--ctl-h); padding: 3px 0 3px 4px; border-top: 1px solid var(--line-soft);
+  background: var(--card); border-radius: 0;
+  transition: background var(--t-fast) var(--ease);
+}
+.ro-row:first-child { border-top: 0; }
+.ro-glyph { grid-area: glyph; display: flex; color: var(--ink-soft); }
+.ro-glyph svg { width: 15px; height: 15px; stroke-width: 1.8; }
+.ro-name { grid-area: name; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+.ro-tab { grid-area: tab; }
+.ro-grip { grid-area: grip; cursor: grab; touch-action: none; }
+.ro-row.is-drag { background: var(--sunk); border-radius: var(--radius-sm); }
+.ro-row.is-drag .ro-grip { cursor: grabbing; }
+.ro-msg:empty { display: none; }
