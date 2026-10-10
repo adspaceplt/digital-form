@@ -243,6 +243,15 @@
       /* `half` sets a field beside the next half one (a date and its time). */
       var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
       if (f.tick) {
+        /* A tick with a lead line (the AI declaration) is one shaded block:
+           the line, then its tick. */
+        if (f.lead) {
+          wrap.className += ' is-declare';
+          var ld = el('p', 'askdeclare');
+          ld.innerHTML = (f.leadMark || '') + '<span></span>';
+          ld.lastChild.textContent = f.lead;
+          wrap.appendChild(ld);
+        }
         var tl = el('label', 'tickline');
         var tk = el('input');
         tk.type = 'checkbox';
@@ -329,12 +338,15 @@
     return 'This ' + what + ' was written with AI. Read it in full and check every fact, figure, name, price and claim. ' +
       'Errors in confirmed content are the responsibility of the person who confirms it, and may be raised as an issue in their performance review.';
   }
-  function aiField() { return { name: 'ai_ok', label: AI_TICK, tick: true, value: false }; }
+  /* The declaration is its own shaded block, the line over its tick, never
+     run on into the question's own words (the user, 2026-10-10: "one whole
+     chunk isnt reader friendly"). */
+  function aiField(what) { return { name: 'ai_ok', label: AI_TICK, tick: true, value: false, lead: aiLine(what || 'content'), leadMark: AI_GLYPH }; }
   function aiRefused(v) { return v && v.ai_ok === 'on' ? '' : 'Tick the declaration to continue.'; }
   /* what: 'caption', 'script' or 'commentary'; go: the act's own word. */
   function declare(what, go, onYes) {
-    ask({ title: 'Written with AI', body: aiLine(what), go: go || 'Confirm and save',
-      fields: [aiField()], check: aiRefused }, function () { onYes(); });
+    ask({ title: 'Written with AI', go: go || 'Confirm and save',
+      fields: [aiField(what)], check: aiRefused }, function () { onYes(); });
   }
 
   window.ADspaceConfirm = { ask: ask, close: shut,

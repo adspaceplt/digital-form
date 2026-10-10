@@ -2696,6 +2696,27 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields.has-half > .askentry.is-half { grid-column: auto; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
+/* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
+   words and mark give way to a turning ring in its own ink. */
+.btn.is-busy { position: relative; cursor: progress; }
+.btn.is-busy:disabled { opacity: 1; filter: none; }
+.btn.is-busy > :not(.btn-spin) { visibility: hidden; }
+.btn.is-busy { color: transparent; }
+.btn-spin {
+  position: absolute; left: 50%; top: 50%; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  color: var(--ink-soft); animation: btnspin .7s linear infinite;
+}
+.btn-go .btn-spin, .btn-primary .btn-spin { color: var(--on-action); }
+.btn-danger .btn-spin { color: var(--err); }
+@keyframes btnspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn-spin { animation: none; border-right-color: currentColor; opacity: .6; } }
+/* The AI declaration (2026-10-10): its own shaded block under the question,
+   the mark and the line over the tick, never run on into the question. */
+.askentry.is-declare { background: var(--sunk); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 10px; }
+.askdeclare { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.askdeclare svg { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 2px; color: var(--ink); }
+.askentry.is-declare > .tickline { margin: 0; color: var(--ink); }
 .askentry > .datefield { display: flex; width: 100%; }
 @media (max-width: 560px) {
   /* Two actions of the same standing are two halves, never a slab and a
@@ -9832,9 +9853,17 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cr-main > .viewhead:first-child { margin-top: 0; }
 .cr-rail { min-width: 0; }
 .cr-rail .railblock { border-bottom: 0; margin: 0; }
-.cr-rail .linkbox .input { width: 100%; }
-.cr-linkacts { margin-top: 8px; }
-.cr-linkacts > .btn { flex: 1 1 0; min-width: 0; }
+/* The client's sets run the page's width; the review link sits in the
+   head (2026-10-10), as a script month's client link does. */
+.cr-rec-one { grid-template-columns: minmax(0, 1fr); }
+.cr-linktools { grid-template-columns: minmax(0, 1fr); }
+.cr-linktools .linkbox { flex-wrap: nowrap; }
+.cr-linktools .linkbox .input { min-width: 0; }
+@media (max-width: 640px) {
+  .cr-linktools .linkbox { flex-wrap: wrap; }
+  .cr-linktools .linkbox .input { flex: 1 1 100%; }
+  .cr-linktools .linkbox .btn { flex: 1 1 0; min-width: 0; }
+}
 @media (max-width: 1100px) {
   .cr-rec { grid-template-columns: minmax(0, 1fr); }
   .cr-rail { order: -1; margin-bottom: 12px; }

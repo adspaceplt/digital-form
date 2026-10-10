@@ -1556,3 +1556,18 @@ no reach, age split or video views, so an ad level export with those
 columns is still asked for; the TikTok Business API (ads management and
 reporting) is the later route, through its own developer app and advertiser
 authorisation.
+
+### 2026-10-10 · One glyph an act, a press that shows it is working, and lists by month
+
+The user: "all buttons didnt follow the initial ones when newly build". Content
+Review's Publish carried the plane; Video Scripts' and Reports' did not. A rule
+in a file did not hold new screens to it, so the act table is now code
+(`js/acts.js`): a button drawn as an act's words alone is given that act's mark
+as it is drawn. The same day ("pending until its live kind of animations"), a
+press whose write is out shows a turning ring on the button, at its own width,
+from 150ms. The AI declaration ran on into the Submit question's words ("one
+whole chunk isnt reader friendly"); it is now its own shaded block over its
+tick. Content Review's review link left its rail ("taking up that spaces there
+for nothing") for the client's head, laid as the script month's link is. The
+Video Scripts list became a card a content month with a row a client's month,
+since a client writes thirty to fifty scripts a year.

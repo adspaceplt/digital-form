@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010f">
+<link rel="stylesheet" href="/css/portal.css?v=20261010h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -62,9 +62,10 @@
 <script src="/js/words.js?v=20261009s"></script>
 <script src="/js/icons.js?v=20261008c"></script>
 <script src="/js/copy.js?v=20261001a"></script>
+<script src="/js/acts.js?v=20261010a"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261008c"></script>
-<script src="/js/confirm.js?v=20261010a"></script>
+<script src="/js/confirm.js?v=20261010h"></script>
 <script src="/js/sheet.js?v=20261004a"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261004b"></script>
@@ -1431,10 +1432,20 @@
           </div>
         </div>
       </div>
+      <!-- The review link, as every record's client link (the user,
+           2026-10-10: the rail beside the sets held only the link): the
+           address, Copy link and Preview under the head. -->
+      <div class="rec-linktools cr-linktools">
+        <div class="linkbox">
+          <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
+          <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+          <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+        </div>
+      </div>
       <div class="msg" id="wsMsg"></div>
     </section>
 
-    <div class="cr-rec">
+    <div class="cr-rec cr-rec-one">
     <div class="cr-main">
     <div class="viewhead">
       <span class="headmark"><h2>Content sets</h2></span>
@@ -1529,19 +1540,6 @@
     </div>
     </div>
 
-    <!-- What the client is sent: the link, and whether it asks for a code. -->
-    <aside class="cr-rail">
-      <div class="railblock">
-        <h3 class="railtitle">Review link</h3>
-        <div class="linkbox">
-          <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
-        </div>
-        <div class="row acts cr-linkacts">
-          <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
-          <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-        </div>
-      </div>
-    </aside>
     </div>
   </section>
 
@@ -5191,7 +5189,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261010g"></script>
+<script src="/js/reports.js?v=20261010h"></script>
 <script src="/js/register.js?v=20261010a"></script>
 <script src="/js/engage.js?v=20261010e"></script>
 <script src="/js/crm.js?v=20261010e"></script>
@@ -5199,7 +5197,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/team.js?v=20261010a"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261010b"></script>
+<script src="/js/scripts.js?v=20261010h"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261009s"></script>
 <script src="/js/ops.js?v=20261010b"></script>

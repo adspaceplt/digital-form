@@ -198,44 +198,56 @@
       UI.emptyLine(box, 'No matches.', 'Clear the search', function () { $('vsFind').value = ''; st.find = ''; paint(); });
       return;
     }
+    /* A card a content month, newest first (the user, 2026-10-10: thirty
+       to fifty videos a client a year), as Reports runs a card a report
+       month: the newest open, the rest shut until opened. A row is one
+       client's month, opening its record on its first script (on the
+       script a search found). */
     var GRP = window.ADspaceGroup;
-    var byClient = {}, order = [];
+    var byMonth = {}, months = [];
     list.forEach(function (s) {
-      if (!byClient[s.client_id]) { byClient[s.client_id] = []; order.push(s.client_id); }
-      byClient[s.client_id].push(s);
+      var p = String(s.period || '').slice(0, 7) || 'none';
+      if (!byMonth[p]) { byMonth[p] = {}; months.push(p); }
+      var g = byMonth[p][s.client_id] || (byMonth[p][s.client_id] = { client: s.clients || {}, period: s.period, scripts: [] });
+      g.scripts.push(s);
     });
-    order.sort(function (a, b) {
-      var na = (byClient[a][0].clients || {}).name || '', nb = (byClient[b][0].clients || {}).name || '';
-      return na.localeCompare(nb, 'en', { sensitivity: 'base' });
-    });
-    order.forEach(function (cid) {
-      var rows = byClient[cid].slice().sort(function (a, b) {
-        return String(b.period || '').localeCompare(String(a.period || '')) || (a.seq || 0) - (b.seq || 0);
-      });
-      var c = rows[0].clients || {};
+    months.sort(function (a, b) { return b.localeCompare(a); });
+    months.forEach(function (p, i) {
+      var groups = Object.keys(byMonth[p]).map(function (k) { return byMonth[p][k]; });
+      groups.forEach(function (g) { g.scripts.sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); }); });
+      groups.sort(function (a, b) { return String(a.client.name || '').localeCompare(String(b.client.name || ''), 'en', { sensitivity: 'base' }); });
+      var n = groups.reduce(function (t, g) { return t + g.scripts.length; }, 0);
       box.appendChild(GRP.section({
-        route: 'scripts', key: cid, name: c.name || 'Client', count: rows.length,
-        shut: !st.find && GRP.shut('scripts', cid, false, rows.length === list.length),
+        route: 'scripts', key: 'm' + p, name: p === 'none' ? 'No month' : monthWord(p), count: n,
+        shut: !st.find && GRP.shut('scripts', 'm' + p, i > 0, months.length === 1),
         table: function () {
-          var table = GRP.table('vs-row', ['Script', 'Shoot', 'State']);
-          GRP.more(table, rows, 30, 'scripts', rowOf);
+          var table = GRP.table('vs-row', ['Client', 'Next shoot', 'Published']);
+          GRP.more(table, groups, 30, 'scripts', rowOf);
           return table;
         }
       }));
     });
   }
 
-  function rowOf(s) {
+  /* One client's month: the client over its codes and scripts, the next
+     shoot (else the last), and how many of its scripts are published. */
+  function rowOf(g) {
     var row = document.createElement('button');
     row.type = 'button';
     row.className = 'crm-row vs-row';
-    row.setAttribute('data-id', s.id);
-    var shoot = [dayWord(s.shoot_on), s.venue].filter(Boolean).join(' · ');
+    var list = g.scripts, n = list.length;
+    var pub = list.filter(function (x) { return stateOf(x) === 'shared'; }).length;
+    var codes = list.map(function (x) { return tabWord(x); });
+    var today = new Date().toISOString().slice(0, 10);
+    var days = list.map(function (x) { return x.shoot_on; }).filter(Boolean).sort();
+    var ahead = days.filter(function (d) { return d >= today; })[0], shoot = ahead || days[days.length - 1];
+    row.setAttribute('data-id', list[0].id);
     row.innerHTML =
-      '<span class="vs-c-name"><b>' + esc(label(s)) + '</b><small>' + esc([monthWord(s.period), KIND_WORD[s.kind]].filter(Boolean).join(' · ')) + '</small></span>' +
-      '<span class="vs-c-shoot">' + (shoot ? esc(shoot) : '<span class="mute">Not set</span>') + '</span>' +
-      '<span class="vs-c-state">' + chip(stateOf(s)) + '</span>';
-    row.addEventListener('click', function () { openScript(s.id, true); });
+      '<span class="vs-c-name"><b>' + esc(g.client.name || 'Client') + '</b><small>' +
+        esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span>' +
+      '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last</span>') : '<span class="mute">Not set</span>') + '</span>' +
+      '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>';
+    row.addEventListener('click', function () { openScript(list[0].id, true); });
     return row;
   }
 

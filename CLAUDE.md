@@ -141,6 +141,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
+| `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
@@ -591,6 +592,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.
+- `js/acts.js` (`ADspaceActs`) is the one table of act glyphs and the one
+  pending state (the user, 2026-10-10): every console `.btn` whose words are
+  an act carries its mark (Publish the plane, Unpublish the struck eye,
+  Edit the pen, Download the file, Copy the copy mark, Preview and Preview
+  PDF the leaving mark after the words, Add and New the plus), given as the
+  button is drawn where a screen wrote words alone; a form's own commit
+  stays words. A press whose write disables its button shows, after 150ms,
+  a turning ring in the button's ink at the button's width until it is let
+  go. A new act joins the table, never a screen (`tests/acts.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
@@ -1639,8 +1649,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
-    Review); the sets are rows (name, the state at the right, the post
-    count) beside the review link. A post is a row: the placement with the
+    Review), the review link under it as every record's client link
+    (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10); the
+    sets are rows (name, the state at the right, the post count) the page's
+    width. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
   - A set is a page of its own (`set=`): its head is the record head (the
@@ -3502,8 +3514,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.
-- The list is a card a client, a row a script (code and title over the month
-  and type, the shoot, the state: Draft or Published), newest month first. A
+- The list is a card a content month, newest first, the newest open (the
+  user, 2026-10-10: thirty to fifty videos a client a year), a row a
+  client's month (the client over its codes and count, the next shoot else
+  the last, Published or n of N), opening its record on its first script
+  (on the script a search found). A
   script opens in its content month's record (the user, 2026-10-09: one link
   for the client, the videos as tabs on top): the head names the client and
   the month (`n scripts · n published`; the month opens the client's Months

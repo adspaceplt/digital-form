@@ -1848,7 +1848,7 @@
       if (ask.reason || ask.ai) {
         var fs = [who];
         if (ask.reason) fs.push({ name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' });
-        if (ask.ai) fs.push(AIQ.field());
+        if (ask.ai) fs.push(AIQ.field('commentary'));
         window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go, fields: fs,
           check: ask.ai ? AIQ.refused : null },
           function (v) { then(v.who, v.why); });
@@ -1879,7 +1879,7 @@
       db.rpc('ai_written', { p_report: r.id }).then(function (res) { return !res.error && res.data === true; })
         .catch(function () { return false; }).then(function (ai) {
           b.disabled = false;
-          if (ai && AIQ) { ask.ai = true; ask.body += ' ' + AIQ.line('commentary'); }
+          if (ai && AIQ) ask.ai = true;
           pickReviewer(r, b, m, ask, function (who, why) {
             var args = { p_id: r.id, p_reviewer: who };
             if (why) args.p_reason = why;
