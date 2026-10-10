@@ -4097,6 +4097,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     clients.
 - Sign-in never says whether an address has an account ("If {email} is
   registered, …").
+- An email is matched as itself in every edge function (`exactEmail`: `_`
+  and `%` are letters, never wildcards; audit P2, 2026-10-10).
+- A colleague's upload names its purpose and record, and `sign-upload`
+  signs it only for that (audit P1, 2026-10-10): `review` a content set
+  (`batchId`, Content Review: Sets at Work), `logo` the client (Clients or
+  Content Review: Client settings at Work), `campaign` a booking whose draft
+  is owed (`optionId`, Creator Campaigns: Campaigns at Work), `invoice` a
+  campaign (`campaignId`, Creator Campaigns: Finance at Work, private where
+  set up), `report` a report version (`versionId`, Reports at Work, always
+  private); the record must be the named client's and the caller's client
+  scope must reach it, each asked as the caller. Work in one section signs
+  nothing for another; a page that names no purpose is asked to reload.
 - A client's review link and a campaign's selection link carry an
   eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
   made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in

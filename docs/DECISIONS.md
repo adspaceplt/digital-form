@@ -1800,3 +1800,19 @@ secrets; it lives in this public repository because only its secrets are
 secret. A raw `pg_dump` was refused: Supabase's guide says its internals
 break a restore. Handbook files in Supabase Storage are not covered.
 
+### 2026-10-10 · An upload is signed only for its own purpose and record
+
+The outside review (P1) found `sign-upload` signing an upload into any client
+for any signed-in colleague, and a first fix let Work in any upload section
+sign every kind. The user: "P1 must check the specific upload purpose, parent
+record, section permission and client scope. Having Work permission in any
+upload-capable section must not authorize every upload type." Each upload
+now names what it is for and its record (a content set's file, a client's
+logo, a booking's draft, a campaign's invoice, a report's kept PDF); the
+function reads the record with the service role, checks it is the named
+client's, then asks the database as the caller for that purpose's own
+section or part at Work and the client scope. A report's PDF is always
+private and a logo never. P2 in the same release: an email is matched as
+itself in every edge function, so an address holding `_` or `%` never stands
+for another's (`portal-login` had made logins on such a match).
+
