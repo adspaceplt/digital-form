@@ -182,13 +182,17 @@
   function stored() {
     try { return localStorage.getItem('adspace-theme'); } catch (e) { return null; }
   }
-  /* The button names the theme it switches *to*, as a light switch does, and
-     the glyph is the whole of it, so the name is the label. */
+  /* The theme is the account menu's Theme (2026-10-10, the user: "enhance
+     the light or dark mode"): Auto follows the device, Light and Dark are
+     kept in this browser. It was a two-way switch in the bar, where Auto was
+     reached only by pressing back to what the device already showed. */
+  function themeChoice() {
+    var t = stored();
+    return t === 'dark' || t === 'light' ? t : 'auto';
+  }
   function paintTheme() {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var btn = $('themeToggle');
-    btn.setAttribute('aria-pressed', String(dark));
-    btn.setAttribute('aria-label', dark ? 'Switch to light' : 'Switch to dark');
+    var pick = $('themePick');
+    if (pick && pick.value !== themeChoice()) pick.value = themeChoice();
   }
   function wearTheme(dark) {
     if (dark) document.documentElement.setAttribute('data-theme', 'dark');
@@ -200,18 +204,13 @@
     });
     paintTheme();
   }
-  $('themeToggle').addEventListener('click', function () {
-    var dark = document.documentElement.getAttribute('data-theme') !== 'dark';
-    wearTheme(dark);
-    /* Switching *to* what the device already shows is switching back to
-       following it, so nothing is stored and the machine keeps the console at
-       sunset. That is what stops a two state switch becoming a one way door:
-       press it twice and the setting is gone rather than pinned to the value
-       it happened to land on. */
+  if ($('themePick')) $('themePick').addEventListener('change', function () {
+    var v = this.value;
     try {
-      if (sysDark && sysDark.matches === dark) localStorage.removeItem('adspace-theme');
-      else localStorage.setItem('adspace-theme', dark ? 'dark' : 'light');
+      if (v === 'auto') localStorage.removeItem('adspace-theme');
+      else localStorage.setItem('adspace-theme', v);
     } catch (e) {}
+    wearTheme(v === 'dark' || (v === 'auto' && Boolean(sysDark && sysDark.matches)));
   });
   /* The device changing carries the console with it, but only while nobody
      has chosen: a stored answer is a decision and is not overruled by dusk. */
@@ -262,7 +261,15 @@
     menu.hidden = false;
     this.setAttribute('aria-expanded', 'true');
     if (acctPhone && acctPhone.matches && window.ADspaceMenu) window.ADspaceMenu.pop(this, menu, 'right');
-    menu.querySelector('.kmenu-item:not([hidden])').focus();
+    /* The theme's segment was laid while the menu was hidden. */
+    var seg = $('themePick') && $('themePick').__seg;
+    if (seg && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(seg);
+    menu.querySelector('button.kmenu-item:not([hidden])').focus();
+  });
+  /* Settings, Arrange sections and the Activity record open from the menu,
+     which shuts behind them. */
+  ['settingsOpen', 'railEdit'].forEach(function (id) {
+    if ($(id)) $(id).addEventListener('click', function () { shutAcct(); });
   });
   if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });
   // Crossing the phone line with the menu open shuts it rather than leave it laid for the other.
@@ -950,14 +957,14 @@
     if (!bar) return;
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     var open = navItems().filter(function (b) { return !b.hidden; });
-    var act = $('activityOpen'), sets = $('settingsOpen');
-    var withAct = Boolean((act && !act.hidden) || (sets && !sets.hidden));
-    var room = open.length <= 5 && !withAct ? 5 : 4;
+    /* Settings and the Activity record are in the account menu, so More
+       holds sections alone. */
+    var room = open.length <= 5 ? 5 : 4;
     tabRoom = room;
     var tabs = open.slice(0, room);
-    var more = open.length > room || withAct;
+    var more = open.length > room;
     var edit = $('railEdit');
-    if (edit) edit.hidden = !(open.length > 2 && (!tabbarOn() || more));
+    if (edit) edit.hidden = !(open.length > 2);
     tabbed = tabs.map(function (b) { return b.getAttribute('data-section'); });
     navItems().forEach(function (b) {
       b.classList.toggle('is-tabbed', tabbed.indexOf(b.getAttribute('data-section')) > -1);
@@ -1142,7 +1149,7 @@
       roSheet();
       $('railMsg').textContent = '';
       roFill(null);
-      window.ADspaceSheet.show(roBox, { opener: edit });
+      window.ADspaceSheet.show(roBox, { opener: $('acctBtn') });
     });
     function follow() {
       var was = document.documentElement.classList.contains('has-tabbar');
@@ -1383,7 +1390,6 @@
     $('sectionMine').hidden      = name !== 'mine';
     $('sectionHandbook').hidden  = name !== 'handbook';
     $('sectionSettings').hidden  = name !== 'settings';
-    if ($('settingsOpen')) $('settingsOpen').classList.toggle('is-on', name === 'settings');
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
@@ -2058,12 +2064,10 @@
   function showActivityLink() {
     $('activityOpen').hidden = !maySeeActivity;
     if ($('settingsOpen')) $('settingsOpen').hidden = !(meLoaded && sectionAllowed('settings'));
-    /* The bar's More holds the Activity record, so the bar is laid once
-       the record's reach is known, and again on every section shown. */
     if (meLoaded) paintTabbar();
   }
 
-  /* The build this console is running, under the Activity record: the
+  /* The build this console is running, at the rail's foot: the
      deploy's day in Malaysia, short (v26.10.06; the user, 2026-10-06).
      /version.json is written by the Pages build itself; read raw (no build
      ran) or not at all, the line stays hidden. */
@@ -2085,7 +2089,7 @@
   function shutActivity() { $('activitySheet').hidden = true; }
 
   if ($('settingsOpen')) $('settingsOpen').addEventListener('click', function () {
-    if (rail && rail.isOpen && rail.isOpen() && document.documentElement.classList.contains('has-tabbar')) rail.shut();
+    if (rail && rail.isOpen && rail.isOpen()) rail.shut();
     visitSection('settings');
   });
   $('activityOpen').addEventListener('click', function () {

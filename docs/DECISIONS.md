@@ -1816,3 +1816,25 @@ private and a logo never. P2 in the same release: an email is matched as
 itself in every edge function, so an address holding `_` or `%` never stands
 for another's (`portal-login` had made logins on such a match).
 
+
+### 2026-10-10 · The account menu holds the workspace and the theme
+
+The user asked for the theme to be set from the name menu, for that menu to
+be smaller, and called the three marks at the rail's foot "so weird". The
+menu now reads: who you are; My records and My namecard; Settings and
+Arrange sections (each only where it may be used); Theme,
+Passkeys, Notifications and Refresh app; Sign out. Its rows are a control's
+height at a desk (38px, the floor uxaudit's `target` holds) and 48px docked
+on a phone; it is 272px wide. The Activity record, read more often, stays
+at the rail's foot as one mark on the build's line (the user: "activity log
+can go inline with version code", "just activity record icons would do"):
+the build at the left and the mark at the right edge, at a desk as under
+the tab bar, where the right edge is nearest the thumb.
+
+The theme leaves the bar for a segment in the menu: Auto, Light, Dark. This
+reverses the 2026-09-20 rule that put a one-press switch in the bar and kept
+it out of the menu. A three-way choice cannot be one icon, Auto had no way
+back except pressing to the device's register, and the bar now holds only
+what acts on the work (search, the bell) and the account. Light chosen on a
+light device is now kept as Light rather than cleared, since Auto is the way
+to follow the device.
