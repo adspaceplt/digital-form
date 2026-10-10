@@ -18,6 +18,7 @@ console's **WhatsApp** section (after Clients in the rail):
 | Feedback request | Request feedback on WhatsApp, in a client's ⋯ | 1 the contact's greeting, 2 the client |
 | Team reminders | Each reminder in a colleague's bell (no open task, the outstation record, self-rating, reflection, health check-in) | 1 the colleague's first name, 2 the notice's title, 3 its message |
 | Creator updates | A creator's booking confirmed, and Send on WhatsApp in a booked creator's ⋯ | 1 the creator's first name, 2 the campaign. A **Visit website** button with a dynamic URL, `https://digital.adspace.me/creator/?k={{1}}`, opens the creator's own page |
+| Approval reminder | Remind, in My Work's Waiting for you, once a published content set or a creator's draft at Reviewing has waited on the client for the Business setting's days (Settings → Due dates, 3 by default) | 1 the contact's greeting, 2 the client, 3 what waits ("2 posts in October posts", "Jane's draft for Raya creators"), 4 the link to approve it (the client's review page or the campaign's selection page). Category **Utility**, no header, no button |
 
 The composer can send any other approved template too; it fills the
 greeting first, then the client (or a creator's campaign), and a named
