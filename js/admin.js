@@ -1289,14 +1289,114 @@
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
       { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯.' }] },
     mine: { name: 'My records', steps: [
-      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] }
+      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] },
+    /* A screen of its own inside a section (2026-10-10; the user: "the
+       entire portal of these sections"): a tab, a report's step, a sheet.
+       Keyed by guideKey(), each met once. */
+    settings: { name: 'Settings', steps: [
+      { at: '#setList .crm-group-head', text: 'Settings are grouped by what they change. A row shows only to a colleague who holds it.' },
+      { at: '#setList .set-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
+      { at: '#setList .set-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
+    'whatsapp.templates': { name: 'Templates', steps: [
+      { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent in the last seven days.' },
+      { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
+      { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. Off, it sends nothing and its button leaves the records.' }] },
+    'whatsapp.compose': { name: 'New message', within: '#waCompose', steps: [
+      { at: '#waTo', text: 'Choose a client contact or a creator. The number shows under it; a username alone cannot be messaged.' },
+      { at: '#waTpl', text: 'Choose a template Meta approved. Its variables fill themselves from the record and can be changed.' },
+      { at: '#waSend', text: 'The preview reads as the message will. Send asks once more, naming the number and the category.' }] },
+    phone: { name: 'Your sections', steps: [
+      { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'Your first four sections. Press one to open it.' },
+      { at: '#tabMore', text: 'More holds the other sections, the Activity record and the build.' },
+      { at: '#acctBtn', text: 'Your name opens My records, Settings and Arrange sections, which chooses the four kept on this bar.' }] },
+    arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
+      { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
+      { at: '#railLists .ro-tab', text: 'Tab bar marks the sections the phone keeps at its foot.' },
+      { at: '#railSave', text: 'Save keeps the order for the web rail and the phone alike. Reset order returns to the standard.' }] },
+    'mine.health': { name: 'Health', steps: [
+      { at: '#mineHealthBox .health-termbox', text: 'Five questions every two weeks, read by management by name to support you, never in a performance review.' },
+      { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
+    'mine.checkin': { name: 'Health', steps: [
+      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in once every half month: five answers and an optional note, changed until the half month ends.' },
+      { at: '#mineHealthBox [data-a="talk"]', text: 'Ask a colleague for a talk. They are told who asked, never your note.' },
+      { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and takes your answers out of Team: Health.' }] },
+    'team.health': { name: 'Health', steps: [
+      { at: '#healthAvg', text: 'This half month\'s averages, and how many have checked in. An average under 3 is drawn in warn.' },
+      { at: '#teamHealthBox .health-prow', text: 'Press a colleague for their history. Answers show only while their agreement stands.' },
+      { at: '#teamHealthBox .health-talks', text: 'Talks asked for in the last 90 days.' }] },
+    'reports.entry': { name: 'Report', steps: [
+      { at: '#rhEdit .rp-steps', text: 'Four steps, each with what it holds so far. Press one to go to it.' },
+      { at: '#rhEdit .rp-head [data-a="pdf"]', text: 'Preview PDF draws the report as the client will read it, marked as a draft until it is confirmed.' },
+      { at: '#rhEdit .rp-stepfoot [data-a="next"]', text: 'Next opens the following step.' }] },
+    'reports.text': { name: 'Commentary', steps: [
+      { at: '#rhEdit .rp-aidraft [data-a="aidraft"]', text: 'Write with AI drafts the commentary from the figures and your notes. Read it before submitting.' },
+      { at: '#rhEdit .rp-ainotes > summary', text: 'Notes for the draft: reasons, changes, the goal and next month\'s budget. Kept in this browser only.' },
+      { at: '#rhEdit .rp-ailang', text: 'The language Write with AI drafts in.' }] },
+    'reports.check': { name: 'Check and submit', steps: [
+      { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
+      { at: '#rhEdit [data-a="submit"]', text: 'Submit for review asks who reviews the report, then sends it to them.' }] }
   };
-  function offerGuide(name) {
+  /* The screen on show, for its guide: a route, else a tab, a report's step
+     or a sheet open over it. Read from the page each time it is asked. */
+  function shownSheet(id) { var e = $(id); return !!e && !e.hidden; }
+  function guideKey() {
+    if (shownSheet('railSheet')) return 'arrange';
+    if (shownSheet('waCompose')) return 'whatsapp.compose';
+    var q = new URLSearchParams(location.search);
+    if (section === 'whatsapp') return q.get('tab') === 'templates' ? 'whatsapp.templates' : 'whatsapp';
+    if (section === 'mine' && q.get('view') === 'health') {
+      return document.querySelector('#mineHealthBox [data-a="agree"]') ? 'mine.health' : 'mine.checkin';
+    }
+    if (section === 'team' && q.get('tab') === 'health') return 'team.health';
+    if (section === 'reports') {
+      var on = document.querySelector('#rhEdit:not([hidden]) .rp-step.is-on');
+      if (!on) return q.get('report') ? '' : 'reports';
+      var k = on.getAttribute('data-step');
+      return k === 'text' ? 'reports.text' : k === 'check' ? 'reports.check' : 'reports.entry';
+    }
+    return section;
+  }
+  var guideAt = null;
+  /* Offered as a screen first appears: on a route, a tab or a step moved to
+     in the address, and as a sheet with a guide opens. A phone meets its
+     tab bar's guide first, then the screen's. */
+  function guideHere(force) {
+    var key = guideKey();
+    if (!force && key === guideAt) return;
+    guideAt = key;
     var G = window.ADspaceGuide;
     if (!G) return;
     G.leave();
-    if (meLoaded && me && GUIDES[name]) G.offer(name, GUIDES[name]);
+    if (!(meLoaded && me)) return;
+    var mine = key && GUIDES[key];
+    if (document.documentElement.classList.contains('has-tabbar') && !G.seen('phone') && !(mine && mine.within)) {
+      G.offer('phone', Object.assign({}, GUIDES.phone, {
+        then: function () { if (guideAt === key && mine) G.offer(key, mine); }
+      }));
+      return;
+    }
+    if (mine) G.offer(key, mine);
   }
+  ['pushState', 'replaceState'].forEach(function (m) {
+    var orig = history[m];
+    history[m] = function () {
+      var r = orig.apply(this, arguments);
+      setTimeout(function () { guideHere(false); }, 0);
+      return r;
+    };
+  });
+  window.addEventListener('popstate', function () { setTimeout(function () { guideHere(false); }, 0); });
+  /* A sheet opened, a tab or a report's step drawn, Health agreed to: the
+     screen changes without the address, so the page is read again a moment
+     after it settles. Only a change of screen offers anything. */
+  var guideT = 0;
+  try {
+    new MutationObserver(function () {
+      clearTimeout(guideT);
+      guideT = setTimeout(function () { guideHere(false); }, 150);
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  } catch (e) {}
+  function offerGuide() { guideHere(true); }
   function introSeen(name) {
     try { return Number(localStorage.getItem('adspace-hint-intro-' + name) || 0); } catch (e) { return INTRO_SHOWS; }
   }
@@ -1312,7 +1412,7 @@
     if (!pop || !btn) return;
     /* Show me around: the section's guide again, where a step of it is on
        the screen (a record hides the list's controls). */
-    if (on && $('sectionGuide')) $('sectionGuide').hidden = !(window.ADspaceGuide && window.ADspaceGuide.can(GUIDES[section]));
+    if (on && $('sectionGuide')) $('sectionGuide').hidden = !(window.ADspaceGuide && (window.ADspaceGuide.can(GUIDES[guideKey()]) || window.ADspaceGuide.can(GUIDES[section])));
     pop.hidden = !on;
     btn.setAttribute('aria-expanded', String(on));
     if (on) ADspaceMenu.pop(btn, pop, 'left');
@@ -1351,7 +1451,8 @@
   $('sectionAbout').addEventListener('click', function (e) { e.stopPropagation(); });
   if ($('sectionGuide')) $('sectionGuide').addEventListener('click', function () {
     aboutOpen(false);
-    if (window.ADspaceGuide) window.ADspaceGuide.open(section, GUIDES[section]);
+    var k = guideKey(), G = window.ADspaceGuide;
+    if (G && !(GUIDES[k] && G.open(k, GUIDES[k]))) G.open(section, GUIDES[section]);
   });
   document.addEventListener('click', function () { if (aboutIsOpen()) aboutOpen(false); });
   document.addEventListener('keydown', function (e) {
