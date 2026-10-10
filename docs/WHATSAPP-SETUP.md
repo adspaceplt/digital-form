@@ -68,7 +68,7 @@ lists a token's permissions, to confirm both WhatsApp permissions are on it.
 Create one template a purpose (category **Utility**, or Marketing for the
 feedback request), with `{{1}}`, `{{2}}`… in the body in the order above. The
 report template needs a **Document** header. Once Meta approves each, open
-the console's account menu → **WhatsApp** (Business settings), press Edit on
+the console's **Settings** page → **WhatsApp** (Business settings), press Edit on
 the purpose, and enter the template's name and language exactly as Meta shows
 them (for example `monthly_report`, `en`), the number of variables, and tick
 On. A purpose that is Off sends nothing.

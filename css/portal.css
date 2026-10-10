@@ -4069,35 +4069,43 @@ body.is-plain .topbar { background: var(--chrome); }
    person rather than at the far end of the row. */
 .crm-lang { font-size: 12px; color: var(--ink-mute); }
 
-/* What is running for this client. A row, with the chevron that says it
-   goes somewhere, because it does. */
-/* One panel with rows in it, the shape every other section of the record now
-   uses. Four bordered cards with gaps between them was a second language for
-   a list, on the one page where five other lists are tables. */
-.work-list {
-  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
-  overflow: hidden; margin-bottom: 12px;
+/* THE CLIENT'S MONTHS (2026-10-10): the record's Engagements pane, a card a
+   content month (js/engage.js). A row is the section's glyph on a tonal
+   tile, what it is over its kind and facts, where it stands, and the
+   chevron at the right edge (a finished report's Download where the reader
+   downloads rather than opens it). The name gives way, never the state; the
+   facts wrap between their parts. On a narrow pane two columns: name over
+   facts at the left, the state at the right, the Download under it. */
+.cmonth-row {
+  display: grid; align-items: center; gap: 4px 14px;
+  grid-template-columns: 32px minmax(0, 1fr) var(--state-w) 16px;
 }
-.work-row {
-  display: grid; align-items: center; gap: 2px 14px; width: 100%; text-align: left;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name go" "meta go";
-  background: var(--card); border: 0; border-bottom: 1px solid var(--line-soft);
-  border-radius: 0; padding: 13px 15px;
+.cmonth-table.has-file .cmonth-row { grid-template-columns: 32px minmax(0, 1fr) var(--state-w) 116px; }
+.cmonth-tile {
+  width: 32px; height: 32px; border-radius: var(--radius-ctl-sm); background: var(--tonal); color: var(--ink-soft);
+  display: grid; place-items: center;
 }
-.work-row:last-child { border-bottom: 0; }
-@media (hover: hover) { .work-row:hover { background: var(--sunk); } }
-/* Same rule as the cards: the state hangs off the end of the line rather than
-   off the end of the name, so it is in one place down the list. */
-.work-row-name {
-  grid-area: name; display: flex; align-items: center; gap: 9px; min-width: 0;
+.cmonth-tile svg { width: 16px; height: 16px; stroke-width: 1.8; }
+.cmonth-what { display: grid; gap: 2px; min-width: 0; }
+.cmonth-what b {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0;
   font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
 }
-.work-row-name > .tone { margin-left: auto; flex: 0 0 auto; }
-/* The name gives way, never the state. */
-.work-row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-row-meta { grid-area: meta; font-size: 12.5px; color: var(--ink-mute); }
-.work-row-go { grid-area: go; width: 15px; height: 15px; color: var(--ink-mute); }
+.cmonth-name { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmonth-what small { font-size: 12.5px; color: var(--ink-mute); }
+.cmonth-what small .part { white-space: nowrap; }
+.cmonth-state { min-width: 0; }
+.cmonth-end { display: flex; justify-content: flex-end; color: var(--ink-mute); }
+.cmonth-end > svg { width: 16px; height: 16px; }
+.cmonth-end .btn svg { width: 14px; height: 14px; }
+.cmonth-fail > .softpanel { margin-bottom: 12px; }
+.is-narrow .cmonth-row,
+.is-narrow .cmonth-table.has-file .cmonth-row { grid-template-columns: 32px minmax(0, 1fr) var(--state-w); align-items: start; }
+.is-narrow .cmonth-tile { grid-row: 1 / span 2; }
+.is-narrow .cmonth-what { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.is-narrow .cmonth-state { grid-column: 3; grid-row: 1; justify-self: stretch; text-align: right; }
+.is-narrow .cmonth-row:not(.is-file) > .cmonth-end { display: none; }
+.is-narrow .cmonth-row.is-file > .cmonth-end { grid-column: 3; grid-row: 2; }
 
 /* Name, state and the control that changes them, together. */
 .crm-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -8677,8 +8685,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    own register rows, each table stating its tracks on the header and the
    row alike, and on a narrow pane two lines with the state or the ⋯ ending
    the first. */
-.rp-viewhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
-.rp-viewhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .rp-acc-row, .rp-post-row { display: grid; align-items: center; gap: 0 12px; }
 .rp-acc-row { grid-template-columns: minmax(0, 1fr) 150px 84px minmax(0, 1fr) var(--ctl-h); }
 .rp-post-row { grid-template-columns: 34px minmax(0, 1fr) 104px 84px 84px var(--ctl-h); }
@@ -8975,11 +8981,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
 .rp-check.is-late .rp-check-t small { color: var(--err); }
 .rp-check .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
-/* The client record's Reports tab: the finished reports only. */
-.rp-out-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) var(--state-w) 210px auto; }
-.rp-out-row.crm-head { padding: 12px 15px 8px; }
-.rp-out-row.crm-row { padding: 10px 15px; min-height: 52px; }
-.rp-out-act { display: flex; justify-content: flex-end; }
 /* Versions (2026-10-07): a row a version, its file at the right edge; the
    meta (who published it, and why it came off) wraps, being words a person
    typed. */
@@ -8993,13 +8994,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-vrow .rp-name small { white-space: normal; overflow-wrap: anywhere; }
 .rp-vrow .rp-name .nb { white-space: nowrap; }
 .rp-vact { display: flex; justify-content: flex-end; }
-.rp-out-act .btn svg { width: 14px; height: 14px; }
-.is-narrow .rp-out-row.crm-head { display: none; }
-.is-narrow .rp-out-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "ver state"; gap: 4px 12px; }
-.is-narrow .rp-out-row > .rp-name { grid-area: name; }
-.is-narrow .rp-out-row > .rp-state { grid-area: state; justify-self: stretch; text-align: right; }
-.is-narrow .rp-out-row > .rp-ver { grid-area: ver; font-size: 12px; color: var(--ink-mute); }
-.is-narrow .rp-out-row > .rp-out-act { grid-area: act; }
 /* The Reports route: one row a report across every client. */
 .rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
 .rh-row.crm-head { padding: 12px 15px 8px; }
@@ -10964,7 +10958,7 @@ button.vs-row { cursor: pointer; }
 }
 .is-narrow .vs-row > .vs-c-name { grid-area: name; }
 .is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; }
-.is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: end; }
+.is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }

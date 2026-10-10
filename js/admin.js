@@ -375,12 +375,8 @@
     var M = window.ADspaceMaintenance;
     upgrade = d || { on: false, set: false };
     var admin = may('team.upgrade', 'work');
-    /* WhatsApp (2026-10-09): its templates are Business settings. Upgrade
-       mode, Announcements and Notices are on the Settings page
-       (2026-10-10), which repaints its switch from here. */
-    var wa = may('team.settings', 'work');
-    if ($('acctWhatsApp')) $('acctWhatsApp').hidden = !wa;
-    if ($('acctUpgradeSep')) $('acctUpgradeSep').hidden = !wa;
+    /* Upgrade mode, Announcements, Notices and WhatsApp are on the Settings
+       page (2026-10-10), which repaints its switch from here. */
     if (section === 'settings' && window.ADspaceSettings) window.ADspaceSettings.paint();
     var bar = $('upgradeBar');
     if (bar) {
@@ -468,11 +464,6 @@
     });
   }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
-  if ($('acctWhatsApp')) $('acctWhatsApp').addEventListener('click', function (e) {
-    e.stopPropagation();
-    shutAcct();
-    if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage($('acctBtn') || this);
-  });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {

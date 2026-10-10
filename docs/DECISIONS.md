@@ -1467,6 +1467,37 @@ a restricted account is marked on the client, red in its rail and listed on
 the Overview. Delays were answered on 2026-10-09 by the three required
 dates; the WhatsApp approval chaser waits on the WhatsApp section.
 
+### 2026-10-10 · WhatsApp on the Settings page
+The user, the same day: "Whatsapp business settings not moved to settings
+section". The templates sheet (and its last fifty messages) was left in the
+account menu when Settings took Upgrade mode, Announcements and Notices.
+It is now the Settings page's WhatsApp card (Templates and recent messages,
+Open, `team.settings`), opening the same sheet; the account menu holds no
+WhatsApp item.
+### 2026-10-10 · A client's reports live in its Engagements, by content month
+The user: "Do you think client reports worth going into the client file >
+Engagements so we have one less tab to monitor? … or the engagements part
+worth its own tab? and reports in it." Agreed: Engagements becomes its own
+tab, with the reports in it. The record's Reports
+tab is gone and the Overview's Engagements block left the Overview; one
+Engagements tab, after Overview, holds the client's work by content month
+(`js/engage.js`): the month's content in My Work (done of held, red with a
+task past its date, Report due), its Content Review sets, its Video Scripts
+as one row, its creator campaigns and its reports, each opening where it is
+worked, as search opens a record. An older `tab=reports` lands there. A
+report is filed in the month whose span holds its last day, as
+`sm_report_gate` finds it, so a month from the 16th holds the report the
+gate asks it for; a set and a campaign by the day they were made, a script
+by its own month; otherwise the calendar month. The tasks themselves stay in
+My Work, as decided on 2026-09-25: the row is the month's count and opens
+the client's Months view. A colleague at Clients View without Reports keeps
+exactly what the Reports tab gave them, the finished reports with Download.
+Each block is read once for the client behind its own permission, and the
+month line under the name now reads the same answer, so opening a record
+reads the client's months once rather than twice. The Engagements rows had
+read a set's state from a column that does not exist (`state`), so every set
+read Draft; they read `published` now. No schema change.
+
 ### 2026-10-10 · The user group panel, simpler
 The user approved a simpler panel: eleven sections at four levels and
 around fifty finer permissions read as one long form. Now the group starts
