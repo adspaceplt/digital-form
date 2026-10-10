@@ -349,8 +349,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. A card a group
   (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks; AI:
-  AI usage and limits; Records: Document types, Task numbering), each row
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks;
+  WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
   drawn only for its part, its value under its name, a switch, Edit or Open
   at the right edge opening the one sheet that already edits it. The
   account menu keeps what is the person's own (My records, My namecard,
@@ -3708,8 +3708,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). One template
   a purpose (`wa_templates`: `report`, `feedback`, `reminder`, `creator`;
-  name and language as Meta holds them, how many body variables, On), set in
-  the account menu's WhatsApp (`team.settings`, `wa_template_save`, filed
+  name and language as Meta holds them, how many body variables, On), set on
+  the Settings page's WhatsApp (`team.settings`, `wa_template_save`, filed
   under WhatsApp from and to): Edit asks the name, language and variables,
   and each row's switch (`.switch`) turns it on or off at the press (one
   with no template asks for one first); a purpose that is Off sends nothing. The

@@ -1466,3 +1466,11 @@ later, and a month being planned lists last month's best and weakest posts;
 a restricted account is marked on the client, red in its rail and listed on
 the Overview. Delays were answered on 2026-10-09 by the three required
 dates; the WhatsApp approval chaser waits on the WhatsApp section.
+
+### 2026-10-10 · WhatsApp on the Settings page
+The user, the same day: "Whatsapp business settings not moved to settings
+section". The templates sheet (and its last fifty messages) was left in the
+account menu when Settings took Upgrade mode, Announcements and Notices.
+It is now the Settings page's WhatsApp card (Templates and recent messages,
+Open, `team.settings`), opening the same sheet; the account menu holds no
+WhatsApp item.

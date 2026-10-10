@@ -3,7 +3,7 @@
    switches, and AI usage hid under Reports while it covers every section.
    One page at the rail's foot, above the Activity record, holds what changes
    the portal for everybody: upgrade mode, announcements and notices; the
-   business figures; Meta checks; AI usage and limits; document types and
+   business figures; Meta checks; WhatsApp's templates; AI usage and limits; document types and
    task numbering. Each row is drawn only for a colleague holding its granted
    part, and each opens the one sheet that already edits it (one copy of
    every mechanism). The account menu keeps what is the person's own. */
@@ -75,6 +75,11 @@
           meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' }
       ] });
     }
+    /* WhatsApp (2026-10-10; the user: "Whatsapp business settings not moved
+       to settings section"): the templates each message is sent with and the
+       last fifty messages, a Business setting. */
+    if (may('team.settings') && window.ADspaceWhatsApp) out.push({ key: 'whatsapp', name: 'WhatsApp', rows: [
+      { id: 'whatsapp', name: 'Templates and recent messages', kind: 'open' }] });
     if (may('reports.ai')) out.push({ key: 'ai', name: 'AI', rows: [
       { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }] });
     var lists = [];
@@ -164,6 +169,7 @@
     }
     if (a === 'prices') { ed({ title: 'AI prices, US$ a million tokens', keys: [['ai_price_in', 'Input', 'usd'], ['ai_price_out', 'Output', 'usd']] }); return; }
     if (a === 'meta') { flipMeta(btn); return; }
+    if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('setMsg'); return; }
