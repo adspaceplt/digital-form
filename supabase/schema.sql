@@ -703,13 +703,13 @@ create or replace function public.functions_tidy()
 returns jsonb language plpgsql set search_path = public as $$
 declare
   open_to_anon constant text[] := array[
-    'announcement_now', 'app_settings_read', 'confirm_selection', 'creator_add_file',
+    'announcement_now', 'app_settings_read', 'confirm_selection', 'confirm_selection_with', 'creator_add_file',
     'creator_may_upload', 'creator_post_save', 'creator_rate', 'creator_remove_file',
     'creator_set_profiles', 'creator_submit', 'get_campaign', 'get_creator',
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'verify_serial'];
+    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'submit_review_seen', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -6080,7 +6080,8 @@ language sql immutable parallel safe as $$
   select case
     when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
                     'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
-                    'campaign.file_added', 'campaign.qc',
+                    'campaign.file_added', 'campaign.file_deleted', 'campaign.file_hidden',
+                    'campaign.file_shown', 'campaign.qc',
                     'campaign.invoice', 'campaign.invoice_file',
                     'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
                     'campaign.opened', 'campaign.rate', 'campaign.rated',
@@ -42111,6 +42112,1434 @@ revoke all on function public.team_notice_delete(uuid) from public, anon;
 grant execute on function public.team_notice_delete(uuid) to authenticated;
 
 -- END OF NOTICE DELETE ---------------------------------------------------------
+
+-- ===========================================================================
+-- CONFIRM ONCE — a client's creator selection, the team's Confirm creators
+-- and a portal request are each one act that happens once (audit F1, S3, C1,
+-- 2026-10-10). 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored
+-- byte for byte in supabase/schema.sql under the same banner; tests/sql.js
+-- compares the two.
+--
+-- WHAT CHANGED
+--   1. `confirm_selection_with(p_token, p_person, p_passcode, p_selected,
+--      p_backup, p_seen, p_idem)`: the selection page's Confirm sends the
+--      creators on the client's screen, the price shown for each and a key
+--      made once for the press. Under the campaign's row lock it refuses
+--      `empty`, `closed`, `over-slots`, `stale` (a creator no longer open to
+--      choose) and `prices` (a price changed since the page read it; the
+--      answer carries the prices now), then saves the selection and files
+--      the confirmation with what was confirmed (`snapshot`) in the same
+--      transaction. The same key again answers `ok` with `again` and files
+--      nothing. Joins `open_to_anon`: run 2026-10-07-function-hygiene.sql
+--      again BEFORE this file.
+--   2. `confirm_selection` (a page loaded before this one) refuses `empty`
+--      when nothing is shortlisted (a backup, once selection has closed),
+--      so a selection that never saved is never confirmed.
+--   3. `campaign_confirm_creators(p_campaign, p_options, p_person, p_source,
+--      p_idem)`: the console's Confirm creators, Creator Campaigns at Work on
+--      a client in scope. Every named booking must still be shortlisted on
+--      that campaign (`stale` with the count), then the confirmation, the
+--      bookings and the campaign's state move together, filed
+--      `campaign.locked`; the same key again files nothing.
+--   4. `portal_request_once(p_client, p_kind, p_service, p_note, p_idem)`:
+--      the portal's Request change keeps one key from the sheet's opening
+--      until it is sent, so a reply lost on the way and a second press file
+--      one request. `portal_request` (an older page) is the same with no key.
+--   5. `campaign_confirmations.idem`, `.snapshot`, `client_requests.idem`,
+--      each key unique within its campaign or client.
+--
+-- ROLLBACK
+--   Pages first (they fall back to the older functions where these are
+--   missing), then remove the three new functions, put `confirm_selection`
+--   and `portal_request` back from their earlier bands, and leave the
+--   columns (they hold nothing a page reads).
+-- ===========================================================================
+
+alter table public.campaign_confirmations add column if not exists idem text;
+alter table public.campaign_confirmations add column if not exists snapshot jsonb;
+create unique index if not exists campaign_conf_idem
+  on public.campaign_confirmations(campaign_id, idem) where idem is not null;
+alter table public.client_requests add column if not exists idem text;
+create unique index if not exists client_requests_idem
+  on public.client_requests(client_id, idem) where idem is not null;
+
+create or replace function public.confirm_selection_with(
+  p_token text, p_person text, p_passcode text, p_selected uuid[], p_backup uuid[],
+  p_seen jsonb, p_idem text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c      campaigns%rowtype;
+  v_sel  uuid[];
+  v_bak  uuid[];
+  v_all  uuid[];
+  v_idem text := left(nullif(btrim(coalesce(p_idem, '')), ''), 64);
+  v_now  jsonb;
+  v_snap jsonb;
+  n      integer;
+begin
+  select * into c from campaigns where access_token = p_token for update;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+  -- The same press again: the first answer stands and nothing is filed twice.
+  if v_idem is not null and exists (select 1 from campaign_confirmations k
+                                     where k.campaign_id = c.id and k.idem = v_idem) then
+    return jsonb_build_object('ok', true, 'again', true);
+  end if;
+
+  v_sel := array(select distinct x from unnest(coalesce(p_selected, '{}'::uuid[])) x where x is not null);
+  v_bak := case when coalesce(c.backups_open, false)
+                then array(select distinct x from unnest(coalesce(p_backup, '{}'::uuid[])) x
+                            where x is not null and not (x = any (v_sel)))
+                else '{}'::uuid[] end;
+  v_all := v_sel || v_bak;
+  n := cardinality(v_sel);
+
+  if c.selection_closed_at is not null and not (coalesce(c.backups_open, false) and n = 0) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  if cardinality(v_all) = 0 then return jsonb_build_object('error', 'empty'); end if;
+  if n > c.slots then return jsonb_build_object('error', 'over-slots', 'slots', c.slots); end if;
+  -- Every creator named is still on the campaign and open to choose.
+  if (select count(*) from campaign_options o
+       where o.id = any (v_all) and o.campaign_id = c.id
+         and o.state in ('option', 'shortlisted', 'backup')) <> cardinality(v_all) then
+    return jsonb_build_object('error', 'stale');
+  end if;
+  -- The prices the client read are the prices now.
+  select jsonb_object_agg(o.id::text, o.rate) into v_now
+    from campaign_options o where o.id = any (v_all);
+  if exists (select 1 from campaign_options o
+              where o.id = any (v_all)
+                and coalesce(p_seen -> (o.id::text), 'null'::jsonb)
+                    is distinct from coalesce(to_jsonb(o.rate), 'null'::jsonb)) then
+    return jsonb_build_object('error', 'prices', 'rates', v_now);
+  end if;
+
+  update campaign_options set state = 'option'
+   where campaign_id = c.id and state in ('shortlisted', 'backup');
+  if n > 0 then
+    update campaign_options set state = 'shortlisted'
+     where campaign_id = c.id and id = any (v_sel) and state = 'option';
+  end if;
+  if cardinality(v_bak) > 0 then
+    update campaign_options set state = 'backup'
+     where campaign_id = c.id and id = any (v_bak) and state = 'option';
+  end if;
+
+  select jsonb_agg(jsonb_build_object('id', o.id, 'creator', cr.name, 'rate', o.rate, 'as', o.state)
+                   order by o.position, o.added_at)
+    into v_snap
+    from campaign_options o join creators cr on cr.id = o.creator_id
+   where o.id = any (v_all);
+  insert into campaign_confirmations (campaign_id, kind, person, source, idem, snapshot)
+  values (c.id, 'client', trim(p_person), 'portal', v_idem, coalesce(v_snap, '[]'::jsonb));
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          case when n > 0 then n::text || ' creator' || case when n = 1 then '' else 's' end || ' confirmed'
+               else cardinality(v_bak)::text || ' backup' || case when cardinality(v_bak) = 1 then '' else 's' end || ' confirmed' end);
+
+  return jsonb_build_object('ok', true, 'selected', n);
+end $$;
+
+revoke all on function public.confirm_selection_with(text, text, text, uuid[], uuid[], jsonb, text) from public;
+grant execute on function public.confirm_selection_with(text, text, text, uuid[], uuid[], jsonb, text) to anon, authenticated;
+
+create or replace function public.confirm_selection(
+  p_token text, p_person text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+  if c.selection_closed_at is not null and not coalesce(c.backups_open, false) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  -- Nothing saved is nothing to confirm (a save refused under the page).
+  if not exists (select 1 from campaign_options o
+                  where o.campaign_id = c.id
+                    and o.state = case when c.selection_closed_at is not null
+                                       then 'backup' else 'shortlisted' end) then
+    return jsonb_build_object('error', 'empty');
+  end if;
+
+  insert into campaign_confirmations (campaign_id, kind, person, source)
+  values (c.id, 'client', trim(p_person), 'portal');
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          (select count(*)::text || ' creator' || case when count(*) = 1 then '' else 's' end
+             from campaign_options
+            where campaign_id = c.id and state = 'shortlisted') || ' confirmed');
+
+  return jsonb_build_object('ok', true);
+end $$;
+
+revoke all on function public.confirm_selection(text, text, text) from public;
+grant execute on function public.confirm_selection(text, text, text) to anon, authenticated;
+
+create or replace function public.campaign_confirm_creators(
+  p_campaign uuid, p_options uuid[], p_person text, p_source text, p_idem text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me       public.team_members;
+  c        public.campaigns%rowtype;
+  v_ids    uuid[] := array(select distinct x from unnest(coalesce(p_options, '{}'::uuid[])) x where x is not null);
+  v_idem   text := left(nullif(btrim(coalesce(p_idem, '')), ''), 64);
+  v_person text;
+  v_source text := case when p_source in ('portal', 'whatsapp', 'email', 'call') then p_source else 'whatsapp' end;
+  v_ok     integer;
+  v_snap   jsonb;
+begin
+  if not public.allowed('campaigns.campaigns', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.campaigns where id = p_campaign for update;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_scope_ok('campaign', c.id, 'work') then
+    return jsonb_build_object('error', 'client-scope');
+  end if;
+  if v_idem is not null and exists (select 1 from public.campaign_confirmations k
+                                     where k.campaign_id = c.id and k.idem = v_idem) then
+    return jsonb_build_object('ok', true, 'again', true);
+  end if;
+  if cardinality(v_ids) = 0 then return jsonb_build_object('error', 'empty'); end if;
+  select count(*) into v_ok from public.campaign_options o
+   where o.id = any (v_ids) and o.campaign_id = c.id and o.state = 'shortlisted';
+  if v_ok <> cardinality(v_ids) then
+    return jsonb_build_object('error', 'stale', 'count', cardinality(v_ids) - v_ok);
+  end if;
+  v_person := coalesce(nullif(btrim(coalesce(p_person, '')), ''), me.name);
+
+  select jsonb_agg(jsonb_build_object('id', o.id, 'creator', cr.name, 'rate', o.rate, 'as', o.state)
+                   order by o.position, o.added_at)
+    into v_snap
+    from public.campaign_options o join public.creators cr on cr.id = o.creator_id
+   where o.id = any (v_ids);
+  insert into public.campaign_confirmations (campaign_id, kind, person, source, idem, snapshot)
+  values (c.id, case when v_source = 'portal' then 'client' else 'keyed_in' end,
+          v_person, v_source, v_idem, coalesce(v_snap, '[]'::jsonb));
+  update public.campaign_options
+     set state = 'confirmed', confirmed_at = now(), confirmed_by = v_person
+   where id = any (v_ids);
+  update public.campaigns set state = 'production' where id = c.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'campaign.locked', c.title,
+          cardinality(v_ids)::text || ' creators · ' || v_person);
+
+  return jsonb_build_object('ok', true, 'confirmed', cardinality(v_ids));
+end $$;
+revoke all on function public.campaign_confirm_creators(uuid, uuid[], text, text, text) from public, anon;
+grant execute on function public.campaign_confirm_creators(uuid, uuid[], text, text, text) to authenticated;
+
+create or replace function public.portal_request_once(
+  p_client uuid, p_kind text, p_service uuid, p_note text, p_idem text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who    text := lower(auth.jwt() ->> 'email');
+  cl     public.clients%rowtype;
+  me     public.client_contacts%rowtype;
+  sv     public.client_services%rowtype;
+  rid    uuid;
+  v_idem text := left(nullif(btrim(coalesce(p_idem, '')), ''), 64);
+begin
+  if who is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  if p_client is null or p_client not in (select public.portal_clients()) then
+    return jsonb_build_object('error', 'no-access');
+  end if;
+  -- The same request again (a reply lost on the way): the one already filed.
+  if v_idem is not null then
+    select r.id into rid from public.client_requests r
+     where r.client_id = p_client and r.idem = v_idem;
+    if rid is not null then return jsonb_build_object('ok', true, 'id', rid, 'again', true); end if;
+  end if;
+  if p_kind not in ('upgrade', 'downgrade', 'cancel', 'details') then
+    return jsonb_build_object('error', 'bad-kind');
+  end if;
+  select * into cl from public.clients where id = p_client;
+  select * into me from public.client_contacts
+    where client_id = p_client and portal_access and archived_at is null and lower(email) = who
+    order by is_primary desc limit 1;
+  if p_kind <> 'details' then
+    select * into sv from public.client_services
+      where id = p_service and client_id = p_client and archived_at is null and state = 'confirmed';
+    if sv.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  end if;
+  if p_kind <> 'cancel' and coalesce(btrim(p_note), '') = '' then
+    return jsonb_build_object('error', 'note-required');
+  end if;
+  insert into public.client_requests (client_id, contact_id, contact_name, kind, service_id, service_label, note, idem)
+  values (p_client, me.id, me.name, p_kind, sv.id, sv.label, nullif(btrim(p_note), ''), v_idem)
+  on conflict (client_id, idem) where idem is not null do nothing
+  returning id into rid;
+  if rid is null then
+    select r.id into rid from public.client_requests r
+     where r.client_id = p_client and r.idem = v_idem;
+    return jsonb_build_object('ok', true, 'id', rid, 'again', true);
+  end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'request.raised', cl.name, p_kind || coalesce(' · ' || sv.label, ''));
+  return jsonb_build_object('ok', true, 'id', rid);
+end $$;
+
+create or replace function public.portal_request(
+  p_client uuid, p_kind text, p_service uuid default null, p_note text default null)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select public.portal_request_once(p_client, p_kind, p_service, p_note, null)
+$$;
+
+revoke all on function public.portal_request_once(uuid, text, uuid, text, text) from public, anon;
+grant execute on function public.portal_request_once(uuid, text, uuid, text, text) to authenticated;
+revoke all on function public.portal_request(uuid, text, uuid, text) from public, anon;
+grant execute on function public.portal_request(uuid, text, uuid, text) to authenticated;
+
+-- END OF CONFIRM ONCE ----------------------------------------------------------
+
+-- ===========================================================================
+-- APPROVAL AS SEEN — a client's decision is on the version of the post the
+-- page showed, and keeps what that was (audit F2, 2026-10-10).
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/approvalseen.js
+-- compares the two. Holds no word the connector stops on.
+--
+-- WHAT CHANGED
+--   1. `posts.content_version` counts every change to a post's file, copy or
+--      title, a correction before any decision included (which stays a
+--      correction of the same round: the round is the posts_revision
+--      trigger's alone). Stamped by trigger `posts_content_version`; a page
+--      cannot set it.
+--   2. `get_review_feed` sends each post's `version`.
+--   3. `submit_review_seen(… p_version)`: the client's link checked first,
+--      then the post locked and its version compared; a post changed since
+--      the page read it is refused `changed` (with the version now), and the
+--      decision is filed through `submit_review` with what was decided on
+--      kept as `reviews.seen` (version, round, title, caption, caption_zh,
+--      media). Joins `open_to_anon`: run 2026-10-07-function-hygiene.sql
+--      again BEFORE this file. `submit_review` stays for a page loaded
+--      before this one.
+--
+-- ROLLBACK
+--   Pages first (they fall back to `submit_review` where the new function
+--   is missing), then re-run the REEL COVER PAIRS section's get_review_feed
+--   and remove the trigger, the function and the two columns in the SQL
+--   Editor.
+-- ===========================================================================
+
+alter table public.posts add column if not exists content_version integer not null default 1;
+alter table public.reviews add column if not exists seen jsonb;
+
+create or replace function public.posts_content_version() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (new.media, new.caption, new.caption_zh, new.title)
+     is distinct from (old.media, old.caption, old.caption_zh, old.title) then
+    new.content_version := coalesce(old.content_version, 1) + 1;
+  else
+    new.content_version := old.content_version;
+  end if;
+  return new;
+end $$;
+revoke all on function public.posts_content_version() from public, anon, authenticated;
+create or replace trigger posts_content_version before update on public.posts
+  for each row execute function public.posts_content_version();
+
+create or replace function public.get_review_feed(p_token text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_client public.clients%rowtype;
+begin
+  select * into v_client
+  from public.clients
+  where access_token = p_token and active and not review_hidden;
+
+  if not found then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+
+  if v_client.passcode is not null
+     and (p_passcode is null or p_passcode <> v_client.passcode) then
+    return jsonb_build_object('error', 'passcode_required', 'client', v_client.name);
+  end if;
+
+  return jsonb_build_object(
+    'client', jsonb_build_object(
+      'name', v_client.name,
+      'logo_url', v_client.logo_url,
+      'handles', jsonb_build_object(
+        'instagram', v_client.handle_ig,
+        'facebook',  v_client.handle_fb,
+        'tiktok',    v_client.handle_tiktok,
+        'xhs',       v_client.handle_xhs)),
+    'batches', coalesce((
+      select jsonb_agg(batch order by batch->>'created_at' desc)
+      from (
+        select jsonb_build_object(
+          'id',         b.id,
+          'title',      b.title,
+          'note',       b.note,
+          'created_at', b.created_at,
+          'posts', coalesce((
+            select jsonb_agg(post order by (post->>'position')::int)
+            from (
+              select jsonb_build_object(
+                'id',         p.id,
+                'platform',   p.platform,
+                'format',     p.format,
+                'handle',     p.handle,
+                'caption',    p.caption,
+                'caption_zh', p.caption_zh,
+                'title',      p.title,
+                'media',      p.media,
+                'cover_for',  p.cover_for,
+                'position',   p.position,
+                'round',      p.round,
+                'version',    p.content_version,
+                'reset_note', case
+                  when p.review_reset_at is not null then p.review_reset_note end,
+                /* The decision standing on the round on show: never one about
+                   a round the client no longer sees, never one taken back. */
+                'review',     (
+                  select jsonb_build_object(
+                    'decision',   r.decision,
+                    'note',       r.note,
+                    'reviewer',   case when r.source = 'team' then null else r.reviewer end,
+                    'created_at', r.created_at,
+                    'by_team',    (r.source = 'team'),
+                    'suggested',  (r.suggested_caption is not null or r.suggested_caption_zh is not null),
+                    /* The client's own edit, so Edit request reopens it. */
+                    'suggested_caption',    r.suggested_caption,
+                    'suggested_caption_zh', r.suggested_caption_zh)
+                  from public.reviews r
+                  where r.post_id = p.id and r.round = p.round and r.undone_at is null
+                    and (p.review_reset_at is null or r.created_at > p.review_reset_at)
+                  order by r.created_at desc
+                  limit 1),
+                /* What the client asked of the round before, so a revision
+                   says what it answers. Words only: the earlier file and copy
+                   stay with the team. */
+                'asked',      case when p.round > 1 then (
+                  select jsonb_build_object(
+                    'note',       r.note,
+                    'reviewer',   r.reviewer,
+                    'created_at', r.created_at,
+                    'suggested',  (r.suggested_caption is not null or r.suggested_caption_zh is not null))
+                  from public.reviews r
+                  where r.post_id = p.id and r.round = p.round - 1 and r.decision = 'changes'
+                    and r.undone_at is null
+                  order by r.created_at desc
+                  limit 1) end
+              ) as post
+              from public.posts p
+              where p.batch_id = b.id
+            ) posts
+          ), '[]'::jsonb)
+        ) as batch
+        from public.batches b
+        where b.client_id = v_client.id and b.published
+      ) batches
+    ), '[]'::jsonb)
+  );
+end $$;
+revoke all on function public.get_review_feed(text, text) from public;
+grant execute on function public.get_review_feed(text, text) to anon, authenticated;
+
+create or replace function public.submit_review_seen(
+  p_token      text,
+  p_post_id    uuid,
+  p_decision   text,
+  p_version    integer,
+  p_note       text default null,
+  p_reviewer   text default null,
+  p_passcode   text default null,
+  p_caption    text default null,
+  p_caption_zh text default null
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_post public.posts%rowtype;
+  v_res  jsonb;
+begin
+  -- The link first, as submit_review asks it, so a post id alone says nothing.
+  if not exists (select 1
+                   from public.posts p
+                   join public.batches b on b.id = p.batch_id
+                   join public.clients c on c.id = b.client_id
+                  where p.id = p_post_id and b.published
+                    and c.access_token = p_token and c.active and not c.review_hidden
+                    and (c.passcode is null or c.passcode = p_passcode)) then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  select * into v_post from public.posts where id = p_post_id for update;
+  if p_version is null or p_version is distinct from v_post.content_version then
+    return jsonb_build_object('error', 'changed', 'version', v_post.content_version);
+  end if;
+  v_res := public.submit_review(p_token, p_post_id, p_decision, p_note, p_reviewer,
+                                p_passcode, p_caption, p_caption_zh);
+  if coalesce((v_res ->> 'ok')::boolean, false) then
+    update public.reviews r
+       set seen = jsonb_build_object('version', v_post.content_version, 'round', v_post.round,
+                                     'title', v_post.title, 'caption', v_post.caption,
+                                     'caption_zh', v_post.caption_zh, 'media', v_post.media)
+     where r.post_id = p_post_id and r.created_at = now() and r.seen is null;
+  end if;
+  return v_res;
+end $$;
+
+revoke all on function public.submit_review_seen(text, uuid, text, integer, text, text, text, text, text) from public;
+grant execute on function public.submit_review_seen(text, uuid, text, integer, text, text, text, text, text) to anon, authenticated;
+
+-- END OF APPROVAL AS SEEN -----------------------------------------------------
+
+-- ===========================================================================
+-- RELEASED FILES — the client sees the round the team released and nothing
+-- newer, a file changed after the quality check is checked again, and a file
+-- the client approved is hidden rather than removed (audit S5, S6,
+-- 2026-10-10). 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored
+-- byte for byte in supabase/schema.sql under the same banner;
+-- tests/releasedfiles.js compares the two. It replaces a policy, so it runs
+-- in the SQL Editor.
+--
+-- WHAT CHANGED
+--   1. `campaign_options.released_round`, stamped by `campaign_qc_pass` at
+--      release with the newest round handed in; `get_campaign` sends that
+--      round's files alone, never a hidden one. Rows released before are
+--      stamped once from their files.
+--   2. `option_qc.voided_at`: a file added or removed while the booking is
+--      Submitted voids that round's checks (trigger
+--      `campaign_deliverables_qc_void`); `option_qc_count` reads only checks
+--      standing, and the same colleague's check is taken again.
+--   3. `campaign_deliverables.hidden_at` / `hidden_by`: from the client's
+--      approval on (Scheduled, Posted, Completed) a file is hidden, never
+--      removed: `campaign_file_hide(p_file, p_hide)`, Creator Campaigns at
+--      Work, client scope, filed `campaign.file_hidden` /
+--      `campaign.file_shown`. Trigger `campaign_deliverables_guard` refuses a
+--      page removing such a file (`approved-hide`). Once hidden it is
+--      deleted only by `campaign_file_delete(p_file)` at the granted part
+--      `campaigns.files_delete`, filed `campaign.file_deleted`; the record's
+--      section map files the three tags under Creator Campaigns.
+--   4. The one `for all` policy is four: read at Creator Campaigns:
+--      Campaigns View, add and change at Work, and a permanent delete at the
+--      granted part `campaigns.files_delete` (an admin's alone until given).
+--
+-- ROLLBACK
+--   Pages first (they read the new columns where present), then put back
+--   `campaign_deliverables_team` (for all, is_team()), re-run the earlier
+--   get_campaign, campaign_qc_pass and option_qc_count, and remove the
+--   triggers, the function and the columns, in the SQL Editor.
+-- ===========================================================================
+
+alter table public.campaign_options add column if not exists released_round integer;
+alter table public.option_qc add column if not exists voided_at timestamptz;
+alter table public.campaign_deliverables add column if not exists hidden_at timestamptz;
+alter table public.campaign_deliverables add column if not exists hidden_by text;
+
+-- Rows released before: the round on show today.
+update public.campaign_options o
+   set released_round = (select max(d.round) from public.campaign_deliverables d
+                          where d.option_id = o.id and d.removed_at is null)
+ where o.released_round is null
+   and o.state in ('reviewing', 'scheduled', 'posted', 'completed');
+update public.campaign_options o
+   set released_round = (select max(d.round) from public.campaign_deliverables d
+                          where d.option_id = o.id and d.removed_at is null
+                            and d.round < coalesce(o.revision_round, 0))
+ where o.released_round is null and o.state = 'changes'
+   and coalesce(o.changes_by, 'client') = 'client';
+
+create or replace function public.option_qc_count(p_option uuid)
+returns integer
+language sql security definer stable set search_path = public as $$
+  select count(distinct q.team_member_id)::int
+    from public.option_qc q
+    join public.campaign_options o on o.id = q.option_id
+   where q.option_id = p_option
+     and q.round = coalesce(o.revision_round, 0)
+     and q.voided_at is null
+$$;
+grant execute on function public.option_qc_count(uuid) to authenticated;
+
+create or replace function public.campaign_qc_pass(
+  p_option uuid, p_want_second boolean default false)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me   public.team_members;
+  o    public.campaign_options;
+  n    integer;
+begin
+  if not public.allowed('campaigns.campaigns', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+
+  select * into o from public.campaign_options where id = p_option for update;
+  if o.id is null then return jsonb_build_object('error', 'no-booking'); end if;
+  if o.state <> 'submitted' then
+    return jsonb_build_object('error', 'not-submitted');
+  end if;
+
+  /* A check voided by a file added since (audit S5) is taken again. */
+  insert into public.option_qc (option_id, team_member_id, round)
+  values (p_option, me.id, coalesce(o.revision_round, 0))
+  on conflict (option_id, team_member_id, round)
+  do update set voided_at = null, checked_at = now()
+   where public.option_qc.voided_at is not null;
+
+  if p_want_second and not coalesce(o.qc_second_wanted, false) then
+    update public.campaign_options set qc_second_wanted = true where id = p_option;
+    o.qc_second_wanted := true;
+  end if;
+
+  n := public.option_qc_count(p_option);
+  if coalesce(o.qc_second_wanted, false) and n < 2 then
+    return jsonb_build_object('state', 'waiting', 'checks', n, 'second', true);
+  end if;
+
+  update public.campaign_options
+     set state = 'reviewing', changes_by = null,
+         released_round = coalesce((select max(d.round) from public.campaign_deliverables d
+                                     where d.option_id = p_option and d.removed_at is null
+                                       and d.hidden_at is null), released_round)
+   where id = p_option;
+  return jsonb_build_object('state', 'reviewing', 'checks', n,
+                            'second', coalesce(o.qc_second_wanted, false));
+end $$;
+grant execute on function public.campaign_qc_pass(uuid, boolean) to authenticated;
+
+create or replace function public.campaign_deliverables_qc_void() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' and new.removed_at is not distinct from old.removed_at then
+    return new;
+  end if;
+  update public.option_qc q set voided_at = now()
+    from public.campaign_options o
+   where o.id = new.option_id and o.state = 'submitted'
+     and q.option_id = o.id and q.round = coalesce(o.revision_round, 0)
+     and q.voided_at is null;
+  return new;
+end $$;
+revoke all on function public.campaign_deliverables_qc_void() from public, anon, authenticated;
+create or replace trigger campaign_deliverables_qc_void
+  after insert or update on public.campaign_deliverables
+  for each row execute function public.campaign_deliverables_qc_void();
+
+/* A file the client approved is the client's record of what they approved:
+   a page hides it, and never removes it. Run as the caller, so
+   `current_user` tells a page's write from a function's. */
+create or replace function public.campaign_deliverables_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if current_user in ('authenticated', 'anon')
+     and new.removed_at is not null and old.removed_at is null
+     and exists (select 1 from public.campaign_options o
+                  where o.id = new.option_id and o.state in ('scheduled', 'posted', 'completed')) then
+    raise exception 'approved-hide' using hint = 'An approved file is hidden, not removed.';
+  end if;
+  if current_user in ('authenticated', 'anon')
+     and (new.hidden_at, new.hidden_by) is distinct from (old.hidden_at, old.hidden_by) then
+    raise exception 'hide-function' using hint = 'Hide and Restore go through campaign_file_hide.';
+  end if;
+  return new;
+end $$;
+revoke all on function public.campaign_deliverables_guard() from public, anon, authenticated;
+create or replace trigger campaign_deliverables_guard
+  before update on public.campaign_deliverables
+  for each row execute function public.campaign_deliverables_guard();
+
+create or replace function public.campaign_file_hide(p_file uuid, p_hide boolean default true)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me   public.team_members;
+  d    public.campaign_deliverables%rowtype;
+  o    public.campaign_options%rowtype;
+  c    public.campaigns%rowtype;
+  cr   text;
+begin
+  if not public.allowed('campaigns.campaigns', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.campaign_deliverables where id = p_file for update;
+  if d.id is null or d.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into o from public.campaign_options where id = d.option_id;
+  select * into c from public.campaigns where id = o.campaign_id;
+  if not public.client_scope_ok('campaign', c.id, 'work') then
+    return jsonb_build_object('error', 'client-scope');
+  end if;
+  if o.state not in ('scheduled', 'posted', 'completed') then
+    return jsonb_build_object('error', 'not-approved');
+  end if;
+  if coalesce(p_hide, true) = (d.hidden_at is not null) then
+    return jsonb_build_object('ok', true, 'again', true);
+  end if;
+  update public.campaign_deliverables
+     set hidden_at = case when coalesce(p_hide, true) then now() end,
+         hidden_by = case when coalesce(p_hide, true) then me.name end
+   where id = d.id;
+  select cx.name into cr from public.creators cx where cx.id = o.creator_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, case when coalesce(p_hide, true) then 'campaign.file_hidden' else 'campaign.file_shown' end,
+          c.title, coalesce(cr, 'Creator') || ' · ' || coalesce(d.name, 'file'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.campaign_file_hide(uuid, boolean) from public, anon;
+grant execute on function public.campaign_file_hide(uuid, boolean) to authenticated;
+
+drop policy if exists campaign_deliverables_team on public.campaign_deliverables;
+drop policy if exists campaign_deliverables_read on public.campaign_deliverables;
+drop policy if exists campaign_deliverables_write on public.campaign_deliverables;
+drop policy if exists campaign_deliverables_edit on public.campaign_deliverables;
+drop policy if exists campaign_deliverables_del on public.campaign_deliverables;
+create policy campaign_deliverables_read on public.campaign_deliverables
+  for select to authenticated using (public.allowed('campaigns.campaigns', 'view'));
+create policy campaign_deliverables_write on public.campaign_deliverables
+  for insert to authenticated with check (public.allowed('campaigns.campaigns', 'work'));
+create policy campaign_deliverables_edit on public.campaign_deliverables
+  for update to authenticated using (public.allowed('campaigns.campaigns', 'work'))
+  with check (public.allowed('campaigns.campaigns', 'work'));
+create policy campaign_deliverables_del on public.campaign_deliverables
+  for delete to authenticated using (public.ops_granted('campaigns.files_delete', 'work'));
+
+/* A file the client approved leaves for good only by a colleague holding
+   the granted part `campaigns.files_delete` (an admin's until given), and
+   only once hidden: the stored file itself is kept, as every upload is. */
+create or replace function public.campaign_file_delete(p_file uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me   public.team_members;
+  d    public.campaign_deliverables%rowtype;
+  o    public.campaign_options%rowtype;
+  c    public.campaigns%rowtype;
+  cr   text;
+begin
+  if not public.ops_granted('campaigns.files_delete', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.campaign_deliverables where id = p_file for update;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.hidden_at is null then return jsonb_build_object('error', 'not-hidden'); end if;
+  select * into o from public.campaign_options where id = d.option_id;
+  select * into c from public.campaigns where id = o.campaign_id;
+  if not public.client_scope_ok('campaign', c.id, 'manage') then
+    return jsonb_build_object('error', 'client-scope');
+  end if;
+  select cx.name into cr from public.creators cx where cx.id = o.creator_id;
+  delete from public.campaign_deliverables where id = d.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'campaign.file_deleted', c.title,
+          coalesce(cr, 'Creator') || ' · ' || coalesce(d.name, 'file'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.campaign_file_delete(uuid) from public, anon;
+grant execute on function public.campaign_file_delete(uuid) to authenticated;
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.file_deleted', 'campaign.file_hidden',
+                    'campaign.file_shown', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.whatsapp', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.service_restored', 'client.stage', 'client.touch',
+                    'client.touch_deleted', 'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('wa.sent', 'wa.template') then 'whatsapp'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.audited', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.month', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('script.approved', 'script.changes', 'script.created', 'script.deleted',
+                    'script.link', 'script.saved', 'script.shared', 'script.shot',
+                    'script.unshared') then 'scripts'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+create or replace function public.get_campaign(p_token text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  cl clients%rowtype;
+  billable boolean;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  select * into cl from clients where id = c.client_id;
+
+  -- An invoice belongs to an accepted booking. Until the client has chosen and
+  -- the team has confirmed at least one creator, the number and the PDF stay
+  -- off the client's page, and reverting the last confirmation takes them off
+  -- it again. The gate is here rather than on the page so nothing the client
+  -- can open carries what it should not show.
+  select exists (
+    select 1 from campaign_options o
+     where o.campaign_id = c.id
+       and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                       'reviewing', 'changes', 'scheduled', 'posted', 'completed')
+  ) into billable;
+
+  if c.passcode is not null and c.passcode <> '' then
+    if p_passcode is null or p_passcode <> c.passcode then
+      return jsonb_build_object('error', 'passcode', 'client', cl.name);
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'campaign', jsonb_build_object(
+      'title', c.title, 'title_zh', c.title_zh,
+      'purpose', c.purpose, 'purpose_zh', c.purpose_zh, 'slots', c.slots,
+      'backups_open', coalesce(c.backups_open, false),
+      'selection_closed', c.selection_closed_at is not null,
+      'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
+      'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
+      'invoice_no', case when billable then c.invoice_no end,
+      'invoice_url', case when billable then c.invoice_url end),
+    -- Currency and tax travel with the campaign, because the client's page
+    -- prints both and must not assume Malaysia.
+    'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url,
+      'market', coalesce(cl.market, 'MY'), 'sst_applies', coalesce(cl.sst_applies, true)),
+    /* A draft reaches the client when the team releases it, and not a moment
+       before. `submitted` is the team's own step, so it is reported as
+       `pending_draft`: the client is not asked to approve something they
+       cannot open, and does not learn that a round exists. A `changes` the
+       team raised is the same round going back to the creator, so it is
+       withheld the same way; a `changes` the client raised is their own and
+       is reported as it is. The mapping is here and not on the page, because
+       what a client may not see is withheld by this function. */
+    'options', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', o.id, 'name', cr.name,
+        'rate', o.rate, 'platforms', o.platforms, 'state', s.shown,
+        'is_replacement', o.is_replacement, 'added_at', o.added_at,
+        -- Production. Present once a creator is locked; null before that, so
+        -- the page can tell "not started" from "nothing to say".
+        'visit_date', o.visit_date, 'visit_time', o.visit_time,
+        'visit_location', o.visit_location, 'visit_pic', o.visit_pic,
+        'visit_pic_phone', o.visit_pic_phone, 'tracking_no', o.tracking_no,
+        'draft_url', case when s.released then o.draft_url end,
+        /* The client's own rounds: a round the team sent back, or a request
+           taken back, is not one the client made (2026-09-27). */
+        'revision_round', (select count(*) from public.option_reviews r
+                            where r.option_id = o.id and r.source = 'client'
+                              and r.decision = 'changes' and r.undone_at is null)::int + 1,
+        'planned_publish', o.planned_publish,
+        /* What the creator uploaded, once it has been released: the round
+           the team last released (`released_round`, stamped at release), so
+           a creator's next round, uploaded after the client asked for
+           changes, stays with the team until it is released in its turn
+           (audit S5, 2026-10-10). A file hidden after the client's approval
+           is never sent (audit S6). */
+        'files', case when s.released then coalesce((
+            select jsonb_agg(jsonb_build_object(
+              'id', d.id, 'url', d.url, 'name', d.name, 'kind', d.kind,
+              'bytes', d.bytes) order by d.uploaded_at)
+            from campaign_deliverables d
+            where d.option_id = o.id and d.removed_at is null and d.hidden_at is null
+              and d.round = coalesce(o.released_round,
+                            (select max(d2.round) from campaign_deliverables d2
+                              where d2.option_id = o.id and d2.removed_at is null))
+          ), '[]'::jsonb) else '[]'::jsonb end,
+        -- The caption is part of what is being approved, so it travels with
+        -- the files and is withheld with them.
+        'caption', case when s.released then o.draft_caption end,
+        'profiles', coalesce((
+          select jsonb_agg(jsonb_build_object('platform', p.platform, 'url', p.url))
+          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb),
+        -- One row per platform posted on, so two placements stay two numbers.
+        'posts', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'platform', pp.platform, 'post_url', pp.post_url,
+            'published_at', pp.published_at, 'window_days', pp.window_days,
+            'impressions', pp.impressions, 'engagements', pp.engagements,
+            'views', pp.views, 'measured_at', pp.measured_at) order by pp.platform)
+          from option_posts pp where pp.option_id = o.id), '[]'::jsonb),
+        /* What was last decided, so the card can say who approved it and
+           when rather than jumping to the next step with nothing to show for
+           the decision. The client's own decisions, and an approval the team
+           gave on the client's behalf (`by_team`, read "Proceeded by"); a
+           team send-back stays withheld. Withheld with the draft it is about. */
+        'review', case when s.released then (
+            select jsonb_build_object('decision', r.decision, 'reviewer', r.reviewer,
+                                      'note', case when r.source = 'client' then r.note end,
+                                      'at', r.created_at, 'by_team', r.source = 'team')
+            from option_reviews r where r.option_id = o.id
+              and (r.source = 'client' or r.decision = 'approved') and r.undone_at is null
+            order by r.created_at desc limit 1) end)
+        order by o.position, o.added_at)
+      from campaign_options o
+      join creators cr on cr.id = o.creator_id
+      cross join lateral (
+        select sh.shown,
+               sh.shown in ('reviewing', 'changes', 'scheduled', 'posted', 'completed')
+                 as released
+        from (select case
+                       when o.state = 'submitted' then 'pending_draft'
+                       when o.state = 'changes'
+                            and coalesce(o.changes_by, 'client') = 'team' then 'pending_draft'
+                       else o.state
+                     end as shown) sh
+      ) s
+      where o.campaign_id = c.id and o.state <> 'replaced'), '[]'::jsonb)
+  );
+end $$;
+
+revoke all on function public.get_campaign(text, text) from public;
+grant execute on function public.get_campaign(text, text) to anon, authenticated;
+
+-- END OF RELEASED FILES -------------------------------------------------------
+
+-- ===========================================================================
+-- LETTERS HELD TO THEIR LINES — a letter is priced by the database and
+-- verified only over the lines it printed; a client's deletion files itself;
+-- the documents table takes no direct write; a group seeing only its own
+-- clients holds no Activity record (audit S2, S4, R1, 2026-10-10).
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/lettersql.js compares
+-- the two. It drops policies, so it runs in the SQL Editor.
+--
+-- WHAT CHANGED
+--   1. `issue_letter` works the price itself (the letter's own rule:
+--      js/documents.js priceOf, js/money.js rateFor, SST at the rate in
+--      force today) and refuses page figures that differ by more than a sen
+--      (`stale`, with the figures now). Same signature.
+--   2. `verify_letter` refuses a letter one of whose lines was removed since
+--      (`archived-line`) or whose quantity, rate, term or adjustment moved
+--      since it was issued (`changed-terms`).
+--   3. `delete_client` files `client.deleted` itself, in the transaction that
+--      deletes; the page no longer files it.
+--   4. `client_documents` keeps its read policy; insert, update and delete
+--      go only through the letter functions (no page writes the table).
+--   5. Trigger `team_roles_scope_guard`: a group is not given Own clients
+--      only together with any Activity record access (`scope-activity`),
+--      since the record is not scoped. An admin group is left alone.
+--
+-- ROLLBACK
+--   Re-run the CLIENT LETTERS section's issue_letter and verify_letter, the
+--   ONE SET OF HANDLES section's delete_client (the page filing again), and
+--   the DELETE AT ITS LEVEL section's three client_documents policies, and
+--   remove the trigger and its function.
+-- ===========================================================================
+
+create or replace function public.issue_letter(
+  p_client    uuid,
+  p_services  uuid[],
+  p_idem      text,
+  p_subtotal  numeric,
+  p_tax       numeric,
+  p_total     numeric,
+  p_deal      jsonb   default '{}'::jsonb,
+  p_replaces  uuid    default null,
+  p_renewal   boolean default false,
+  /* A reference somebody typed. Blank is the ordinary case and the counter
+     below makes the number; where one is typed it is checked against every
+     document that stands and the counter is not advanced, so filling a gap
+     by hand never costs the next letter its place in the sequence. */
+  p_serial    text    default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who    text := lower(auth.jwt() ->> 'email');
+  cl     public.clients%rowtype;
+  ct     public.client_contacts%rowtype;
+  me     public.team_members%rowtype;
+  v_ym   text;
+  v_seq  int;
+  v_try  int;
+  v_no   text;
+  v_id   uuid;
+  v_lines jsonb;
+  v_n    int;
+  v_bad  int;
+  v_old  public.client_documents%rowtype;
+  v_term int;
+  v_each numeric;
+  v_etax numeric;
+  v_sub  numeric;
+  v_tax  numeric;
+  v_tot  numeric;
+  v_pct  numeric;
+begin
+  if not public.allowed('clients.documents') then
+    return jsonb_build_object('error', 'not-allowed');
+  end if;
+  if p_client is null or p_services is null or array_length(p_services, 1) is null then
+    return jsonb_build_object('error', 'no-lines');
+  end if;
+
+  select * into cl from public.clients where id = p_client;
+  if cl.id is null then return jsonb_build_object('error', 'no-client'); end if;
+
+  -- The Client ID is what the serial is built from, so there is no letter
+  -- without one. Staff enter it on the record; nothing invents it. A typed
+  -- reference needs no code, because nothing is being built.
+  v_no := nullif(btrim(coalesce(p_serial, '')), '');
+  if v_no is null and coalesce(btrim(cl.client_code), '') = '' then
+    return jsonb_build_object('error', 'no-client-code');
+  end if;
+
+  -- The same submission, pressed twice, is one letter. Answered before any
+  -- number is reserved, so a double click cannot spend a serial either.
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.client_documents
+      where client_id = p_client and idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
+    end if;
+  end if;
+
+  -- A typed reference is checked before anything is written: the same shape
+  -- the Register accepts, and refused where a document still holds it.
+  if v_no is not null then
+    if v_no !~ '^[A-Za-z0-9/._-]{3,40}$' then
+      return jsonb_build_object('error', 'serial-shape');
+    end if;
+    if public.serial_taken(v_no) then
+      return jsonb_build_object('error', 'serial-taken');
+    end if;
+  end if;
+
+  -- Every id must be this client's own live line, and in a state this letter
+  -- may carry: To quote always, Confirmed only on a deliberate renewal.
+  select count(*) into v_bad from unnest(p_services) s(id)
+    left join public.client_services cs
+      on cs.id = s.id and cs.client_id = p_client and cs.archived_at is null
+    where cs.id is null
+       or (cs.state = 'confirmed' and not p_renewal)
+       or cs.state not in ('quoted', 'confirmed');
+  if v_bad > 0 then return jsonb_build_object('error', 'bad-lines'); end if;
+
+  -- A line already on a live letter is not offered again by accident. The way
+  -- through is to void that letter, or to name it as the one being replaced.
+  select count(*) into v_bad
+    from public.client_document_services m
+    join public.client_documents d on d.id = m.document_id
+   where m.service_id = any(p_services)
+     and d.voided_at is null
+     and d.superseded_by is null
+     and d.verified_at is null
+     and (p_replaces is null or d.id <> p_replaces);
+  if v_bad > 0 then return jsonb_build_object('error', 'already-quoted'); end if;
+
+  if p_replaces is not null then
+    select * into v_old from public.client_documents
+      where id = p_replaces and client_id = p_client;
+    if v_old.id is null then return jsonb_build_object('error', 'no-replaces'); end if;
+    if v_old.verified_at is not null then return jsonb_build_object('error', 'replaces-verified'); end if;
+  end if;
+
+  select * into ct from public.client_contacts
+    where client_id = p_client and archived_at is null
+    order by (id = cl.bill_contact_id) desc, is_primary desc, name limit 1;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  -- A letter is signed by a person. issued_by is this row's name, so a team
+  -- row named "Superadmin" printed that word under ADSPACE PLT on a client's
+  -- letterhead. Refuse rather than draw a permission as a signatory.
+  if not public.issuer_name_ok(me.name) then
+    return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));
+  end if;
+
+  -- The snapshot is built from the stored rows, never from what the browser
+  -- sent: the words on a letter are the words the record held at that moment.
+  select jsonb_agg(jsonb_build_object(
+           'label', cs.label, 'unit', coalesce(cs.unit, ''), 'note', coalesce(cs.note, ''),
+           'detail', coalesce(cs.detail, ''), 'state', cs.state,
+           'qty', cs.qty, 'rate', cs.rate,
+           'tenure', greatest(1, coalesce(cs.tenure, 1)),
+           'start_on', coalesce(cs.start_on, ''),
+           -- The line's own answer to whether its term prices it. Written into
+           -- the snapshot because the letter is redrawn from it, and a letter
+           -- must print the same figure every time it is drawn. A snapshot
+           -- taken before this key existed carries none, which money.js reads
+           -- as on, so those letters redraw as they were issued.
+           'term_adjust', coalesce(cs.term_adjust, false),
+           -- And the percentage that tick applies, so a later rate card can
+           -- never move a figure this letter printed. Null on a line quoted
+           -- before the column existed, which money.js reads as that card.
+           'term_pct', cs.term_pct,
+           'tax', cl.sst_applies is not false,
+           'service_id', cs.id)
+           order by cs.created_at)
+    into v_lines
+    from public.client_services cs
+   where cs.id = any(p_services);
+  if v_lines is null then return jsonb_build_object('error', 'no-lines'); end if;
+
+  /* The price is the database's (audit S4, 2026-10-10), worked as the
+     letter draws it (js/documents.js priceOf, js/money.js rateFor): each
+     line's rate with its term on it, rounded to the cent; a letter whose
+     lines share a term of more than a month priced by the month and times
+     the term; SST at the rate in force today unless the client is exempt.
+     The page's figures are kept only where they agree to the sen, so a line
+     changed since the sheet opened, or a figure typed in a browser, is
+     refused (`stale`) and the sheet reads the lines again. */
+  select case when count(distinct greatest(1, coalesce(cs.tenure, 1))) = 1
+               and min(greatest(1, coalesce(cs.tenure, 1))) > 1
+              then min(greatest(1, coalesce(cs.tenure, 1))) else 0 end
+    into v_term
+    from public.client_services cs where cs.id = any(p_services);
+  select coalesce(sum(coalesce(cs.qty, 0) *
+           round(coalesce(cs.rate, 0) *
+             case when cs.term_adjust is false then 1
+                  when cs.term_pct is not null then 1 + cs.term_pct / 100
+                  else case greatest(1, coalesce(cs.tenure, 1))
+                         when 3 then 1 / 0.9 when 12 then 0.95 when 24 then 0.9 else 1 end
+             end, 2) *
+           case when v_term > 0 then 1 else greatest(1, coalesce(cs.tenure, 1)) end), 0)
+    into v_each
+    from public.client_services cs where cs.id = any(p_services);
+  v_pct := case when cl.sst_applies is false then 0
+                else coalesce(public.app_setting('sst_pct', (timezone('Asia/Kuala_Lumpur', now()))::date), 0) end;
+  v_etax := round(v_each * v_pct) / 100;
+  v_sub := round(v_each * greatest(v_term, 1), 2);
+  v_tax := round(v_etax * greatest(v_term, 1), 2);
+  v_tot := round(round(v_each + v_etax, 2) * greatest(v_term, 1), 2);
+  if abs(coalesce(p_subtotal, -1) - v_sub) > 0.01 or abs(coalesce(p_tax, -1) - v_tax) > 0.01
+     or abs(coalesce(p_total, -1) - v_tot) > 0.01 then
+    return jsonb_build_object('error', 'stale', 'subtotal', v_sub, 'tax', v_tax, 'total', v_tot);
+  end if;
+
+  -- A typed reference spends no sequence number: the counter is the office's
+  -- record of how many letters it has issued this month, and a person filling
+  -- a gap by hand has not issued one more.
+  if v_no is null then
+    -- The month is Malaysian, because the office that numbers the letter is.
+    v_ym := to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
+
+    -- The counter still advances on every automatic issue, and the upsert's
+    -- row lock is what makes the scan below safe: a second issuer blocks here
+    -- until the first has committed its letter, so the two never read the same
+    -- gap as free. What the counter gives is a bound to scan within, not the
+    -- number itself.
+    insert into public.client_document_seq (client_id, ym, next_val)
+         values (p_client, v_ym, 2)
+    on conflict (client_id, ym)
+      do update set next_val = public.client_document_seq.next_val + 1
+      returning next_val - 1 into v_seq;
+
+    -- The lowest free slot, not the counter's own value. A deleted letter
+    -- releases its reference (serial_taken stopped counting deletions on
+    -- 2026-09-20), and without this the automatic path still counted upward
+    -- past the gap: a client whose first two letters were issued in testing
+    -- and deleted started at 03 for ever. The counter is at least the number
+    -- of letters issued this month, so a free slot exists at or below it
+    -- unless somebody has typed references over the same range by hand; the
+    -- cap covers that and refuses rather than looping.
+    --
+    -- Two digits is the floor, not the ceiling: the hundredth letter of a month
+    -- widens to three rather than wrapping. Not lpad(): Postgres pads AND
+    -- truncates to the width it is given, so lpad('100', 2, '0') is '10' and the
+    -- hundredth letter would collide with the tenth.
+    v_try := 1;
+    loop
+      v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
+              case when v_try < 100 then lpad(v_try::text, 2, '0') else v_try::text end;
+      exit when not public.serial_taken(v_no);
+      v_try := v_try + 1;
+      if v_try > greatest(v_seq, 1) + 200 then
+        return jsonb_build_object('error', 'no-serial');
+      end if;
+    end loop;
+  end if;
+
+  insert into public.client_documents
+    (client_id, kind, number, issued_at, market, subtotal, tax, total,
+     bill_to, lines, issued_by, client_code, idem_key)
+  values
+    (p_client, 'offer', v_no, (timezone('Asia/Kuala_Lumpur', now()))::date,
+     coalesce(cl.market, 'MY'),
+     round(coalesce(p_subtotal, 0), 2), round(coalesce(p_tax, 0), 2), round(coalesce(p_total, 0), 2),
+     jsonb_build_object(
+       'name', coalesce(cl.name, ''), 'legal_name', coalesce(cl.legal_name, ''),
+       'address', coalesce(cl.billing_address, ''), 'regno', coalesce(cl.company_no, ''),
+       'regno_old', coalesce(cl.company_no_old, ''), 'tin', coalesce(cl.tin, ''),
+       'sst_no', coalesce(cl.sst_no, ''), 'sst_applies', cl.sst_applies is not false,
+       'contact', coalesce(ct.name, ''), 'contact_role', coalesce(ct.role, ''),
+       'phone', coalesce(ct.phone, ''), 'email', coalesce(ct.email, ''),
+       'finance_email', coalesce(cl.finance_email, ''),
+       'client_code', cl.client_code,
+       'owner', coalesce(p_deal ->> 'owner', ''), 'source', coalesce(p_deal ->> 'source', ''),
+       'industry', coalesce(p_deal ->> 'industry', ''), 'stage', coalesce(p_deal ->> 'stage', ''),
+       'enquiry', coalesce(p_deal ->> 'enquiry', '')),
+     v_lines, coalesce(me.name, who), cl.client_code, nullif(btrim(p_idem), ''))
+  returning id into v_id;
+
+  insert into public.client_document_services (document_id, service_id)
+    select v_id, s.id from unnest(p_services) s(id)
+    on conflict do nothing;
+
+  if p_replaces is not null then
+    update public.client_documents set superseded_by = v_id where id = p_replaces;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.superseded', cl.name, v_old.number || ' replaced by ' || v_no);
+  end if;
+
+  select count(*) into v_n from public.client_document_services where document_id = v_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.issued', cl.name, v_no || ' · ' || v_n || ' line' || case when v_n = 1 then '' else 's' end);
+
+  return jsonb_build_object('ok', true, 'id', v_id, 'number', v_no);
+exception
+  when unique_violation then
+    -- Two presses that raced past the idempotency read: the loser reads the
+    -- winner's letter back rather than making a second one.
+    if coalesce(btrim(p_idem), '') <> '' then
+      select * into v_old from public.client_documents
+        where client_id = p_client and idem_key = btrim(p_idem) limit 1;
+      if v_old.id is not null then
+        return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
+      end if;
+    end if;
+    -- A typed reference two people sent at once: the loser is told the
+    -- reference is spent rather than that "two letters were issued at once",
+    -- which names a cause they cannot act on.
+    if nullif(btrim(coalesce(p_serial, '')), '') is not null then
+      return jsonb_build_object('error', 'serial-taken');
+    end if;
+    return jsonb_build_object('error', 'clash');
+end $$;
+
+grant execute on function public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean, text) to authenticated;
+
+create or replace function public.verify_letter(p_doc uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who   text := lower(auth.jwt() ->> 'email');
+  d     public.client_documents%rowtype;
+  cl    public.clients%rowtype;
+  me    public.team_members%rowtype;
+  v_map int;
+  v_n   int;
+begin
+  if not public.allowed('clients.documents') then return jsonb_build_object('error', 'not-allowed'); end if;
+  select * into d from public.client_documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.voided_at is not null then return jsonb_build_object('error', 'voided'); end if;
+  if d.superseded_by is not null then return jsonb_build_object('error', 'superseded'); end if;
+  if d.signed_at is null then return jsonb_build_object('error', 'not-signed'); end if;
+
+  -- Verifying twice is verifying once.
+  if d.verified_at is not null then
+    return jsonb_build_object('ok', true, 'repeat', true, 'confirmed', 0);
+  end if;
+
+  -- A letter issued before this change has no mappings, so there is nothing
+  -- to confirm and no guess is made. It stays history.
+  select count(*) into v_map from public.client_document_services where document_id = p_doc;
+  if v_map = 0 or v_map <> coalesce(jsonb_array_length(d.lines), -1) then
+    return jsonb_build_object('error', 'no-mapping');
+  end if;
+
+  /* What the client signed is the letter's snapshot. A line removed since,
+     or one whose quantity, rate, term or adjustment moved since, is not
+     what was signed, so nothing is confirmed (audit S4, 2026-10-10): the
+     letter is reissued, or the line put back as it was. */
+  if exists (select 1 from public.client_document_services m
+               join public.client_services cs on cs.id = m.service_id
+              where m.document_id = p_doc and cs.archived_at is not null) then
+    return jsonb_build_object('error', 'archived-line');
+  end if;
+  if exists (select 1 from jsonb_array_elements(d.lines) l
+               join public.client_services cs on cs.id = (l ->> 'service_id')::uuid
+              where l ? 'service_id'
+                and ((l ->> 'qty')::numeric is distinct from cs.qty
+                  or (l ->> 'rate')::numeric is distinct from cs.rate
+                  or (l ->> 'tenure')::int is distinct from greatest(1, coalesce(cs.tenure, 1))
+                  or (l ? 'term_adjust' and (l ->> 'term_adjust')::boolean is distinct from coalesce(cs.term_adjust, false))
+                  or (l ? 'term_pct' and (l ->> 'term_pct')::numeric is distinct from cs.term_pct))) then
+    return jsonb_build_object('error', 'changed-terms');
+  end if;
+
+  update public.client_services cs
+     set state = 'confirmed'
+    from public.client_document_services m
+   where m.document_id = p_doc and cs.id = m.service_id
+     and cs.archived_at is null and cs.state <> 'confirmed';
+  get diagnostics v_n = row_count;
+
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+  update public.client_documents
+     set verified_at = now(), verified_by = coalesce(me.name, who)
+   where id = p_doc;
+
+  select * into cl from public.clients where id = d.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.verified', cl.name,
+          d.number || ' · ' || v_n || ' line' || case when v_n = 1 then '' else 's' end || ' confirmed');
+  return jsonb_build_object('ok', true, 'confirmed', v_n);
+end $$;
+
+grant execute on function public.verify_letter(uuid) to authenticated;
+
+create or replace function public.delete_client(p_client uuid, p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  want text;
+  who  text := auth.jwt() ->> 'email';
+  cl   public.clients%rowtype;
+  me   public.team_members%rowtype;
+begin
+  if who is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select value into want from public.app_secrets where key = 'delete_code';
+
+  -- No code set: the interface asks for the client's name instead, and has
+  -- already checked it. Nothing more to enforce here.
+  if want is not null and want <> '' then
+    if p_code is null or p_code <> want then
+      return 'wrong-code';
+    end if;
+  end if;
+
+  select * into cl from public.clients where id = p_client;
+  delete from public.clients where id = p_client;
+  if not found then
+    return 'not-found';
+  end if;
+  /* Filed here, in the same transaction, never by the page after the answer
+     (audit R1, 2026-10-10): a reply lost on the way left no record. */
+  select * into me from public.team_members where lower(email) = lower(who) and active limit 1;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, who), 'client.deleted', cl.name, coalesce(cl.client_code, ''));
+  return 'deleted';
+end $$;
+
+revoke all on function public.delete_client(uuid, text) from anon;
+grant execute on function public.delete_client(uuid, text) to authenticated;
+
+drop policy if exists client_documents_write on public.client_documents;
+drop policy if exists client_documents_edit on public.client_documents;
+drop policy if exists client_documents_del on public.client_documents;
+
+/* Own clients only narrows Clients and every table under a client, but the
+   Activity record is not scoped: it names every client's events. A group
+   holds one or the other until the record is scoped (the user, 2026-10-10). */
+create or replace function public.team_roles_scope_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if coalesce(new.client_scope, 'all') = 'own' and not coalesce(new.is_admin, false)
+     and (coalesce(new.access ->> 'activity', 'none') <> 'none'
+          or exists (select 1 from jsonb_each_text(coalesce(new.access, '{}'::jsonb)) e
+                      where e.key like 'activity.%' and e.value <> 'none')) then
+    raise exception 'scope-activity'
+      using hint = 'Own clients only cannot be given with the Activity record, which is not limited to a colleague''s clients.';
+  end if;
+  return new;
+end $$;
+revoke all on function public.team_roles_scope_guard() from public, anon, authenticated;
+create or replace trigger team_roles_scope_guard
+  before insert or update of access, client_scope, is_admin on public.team_roles
+  for each row execute function public.team_roles_scope_guard();
+
+-- END OF LETTERS HELD TO THEIR LINES -------------------------------------------
 
 -- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above

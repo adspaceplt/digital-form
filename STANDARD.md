@@ -563,7 +563,8 @@ section holds only what is true of the project as a whole.
   dialog.
 
 ### Open security findings
-- None open. Checked live on 2026-09-27: every public table has row level
+- None open. The audit of 2026-10-10 closed in five batches (the last, F3:
+  a media pass per client folder). Checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
   which answers false for anybody who is not an active colleague. The
   internal helpers the API could still reach are closed
@@ -609,7 +610,8 @@ section holds only what is true of the project as a whole.
     (`docs/S3-STORAGE.md` §6b done by the user).
   - The ALP checklists as forms.
 - Access: client scope (built 2026-10-03) leaves the Activity record
-  unscoped.
+  unscoped, so a group seeing its own clients only holds no Activity access
+  (refused by the Team panel and the database, 2026-10-10).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
   references only: not briefs, notes, comments or a document's body.
 - Performance rewards are worked out and confirmed in the portal; the

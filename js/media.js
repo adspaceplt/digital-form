@@ -54,9 +54,14 @@
      Stored addresses never change. The pass lasts twelve hours and is asked
      again on a page load or a return to the tab once under two hours are left;
      a file that fails in the meantime asks again once and loads again,
-     a video from the second it was at. */
+     a video from the second it was at.
+     Each pass is held to the folders its caller may see (audit F3,
+     2026-10-10): `passes` is one policy a folder, set on that folder's own
+     path so the browser sends it there alone; a colleague's is content/ on
+     the root. A pass is fresh only for the proof it was asked with. */
   var CONTENT = /^https:\/\/mycdn\.adspace\.me\/content\//i;
   var UNTIL = 'adspace-media-until';
+  var FOR = 'adspace-media-for';
   var HOUR = 3600 * 1000;
   var proof = null;
   var inflight = null;
@@ -69,15 +74,24 @@
     return m ? m[1] : '';
   }
   function until() { return (Number(cookie(UNTIL)) || 0) * 1000; }
-  function fresh(margin) { return until() - Date.now() > margin; }
+  /* Which proof the pass was asked with, as a short hash: a pass for one
+     link is not fresh for another. */
+  function tagOf(p) {
+    var t = p ? (p.review ? 'r' + p.review : p.campaign ? 'c' + p.campaign : p.creator ? 'k' + p.creator : 's') : '';
+    var h = 5381;
+    for (var i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  }
+  function fresh(margin) { return cookie(FOR) === tagOf(proof) && until() - Date.now() > margin; }
   /* adspace.me on the real site; the host alone anywhere else (the tests). */
   function scope() {
     var d = s3().mediaCookieDomain, h = location.hostname;
     return d && (h === d || h.slice(-(d.length + 1)) === '.' + d) ? '; domain=' + d : '';
   }
-  function put(name, value, age) {
-    document.cookie = name + '=' + value + scope() + '; path=/; max-age=' + age + '; secure; samesite=lax';
+  function put(name, value, age, path) {
+    document.cookie = name + '=' + value + scope() + '; path=' + (path || '/') + '; max-age=' + age + '; secure; samesite=lax';
   }
+  var CF = ['CloudFront-Policy', 'CloudFront-Signature', 'CloudFront-Key-Pair-Id'];
   function ask(force) {
     if (!isOn() || !proof) return Promise.resolve(false);
     if (!force && fresh(2 * HOUR)) return Promise.resolve(true);
@@ -91,12 +105,27 @@
       timer = setTimeout(function () { resolve(false); }, 6000);
       db.functions.invoke('media-pass', { body: proof }).then(function (r) {
         var d = r && r.data;
-        if (!r || r.error || !d || d.off || !d.signature) { resolve(false); return; }
+        var passes = d && d.passes;
+        /* The function before passes per folder answered one pass over the
+           whole of content/ on the root; it is set as it always was, so a
+           page served before the function is deployed keeps its media. */
+        if (d && !passes && d.signature) passes = [{ path: '/', policy: d.policy, signature: d.signature }];
+        if (!r || r.error || !d || d.off || !passes || !passes.length) { resolve(false); return; }
         var age = Math.max(60, d.expires - Math.floor(Date.now() / 1000));
-        put('CloudFront-Policy', d.policy, age);
-        put('CloudFront-Signature', d.signature, age);
-        put('CloudFront-Key-Pair-Id', d.keyPairId, age);
+        /* A pass for the whole of content/ left on the root by an earlier
+           page is taken away unless this one is a colleague's. */
+        if (!passes.some(function (x) { return x.path === '/' || x.path === '/content/'; })) {
+          CF.forEach(function (n) { put(n, '', 0); put(n, '', 0, '/content/'); });
+        }
+        passes.forEach(function (x) {
+          // Only a folder under content/, never another path on adspace.me.
+          if (x.path !== '/' && !/^\/content\/((creator\/)?[A-Za-z0-9-]{1,64}\/)?$/.test(String(x.path || ''))) return;
+          put('CloudFront-Policy', x.policy, age, x.path);
+          put('CloudFront-Signature', x.signature, age, x.path);
+          put('CloudFront-Key-Pair-Id', d.keyPairId, age, x.path);
+        });
         put(UNTIL, String(d.expires), age);
+        put(FOR, tagOf(proof), age);
         resolve(true);
       }).catch(function () { resolve(false); });
     }).then(function (ok) { clearTimeout(timer); inflight = null; return ok; });

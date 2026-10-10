@@ -1838,3 +1838,92 @@ back except pressing to the device's register, and the bar now holds only
 what acts on the work (search, the bell) and the account. Light chosen on a
 light device is now kept as Light rather than cleared, since Auto is the way
 to follow the device.
+
+### 2026-10-10 · Confirming is one act a press
+
+The audit found three acts that could happen twice or half (F1, S3, C1). On
+the selection page a selection whose autosave the database refused could
+still be confirmed with nothing in it, and a confirmation could be filed
+against rates the client never saw. In the console Confirm creators was three
+writes (the confirmation, each booking, the campaign) with no way back if one
+failed. The portal's Request change filed a second request when a reply was
+lost and the client pressed again.
+
+Each is now one function, one transaction, with a key made once for the
+press: `confirm_selection_with` (the creators on screen and the rate shown
+for each, refused when either changed), `campaign_confirm_creators`, and
+`portal_request_once`. The same key again answers with the first result and
+files nothing. The older functions stay for pages loaded before, and
+`confirm_selection` now refuses a selection that never saved. The audit's
+remaining findings moved from the working ledger to STANDARD.md's open
+findings, each removed as its batch closes it.
+
+### 2026-10-10 · The client decides on what it saw, and keeps what it approved
+
+The audit found four places where what the client saw and what was recorded
+could part (F2, S5, S6, C2). A post edited after the review page opened could
+still be approved, and the approval then stood over words the client never
+read. A creator's next round, handed in after the client asked for changes,
+showed on the client's page before the team had checked it. A file the
+client had approved could be removed from the console at any state, and the
+table's one policy let any colleague change its rows. A reply to a portal
+request was written over a Withdraw the client made meanwhile.
+
+The review page now sends the version it shows; a post changed since is
+refused in the client's words and what was decided on is kept with the
+decision. Release stamps the round released, and the client's page shows
+that round alone; a file added while the booking waits for its quality
+check voids the checks. From the client's approval on, the team hides a file
+rather than removing it (the user: hide at Work; a permanent delete is an
+admin's granted part alone, `campaigns.files_delete`, never implied by Full
+Access; before approval Remove and Delete work as before). A request is
+written only over the request as it was read. The guard trigger runs as the
+caller: a security definer trigger sees its owner as `current_user`, so it
+could never tell a page's write from a function's.
+
+### 2026-10-10 · Letters held to their lines
+
+The audit's fourth batch (S2, S4, R1). A Letter of Offer's totals were the
+browser's: the database stored what the page sent, so a page could print one
+figure and file another, and a line repriced while the sheet was open went
+out at the old price. `issue_letter` now works the price from the stored
+lines by the letter's own rule and keeps the page's figures only within a
+sen (the browser's rounding), refusing anything further with its own. A
+letter could also be verified after a line it printed was repriced or
+removed, confirming terms the client never signed; `verify_letter` now
+refuses both and the letter is reissued. `delete_client` left its record to
+the page after the answer, so a lost reply left none; it files the deletion
+itself. `client_documents` kept insert, update and delete policies no page
+used; only the read stays.
+
+The Activity record is not scoped by client, so the user's rule until it is:
+a group seeing its own clients only holds no Activity access, refused in the
+Team panel and by a trigger. Offboarding a colleague, a client's contact and
+a client is written down in docs/OFFBOARDING.md.
+
+### 2026-10-10 · A media pass per client folder
+
+The audit's last finding (F3): the media pass opened every file under
+`content/`, so a client holding a review link held a pass to every other
+client's files, and a file name was the only boundary. CloudFront's signed
+cookies carry one policy with one statement, so a pass is now one policy a
+folder, each set on that folder's cookie path: a browser sends a folder's
+pass to that folder alone. The review link opens its client's folder; the
+selection link that and each booking's drafts; a creator their own bookings;
+a client's contact each client they hold access at; a colleague all of
+`content/`. A client page's pass takes away a whole-of-content pass an
+earlier page left on the root. The folder layout is the one S3-STORAGE.md
+records (`content/{clientId}/`, `content/creator/{optionId}/`), and nothing
+changes in CloudFront.
+
+### 2026-10-10 · Any session, any account
+
+The user may continue the portal from a team account once this one's credits
+are spent; both reach the same repositories. A new session is given its own
+branch, so `CLAUDE.md` no longer names one: it works on the branch it is
+given, and a release in progress is carried by its PR (its description holds
+the order and rollback, a comment what is still open), never by a session's
+memory. Connectors (GitHub, Supabase) are per account and are connected again
+there; no secret moves. Only one account works at a time, and "hand over"
+(push both repositories, then one comment on the open PR) is the step
+before switching.

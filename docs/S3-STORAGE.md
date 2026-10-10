@@ -470,6 +470,11 @@ so `mycdn.adspace.me` receives them, and last **twelve hours** (asked again
 on a page load or a return to the tab once under two are left; a file that
 fails asks again once and loads, a video from the second it was at).
 
+- Each pass opens only the folders its caller may see (2026-10-10): a
+  client's link its client's `content/{clientId}/` (and, on the selection
+  page, each booking's `content/creator/{optionId}/`), a creator their own
+  bookings' drafts, a colleague all of `content/`. One policy a folder, each
+  set on that folder's cookie path. Nothing changes in CloudFront.
 - Stored addresses never change and nothing is moved, copied or deleted.
 - The review link, the selection link and the creator's code work as before.
 - A raw address copied out of a page answers **403** to anybody without a

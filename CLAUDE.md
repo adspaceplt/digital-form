@@ -92,14 +92,32 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
-  - Run only the suites the change touched (the tiers below), before the
-    merge as well. A batch never waits on `all` (the user, 2026-10-09: a
-    test that grew from 15 minutes to 90): a shared script, the stand-in or
-    a schema change runs the suites that call what changed (`grep -l` over
-    `tests/` for the function, table or id) plus `ui`, and `all` runs once
-    a day, after the day's merges, its findings the next batch. Never a
-    full gate for a style, a copy or a one-screen fix (the user,
-    2026-09-28: a full gate for one border wastes their credits).
+  - Proportionate testing (the user, 2026-10-10): while building, the
+    changed behaviour's suites and what depends on it; before release, the
+    required regression coverage (the tiers below) against the final
+    candidate; after a fix, the failed and affected suites again, and the
+    whole gate again only where the fix invalidates its broader results. A
+    shared script, the stand-in or a schema change runs the suites that
+    call what changed (`grep -l` over `tests/` for the function, table or
+    id). `all` runs once a day, after the day's merges, its findings the
+    next batch, and never stands in for a release's own checks. Never
+    weaken an assertion or change an expectation merely to pass.
+  - Visual checks follow rendered impact, never every gate by default:
+    SQL or backend alone takes functional, database and authorization
+    suites and no layout walk; copy, markup a script draws, visibility, an
+    error or an interaction state takes screenshots of the touched screens
+    and the suites that walk them; shared layout, navigation, CSS or a
+    component takes `ui` (uxaudit and matrix). The report names the checks
+    chosen and why any was left out.
+  - uxaudit and matrix run side by side only where their browser
+    profiles, mutable fixtures, output files and server are shown to be
+    their own; both exit codes are read and either failing fails the gate;
+    else they run one after the other. A run stops only the processes it
+    started, never a server it did not.
+  - Evidence: every result names the application commit, the tests commit
+    and the configuration. A result is reused only where nothing since
+    touches what it covers, said in one line. Mocked suites prove nothing
+    about the live database, the CDN or a physical device.
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
@@ -127,28 +145,29 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 |---|---|
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
-| CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui`; `all` once a day after the merges |
-| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
+| Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
+| Shared layout, navigation, `css/portal.css`, a component | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change) |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui` where what it draws changed; `all` once a day after the merges |
+| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a merge | The union of the rows above for everything in the batch; never `all` |
+| Before a release | The union of the rows above for everything in it, against the final candidate; never `all` |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting |
-| `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
+| `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
-| `portal.js` | portal |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
-| `team.js` | team, perms, levels, card, scope, perfui, viewonly |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
+| `portal.js` | portal, confirmpage |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql |
+| `team.js` | team, perms, levels, card, scope, perfui, viewonly, lettersql |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
@@ -172,7 +191,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
 | `supabase/functions/brand-analysis/`, the Brand pane's analysis, the BRAND ANALYSIS section | analysis, smsql, caption, crm, then `ui` |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
-| `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
+| `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass |
 | the Short Links route | qr, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
@@ -223,7 +242,7 @@ added to all three in the same push.
   only. The report names what became configurable.
 - Every changed script or stylesheet tag carries `?v=YYYYMMDD` (`a`, `b`… for
   further pushes the same day). Bump it with one `sed` over every HTML file that
-  carries one.
+  carries one, never inside `.claude/` (agents' worktrees live there).
 - A new route or pane joins `tests/uxaudit.js`'s walk and `tests/matrix.js`'s
   route list in the same push that builds it.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
@@ -636,9 +655,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`{creator}`) or a sign-in (`{}`: a colleague, or a client contact with
   live portal access, the client portal asking before it draws; 2026-10-08)
   asks `media-pass` for CloudFront's three
-  signed cookies over `content/*` before it draws a file, set on
+  signed cookies before it draws a file, set on
   `mediaCookieDomain` (adspace.me) for twelve hours and asked again under two
-  left (load, return to the tab). A file under `content/` that fails asks
+  left (load, return to the tab). A pass is held to the folders its caller
+  may see (audit F3, 2026-10-10): `passes`, one policy a folder, each set on
+  that folder's own cookie path so the browser sends it there alone: the
+  review link its client's `content/{clientId}/`, the selection link that and
+  each booking's `content/creator/{optionId}/`, a creator their bookings'
+  drafts alone, a client's contact each client they hold access at, a
+  colleague the whole of `content/` (path `/content/`). A client page's pass
+  takes away a root pass left by an earlier page, and is fresh only for the
+  proof it was asked with (`adspace-media-for`). An answer in the earlier
+  shape (one pass over `content/`, no `passes`) is set on the root as before,
+  so a page served before `media-pass` is deployed keeps its media. A file under `content/` that fails asks
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.
@@ -953,7 +982,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-07), `register.types` (Document types, 2026-10-07) and
   `team.health` (Health check-ins, every colleague's answers by name,
   2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
-  (Meta import and audit, 2026-10-10); each offers Manage
+  (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
+  approved files, 2026-10-10); each offers Manage
   alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1031,7 +1061,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
     the admin tools for every group, read only.
   - Clients they see (`#grScope`, All clients / Own clients only) sits in the
-    Clients fold; Own makes the preset Custom.
+    Clients fold; Own makes the preset Custom. Own clients only is never
+    given with any Activity record access, a section or a tab (the record is
+    not scoped): the sheet refuses it and trigger `team_roles_scope_guard`
+    (`scope-activity`) holds it for every group but an admin's
+    (`2026-10-10-letters-held-to-their-lines.sql`).
   - No preset below Admin opens Team, HR letters or performance reviews.
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
   Members, Performance and Health (`tab=health`, `team.health` alone); the
@@ -1392,6 +1426,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
   - Approval never edits a service line.
+  - A reply or a move is written only over the request as it was read
+    (`.eq('updated_at', …)`, stamped by `client_requests_touch`): one the
+    client withdrew or a colleague answered meanwhile reads "Not saved. This
+    request changed since it was opened, and has been read again." and the
+    list is read again (audit C2, 2026-10-10).
 - Engagements (`js/engage.js`, `tab=engagements`; the user, 2026-10-09:
   "one less tab to monitor"): the client's work by content month, its
   reports included. The tab is drawn for an Active, Paused or Past client,
@@ -1431,7 +1470,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Delete client:
   - in the record's ⋯, as a sheet counting from the loaded record;
   - the name typed back, plus the delete code where `delete_code_set()`;
-  - `delete_client` re-checks at the press.
+  - `delete_client` re-checks at the press and files `client.deleted`
+    itself, in the transaction that deletes (audit R1); the page files
+    nothing.
   - Paused and Past are the everyday exits.
 - Person in charge (`owner` holds a name as text):
   - Changed from one colleague to another only at Clients Full Access, or by
@@ -1490,7 +1531,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Only To quote lines.
   - Priced by the month when every line shares a term ("Payable monthly"; the
     commitment stated in TERMS). Otherwise Total.
-  - `priceOf()` computes the snapshot and the drawing.
+  - `priceOf()` computes the snapshot and the drawing. `issue_letter` works
+    the same price from the stored lines (the term's rate rounded to the
+    cent, by the month where every line shares a term, SST at today's rate
+    unless exempt) and keeps the page's figures only within a sen, else
+    refuses `stale` with its own (audit S4, 2026-10-10).
+  - `verify_letter` confirms only the lines as printed: a line removed since
+    (`archived-line`) or one whose quantity, rate, term or adjustment moved
+    since the letter (`changed-terms`) is refused, and the letter reissued.
+  - `client_documents` keeps its read policy alone: every write is a letter
+    or register function.
   - `legalName` is resolved once.
   - Every line wraps.
 - Letter layout:
@@ -1737,6 +1787,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   Confirm internally shows only on a published set. The post ⋯ items carry
   their parts (`review.sets:work`; Delete `review.sets:manage`).
   `review.approved` reads Approved (the actor says who).
+- A decision is on the version on show (`2026-10-10-approval-as-seen.sql`,
+  audit F2): `posts.content_version` moves with the file, copy or title
+  (trigger `posts_content_version`, never set by a write), `get_review_feed`
+  sends it as `version`, and the page decides through
+  `submit_review_seen(… p_version)`, which refuses a post changed since
+  (`changed`: "This post was updated after the page opened. Please refresh to
+  review the latest version.") and keeps what was decided on in
+  `reviews.seen`; `ADspaceAPI.submitReview` asks `submit_review` only where
+  the function is missing.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
@@ -1869,6 +1928,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `.qc-hold` names who checked. No notification.
   - The sheet reads the request the file answers and its caption first
     (`#qcCap`; `No caption.` in warn when there is none).
+  - A file added or removed while Submitted voids that round's checks
+    (`option_qc.voided_at`, trigger `campaign_deliverables_qc_void`); the
+    same colleague's check is taken again (`2026-10-10-released-files.sql`,
+    audit S5).
+  - Release stamps `campaign_options.released_round` (the newest round
+    handed in), and `get_campaign` sends that round's files alone, never a
+    round handed in after the client asked for changes until it is released
+    in its turn, never a hidden file.
 - Every decision on a draft is a row in `option_reviews`, told apart by
   `source` (client, team) and never removed (`undone_at`, `undone_by` when
   taken back): the client's through `review_draft`, the team's send-back
@@ -1920,7 +1987,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADSPACE_CONFIG.s3.maxUploadMB` 1024). Picked files are held on the card
   (`teamHeld`, × each) and upload only on Hand in N files.
 - Removing a handed-in file arms first (`.filearm`), then soft removes, then
-  offers Undo in place.
+  offers Undo in place, until the client approves (audit S6, the user,
+  2026-10-10). From Scheduled on a file is the client's record: its control
+  is Hide from the client (the struck eye; `campaign_file_hide`, Creator
+  Campaigns: Campaigns at Work, client scope, filed `campaign.file_hidden` /
+  `campaign.file_shown`, Undo where it happened), it waits under Hidden from
+  the client (`details.filehidden`, Restore, never asks), and only the granted
+  part `campaigns.files_delete` deletes it, once hidden, from its ⋯
+  (`campaign_file_delete`, asked, `campaign.file_deleted`; the stored file
+  is kept). Trigger `campaign_deliverables_guard` (as the caller) refuses a
+  page removing an approved file (`approved-hide`) or setting the hidden
+  columns (`hide-function`). `campaign_deliverables` reads at Campaigns View,
+  adds and changes at Work and deletes at the part, four policies.
 - A campaign name that would render as nothing reads `Untitled campaign` and
   stays editable. A new one is refused on save.
 - The campaign's form is one sheet for New campaign and Edit (`#addCampBox`);
@@ -1956,6 +2034,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     confirmed.
 - Confirm creators is reachable from Client selection, from the Creators tab
   (`#campLock2`), and from the header line's Review and confirm (`#campNextGo`).
+- Confirming is one act a press (audit F1, S3, C1;
+  `2026-10-10-confirm-once.sql`): the selection page's Confirm sends the
+  creators on screen, the rate shown for each and a key made as its sheet
+  opens to `confirm_selection_with` (anon; `empty`, `closed`, `over-slots`,
+  `stale`, `prices` with the rates now), which saves the selection and files
+  the confirmation with what was confirmed (`snapshot`) in one transaction;
+  a refusal for rates or creators reads the campaign again under the open
+  sheet, said in the client's words. The console's Confirm creators is
+  `campaign_confirm_creators` (Creator Campaigns at Work, client scope;
+  `stale` with the count): the confirmation, the bookings and the campaign
+  move together, filed `campaign.locked`. The same key again answers `again`
+  and files nothing. `confirm_selection` (an older page) refuses `empty`.
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
@@ -3596,7 +3686,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Request change opens through `js/sheet.js` (focus held, Escape, focus back
   to the button, a press outside never closes it over typed text), and an
   unsent note comes back when it opens again until it is sent (audit F8,
-  2026-10-10).
+  2026-10-10). Send keeps one key until the request is filed
+  (`portal_request_once`, audit C1), so a reply lost on the way and a second
+  press file one request; `portal_request` is the same with no key.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
 - A contact reads its name with Main contact at the right of the line, the
@@ -4163,7 +4255,27 @@ Each line is a rule that broke once. Its reason is in the archive.
 ## 3. Workflow and constraints
 
 ### Git and delivery
-- Branch `cl/exciting-mayer-fvg0dc`; one PR per batch, squash-merged by Claude.
+- The branch the session is given (any account: the work carries in the
+  repositories, a release in progress on its PR, never in a session); a
+  branch with an open PR is continued, not replaced. Squash-merged by
+  Claude. Releases are
+  grouped by risk (the user, 2026-10-10): related batches share one PR and
+  one deploy where the combined diff, the migration sequence and the
+  rollback stay understandable; unrelated or independently risky changes
+  go apart.
+- Two accounts, one at a time (the user, 2026-10-10): the user may move
+  between accounts as credits allow, never with two sessions working at
+  once. "Hand over" means: commit and push both repositories, then post
+  or replace one comment on the open PR (else a draft PR) stating the
+  commits, the checks passed, failed and not run, the steps done and
+  still open in order with their rollback, and what waits on the user. A
+  session opening on an open PR reads its latest handover first and
+  continues its branch.
+- A release with a migration or a function states its order (pages,
+  each migration, each function), what an old open tab meets at every
+  intermediate state, what a failed step leaves and which steps reverse.
+  No order is assumed safe. The full schema file is never run on
+  production.
 - After a merge, reset the branch onto `origin/main`
   (`git checkout -B … origin/main`, force-with-lease push). Never stack on
   merged history.
@@ -4176,10 +4288,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
 - A migration is applied by Claude through the Supabase connector (project
-  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), once the merge's Pages
-  deploy has succeeded (the page must stop asking before the database stops
-  answering), and verified on the live database afterwards. The report
-  names what was applied.
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), in the order the release
+  states (commonly after the Pages deploy, so the page stops asking before
+  the database stops answering), and verified on the live database
+  afterwards. The report names what was applied.
   - The connector holds any statement holding `drop` or `delete` (a function
     body included) for a confirmation it cannot show, and times out: apply
     the rest in small `execute_sql` pieces (`create or replace trigger`, a

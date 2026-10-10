@@ -59,6 +59,18 @@
        ordinary decision is the call it always was. */
     if (payload.caption != null) args.p_caption = payload.caption;
     if (payload.captionZh != null) args.p_caption_zh = payload.captionZh;
+    /* The decision is on the version on show (audit F2, 2026-10-10): a post
+       changed after the page opened is refused `changed`, and what was
+       decided on is kept with the decision. A database without the function
+       is asked the older way. */
+    if (payload.version != null) {
+      const seen = await client.rpc('submit_review_seen', Object.assign({ p_version: payload.version }, args));
+      const missing = seen.error && (seen.error.code === 'PGRST202' || /submit_review_seen/.test(seen.error.message || ''));
+      if (!missing) {
+        if (seen.error) throw seen.error;
+        return seen.data;
+      }
+    }
     const { data, error } = await client.rpc('submit_review', args);
     if (error) throw error;
     return data;

@@ -41,13 +41,13 @@ create or replace function public.functions_tidy()
 returns jsonb language plpgsql set search_path = public as $$
 declare
   open_to_anon constant text[] := array[
-    'announcement_now', 'app_settings_read', 'confirm_selection', 'creator_add_file',
+    'announcement_now', 'app_settings_read', 'confirm_selection', 'confirm_selection_with', 'creator_add_file',
     'creator_may_upload', 'creator_post_save', 'creator_rate', 'creator_remove_file',
     'creator_set_profiles', 'creator_submit', 'get_campaign', 'get_creator',
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'verify_serial'];
+    'review_draft', 'save_selection', 'script_decide', 'script_shot_link', 'submit_review', 'submit_review_seen', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;

@@ -6004,6 +6004,17 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   .filepin-x:hover { background: var(--err-bg); color: var(--err); border-color: var(--err-line); }
 }
 .filepin-x:active { transform: scale(.94); }
+/* After the client's approval the file's control hides it from the client
+   (audit S6): the struck eye, never the red of a removal. Hidden files wait
+   under their own fold with Restore, and Delete in the ⋯ for the part. */
+.filecard-x.is-hide svg, .filepin-x.is-hide svg { width: 15px; height: 15px; }
+@media (hover: hover) {
+  .filecard-x.is-hide:hover, .filepin-x.is-hide:hover { background: var(--sunk); color: var(--ink); border-color: var(--line); }
+}
+.handedin .filehidden { margin-top: 12px; }
+.filehidden > .filepins { margin-top: 8px; }
+.filepin-row.is-hidden { gap: 8px; }
+.filepin-row.is-hidden .filepin-name { color: var(--ink-soft); }
 
 /* How the job went. Five targets, nothing to type, and the filled state is
    the accent this portal keeps for something that is true rather than

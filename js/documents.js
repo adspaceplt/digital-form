@@ -111,11 +111,10 @@
     return r.slice(0, 32);
   }
 
-  /* What the letter would be worth. Computed here because js/money.js is the
-     one definition of a term factor and its rounding, and duplicating that in
-     SQL is how the console and the letter would come to disagree. The lines
-     themselves are read back from the database inside the transaction, so a
-     figure sent from here can never change the words on the page. */
+  /* What the letter would be worth, as the letter draws it. The database
+     works the same price from the stored lines and keeps these figures only
+     where they agree to the sen (audit S4, 2026-10-10), so a line changed
+     since the sheet opened is refused rather than printed at the old price. */
   function quoteOf(client, lines) {
     return priceOf(lines, client.market, client.sst_applies !== false);
   }
@@ -193,7 +192,10 @@
     'not-verified': 'Only a verified letter is voided. An issued or signed letter is deleted instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
-    'bad-state': 'That is not a state a service can be in.'
+    'bad-state': 'That is not a state a service can be in.',
+    'stale': 'The services changed since this sheet was opened. Close it and issue the letter again.',
+    'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
+    'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
   };
 
   function missingWord(m) {

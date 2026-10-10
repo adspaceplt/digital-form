@@ -62,6 +62,13 @@
   var LEVEL_WORD = { view: 'View', work: 'Manage', manage: 'Full Access' };
   var SCOPE_WORD = { all: 'All clients', own: 'Own clients only' };
   function readScope() { var el = document.getElementById('grScope'); return el && el.value === 'own' ? 'own' : 'all'; }
+  var SCOPE_CLASH = 'Own clients only cannot be given with the Activity record, which shows every client. Set the Activity record to No Access, or choose All clients.';
+  function scopeClash(access, scope, admin) {
+    if (scope !== 'own' || admin) return false;
+    return Object.keys(access || {}).some(function (k) {
+      return (k === 'activity' || k.indexOf('activity.') === 0) && access[k] && access[k] !== 'none';
+    });
+  }
 
   /* Each section offers the levels that mean something in it. The activity
      record is a log, so it is read or not read; administering the team is one
@@ -120,7 +127,10 @@
                 /* A client reminded of what waits on their approval (2026-10-10). */
                 ['approval', 'Approval reminder']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
-    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
+    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
+                /* A file the client approved, hidden and then deleted for good
+                   (audit S6, 2026-10-10): granted, an admin's by itself. */
+                ['files_delete', 'Delete approved files']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
@@ -179,7 +189,8 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
+    'campaigns.files_delete': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -201,7 +212,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -767,7 +778,7 @@
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
     db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
-      if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
+      if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); load(); return; }
       if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
@@ -848,7 +859,7 @@
     ['AI', ['reports.ai']],
     ['Records', ['register.types', 'ops.numbering']],
     ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']],
-    ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel']]
+    ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel', 'campaigns.files_delete']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
@@ -1252,6 +1263,10 @@
     // Only an exception is stored; Same as section is the absence of a key,
     // and so is a part set to exactly what its section already gives.
     var access = readAccess();
+    /* The Activity record is not scoped, so a group seeing only its own
+       clients holds none of it (the database's `team_roles_scope_guard`). */
+    var admin = 'is_admin' in flags ? flags.is_admin : Boolean(state.editing && state.editing.is_admin);
+    if (scopeClash(access, readScope(), admin)) { msg('grMsg', SCOPE_CLASH, 'err'); return; }
     if (state.editing) {
       var r = state.editing;
       var patch = {};
@@ -1269,7 +1284,7 @@
     var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope() };
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
-      if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
+      if (q.error) { msg('grMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); return; }
       log('team.group_added', name, '');
       shutGroupBox();
       msg('groupMsg', name + ' added.', 'ok');

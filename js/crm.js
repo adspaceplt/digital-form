@@ -1925,14 +1925,13 @@
           '. This is immediate and cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
       }, function (v) {
-        var name = c.name;
         return db.rpc('delete_client', { p_client: c.id, p_code: codeNeeded ? v.code : null }).then(function (r) {
           if (r.error) return r.error.message;
           var out = r.data;
           if (out === 'wrong-code') return 'That delete code is not right.';
           if (out === 'not-found') return 'That client is no longer there.';
           if (out !== 'deleted') return String(out || 'Unable to delete.');
-          log('client.deleted', name, '');
+          /* `delete_client` files the deletion itself (audit R1). */
           state.client = null;
           showList();
           return '';
@@ -3991,9 +3990,23 @@
   });
   function saveRequest(q, patch, action) {
     patch.decided_by = actorName();
-    db.from('client_requests').update(patch).eq('id', q.id).select('id').then(function (r) {
-      if (r.error) { msg(replying ? 'rqMsg' : 'crmReqMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { msg(replying ? 'rqMsg' : 'crmReqMsg', 'Not saved. The database refused the request.', 'err'); return; }
+    /* Written only over the request as it was read (audit C2, 2026-10-10):
+       a client who withdrew it, or a colleague who answered it meanwhile,
+       is not overwritten; the request is read again and that is said. */
+    var w = db.from('client_requests').update(patch).eq('id', q.id);
+    if (q.updated_at) w = w.eq('updated_at', q.updated_at);
+    w.select('id').then(function (r) {
+      var box = replying ? 'rqMsg' : 'crmReqMsg';
+      if (r.error) { msg(box, r.error.message, 'err'); return; }
+      if (!(r.data || []).length) {
+        db.from('client_requests').select('id, updated_at').eq('id', q.id).maybeSingle().then(function (n) {
+          var moved = n.data && q.updated_at && n.data.updated_at !== q.updated_at;
+          msg(box, moved ? 'Not saved. This request changed since it was opened, and has been read again.'
+            : 'Not saved. The database refused the request.', 'err');
+          if (moved) loadRequests();
+        });
+        return;
+      }
       log(action, state.client.name, (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '') +
         (patch.state ? ' · ' + RQ_STATE[patch.state][0] : '') + (patch.fee != null ? ' · ' + MON.money2(patch.fee, state.client.market) : ''));
       shutReply();

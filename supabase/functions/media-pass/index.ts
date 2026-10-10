@@ -1,6 +1,7 @@
 /*
  * media-pass — hands a browser the CloudFront signed cookies that open the
- * portal's media under `content/` for twelve hours (2026-10-03).
+ * portal's media under `content/` for twelve hours (2026-10-03), each pass
+ * held to the folders its caller may see (audit F3, 2026-10-10).
  *
  * Content Review files, creator drafts and everything else uploaded to S3 sit
  * under `content/`. Once the CloudFront behaviour for `content/*` trusts the
@@ -42,7 +43,15 @@ const ALLOWED_ORIGINS = [
 
 // Twelve hours: a working day, so a review left open does not lose its media.
 const HOURS = 12;
-const RESOURCE = 'https://mycdn.adspace.me/content/*';
+const CDN = 'https://mycdn.adspace.me';
+/* A pass is one CloudFront policy a folder (a policy holds one statement),
+   each set as cookies on that folder's own path, so a browser sends a
+   folder's pass only to that folder: `content/{clientId}/` for what the team
+   uploaded for a client, `content/creator/{optionId}/` for a booking's
+   drafts (docs/S3-STORAGE.md). A colleague's pass is the whole of content/.
+   A file name is no longer the only boundary between two clients. */
+const MAX_FOLDERS = 40;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -134,19 +143,44 @@ Deno.serve(async (req) => {
   const pub = createClient(url, anon);
   const pass = body.passcode ? String(body.passcode) : null;
   const key = (v: unknown) => /^[A-Za-z0-9_-]{6,64}$/.test(String(v || ''));
+  // The folders this caller may open; `null` is the whole of content/.
+  let folders: string[] | null = [];
+  const clientFolder = (id: unknown) => { if (UUID.test(String(id || ''))) folders!.push(`content/${id}/`); };
+  const optionFolder = (id: unknown) => { if (UUID.test(String(id || ''))) folders!.push(`content/creator/${id}/`); };
   if (body.review) {
     if (!key(body.review)) return json({ error: 'bad_token' }, 400, origin);
     const { data, error } = await pub.rpc('get_review_feed', { p_token: String(body.review), p_passcode: pass });
     if (error || !data || data.error) return json({ error: 'not_allowed' }, 403, origin);
+    // The link proved; its client's folder is read with the service role.
+    const { data: c } = await admin.from('clients').select('id')
+      .eq('access_token', String(body.review)).limit(1);
+    (c || []).forEach((r: { id: string }) => clientFolder(r.id));
   } else if (body.campaign) {
     if (!key(body.campaign)) return json({ error: 'bad_token' }, 400, origin);
     const { data, error } = await pub.rpc('get_campaign', { p_token: String(body.campaign), p_passcode: pass });
     if (error || !data || data.error) return json({ error: 'not_allowed' }, 403, origin);
+    const { data: c } = await admin.from('campaigns').select('id, client_id')
+      .eq('access_token', String(body.campaign)).limit(1);
+    const camp = (c || [])[0];
+    if (camp) {
+      clientFolder(camp.client_id);
+      const { data: o } = await admin.from('campaign_options').select('id')
+        .eq('campaign_id', camp.id).neq('state', 'replaced').limit(MAX_FOLDERS);
+      (o || []).forEach((r: { id: string }) => optionFolder(r.id));
+    }
   } else if (body.creator) {
     const code = String(body.creator).toUpperCase();
     if (!/^[A-Z0-9]{8}$/.test(code)) return json({ error: 'bad_code' }, 400, origin);
     const { data, error } = await pub.rpc('get_creator', { p_code: code });
     if (error || !data || data.error) return json({ error: 'not_allowed' }, 403, origin);
+    // A creator opens their own bookings' drafts and nothing of the client's.
+    const { data: cr } = await admin.from('creators').select('id').eq('access_code', code).limit(1);
+    const who = (cr || [])[0];
+    if (who) {
+      const { data: o } = await admin.from('campaign_options').select('id')
+        .eq('creator_id', who.id).limit(MAX_FOLDERS);
+      (o || []).forEach((r: { id: string }) => optionFolder(r.id));
+    }
   } else {
     const auth = req.headers.get('Authorization') ?? '';
     if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
@@ -159,12 +193,15 @@ Deno.serve(async (req) => {
       /* A client's contact signed in to the client portal (2026-10-08): their
          logos and reports sit under content/ too. Live portal access only,
          as portal_clients() answers it; an address that is also a colleague's
-         was answered above. */
+         was answered above. Each client they hold access at is a folder. */
       if (member) return json({ error: 'not_team' }, 403, origin);
       const { data: contact } = await admin.from('client_contacts')
-        .select('id').eq('portal_access', true).is('archived_at', null)
-        .ilike('email', exactEmail(user.email)).limit(1);
+        .select('client_id').eq('portal_access', true).is('archived_at', null)
+        .ilike('email', exactEmail(user.email)).limit(MAX_FOLDERS);
       if (!contact || !contact.length) return json({ error: 'not_allowed' }, 403, origin);
+      contact.forEach((r: { client_id: string }) => clientFolder(r.client_id));
+    } else {
+      folders = null;
     }
   }
 
@@ -172,18 +209,27 @@ Deno.serve(async (req) => {
   const k = await keys(admin);
   if (!k.cf_media_key_id) return json({ off: true }, 200, origin);
 
-  // 3. One custom policy over every file under content/, signed with the
-  //    private half, in the three cookies CloudFront reads.
+  // 3. One custom policy a folder, signed with the private half; the page
+  //    sets each as CloudFront's three cookies on that folder's path.
   const expires = Math.floor(Date.now() / 1000) + HOURS * 3600;
-  const policy = JSON.stringify({
-    Statement: [{ Resource: RESOURCE, Condition: { DateLessThan: { 'AWS:EpochTime': expires } } }]
-  });
   const signer = await crypto.subtle.importKey('pkcs8', unpem(k.cf_media_private), ALG, false, ['sign']);
-  const sig = await crypto.subtle.sign(ALG.name, signer, new TextEncoder().encode(policy));
-  return json({
-    policy: cfSafe(btoa(policy)),
-    signature: cfSafe(b64(sig)),
-    keyPairId: k.cf_media_key_id,
-    expires
-  }, 200, origin);
+  const sign = async (folder: string) => {
+    const policy = JSON.stringify({
+      Statement: [{ Resource: `${CDN}/${folder}*`, Condition: { DateLessThan: { 'AWS:EpochTime': expires } } }]
+    });
+    const sig = await crypto.subtle.sign(ALG.name, signer, new TextEncoder().encode(policy));
+    return { path: '/' + folder, policy: cfSafe(btoa(policy)), signature: cfSafe(b64(sig)) };
+  };
+  if (folders === null) {
+    // A colleague: the whole of content/, as before, so a console page loaded
+    // before this change keeps its pass.
+    const all = await sign('content/');
+    return json({ passes: [all], policy: all.policy, signature: all.signature,
+                  keyPairId: k.cf_media_key_id, expires }, 200, origin);
+  }
+  const unique = [...new Set(folders)].slice(0, MAX_FOLDERS);
+  if (!unique.length) return json({ error: 'not_allowed' }, 403, origin);
+  const passes = [];
+  for (const f of unique) passes.push(await sign(f));
+  return json({ passes, keyPairId: k.cf_media_key_id, expires }, 200, origin);
 });

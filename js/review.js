@@ -688,7 +688,7 @@
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
 
     API.submitReview({
-      token: token, postId: post.id, decision: decision,
+      token: token, postId: post.id, decision: decision, version: post.version,
       note: note, reviewer: reviewer, passcode: passcode,
       caption: copy && copy.caption, captionZh: copy && copy.caption_zh
     }).then(function (res) {
@@ -698,7 +698,9 @@
         wrap.querySelector('.approve-state').textContent =
           res && res.error === 'note_required'
             ? 'Please describe the required changes.'
-            : 'Unable to save. Please refresh and try again.';
+            : res && res.error === 'changed'
+              ? 'This post was updated after the page opened. Please refresh to review the latest version.'
+              : 'Unable to save. Please refresh and try again.';
         return;
       }
       post.review = {

@@ -1854,9 +1854,37 @@
     var ext = String(f.name || f.url || '').split('?')[0].split('.').pop().toLowerCase();
     return MEDIA_EXT[ext] || f.kind || 'file';
   }
+  /* From the client's approval on a file is the client's record of what they
+     approved: the team hides it from the client's page, never removes it, and
+     a hidden file waits under Hidden from the client with Restore; only the
+     granted part `campaigns.files_delete` deletes it (audit S6, 2026-10-10). */
+  var APPROVED = ['scheduled', 'posted', 'completed'];
+  function approvedOf(o) { return APPROVED.indexOf(o.state) >= 0; }
+  function hideIcon() { return (window.ADspaceActs && window.ADspaceActs.glyph) ? window.ADspaceActs.glyph('hide') : '–'; }
+  function fileX(o, cls) {
+    return approvedOf(o)
+      ? '<button class="' + cls + ' is-hide" type="button" data-a="hidefile" aria-label="Hide from the client" title="Hide from the client">' + hideIcon() + '</button>'
+      : '<button class="' + cls + '" type="button" data-a="removefile" aria-label="Remove submitted file">×</button>';
+  }
+  function hiddenFiles(o, hid) {
+    if (!hid.length) return '';
+    var del = mayPart('campaigns.files_delete', 'work');
+    return '<details class="fmore filehidden"><summary>Hidden from the client · ' + hid.length + '</summary>' +
+      '<div class="filepins">' + hid.map(function (f) {
+        return '<span class="filepin filepin-row is-hidden" data-file="' + esc(f.id) + '">' +
+          '<a class="filepin-open" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+            '<span class="filepin-name">' + esc(f.name) + '</span></a>' +
+          '<button class="btn btn-sm" type="button" data-a="showfile">Restore</button>' +
+          (del ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="hidmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delfile">Delete</button></div></span>' : '') +
+          '</span>';
+      }).join('') + '</div></details>';
+  }
   function handedIn(o) {
-    var files = (state.files && state.files[o.id]) || [];
-    if (!files.length && !o.draft_caption) return '';
+    var all = (state.files && state.files[o.id]) || [];
+    var files = all.filter(function (f) { return !f.hidden_at; });
+    var hid = all.filter(function (f) { return f.hidden_at; });
+    if (!all.length && !o.draft_caption) return '';
     /* Media is watched and everything else is opened, so they are two shapes,
        not one grid of squares. A 9:16 player beside a square tile left the
        third file orphaned on a row of its own with a gap beside it, which is
@@ -1891,7 +1919,7 @@
               return '<div class="filecard filecard-video" data-file="' + esc(f.id) + '">' +
                 ADspaceMedia.tag(f.url, 'controls playsinline preload="metadata"') +
                 '<span class="filecard-name">' + esc(f.name) + '</span>' +
-                '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
+                fileX(o, 'filecard-x') + '</div>';
             }
             /* A thumbnail that cannot load shows what the file is rather than
                the browser's broken image mark, which tells a reviewer the
@@ -1902,7 +1930,7 @@
               '<img src="' + esc(f.url) + '" alt="" loading="lazy" onerror="this.remove()">' +
               '<span class="filecard-kind">' + ext + '</span>' +
               '<span class="filecard-name">' + esc(f.name) + '</span></a>' +
-              '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
+              fileX(o, 'filecard-x') + '</div>';
           }).join('') + '</div>'
         : '') +
       (rest.length
@@ -1913,10 +1941,10 @@
                 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                 '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
               '</svg><span class="filepin-name">' + esc(f.name) + '</span></a>' +
-              '<button class="filepin-x" type="button" data-a="removefile" ' +
-              'aria-label="Remove submitted file">×</button></span>';
+              fileX(o, 'filepin-x') + '</span>';
           }).join('') + '</div>'
         : '') +
+      hiddenFiles(o, hid) +
       /* The caption is part of what the client approves, so its absence is
          said rather than drawn as nothing (2026-09-27: a draft went to the
          client with no caption, past a check that asks about the caption). */
@@ -3212,6 +3240,7 @@
     card.className = 'kcard' + (live ? ' is-live' : '') + (dead ? ' is-off' : '') +
       (waiting ? ' is-waiting' : '') + (live && !open ? ' is-folded' : '');
     card.setAttribute('data-state', o.state);
+    card.setAttribute('data-option', o.id);
 
     /* Folded, the card is one line: the date, the platforms, the money. A card
        waiting on us leads with what arrived, because how much was sent is the
@@ -3585,6 +3614,95 @@
         var id = file && file.getAttribute('data-file');
         if (!id) return;
         arm(button, file, function () { removeFile(button, file, id); });
+      });
+    });
+
+    /* Hide and Restore after the client's approval (audit S6): soft, so they
+       ask nothing, and the way back is drawn where it happened. */
+    var FILE_SAID = {
+      denied: 'Your access does not allow this.',
+      'client-scope': 'This client is outside your clients.',
+      'not-approved': 'A file is hidden once the client has approved it.',
+      'not-found': 'The file is no longer on this booking.',
+      'not-hidden': 'Hide the file first.'
+    };
+    function fileSaid(r, verb) {
+      var code = r && r.data && r.data.error;
+      if (r && r.error) {
+        return /does not exist|PGRST202|schema cache/i.test(r.error.message || '')
+          ? 'This needs a database update.' : verb + ' Check the connection and try again.';
+      }
+      return code ? verb + ' ' + (FILE_SAID[code] || 'The database refused the request.') : '';
+    }
+    function hideFile(id, hide, what) {
+      return db.rpc('campaign_file_hide', { p_file: id, p_hide: hide }).then(function (r) {
+        var bad = fileSaid(r, 'Not saved.');
+        if (bad) { msg('campWorkMsg', bad, 'err'); return false; }
+        /* The card is drawn again from what it holds, so the way back lands
+           under the files it is about. */
+        (state.files[o.id] || []).forEach(function (f) {
+          if (f.id === id) { f.hidden_at = hide ? new Date().toISOString() : null; }
+        });
+        paintOptions();
+        if (hide) {
+          var host = document.querySelector('.kcard[data-option="' + o.id + '"] .handedin');
+          undoBar((what ? what.trim() + ' hidden from the client.' : 'Hidden from the client.'), function () {
+            hideFile(id, false, what);
+          }, host);
+        }
+        return true;
+      }).catch(function () { msg('campWorkMsg', 'Not saved. Check the connection and try again.', 'err'); });
+    }
+    Array.prototype.forEach.call(card.querySelectorAll('[data-a="hidefile"]'), function (button) {
+      button.addEventListener('click', function () {
+        var file = button.closest('[data-file]');
+        var id = file && file.getAttribute('data-file');
+        if (!id) return;
+        var what = (file.querySelector('.filecard-name, .filepin-name') || {}).textContent || '';
+        button.disabled = true;
+        hideFile(id, true, what).then(function (ok) {
+          if (!ok) button.disabled = false;
+        });
+      });
+    });
+    Array.prototype.forEach.call(card.querySelectorAll('[data-a="showfile"]'), function (button) {
+      button.addEventListener('click', function () {
+        var file = button.closest('[data-file]');
+        var id = file && file.getAttribute('data-file');
+        if (!id) return;
+        button.disabled = true;
+        hideFile(id, false, '').then(function (ok) { if (!ok) button.disabled = false; });
+      });
+    });
+    Array.prototype.forEach.call(card.querySelectorAll('[data-a="hidmenu"]'), function (button) {
+      var m = button.parentNode.querySelector('.kmenu');
+      button.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = m.hidden;
+        shutMenus();
+        m.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(button, m);
+      });
+      m.querySelector('[data-a="delfile"]').addEventListener('click', function () {
+        m.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        var file = button.closest('[data-file]');
+        var id = file && file.getAttribute('data-file');
+        var what = ((file.querySelector('.filepin-name') || {}).textContent || 'This file').trim();
+        if (!mayPart('campaigns.files_delete', 'work')) { msg('campWorkMsg', 'Not deleted. ' + FILE_SAID.denied, 'err'); return; }
+        window.ADspaceConfirm.ask({
+          title: 'Delete this file?',
+          body: what + ' leaves this booking. The client approved it. There is no restore.',
+          go: 'Delete', tone: 'danger', wait: true
+        }, function () {
+          return db.rpc('campaign_file_delete', { p_file: id }).then(function (r) {
+            var bad = fileSaid(r, 'Not deleted.');
+            if (bad) return bad;
+            loadOptions();
+            return '';
+          }).catch(function () { return 'Not deleted. Check the connection and try again.'; });
+        });
       });
     });
 
@@ -4567,6 +4685,7 @@
         '</span><span class="muted act-when">' + money(o.rate) + '</span></div>';
     }).join('');
     $('lockPerson').value = '';
+    lockKey = null;
     $('lockBy').textContent = (bridge.actor && bridge.actor()) || '';
     msg('lockMsg', '');
     $('lockSheet').hidden = false;
@@ -4588,7 +4707,34 @@
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     var ids = picked.map(function (o) { return o.id; });
     var stamp = new Date().toISOString();
+    var btn = this;
+    if (btn.disabled) return;
 
+    /* One act (audit S3, 2026-10-10): the confirmation, the bookings and the
+       campaign move together in `campaign_confirm_creators`, which refuses a
+       booking no longer shortlisted and answers the same key again without
+       filing twice. A database without it takes the older three writes. */
+    if (!lockKey) lockKey = (window.ADspaceAPI && ADspaceAPI.accessToken ? ADspaceAPI.accessToken() : '') + Date.now().toString(36);
+    btn.disabled = true;
+    db.rpc('campaign_confirm_creators', {
+      p_campaign: state.campaign.id, p_options: ids, p_person: person, p_source: source, p_idem: lockKey
+    }).then(function (r) {
+      btn.disabled = false;
+      var missing = r.error && (r.error.code === 'PGRST202' || /campaign_confirm_creators/.test(r.error.message || ''));
+      if (missing) { lockOld(); return; }
+      var d = r.data || {};
+      if (r.error || d.error) {
+        msg('lockMsg', r.error ? r.error.message : (LOCK_SAID[d.error] ? LOCK_SAID[d.error](d) : 'Not confirmed. The database refused the request.'), 'err');
+        if (d.error === 'stale') loadOptions();
+        return;
+      }
+      lockKey = null;
+      state.campaign.state = 'production';
+      shutLock();
+      openCampaign(state.campaign);
+    }).catch(function (e) { btn.disabled = false; msg('lockMsg', (e && e.message) || String(e), 'err'); });
+
+    function lockOld() {
     db.from('campaign_confirmations').insert({
       campaign_id: state.campaign.id,
       kind: source === 'portal' ? 'client' : 'keyed_in',
@@ -4624,7 +4770,16 @@
           });
       }).catch(function (e) { msg('lockMsg', (e && e.message) || String(e), 'err'); });
     });
+    }
   });
+  var lockKey = null;
+  var LOCK_SAID = {
+    stale: function (d) { return (d.count === 1 ? '1 creator is' : d.count + ' creators are') + ' no longer shortlisted. The list has been read again.'; },
+    empty: function () { return 'No creators selected.'; },
+    denied: function () { return 'Not confirmed. Creator Campaigns at Manage is required.'; },
+    'client-scope': function () { return 'Not confirmed. This client is outside your reach.'; },
+    'not-found': function () { return 'This campaign is no longer available.'; }
+  };
 
   // ---- Bulk logistics -----------------------------------------------------
   $('bulkToggle').addEventListener('click', function () { bulkOpen(this); });
