@@ -1965,3 +1965,13 @@ stayed Open; it is In production once nothing is left to choose, while Open
 with a free slot remains a reopened selection. Revert to options now says the
 client chooses again once the selection is reopened, since the place is not
 offered to the client until then.
+
+### 2026-10-11 · Late reports ordered by the days they read
+
+The daily full run found Overview's Reports for last month listing three
+reports that each read "3 days late" as Draft, Confirmed, Not started: they
+were ordered by the hour their due dates held, which the reader cannot see.
+Late reports are ordered by whole days late, then by stage. The same run
+found the geometry suite still expecting the account menu's rows at 40 to
+48px; the compact menu (2026-10-10) draws them at a control's height at a
+desk, 48px docked, and the suite now asserts that.

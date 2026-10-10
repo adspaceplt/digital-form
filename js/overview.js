@@ -411,6 +411,7 @@
           var SM = window.ADspaceSmReport;
           var STAGE = { none: 'Not started', draft: 'Draft', confirmed: 'Confirmed' };
           var RANK = { none: 0, draft: 1, confirmed: 2 };
+          var lateDays = function (x) { return Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)); };
           return db.rpc('sm_reports_owed', { p_period: lastMonth().key }).then(rows).then(function (d) {
             var items = (d && d.items) || [];
             var done = items.filter(function (x) { return x.status === 'published'; }).length;
@@ -418,7 +419,9 @@
             var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
             open.sort(function (a, b) {
               if (a.late !== b.late) return a.late ? -1 : 1;
-              if (a.late && a.due !== b.due) return a.due < b.due ? -1 : 1;
+              /* Late by the whole days the row reads, so two rows both 3 days
+                 late fall in stage order, never by the hour their dates hold. */
+              if (a.late && lateDays(a) !== lateDays(b)) return lateDays(b) - lateDays(a);
               if (RANK[a.status] !== RANK[b.status]) return RANK[a.status] - RANK[b.status];
               return String(a.brand || a.client).localeCompare(String(b.brand || b.client));
             });
@@ -427,7 +430,7 @@
               progress: items.length ? { done: done, total: items.length,
                 word: done + ' of ' + items.length + ' published' + (asked ? ' · ' + asked + ' in review' : '') } : null,
               rows: open.map(function (x) {
-                var over = x.late ? Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)) : 0;
+                var over = x.late ? lateDays(x) : 0;
                 var c = { slug: x.slug, id: x.client_id };
                 return { name: x.brand || x.client,
                          meta: [x.brand ? x.client : '', SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind,

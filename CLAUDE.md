@@ -2220,7 +2220,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   month's); a client with neither is never listed (the user, 2026-10-07:
   not every client is a monthly engagement). The ring reads `n of N
   published · n in review`; the rows are what is left but review (the card
-  above lists those): Not started, Draft, Confirmed, late first, each with
+  above lists those): Not started, Draft, Confirmed, late first (by the
+  whole days late the row reads, then by stage), each with
   who has the report task and its due time (else `report_due_days` after the
   month), late in red; a row opens the report, else its task.
 - No money anywhere on it: no value, revenue or fee.
