@@ -1857,3 +1857,26 @@ files nothing. The older functions stay for pages loaded before, and
 `confirm_selection` now refuses a selection that never saved. The audit's
 remaining findings moved from the working ledger to STANDARD.md's open
 findings, each removed as its batch closes it.
+
+### 2026-10-10 · The client decides on what it saw, and keeps what it approved
+
+The audit found four places where what the client saw and what was recorded
+could part (F2, S5, S6, C2). A post edited after the review page opened could
+still be approved, and the approval then stood over words the client never
+read. A creator's next round, handed in after the client asked for changes,
+showed on the client's page before the team had checked it. A file the
+client had approved could be removed from the console at any state, and the
+table's one policy let any colleague change its rows. A reply to a portal
+request was written over a Withdraw the client made meanwhile.
+
+The review page now sends the version it shows; a post changed since is
+refused in the client's words and what was decided on is kept with the
+decision. Release stamps the round released, and the client's page shows
+that round alone; a file added while the booking waits for its quality
+check voids the checks. From the client's approval on, the team hides a file
+rather than removing it (the user: hide at Work; a permanent delete is an
+admin's granted part alone, `campaigns.files_delete`, never implied by Full
+Access; before approval Remove and Delete work as before). A request is
+written only over the request as it was read. The guard trigger runs as the
+caller: a security definer trigger sees its owner as `current_user`, so it
+could never tell a page's write from a function's.

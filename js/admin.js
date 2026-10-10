@@ -704,7 +704,7 @@
        creator's booking follows the section unless a group shuts it. */
     whatsapp:  ['report', 'feedback', 'booking', 'approval'],
     review:    ['sets', 'settings'],
-    campaigns: ['campaigns', 'creators', 'finance'],
+    campaigns: ['campaigns', 'creators', 'finance', 'files_delete'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any
        other group's once set. */
     register:  ['documents', 'hr', 'types'],
@@ -737,7 +737,8 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
+    'campaigns.files_delete': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -2026,6 +2027,9 @@
     'drive.imported':        ['Drive imported', 'is-ok', 'review'],
     /* A file the team handed in for a creator, from the console. */
     'campaign.file_added':   ['Draft uploaded', '', 'campaigns'],
+    'campaign.file_hidden':  ['File hidden from the client', '', 'campaigns'],
+    'campaign.file_shown':   ['File restored for the client', '', 'campaigns'],
+    'campaign.file_deleted': ['Approved file deleted', '', 'campaigns'],
     'campaign.qc':           ['Quality checked', '', 'campaigns']
   };
   /* The same order as the rail, because they are the same eight sections and

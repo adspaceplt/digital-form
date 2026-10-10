@@ -120,7 +120,10 @@
                 /* A client reminded of what waits on their approval (2026-10-10). */
                 ['approval', 'Approval reminder']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
-    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
+    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
+                /* A file the client approved, hidden and then deleted for good
+                   (audit S6, 2026-10-10): granted, an admin's by itself. */
+                ['files_delete', 'Delete approved files']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
@@ -179,7 +182,8 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
+    'campaigns.files_delete': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -201,7 +205,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -848,7 +852,7 @@
     ['AI', ['reports.ai']],
     ['Records', ['register.types', 'ops.numbering']],
     ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']],
-    ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel']]
+    ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel', 'campaigns.files_delete']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };

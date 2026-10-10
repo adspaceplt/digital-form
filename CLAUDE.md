@@ -137,15 +137,15 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
@@ -953,7 +953,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-07), `register.types` (Document types, 2026-10-07) and
   `team.health` (Health check-ins, every colleague's answers by name,
   2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
-  (Meta import and audit, 2026-10-10); each offers Manage
+  (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
+  approved files, 2026-10-10); each offers Manage
   alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1392,6 +1393,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
   - Approval never edits a service line.
+  - A reply or a move is written only over the request as it was read
+    (`.eq('updated_at', …)`, stamped by `client_requests_touch`): one the
+    client withdrew or a colleague answered meanwhile reads "Not saved. This
+    request changed since it was opened, and has been read again." and the
+    list is read again (audit C2, 2026-10-10).
 - Engagements (`js/engage.js`, `tab=engagements`; the user, 2026-10-09:
   "one less tab to monitor"): the client's work by content month, its
   reports included. The tab is drawn for an Active, Paused or Past client,
@@ -1737,6 +1743,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   Confirm internally shows only on a published set. The post ⋯ items carry
   their parts (`review.sets:work`; Delete `review.sets:manage`).
   `review.approved` reads Approved (the actor says who).
+- A decision is on the version on show (`2026-10-10-approval-as-seen.sql`,
+  audit F2): `posts.content_version` moves with the file, copy or title
+  (trigger `posts_content_version`, never set by a write), `get_review_feed`
+  sends it as `version`, and the page decides through
+  `submit_review_seen(… p_version)`, which refuses a post changed since
+  (`changed`: "This post was updated after the page opened. Please refresh to
+  review the latest version.") and keeps what was decided on in
+  `reviews.seen`; `ADspaceAPI.submitReview` asks `submit_review` only where
+  the function is missing.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
@@ -1869,6 +1884,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `.qc-hold` names who checked. No notification.
   - The sheet reads the request the file answers and its caption first
     (`#qcCap`; `No caption.` in warn when there is none).
+  - A file added or removed while Submitted voids that round's checks
+    (`option_qc.voided_at`, trigger `campaign_deliverables_qc_void`); the
+    same colleague's check is taken again (`2026-10-10-released-files.sql`,
+    audit S5).
+  - Release stamps `campaign_options.released_round` (the newest round
+    handed in), and `get_campaign` sends that round's files alone, never a
+    round handed in after the client asked for changes until it is released
+    in its turn, never a hidden file.
 - Every decision on a draft is a row in `option_reviews`, told apart by
   `source` (client, team) and never removed (`undone_at`, `undone_by` when
   taken back): the client's through `review_draft`, the team's send-back
@@ -1920,7 +1943,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADSPACE_CONFIG.s3.maxUploadMB` 1024). Picked files are held on the card
   (`teamHeld`, × each) and upload only on Hand in N files.
 - Removing a handed-in file arms first (`.filearm`), then soft removes, then
-  offers Undo in place.
+  offers Undo in place, until the client approves (audit S6, the user,
+  2026-10-10). From Scheduled on a file is the client's record: its control
+  is Hide from the client (the struck eye; `campaign_file_hide`, Creator
+  Campaigns: Campaigns at Work, client scope, filed `campaign.file_hidden` /
+  `campaign.file_shown`, Undo where it happened), it waits under Hidden from
+  the client (`details.filehidden`, Restore, never asks), and only the granted
+  part `campaigns.files_delete` deletes it, once hidden, from its ⋯
+  (`campaign_file_delete`, asked, `campaign.file_deleted`; the stored file
+  is kept). Trigger `campaign_deliverables_guard` (as the caller) refuses a
+  page removing an approved file (`approved-hide`) or setting the hidden
+  columns (`hide-function`). `campaign_deliverables` reads at Campaigns View,
+  adds and changes at Work and deletes at the part, four policies.
 - A campaign name that would render as nothing reads `Untitled campaign` and
   stays editable. A new one is refused on save.
 - The campaign's form is one sheet for New campaign and Edit (`#addCampBox`);

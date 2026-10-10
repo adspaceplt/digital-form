@@ -565,12 +565,6 @@ section holds only what is true of the project as a whole.
 ### Open security findings
 - From the audit of 2026-10-10 (the user's decisions recorded; each is
   closed by its batch and the entry removed then):
-  - F2: a stale client approval could be accepted after the content
-    changed. S5: a new round could be seen before it was released.
-    S6: a released creator file could be removed at any state, and a group
-    at View could change rows (the user's rule: hide after the client's
-    approval, at Work; permanent delete an admin's granted part alone).
-    C2: a request's update keyed on its id alone. Batch 3.
   - S2: direct write policies no page uses. S4: totals taken from the
     browser, and a letter verified after its terms changed. R1:
     `delete_client` logged by the browser after the delete. The Team panel
