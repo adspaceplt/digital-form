@@ -159,6 +159,8 @@
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
       selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
+      ratesChanged: 'The rates have been updated. Please review them and confirm again.',
+      selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -255,6 +257,8 @@
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
+      ratesChanged: '报价已更新，请查看后再次确认。',
+      selectionChanged: '部分达人已无法选择，请重新查看后再次确认。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -348,7 +352,7 @@
 
     /* SST is a setting (js/money.js): read beside the campaign, never after it. */
     var rates = MON.load ? MON.load() : Promise.resolve();
-    db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode })
+    return db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode })
       .then(function (r) { return rates.then(function () { return r; }); }).then(function (r) {
       /* A client page never shows a database message (audit, 2026-10-03). */
       if (r.error) { showState(t().failTitle, t().failText, false); return; }
@@ -1272,23 +1276,29 @@
 
   // ---- Confirm ------------------------------------------------------------
   $('confirmBtn').addEventListener('click', function () {
-    var picked = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
     $('confirmHeading').textContent = t().confirmHeading;
     $('confirmBlurb').textContent = t().confirmBlurb;
     $('confirmNameLabel').textContent = t().nameLabel;
     $('confirmName').placeholder = t().namePlaceholder;
     $('confirmGo').textContent = t().send;
     $('confirmCancel').textContent = t().cancel;
+    paintConfirmList();
+    msg('confirmMsg', '');
+    $('confirmSheet').hidden = false;
+    $('confirmName').focus();
+  });
+
+  /* The creators chosen and their rates, as the sheet confirms them; drawn
+     again when the campaign is read again under an open sheet. */
+  function paintConfirmList() {
+    var picked = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
     $('confirmList').innerHTML = picked.map(function (o) {
       return '<div class="act"><span class="act-subject">' + esc(o.name) + '</span>' +
         '<span class="muted act-when">' + money(o.rate) + '</span></div>';
     }).join('');
     var sub = picked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
     $('confirmTotals').innerHTML = totalsHtml(sub);
-    msg('confirmMsg', '');
-    $('confirmSheet').hidden = false;
-    $('confirmName').focus();
-  });
+  }
 
   function msg(id, text, kind) {
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
@@ -1302,22 +1312,66 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutConfirm(); });
 
+  /* One press is one confirmation (audit F1, 2026-10-10): the creators on
+     the client's screen, the rate shown for each and a key made when the
+     sheet opens go together to `confirm_selection_with`, which saves the
+     selection and files the confirmation in one transaction, refuses a rate
+     or a creator that changed under the page, and answers the same key
+     again without filing twice. A database without it is asked the older
+     way, which now refuses a selection that never saved. */
+  var confirmKey = null;
+  function newKey() {
+    var a = new Uint8Array(16);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+  $('confirmBtn').addEventListener('click', function () { confirmKey = newKey(); }, true);
+
   $('confirmGo').addEventListener('click', function () {
     var name = ($('confirmName').value || '').trim();
     if (!name) { msg('confirmMsg', t().nameNeeded, 'err'); return; }
-    db.rpc('confirm_selection', { p_token: TOKEN, p_person: name, p_passcode: passcode })
-      .then(function (r) {
-        var d = (r && r.data) || {};
-        if ((r && r.error) || d.error) {
-          /* In the client's words, never the database's. Selection closed
-             under them: the page is read again, so the list goes too. */
-          msg('confirmMsg', d.error === 'closed' ? t().selectionClosed : t().saveFailed, 'err');
-          if (d.error === 'closed') load();
-          return;
-        }
-        shutConfirm();
-        showState(t().kicker, t().confirmed, false);
-      });
+    var btn = this;
+    if (btn.disabled) return;
+    clearTimeout(saveTimer);
+    var sel = [], bak = [], seen = {};
+    Object.keys(chosen).forEach(function (id) { (chosen[id] === 'selected' ? sel : bak).push(id); });
+    (feed.options || []).forEach(function (o) {
+      if (chosen[o.id]) seen[o.id] = o.rate == null ? null : Number(o.rate);
+    });
+    if (!confirmKey) confirmKey = newKey();
+    btn.disabled = true;
+    var reread = function () {
+      var lp = load();
+      if (lp && lp.then) lp.then(function () { if (!$('confirmSheet').hidden) paintConfirmList(); });
+    };
+    var said = function (d) {
+      var e = d && d.error;
+      if (e === 'closed') { msg('confirmMsg', t().selectionClosed, 'err'); load(); }
+      else if (e === 'prices') { msg('confirmMsg', t().ratesChanged, 'err'); reread(); }
+      else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
+      else msg('confirmMsg', t().saveFailed, 'err');
+    };
+    db.rpc('confirm_selection_with', {
+      p_token: TOKEN, p_person: name, p_passcode: passcode,
+      p_selected: sel, p_backup: bak, p_seen: seen, p_idem: confirmKey
+    }).then(function (r) {
+      var missing = r && r.error && (r.error.code === 'PGRST202' || /confirm_selection_with/.test(r.error.message || ''));
+      if (!missing) return r;
+      return db.rpc('save_selection', { p_token: TOKEN, p_selected: sel, p_backup: bak, p_passcode: passcode })
+        .then(function (s) {
+          if ((s && s.error) || (s && s.data && s.data.error)) return s;
+          return db.rpc('confirm_selection', { p_token: TOKEN, p_person: name, p_passcode: passcode });
+        });
+    }).then(function (r) {
+      btn.disabled = false;
+      var d = (r && r.data) || {};
+      /* In the client's words, never the database's; where the campaign
+         moved under the page it is read again. */
+      if ((r && r.error) || d.error) { said(r && r.error ? {} : d); return; }
+      confirmKey = null;
+      shutConfirm();
+      showState(t().kicker, t().confirmed, false);
+    }).catch(function () { btn.disabled = false; msg('confirmMsg', t().saveFailed, 'err'); });
   });
 
   setLang(lang);

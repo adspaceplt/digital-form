@@ -129,7 +129,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui`; `all` once a day after the merges |
-| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
+| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Before a merge | The union of the rows above for everything in the batch; never `all` |
 
@@ -141,12 +141,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting |
-| `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage |
+| `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
-| `portal.js` | portal |
+| `portal.js` | portal, confirmpage |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
@@ -1956,6 +1956,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     confirmed.
 - Confirm creators is reachable from Client selection, from the Creators tab
   (`#campLock2`), and from the header line's Review and confirm (`#campNextGo`).
+- Confirming is one act a press (audit F1, S3, C1;
+  `2026-10-10-confirm-once.sql`): the selection page's Confirm sends the
+  creators on screen, the rate shown for each and a key made as its sheet
+  opens to `confirm_selection_with` (anon; `empty`, `closed`, `over-slots`,
+  `stale`, `prices` with the rates now), which saves the selection and files
+  the confirmation with what was confirmed (`snapshot`) in one transaction;
+  a refusal for rates or creators reads the campaign again under the open
+  sheet, said in the client's words. The console's Confirm creators is
+  `campaign_confirm_creators` (Creator Campaigns at Work, client scope;
+  `stale` with the count): the confirmation, the bookings and the campaign
+  move together, filed `campaign.locked`. The same key again answers `again`
+  and files nothing. `confirm_selection` (an older page) refuses `empty`.
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
@@ -3596,7 +3608,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Request change opens through `js/sheet.js` (focus held, Escape, focus back
   to the button, a press outside never closes it over typed text), and an
   unsent note comes back when it opens again until it is sent (audit F8,
-  2026-10-10).
+  2026-10-10). Send keeps one key until the request is filed
+  (`portal_request_once`, audit C1), so a reply lost on the way and a second
+  press file one request; `portal_request` is the same with no key.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
 - A contact reads its name with Main contact at the right of the line, the

@@ -984,6 +984,12 @@
     } else { $('reqSheet').hidden = false; }
   }
   var reqDraft = '';
+  var reqKey = null;
+  function keyOf() {
+    var a = new Uint8Array(16);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
   function paintRequest() {
     var w = t();
     if (req.pick) {
@@ -1014,17 +1020,28 @@
     var note = ($('reqNote').value || '').trim();
     if (req.kind !== 'cancel' && !note) { msg('reqMsg', t().noteNeeded, 'err'); $('reqNote').focus(); return; }
     $('reqGo').disabled = true;
-    db.rpc('portal_request', { p_client: feed.client.id, p_kind: req.kind, p_service: req.line ? req.line.id : null, p_note: note || null })
+    /* One request, however many presses (audit C1, 2026-10-10): a key kept
+       until it is sent, so a reply lost on the way and a second press file
+       it once. A database without `portal_request_once` is asked the older
+       way. */
+    if (!reqKey) reqKey = keyOf();
+    var args = { p_client: feed.client.id, p_kind: req.kind, p_service: req.line ? req.line.id : null, p_note: note || null };
+    db.rpc('portal_request_once', { p_client: args.p_client, p_kind: args.p_kind, p_service: args.p_service, p_note: args.p_note, p_idem: reqKey })
+      .then(function (r) {
+        var missing = r.error && (r.error.code === 'PGRST202' || /portal_request_once/.test(r.error.message || ''));
+        return missing ? db.rpc('portal_request', args) : r;
+      })
       .then(function (r) {
         $('reqGo').disabled = false;
         var d = r.data || {};
         if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : t().notSent, 'err'); return; }
+        reqKey = null;
         $('reqNote').value = ''; reqDraft = '';
         shutRequest();
         showPane('services', true);
         msg('rqMsg', t().sent, 'ok');
         load();
-      }, function () { $('reqGo').disabled = false; msg('reqMsg', t().notSent, 'err'); });
+      }).catch(function () { $('reqGo').disabled = false; msg('reqMsg', t().notSent, 'err'); });
   });
 
   function withdraw(r) {

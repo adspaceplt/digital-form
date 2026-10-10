@@ -1838,3 +1838,22 @@ back except pressing to the device's register, and the bar now holds only
 what acts on the work (search, the bell) and the account. Light chosen on a
 light device is now kept as Light rather than cleared, since Auto is the way
 to follow the device.
+
+### 2026-10-10 · Confirming is one act a press
+
+The audit found three acts that could happen twice or half (F1, S3, C1). On
+the selection page a selection whose autosave the database refused could
+still be confirmed with nothing in it, and a confirmation could be filed
+against rates the client never saw. In the console Confirm creators was three
+writes (the confirmation, each booking, the campaign) with no way back if one
+failed. The portal's Request change filed a second request when a reply was
+lost and the client pressed again.
+
+Each is now one function, one transaction, with a key made once for the
+press: `confirm_selection_with` (the creators on screen and the rate shown
+for each, refused when either changed), `campaign_confirm_creators`, and
+`portal_request_once`. The same key again answers with the first result and
+files nothing. The older functions stay for pages loaded before, and
+`confirm_selection` now refuses a selection that never saved. The audit's
+remaining findings moved from the working ledger to STANDARD.md's open
+findings, each removed as its batch closes it.

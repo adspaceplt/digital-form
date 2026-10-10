@@ -41,7 +41,7 @@ create or replace function public.functions_tidy()
 returns jsonb language plpgsql set search_path = public as $$
 declare
   open_to_anon constant text[] := array[
-    'announcement_now', 'app_settings_read', 'confirm_selection', 'creator_add_file',
+    'announcement_now', 'app_settings_read', 'confirm_selection', 'confirm_selection_with', 'creator_add_file',
     'creator_may_upload', 'creator_post_save', 'creator_rate', 'creator_remove_file',
     'creator_set_profiles', 'creator_submit', 'get_campaign', 'get_creator',
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',

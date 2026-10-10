@@ -4567,6 +4567,7 @@
         '</span><span class="muted act-when">' + money(o.rate) + '</span></div>';
     }).join('');
     $('lockPerson').value = '';
+    lockKey = null;
     $('lockBy').textContent = (bridge.actor && bridge.actor()) || '';
     msg('lockMsg', '');
     $('lockSheet').hidden = false;
@@ -4588,7 +4589,34 @@
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     var ids = picked.map(function (o) { return o.id; });
     var stamp = new Date().toISOString();
+    var btn = this;
+    if (btn.disabled) return;
 
+    /* One act (audit S3, 2026-10-10): the confirmation, the bookings and the
+       campaign move together in `campaign_confirm_creators`, which refuses a
+       booking no longer shortlisted and answers the same key again without
+       filing twice. A database without it takes the older three writes. */
+    if (!lockKey) lockKey = (window.ADspaceAPI && ADspaceAPI.accessToken ? ADspaceAPI.accessToken() : '') + Date.now().toString(36);
+    btn.disabled = true;
+    db.rpc('campaign_confirm_creators', {
+      p_campaign: state.campaign.id, p_options: ids, p_person: person, p_source: source, p_idem: lockKey
+    }).then(function (r) {
+      btn.disabled = false;
+      var missing = r.error && (r.error.code === 'PGRST202' || /campaign_confirm_creators/.test(r.error.message || ''));
+      if (missing) { lockOld(); return; }
+      var d = r.data || {};
+      if (r.error || d.error) {
+        msg('lockMsg', r.error ? r.error.message : (LOCK_SAID[d.error] ? LOCK_SAID[d.error](d) : 'Not confirmed. The database refused the request.'), 'err');
+        if (d.error === 'stale') loadOptions();
+        return;
+      }
+      lockKey = null;
+      state.campaign.state = 'production';
+      shutLock();
+      openCampaign(state.campaign);
+    }).catch(function (e) { btn.disabled = false; msg('lockMsg', (e && e.message) || String(e), 'err'); });
+
+    function lockOld() {
     db.from('campaign_confirmations').insert({
       campaign_id: state.campaign.id,
       kind: source === 'portal' ? 'client' : 'keyed_in',
@@ -4624,7 +4652,16 @@
           });
       }).catch(function (e) { msg('lockMsg', (e && e.message) || String(e), 'err'); });
     });
+    }
   });
+  var lockKey = null;
+  var LOCK_SAID = {
+    stale: function (d) { return (d.count === 1 ? '1 creator is' : d.count + ' creators are') + ' no longer shortlisted. The list has been read again.'; },
+    empty: function () { return 'No creators selected.'; },
+    denied: function () { return 'Not confirmed. Creator Campaigns at Manage is required.'; },
+    'client-scope': function () { return 'Not confirmed. This client is outside your reach.'; },
+    'not-found': function () { return 'This campaign is no longer available.'; }
+  };
 
   // ---- Bulk logistics -----------------------------------------------------
   $('bulkToggle').addEventListener('click', function () { bulkOpen(this); });

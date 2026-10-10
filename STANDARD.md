@@ -563,7 +563,24 @@ section holds only what is true of the project as a whole.
   dialog.
 
 ### Open security findings
-- None open. Checked live on 2026-09-27: every public table has row level
+- From the audit of 2026-10-10 (the user's decisions recorded; each is
+  closed by its batch and the entry removed then):
+  - F2: a stale client approval could be accepted after the content
+    changed. S5: a new round could be seen before it was released.
+    S6: a released creator file could be removed at any state, and a group
+    at View could change rows (the user's rule: hide after the client's
+    approval, at Work; permanent delete an admin's granted part alone).
+    C2: a request's update keyed on its id alone. Batch 3.
+  - S2: direct write policies no page uses. S4: totals taken from the
+    browser, and a letter verified after its terms changed. R1:
+    `delete_client` logged by the browser after the delete. The Team panel
+    must refuse Own clients only together with any Activity access until
+    the Activity record is scoped. Batch 4.
+  - F3: the media pass opens every file under `content/`, so a file name is
+    the only boundary; a pass per client follows (CloudFront's `content/*`
+    behaviour is restricted and refuses a direct or encoded address, read
+    2026-10-10). Batch 5.
+- Closed before then: checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
   which answers false for anybody who is not an active colleague. The
   internal helpers the API could still reach are closed
