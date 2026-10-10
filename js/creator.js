@@ -245,7 +245,7 @@
         } else { forget(); askCode(); }
         return;
       }
-      code = c;
+      if (code !== c) { code = c; draftsLoad(); }
       try { localStorage.setItem(KEY, c); } catch (e) { /* private window */ }
       feed = d;
       // The code has proved itself: the media pass first, then the files.
@@ -264,7 +264,7 @@
     following = false;
     var b = $('pushBtn'); if (b) b.hidden = true;
     if (window.ADspacePush) window.ADspacePush.shut();
-    try { localStorage.removeItem(KEY); } catch (e) {} code = ''; feed = null;
+    try { localStorage.removeItem(KEY); sessionStorage.removeItem(DRAFTS + code); } catch (e) {} drafts = {}; code = ''; feed = null;
   }
 
   /* Notifications on this device for this creator (js/push.js), offered once
@@ -892,11 +892,38 @@
         '<div class="progress-track"><div class="progress-fill" data-bar></div></div></div>' +
       '<label class="field-label" for="cap-' + esc(b.id) + '">' + esc(t().captionLabel) + '</label>' +
       '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="2" data-cap ' +
-        'placeholder="' + esc(t().captionHint) + '">' + esc(b.caption || '') + '</textarea>' +
+        'placeholder="' + esc(t().captionHint) + '">' + esc(capOf(b)) + '</textarea>' +
       '<div class="kactions"><button class="btn btn-go" type="button" data-a="submit">' +
         esc(b.state === 'submitted' ? t().update : t().submit) + '</button></div>' +
       '<div class="msg" data-msg></div></div>';
   }
+
+  /* A caption typed and not yet handed in is kept a booking, so a booking
+     switch, the language or a repaint never empties it (audit F4,
+     2026-10-10). It lives in this tab's session, under the code: it ends
+     with the tab, on Submit, and on Forget this device. It is never sent
+     by anything but Submit. */
+  var DRAFTS = 'adspace-creator-drafts:';
+  var drafts = {};
+  function draftsLoad() {
+    drafts = {};
+    try { var v = JSON.parse(sessionStorage.getItem(DRAFTS + code) || '{}'); if (v && typeof v === 'object') drafts = v; } catch (e) {}
+  }
+  function draftsKeep() {
+    try {
+      if (Object.keys(drafts).length) sessionStorage.setItem(DRAFTS + code, JSON.stringify(drafts));
+      else sessionStorage.removeItem(DRAFTS + code);
+    } catch (e) {}
+  }
+  function capOf(b) { return Object.prototype.hasOwnProperty.call(drafts, b.id) ? drafts[b.id] : (b.caption || ''); }
+  document.addEventListener('input', function (e) {
+    var f = e.target;
+    if (!f || !f.hasAttribute || !f.hasAttribute('data-cap')) return;
+    var id = String(f.id || '').replace(/^cap-/, '');
+    var b = feed && (feed.bookings || []).filter(function (x) { return x.id === id; })[0];
+    if (b && f.value === (b.caption || '')) delete drafts[id]; else drafts[id] = f.value;
+    draftsKeep();
+  });
 
   /* Files picked but not yet handed in stay on this device, one list a
      booking: shown from the device, taken off with × at no cost, and sent to
@@ -923,7 +950,7 @@
   function letGo(h) { try { URL.revokeObjectURL(h.url); } catch (e) {} }
 
   window.addEventListener('beforeunload', function (e) {
-    var waiting = Object.keys(held).some(function (k) { return held[k].length; });
+    var waiting = Object.keys(held).some(function (k) { return held[k].length; }) || Object.keys(drafts).length > 0;
     if (!waiting) return;
     e.preventDefault();
     e.returnValue = '';
@@ -1179,6 +1206,7 @@
           var d = r.data || {};
           if (d.error === 'empty') { finish(t().needFiles, 'err'); return; }
           if (r.error || d.error) { finish(t().failText, 'err'); return; }
+          delete drafts[b.id]; draftsKeep();
           finish();
           load(code);
         }, function () { finish(t().failText, 'err'); });

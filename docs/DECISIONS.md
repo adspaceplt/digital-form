@@ -1743,3 +1743,35 @@ rule made one). Under the tab bar, More's foot became one line of marks
 (the user: the three rows took room for words already known). The Video
 Scripts month's ⋯ and Preview PDF were drawn but wired only when a script
 was open; they are wired with the head now.
+
+### 2026-10-10 · Audit fixes, batch 1: the gate, Confirmed, failures said, the worker's reach
+
+An outside review (the user's second checker) found, and I verified on main,
+gaps the gate itself let through. The gate passed a suite that printed a
+FAIL before its last line, or nothing at all, and five suites only printed
+what they saw. It now fails any FAIL line and an empty output, refuses to
+test a server that serves another folder, and names the tests' commit; the
+five suites assert. A suite that tests the gate's judgement joins it.
+
+The service sheet still offered Confirmed and wrote it, though the line's own
+control had refused it since the letter became the only way in. A trigger now
+refuses a page writing Confirmed; `verify_letter` and the admin override run
+as their owner and pass, so no function was restated. A configured review
+page whose database library failed to load had shown demo posts and a
+decision that was never sent; it now says it could not load. Refresh app
+unregistered every page's worker on the browser; it now takes only the
+console's own. A drawn PDF outlived its hour when read; the hour is kept on
+every read and signing out lets go of the page's own. The client portal's
+Request change moved onto the shared sheet, and a creator's unsent caption
+is kept a booking.
+
+Where the reviewer's fix was heavier than the problem, the lighter one was
+taken: no structured result line in every suite, no build fingerprints.
+
+A random file name is not an authorization boundary (the user, 2026-10-10):
+the media pass over all of `content/` stays an open finding (F3) until
+CloudFront's own configuration is read and the pass is tested against it.
+
+A suite written for F6 and F7 (`tests/fileworker.js`, ten checks failing on
+main) found the console worker's own clean-up deleting every cache but its
+own whenever it updated; it now clears only the console's older stores.

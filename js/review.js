@@ -693,9 +693,10 @@
       caption: copy && copy.caption, captionZh: copy && copy.caption_zh
     }).then(function (res) {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-      if (res && res.error) {
+      /* Only the database's own ok is a decision recorded (audit F5). */
+      if (!res || res.error || res.ok !== true) {
         wrap.querySelector('.approve-state').textContent =
-          res.error === 'note_required'
+          res && res.error === 'note_required'
             ? 'Please describe the required changes.'
             : 'Unable to save. Please refresh and try again.';
         return;

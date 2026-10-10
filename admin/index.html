@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010zf">
+<link rel="stylesheet" href="/css/portal.css?v=20261010zh">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -66,8 +66,8 @@
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261008c"></script>
 <script src="/js/confirm.js?v=20261010zc"></script>
-<script src="/js/sheet.js?v=20261004a"></script>
-<script src="/js/refresh.js?v=20261001a"></script>
+<script src="/js/sheet.js?v=20261010zi"></script>
+<script src="/js/refresh.js?v=20261010zi"></script>
 <script src="/js/form.js?v=20261004b"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
@@ -77,7 +77,7 @@
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261009s"></script>
+<script src="/js/api.js?v=20261010zi"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261010zc"></script>
 <script src="/js/notice.js?v=20261009c"></script>
@@ -250,15 +250,15 @@
     <div class="sidebar-foot">
       <!-- Arrange sections (2026-10-10): the colleague's own order of the
            rail, which the phone tab bar follows. -->
-      <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" hidden>
+      <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" title="Arrange sections" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg><span>Arrange sections</span>
       </button>
       <!-- Settings (js/settings.js, 2026-10-10): what changes the portal for
            everybody, for the colleagues holding one of its parts. -->
-      <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" hidden>
+      <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span>
       </button>
-      <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" hidden>
+      <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
       </button>
       <!-- The build this console is running, from /version.json. -->
@@ -1026,13 +1026,19 @@
               <div><label class="field-label" for="svLabel">Name</label>
                 <input class="input" id="svLabel" aria-required="true" placeholder="Social Media Management"></div>
             </div>
-            <div class="row">
+            <!-- Confirmed is never chosen here: a line becomes Confirmed when
+                 its signed letter is verified (audit S1, 2026-10-10). A line
+                 already confirmed reads its state. -->
+            <div class="row" id="svStateRow">
               <div><label class="field-label" for="svState">State</label>
                 <select class="select" id="svState" data-seg>
                   <option value="enquired">Enquired</option>
                   <option value="quoted">To quote</option>
-                  <option value="confirmed">Confirmed</option>
                 </select></div>
+            </div>
+            <div class="row" id="svStateFixed" hidden>
+              <div><span class="field-label">State</span>
+                <p class="readfield">Confirmed</p></div>
             </div>
           </section>
           <section class="fsec">
@@ -5212,14 +5218,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261010zf"></script>
-<script src="/js/documents.js?v=20261007i"></script>
+<script src="/js/admin.js?v=20261010zi"></script>
+<script src="/js/documents.js?v=20261010zi"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
 <script src="/js/reports.js?v=20261010zc"></script>
 <script src="/js/register.js?v=20261010zc"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261010zc"></script>
+<script src="/js/crm.js?v=20261010zi"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261010ze"></script>
 <script src="/js/namecard.js?v=20261009s"></script>

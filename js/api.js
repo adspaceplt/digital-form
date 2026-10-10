@@ -24,7 +24,11 @@
     client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { global: { fetch: steadyFetch } });
   }
 
+  /* Demo content is for a copy with no database configured, never a
+     configured page whose database library failed to load: that page says
+     it could not load, and records nothing (audit F5, 2026-10-10). */
   async function getReviewFeed(token, passcode) {
+    if (!client && configured) throw new Error('unavailable');
     if (!client) {
       const res = await fetch('/demo/sample.json', { cache: 'no-store' });
       if (!res.ok) throw new Error('Demo content unavailable.');
@@ -39,6 +43,7 @@
   }
 
   async function submitReview(payload) {
+    if (!client && configured) throw new Error('unavailable');
     if (!client) {
       return { ok: true, demo: true };
     }
