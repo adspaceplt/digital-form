@@ -1324,3 +1324,145 @@ read Published and Unpublished, and the stored keys (`status` `shared`,
 `script.shared`) stay. The head carries Preview PDF, a tab opened at the
 press with the drawn file in it, and the ⋯ carries Download, as a report's
 head does; both ask one script or the whole month once there are two.
+
+### 2026-10-09 · The consistency batch: Video Scripts by month, one word per act, the rail regrouped
+The user, through the day: "the header card like this, show similar link in
+one card for different videos?", "why is the tab selection of each video
+below?", "if i have 30 videos = one whole long page", "the VC# and shot
+check box, remove from all client-facing site", "refer back to the Reports
+style", "Reports should be under Work … should be Internal section", "is
+the hover supposed to be very 0 radius corner", and then "do a sweep for any
+similar issues … proceed to change all these in one batch".
+- Video Scripts: a script opens in its content month's record. The client's
+  link sits once in the month's head; the scripts are tabs under it; each
+  script's card carries its state, Edit and Publish. The rail of the
+  month's scripts, which fell below the script on a narrow window, is gone.
+- On the day: Enter on a clip number records it, ticks the scene shot and
+  moves on, and the next number is offered, because the crew types camera
+  clip numbers in order. The clip numbers and ticks left the client page and
+  the client's link (`get_scripts` sends none, `script_shot_link` answers
+  closed): they are the team's record.
+- The client's page is a list a month with one script open at a time, so a
+  month of thirty scripts is thirty rows, not one long page.
+- The script PDF takes the Reports PDF's furniture and scale; the
+  Performance record's foot moved to Slate Medium as the Reports foot is.
+- One word per act: Publish (Reports and Creator Campaigns said Publish to
+  client), Download (Performance said Download PDF, and offered it twice on
+  the same screen). `tests/words.js` fails a retired word.
+- The rail: Reports joins Work after Creator Campaigns; the second group is
+  Internal (Documents, Short Links, Services, Team, Handbook). Team and
+  Handbook keep their order.
+- Square hovers: the Timeline pen hovered as a square; `uxaudit` now fails
+  any control whose hover fill draws no corner (`corner`).
+- The full gate never ran `vs`; it does now, with `words`.
+- A read-only review of the day's sixteen merges found what the sweep added:
+  WhatsApp said "This needs Business settings." to a sender (now "This needs
+  Send on WhatsApp for your group."), its help text still named the first
+  name where the greeting is sent, and a template's Edit had no pen and sat
+  on its own line; the script page never loaded its guide; the script's
+  Delete still named the client's decisions and its refusal named Work for
+  a Full Access act; Send on WhatsApp said "Sent" even when marking the
+  report as sent was refused; four wa.me builders read a number four ways
+  (`ADspaceAPI.waNumber` is the one now); a failed read of the content sets
+  left "Loading…"; the task card's current step was blue (a status in blue;
+  ink now); Reports' Unpublish was red (tonal now); Reset client link
+  became Reset access link, as Content Review says; Malay reads Bahasa
+  Melayu, as Write caption says; the sticky edit foot stood on the page's
+  ground (glass now); search never found a Video Script (it finds one by
+  code or title now). Kept as they are, with reasons: the three button
+  labels over three words (Send back with Meta's changes, Update all from
+  Meta, Request feedback on WhatsApp) are documented acts; a script's notes
+  stay on the client's link (the user's template prints them); an unpublished
+  script's PDF carries no DRAFT mark, since the crew prints it for the shoot.
+- The earlier audit's open findings on the client pages (SEL-1, SEL-3,
+  SEL-4, CR-1, CR-2, CR-4, PO-1, PO-2) were measured again and are closed in
+  `tests/ux-audit/results.json`.
+
+### 2026-10-09 · Every new content piece carries its three dates
+The user: "could you force to have required first draft date, due date and
+the post date (as required) to curb delays?" On 2026-10-05 and 06 the three
+dates were typed per line and a blank one stayed blank; the post date was
+"tentative and never required". From now a piece is made only with all
+three: the New sheet marks them required and refuses a line missing one,
+naming the post, and `ops_create_pieces` refuses the same
+(`dates-required`, with the piece's place), so no other caller can skip
+them. Tasks made before keep their dates as they are. Add task (an everyday
+task), templates, copies, repeats and a month's report tasks are untouched:
+a report task has one date by the user's choice of 2026-10-05, and a repeat
+counts from its first piece, which now always has a post date.
+
+
+### 2026-10-10 · Words written by AI are declared read before they are saved
+The user, 2026-10-09: "Write caption, Write draft is not clear that this is
+going to be written by AI", and "a warning dialog for all AI assisted write
+out (if its manually written 100% then no need) ... they declare that the
+contents are read and confirmed ... Should there have any critical issues it
+could affect your performance". Every writer now reads Write with AI with
+the AI mark before it, Writing while it runs, and its Undo line says Written
+by AI. Read before saving (submitting, on a report). Saving a caption or a
+script whose words came from Write with AI, or submitting a report whose
+commentary did, asks once, in the same sheet as the save or the submit: the
+words were written with AI, read in full and checked for facts, figures,
+names, prices and claims; the person who confirms is responsible, and an
+error may be raised as an issue in their performance review; a tick that
+refuses until ticked. Words typed by hand ask nothing. A report's answer
+comes from the database (`ai_written`), so a reload never loses it; a
+caption's and a script's from the page, which holds the words until they are
+saved. The declaration is filed with the save under the act's own tag, so
+the Activity record map did not change.
+
+### 2026-10-10 · One caption a post, with a language choice
+The user: "one post only allowed one caption ... make it as a language
+option"; the 中文 caption field was unused (0 of 42 live posts held one).
+Write with AI asks Language (English, Bahasa Melayu, 中文, English and 中文)
+and writes one caption; English and 中文 is both in the one caption, English
+first, each composed in its own language. A post already holding Chinese
+keeps its field until it is emptied.
+
+### 2026-10-10 · Meta checks behind a setting and a part
+The user: Import from Meta "has quite a number of bugs and the numbers not
+really tally with actual Meta records ... hidden from all team members at
+this moment, without compromising the usage of manual input", and "agility
+and not hardcoded". `meta_checks` is a Business setting (0 or 1, from a
+day), switched on the Settings page; `reports.meta` is a granted part. Both
+must hold for the import buttons, `meta-import`'s ads and posts, and the
+Report audit's Meta part; while either does not, `sm_report_audit_needed`
+answers false, so Submit and Publish never wait on Meta. The setting starts
+at 0 on the live database; the importer, the audit and their tests stay as
+they are for the day it returns.
+
+### 2026-10-10 · Settings at the rail's foot
+The user: the account menu "below the user Name, business settings are
+getting longer", and AI usage "hidden under Reports while the AI usage
+covers multiple other sections". One page, Settings, sits above the
+Activity record for a colleague holding any of its parts: Portal (Upgrade
+mode, Announcements, Notices), Business figures (Follow-up limits, Tax and
+terms, Due dates, AI prices, Meta checks), AI (AI usage and limits) and
+Records (Document types, Task numbering). Each row opens the sheet that
+already edited it, so nothing is built twice; the bars that held Follow-up
+limits, Tax and terms, Due dates, Document types and Task numbering keep
+them where the work is. The account menu keeps the person's own items, and
+WhatsApp until it becomes its own section.
+
+### 2026-10-10 · The script PDF for the crew
+The user found the script PDF "very not user friendly". On a shoot day the
+crew reads one sheet and ticks it by pen: every scene now has a Shot box
+beside its VC# cell (ticked and numbered where the console recorded it), the
+words said are set heavier than what is seen so the talent finds their line,
+each script ends in its own Notes / Remarks, and a month's scripts sharing
+one shoot share one header table whatever their kind. The context box
+carries no VC#, which it never had a use for.
+
+### 2026-10-10 · Views, restrictions and interest, answered inside the work
+The user asked how the portal could help with low views, restricted
+accounts, content that is not interesting and delays. Four answers, each
+inside a step the team already takes rather than a new screen: Reels and
+Graphics checklists gain checks against the commonest causes of low reach
+and restrictions (the hook, licensed music, original footage, no absolute
+claims); a client's content brief on its Brand pane (audience, pain points,
+pillars, tone, what to avoid, competitors, hooks that worked) is read by
+both AI writers; a post gone live records its views and engagements a week
+later, and a month being planned lists last month's best and weakest posts;
+a restricted account is marked on the client, red in its rail and listed on
+the Overview. Delays were answered on 2026-10-09 by the three required
+dates; the WhatsApp approval chaser waits on the WhatsApp section.

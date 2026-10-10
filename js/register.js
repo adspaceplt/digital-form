@@ -1282,5 +1282,5 @@
   }
   wire();
 
-  window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue, paintFor: paintFor };
+  window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue, paintFor: paintFor, openTypes: function (opener) { openTypes(opener); } };
 })();

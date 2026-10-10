@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261009r">
+<link rel="stylesheet" href="/css/portal.css?v=20261010b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -59,12 +59,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261007a"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261009a"></script>
+<script src="/js/words.js?v=20261009s"></script>
 <script src="/js/icons.js?v=20261008c"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261008c"></script>
-<script src="/js/confirm.js?v=20261008p"></script>
+<script src="/js/confirm.js?v=20261010a"></script>
 <script src="/js/sheet.js?v=20261004a"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261004b"></script>
@@ -76,11 +76,11 @@
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261001a"></script>
+<script src="/js/api.js?v=20261009s"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261009h"></script>
 <script src="/js/notice.js?v=20261009c"></script>
-<script src="/js/whatsapp.js?v=20261009q"></script>
+<script src="/js/whatsapp.js?v=20261009s"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261008p"></script>
 <script src="/js/media.js?v=20261003b"></script>
@@ -204,16 +204,16 @@
         <button class="navitem" data-section="campaigns" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
         </button>
-      </div>
-      <div class="navgroup">
-        <span class="sidebar-label">Records and setup</span>
-        <button class="navitem" data-section="register" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
-        </button>
         <!-- Every client's reports in one place, and where a new one is
              started: the report type, the client, the month. -->
         <button class="navitem" data-section="reports" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
+        </button>
+      </div>
+      <div class="navgroup">
+        <span class="sidebar-label">Internal</span>
+        <button class="navitem" data-section="register" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
         </button>
         <button class="navitem" data-section="links" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
@@ -241,6 +241,11 @@
          a *section*: that class carries wiring, and borrowing it for the
          shape alone broke the console for everybody who is not an admin. -->
     <div class="sidebar-foot">
+      <!-- Settings (js/settings.js, 2026-10-10): what changes the portal for
+           everybody, for the colleagues holding one of its parts. -->
+      <button class="railrow railfoot" id="settingsOpen" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg><span>Settings</span>
+      </button>
       <button class="railrow railfoot" id="activityOpen" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
       </button>
@@ -369,29 +374,13 @@
           <button class="kmenu-item" id="refreshApp" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh app
           </button>
-          <!-- Upgrade mode (js/maintenance.js): an admin's alone, so the group
-               and its rule are drawn only for an admin. A switch, its state at
-               the row's right edge (Off, On, or Set while it waits on its
-               start). -->
+          <!-- Upgrade mode, Announcements and Notices are on the Settings page
+               (2026-10-10); the menu keeps what is the person's own. -->
           <hr class="acct-sep" id="acctUpgradeSep" hidden>
-          <button class="kmenu-item" id="acctUpgrade" type="button" role="switch" aria-checked="false" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg><span class="acct-push-word">Upgrade mode</span><span class="acct-val" id="acctUpgradeWord">Off</span>
-          </button>
-          <p class="msg acct-msg" id="acctUpgradeMsg" role="status" hidden></p>
-          <!-- Announcements (js/announce.js): Team: Announcements, an admin's
-               by itself. -->
-          <button class="kmenu-item" id="acctAnnounce" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4"/><path d="M4 12h2l9 5V7L6 12"/><path d="M18 9a4 4 0 0 1 0 6"/></svg>Announcements
-          </button>
           <!-- WhatsApp (js/whatsapp.js): the templates each message is sent
                with and the last fifty messages. Business settings. -->
           <button class="kmenu-item" id="acctWhatsApp" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/></svg>WhatsApp
-          </button>
-          <!-- Notices (js/notice.js): a notice to all colleagues or to those
-               chosen, in each bell. Team: Notices, an admin's by itself. -->
-          <button class="kmenu-item" id="acctNotice" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></svg>Notices
           </button>
           <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
@@ -695,6 +684,7 @@
                   <button class="kmenu-item" id="crmTake" type="button" role="menuitem" data-a="take" hidden>Take lead</button>
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-a="edit">Edit</button>
                   <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-a="feedback" hidden>Request feedback on WhatsApp</button>
+                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-a="restrict" hidden>Mark account restricted</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
               </div>
@@ -936,6 +926,42 @@
                 <div class="row">
                   <div><label class="field-label" for="crmNotes">Brand notes</label>
                     <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
+                </div>
+              </section>
+              <!-- The content brief (2026-10-10): what the content is for and how it
+                   speaks; Write with AI reads it for captions and scripts. -->
+              <section class="fsec">
+                <h4 class="fsec-h">Audience and pillars</h4>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrAudience">Audience</label>
+                    <textarea class="input textarea" id="crmBrAudience" rows="2" maxlength="1000" placeholder="Who the content speaks to"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrPains">Pain points</label>
+                    <textarea class="input textarea" id="crmBrPains" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrPillars">Content pillars</label>
+                    <textarea class="input textarea" id="crmBrPillars" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Voice and references</h4>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrTone">Tone of voice</label>
+                    <textarea class="input textarea" id="crmBrTone" rows="2" maxlength="1000" placeholder="Optional"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrAvoid">Topics and words to avoid</label>
+                    <textarea class="input textarea" id="crmBrAvoid" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrRivals">Competitors</label>
+                    <textarea class="input textarea" id="crmBrRivals" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
+                </div>
+                <div class="row">
+                  <div><label class="field-label" for="crmBrHooks">Hooks that worked</label>
+                    <textarea class="input textarea" id="crmBrHooks" rows="2" maxlength="1000" placeholder="One point a line"></textarea></div>
                 </div>
               </section>
               <section class="fsec" id="crmWlSec">
@@ -1311,6 +1337,14 @@
             <span id="crmGateText"></span>
             <svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
           </button>
+          <!-- A social account its platform has restricted (2026-10-10): red,
+               because posting waits on it; Clear is the way back. -->
+          <div class="railgate is-restricted" id="crmRestrict" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+            <b id="crmRestrictWord"></b>
+            <span id="crmRestrictText"></span>
+            <button class="btn btn-sm railgate-act" id="crmRestrictClear" type="button">Clear</button>
+          </div>
           <!-- How much of the record is filled in, and the one line saying
                what is missing. A bar rather than a number, because the useful
                question is "is this nearly done" and not "is this 62%". -->
@@ -1844,7 +1878,7 @@
                pane whose own primary is Save. It is on that pane now, under
                the list it confirms. -->
           <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
+            <button class="btn btn-go" id="campPublish" type="button">Publish</button>
           </div>
         </section>
           <p class="camp-next" id="campNext" hidden></p>
@@ -2611,15 +2645,15 @@
                   </div>
                   <div class="field piece-draft">
                     <label class="field-label" for="ntDraft">Draft due</label>
-                    <input class="input" id="ntDraft" type="date">
+                    <input class="input" id="ntDraft" type="date" aria-required="true">
                   </div>
                   <div class="field piece-due">
                     <label class="field-label" for="ntDue">Due date</label>
-                    <input class="input" id="ntDue" type="date">
+                    <input class="input" id="ntDue" type="date" aria-required="true">
                   </div>
                   <div class="field piece-post">
                     <label class="field-label" for="ntPublish">Post date</label>
-                    <input class="input" id="ntPublish" type="date">
+                    <input class="input" id="ntPublish" type="date" aria-required="true">
                   </div>
                   <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -3902,6 +3936,14 @@
     <!-- ---- My records: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
+    <!-- Settings (js/settings.js, 2026-10-10): a card a group (Portal,
+         Business figures, AI, Records), a row a setting, each drawn only for
+         the colleague holding its part. -->
+    <div class="console-body" id="sectionSettings" hidden>
+      <div class="msg" id="setMsg" role="status"></div>
+      <div id="setList" data-narrow="640"></div>
+    </div>
+
     <div class="console-body" id="sectionHandbook" hidden>
       <!-- The company's internal files: the Employee Handbook, SOPs, policies,
            templates and forms. Every colleague reads them; only an admin adds
@@ -4019,33 +4061,37 @@
 
       <div id="vsRecord" hidden>
         <button class="backlink" id="vsBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+        <!-- A client's content month (the user, 2026-10-09: one link for the
+             client, not one a video): the client and the month, Preview PDF
+             and the ⋯, then the client's link, Copy link and Preview once for
+             every script of the month. -->
         <section class="panel rec-head vs-head">
-          <div class="rec-id rec-id-plain">
+          <div class="rec-id">
+            <span class="rec-mark" id="vsRecMark" aria-hidden="true"></span>
             <div class="rec-who">
               <div class="rec-name"><h2 id="vsRecName"></h2></div>
               <p class="rec-id-meta" id="vsRecMeta"></p>
             </div>
             <div class="rec-ctl" id="vsRecCtl"></div>
           </div>
-          <!-- The client link and the act that hands this video to the client,
-               laid as a campaign's: the address, Copy link and Preview, then
-               Publish / Unpublish at the right edge. -->
           <div class="rec-linktools" id="vsLinkTools" hidden>
-            <div class="linkbox" id="vsLinkBox" hidden>
+            <div class="linkbox" id="vsLinkBox">
               <input class="input readfield" id="vsLink" readonly aria-label="Client link">
               <button class="btn btn-icon" id="vsCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
               <a class="btn btn-icon" id="vsOpen" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
             </div>
-            <div class="row" id="vsRecActs" hidden></div>
           </div>
           <div class="msg" id="vsRecMsg"></div>
         </section>
-        <div class="cr-rec vs-rec">
-          <div class="cr-main" id="vsRecBody"></div>
-          <aside class="cr-rail">
-            <div class="railblock" id="vsSeries"></div>
-          </aside>
+        <!-- A tab a script of the month, in number order, and Add script at
+             the line's end. -->
+        <div class="tabline vs-tabline">
+          <nav class="rectabs" id="vsTabs" role="tablist" aria-label="Scripts of the month"></nav>
+          <button class="btn btn-sm vs-next" id="vsNextVideo" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add script</button>
         </div>
+        <!-- The script on show: its own head (the state, Edit, Publish or
+             Unpublish, and the ⋯) over its facts, then the script. -->
+        <div class="vs-rec" id="vsRecBody" data-swipe="vsTabs"></div>
       </div>
 
       <!-- The script's editor is a page of its own (the user, 2026-10-09: a
@@ -4063,7 +4109,7 @@
         <section class="panel vs-editform">
           <section class="fsec">
             <h4 class="fsec-h">Video</h4>
-            <div class="row"><div><label class="field-label" for="vsKind">Type of script</label>
+            <div class="row"><div><label class="field-label" for="vsKind">Script type</label>
               <select class="select" id="vsKind">
                 <option value="scenes">Detailed scenes</option>
                 <option value="products">Products and scenes</option>
@@ -4101,7 +4147,7 @@
                  fields from the colleague's notes; Save keeps it. -->
             <div class="readgroup-head vs-writehead">
               <h4 class="fsec-h">Script</h4>
-              <button class="btn btn-sm" id="vsWrite" type="button">Write script</button>
+              <button class="btn btn-sm btn-icon" id="vsWrite" type="button">Write with AI</button>
             </div>
             <div class="msg capmsg" id="vsWriteMsg" role="status"></div>
             <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
@@ -4135,7 +4181,7 @@
             <select class="select" id="vsNewClient" aria-required="true"><option value="">Choose a client</option></select></div></div>
           <div class="row"><div><label class="field-label" for="vsNewMonth">Content month</label>
             <select class="select" id="vsNewMonth" aria-required="true"></select></div></div>
-          <div class="row"><div><label class="field-label" for="vsNewKind">Type of script</label>
+          <div class="row"><div><label class="field-label" for="vsNewKind">Script type</label>
             <select class="select" id="vsNewKind">
               <option value="scenes">Detailed scenes</option>
               <option value="products">Products and scenes</option>
@@ -4427,7 +4473,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="pvMenu" hidden role="menu">
-                  <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download PDF</button>
+                  <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download</button>
                   <button class="kmenu-item" data-a="return" type="button" role="menuitem">Revert to draft</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem">Reopen</button>
                   <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem">Delete</button>
@@ -4539,7 +4585,6 @@
                 </button>
                 <div class="kmenu" id="rhMore" hidden role="menu">
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem">Select reports</button>
-                  <button class="kmenu-item" data-a="aiuse" type="button" role="menuitem">AI usage</button>
                 </div>
               </span>
               <button class="btn btn-sm btn-primary" id="rhNew" type="button" data-need="reports:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New report</span></button>
@@ -4554,7 +4599,7 @@
           <span class="bulkbar-acts">
             <button class="btn btn-sm" id="rhBulkPdf" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
             <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" disabled hidden>Mark as sent</button>
-            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish to client</button>
+            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="rhBulkDone" type="button">Done</button>
         </div>
@@ -5149,24 +5194,25 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261009r"></script>
+<script src="/js/admin.js?v=20261010a"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261009p"></script>
-<script src="/js/register.js?v=20261009a"></script>
-<script src="/js/crm.js?v=20261009q"></script>
+<script src="/js/reports.js?v=20261010a"></script>
+<script src="/js/register.js?v=20261010a"></script>
+<script src="/js/crm.js?v=20261010b"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261009q"></script>
-<script src="/js/namecard.js?v=20261007h"></script>
+<script src="/js/team.js?v=20261010a"></script>
+<script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261009o"></script>
-<script src="/js/scriptpdf.js?v=20261009m"></script>
-<script src="/js/campaigns.js?v=20261009q"></script>
-<script src="/js/ops.js?v=20261009j"></script>
-<script src="/js/perf.js?v=20261009b"></script>
+<script src="/js/scripts.js?v=20261010b"></script>
+<script src="/js/scriptpdf.js?v=20261010a"></script>
+<script src="/js/campaigns.js?v=20261009s"></script>
+<script src="/js/ops.js?v=20261010b"></script>
+<script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
-<script src="/js/search.js?v=20261008c"></script>
-<script src="/js/overview.js?v=20261007i"></script>
+<script src="/js/search.js?v=20261009s"></script>
+<script src="/js/overview.js?v=20261010b"></script>
+<script src="/js/settings.js?v=20261010a"></script>
 </body>
 </html>

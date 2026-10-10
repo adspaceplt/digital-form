@@ -15,7 +15,7 @@
  *
  *   Draft      Submit for review            reports Work
  *   In review  Confirm / Send back          the named reviewer, or an admin
- *   Confirmed  Publish to client / Send back Manage
+ *   Confirmed  Publish / Send back Manage
  *   Published  Revise, Unpublish            Work / Manage
  *
  * The PDF is drawn in the browser by js/smreport.js from the database's own
@@ -36,6 +36,9 @@
   var UI = window.ADspaceState;
   var SM = function () { return window.ADspaceSmReport; };
   function may(level) { return bridge.may ? bridge.may('reports', level) : false; }
+  /* The AI mark and its declaration (js/confirm.js, 2026-10-10). */
+  var AIQ = (window.ADspaceConfirm && window.ADspaceConfirm.ai) || null;
+  var AI_GLYPH = AIQ ? AIQ.glyph : '';
   function me() { return bridge.me ? bridge.me() : null; }
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -119,7 +122,7 @@
     'not-confirmed': 'Confirm the report before publishing it.',
     'meta-audit': 'The figures must match Meta first: see the Report audit.',
     'not-linked': 'This client links no Meta accounts.',
-    'not-unavailable': 'Meta answered, so the figures are compared, not passed.',
+    'not-unavailable': 'Meta is answering, so the figures must match it. Run the audit again.',
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
@@ -133,7 +136,7 @@
     var m = String((e && (e.error || e.message)) || e || '');
     var key = Object.keys(SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
     if (key) return SAID[key];
-    if (/function .* does not exist|schema cache/i.test(m)) return 'Reports need a database update. Run the 2026-09-25 report builder migration.';
+    if (/function .* does not exist|schema cache/i.test(m)) return 'This needs a database update.';
     return m || 'Not saved.';
   }
 
@@ -628,11 +631,24 @@
       return c && c.white_label && !(b && b.logo === 'adspace') ? c : null;
     }).catch(function () { return null; });
   }
+  /* Meta checks (2026-10-10; the user: Meta's figures "not really tally",
+     so Import from Meta and the audit against Meta are hidden until fixed,
+     and typing the figures by hand works as before): on only while the
+     Business setting Meta checks is On (`meta_checks`, from a day) and the
+     person holds Reports: Meta import and audit (a granted part). The
+     database answers the same (`meta_checks_on()`): off, no report waits on
+     Meta. */
+  function metaOn() {
+    var M = window.ADspaceMoney;
+    var on = M && M.setting ? Number(M.setting('meta_checks')) === 1 : false;
+    return on && !!(bridge.may && bridge.may('reports.meta', 'work'));
+  }
   /* The Meta assets the report's client (or its brand) is linked to
      (2026-10-08), read once a report opens: Import from Meta is drawn only
-     where there is one. A refused read draws no button. */
+     where there is one, and only while Meta checks are on. A refused read
+     draws no button. */
   function metaOf(cid, brand) {
-    if (!cid) return Promise.resolve(null);
+    if (!cid || !metaOn()) return Promise.resolve(null);
     return db.rpc('meta_links_list', { p_client: cid }).then(function (q) {
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) return null;
@@ -875,7 +891,7 @@
     var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
     if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit for review</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
-    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
+    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     var mayReturn = named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine);
     if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
@@ -1382,7 +1398,7 @@
     var last = st.checkLast, a = st.audit || {}, al = a.last;
     /* Against Meta is drawn wherever its reading answers: Not linked is a
        line of its own, with the way to link the client's accounts. */
-    var srcs = metaSources(r), hasMeta = !!al || (srcs.length > 0 && metaOpen(r));
+    var srcs = metaSources(r), hasMeta = metaOn() && (!!al || (srcs.length > 0 && metaOpen(r)));
     if (!last && !can && !hasMeta && !metaCan(r)) { host.hidden = true; return; }
     host.hidden = false;
     var canMeta = metaCan(r), busy = a.busy || checkRun[r.id], draft = r.status === 'draft' && may('work');
@@ -1763,7 +1779,7 @@
     if (r.status === 'published' && may('work') && r.sent_on) {
       items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
     }
-    if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
+    if (live && may('manage')) items.push('<button class="kmenu-item" data-soft type="button" data-a="unpublish">Unpublish</button>');
     if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false" data-a="more">' + ICON.more + '</button>' +
@@ -1772,14 +1788,15 @@
 
   /* A step that moves the report repaints it from the database and says what
      happened under the head, where the status chip has just changed. */
-  function stepCall(fn, args, done, btn, m) {
+  function stepCall(fn, args, done, btn, m, after) {
     if (btn) btn.disabled = true;
     db.rpc(fn, args).then(function (res) {
       if (btn) btn.disabled = false;
       var d = res.data || {};
       if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+      if (after) after();
       reopen(done);
-    });
+    }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e), 'err'); });
   }
   function reopen(done, after) {
     var id = st.open.id;
@@ -1809,9 +1826,12 @@
       var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
       /* A late report, or one past its month's gate, says why in the same
          question (2026-10-04). */
-      if (ask.reason) {
-        window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
-          fields: [who, { name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' }] },
+      if (ask.reason || ask.ai) {
+        var fs = [who];
+        if (ask.reason) fs.push({ name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' });
+        if (ask.ai) fs.push(AIQ.field());
+        window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go, fields: fs,
+          check: ask.ai ? AIQ.refused : null },
           function (v) { then(v.who, v.why); });
         return;
       }
@@ -1834,11 +1854,21 @@
           'The reason is kept with the report.';
         ask.reason = past && late ? 'Reason' : past ? 'Why it goes now' : 'Why it is late';
       }
-      pickReviewer(r, b, m, ask, function (who, why) {
-        var args = { p_id: r.id, p_reviewer: who };
-        if (why) args.p_reason = why;
-        stepCall('sm_report_submit', args, 'Submitted to ' + nameOf(who) + '.', b, m);
-      });
+      /* Commentary written with AI is declared read in the same question
+         (2026-10-10): the database says whether Write with AI drafted it. */
+      b.disabled = true;
+      db.rpc('ai_written', { p_report: r.id }).then(function (res) { return !res.error && res.data === true; })
+        .catch(function () { return false; }).then(function (ai) {
+          b.disabled = false;
+          if (ai && AIQ) { ask.ai = true; ask.body += ' ' + AIQ.line('commentary'); }
+          pickReviewer(r, b, m, ask, function (who, why) {
+            var args = { p_id: r.id, p_reviewer: who };
+            if (why) args.p_reason = why;
+            stepCall('sm_report_submit', args, 'Submitted to ' + nameOf(who) + '.', b, m, ai ? function () {
+              fileReport('report.saved', 'Commentary written with AI, read and confirmed', r);
+            } : null);
+          });
+        });
     });
     on('confirm', function (b) {
       /* An admin confirming for the named reviewer says so first; the
@@ -2029,8 +2059,11 @@
           pdf: function () { return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, name).then(function (f) { return f.blob; }); }
         }).then(function (d) {
           var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function () {
-            reopen('Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.');
+          var sent = 'Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.';
+          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
+            var no = res.error || (res.data && res.data.error ? res.data : null);
+            if (no) { b.disabled = false; say(m, sent + ' It was not marked as sent: ' + said(no), 'warn'); return; }
+            reopen(sent);
           });
         }).catch(function (e) {
           b.disabled = false;
@@ -3090,7 +3123,7 @@
         '<div class="rp-airow"><div class="rp-ailang"><span class="rp-ailang-label" aria-hidden="true">Draft language</span>' +
           '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
-        '<button class="btn btn-sm" type="button" data-a="aidraft">Write draft</button></div></div>' +
+        '<button class="btn btn-sm btn-icon" type="button" data-a="aidraft">' + AI_GLYPH + 'Write with AI</button></div></div>' +
         '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
           '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
           '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details></div>' +
@@ -3233,7 +3266,7 @@
       return b ? { b: b, m: st.host.querySelector('.rp-text [data-m="ai"]') } : null;
     };
     var draft = function () {
-      ab.disabled = true; ab.textContent = 'Drafting';
+      ab.disabled = true; ab.innerHTML = AI_GLYPH + 'Writing';
       say(am, '');
       aiRun[rid] = true;
       var body = { report_id: rid, notes: notes.value.trim(), lang: lang.value };
@@ -3258,7 +3291,7 @@
            in the fields when the step is painted again, so a paid draft is
            never lost to a change of screen. */
         if (!h) { aiKept[rid] = out; return; }
-        h.b.disabled = false; h.b.textContent = 'Write draft';
+        h.b.disabled = false; h.b.innerHTML = AI_GLYPH + 'Write with AI';
         if (out.draft) told(out, h.m); else say(h.m, out.said, 'err');
         paintLeft();
       });
@@ -3269,8 +3302,8 @@
       put(out.draft);
       if (out.unsaved) { say(m, 'Drafted, but not saved: ' + out.unsaved + ' Save before leaving.', 'err'); return; }
       Object.assign(st.open, { intro: out.draft.intro != null ? out.draft.intro : st.open.intro });
-      say(m, 'Drafted and saved.', 'ok');
-      undoBar('Draft saved.', m, function () {
+      say(m, '');
+      undoBar('Written by AI. Read before submitting.', m, function () {
         /* Read the report again: the page's copy still holds the draft. */
         restoreDraft(rid, out.before).then(function () {
           if (st.open && st.open.id === rid) st.open = { id: rid };
@@ -3299,7 +3332,7 @@
         if (!d.left && !h.m.textContent) say(h.m, aiLimit(d), 'warn');
       }).catch(function () { /* an older database: no line */ });
     };
-    if (aiRun[rid]) { ab.disabled = true; ab.textContent = 'Drafting'; }
+    if (aiRun[rid]) { ab.disabled = true; ab.innerHTML = AI_GLYPH + 'Writing'; }
     if (aiKept[rid]) {
       var kept = aiKept[rid]; delete aiKept[rid];
       if (kept.draft) told(kept, am); else say(am, kept.said, 'err');
@@ -4300,6 +4333,7 @@
      more than one ad account (or a Page and an Instagram account) it asks
      which first; the other is imported after. Every figure is Meta's. */
   var META_SAID = {
+    'meta-off': 'Meta checks are off in Business settings.',
     'not-connected': 'Meta is not connected.',
     'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
     'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
@@ -4537,7 +4571,7 @@
     script: 10, script_admin: 20 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
-  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Video scripts' };
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Scripts' };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
@@ -5109,7 +5143,9 @@
       if (!st.open || !st.open.id) return { tab: hub.tab && hub.tab !== 'draft' ? hub.tab : '' };
       return { report: st.open.id, step: st.open.client_id ? st.step : '' };
     },
-    enterHub: enterHub
+    enterHub: enterHub,
+    /* AI usage and limits, opened from the Settings page (2026-10-10). */
+    aiUsage: function (opener) { if (bridge.may && bridge.may('reports.ai', 'work')) aiUseSheet(opener); }
   };
   if (bridge.reportsReady) bridge.reportsReady();
 })();

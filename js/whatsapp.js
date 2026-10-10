@@ -18,15 +18,18 @@
 (function () {
   var API = window.ADspaceAPI;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
   var PURPOSE = {
-    report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the contact\'s first name, the client, the report.'],
-    feedback: ['Feedback request', 'Sent by hand from the client\'s record. Variables: the contact\'s first name, the client.'],
+    report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the greeting (salutation and name), the client or brand, the report and its period.'],
+    feedback: ['Feedback request', 'Sent by hand from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
-    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button: https://digital.adspace.me/creator/?k={{1}}, the creator\'s own code.']
+    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.']
   };
   var STATE = { queued: ['Queued', 'is-off'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-ok'], failed: ['Not sent', 'is-danger'] };
   var SAID = {
     denied: 'This needs Business settings.',
+    'send-denied': 'This needs Send on WhatsApp for your group.',
+    'bad-purpose': 'This template is not sent by hand.',
     'bad-name': 'Enter the template name exactly as Meta holds it: lower case letters, digits and underscores.',
     'bad-lang': 'Enter the language code as Meta holds it, such as en or en_US.',
     'bad-params': 'A template takes 0 to 5 variables.',
@@ -72,7 +75,7 @@
         var on = {};
         (d.templates || []).forEach(function (t) { on[t.purpose] = t.active && Boolean(t.name); });
         return { on: on, list: d.templates || [], error: r.error || d.error || null };
-      }, function (e) { return { on: {}, list: [], error: e }; });
+      }).catch(function (e) { return { on: {}, list: [], error: e }; });
     }
     return known;
   }
@@ -114,9 +117,9 @@
         return '<div class="ann-row wa-row' + (live ? '' : ' is-off') + '" data-p="' + esc(t.purpose) + '">' +
           '<div class="ann-what"><p class="ann-text">' + esc(w[0]) + '</p>' +
             '<p class="ann-meta">' + esc(t.name ? t.name + ' · ' + t.lang + ' · ' + t.params + (t.params === 1 ? ' variable' : ' variables') : 'No template') + '</p></div>' +
-          '<div class="ann-ctl"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
-            ' aria-label="' + esc(w[0]) + '" data-a="on"></button></div>' +
-          '<div class="ann-acts"><button class="btn btn-sm" type="button" data-a="edit">Edit</button></div></div>';
+          '<div class="ann-ctl"><button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>' +
+            '<button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
+            ' aria-label="' + esc(w[0]) + '" data-a="on"></button></div></div>';
       }).join('') + '</div>';
       Array.prototype.forEach.call(box.querySelectorAll('.wa-row'), function (rw) {
         var t = k.list.filter(function (x) { return x.purpose === rw.getAttribute('data-p'); })[0];
@@ -184,7 +187,7 @@
         return '<div class="ann-row wa-msg">' +
           '<div class="ann-what"><p class="ann-text">' + esc((PURPOSE[x.purpose] || [x.purpose])[0]) + ' · ' + esc(x.to_name || x.to_number) + '</p>' +
             '<p class="ann-meta">' + esc([x.to_number, when(x.sent_at || x.created_at), x.created_by && x.created_by !== 'system' ? 'By ' + x.created_by : ''].filter(Boolean).join(' · ')) + '</p></div>' +
-          '<div class="ann-ctl"><span class="chip-state ' + s[1] + '">' + s[0] + '</span></div><div class="ann-acts"></div></div>';
+          '<div class="ann-ctl"><span class="chip-state ' + s[1] + '">' + s[0] + '</span></div></div>';
       }).join('') + '</div>';
     }).catch(function (e) { if (S && S.failLine) S.failLine(box, 'Recent messages', said(e), paintRecent); });
   }
@@ -197,10 +200,11 @@
   }
 
   /* ---- By hand ------------------------------------------------------------- */
+  function sendErr(e) { return e === 'denied' ? 'send-denied' : e; }
   function invoke(body) {
     return db().functions.invoke('wa-send', { body: body }).then(function (res) {
       var d = res && res.data;
-      if (res.error || !d || d.error) throw (d && d.error) || 'wa-failed';
+      if (res.error || !d || d.error) throw sendErr((d && d.error) || 'wa-failed');
       return d;
     });
   }
@@ -225,7 +229,7 @@
     return db().rpc('wa_creator_send', { p_option: o.optionId }).then(function (r) {
       var d = (r && r.data) || {};
       if (r && r.error) throw r.error;
-      if (d.error) throw d.error === 'no-number' ? 'no-creator-number' : d.error;
+      if (d.error) throw d.error === 'no-number' ? 'no-creator-number' : sendErr(d.error);
       return d;
     });
   }

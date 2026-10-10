@@ -162,6 +162,8 @@
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
+    'not-live': 'Results are recorded once the post is live.',
+    'bad-number': 'Enter whole numbers, 0 or more.',
     'bad-format': 'Choose a format from the list.',
     'bad-type': 'Choose a type from the list.',
     'bad-complexity': 'Choose a complexity from the list.',
@@ -178,6 +180,7 @@
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
     'draft-not-before-final': 'Draft due must be before the due date.',
+    'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'Move not allowed from this stage.',
     'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
@@ -263,6 +266,7 @@
       return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
         : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
     }
+    if (err === 'dates-required' && d && d.piece) return 'Post ' + d.piece + ' needs its Draft due, Due date and Post date.';
     if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
@@ -1424,11 +1428,13 @@
   /* THE NEXT NUMBER. What the next task will be called, and the place to set
      it, for an admin: the database refuses a number already used and files
      the change in the activity record. */
-  function openNumbering() {
+  function openNumbering(where) {
     if (!may('ops.numbering', 'work')) return;
+    /* Said where it was asked: My Work's line, or the Settings page's. */
+    where = where || 'workMsg';
     db.rpc('ops_next_task_no').then(function (r) {
       var d = r.data;
-      if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
+      if (r.error || (d && d.error)) { msg(where, r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
         title: 'Task numbering',
         body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number.'),
@@ -1436,14 +1442,14 @@
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
       }, function (v) {
         var want = Math.floor(Number(String(v).replace(/[^0-9]/g, '')));
-        if (!want) { msg('workMsg', said('bad-number'), 'err'); return; }
+        if (!want) { msg(where, said('bad-number'), 'err'); return; }
         db.rpc('ops_set_next_task_no', { p_next: want }).then(function (q) {
           var e = q.data;
           if (q.error || (e && e.error)) {
-            msg('workMsg', q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
+            msg(where, q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
             return;
           }
-          msg('workMsg', 'The next task is ' + e.serial + '.', 'ok');
+          msg(where, 'The next task is ' + e.serial + '.', 'ok');
         });
       });
     });
@@ -4895,7 +4901,7 @@
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
     publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
-    details_changed: 'Details changed', file_changed: 'Link changed',
+    details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
     comment_edited: 'Remark edited', comment_removed: 'Remark deleted', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
@@ -4982,6 +4988,10 @@
       if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
+    if (e.event_type === 'results_set') {
+      var rw = function (x) { return x && x.views != null ? numWord(x.views) + ' views, ' + numWord(x.engagements) + ' engagements' : 'not recorded'; };
+      return rw(from) + ' to ' + rw(to);
+    }
     if (e.event_type === 'file_changed') return (to.label || '') + (to.kind && from.kind !== to.kind ? ' · ' + (LINK_WORD[to.kind] || to.kind) : '');
     if (e.event_type === 'blocked') return d.category ? String(d.category).replace(/_/g, ' ') : '';
     if (e.event_type === 'file_added' || e.event_type === 'file_removed' || e.event_type === 'file_restored') {
@@ -5054,9 +5064,9 @@
       var unset = v[key] === null || v[key] === undefined;
       if (edit) {
         return frow(label, detailSelect(key, label,
-          (unset ? [['', 'Not said']] : []).concat([['true', 'Ready'], ['false', 'Not ready']]), unset ? '' : String(v[key])));
+          (unset ? [['', 'Not set']] : []).concat([['true', 'Ready'], ['false', 'Not ready']]), unset ? '' : String(v[key])));
       }
-      return frow(label, unset ? '<span class="mute">Not said</span>' : esc(v[key] ? 'Ready' : 'Not ready'));
+      return frow(label, unset ? '<span class="mute">Not set</span>' : esc(v[key] ? 'Ready' : 'Not ready'));
     };
     var rows = [ready('script_ready', 'Script'), ready('footage_ready', 'Footage')];
     if (v.shoot_at) rows.push(frow('Shoot', esc(niceTime(v.shoot_at))));
@@ -5254,6 +5264,22 @@
     }
     return out;
   }
+  function numWord(n) { return Number(n || 0).toLocaleString('en-MY'); }
+  function askResults(t) {
+    var whole = function (x) { var v = String(x == null ? '' : x).replace(/[,\s]/g, ''); return /^\d+$/.test(v) ? Number(v) : null; };
+    ADspaceConfirm.ask({
+      title: 'Results', go: 'Save',
+      body: 'The post\'s own figures, a week after it went live.',
+      fields: [{ name: 'views', label: 'Views', value: t.result_views != null ? String(t.result_views) : '', type: 'number', min: '0', half: true },
+               { name: 'eng', label: 'Engagements', value: t.result_engagements != null ? String(t.result_engagements) : '', type: 'number', min: '0', half: true }],
+      check: function (v) { return whole(v.views) == null || whole(v.eng) == null ? said('bad-number') : ''; }
+    }, function (v) {
+      call('ops_set_results', { p_task: t.id, p_views: whole(v.views), p_engagements: whole(v.eng) }, 'taskFactsMsg', function (d) {
+        state.drawerDirty = true;
+        applyTask(d); readTask(t.id, function () { msg('taskFactsMsg', 'Saved.', 'ok'); });
+      });
+    });
+  }
   function paintDetails(t) {
     var edit = may('ops', 'work') && !isFinished(t);
     var forWord = t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client';
@@ -5280,7 +5306,18 @@
        ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)]
       ].forEach(function (p) { if (p[1]) rows.push(frow(p[0], esc(p[1]))); });
     }
+    /* Results (2026-10-10): a client's post records its views and
+       engagements a week after it went live (Performance review), so the
+       next month is planned from what worked. */
+    if (t.live_at && t.scope === 'client') {
+      var resWord = t.result_views != null ? numWord(t.result_views) + ' views · ' + numWord(t.result_engagements) + ' engagements' : 'Not recorded';
+      rows.push(frow('Results', may('ops', 'work')
+        ? '<button class="tinline" type="button" data-a="results" aria-label="Results, ' + esc(resWord) + '. Record">' + esc(resWord) + '</button>'
+        : esc(resWord)));
+    }
     $('taskFacts').innerHTML = rows.join('');
+    var resBtn = $('taskFacts').querySelector('[data-a="results"]');
+    if (resBtn) resBtn.addEventListener('click', function () { askResults(t); });
     Array.prototype.forEach.call($('taskFacts').querySelectorAll('select.tdetail'), function (sel) {
       var was = sel.value;
       sel.addEventListener('change', function () {
@@ -5924,16 +5961,17 @@
        read as one another without their labels. */
     var k = 'ntP' + (rows.length + 1) + '-';
     var fld = function (cls, key, label, control) {
-      return '<div class="field ' + cls + '"><label class="field-label" for="' + k + key + '">' + label + '</label>' +
+      var req = / aria-required="true"/.test(control) ? ' is-req' : '';
+      return '<div class="field ' + cls + '"><label class="field-label' + req + '" for="' + k + key + '">' + label + '</label>' +
         control.replace('>', ' id="' + k + key + '">') + '</div>';
     };
     row.innerHTML =
       fld('piece-desc', 'desc', 'Content description', '<textarea class="input" rows="1" data-oneline placeholder="Content Post" autocomplete="off"></textarea>') +
       fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
       fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
-      fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date">') +
-      fld('piece-due', 'due', 'Due date', '<input class="input" type="date">') +
-      fld('piece-post', 'post', 'Post date', '<input class="input" type="date">') +
+      fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date" aria-required="true">') +
+      fld('piece-due', 'due', 'Due date', '<input class="input" type="date" aria-required="true">') +
+      fld('piece-post', 'post', 'Post date', '<input class="input" type="date" aria-required="true">') +
       '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
@@ -6012,6 +6050,13 @@
     var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
     for (var ri = 0; ri < rows.length; ri++) {
       var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
+      /* Every post its three dates (the user, 2026-10-09: "to curb
+         delays"); the first one missing is named and focused. */
+      ['draft', 'due', 'post'].some(function (k) {
+        if (!rv[k]) { bad = k; said2 = said('dates-required', null, { piece: rows.length > 1 ? ri + 1 : null }); return true; }
+        return false;
+      });
+      if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
       ['draft', 'due', 'post'].some(function (k) {
         if (rv[k] && rv[k] < todayMyt) { bad = k; said2 = 'That ' + DATE_WORD[k] + ' has already passed.'; return true; }
         return false;
@@ -6720,6 +6765,24 @@
   /* THE ENGAGEMENT CARD: the month's facts, the meeting, the readiness
      list. Everything in it is a control where the person may work the
      section and a fact where they may not. */
+  function lastMonthRows(e) {
+    var m = /^(\d{4})-(\d{2})/.exec(e.period || '');
+    if (!m) return '';
+    var d = new Date(Number(m[1]), Number(m[2]) - 2, 1);
+    var prev = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var done = cw.tasks.filter(function (t) { return cwPeriodOf(t) === prev && t.result_views != null; })
+      .sort(function (a, b) { return b.result_views - a.result_views; });
+    if (!done.length) return '';
+    var line = function (t) {
+      return '<span class="eng-post">' + esc([t.code || serialOf(t), formatWord(t)].filter(Boolean).join(' · ')) +
+        ' <span class="eng-fig">' + esc(numWord(t.result_views) + ' views') + '</span></span>';
+    };
+    var best = done.slice(0, 3), rest = done.slice(3), weak = rest.slice(-3).reverse();
+    return '<div class="eng-row eng-results"><span class="eng-lab">Best in ' + esc(monthWord(prev)) + '</span>' +
+        '<span class="eng-val">' + best.map(line).join('') + '</span></div>' +
+      (weak.length ? '<div class="eng-row eng-results"><span class="eng-lab">Weakest in ' + esc(monthWord(prev)) + '</span>' +
+        '<span class="eng-val">' + weak.map(line).join('') + '</span></div>' : '');
+  }
   function engCard(e) {
     var can = may('ops', 'work');
     var el = document.createElement('section');
@@ -6774,6 +6837,14 @@
         done.disabled = true;
         setStatus(e, 'completed', el, function () { done.disabled = false; });
       });
+    }
+    /* While the month is planned, last month's best and weakest posts by
+       views (2026-10-10; the user: "content not interesting"), from the
+       results recorded a week after each went live. */
+    if (phase === 'planning' || phase === 'ready') {
+      var lastRows = lastMonthRows(e);
+      var facts0 = el.querySelector('.eng-facts');
+      if (lastRows && facts0) facts0.insertAdjacentHTML('beforeend', lastRows);
     }
     var ctl = el.querySelector('.eng-ctl');
     if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {
@@ -8019,7 +8090,7 @@
   window.ADspaceOps = {
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
-    enter: enter, urlState: urlState, signedIn: signedIn,
+    enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
     /* Which task is open, and a re-read of it. The record is otherwise only
        reachable through a press, so a change made to the row underneath it
        has no way to reach the screen. */

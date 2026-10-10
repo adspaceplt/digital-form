@@ -360,13 +360,12 @@
   /* A refusal is said where it can be read: under the switch while the
      account menu is open, else on the banner's line. */
   function upgradeSay(text) {
-    if (!$('acctUpgradeMsg')) return;
-    $('acctUpgradeMsg').textContent = text || '';
-    $('acctUpgradeMsg').className = 'msg acct-msg' + (text ? ' err' : '');
-    $('acctUpgradeMsg').hidden = !text;
+    /* Said on the Settings page, where the switch is (2026-10-10), and on
+       the upgrade bar anywhere else. */
+    if (window.ADspaceSettings) window.ADspaceSettings.say(text || '', text ? 'err' : '');
     var bar = $('upgradeBar');
     if (!text) { bar.classList.remove('is-err'); return; }
-    if ($('acctMenu') && !$('acctMenu').hidden) return;
+    if (section === 'settings') return;
     bar.hidden = false;
     bar.classList.add('is-err');
     $('upgradeWord').textContent = text;
@@ -376,20 +375,13 @@
     var M = window.ADspaceMaintenance;
     upgrade = d || { on: false, set: false };
     var admin = may('team.upgrade', 'work');
-    if ($('acctUpgrade')) {
-      $('acctUpgrade').hidden = !admin;
-      var ann = may('team.announce', 'work');
-      if ($('acctAnnounce')) $('acctAnnounce').hidden = !ann;
-      /* Notices (2026-10-09): Team: Notices, an admin's by itself. */
-      var ntc = may('team.notice', 'work');
-      if ($('acctNotice')) $('acctNotice').hidden = !ntc;
-      /* WhatsApp (2026-10-09): its templates are Business settings. */
-      var wa = may('team.settings', 'work');
-      if ($('acctWhatsApp')) $('acctWhatsApp').hidden = !wa;
-      $('acctUpgradeSep').hidden = !(admin || ann || ntc || wa);
-      $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
-      $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
-    }
+    /* WhatsApp (2026-10-09): its templates are Business settings. Upgrade
+       mode, Announcements and Notices are on the Settings page
+       (2026-10-10), which repaints its switch from here. */
+    var wa = may('team.settings', 'work');
+    if ($('acctWhatsApp')) $('acctWhatsApp').hidden = !wa;
+    if ($('acctUpgradeSep')) $('acctUpgradeSep').hidden = !wa;
+    if (section === 'settings' && window.ADspaceSettings) window.ADspaceSettings.paint();
     var bar = $('upgradeBar');
     if (bar) {
       bar.classList.remove('is-err');
@@ -453,11 +445,11 @@
     var bad = ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date());
     return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
   }
-  if ($('acctUpgrade')) $('acctUpgrade').addEventListener('click', function (e) {
-    e.stopPropagation();
+  /* The switch on the Settings page (2026-10-10): off at the press, on
+     through its question. */
+  function upgradeToggle(btn) {
     upgradeSay('');
-    if (upgrade.set) { upgradeOff(this); return; }
-    shutAcct();
+    if (upgrade.set) { upgradeOff(btn); return; }
     var today = myDay(new Date());
     window.ADspaceConfirm.ask({
       title: 'Turn on upgrade mode',
@@ -474,22 +466,12 @@
       var w = upgradeWindow(v);
       setUpgrade({ p_on: true, p_note: v.note || null, p_starts: w.starts, p_ends: w.ends }, upgradeSay);
     });
-  });
+  }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
-  if ($('acctAnnounce')) $('acctAnnounce').addEventListener('click', function (e) {
-    e.stopPropagation();
-    shutAcct();
-    if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage($('acctBtn') || this);
-  });
   if ($('acctWhatsApp')) $('acctWhatsApp').addEventListener('click', function (e) {
     e.stopPropagation();
     shutAcct();
     if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage($('acctBtn') || this);
-  });
-  if ($('acctNotice')) $('acctNotice').addEventListener('click', function (e) {
-    e.stopPropagation();
-    shutAcct();
-    if (window.ADspaceNotice) window.ADspaceNotice.manage($('acctBtn') || this);
   });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
@@ -706,7 +688,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -726,7 +708,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -746,12 +728,12 @@
        numbering, moving anybody's task, Performance's company figures,
        settings and removals, business settings, upgrade mode, invitations,
        Handbook files, Transfer client and AI usage. */
-    reports:   ['whitelabel', 'transfer', 'ai']
+    reports:   ['whitelabel', 'transfer', 'ai', 'meta']
   };
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -794,6 +776,8 @@
     if (name === 'team') return may('team', 'view') || may('team.performance', 'view') || may('team.health', 'work');
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
+    /* Settings (2026-10-10): any colleague holding one of its granted parts. */
+    if (name === 'settings') return Boolean(window.ADspaceSettings && window.ADspaceSettings.allowed());
     /* The Handbook is every colleague's to read (only an admin changes it),
        so it has no level of its own on the ladder. */
     if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
@@ -916,8 +900,8 @@
     if (!bar) return;
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     var open = navItems().filter(function (b) { return !b.hidden; });
-    var act = $('activityOpen');
-    var withAct = Boolean(act && !act.hidden);
+    var act = $('activityOpen'), sets = $('settingsOpen');
+    var withAct = Boolean((act && !act.hidden) || (sets && !sets.hidden));
     var room = open.length <= 5 && !withAct ? 5 : 4;
     var tabs = open.slice(0, room);
     var more = open.length > room || withAct;
@@ -955,7 +939,7 @@
     Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (t) {
       var name = t.getAttribute('data-tab');
       var on = moreOpen ? name === 'more'
-        : name === 'more' ? (!inBar && section !== 'mine' && navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === section; }))
+        : name === 'more' ? (!inBar && section !== 'mine' && (section === 'settings' || navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === section; })))
         : name === section;
       t.classList.toggle('is-on', on);
       if (on && name !== 'more') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
@@ -1024,7 +1008,8 @@
     services: 'Services',
     team: 'Team',
     handbook: 'Handbook',
-    mine: 'My records'
+    mine: 'My records',
+    settings: 'Settings'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -1052,7 +1037,8 @@
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
-    mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.'
+    mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
+    settings:  'Portal switches, business figures, AI limits and document lists, kept by the colleagues who hold them.'
   };
   var INTRO_SHOWS = 3;
   /* FIRST-VISIT GUIDES (js/guide.js; the user, 2026-10-07: first time users
@@ -1177,7 +1163,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1201,6 +1187,8 @@
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionMine').hidden      = name !== 'mine';
     $('sectionHandbook').hidden  = name !== 'handbook';
+    $('sectionSettings').hidden  = name !== 'settings';
+    if ($('settingsOpen')) $('settingsOpen').classList.toggle('is-on', name === 'settings');
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
@@ -1274,6 +1262,12 @@
     if (name === 'handbook') {
       if (!window.ADspaceHandbook) { enterLater = 'handbook'; return; }
       window.ADspaceHandbook.enter();
+      setUrl();
+      return;
+    }
+    if (name === 'settings') {
+      if (!window.ADspaceSettings) { enterLater = 'settings'; return; }
+      window.ADspaceSettings.enter();
       setUrl();
       return;
     }
@@ -1556,6 +1550,9 @@
         });
         state.reviewSets = m;
         paintSets();
+      }).catch(function () {
+        if (state.reviewClients !== list) return;
+        state.reviewSets = 'error'; paintSets();
       });
     }
     if (ids.length) page(0); else state.reviewSets = {};
@@ -1852,6 +1849,7 @@
      actually refuses. */
   function showActivityLink() {
     $('activityOpen').hidden = !maySeeActivity;
+    if ($('settingsOpen')) $('settingsOpen').hidden = !(meLoaded && sectionAllowed('settings'));
     /* The bar's More holds the Activity record, so the bar is laid once
        the record's reach is known, and again on every section shown. */
     if (meLoaded) paintTabbar();
@@ -1878,6 +1876,10 @@
 
   function shutActivity() { $('activitySheet').hidden = true; }
 
+  if ($('settingsOpen')) $('settingsOpen').addEventListener('click', function () {
+    if (rail && rail.isOpen && rail.isOpen() && document.documentElement.classList.contains('has-tabbar')) rail.shut();
+    visitSection('settings');
+  });
   $('activityOpen').addEventListener('click', function () {
     $('activitySheet').hidden = false;
     loadActivity();
@@ -2367,11 +2369,15 @@
     'denied': 'This needs Content Review: Sets at Manage.',
     'not-found': 'This set no longer exists.'
   };
+  /* The caption's language, one choice (2026-10-10). */
+  var CAP_LANGS = [['en', 'English'], ['ms', 'Bahasa Melayu'], ['zh', '中文'], ['en_zh', 'English and 中文']];
   var CAP_HANDLE = { instagram: 'handle_ig', facebook: 'handle_fb', tiktok: 'handle_tiktok', xhs: 'handle_xhs' };
-  var capKnown = { lang: {}, zh: {}, brief: {} };
+  var capKnown = { lang: {}, brief: {} };
+  var AI_GLYPH = (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '';
+  function capIdle(b) { if (b) { b.disabled = false; b.innerHTML = AI_GLYPH + 'Write with AI'; } }
   function capButton() {
     return may('review.sets', 'work')
-      ? '<div class="capwrite"><button class="btn btn-sm" data-f="capwrite" type="button">Write caption</button></div>' +
+      ? '<div class="capwrite"><button class="btn btn-sm btn-icon" data-f="capwrite" type="button">' + AI_GLYPH + 'Write with AI</button></div>' +
         '<div class="msg capmsg" data-m="cap" role="status"></div>'
       : '';
   }
@@ -2382,7 +2388,7 @@
   }
   function capLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Write caption is turned off for you. An admin can turn it on.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Captions with AI are turned off for you. An admin can turn them on.';
     return 'You have used your ' + (d.limit || 20) + ' captions for today.' + (d.next ? ' Resets at ' + capClock(d.next) + '.' : '');
   }
   function capNotes(key, v) {
@@ -2403,10 +2409,6 @@
           var main = list.filter(function (x) { return x.is_primary; })[0] || list[0];
           return (capKnown.lang[client.id] = main && main.lang ? main.lang : 'en');
         }, function () { return 'en'; });
-    var zh = capKnown.zh[set.id] != null ? Promise.resolve(capKnown.zh[set.id])
-      : db.from('posts').select('caption_zh').eq('batch_id', set.id).not('caption_zh', 'is', null).limit(50).then(function (r) {
-          return (capKnown.zh[set.id] = !r.error && (r.data || []).some(function (x) { return String(x.caption_zh || '').trim(); }));
-        }, function () { return false; });
     var brief = capKnown.brief[set.id] != null ? Promise.resolve(capKnown.brief[set.id])
       : db.rpc('ops_record_tasks', { p_type: 'set', p_ref: set.id }).then(function (r) {
           var ids = (!r.error && Array.isArray(r.data) ? r.data : []).map(function (t) { return t.id; }).slice(0, 20);
@@ -2417,11 +2419,13 @@
             return (capKnown.brief[set.id] = ids.map(function (id) { return by[id] || ''; }).filter(Boolean)[0] || '');
           });
         }).then(null, function () { return ''; });
-    return Promise.all([lang, zh, brief]).then(function (a) { return { lang: a[0], zh: a[1], brief: a[2] }; });
+    return Promise.all([lang, brief]).then(function (a) { return { lang: a[0], brief: a[1] }; });
   }
-  /* `o`: { btn, placement, title, notesKey, zh (the post holds Chinese),
-     now: { caption, caption_zh }, put(words) → the row's .capwrite after
-     the words are in the fields }. */
+  /* `o`: { btn, placement, title, notesKey, now: { caption },
+     put(words) → the row's .capwrite after the words are in the field }.
+     One caption a post (the user, 2026-10-10: "one post only allowed one
+     caption … make it as a language option"): the language is asked once,
+     English and 中文 being one caption in both. */
   function writeCaption(o) {
     var client = state.client, set = state.batch;
     if (!client || !set || !may('review.sets', 'work')) return;
@@ -2443,28 +2447,27 @@
         return;
       }
       if (!left.left) { say(wrapOf(btn), capLimit(left), 'err'); return; }
-      var had = !!(String(o.now.caption || '').trim() || String(o.now.caption_zh || '').trim());
+      var had = !!String(o.now.caption || '').trim();
       var fields = [
-        { name: 'lang', label: 'Caption language', choices: [['en', 'English'], ['ms', 'Bahasa Melayu']], seg: true,
-          value: pre.lang === 'ms' ? 'ms' : 'en' },
-        { name: 'zh', label: '中文 caption', tick: true, value: o.zh || pre.zh || pre.lang === 'zh' }
+        { name: 'lang', label: 'Caption language', choices: CAP_LANGS,
+          value: ['en', 'ms', 'zh'].indexOf(pre.lang) > -1 ? pre.lang : 'en' }
       ];
       if (plat === 'xhs') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
       fields.push({ name: 'notes', label: 'Notes for the caption', rows: 3, required: false,
         placeholder: 'What the post is about, the offer, the call to action',
         value: capNotes(o.notesKey) || pre.brief });
       window.ADspaceConfirm.ask({
-        title: 'Write caption',
-        body: (had ? 'Replaces the words in the caption fields. ' : '') + left.left + (left.left === 1 ? ' caption' : ' captions') + ' left today.',
+        title: 'Write with AI',
+        body: (had ? 'Replaces the words in the caption. ' : '') + left.left + (left.left === 1 ? ' caption' : ' captions') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
         capNotes(o.notesKey, String(v.notes || '').trim());
         btn.disabled = true;
-        btn.textContent = 'Writing';
-        var before = { caption: o.now.caption || '', caption_zh: o.now.caption_zh || '' };
+        btn.innerHTML = AI_GLYPH + 'Writing';
+        var before = { caption: o.now.caption || '' };
         db.functions.invoke('caption-draft', { body: {
           set_id: set.id, placement: o.placement, title: o.title || '', notes: String(v.notes || '').trim(),
-          lang: v.lang === 'ms' ? 'ms' : 'en', zh: v.zh === 'on', safe: plat === 'xhs' && v.safe === 'on'
+          lang: CAP_LANGS.some(function (x) { return x[0] === v.lang; }) ? v.lang : 'en', safe: plat === 'xhs' && v.safe === 'on'
         } }).then(function (res) {
           var d = res && res.data;
           if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
@@ -2474,17 +2477,16 @@
             return String(t || '').replace(/\{\s*brand\s*\}/gi, client.name || '')
               .replace(/\{\s*handle\s*\}/gi, handle ? '@' + handle : (client.name || ''));
           };
-          var words = { caption: fill(d.draft.caption), caption_zh: d.draft.caption_zh != null ? fill(d.draft.caption_zh) : before.caption_zh };
+          var words = { caption: fill(d.draft.caption), ai: true };
           var at = o.put(words);
           var b2 = at && at.querySelector('[data-f="capwrite"]');
-          if (b2) { b2.disabled = false; b2.textContent = 'Write caption'; }
-          if (btn !== b2) { btn.disabled = false; btn.textContent = 'Write caption'; }
+          capIdle(b2);
+          if (btn !== b2) capIdle(btn);
           var line = at && at.parentNode && at.parentNode.querySelector('[data-m="cap"]');
           say(at, '');
-          if (line) undoHere('Caption written. ' + (o.saveWord || 'Save') + ' keeps it.', function () { o.put(before); }, line);
+          if (line) undoHere('Written by AI. Read before saving.', function () { o.put({ caption: before.caption, ai: false }); }, line);
         }).catch(function (e) {
-          btn.disabled = false;
-          btn.textContent = 'Write caption';
+          capIdle(btn);
           say(wrapOf(btn), e && e.message === 'ai-limit' ? capLimit(e.d) : (CAP_SAID[e && e.message] || (e && e.message) || CAP_SAID['ai-failed']), 'err');
         });
       });
@@ -3057,7 +3059,7 @@
     return {
       placement: guessPlacement(info),
       media: [media],
-      caption: '', caption_zh: '', title: '', showZh: false,
+      caption: '', title: '', ai: false,
       /* Which reel a cover is for (2026-10-03): its own key, and the key of
          the reel draft it belongs to, matched by name on arrival. */
       key: 'd' + Math.random().toString(36).slice(2, 10),
@@ -3986,9 +3988,6 @@
                    esc(d.title) + '">' : '') +
           '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(d.caption) + '</textarea>' +
-          (d.showZh
-            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' + esc(d.caption_zh) + '</textarea>'
-            : '<button class="linkbtn" data-f="addzh" type="button">Add Chinese caption</button>') +
           capButton() +
         '</div>';
 
@@ -4013,18 +4012,13 @@
       });
       var cap = row.querySelector('[data-f="caption"]');
       cap.addEventListener('input', function (e) { d.caption = e.target.value; queueSave(); });
-      var zh = row.querySelector('[data-f="caption_zh"]');
-      if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; queueSave(); });
-      var addzh = row.querySelector('[data-f="addzh"]');
-      if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
       var capw = row.querySelector('[data-f="capwrite"]');
       if (capw) capw.addEventListener('click', function () {
         writeCaption({ btn: capw, placement: d.placement, title: d.title, notesKey: state.batch.id + ':' + d.key,
-          zh: d.showZh || !!d.caption_zh, now: { caption: d.caption, caption_zh: d.caption_zh }, saveWord: 'Add to set',
+          now: { caption: d.caption },
           put: function (w) {
             d.caption = w.caption || '';
-            d.caption_zh = w.caption_zh || '';
-            if (d.caption_zh) d.showZh = true;
+            d.ai = !!w.ai;
             var at = state.drafts.indexOf(d);
             renderDrafts();
             var nr = at > -1 ? $('drafts').children[at] : null;
@@ -4064,7 +4058,7 @@
       placement: 'instagram:carousel',
       media: state.drafts.reduce(function (all, d) { return all.concat(d.media); }, []),
       caption: state.drafts.map(function (d) { return d.caption; }).filter(Boolean)[0] || '',
-      caption_zh: '', title: '', showZh: false
+      title: '', ai: state.drafts.some(function (d) { return d.ai && d.caption; })
     };
     state.drafts = [merged];
     renderDrafts();
@@ -4101,13 +4095,20 @@
   $('saveDrafts').addEventListener('click', function () {
     if (!state.drafts.length || state.uploading) return;
     msg('setMsg', '');
-    uploadPending().then(addPosts).catch(function (e) {
-      msg('setMsg', (e && e.message) || 'Upload failed.', 'err');
-    });
+    /* A caption written with AI is declared read before it is kept
+       (2026-10-10), once for every such caption in the set. */
+    var ai = state.drafts.filter(function (d) { return d.ai && String(d.caption || '').trim(); }).length;
+    var go = function () {
+      uploadPending().then(function () { return addPosts(ai); }).catch(function (e) {
+        msg('setMsg', (e && e.message) || 'Upload failed.', 'err');
+      });
+    };
+    if (ai && window.ADspaceConfirm.ai) window.ADspaceConfirm.ai.declare(ai === 1 ? 'caption' : 'set of captions', 'Confirm and add', go);
+    else go();
   });
 
   /* Every file is in storage by now, so the posts are written in one insert. */
-  function addPosts() {
+  function addPosts(ai) {
     return db.from('posts').select('position').eq('batch_id', state.batch.id)
       .order('position', { ascending: false }).limit(1).then(function (r) {
         var next = (r.data && r.data.length ? r.data[0].position : -1) + 1;
@@ -4119,7 +4120,6 @@
             handle: null,   // the client's per platform account name is used instead
             title: d.title || null,
             caption: d.caption || null,
-            caption_zh: d.caption_zh || null,
             media: d.media,
             position: next + i
           };
@@ -4146,7 +4146,8 @@
             loadPosts();
           });
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
-            rows.length + (rows.length === 1 ? ' post' : ' posts'));
+            rows.length + (rows.length === 1 ? ' post' : ' posts') +
+            (ai ? ' · ' + ai + (ai === 1 ? ' caption' : ' captions') + ' written with AI, read and confirmed' : ''));
           clearDrafts();
           if (window.ADspaceSheet.isOpen($('assetSheet'))) window.ADspaceSheet.close();
           msg('setMsg', rows.length + ' post' + (rows.length === 1 ? '' : 's') + ' added.', 'ok');
@@ -4541,6 +4542,12 @@
       enterLater = '';
       window.ADspaceScripts.enter();
     },
+    settingsReady: function () {
+      if (enterLater !== 'settings' || section !== 'settings') return;
+      enterLater = '';
+      window.ADspaceSettings.enter();
+      setUrl();
+    },
     handbookReady: function () {
       if (enterLater !== 'handbook' || section !== 'handbook') return;
       enterLater = '';
@@ -4572,6 +4579,8 @@
     restore: function () { restoreView(); },
     /* ===== end console search ===== */
     may: may,
+    upgradeState: function () { return upgrade; },
+    upgradeToggle: upgradeToggle,
     parts: PARTS
   };
 
@@ -5066,8 +5075,11 @@
               esc(p.title || '') + '">' : '') +
           '<textarea class="textarea" data-f="caption" placeholder="Caption" aria-label="Caption">' +
             esc(p.caption || '') + '</textarea>' +
-          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' +
-            esc(p.caption_zh || '') + '</textarea>' +
+          /* One caption a post (2026-10-10); a Chinese caption kept from
+             before stays editable where one is held. */
+          (String(p.caption_zh || '').trim()
+            ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案" aria-label="中文 caption">' +
+              esc(p.caption_zh || '') + '</textarea>' : '') +
           capButton() +
           /* The revised file goes in here; it stays on this device until
              Save, like every other file picked in this section. */
@@ -5093,30 +5105,40 @@
         paintRead();
       });
       var capw = row.querySelector('[data-f="capwrite"]');
+      var aiCap = false;
       if (capw) capw.addEventListener('click', function () {
-        var capEl = row.querySelector('[data-f="caption"]'), zhEl = row.querySelector('[data-f="caption_zh"]');
+        var capEl = row.querySelector('[data-f="caption"]');
         var titleNow = row.querySelector('[data-f="title"]');
         writeCaption({ btn: capw, placement: row.querySelector('[data-f="placement"]').value,
           title: titleNow ? titleNow.value : (p.title || ''), notesKey: p.id,
-          zh: !!String(zhEl.value || '').trim(), now: { caption: capEl.value, caption_zh: zhEl.value },
+          now: { caption: capEl.value },
           put: function (w) {
             capEl.value = w.caption || '';
-            zhEl.value = w.caption_zh || '';
-            [capEl, zhEl].forEach(function (x) { x.dispatchEvent(new Event('input', { bubbles: true })); });
+            aiCap = !!w.ai;
+            capEl.dispatchEvent(new Event('input', { bubbles: true }));
             return capw.closest('.capwrite');
           } });
       });
       row.querySelector('[data-a="save"]').addEventListener('click', function () {
+        /* A caption written with AI is declared read first (2026-10-10). */
+        if (aiCap && String(row.querySelector('[data-f="caption"]').value || '').trim() && window.ADspaceConfirm.ai) {
+          window.ADspaceConfirm.ai.declare('caption', 'Confirm and save', function () { savePost(true); });
+          return;
+        }
+        savePost(false);
+      });
+      function savePost(declared) {
         var parts = row.querySelector('[data-f="placement"]').value.split(':');
         var titleEl = row.querySelector('[data-f="title"]');
+        var zhField = row.querySelector('[data-f="caption_zh"]');
         var patch = {
           platform: parts[0],
           format: parts[1],
           title: titleEl ? (titleEl.value.trim() || null) : p.title,
           caption: row.querySelector('[data-f="caption"]').value || null,
-          caption_zh: row.querySelector('[data-f="caption_zh"]').value || null,
           media: mediaCopy
         };
+        if (zhField) patch.caption_zh = zhField.value || null;
         var picked = Array.prototype.slice.call(row.querySelector('[data-f="file"]').files || []);
         var saveBtn = row.querySelector('[data-a="save"]');
         saveBtn.disabled = true;
@@ -5149,7 +5171,8 @@
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
             MK.label(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
             (decided && moved.some(function (k) { return ['media', 'caption', 'caption_zh', 'title'].indexOf(k) > -1; })
-              ? ' · revision ' + (round + 1) : ''));
+              ? ' · revision ' + (round + 1) : '') +
+            (declared ? ' · caption written with AI, read and confirmed' : ''));
           editMedia = null;
           msg('setMsg', 'Post updated.', 'ok');
           loadPosts();
@@ -5158,7 +5181,7 @@
           saveBtn.textContent = 'Save';
           msg('setMsg', 'Not saved. ' + ((e && e.message) || 'The upload failed.'), 'err');
         });
-      });
+      }
     }
 
     paintRead();

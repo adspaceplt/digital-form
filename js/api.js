@@ -165,8 +165,23 @@
     return out;
   }
 
+  /* The one reading of a number for a wa.me link (2026-10-09), as the team
+     types numbers and as `wa_number` reads them in SQL: a leading 0 is
+     Malaysia (6 in front, keeping the 0 as 60), eight digits Singapore (65),
+     nine or ten starting 1 a Malaysian mobile without its 0 (60); anything
+     else already carries its country code. Digits alone; '' for nothing. */
+  function waNumber(raw) {
+    const d = String(raw || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.charAt(0) === '0') return '6' + d;
+    if (d.length === 8) return '65' + d;
+    if ((d.length === 9 || d.length === 10) && d.charAt(0) === '1') return '60' + d;
+    return d;
+  }
+
   window.ADspaceAPI = {
     accessToken,
+    waNumber,
     movedKey,
     configured,
     client,

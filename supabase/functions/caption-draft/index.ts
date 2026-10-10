@@ -1,10 +1,11 @@
 /*
  * caption-draft — writes a post's caption for Content Review (2026-10-08).
  *
- * Write caption beside a post's caption fields in the console (js/admin.js,
- * Add assets and a saved post's Edit) posts the set's id, the post's
- * placement and title, the colleague's notes for the caption and the
- * languages asked for. The function reads the set and its client as the
+ * Write with AI beside a post's caption in the console (js/admin.js, Add
+ * assets and a saved post's Edit) posts the set's id, the post's placement
+ * and title, the colleague's notes for the caption and its one language
+ * (English, Bahasa Melayu, Chinese, or English and Chinese in one caption;
+ * 2026-10-10). The function reads the set and its client as the
  * caller, under the caller's own access (Content Review: Sets at Work, a
  * client the colleague sees), and sends Claude only what a caption needs:
  * the platform and format, the set's and the post's titles, the notes, and
@@ -76,12 +77,11 @@ rednote: soft selling and authentic discovery in a first person, benefit led, tr
 
 TRUTH
 Say only what the notes, the titles and the client's industry support. Never invent a price, an offer, a date, an address, an award, a figure or a claim. Where the notes give no offer, the call to action invites the reader to find out more.
-Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
+Where a brief is given, write for its audience and their pain points, keep to its pillars and tone, never use what it lists to avoid, never name a competitor, and let a hook that worked shape the opening without copying it; the brand notes are the client's own words on how it speaks. Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
 These brand names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, ADspace.
 
-LANGUAGES
-caption is written in the main language named: British English, or Bahasa Melayu as Malaysians write it on social media (natural, warm, never stiff or translated).
-caption_zh, when asked for, is Simplified Chinese written as Chinese for Malaysian and Singaporean readers: composed in Chinese for the platform, never translated word for word from the other caption; it may lead with its own hook. Full width Chinese punctuation. The two captions say the same offer and call to action.`;
+LANGUAGE
+One caption, in the language named. English: British English. Bahasa Melayu: as Malaysians write it on social media (natural, warm, never stiff or translated). Chinese: Simplified Chinese written as Chinese for Malaysian and Singaporean readers, composed in Chinese for the platform with full width Chinese punctuation, never translated word for word. English and Chinese: the English caption first, then a blank line, then the same message composed in Chinese (never translated word for word; it may lead with its own hook), both with the same offer and one call to action, and at most one title line, over the English.`;
 
 /* XHS Safe Mode: only when the colleague ticks it (the user's rule: apply
    it only once confirmed). */
@@ -116,8 +116,11 @@ Deno.serve(async (req) => {
   const [platKey, fmtKey] = String(body && body.placement || 'instagram:feed').split(':');
   const platform = PLATFORM[platKey] || 'Instagram';
   const format = FORMAT[fmtKey] || 'post';
-  const lang = body && body.lang === 'ms' ? 'ms' : 'en';
-  const zh = !!(body && body.zh);
+  /* One caption a post (2026-10-10), in one of four languages; an older
+     page's English with its Chinese tick reads as English and Chinese. */
+  const LANG: Record<string, string> = { en: 'English', ms: 'Bahasa Melayu', zh: 'Chinese', en_zh: 'English and Chinese' };
+  const asked = String(body && body.lang || 'en');
+  const lang = LANG[asked] ? (asked === 'en' && body && body.zh ? 'en_zh' : asked) : 'en';
   const safe = platKey === 'xhs' && !!(body && body.safe);
   const notes = String(body && body.notes || '').replace(/\r/g, '').trim().slice(0, 2000);
   const title = String(body && body.title || '').replace(/\r/g, '').trim().slice(0, 200);
@@ -148,19 +151,32 @@ Deno.serve(async (req) => {
   ].sort((a, b) => b[0].length - a[0].length);
   const mask = (s: string) => masks.reduce((t, [re, to]) => t.replace(new RegExp(re, 'gi'), to), s);
 
+  /* The client's content brief and brand notes (2026-10-10), masked as
+     the rest; read apart so a database without the column still drafts. */
+  const br = await db.from('clients').select('brief, brand_notes').eq('id', set.data.client_id as string).maybeSingle();
+  const briefIn = (!br.error && br.data) ? (br.data as Record<string, unknown>) : {};
+  const brief: Record<string, string> = {};
+  const rawBrief = (briefIn.brief && typeof briefIn.brief === 'object') ? briefIn.brief as Record<string, unknown> : {};
+  for (const k of ['audience', 'pains', 'pillars', 'tone', 'avoid', 'competitors', 'hooks']) {
+    const v = String(rawBrief[k] ?? '').trim();
+    if (v) brief[k] = mask(v).slice(0, 1000);
+  }
+  const brandNotes = String(briefIn.brand_notes ?? '').trim();
+
   const data: Record<string, unknown> = {
     platform, format,
+    brief: Object.keys(brief).length ? brief : null,
+    brand_notes: brandNotes ? mask(brandNotes).slice(0, 1500) : null,
     market: String(c.market || '').toUpperCase() === 'SG' ? 'Singapore' : 'Malaysia',
     industry: String(c.industry || '').trim() || null,
     set: mask(String(set.data.title || '')),
     post_title: title ? mask(title) : null,
     notes: notes ? mask(notes) : null,
-    main_language: lang === 'ms' ? 'Bahasa Melayu' : 'English'
+    language: LANG[lang]
   };
 
   const str = (d: string) => ({ type: 'string', description: d });
-  const properties: Record<string, unknown> = { caption: str('The caption in the main language, ready to post') };
-  if (zh) properties.caption_zh = str('The caption in Simplified Chinese, written as Chinese');
+  const properties: Record<string, unknown> = { caption: str('The caption in the language named, ready to post') };
   const schema = { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
 
   const claim = await db.rpc('ai_caption_claim', { p_batch: setId });
@@ -179,7 +195,7 @@ Deno.serve(async (req) => {
       max_tokens: 16000,
       system: SYSTEM + (safe ? SAFE : ''),
       output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Write the caption for this post' + (zh ? ', and its Chinese caption' : '') +
+      messages: [{ role: 'user', content: 'Write the caption for this post' +
         '. The post and the team\'s notes follow as JSON.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
     await keepTokens(db, pressId, res);
@@ -192,14 +208,13 @@ Deno.serve(async (req) => {
     let out: Record<string, unknown> | null = null;
     try { out = JSON.parse(text); } catch { out = null; }
     const clean = (v: unknown) => String(v ?? '').replace(/\r/g, '').trim().slice(0, 5000);
-    if (!out || typeof out.caption !== 'string' || (zh && typeof out.caption_zh !== 'string')) {
+    if (!out || typeof out.caption !== 'string') {
       console.error('caption-draft: no caption in the answer', res.stop_reason);
       await done(false);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
     await done(true);
     const answer: Record<string, unknown> = { caption: clean(out.caption) };
-    if (zh) answer.caption_zh = clean(out.caption_zh);
     return json({ draft: answer, left: got.left }, 200, origin);
   } catch (e) {
     /* The API's own type and message go to the function's log (never the

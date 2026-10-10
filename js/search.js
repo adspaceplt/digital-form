@@ -56,6 +56,7 @@
   function clientKey(c) { return (c && (c.slug || c.id)) || ''; }
   function stageOf(v) { return (W.stage && W.stage[v]) || ''; }
   var PLATFORM = { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function hostOf(url) { return String(url || '').replace(/^https?:\/\//i, '').replace(/\/$/, ''); }
 
   /* ---- Opening a result --------------------------------------------------
@@ -168,6 +169,19 @@
           open: function () {
             go('/admin/?s=review&client=' + encodeURIComponent(clientKey(c) || s.client_id) + '&set=' + encodeURIComponent(s.id), 'review');
           }
+        };
+      } },
+    { key: 'scripts', head: 'Video Scripts', can: function () { return may('scripts'); },
+      read: function (q) {
+        return read(db.from('video_scripts').select('id, code, title, period, status, client_id, clients(name)')
+          .or(any(['code', 'title'], q)).order('created_at', { ascending: false }).limit(LIMIT));
+      },
+      row: function (v) {
+        var m = /^(\d{4})-(\d{2})/.exec(v.period || '');
+        return {
+          id: 'script-' + v.id, name: v.title || v.code, code: v.title ? v.code : '',
+          meta: [(v.clients && v.clients.name), m ? MON[Number(m[2]) - 1] + ' ' + m[1] : '', v.status === 'shared' ? 'Published' : 'Draft'],
+          open: function () { go('/admin/?s=scripts&script=' + encodeURIComponent(v.id), 'scripts'); }
         };
       } },
     { key: 'campaigns', head: 'Creator Campaigns', can: function () { return may('campaigns.campaigns'); },
