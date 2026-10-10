@@ -2217,11 +2217,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .subsection + .subsection { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
 /* Two jobs in one panel: each carries its own eyebrow, and the second is
    ruled off from the first rather than running on from it. */
-.pickhead { display: flex; align-items: baseline; gap: 12px; margin: 16px 0 10px; }
-.pickhead .sectionlabel { margin: 0; }
-.pickhead .muted { margin-left: auto; font-size: 12.5px; white-space: nowrap; }
-#addOptionBox .subsection { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
-#addOptionBox .pickhead:first-of-type { margin-top: 6px; }
 .subsection > h4 {
   font-size: 12.5px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 3px;
 }
@@ -3049,23 +3044,6 @@ body.is-plain .topbar { background: var(--chrome); }
    only thing wearing it was an outbound profile link. Those are .plink now,
    the component the contact row already uses for a phone and an email. */
 
-/* ---------- Roster picker ---------- */
-.optionpick { max-height: 320px; overflow: auto; margin-top: 12px; }
-/* The scrolling list was a bare overflow box with no boundary, so "where is
-   the existing listing" was a fair question: it looked like loose rows under
-   a loose field. A border makes it a container, and the count above it says
-   what is in it. */
-/* The section's own field fills it rather than sizing itself to its
-   placeholder, which left a 208px box under a full width heading. */
-#optionSearch { width: 100%; }
-.optionpick { border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.optionpick .empty { margin: 0; border: 0; }
-.pickrow {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 9px 12px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
-}
-.pickrow:last-child { border-bottom: 0; }
-.pickrow.is-in { opacity: .5; }
 
 /* =========================================================================
    CREATOR SELECTION  (client facing)
@@ -3714,9 +3692,6 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 
 /* ---------- Offer rate, set when adding ---------- */
-.pickadd { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.pickadd .slugfield { width: 136px; }
-.pickadd .pickrate { min-width: 0; width: 100%; }
 .rate-edit { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
 .rate-edit .slugfield { width: 150px; }
 .rate-edit .input { min-width: 0; width: 100%; }
@@ -3727,12 +3702,41 @@ body.is-plain .topbar { background: var(--chrome); }
 .btn-quiet.is-danger { color: #a3312a; }
 .btn-quiet.is-danger:hover { color: #a3312a; border-color: #a3312a; }
 
+
+/* ---------- Add creators (a sheet, 2026-10-10) ----------
+   The Creators List in its fee bands, a tick a creator; a tick opens the
+   rate and platforms under its row on the shaded ground. The strip and the
+   search stay above the list as it scrolls. */
+.ac-sheet .ac-tabs { flex: 0 0 auto; margin: 8px 0 12px; }
+.ac-bar { flex: 0 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 12px; margin-bottom: 12px; }
+.ac-bar .input, .ac-bar .select { width: 100%; min-width: 0; }
+.ac-sheet .crm-group:first-child { margin-top: 0; }
+.ac-row { border-top: 1px solid var(--line-soft); }
+.ac-row:first-child { border-top: 0; }
+.ac-row.is-on { background: var(--sunk); }
+.ac-pick {
+  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 10px 15px; cursor: pointer; min-height: var(--ctl-h);
+}
+.ac-row.is-in .ac-pick { grid-template-columns: minmax(0, 1fr) auto; cursor: default; }
+.ac-pick input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
+.ac-who { min-width: 0; }
+.ac-name { display: block; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.ac-meta { display: block; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.ac-rate { font-size: 13.5px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.ac-more {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: start;
+  padding: 0 15px 12px 45px;
+}
+.ac-more .field-label { display: block; }
+.ac-more .slugfield { width: 100%; }
+.ac-more .pickrate { min-width: 0; width: 100%; }
+.is-narrow .ac-bar { grid-template-columns: minmax(0, 1fr) 156px; }
+.is-narrow .ac-more { grid-template-columns: minmax(0, 1fr); padding-left: 15px; }
 @media (max-width: 640px) {
-  .pickrow { flex-wrap: wrap; }
-  /* The boxes take the whole line here, so what follows them has to be allowed
-     onto the next one or the rate and Add are pushed past the screen edge. */
-  .pickadd { flex: 1 1 100%; flex-wrap: wrap; row-gap: 10px; }
-  .pickadd .slugfield { flex: 1 1 auto; width: auto; }
+  .sheet-card .ac-tabs { order: 0; }
+  .ac-bar { grid-template-columns: minmax(0, 1fr) 156px; }
+  .ac-more { grid-template-columns: minmax(0, 1fr); padding-left: 15px; }
 }
 
 /* Which platforms an offer covers, ticked by us. */
@@ -3775,7 +3779,7 @@ body.is-plain .topbar { background: var(--chrome); }
 /* On a phone the pill takes the line it needs rather than pushing the row
    sideways: the boxes already wrap. */
 @media (max-width: 640px) {
-  .pickadd .pboxes { flex: 1 1 100%; }
+  .ac-more .pboxes { flex: 1 1 100%; }
   .pbox.needs-link { flex: 1 1 100%; min-width: 0; }
   .pbox.needs-link .pbox-link { flex: 1 1 auto; width: auto; min-width: 0; }
 }

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010zs">
+<link rel="stylesheet" href="/css/portal.css?v=20261010zu">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1906,48 +1906,55 @@
         </div>
 
 
-        <!-- Two jobs, and the panel used to run them together under one head:
-             pick somebody the creators list already has, or key in somebody it
-             does not. Each carries its own eyebrow now, the list says how
-             many it is showing, and the second job is folded shut because it
-             is the rarer one. -->
-        <div class="panel" id="addOptionBox" hidden>
-          <div class="panelhead"><h3>Add creators</h3>
-            <button class="btn btn-quiet btn-sm" id="optionCancel" type="button" style="margin-left:auto">Close</button>
-          </div>
-
-          <div class="pickhead">
-            <span class="sectionlabel">Existing creators</span>
-            <span class="muted" id="optionCount"></span>
-          </div>
-          <label class="field-label" for="optionSearch">Search by name</label>
-          <input class="input" id="optionSearch" placeholder="Search creators" autocomplete="off">
-          <div class="optionpick" id="optionPick"></div>
-          <div class="msg" id="optionMsg"></div>
-
-          <div class="subsection">
-            <div class="pickhead">
-              <span class="sectionlabel">New creators</span>
+        <!-- Add creators is a sheet over the Creators pane (the user,
+             2026-10-10: the panel was "messy … no proper grouping"): the
+             Creators List in its fee bands, a tick a creator opening its rate
+             and platforms in place, one Add for every tick; New creator is the
+             strip's second view. -->
+        <div class="sheet" id="addOptionBox" hidden>
+          <div class="sheet-card formsheet ac-sheet" role="dialog" aria-modal="true" aria-labelledby="optionTitle" tabindex="-1" data-narrow="560">
+            <div class="sheet-head">
+              <h3 id="optionTitle">Add creators</h3>
+              <button class="iconbtn" id="optionCancel" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
             </div>
-            <button class="btn btn-sm" id="ncToggle" type="button" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
-            <div id="ncBox" hidden style="margin-top:12px">
-              <div class="row">
-                <div><label class="field-label" for="ncName">Name</label>
-                  <input class="input" id="ncName" aria-required="true" placeholder="Jane Doe"></div>
-                <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Client rate for this campaign (RM)</label>
-                  <input inputmode="decimal" class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
+            <div class="cmdbar-views kindseg ac-tabs" id="optionTabs" role="group" aria-label="Add from">
+              <button class="acttab is-on" id="optionTabList" type="button" aria-pressed="true">Creators List</button>
+              <button class="acttab" id="ncToggle" type="button" aria-pressed="false">New creator</button>
+            </div>
+            <div class="ac-bar" id="optionBar">
+              <input class="input" id="optionSearch" type="search" placeholder="Name or handle" aria-label="Search creators" autocomplete="off" data-nodraft>
+              <select class="select" id="optionPlatform" aria-label="Platform" data-nodraft>
+                <option value="all">All platforms</option>
+                <option value="xhs">rednote</option>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="facebook">Facebook</option>
+              </select>
+            </div>
+            <div class="sheet-body">
+              <div id="optionPick"></div>
+              <div id="ncBox" hidden>
+                <div class="row fgrid">
+                  <div><label class="field-label" for="ncName">Name</label>
+                    <input class="input" id="ncName" aria-required="true" placeholder="Jane Doe"></div>
+                  <div><label class="field-label" for="ncRate">Client rate for this campaign (RM)</label>
+                    <input inputmode="decimal" class="input" id="ncRate" type="number" min="0" step="10" aria-required="true" placeholder="360"></div>
+                </div>
+                <label class="field-label" style="margin-top:16px">Profile links</label>
+                <div id="ncProfRows"></div>
+                <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+                <label class="field-label" style="margin-top:16px">Posts on</label>
+                <div id="ncPlatforms"></div>
+                <div class="msg" id="ncDupe"></div>
+                <div class="msg" id="ncMsg"></div>
               </div>
-              <label class="field-label" style="margin-top:12px">Profile links</label>
-              <div id="ncProfRows"></div>
-              <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
-              <label class="field-label" style="margin-top:12px">Posts on</label>
-              <div id="ncPlatforms"></div>
-              <div class="msg" id="ncDupe"></div>
-              <div class="row acts" style="margin-top:12px">
-                <button class="btn btn-primary" id="ncSave" type="button">Add to campaign</button>
-                <button class="btn btn-quiet" id="ncClose" type="button" style="flex:0 0 auto">Cancel</button>
-              </div>
-              <div class="msg" id="ncMsg"></div>
+              <div class="msg" id="optionMsg" role="status"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="optionAdd" type="button">Add creators</button>
+              <button class="btn btn-primary" id="ncSave" type="button" hidden>Add to campaign</button>
+              <button class="btn btn-quiet" id="optionClose" type="button">Cancel</button>
+              <span class="lpicksum" id="optionCount" aria-live="polite"></span>
             </div>
           </div>
         </div>
@@ -5236,7 +5243,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
-<script src="/js/campaigns.js?v=20261010zt"></script>
+<script src="/js/campaigns.js?v=20261010zu"></script>
 <script src="/js/ops.js?v=20261010zc"></script>
 <script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>

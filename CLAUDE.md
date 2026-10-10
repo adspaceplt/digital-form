@@ -1924,7 +1924,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - In production and Completed are derived (`syncCampState` off
     `loadOptions`): every booked creator at Completed completes the
     campaign, one reverted puts it back in production, none open returns it
-    to Open; filed `campaign.stage`. Nothing presses it.
+    to Open, and an Open campaign whose bookings fill every slot again (a
+    creator reinstated) is in production; filed `campaign.stage`. Nothing
+    presses it. Open with bookings and a free slot is a reopened selection.
 - Release to client (Submitted → Reviewing) goes only through
   `campaign_qc_pass(p_option, p_want_second)`. A trigger refuses any other
   route.
@@ -2075,9 +2077,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `nameKey()` trims, collapses whitespace and ignores case. The name is
     stored that way, and the duplicate is refused before any link is typed.
   - The word is Creators List, never "roster".
-- Add creators: Existing creators (search and count), New creators (folded).
-  Ticking a platform with no link grows the box into the field (`.pbox`), saved
-  through `readProfile()`.
+- Add creators is a sheet (`#addOptionBox`, 2026-10-10; the user: "messy …
+  no proper grouping"): the strip Creators List / New creator; a search by
+  name or handle and a platform; the Creators List's fee bands (stood down
+  left out) and Already in this campaign last, each its state; a tick a
+  creator opening its client rate and platforms, prefilled from the list;
+  the foot's count and sum of the rates, and one Add N creators inserting
+  every tick at once (all or none), Undo where it happened. A creator
+  withdrawn or replaced here (not goodwill) is offered from the same list:
+  their one row (`unique (campaign_id, creator_id)`) moves back to Offered,
+  its reason cleared, filed `campaign.reinstated` … offered again. Ticking a
+  platform with no link grows the box into the field (`.pbox`), saved to the
+  creator through `readProfile()`.
 - A creator's profile links (`creator_profiles`) are saved only through
   `profiles_replace()`:
   - `creator_set_profiles` (the creator) and `creator_save_profiles` (Work).

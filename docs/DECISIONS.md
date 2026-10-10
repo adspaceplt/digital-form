@@ -1943,3 +1943,25 @@ first phone visit, its last step naming Arrange sections in the account menu,
 which no guide could reach otherwise. Guides are offered from the page's own
 changes (the address, a sheet or step drawn), read a moment after the page
 settles, so no screen calls the guide itself.
+
+### 2026-10-10 · Add creators as a sheet, and a creator offered again
+
+The user called the Add creators panel messy: one long list of every creator,
+each row carrying its own rate field, platform ticks and Add button, with no
+grouping and nothing saying which creators were already in. It is a sheet
+now, built from the mockup the user approved: the Creators List / New
+creator strip (a view strip, never a pill: a pill picks a value, the strip
+moves between screens), a search by name or handle and a platform, the same
+fee bands as the Creators List with those already in the campaign in their
+own card at the foot, a tick a creator that opens its rate and platforms in
+place, and one Add for every tick with Undo.
+
+The same pass fixed two findings of the re-audit. A creator withdrawn or
+replaced on a campaign read Already offered for good, because the table
+holds one row a creator a campaign and the picker only inserted; the sheet
+moves that row back to Offered instead. And an Open campaign whose bookings
+filled every slot again (a creator reinstated after every booking had left)
+stayed Open; it is In production once nothing is left to choose, while Open
+with a free slot remains a reopened selection. Revert to options now says the
+client chooses again once the selection is reopened, since the place is not
+offered to the client until then.
