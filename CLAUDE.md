@@ -985,7 +985,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every console directory is a card per group via `js/group.js`:
   - Clients by stage;
   - a client's Engagements by content month;
-  - Content Review as one card;
+  - Content Review as one card; a client's sets by content month;
   - Campaigns by state (Completed shut);
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
@@ -1655,8 +1655,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     settings as a sheet with one Save, Reset access link, Remove from Content
     Review), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10); the
-    sets are rows (name, the state at the right, the post count) the page's
-    width. A post is a row: the placement with the
+    sets are a card a content month (`batches.period`, YYYY-MM, empty for
+    Ad hoc; `2026-10-10-sets-by-month.sql`), newest first and open, Ad hoc
+    last, a row a set (name, the state at the right, the post count read for
+    every set in one request) the page's width. A new set takes this month
+    (MYT); the set's ⋯ Content month changes it (last month to six ahead, or
+    Ad hoc; filed `set.month` from and to), and the set's head names it
+    before whether the client sees it. Engagements files a set by its month,
+    an Ad hoc one by the day it was made. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
   - A set is a page of its own (`set=`): its head is the record head (the

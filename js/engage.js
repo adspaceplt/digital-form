@@ -126,7 +126,7 @@
         .then(function (r) { if (failed(r)) throw new Error(why(r)); out.finished = (r.data || {}).reports || []; });
     },
     sets: function (c, out) {
-      return db.from('batches').select('id, title, published, created_at').eq('client_id', c.id)
+      return db.from('batches').select('id, title, published, created_at, period').eq('client_id', c.id)
         .order('created_at', { ascending: false })
         .then(function (r) { if (failed(r)) throw new Error(why(r)); out.sets = r.data || []; });
     },
@@ -230,7 +230,9 @@
       return byKey[k];
     };
     (d.eng && !d.fail.content ? d.eng : []).forEach(function (e) { month(e.period).content = e; });
-    (d.sets || []).forEach(function (s) { var k = monthOf(dayMy(s.created_at), spans); if (k) month(k).sets.push(s); });
+    /* A set by the month it names (2026-10-10); an Ad hoc set by the day it
+       was made. */
+    (d.sets || []).forEach(function (s) { var k = /^\d{4}-\d{2}$/.test(s.period || '') ? s.period : monthOf(dayMy(s.created_at), spans); if (k) month(k).sets.push(s); });
     (d.scripts || []).forEach(function (s) { if (/^\d{4}-\d{2}$/.test(s.period || '')) month(s.period).scripts.push(s); });
     (d.camps || []).forEach(function (k0) { var k = monthOf(dayMy(k0.created_at), spans); if (k) month(k).camps.push(k0); });
     (d.reports || []).forEach(function (r) { var k = monthOf(r.period_end, spans); if (k) month(k).reports.push(r); });

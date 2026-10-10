@@ -1617,3 +1617,16 @@ there either. The stand-in had never answered `delete_client`, so the
 client's Delete had no test; `tests/deletes.js` drives it and opens every ⋯
 on the main screens. The audit also found the Settings page reusing the id
 `setMsg`, which Content Review's set page holds; it is `settingsMsg`.
+
+### 2026-10-10 · A month for every content set, and a list for every script month
+
+The user, reviewing how the Work sections are laid out: a client writes thirty
+to fifty video scripts a year and keeps adding content sets, so tabs and one
+long card stop working. A script month became a list of its scripts, each
+script a page with Previous and Next. Content sets gained a content month
+(`batches.period`), backfilled once from the day each was made so a second
+run never undoes an Ad hoc set, and a client's sets are a card a month. The
+month change is a new activity tag, so the activity map is restated in a file
+of its own for the SQL Editor (it names `*.deleted` tags the connector holds);
+it restates the WhatsApp map too, so running it alone files both. The sets'
+post counts were one request a set; they are one request for the client.

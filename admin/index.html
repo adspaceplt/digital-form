@@ -1403,7 +1403,7 @@
       <span class="headmark"><h2>Content sets</h2></span>
       <button class="btn btn-primary" id="addBatch" data-need="review.sets:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
     </div>
-    <div class="crm-table softpanel cr-sets" id="batchCards"></div>
+    <div class="cr-setgroups" id="batchCards"></div>
     <div class="msg" id="setsMsg"></div>
 
     <!-- ============ One set ============ -->
@@ -1432,6 +1432,7 @@
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
                   <button class="kmenu-item" id="selectPosts" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
+                  <button class="kmenu-item" id="setMonth" data-need="review.sets:work" type="button" role="menuitem">Content month</button>
                   <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
                 </div>
               </div>
