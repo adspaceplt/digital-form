@@ -2057,38 +2057,27 @@
     };
     on('sent', function (b) { b.closest('.kmenu').hidden = true; askDay(); });
     on('sentfact', function () { askDay(); });
-    /* Send on WhatsApp (2026-10-09, js/whatsapp.js): drawn where the report
-       template is on and the group's Send on WhatsApp part allows it; the
-       kept PDF to the client's main contact, then marked as sent today. */
+    /* Send on WhatsApp (2026-10-09; the composer from 2026-10-10,
+       js/whatsapp.js): drawn where the report template is on and the group
+       may send a report on WhatsApp; it opens the composer on the client's
+       main contact with this report attached, and a report sent is marked
+       as sent today. */
     var waBtn = box.querySelector('.rp-head [data-a="wasend"]');
-    if (waBtn && window.ADspaceWhatsApp && bridge.may && bridge.may('reports.whatsapp', 'work')) {
+    if (waBtn && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('report')) {
       window.ADspaceWhatsApp.on('report').then(function (yes) { waBtn.hidden = !yes; });
     }
     on('wasend', function (b) {
-      var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-      if (!live) return;
-      window.ADspaceConfirm.ask({ title: 'Send on WhatsApp?', go: 'Send',
-        body: 'The PDF goes to the client\'s main contact on WhatsApp, and the report is marked as sent today.' }, function () {
-        var name = fileNameOf(r, st.client && st.client.name);
-        b.disabled = true;
-        say(m, 'Sending…');
-        window.ADspaceWhatsApp.sendReport({
-          reportId: r.id, filename: name,
-          title: SM() ? SM().titleOf(r) + ', ' + SM().periodWord(r.period_start, r.period_end) : '',
-          pdf: function () { return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, name).then(function (f) { return f.blob; }); }
-        }).then(function (d) {
+      window.ADspaceWhatsApp.compose({ purpose: 'report', clientId: r.client_id, reportId: r.id, opener: b,
+        onSent: function (d, line) {
+          if (d.reportId !== r.id || r.sent_on) { say(m, line, 'ok'); return; }
           var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-          var sent = 'Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.';
-          return db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
+          /* A report sent and not marked as sent says so, never Sent alone. */
+          db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
             var no = res.error || (res.data && res.data.error ? res.data : null);
-            if (no) { b.disabled = false; say(m, sent + ' It was not marked as sent: ' + said(no), 'warn'); return; }
-            reopen(sent);
-          });
-        }).catch(function (e) {
-          b.disabled = false;
-          say(m, window.ADspaceWhatsApp.said(e), 'err');
-        });
-      });
+            if (no) { say(m, line + ' It was not marked as sent: ' + said(no), 'warn'); return; }
+            reopen(line);
+          }).catch(function (e) { say(m, line + ' It was not marked as sent: ' + said(e), 'warn'); });
+        } });
     });
     on('unsent', function (b) { b.closest('.kmenu').hidden = true; sentCall(null); });
     on('unpublish', function (b) {
@@ -5230,8 +5219,27 @@
     });
   }
 
+  /* A published report's file as the client portal hands it over: its
+     newest version not withdrawn, the kept file where it stands, else drawn
+     from that version's snapshot (WhatsApp's composer attaches it). */
+  function keptPdf(reportId) {
+    return Promise.all([
+      db.from('sm_reports').select('id, client_id, kind, title, period_start, period_end, brand_id, brand_name, status').eq('id', reportId).maybeSingle(),
+      db.from('sm_report_versions').select('id, version_no, published_at, withdrawn_at, file_key, file_at').eq('report_id', reportId).order('version_no', { ascending: false })
+    ]).then(function (got) {
+      if (got[0].error || got[1].error || !got[0].data) throw new Error('not-found');
+      var r = got[0].data;
+      var live = (got[1].data || []).filter(function (v) { return v.published_at && !v.withdrawn_at; })[0];
+      if (r.status !== 'published' || !live) throw new Error('not-published');
+      return db.from('clients').select('id, name').eq('id', r.client_id).maybeSingle().then(function (c) {
+        var name = fileNameOf(r, c.data && c.data.name);
+        return versionFile(live, r.client_id, function () { return versionSnap(live.id); }, name);
+      });
+    });
+  }
+
   window.ADspaceReports = {
-    clientFile: clientFile, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows,
+    clientFile: clientFile, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows, keptPdf: keptPdf,
     openId: function () { return st.open && st.open.id ? st.open.id : ''; },
     /* The address while the section is open: the report, and the step where
        it is not the one the report would open on anyway. */

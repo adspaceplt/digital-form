@@ -1325,6 +1325,34 @@ read Published and Unpublished, and the stored keys (`status` `shared`,
 press with the drawn file in it, and the ⋯ carries Download, as a report's
 head does; both ask one script or the whole month once there are two.
 
+### 2026-10-10 · WhatsApp, a section of its own (Phase 1)
+Approved by the user as WhatsApp Phase 1; the inbox and messages to
+colleagues (Phase 2) were left out. WhatsApp had grown three buttons on
+three records, three parts on three sections and a sheet in the account
+menu, with no answer to "did it arrive?". It is now a section after Clients
+(whose contacts it mostly messages): Messages, every message the portal
+sent with what Meta reports of it, and at Full Access Templates. Its levels
+read as every section's: View reads, Manage sends, Full Access sets the
+templates. The three sending parts moved under it and narrow it (follow or
+shut, as the My Work views), because a send is now one act whatever record
+it starts from; a send also asks the record's own section at View, so the
+section never opens a record its group cannot read. Groups started from
+their Clients level, Admin at Full Access, as asked. The composer is one
+sheet every record opens prefilled: To is a client contact or a creator,
+never a colleague; the template is chosen from Meta's approved list read
+through `wa-send` (`WHATSAPP_WABA_ID`), never typed, because a name typed
+wrong was the commonest refusal; each variable is prefilled and editable and
+the message is previewed as it will read; Send names the recipient, the
+number and the category Meta charges it as. The function asks the database
+for the number and reads the template again from Meta at the press, so
+nothing the page sends decides who receives what. Delivery comes from Meta's
+webhook (`wa-hook`), believed only with its signature over the raw body, and
+recorded against the message id the sender kept, by a function only the
+service role runs. A message delivered or read never turns failed. The old
+by-hand functions stay for a page loaded before the change. `wa.sent` moved
+from Clients to WhatsApp in the activity record; `campaign.whatsapp` stays
+for the booking resends queued before. The activity map went into a file of
+its own because it names tags the Supabase connector stops on.
 ### 2026-10-09 · The consistency batch: Video Scripts by month, one word per act, the rail regrouped
 The user, through the day: "the header card like this, show similar link in
 one card for different videos?", "why is the tab selection of each video

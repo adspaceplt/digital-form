@@ -375,8 +375,8 @@
     var M = window.ADspaceMaintenance;
     upgrade = d || { on: false, set: false };
     var admin = may('team.upgrade', 'work');
-    /* Upgrade mode, Announcements, Notices and WhatsApp are on the Settings
-       page (2026-10-10), which repaints its switch from here. */
+    /* Upgrade mode, Announcements, Notices and WhatsApp's templates are on
+       the Settings page (2026-10-10), which repaints its switch from here. */
     if (section === 'settings' && window.ADspaceSettings) window.ADspaceSettings.paint();
     var bar = $('upgradeBar');
     if (bar) {
@@ -679,7 +679,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -690,6 +690,9 @@
        narrow what the Clients level opens on those records, in the database
        (`client_row_seen`) as here. */
     clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
+    /* WhatsApp (2026-10-10): a send for a report, a feedback request or a
+       creator's booking follows the section unless a group shuts it. */
+    whatsapp:  ['report', 'feedback', 'booking'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any
@@ -699,7 +702,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -878,7 +881,7 @@
      bar under a thumb. The bar steps away while a field takes the keyboard,
      so it never sits on what is typed. */
   var TAB_WORD = {
-    overview: 'Overview', work: 'My Work', clients: 'Clients', review: 'Review',
+    overview: 'Overview', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
@@ -989,6 +992,7 @@
   var SECTION_TITLE = {
     overview: 'Overview',
     clients: 'Clients',
+    whatsapp: 'WhatsApp',
     work: 'My Work',
     review: 'Content Review',
     scripts: 'Video Scripts',
@@ -1018,6 +1022,7 @@
   var INTRO = {
     overview:  'What each section has waiting, for the groups that manage it.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
+    whatsapp:  'Every WhatsApp message the portal sent, with what Meta reports of its delivery.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
     scripts:   'Video scripts by content month, published to the client and used by the crew on the shoot.',
@@ -1048,6 +1053,10 @@
       { at: '#crmNew', text: 'Add a lead the day it comes in. Billing, brand and services follow as the deal firms.' },
       { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client for its contacts, services, documents and every call and visit.' },
       { at: '#crmViews', text: 'Sales shows the leads won, the clients lost and who needs a call.' }] },
+    whatsapp: { name: 'WhatsApp', steps: [
+      { at: '#waNew', text: 'New message sends a template Meta approved to a client contact or a creator.' },
+      { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal sent: Sent, Delivered, Read, or Failed with the reason.' },
+      { at: '#waTabs', text: 'Templates sets which approved template each purpose sends, and turns it on or off.' }] },
     review: { name: 'Content Review', steps: [
       { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
       { at: '#crFind', text: 'Find a client by name.' }] },
@@ -1154,7 +1163,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1167,6 +1176,7 @@
     section = name;
     $('sectionOverview').hidden  = name !== 'overview';
     $('sectionClients').hidden   = name !== 'clients';
+    $('sectionWhatsApp').hidden  = name !== 'whatsapp';
     $('sectionWork').hidden      = name !== 'work';
     $('sectionReview').hidden    = name !== 'review';
     $('sectionScripts').hidden   = name !== 'scripts';
@@ -1267,6 +1277,12 @@
     if (name === 'scripts') {
       if (!window.ADspaceScripts) { enterLater = 'scripts'; return; }
       window.ADspaceScripts.enter();
+      return;
+    }
+    /* WhatsApp reads its tab from the address before it writes it. */
+    if (name === 'whatsapp' && window.ADspaceWhatsApp) {
+      window.ADspaceWhatsApp.enter();
+      setUrl();
       return;
     }
     setUrl();
@@ -1392,6 +1408,9 @@
     } else if (section === 'scripts' && window.ADspaceScripts) {
       var vs = window.ADspaceScripts.urlState();
       Object.keys(vs).forEach(function (k) { if (vs[k]) q.push(k + '=' + encodeURIComponent(vs[k])); });
+    } else if (section === 'whatsapp' && window.ADspaceWhatsApp) {
+      var wa = window.ADspaceWhatsApp.urlState();
+      Object.keys(wa).forEach(function (k) { if (wa[k]) q.push(k + '=' + encodeURIComponent(wa[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
@@ -1700,7 +1719,10 @@
     'service.on':            ['Rate line active', 'is-ok', 'services'],
     'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
     'client.touch':          ['Call/visit logged', '', 'clients'],
-    'wa.sent':               ['Sent on WhatsApp', '', 'clients'],
+    /* WhatsApp (2026-10-10): a message sent by hand, and a purpose's
+       template chosen or switched. */
+    'wa.sent':               ['Sent on WhatsApp', '', 'whatsapp'],
+    'wa.template':           ['Template changed', '', 'whatsapp'],
     'client.review_on':      ['Added to review', 'is-ok', 'clients'],
     'contact.portal_on':     ['Portal enabled', 'is-ok', 'clients'],
     'contact.portal_off':    ['Portal revoked', 'is-warn', 'clients'],
@@ -1809,7 +1831,7 @@
      a person who has learned one sequence should not have to learn a second.
      Everything leads, being the view somebody lands on. */
   var ACT_SECTION = { all: 'Everything',
-                      ops: 'My Work', clients: 'Clients',
+                      ops: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
                       register: 'Documents', reports: 'Reports', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };

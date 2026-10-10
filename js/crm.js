@@ -1015,17 +1015,20 @@
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
     $('crmBrandEdit').hidden = !canWork;
-    /* Request feedback on WhatsApp (2026-10-09, js/whatsapp.js): where the
-       feedback template is on, at Clients Work and its WhatsApp part. */
+    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
+    /* Request feedback on WhatsApp (2026-10-09; the composer from
+       2026-10-10, js/whatsapp.js): where the feedback template is on, at
+       WhatsApp Manage and its Feedback request part, the client read. */
     $('crmFeedback').hidden = true;
-    if (canWork && mayPart('clients.whatsapp', 'work') && window.ADspaceWhatsApp) {
+    if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
       var fbFor = c.id;
       window.ADspaceWhatsApp.on('feedback').then(function (yes) {
-        if (state.client && state.client.id === fbFor) $('crmFeedback').hidden = !yes;
+        if (!state.client || state.client.id !== fbFor || !yes) return;
+        $('crmFeedback').hidden = false;
+        $('crmClientMenuWrap').hidden = false;
       });
     }
     paintRestrict(c);
-    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1978,15 +1981,11 @@
 
   /* Take a lead nobody is in charge of: Person in charge becomes the person
      pressing, filed as any other edit of it. */
-  /* The feedback template to the client's main contact, asked first. */
+  /* The feedback template to the client's main contact, in the composer
+     every record shares; it asks before it sends. */
   function askFeedback(c) {
-    window.ADspaceConfirm.ask({ title: 'Request feedback?', go: 'Send',
-      body: 'The feedback message goes to ' + c.name + '\'s main contact on WhatsApp.' }, function () {
-      msg('crmWorkMsg', 'Sending…');
-      window.ADspaceWhatsApp.sendFeedback({ clientId: c.id }).then(function (d) {
-        msg('crmWorkMsg', 'Sent on WhatsApp' + (d && d.to ? ' to ' + d.to : '') + '.', 'ok');
-      }).catch(function (e) { msg('crmWorkMsg', window.ADspaceWhatsApp.said(e), 'err'); });
-    });
+    window.ADspaceWhatsApp.compose({ purpose: 'feedback', clientId: c.id, opener: $('crmClientMenuBtn'),
+      onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
   }
   function takeLead(c) {
     var me = bridge.me && bridge.me();

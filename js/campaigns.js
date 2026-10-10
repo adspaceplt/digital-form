@@ -3084,9 +3084,10 @@
       items += menuItem('unpick', 'Undo selection');
     }
     if (isLive(o)) {
-      /* Send on WhatsApp (2026-10-09): the booking and the creator's link
-         again; shown once the creator template is on. */
-      if (mayPart('campaigns.whatsapp', 'work')) items += menuItem('wasend', 'Send on WhatsApp');
+      /* Send on WhatsApp (2026-10-09; the composer from 2026-10-10): the
+         booking and the creator's link again; shown once the creator
+         template is on, at WhatsApp Manage and its Booking message part. */
+      if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Send on WhatsApp');
       items += menuItem('unbook', 'Revert to options');
       items += menuItem('withdraw', 'Withdraw');
       items += menuItem('replace', 'Replace');
@@ -3822,17 +3823,12 @@
   /* The booking was made and the client has changed their mind before anything
      was spent. They go back among the options and the slot frees up. */
   /* The creator's booking sent again on WhatsApp, with their link (a
-     number added later, a send that failed, a creator who lost it). */
+     number added later, a send that failed, a creator who lost it), in the
+     composer every record shares; it asks before it sends. */
   function sendBooking(o) {
-    var name = (o.creators || {}).name || 'this creator';
-    window.ADspaceConfirm.ask({
-      title: 'Send on WhatsApp?', go: 'Send',
-      body: name + ' receives the booking message again, with the link to their page.'
-    }, function () {
-      window.ADspaceWhatsApp.sendBooking({ optionId: o.id }).then(function () {
-        msg('campWorkMsg', 'Sent on WhatsApp to ' + name + '.', 'ok');
-      }).catch(function (e) { msg('campWorkMsg', window.ADspaceWhatsApp.said(e), 'err'); });
-    });
+    window.ADspaceWhatsApp.compose({ purpose: 'creator', creatorId: o.creator_id, optionId: o.id,
+      campaign: logSubject() || 'Your campaign',
+      onSent: function (d, line) { msg('campWorkMsg', line, 'ok'); } });
   }
 
   function unbook(o) {
