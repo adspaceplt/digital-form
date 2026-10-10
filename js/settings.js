@@ -26,7 +26,7 @@
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
   function allowed() { return KEYS.some(may); }
   function say(text, tone) {
-    var m = $('setMsg');
+    var m = $('settingsMsg');
     if (!m) return;
     m.textContent = text || '';
     m.className = 'msg' + (tone ? ' ' + tone : '');
@@ -150,7 +150,7 @@
   function press(a, btn) {
     say('');
     var edit = bridge.editSettings;
-    var again = { msg: 'setMsg', done: paint };
+    var again = { msg: 'settingsMsg', done: paint };
     function ed(spec) { Object.keys(again).forEach(function (k) { spec[k] = again[k]; }); edit(spec, btn); }
     if (a === 'upgrade') { if (bridge.upgradeToggle) bridge.upgradeToggle(btn); return; }
     if (a === 'announce') { if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage(btn); return; }
@@ -175,7 +175,7 @@
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
-    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('setMsg'); return; }
+    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('settingsMsg'); return; }
   }
 
   function enter() {

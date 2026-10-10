@@ -3721,9 +3721,6 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The form inside the campaign's own card: no second border, no second
    padding. Deletion is at its foot, behind the edit, and looks like what
    it is. */
-#addCampBox.is-inline { border: 0; padding: 0; margin: 0; box-shadow: none; }
-.form-danger { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); display: flex; }
-.form-danger .btn { flex: 0 0 auto; min-width: 0; }
 .btn-quiet.is-danger { color: #a3312a; }
 .btn-quiet.is-danger:hover { color: #a3312a; border-color: #a3312a; }
 
@@ -10377,7 +10374,7 @@ body.is-maint { overflow: hidden; }
 .ann-zh { color: var(--ink-soft); margin-top: 4px; }
 .ann-meta { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .ann-ctl { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-.ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .ann-acts .btn { flex: 0 0 auto; }
 .ann-none { margin: 0; color: var(--ink-mute); }
 /* Notices (js/notice.js) reuse the list above: the title, the message in

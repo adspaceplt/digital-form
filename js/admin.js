@@ -2827,7 +2827,8 @@
             + (b.published ? ' This set is published to the client.' : '')
             + ' There is no restore.',
         go: 'Delete',
-        tone: 'danger'
+        tone: 'danger',
+        field: { label: 'Type the set name to confirm', placeholder: b.title, match: b.title, need: 'Type the set name to confirm.', mismatch: 'The set name does not match.' }
       }, function () {
 
       /* `.select()` so the answer says what was removed. A delete the database
@@ -5486,7 +5487,8 @@
       body: 'Anywhere /' + l.slug + ' is already printed, posted or sent stops working. '
           + 'There is no restore. To turn it off and keep it, pause it instead.',
       go: 'Delete',
-      tone: 'danger'
+      tone: 'danger',
+      field: { label: 'Type the short link to confirm', placeholder: l.slug, match: l.slug, need: 'Type the short link to confirm.', mismatch: 'The short link does not match.' }
     }, function () {
       db.from('links').delete().eq('slug', l.slug).select('slug').then(function (r) {
         if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }

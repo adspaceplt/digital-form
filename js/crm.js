@@ -1902,41 +1902,42 @@
       delCount((state.documents || []).length, 'letter'),
       delCount((state.touches || []).length, 'call or visit', 'calls and visits')
     ].filter(Boolean);
-    $('cdelWhat').textContent = 'Deleting ' + c.name +
-      ' removes the record and everything filed under it. This is immediate and cannot be undone.';
-    $('cdelList').innerHTML = (gone.length
-      ? gone.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('')
-      : '<li>No entries.</li>') +
-      '<li>Any content sets and campaigns on this client, with everything in them.</li>';
-    $('cdelConfirm').value = '';
-    if ($('cdelCode')) $('cdelCode').value = '';
-    msg('cdelMsg', '', '');
-    $('cdelSheet').hidden = false;
-
-    /* Whether a code is set is not a secret, and the sheet has to know which
-       question to ask before it asks it. Asked once and remembered. */
-    var showCode = function () { $('cdelCodeRow').hidden = !codeNeeded; };
+    /* The one question every Delete asks (2026-10-10): what goes, the name
+       typed back, and the delete code where one is set, the question kept
+       open on a refusal. Whether a code is set is not a secret; it is asked
+       once and remembered. */
+    var ask = function () {
+      var fields = [{ name: 'name', label: 'Type the client name to confirm', placeholder: c.name, match: String(c.name || '').trim(),
+        need: 'Type the client name to confirm.', mismatch: 'The name does not match.' }];
+      if (codeNeeded) fields.push({ name: 'code', label: 'Delete code', type: 'password', need: 'The delete code is required.' });
+      window.ADspaceConfirm.ask({
+        title: 'Delete',
+        body: 'Deleting ' + c.name + ' removes the record and everything filed under it: ' +
+          gone.concat(['any content sets and campaigns on this client, with everything in them']).join(', ') +
+          '. This is immediate and cannot be undone.',
+        go: 'Delete', tone: 'danger', fields: fields, wait: true
+      }, function (v) {
+        var name = c.name;
+        return db.rpc('delete_client', { p_client: c.id, p_code: codeNeeded ? v.code : null }).then(function (r) {
+          if (r.error) return r.error.message;
+          var out = r.data;
+          if (out === 'wrong-code') return 'That delete code is not right.';
+          if (out === 'not-found') return 'That client is no longer there.';
+          if (out !== 'deleted') return String(out || 'Unable to delete.');
+          log('client.deleted', name, '');
+          state.client = null;
+          showList();
+          return '';
+        });
+      });
+    };
     if (codeNeeded === null) {
-      db.rpc('delete_code_set').then(function (r) {
-        codeNeeded = !!(r && r.data);
-        showCode();
-      }, function () { codeNeeded = false; showCode(); });
-    } else showCode();
-
-    $('cdelConfirm').focus();
+      db.rpc('delete_code_set').then(function (r) { codeNeeded = !!(r && r.data); ask(); })
+        .catch(function () { codeNeeded = false; ask(); });
+    } else ask();
   }
 
-  (function wireClientDelete() {
-    var shut = function () { $('cdelSheet').hidden = true; };
-    ['cdelClose', 'cdelCancel'].forEach(function (id) {
-      var el = $(id); if (el) el.addEventListener('click', shut);
-    });
-    var sheet = $('cdelSheet');
-    if (sheet) sheet.addEventListener('click', function (e) { if (e.target === this) shut(); });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sheet && !sheet.hidden) shut();
-    });
-
+  (function wireClientMenu() {
     var btn = $('crmClientMenuBtn'), menu = $('crmClientMenu');
     if (btn && menu) {
       btn.addEventListener('click', function (e) {
@@ -1973,40 +1974,6 @@
       });
     }
 
-    var go = $('cdelGo');
-    if (go) go.addEventListener('click', function () {
-      var c = state.client;
-      if (!c) return;
-      var typed = String($('cdelConfirm').value || '').trim();
-      if (typed.toLowerCase() !== String(c.name || '').trim().toLowerCase()) {
-        msg('cdelMsg', 'The name does not match.', 'err');
-        $('cdelConfirm').focus();
-        return;
-      }
-      var code = codeNeeded ? String($('cdelCode').value || '') : null;
-      if (codeNeeded && !code) {
-        msg('cdelMsg', 'The delete code is required.', 'err');
-        $('cdelCode').focus();
-        return;
-      }
-      go.disabled = true;
-      var name = c.name;
-      db.rpc('delete_client', { p_client: c.id, p_code: code }).then(function (r) {
-        go.disabled = false;
-        if (r.error) { msg('cdelMsg', r.error.message, 'err'); return; }
-        var out = r.data;
-        if (out === 'wrong-code') { msg('cdelMsg', 'That delete code is not right.', 'err'); return; }
-        if (out === 'not-found') { msg('cdelMsg', 'That client is no longer there.', 'err'); return; }
-        if (out !== 'deleted') { msg('cdelMsg', String(out || 'Unable to delete.'), 'err'); return; }
-        shut();
-        log('client.deleted', name, '');
-        state.client = null;
-        showList();
-      }, function (e) {
-        go.disabled = false;
-        msg('cdelMsg', (e && e.message) || 'Unable to delete.', 'err');
-      });
-    });
   })();
 
   /* Take a lead nobody is in charge of: Person in charge becomes the person
@@ -2945,7 +2912,8 @@
       body: ct.name + ' goes from this client for good. There is no restore. '
           + 'Calls, letters and requests keep the name as it was written at the time.',
       go: 'Delete',
-      tone: 'danger'
+      tone: 'danger',
+      field: { label: 'Type the contact name to confirm', placeholder: ct.name, match: ct.name, need: 'Type the contact name to confirm.', mismatch: 'The contact name does not match.' }
     }, function () {
       db.from('client_contacts').delete().eq('id', ct.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
@@ -3040,16 +3008,23 @@
           (due ? ' · overdue' : '') + '</p>' : '') +
       '</div>' +
       '<div class="touch-actions">' +
-        (removed
-          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Restore</button>' +
-            /* The hard delete once the soft one is made, as a contact's: an
-               entry keyed in error, or one holding what should not be kept. */
-            '<button class="btn btn-quiet btn-sm is-danger" data-a="purge" data-need="clients.calls:manage" type="button">Delete</button>'
-          : (open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
-            (tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
-            '<button class="btn btn-quiet btn-sm" data-a="edit" data-need="clients.calls:work" type="button">Edit</button>' +
-            '<button class="btn btn-quiet btn-sm is-danger" data-a="del" data-need="clients.calls:work" type="button">Remove</button>') +
+        /* The commonest act stays on the row (Done, Reopen); Edit, Remove,
+           Restore and Delete are the row's ⋯ as a contact's are, Delete
+           last (2026-10-10). */
+        (!removed && open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
+        (!removed && tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
+        '<span class="team-act">' +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            (removed
+              ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
+                '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.calls:manage" type="button"><b>Delete</b></button>'
+              : '<button class="kmenu-item" data-a="edit" data-need="clients.calls:work" type="button"><b>Edit</b></button>' +
+                '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.calls:work" type="button"><b>Remove</b></button>') +
+          '</div>' +
+        '</span>' +
       '</div>';
+    wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit',    function () { openTouch(tc); });
     on('done',    function () { markDone(tc, true); });
@@ -3973,7 +3948,7 @@
      signed-in person's live permission when the button is pressed. A
      permission taken away while this sheet is open is a refusal here, not a
      deletion that already happened. */
-  var voiding = null, deleting = null;
+  var voiding = null;
 
   function linesWord(n) {
     return n === 1 ? '1 service line' : n + ' service lines';
@@ -3994,30 +3969,43 @@
     $('voidReason').focus();
   }
 
+  /* The one question every Delete asks (2026-10-10): what goes, the
+     reference typed back, a reason; kept open on a refusal. */
   function openDelete(d, mapped) {
-    deleting = d;
-    $('delWhat').textContent =
-      'Deleting ' + d.number + ' removes the letter record, its service mapping and the ' +
-      'client’s access to it, and puts back the service lines this letter alone confirmed' +
-      (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
-      'The file is drawn from the record on Download and is not stored, ' +
-      'so nothing is left to recover: this is immediate and cannot be undone. ' +
-      'The reference is never reused.';
-    $('delConfirm').value = '';
-    $('delReason').value = '';
-    msg('delMsg', '', '');
-    $('delSheet').hidden = false;
-    $('delConfirm').focus();
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: 'Deleting ' + d.number + ' removes the letter record, its service mapping and the ' +
+        'client’s access to it, and puts back the service lines this letter alone confirmed' +
+        (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
+        'The file is drawn from the record on Download and is not stored, ' +
+        'so nothing is left to recover: this is immediate and cannot be undone. ' +
+        'The reference is never reused.',
+      go: 'Delete', tone: 'danger', wait: true,
+      fields: [
+        { name: 'ref', label: 'Type the reference to confirm', placeholder: d.number, match: d.number,
+          need: 'Type ' + d.number + ' to confirm.', mismatch: 'Type ' + d.number + ' to confirm.' },
+        { name: 'why', label: 'Reason', rows: 3, need: 'A reason is required.' }
+      ]
+    }, function (v) {
+      return new Promise(function (done) {
+        DOCS.remove(d, d.number, v.why, function (err, out) {
+          if (err) { done(err); return; }
+          var n = (out && out.reverted) || 0;
+          msg('crmDocMsg', d.number + ' deleted. ' +
+            (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
+          loadDocuments();
+          loadServices();
+          syncValue();
+          done('');
+        });
+      });
+    });
   }
 
   function wireLetterSheets() {
     var shutVoid = function () { voiding = null; $('voidSheet').hidden = true; };
-    var shutDel = function () { deleting = null; $('delSheet').hidden = true; };
     ['voidClose', 'voidCancel'].forEach(function (id) {
       var el = $(id); if (el) el.addEventListener('click', shutVoid);
-    });
-    ['delClose', 'delCancel'].forEach(function (id) {
-      var el = $(id); if (el) el.addEventListener('click', shutDel);
     });
 
     var go = $('voidGo');
@@ -4040,42 +4028,17 @@
       });
     });
 
-    ['voidSheet', 'delSheet'].forEach(function (id) {
+    ['voidSheet'].forEach(function (id) {
       var el = $(id);
       if (el) el.addEventListener('click', function (e) {
-        if (e.target === this) (id === 'voidSheet' ? shutVoid() : shutDel());
+        if (e.target === this) shutVoid();
       });
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (!$('voidSheet').hidden) shutVoid();
-      else if (!$('delSheet').hidden) shutDel();
     });
 
-    var dgo = $('delGo');
-    if (dgo) dgo.addEventListener('click', function () {
-      if (!deleting) return;
-      var typed = String($('delConfirm').value || '').trim();
-      var why = String($('delReason').value || '').trim();
-      if (typed !== deleting.number) {
-        msg('delMsg', 'Type ' + deleting.number + ' to confirm.', 'err');
-        $('delConfirm').focus(); return;
-      }
-      if (!why) { msg('delMsg', 'A reason is required.', 'err'); $('delReason').focus(); return; }
-      var d = deleting;
-      dgo.disabled = true;
-      DOCS.remove(d, typed, why, function (err, out) {
-        dgo.disabled = false;
-        if (err) { msg('delMsg', err, 'err'); return; }
-        shutDel();
-        var n = (out && out.reverted) || 0;
-        msg('crmDocMsg', d.number + ' deleted. ' +
-          (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
-        loadDocuments();
-        loadServices();
-        syncValue();
-      });
-    });
   }
 
   /* ---- Choosing what goes on the letter ---------------------------------
@@ -4418,7 +4381,8 @@
         body: s.name + ' leaves the rate card and cannot be quoted again. There is '
             + 'no restore. Letters already issued keep the line as it was written.',
         go: 'Delete',
-        tone: 'danger'
+        tone: 'danger',
+        field: { label: 'Type the service name to confirm', placeholder: s.name, match: s.name, need: 'Type the service name to confirm.', mismatch: 'The service name does not match.' }
       }, function () {
         db.from('services').delete().eq('slug', s.slug).select('slug').then(function (r) {
           if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }

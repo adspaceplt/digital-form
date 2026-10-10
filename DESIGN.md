@@ -407,6 +407,13 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`.cmdbar-find .input:focus`).
 - A value only read is not a field.
 - A destructive item is red on the item itself.
+- Delete has one place and one question (the user, 2026-10-10): the last
+  item of the thing's own ⋯, red, never inside an Edit form and never a
+  button on a row; it asks `ADspaceConfirm` (what goes, no restore), a
+  record or anything holding other work with its name typed back, one item
+  inside a record once, kept open on a refusal (`wait`). Remove is the soft
+  way, asking nothing, with Undo where it happened. Several at once is the
+  selection bar's red Delete with the count typed back (`tests/deletes.js`).
 - A button that acts carries its action's glyph wherever it is drawn: a plus
   to add, a pen to edit, the copy mark, the file mark to download, the leaving
   mark after anything that opens in a new tab (Preview, Open), the chevron

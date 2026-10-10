@@ -1571,3 +1571,21 @@ tick. Content Review's review link left its rail ("taking up that spaces there
 for nothing") for the client's head, laid as the script month's link is. The
 Video Scripts list became a card a content month with a row a client's month,
 since a client writes thirty to fifty scripts a year.
+
+### 2026-10-10 · One place and one question for Delete
+
+The user: "some deletes contained inside the ... > delete, some inside ... >
+edit > delete; audit all these inconsistencies". The audit found nine: the
+campaign's Delete inside its edit form (which also took over the record's
+head), Calls and visits and Announcements drawing Delete as row buttons, five
+record deletes without the name typed back (a content set, a short link, a
+rate line, a user group, a contact), four deletes on sheets of their own
+rather than the one question, a soft removal worded Delete, a lone trash
+glyph, and Replaced as a red menu item. Delete is now the last item of its
+own ⋯, the campaign form a sheet, and every Delete one ADspaceConfirm
+question, which can now wait on the database's answer and keep itself open
+on a refusal (a wrong delete code). The chord never presses a red answer
+there either. The stand-in had never answered `delete_client`, so the
+client's Delete had no test; `tests/deletes.js` drives it and opens every ⋯
+on the main screens. The audit also found the Settings page reusing the id
+`setMsg`, which Content Review's set page holds; it is `settingsMsg`.

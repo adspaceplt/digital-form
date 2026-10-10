@@ -1122,27 +1122,8 @@
     });
   };
 
-  /* Editing happens in the campaign's own card: the form takes the place of
-     the summary and gives it back on save or cancel. Creating happens above
-     the list, where the form lives otherwise. */
-  function placeCampForm(inline) {
-    var box = $('addCampBox');
-    if (inline) {
-      $('campHead').appendChild(box);
-      box.classList.add('is-inline');
-      $('campSummary').hidden = true;
-    } else {
-      var list = $('campListView');
-      if (box.parentNode !== list.parentNode) list.parentNode.insertBefore(box, list);
-      box.classList.remove('is-inline');
-      $('campSummary').hidden = false;
-    }
-    $('campDangerRow').hidden = !inline;
-  }
-
   function openCampForm(c, restoring) {
     editingCamp = c || null;
-    placeCampForm(!!c);
     $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
     $('addCamp').textContent = c ? 'Save' : 'Create';
     $('campClient').value = c ? (c.client_id || '') : ($('campClient').value || '');
@@ -1157,20 +1138,20 @@
     var self = bridge.me && bridge.me();
     peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
     msg('campMsg', '');
-    $('addCampBox').hidden = false;
+    window.ADspaceSheet.show($('addCampBox'), { opener: c ? $('campMenuBtn') : $('showAddCamp') });
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
     /* Nothing is focused when the form opens: on a phone a field taking
        focus raises the keyboard and zooms the page past the rest of the
        form, and the first field is rarely the one somebody came to change. */
   }
-  function parkCampForm() { $('addCampBox').hidden = true; placeCampForm(false); }
+  function parkCampForm() { if (!$('addCampBox').hidden) window.ADspaceSheet.close(); $('addCampBox').hidden = true; }
   function shutCampForm() { parkCampForm(); editingCamp = null; campDraft.clear(); }
 
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () { openCampForm(null); });
   });
-  /* The record's ⋯, placed on the viewport like every other one; Edit details
-     is its one item, and choosing it shuts the menu the item sits in. */
+  /* The record's ⋯, placed on the viewport like every other one: Edit, then
+     Delete last; choosing either shuts the menu the item sits in. */
   (function () {
     var btn = $('campMenuBtn'), menu = $('campMenu');
     if (!btn || !menu) return;
@@ -1188,6 +1169,7 @@
     loadClients(function () { openCampForm(state.campaign); });
   });
   $('cancelAddCamp').addEventListener('click', shutCampForm);
+  $('campFormClose').addEventListener('click', shutCampForm);
 
   // Every invoice starts AINV, so the field carries it and only the rest is
   // typed. Stored whole, because that is what is on the document.
@@ -1617,6 +1599,7 @@
   });
 
   $('campDelete').addEventListener('click', function () {
+    shutMenus();
     var c = state.campaign;
     /* A delete through a sheet takes the name typed back, and a refused one
        (204 with nothing removed) is named, never filed and left as gone
@@ -3105,8 +3088,8 @@
          again; shown once the creator template is on. */
       if (mayPart('campaigns.whatsapp', 'work')) items += menuItem('wasend', 'Send on WhatsApp');
       items += menuItem('unbook', 'Revert to options');
-      items += menuItem('withdraw', 'Withdrawn');
-      items += menuItem('replace', 'Replaced', 'is-danger');
+      items += menuItem('withdraw', 'Withdraw');
+      items += menuItem('replace', 'Replace');
     }
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }

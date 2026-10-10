@@ -28,6 +28,11 @@
   var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
   var NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+  function shut() {
+    Array.prototype.forEach.call(document.querySelectorAll('.ann-acts .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('.ann-acts [data-a="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
@@ -256,12 +261,18 @@
               '<p class="ann-meta">' + esc([win, a.updated_by ? 'By ' + a.updated_by : ''].filter(Boolean).join(' · ')) + '</p></div>' +
             '<div class="ann-ctl"><span class="chip ' + (st === 'Live' ? 'is-ok' : st === 'Scheduled' ? 'is-warn' : 'is-off') + '">' + st + '</span>' +
               (a.tone === 'important' ? '<span class="chip is-warn">Important</span>' : '') + '</div>' +
+            /* The row's own act (Edit, else Restore), then its ⋯: Stop, or
+               Delete last once stopped or ended (2026-10-10: Delete is the
+               ⋯'s on every list). */
             '<div class="ann-acts">' +
               (up(a)
-                ? '<button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>' +
-                  '<button class="btn btn-sm btn-warn" type="button" data-a="stop">Stop</button>'
-                : (over ? '' : '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>') +
-                  '<button class="btn btn-sm btn-danger" type="button" data-a="delete">Delete</button>') +
+                ? '<button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>'
+                : (over ? '' : '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>')) +
+              '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+                '<div class="kmenu" data-menu hidden role="menu">' +
+                  (up(a) ? '<button class="kmenu-item" type="button" role="menuitem" data-a="stop">Stop</button>'
+                         : '<button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delete">Delete</button>') +
+                '</div></span>' +
             '</div></div>';
         };
         return '<section class="fsec ann-sec" data-aud="' + aud + '">' +
@@ -277,7 +288,16 @@
         sec.querySelector('[data-a="new"]').addEventListener('click', function () { edit(aud, null, this); });
         Array.prototype.forEach.call(sec.querySelectorAll('.ann-row'), function (rw) {
           var a = byId[rw.getAttribute('data-id')];
-          var on = function (k, fn) { var b = rw.querySelector('[data-a="' + k + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
+          var on = function (k, fn) { var b = rw.querySelector('[data-a="' + k + '"]'); if (b) b.addEventListener('click', function () { shut(); fn(b); }); };
+          var mb = rw.querySelector('[data-a="menu"]'), mn = rw.querySelector('[data-menu]');
+          mb.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = mn.hidden;
+            shut();
+            mn.hidden = !open;
+            mb.setAttribute('aria-expanded', String(open));
+            if (open) window.ADspaceMenu.place(mb, mn);
+          });
           on('edit', function (b) { edit(aud, a, b); });
           on('stop', function () {
             window.ADspaceConfirm.ask({ title: 'Stop this announcement?', body: 'It leaves every ' + (aud === 'team' ? 'console' : 'client page') + ' at once.', go: 'Stop', tone: 'warn' },

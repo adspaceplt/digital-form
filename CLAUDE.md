@@ -142,6 +142,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
+| a Delete anywhere, `confirm.js` | deletes, then the area's suite |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
@@ -440,7 +441,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   sheet: Tone, English, 中文, Link, Starts and Ends as a date beside its
   time, MYT; posting one adds it, never ending another),
   `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
-  restore; refused `live` until stopped or ended); each filed `team.changed`
+  restore; refused `live` until stopped or ended; a row's own act is Edit,
+  else Restore, its ⋯ Stop, or Delete last once stopped or ended); each filed `team.changed`
   under subject Announcements. A plain line, never a scrolling marquee. No
   bar is made while upgrade mode's cover is up (a box made after the cover
   would sit outside its `inert`).
@@ -533,7 +535,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     while an input method is composing (pinyin's Enter picks the word).
   - `check(values)` refuses in place what the fields cannot state alone (an
     end before its start): the sheet and what was typed stay.
-  - A destructive question opens on Cancel.
+  - A destructive question opens on Cancel; one that asks a name typed back
+    opens on that field, where an empty Enter is refused.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
     above any sheet.
   - The way back (reinstate, set active, restore) never asks.
@@ -1279,7 +1282,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `null` uses the older factor table; only an explicit `false` turns it off.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
-- Calls and visits carry next actions and an Undo; a removed entry is listed
+- Calls and visits carry next actions and an Undo (Done or Reopen on the
+  row; Edit and Remove, or Restore and Delete, in the row's ⋯); a removed entry is listed
   on asking with Restore and Delete (Clients: Calls at Manage, asked first,
   `client.touch_deleted`). A Meeting entry
   (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
@@ -1815,6 +1819,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   offers Undo in place.
 - A campaign name that would render as nothing reads `Untitled campaign` and
   stays editable. A new one is refused on save.
+- The campaign's form is one sheet for New campaign and Edit (`#addCampBox`);
+  the record's ⋯ holds Edit and Delete, last.
 - The campaign record:
   - Its panes (`pane=`) are Overview, Creators, Schedule, Deliverables, Client
     selection, Finance, Activity.

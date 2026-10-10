@@ -29,6 +29,7 @@
  *   ADspaceConfirm.ask({ …, field: { …, match: 'HKL LIM' } }, onYes)
  *   ADspaceConfirm.ask({ …, field: { …, choices: [['a','A'], …] } }, onYes)
  *   ADspaceConfirm.ask({ …, fields: […], check: function (values) { return 'Why not' or '' } }, onYes)
+ *   ADspaceConfirm.ask({ …, wait: true }, function (v) { return promiseOf('' or 'Why not') })
  *
  * A field may be `tick: true` (a checkbox with its label, answering 'on' or
  * '', never required), and a field of two to four `choices` may be
@@ -132,6 +133,9 @@
     /* Enter answers the question from a field, a one-line box included,
        but never while an input method is composing: there it picks the
        word (pinyin's Enter), and sending then sent half a reason. */
+    /* The chord (Cmd or Ctrl + Enter) never presses a red answer, as
+       js/sheet.js holds for every sheet: a delete is pressed, never chorded. */
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && opts && opts.tone === 'danger') { e.preventDefault(); return; }
     if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229
         && e.target !== elCancel && e.target !== elClose
         && (e.target.tagName !== 'TEXTAREA' || e.target.hasAttribute('data-oneline'))) {
@@ -195,6 +199,22 @@
       var why = opts.check(arg);
       if (why) { say(why); if (rows[0]) rows[0].input.focus(); return; }
     }
+    /* `wait`: the act answers before the question shuts (a delete the
+       server refuses, a wrong delete code): `onYes` returns a promise of ''
+       when done or the refusal's words, said in place with what was typed
+       kept; meanwhile the answer is out and cannot be pressed twice. */
+    if (opts && opts.wait && fn) {
+      elGo.disabled = true;
+      Promise.resolve().then(function () { return fn(arg); }).then(function (why) {
+        elGo.disabled = false;
+        if (why) { say(String(why)); return; }
+        shut();
+      }).catch(function (e) {
+        elGo.disabled = false;
+        say((e && e.message) || String(e));
+      });
+      return;
+    }
     shut();
     if (fn) fn(arg);
   }
@@ -221,6 +241,7 @@
     elBody.hidden = !o.body;
     say('');
 
+    elGo.disabled = false;
     elGo.textContent = o.go || 'Confirm';
     elGo.className = 'btn ' + (o.tone === 'danger' ? 'btn-danger'
                              : o.tone === 'warn' ? 'btn-warn' : 'btn-primary');

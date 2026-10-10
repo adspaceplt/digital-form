@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010h">
+<link rel="stylesheet" href="/css/portal.css?v=20261010i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -65,7 +65,7 @@
 <script src="/js/acts.js?v=20261010a"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261008c"></script>
-<script src="/js/confirm.js?v=20261010h"></script>
+<script src="/js/confirm.js?v=20261010i"></script>
 <script src="/js/sheet.js?v=20261004a"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261004b"></script>
@@ -79,7 +79,7 @@
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261009s"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
-<script src="/js/announce.js?v=20261009h"></script>
+<script src="/js/announce.js?v=20261010i"></script>
 <script src="/js/notice.js?v=20261009c"></script>
 <script src="/js/whatsapp.js?v=20261009s"></script>
 <script src="/js/push.js?v=20261001a"></script>
@@ -1147,61 +1147,6 @@
           </div>
         </div>
 
-        <!-- Permanent. The reference is typed back, because it is the one
-             thing that says which letter is about to stop existing. -->
-        <div class="sheet" id="delSheet" hidden>
-          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="delTitle">
-            <div class="sheet-head">
-              <h3 id="delTitle">Delete letter</h3>
-              <button class="iconbtn" id="delClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-              </button>
-            </div>
-            <div class="sheet-body">
-              <p class="hint" id="delWhat"></p>
-              <label class="field-label" for="delConfirm">Type the reference to confirm</label>
-              <input class="input" id="delConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
-              <label class="field-label" for="delReason" style="margin-top:12px">Reason</label>
-              <textarea class="input" id="delReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
-            </div>
-            <div class="sheet-foot">
-              <button class="btn btn-danger" id="delGo" type="button">Delete</button>
-              <button class="btn btn-quiet" id="delCancel" type="button">Cancel</button>
-            </div>
-            <div class="msg" id="delMsg"></div>
-          </div>
-        </div>
-
-        <!-- Deleting a client takes everything hanging off it: the people, the
-             calls, the letters, the content and the campaigns. The sheet counts
-             them from the record rather than describing them in the abstract,
-             and asks for the name because a client has no reference to type. -->
-        <div class="sheet" id="cdelSheet" hidden>
-          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cdelTitle">
-            <div class="sheet-head">
-              <h3 id="cdelTitle">Delete client</h3>
-              <button class="iconbtn" id="cdelClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-              </button>
-            </div>
-            <div class="sheet-body">
-              <p class="hint" id="cdelWhat"></p>
-              <ul class="dellist" id="cdelList"></ul>
-              <label class="field-label" for="cdelConfirm">Type the client name to confirm</label>
-              <input class="input" id="cdelConfirm" autocomplete="off" spellcheck="false" placeholder="Client name">
-              <div id="cdelCodeRow" hidden>
-                <label class="field-label" for="cdelCode" style="margin-top:12px">Delete code</label>
-                <input class="input" id="cdelCode" type="password" autocomplete="off" placeholder="Delete code">
-              </div>
-            </div>
-            <div class="sheet-foot">
-              <button class="btn btn-danger" id="cdelGo" type="button">Delete</button>
-              <button class="btn btn-quiet" id="cdelCancel" type="button">Cancel</button>
-            </div>
-            <div class="msg" id="cdelMsg"></div>
-          </div>
-        </div>
-
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">
@@ -1729,9 +1674,15 @@
         <button class="tab" id="tabRoster" data-tab="roster" data-need="campaigns.creators:view" type="button" role="tab">Creators</button>
       </div>
 
-      <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
-      <div class="panel" id="addCampBox" hidden>
-          <div class="panelhead"><h3 id="campFormTitle">New campaign</h3></div>
+      <!-- ---- Campaign form: a sheet for New campaign and Edit (2026-10-10:
+           an edit form never takes the record's head; Delete is the ⋯'s) ---- -->
+      <div class="sheet" id="addCampBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="campFormTitle" tabindex="-1">
+          <div class="sheet-head">
+            <h3 id="campFormTitle">New campaign</h3>
+            <button class="iconbtn" id="campFormClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <!-- Whose campaign it is, then what is being pushed: two sections on
                one split each, the deliverable a segment (the form audit of
                2026-09-24). -->
@@ -1775,16 +1726,14 @@
             <label class="tickline"><input type="checkbox" id="campBackups">
               <span>Enable backup selection</span></label>
           </section>
-          <div class="row acts" style="margin-top:16px">
+            <div class="msg" id="campMsg"></div>
+          </div>
+          <div class="sheet-foot">
             <button class="btn btn-primary" id="addCamp" type="button">Create</button>
             <button class="btn btn-quiet" id="cancelAddCamp" type="button">Cancel</button>
           </div>
-          <div class="msg" id="campMsg"></div>
-          <!-- Deletion lives with editing: rare, and behind one more click. -->
-          <div class="form-danger" id="campDangerRow" data-need="campaigns.campaigns:manage" hidden>
-            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" data-need="campaigns.campaigns:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete</button>
-          </div>
         </div>
+      </div>
 
       <!-- ---- Campaign list ---- -->
       <div id="campListView">
@@ -1847,7 +1796,8 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
-                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit details</button>
+                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
+                  <button class="kmenu-item is-danger" id="campDelete" type="button" role="menuitem" data-need="campaigns.campaigns:manage">Delete</button>
                 </div>
               </div>
             </div>
@@ -2397,31 +2347,6 @@
             <button class="btn btn-quiet" id="dueCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="dueMsg"></div>
-        </div>
-      </div>
-
-      <!-- A deletion with no way back is agreed to, never merely clicked, so
-           the sheet says what goes and takes the task's number typed back. -->
-      <div class="sheet" id="tdelSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="tdelTitle">
-          <div class="sheet-head">
-            <h3 id="tdelTitle">Delete task</h3>
-            <button class="iconbtn" id="tdelClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <div class="sheet-body">
-            <p class="hint" id="tdelWhat"></p>
-            <label class="field-label" for="tdelConfirm">Type the task number to confirm</label>
-            <input class="input" id="tdelConfirm" autocomplete="off" placeholder="#WT00001">
-            <label class="field-label" for="tdelReason" style="margin-top:12px">Reason</label>
-            <textarea class="textarea" id="tdelReason" autocomplete="off" placeholder="Optional" rows="2"></textarea>
-          </div>
-          <div class="sheet-foot">
-            <button class="btn btn-danger" id="tdelGo" type="button">Delete</button>
-            <button class="btn btn-quiet" id="tdelCancel" type="button">Cancel</button>
-          </div>
-          <div class="msg" id="tdelMsg"></div>
         </div>
       </div>
 
@@ -3931,7 +3856,7 @@
          Business figures, AI, Records), a row a setting, each drawn only for
          the colleague holding its part. -->
     <div class="console-body" id="sectionSettings" hidden>
-      <div class="msg" id="setMsg" role="status"></div>
+      <div class="msg" id="settingsMsg" role="status"></div>
       <div id="setList" data-narrow="640"></div>
     </div>
 
@@ -5141,28 +5066,6 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<div class="sheet" id="rdelSheet" hidden>
-  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rdelTitle">
-    <div class="sheet-head">
-      <h3 id="rdelTitle">Delete document</h3>
-      <button class="iconbtn" id="rdelClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body">
-      <p class="hint" id="rdelWhat"></p>
-      <label class="field-label" for="rdelConfirm">Type the reference to confirm</label>
-      <input class="input" id="rdelConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
-      <label class="field-label" for="rdelReason" style="margin-top:12px">Reason</label>
-      <textarea class="input" id="rdelReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
-    </div>
-    <div class="sheet-foot">
-      <button class="btn btn-danger" id="rdelGo" type="button">Delete</button>
-      <button class="btn btn-quiet" id="rdelCancel" type="button">Cancel</button>
-    </div>
-    <div class="msg" id="rdelMsg"></div>
-  </div>
-</div>
 
 <!-- A person's passkeys: a list, Add passkey, and Rename and Remove in each
      row's ⋯. The passkeys themselves are Supabase's; nothing is stored here. -->
@@ -5185,26 +5088,26 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261010f"></script>
+<script src="/js/admin.js?v=20261010i"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
 <script src="/js/reports.js?v=20261010h"></script>
-<script src="/js/register.js?v=20261010a"></script>
+<script src="/js/register.js?v=20261010i"></script>
 <script src="/js/engage.js?v=20261010e"></script>
-<script src="/js/crm.js?v=20261010e"></script>
+<script src="/js/crm.js?v=20261010i"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261010a"></script>
+<script src="/js/team.js?v=20261010i"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/scripts.js?v=20261010h"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
-<script src="/js/campaigns.js?v=20261009s"></script>
-<script src="/js/ops.js?v=20261010b"></script>
+<script src="/js/campaigns.js?v=20261010i"></script>
+<script src="/js/ops.js?v=20261010i"></script>
 <script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261009s"></script>
 <script src="/js/overview.js?v=20261010e"></script>
-<script src="/js/settings.js?v=20261010f"></script>
+<script src="/js/settings.js?v=20261010i"></script>
 </body>
 </html>
