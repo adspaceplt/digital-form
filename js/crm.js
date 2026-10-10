@@ -1086,7 +1086,9 @@
     loadRequests();
     loadTouches();
     if (maySeeActivity()) loadClientLog();
-    loadWork();
+    /* The Engagements pane is read when a record is opened or entered again,
+       and drawn from that answer on a repaint (a save elsewhere on it). */
+    loadEngage(!same || restoring);
     showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
     if (restoring) restoreScroll(true);
@@ -1097,15 +1099,20 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'reports', 'activity'];
+  var PANES = ['overview', 'engagements', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
   var pane = 'overview';
 
   function paneFromUrl() {
     var t = new URLSearchParams(location.search).get('tab') || '';
+    /* The record's Reports tab became Engagements (2026-10-10): an older
+       link lands on the client's reports by month. */
+    if (t === 'reports') t = 'engagements';
     return PANES.indexOf(t) >= 0 || t === 'work' ? t : 'overview';
   }
 
-  function showPane(key) {
+  /* `visit` is a move somebody made to the pane (its tab, Back, a link on
+     the Overview), which reads Engagements again; a repaint does not. */
+  function showPane(key, visit) {
     /* A client's months, meetings and tasks moved to My Work's Months view
        (2026-09-25), so an older link to this record's Work pane lands there. */
     if (key === 'work' && state.client && bridge.show) {
@@ -1129,12 +1136,7 @@
     });
     if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
-    /* The client's finished reports, drawn by the report script: the reports
-       are prepared in the Reports section, and this tab lists what came out
-       of it, the way Documents lists the letters. */
-    if (key === 'reports' && window.ADspaceReports) {
-      window.ADspaceReports.clientPane($('crmReportsPane'), state.client);
-    }
+    if (key === 'engagements' && visit) loadEngage(true);
   }
 
   gateTabs();
@@ -1142,7 +1144,7 @@
     if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
     b.addEventListener('click', function () {
       if (b.getAttribute('data-pane') === pane) return;
-      showPane(b.getAttribute('data-pane'));
+      showPane(b.getAttribute('data-pane'), true);
       pushUrl();
     });
   });
@@ -1150,7 +1152,7 @@
      and the address is what the browser remembers. */
   window.addEventListener('popstate', function () {
     if ($('crmWork').hidden) return;
-    showPane(paneFromUrl());
+    showPane(paneFromUrl(), true);
   });
 
   /* What the portal recorded about this client. `activity_log` carries no
@@ -1209,20 +1211,13 @@
   /* THIS MONTH, ONE LINE (2026-10-08, the user: "All yes"). Under the
      person in charge, how the client's month is going: its tasks done of
      those it holds, what is past its due date, and the day its report is
-     owed. Read from the month whose span holds today (`start_day`), counted
-     by `ops_engagement_counts` (the whole month, whoever asks) with the open
+     owed. The month whose span holds today (`start_day`), counted by
+     `ops_engagement_counts` (the whole month, whoever asks) with the open
      tasks the reader sees; pressed, it opens the month in My Work. A lead, a
-     client with no month now, or a reader without My Work draws nothing. */
-  var MONTH_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-                    'August', 'September', 'October', 'November', 'December'];
-  var monthSeq = 0;
-  function monthNow() { return new Date(Date.now() + 8 * 3600000); }
-  function monthSpanOf(e) {
-    var y = Number(String(e.period).slice(0, 4)), mo = Number(String(e.period).slice(5, 7)) - 1;
-    var d = Math.max(1, Math.min(28, Number(e.start_day) || 1));
-    var a = new Date(Date.UTC(y, mo, d)), z = new Date(Date.UTC(y, mo + 1, d - 1));
-    return { start: a, end: z, word: MONTH_LONG[mo] };
-  }
+     client with no month now, or a reader without My Work draws nothing.
+     Read with the Engagements pane (js/engage.js, 2026-10-10), so the
+     record reads the client's months once. */
+  var SHORT_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function paintMonthLine(c) {
     var meta = $('crmIdMeta'), line = $('crmMonthLine');
     if (!meta) return;
@@ -1232,53 +1227,25 @@
       meta.parentNode.insertBefore(line, meta.nextSibling);
     }
     line.hidden = true;
-    var seq = ++monthSeq;
-    if (!c || !db || !(bridge.may && bridge.may('ops', 'view')) || ['active', 'paused'].indexOf(c.stage) < 0) return;
-    var now = monthNow(), today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    db.from('ops_engagements').select('id, period, start_day, reports, status').eq('client_id', c.id)
-      .then(function (r) {
-        if (seq !== monthSeq || !r || r.error) return null;
-        var e = (r.data || []).filter(function (x) {
-          if (x.status === 'cancelled') return false;
-          var sp = monthSpanOf(x);
-          return sp.start.getTime() <= today && today <= sp.end.getTime();
-        })[0];
-        if (!e) return null;
-        return Promise.all([
-          db.rpc('ops_engagement_counts', { p_engagements: [e.id] }),
-          db.from('ops_tasks').select('id, current_final_due_at').eq('engagement_id', e.id)
-            .is('archived_at', null).is('cancelled_at', null).is('completed_at', null)
-        ]).then(function (both) {
-          if (seq !== monthSeq) return;
-          var counts = (both[0] && !both[0].error && (both[0].data || [])[0]) || null;
-          if (!counts) return;
-          var late = (both[1] && !both[1].error ? both[1].data || [] : []).filter(function (t) {
-            if (!t.current_final_due_at) return false;
-            var d = new Date(new Date(t.current_final_due_at).getTime() + 8 * 3600000);
-            return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) < today;
-          }).length;
-          var sp = monthSpanOf(e), parts = [];
-          var held = Number(counts.content != null ? counts.content : counts.live) || 0;
-          var done = Number(counts.done) || 0;
-          parts.push('<span class="part">' + esc(sp.word + ': ' + Math.min(done, held) + ' of ' + held + ' done') + '</span>');
-          if (late) parts.push('<span class="part"><span aria-hidden="true">· </span><span class="is-err">' + late + ' overdue</span></span>');
-          if ((e.reports || []).length) {
-            var days = window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('report_due_days') : 7;
-            var due = new Date(sp.end.getTime() + (Number(days) || 7) * 86400000);
-            parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + due.getUTCDate() + ' ' +
-              MONTH_LONG[due.getUTCMonth()].slice(0, 3).replace('Sep', 'Sept') + '</span>');
-          }
-          var tone = late ? 'is-late' : (held && done >= held) ? 'is-ok' : 'is-wait';
-          line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
-            '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-          line.setAttribute('aria-label', line.textContent.replace(/\s+/g, ' ').trim() + '. Open the month in My Work');
-          line.onclick = function () {
-            history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
-            if (bridge.show) bridge.show('work');
-          };
-          line.hidden = false;
-        });
-      }).catch(function () {});
+    var ENG = window.ADspaceEngage;
+    if (!c || !ENG || !(bridge.may && bridge.may('ops', 'view')) || ['active', 'paused'].indexOf(c.stage) < 0) return;
+    var f = ENG.monthNow(c.id);
+    if (!f) return;
+    var parts = ['<span class="part">' + esc(f.word + ': ' + f.done + ' of ' + f.held + ' done') + '</span>'];
+    if (f.late) parts.push('<span class="part"><span aria-hidden="true">· </span><span class="is-err">' + f.late + ' overdue</span></span>');
+    if (f.due) {
+      var due = new Date(f.due + 'T00:00:00Z');
+      parts.push('<span class="part"><span aria-hidden="true">· </span>Report due ' + due.getUTCDate() + ' ' + SHORT_MON[due.getUTCMonth()] + '</span>');
+    }
+    var tone = f.late ? 'is-late' : (f.held && f.done >= f.held) ? 'is-ok' : 'is-wait';
+    line.innerHTML = '<span class="rec-month-dot ' + tone + '" aria-hidden="true"></span>' + parts.join('') +
+      '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+    line.setAttribute('aria-label', line.textContent.replace(/\s+/g, ' ').trim() + '. Open the month in My Work');
+    line.onclick = function () {
+      history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
+      if (bridge.show) bridge.show('work');
+    };
+    line.hidden = false;
   }
 
   function paintIdentity(c) {
@@ -1341,7 +1308,7 @@
   function wireGo(box) {
     Array.prototype.forEach.call(box.querySelectorAll('[data-go]'), function (b) {
       b.addEventListener('click', function () {
-        showPane(b.getAttribute('data-go'));
+        showPane(b.getAttribute('data-go'), true);
         pushUrl();
       });
     });
@@ -3290,36 +3257,41 @@
   });
 
   // ---- Engagements --------------------------------------------------------
-  /* The campaign's state, from the one file that holds it. This was a private
-     map saying "With the client" where the campaign page said "Open for
-     selection" and js/words.js said "Open": three words for one state, because
-     the shared one was written and then never read. */
-  var CAMP_WORD = W.en.campState;
-
-  function loadWork() {
-    var box = $('crmWorkList');
-    if (!box.querySelector('.crm-table')) skeleton(box, 2);
-    var c = state.client;
-    var out = { sets: null, camps: null };
-    var done = function () {
-      if (out.sets === null || out.camps === null) return;
-      paintWork(out.sets, out.camps);
-    };
-    db.from('batches').select('id, title, published, created_at').eq('client_id', c.id)
-      .order('created_at', { ascending: false }).limit(20)
-      .then(function (r) { out.sets = r.data || []; done(); }, function () { out.sets = []; done(); });
-    db.from('campaigns').select('id, title, state, slots, created_at').eq('client_id', c.id)
-      .order('created_at', { ascending: false }).limit(20)
-      .then(function (r) { out.camps = r.data || []; done(); }, function () { out.camps = []; done(); });
+  /* The record's Engagements pane (2026-10-10): the client's work by content
+     month, its reports included, drawn by js/engage.js. This file keeps the
+     pane's head (the ways into the work, while the client is Active), the
+     tab's place on the strip, and the month line under the name, which is
+     read from the same answer. */
+  var ENGAGED = ['active', 'paused', 'past'];
+  function loadEngage(fresh) {
+    var c = state.client, ENG = window.ADspaceEngage;
+    if (!c || !ENG) return;
+    paintEngage();
+    if (!fresh && ENG.loaded(c.id)) return;
+    ENG.load(c, function (got) {
+      if (!state.client || state.client.id !== got.id) return;
+      paintEngage();
+      paintMonthLine(state.client);
+    });
   }
 
-  function paintWork(sets, camps) {
-    var c = state.client;
-    var box = $('crmWorkList');
+  function paintEngage() {
+    var c = state.client, ENG = window.ADspaceEngage;
+    if (!c || !ENG) return;
+    /* The tab is drawn for a client engaged now or before, or one holding
+       anything there; a lead's waits for the answer. */
+    var tab = document.querySelector('#crmTabs .tab[data-pane="engagements"]');
+    var show = ENGAGED.indexOf(c.stage) > -1 || ENG.holds(c.id);
+    if (tab) tab.hidden = !show;
+    if (!show && pane === 'engagements' && ENG.loaded(c.id)) { showPane('overview'); setUrl(); }
+    paintEngageActions(c);
+    ENG.paint($('crmWorkList'), c, $('crmEngageMsg'));
+  }
+
+  function paintEngageActions(c) {
     var act = $('crmEngageActions');
-    // Nothing to engage until the client is active, so the section waits.
-    $('crmEngage').hidden = c.stage !== 'active';
-    if (c.stage !== 'active') { act.innerHTML = ''; box.innerHTML = ''; return; }
+    // Nothing is started for a client who is not Active, so the head waits.
+    if (c.stage !== 'active') { act.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
     /* Each way into the work is offered where it can be taken: Enable Content
@@ -3344,13 +3316,13 @@
       db.from('clients').update({ review_hidden: false }).eq('id', c.id).select('id').then(function (r) {
         if (r.error || !r.data || !r.data.length) {
           on.disabled = false;
-          msg('crmWorkMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
+          msg('crmEngageMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
           return;
         }
         c.review_hidden = false;
         log('client.review_on', c.name, '');
         location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
-      }).catch(function (e) { on.disabled = false; msg('crmWorkMsg', (e && e.message) || String(e), 'err'); });
+      }).catch(function (e) { on.disabled = false; msg('crmEngageMsg', (e && e.message) || String(e), 'err'); });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
@@ -3360,56 +3332,11 @@
     if (nc) nc.addEventListener('click', function () {
       location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
     });
-
-    if (!sets.length && !camps.length) {
-      box.innerHTML = '<div class="empty">No engagements.</div>';
-      return;
-    }
-    box.innerHTML = '';
-    /* One panel with rows in it, as every other section of this record is. */
-    var list = document.createElement('div');
-    list.className = 'work-list';
-    box.appendChild(list);
-    box = list;
-    /* A row with no name is a row nobody can pick out, and one campaign is
-       live called `0`. The record is never renamed behind anybody's back; it
-       is drawn under a stand in and stays editable in Creator Campaigns. */
-    var named = function (t) {
-      var v = String(t == null ? '' : t).trim();
-      return (!v || v === '0' || v === 'null' || v === 'undefined') ? 'Untitled campaign' : v;
-    };
-    camps.forEach(function (k) {
-      box.appendChild(workRow(named(k.title),
-        'Creator campaign · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'),
-        '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id),
-        [CAMP_WORD[k.state] || k.state, W.tone(k.state)]));
-    });
-    sets.forEach(function (b) {
-      var live = b.state === 'published';
-      box.appendChild(workRow(b.title || 'Content set', 'Content Review',
-        '/admin/?s=review&client=' + encodeURIComponent(keyOf(c)) + '&set=' + encodeURIComponent(b.id),
-        [live ? 'With the client' : 'Draft', live ? 'is-ok' : '']));
-    });
   }
-
-  function workRow(title, meta, href, chip) {
-    var row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'work-row';
-    row.innerHTML =
-      /* The name is what gives way when the row runs out of room; the state
-         is the one thing the row exists to tell you. Both used to sit in one
-         clipped box, so "Open for selection" came out as "Open for selectio"
-         on a phone while the name it belonged to had room to spare. */
-      '<span class="work-row-name"><span class="work-row-title">' + esc(title) + '</span>' +
-        (chip ? '<span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
-      '</span>' +
-      '<span class="work-row-meta">' + esc(meta) + '</span>' +
-      '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M9 18l6-6-6-6"/></svg>';
-    row.addEventListener('click', function () { location.href = href; });
-    return row;
+  if (window.ADspaceEngage) {
+    window.ADspaceEngage.onData(function (c) {
+      if (state.client && state.client.id === c.id) { paintEngage(); paintMonthLine(state.client); }
+    });
   }
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';

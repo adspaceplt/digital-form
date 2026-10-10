@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010b">
+<link rel="stylesheet" href="/css/portal.css?v=20261010e">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -374,14 +374,8 @@
           <button class="kmenu-item" id="refreshApp" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh app
           </button>
-          <!-- Upgrade mode, Announcements and Notices are on the Settings page
-               (2026-10-10); the menu keeps what is the person's own. -->
-          <hr class="acct-sep" id="acctUpgradeSep" hidden>
-          <!-- WhatsApp (js/whatsapp.js): the templates each message is sent
-               with and the last fifty messages. Business settings. -->
-          <button class="kmenu-item" id="acctWhatsApp" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/></svg>WhatsApp
-          </button>
+          <!-- Upgrade mode, Announcements, Notices and WhatsApp are on the
+               Settings page (2026-10-10); the menu keeps what is the person's own. -->
           <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
@@ -701,14 +695,15 @@
         <div class="rec">
           <nav class="rectabs" id="crmTabs" role="tablist" aria-label="Client record">
             <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
+            <!-- The client's work by content month, its reports included
+                 (2026-10-10): drawn for a client engaged now or before, or
+                 one holding anything there (js/engage.js). -->
+            <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false" hidden>Engagements</button>
             <button class="tab" data-pane="contacts" data-part="clients.contacts" type="button" role="tab" aria-selected="false">Contacts</button>
             <button class="tab" data-pane="billing" data-part="clients.billing" type="button" role="tab" aria-selected="false">Billing</button>
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
             <button class="tab" data-pane="services" data-part="clients.services" type="button" role="tab" aria-selected="false">Services</button>
             <button class="tab" data-pane="documents" data-part="clients.documents" type="button" role="tab" aria-selected="false">Documents</button>
-            <!-- The client's monthly social media reports: prepared here, checked
-                 by a second person, then published to the client's portal. -->
-            <button class="tab" data-pane="reports" type="button" role="tab" aria-selected="false">Reports</button>
             <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
@@ -719,19 +714,21 @@
              decorative number tiles would be a dashboard and this is a
              summary of one client. -->
         <!-- No heading: the tab above already says Overview, and a section
-             head repeating it is the one thing said twice. Engagements below
-             keeps its own, because that one names something else. -->
+             head repeating it is the one thing said twice. -->
         <div id="crmSummary"></div>
+          </div>
 
-        <div id="crmEngage" hidden>
-        <!-- The work, last, because none of it exists until the client is
-             active. Each engagement says where it is and opens in its section. -->
+          <div class="rec-pane" data-pane="engagements" id="crmEngage" hidden>
+        <!-- The client's work by content month, newest first: the month's
+             content in My Work, its sets, scripts, campaigns and reports,
+             each opening where it is worked. The ways into the work sit at
+             the head while the client is Active. -->
         <div class="viewhead">
           <span class="headmark"><h2>Engagements</h2></span>
           <div class="crm-engage-actions" id="crmEngageActions"></div>
         </div>
+        <div class="msg" id="crmEngageMsg"></div>
         <div id="crmWorkList"></div>
-        </div>
           </div>
 
           <div class="rec-pane" data-pane="contacts" hidden>
@@ -1221,10 +1218,6 @@
             <div class="msg" id="pickMsg"></div>
           </div>
         </div>
-
-          <div class="rec-pane" data-pane="reports" hidden>
-            <div id="crmReportsPane"></div>
-          </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
         <!-- Every call, visit and message, newest first. -->
@@ -5194,13 +5187,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261010a"></script>
+<script src="/js/admin.js?v=20261010e"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261010a"></script>
+<script src="/js/reports.js?v=20261010e"></script>
 <script src="/js/register.js?v=20261010a"></script>
-<script src="/js/crm.js?v=20261010b"></script>
+<script src="/js/engage.js?v=20261010e"></script>
+<script src="/js/crm.js?v=20261010e"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261010a"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
@@ -5212,7 +5206,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261009s"></script>
-<script src="/js/overview.js?v=20261010b"></script>
-<script src="/js/settings.js?v=20261010a"></script>
+<script src="/js/overview.js?v=20261010e"></script>
+<script src="/js/settings.js?v=20261010e"></script>
 </body>
 </html>
