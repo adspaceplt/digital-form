@@ -75,11 +75,10 @@
           meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' }
       ] });
     }
-    /* WhatsApp (2026-10-10; the user: "Whatsapp business settings not moved
-       to settings section"): the templates each message is sent with and the
-       last fifty messages, a Business setting. */
-    if (may('team.settings') && window.ADspaceWhatsApp) out.push({ key: 'whatsapp', name: 'WhatsApp', rows: [
-      { id: 'whatsapp', name: 'Templates and recent messages', kind: 'open' }] });
+    /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
+       at Full Access; this card opens them there. */
+    if (window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage')) out.push({ key: 'whatsapp', name: 'WhatsApp', rows: [
+      { id: 'whatsapp', name: 'Templates', kind: 'open' }] });
     if (may('reports.ai')) out.push({ key: 'ai', name: 'AI', rows: [
       { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }] });
     var lists = [];
