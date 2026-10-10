@@ -172,7 +172,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
 | `supabase/functions/brand-analysis/`, the Brand pane's analysis, the BRAND ANALYSIS section | analysis, smsql, caption, crm, then `ui` |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
-| `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
+| `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass |
 | the Short Links route | qr, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
@@ -636,9 +636,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`{creator}`) or a sign-in (`{}`: a colleague, or a client contact with
   live portal access, the client portal asking before it draws; 2026-10-08)
   asks `media-pass` for CloudFront's three
-  signed cookies over `content/*` before it draws a file, set on
+  signed cookies before it draws a file, set on
   `mediaCookieDomain` (adspace.me) for twelve hours and asked again under two
-  left (load, return to the tab). A file under `content/` that fails asks
+  left (load, return to the tab). A pass is held to the folders its caller
+  may see (audit F3, 2026-10-10): `passes`, one policy a folder, each set on
+  that folder's own cookie path so the browser sends it there alone: the
+  review link its client's `content/{clientId}/`, the selection link that and
+  each booking's `content/creator/{optionId}/`, a creator their bookings'
+  drafts alone, a client's contact each client they hold access at, a
+  colleague the whole of `content/` (path `/content/`). A client page's pass
+  takes away a root pass left by an earlier page, and is fresh only for the
+  proof it was asked with (`adspace-media-for`). A file under `content/` that fails asks
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.

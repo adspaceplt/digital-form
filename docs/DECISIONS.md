@@ -1900,3 +1900,18 @@ The Activity record is not scoped by client, so the user's rule until it is:
 a group seeing its own clients only holds no Activity access, refused in the
 Team panel and by a trigger. Offboarding a colleague, a client's contact and
 a client is written down in docs/OFFBOARDING.md.
+
+### 2026-10-10 · A media pass per client folder
+
+The audit's last finding (F3): the media pass opened every file under
+`content/`, so a client holding a review link held a pass to every other
+client's files, and a file name was the only boundary. CloudFront's signed
+cookies carry one policy with one statement, so a pass is now one policy a
+folder, each set on that folder's cookie path: a browser sends a folder's
+pass to that folder alone. The review link opens its client's folder; the
+selection link that and each booking's drafts; a creator their own bookings;
+a client's contact each client they hold access at; a colleague all of
+`content/`. A client page's pass takes away a whole-of-content pass an
+earlier page left on the root. The folder layout is the one S3-STORAGE.md
+records (`content/{clientId}/`, `content/creator/{optionId}/`), and nothing
+changes in CloudFront.

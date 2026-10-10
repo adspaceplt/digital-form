@@ -563,13 +563,8 @@ section holds only what is true of the project as a whole.
   dialog.
 
 ### Open security findings
-- From the audit of 2026-10-10 (the user's decisions recorded; each is
-  closed by its batch and the entry removed then):
-  - F3: the media pass opens every file under `content/`, so a file name is
-    the only boundary; a pass per client follows (CloudFront's `content/*`
-    behaviour is restricted and refuses a direct or encoded address, read
-    2026-10-10). Batch 5.
-- Closed before then: checked live on 2026-09-27: every public table has row level
+- None open. The audit of 2026-10-10 closed in five batches (the last, F3:
+  a media pass per client folder). Checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
   which answers false for anybody who is not an active colleague. The
   internal helpers the API could still reach are closed
