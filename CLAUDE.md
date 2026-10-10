@@ -4255,7 +4255,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 ## 3. Workflow and constraints
 
 ### Git and delivery
-- Branch `cl/exciting-mayer-fvg0dc`; squash-merged by Claude. Releases are
+- The branch the session is given (any account: the work carries in the
+  repositories, a release in progress on its PR, never in a session); a
+  branch with an open PR is continued, not replaced. Squash-merged by
+  Claude. Releases are
   grouped by risk (the user, 2026-10-10): related batches share one PR and
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes

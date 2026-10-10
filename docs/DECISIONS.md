@@ -1915,3 +1915,13 @@ a client's contact each client they hold access at; a colleague all of
 earlier page left on the root. The folder layout is the one S3-STORAGE.md
 records (`content/{clientId}/`, `content/creator/{optionId}/`), and nothing
 changes in CloudFront.
+
+### 2026-10-10 · Any session, any account
+
+The user may continue the portal from a team account once this one's credits
+are spent; both reach the same repositories. A new session is given its own
+branch, so `CLAUDE.md` no longer names one: it works on the branch it is
+given, and a release in progress is carried by its PR (its description holds
+the order and rollback, a comment what is still open), never by a session's
+memory. Connectors (GitHub, Supabase) are per account and are connected again
+there; no secret moves.
