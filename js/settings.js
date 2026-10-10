@@ -72,7 +72,9 @@
         { id: 'prices', name: 'AI prices', kind: 'edit',
           meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' },
         { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
-          meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' }
+          meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' },
+        { id: 'reach', name: 'Reach allowance', kind: 'edit',
+          meta: num('reach_allowance_pct') == null ? '' : 'The Report audit accepts Reach within ' + num('reach_allowance_pct') + '% of Meta' }
       ] });
     }
     /* WhatsApp (2026-10-10; the user: "Whatsapp business settings not moved
@@ -169,6 +171,7 @@
     }
     if (a === 'prices') { ed({ title: 'AI prices, US$ a million tokens', keys: [['ai_price_in', 'Input', 'usd'], ['ai_price_out', 'Output', 'usd']] }); return; }
     if (a === 'meta') { flipMeta(btn); return; }
+    if (a === 'reach') { ed({ title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow']] }); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }

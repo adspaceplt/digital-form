@@ -1497,3 +1497,18 @@ results table (Measured, Impressions, Engagements, Views as labelled cells)
 is gone, with its styles. The card's Posted and Posting on facts leave once
 a post row states them, and a completed booking draws no step track: every
 step is behind it and its Completed chip says so.
+
+### 2026-10-10 · Reach within an allowance, and the audit's differences as a table
+The user imported a running month's ads from Meta and ran the audit 27
+seconds later: two ads' Reach read 12 and 9 people more, while spend,
+impressions and results held. Reach is Meta's estimate of unique people,
+revised while a period runs, so "exact, no tolerance" (2026-10-09) held a
+report Meta itself had moved. Asked, the user chose "Small allowance": Reach
+within `reach_allowance_pct` of Meta's (a Business setting, 0.5% from the
+start, 0 to 5, on the Settings page) matches and holds nothing, and the card
+says how many were within it; every other figure stays exact. The same day,
+of the differences ("not showing very clearly. the ui design is bad, and not
+reader friendly"): five stacked lines a difference became one line in a
+table, Where, Figure, Report, Meta, Difference and the act, the figures in
+tabular columns with Meta's in ink; in a narrow pane the three figures sit
+side by side under their labels.

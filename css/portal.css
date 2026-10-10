@@ -8879,7 +8879,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-audit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
 .rp-audit-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .rp-audit-head + .rp-check { border-top: 1px solid var(--line-soft); }
-.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check, .rp-metatable + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-f-more { padding: 4px 16px 12px 52px; }
 .is-narrow .rp-part { grid-template-columns: 24px minmax(0, 1fr); }
 .is-narrow .rp-part > .rp-aicheck-acts { grid-column: 2; flex-wrap: wrap; }
@@ -8899,6 +8899,41 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-f-acts .btn { flex: 0 0 auto; min-width: 0; }
 .rp-finding.is-applied > :not(.rp-f-acts) { opacity: .55; }
 .rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--ink-soft); }
+/* Against Meta's differences as a table (2026-10-10, the user: "not
+   showing very clearly"): one line a difference, the figures in tabular
+   columns, Meta's in ink at 600, how far apart beside them, the act at the
+   row's end. Every row states the same tracks, so the columns hold. */
+.rp-metatable { border-top: 1px solid var(--line-soft); padding: 4px 16px 8px 52px; }
+.rp-metahead, .rp-metarow {
+  display: grid; align-items: center; column-gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 120px 104px 104px 120px 156px;
+}
+.rp-metahead { padding: 8px 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-mute); border-bottom: 1px solid var(--line-soft); }
+.rp-metarow { padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+.rp-metarow:last-child { border-bottom: 0; }
+.rp-metahead .num, .rp-m-num { text-align: right; font-variant-numeric: tabular-nums; }
+.rp-m-where { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.rp-m-field { color: var(--ink-soft); }
+.rp-m-num { color: var(--ink-soft); white-space: nowrap; }
+.rp-m-meta { color: var(--ink); font-weight: 600; }
+.rp-m-gap { color: var(--ink-mute); }
+.rp-metarow.is-words .rp-m-num:not(.rp-m-gap) { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.rp-m-act { display: flex; justify-content: flex-end; }
+.rp-m-act .btn { flex: 0 0 auto; min-width: 0; margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
+/* In a narrow pane: where and the figure on top, then Report, Meta and
+   Difference side by side under their labels, the act under them. */
+.is-narrow .rp-metatable { padding-left: 16px; }
+.is-narrow .rp-metahead { display: none; }
+.is-narrow .rp-metarow {
+  grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 6px; padding: 12px 0;
+}
+.is-narrow .rp-m-where { grid-column: 1 / -1; }
+.is-narrow .rp-m-field { grid-column: 1 / -1; margin-top: -4px; font-size: 13px; }
+.is-narrow .rp-m-num { display: grid; gap: 2px; text-align: left; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.is-narrow .rp-m-num::before { content: attr(data-l); font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.is-narrow .rp-m-act { grid-column: 1 / -1; justify-content: flex-start; }
+.is-narrow .rp-m-act:empty { display: none; }
+.is-narrow .rp-m-act .btn { margin-block: 2px 0; }
 .rp-aicheck > .msg { padding: 0 16px 12px 52px; }
 .rp-aicheck > .msg:empty { display: none; }
 .is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }

@@ -4427,7 +4427,7 @@
      reads the figures again and repaints. `spec`: { title, keys: [[key,
      label, kind]], msg (an element id), done }. Kinds: hours, days, pct
      (0 to 100), adj (-100 to 100). */
-  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false] };
+  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false] };
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;

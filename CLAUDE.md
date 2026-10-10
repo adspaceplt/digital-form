@@ -350,7 +350,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. A card a group
   (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks;
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks,
+  Reach allowance;
   WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
   drawn only for its part, its value under its name, a switch, Edit or Open
   at the right edge opening the one sheet that already edits it. The
@@ -3082,13 +3083,20 @@ Each line is a rule that broke once. Its reason is in the archive.
       a post matched by `linkKey`: Instagram by its shortcode, else host and
       path without www., trailing slash or tracking query), so a difference
       is exactly what an import would change. Exact, at the precision held,
-      no tolerance: each figure Meta gives an ad (by Ad IDs, else name,
+      but Reach (Meta's estimate, revised while a period runs), which
+      matches within `reach_allowance_pct` (Business settings, 0.5 from
+      the start, 0 to 5; `2026-10-10-reach-allowance.sql`; the card then
+      says Reach within n% of Meta on n figures): each figure Meta gives an
+      ad (by Ad IDs, else name,
       audience, objective, result type), its age split, Step 1's impressions
       and amount spent (reach only where one ad account answers), an ad Meta
       ran with spend and results that the report lacks (Add; one with no
       spend or no results is never asked for), one with figures Meta shows no
       delivery for (Remove, its own press alone), each post figure and a
-      post on either side. A row reads where, the figure, Report and Meta;
+      post on either side. The differences are one table (`.rp-metatable`:
+      Where, Figure, Report, Meta in ink at 600, Difference, the act at the
+      row's end; in a narrow pane the three figures side by side under their
+      labels; words and splits wrap, figures keep their line);
       Use Meta's figure, Add, Remove, and Update all from Meta (the figures
       and missing rows, never a Remove) write through the rows' own writes
       with one Undo, file `report.saved` (Report audit · n figures taken

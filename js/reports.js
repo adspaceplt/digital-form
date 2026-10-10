@@ -1070,13 +1070,24 @@
     if (na || nb) return na && nb;
     return Number(a) === Number(b);
   }
+  /* Reach is Meta's estimate of the people reached, which Meta revises while
+     a period runs (the user, 2026-10-10: two ads' Reach moved by 12 and 9
+     in the 27 seconds after an import, every other figure held): within the
+     allowance of Meta's (Business settings, `reach_allowance_pct`) it is a
+     match. Every other figure is exact. */
+  function nearReach(a, b) {
+    var M = window.ADspaceMoney, pct = M && M.setting ? Number(M.setting('reach_allowance_pct')) : 0;
+    if (!(pct > 0) || a == null || a === '' || b == null || b === '') return false;
+    var x = Number(a), y = Number(b);
+    return y > 0 && Math.abs(x - y) <= y * pct / 100;
+  }
   /* The report against Meta's reading, through the importer's own plan, so
      what the audit calls a difference is exactly what an import would
      change. Each row: where it is, the figure, the report's and Meta's;
      beside it, what puts it right (a figure taken, an ad or post added, or
      one Meta does not hold removed), or nothing where no one ad answers. */
   function metaCompare(reads) {
-    var r = st.open, rows = [], fixes = [];
+    var r = st.open, rows = [], fixes = [], within = 0;
     var put = function (row, fix) { rows.push(row); fixes.push(fix || null); };
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
@@ -1089,6 +1100,7 @@
           var ids = u.patch.ad_ids ? { ad_ids: u.patch.ad_ids } : {};
           AD_FIGS.forEach(function (k) {
             if (!(k in u.patch) || sameFig(k, a[k], u.patch[k])) return;
+            if (k === 'reach' && nearReach(a[k], u.patch[k])) { within++; return; }
             var set = Object.assign({}, ids); set[k] = u.patch[k];
             put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set });
           });
@@ -1122,6 +1134,7 @@
       if (had === 1 && reach.length === 1) tot.reach = reach[0];
       ['reach', 'impressions', 'spend'].forEach(function (k) {
         if (!(k in tot) || sameFig(k, t0[k], tot[k])) return;
+        if (k === 'reach' && nearReach(t0[k], tot[k])) { within++; return; }
         var set = {}; set[k] = tot[k];
         put({ where: step, field: FIG_WORD[k], report: figText(k, t0[k]), meta: figText(k, tot[k]) }, { t: 'totals', set: set });
       });
@@ -1132,7 +1145,7 @@
               report: Number(a.spend) > 0 ? money2(a.spend) + ' spent' : fmt(a.impressions) + ' impressions',
               meta: 'No delivery in this period' }, { t: 'ad-remove', id: a.id });
       });
-      return { rows: rows, fixes: fixes };
+      return { rows: rows, fixes: fixes, within: within };
     }
     var year = Number(String(r.period_start).slice(0, 4)), period = [String(r.period_start).slice(0, 10), String(r.period_end).slice(0, 10)];
     reads.forEach(function (rd) {
@@ -1153,6 +1166,7 @@
         }
         cols.forEach(function (c) {
           if (x[c] == null || sameFig(c, p[c], x[c])) return;
+          if (c === 'reach' && nearReach(p[c], x[c])) { within++; return; }
           var set = {}; set[c] = x[c];
           put({ where: where, field: METRIC_WORD[c], report: figText(c, p[c]), meta: figText(c, x[c]) }, { t: 'post', id: p.id, set: set });
         });
@@ -1163,9 +1177,30 @@
               meta: 'Not in Meta for this period' }, { t: 'post-remove', id: p.id });
       });
     });
-    return { rows: rows, fixes: fixes };
+    return { rows: rows, fixes: fixes, within: within };
   }
 
+  /* How far Meta's figure is from the report's, in the figure's own terms
+     (a count, money, a percentage); nothing where either is not a figure. */
+  function gapOf(a, b) {
+    var num = function (t) { var m = String(t || '').replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m && !/[A-Za-z]{3,}/.test(String(t).replace(/^(RM|S\$)\s*/, '').replace(/%$/, '')) ? Number(m[0]) : null; };
+    var x = num(a), y = num(b);
+    if (x === null || y === null || x === y) return '';
+    var d = y - x, sign = d > 0 ? '+' : '\u2212', abs = Math.abs(d);
+    var cur = (String(b).match(/^(RM|S\$)\s*/) || [])[1];
+    if (cur) return sign + cur + ' ' + abs.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (/%$/.test(String(b))) return sign + (Math.round(abs * 100) / 100) + ' pts';
+    var out = sign + (abs % 1 ? Math.round(abs * 100) / 100 : abs).toLocaleString('en');
+    /* The share only where it says something: a base of a hundred or
+       more, and a gap under the base itself. */
+    var share = Math.abs(x) >= 100 && abs < Math.abs(x) ? Math.round(abs / Math.abs(x) * 1000) / 10 : null;
+    return share !== null ? out + ' (' + share + '%)' : out;
+  }
+  /* What the allowance let through, said once on the card. */
+  function withinWord(n) {
+    var M = window.ADspaceMoney, pct = M && M.setting ? Number(M.setting('reach_allowance_pct')) : 0;
+    return 'Reach within ' + pct + '% of Meta on ' + n + (n === 1 ? ' figure' : ' figures');
+  }
   /* One reading: Meta read, compared, and filed, so the reviewer and the
      database read the same. Meta not answering is filed too (Submit then
      waits, unless an admin continues without it, with a reason). */
@@ -1188,7 +1223,7 @@
       if (got.down) return fileMeta(r, 'unavailable', [], got.down).then(function () { return { outcome: 'unavailable' }; });
       a.reads = got.reads;
       var cmp = metaCompare(got.reads);
-      a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false;
+      a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false; a.within = cmp.within;
       var outcome = cmp.rows.length ? 'mismatch' : 'match';
       return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
     }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
@@ -1423,7 +1458,7 @@
       } else if (lst.outcome === 'match' || lst.outcome === 'override') {
         mark = lst.current ? ' is-done' : ' is-missing';
         note = !lst.current ? 'A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.'
-          : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at)
+          : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at) + (a.within ? ' · ' + withinWord(a.within) : '')
           : 'Not checked: Meta unavailable · ' + (lst.by || 'An admin') + ' continued on ' + whenWord(lst.at) + ': ' + (lst.note || '');
       } else if (lst.outcome === 'mismatch') {
         mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
@@ -1438,15 +1473,28 @@
         var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
         if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
         var show = a.all ? rows : rows.slice(0, 10);
-        list = show.map(function (x, i) {
+        /* One line a difference, read across as a table (the user,
+           2026-10-10: "not showing very clearly … not reader friendly"):
+           where, the figure, the report's, Meta's, how far apart, and what
+           puts it right at the row's end. In a narrow pane the three
+           figures sit side by side under their labels. */
+        list = '<div class="rp-metatable" role="table" aria-label="Differences from Meta">' +
+          '<div class="rp-metahead" role="row"><span role="columnheader">Where</span><span role="columnheader">Figure</span>' +
+          '<span role="columnheader" class="num">Report</span><span role="columnheader" class="num">Meta</span>' +
+          '<span role="columnheader" class="num">Difference</span><span role="columnheader"><span class="sr">Action</span></span></div>' +
+          show.map(function (x, i) {
           var f = draft ? fixes[i] : null;
           var word = !f ? '' : f.t === 'ad-add' || f.t === 'post-add' ? 'Add' : f.t === 'ad-remove' || f.t === 'post-remove' ? 'Remove' : 'Use Meta\'s figure';
-          return '<div class="rp-finding rp-metarow"><span class="rp-f-where">' + esc(x.where) + '</span>' +
-            '<span class="rp-f-issue">' + esc(x.field) + '</span>' +
-            '<span class="rp-f-fix"><span class="rp-f-label">Report</span>' + esc(x.report) + '</span>' +
-            '<span class="rp-f-fix"><span class="rp-f-label">Meta</span>' + esc(x.meta) + '</span>' +
-            (word ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button></span>' : '') + '</div>';
-        }).join('') + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
+          var gap = gapOf(x.report, x.meta);
+          /* Words or a split (an ad missing, an age split) wrap as words; a
+             figure keeps its line. */
+          return '<div class="rp-metarow' + (gap ? '' : ' is-words') + '" role="row"><span class="rp-m-where" role="cell">' + esc(x.where) + '</span>' +
+            '<span class="rp-m-field" role="cell">' + esc(x.field) + '</span>' +
+            '<span class="rp-m-num" role="cell" data-l="Report">' + esc(x.report) + '</span>' +
+            '<span class="rp-m-num rp-m-meta" role="cell" data-l="Meta">' + esc(x.meta) + '</span>' +
+            '<span class="rp-m-num rp-m-gap" role="cell" data-l="Difference">' + esc(gap || '—') + '</span>' +
+            '<span class="rp-m-act" role="cell">' + (word ? '<button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button>' : '') + '</span></div>';
+        }).join('') + '</div>' + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
       }
       meta = '<div class="rp-check rp-part' + mark + '" data-part="meta">' +
           '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
