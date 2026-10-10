@@ -1786,3 +1786,17 @@ notice named and no restore; `team_notice_delete` removes the notice and every
 colleague's copy, refuses one still live (Withdraw first, so nothing leaves a
 bell unseen), and files it under Notices. A push already on a phone stays.
 
+### 2026-10-10 · The database is kept every night
+
+The audit asked for backup and restore evidence; the user: "no backups for
+supabase yet since its on freemium?", then "First use the free method"
+rather than the Pro plan's daily backups. A GitHub Actions run each night
+takes Supabase's own dump (the three files its restore guide uses: roles,
+schema, data), refuses one that holds no clients, encrypts it with a
+passphrase kept in the company's password manager, and puts it under the
+bucket's `private/` with a key that may only add files there. It runs on its
+schedule or by hand, never on a pull request, so a fork never reaches its
+secrets; it lives in this public repository because only its secrets are
+secret. A raw `pg_dump` was refused: Supabase's guide says its internals
+break a restore. Handbook files in Supabase Storage are not covered.
+

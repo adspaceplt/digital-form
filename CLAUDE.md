@@ -174,6 +174,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
 | the Short Links route | qr, run |
+| `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
 **What the two walks measure:**
 - **uxaudit** walks every page and state at 1280, and at 390 with a coarse
@@ -4125,6 +4126,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   judges only objects over 7 days old, and files the counts in `s3_sweeps`.
   Its code has no delete request, and `tests/s3sweep.js` holds that. A
   video's `.web.mp4` copy counts as in use while its original is.
+- The database is kept every night (`workers/db-backup/`,
+  `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the
+  Free plan keeps no backups): Supabase's own dump (roles, schema, data),
+  refused when it holds no clients, encrypted with `BACKUP_PASSPHRASE`, put
+  at `private/backups/db/db-{MYT day}.tar.gz.gpg` by a key that may only add
+  there; it runs on its schedule or by hand, never on a pull request, and
+  reads, lists and deletes nothing (`tests/dbbackup.js`). Storage objects
+  (the Handbook) are not in it.
 - Video conversion (`workers/video-convert/`, AWS Lambda `adspace-video-convert`
   on the bucket's ObjectCreated under `content/`, the user's own setup from
   its README): every video that is not already H.264 in an MP4 indexed first

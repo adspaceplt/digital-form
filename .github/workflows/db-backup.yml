@@ -1,0 +1,35 @@
+# The portal's database, kept every night at 02:37 MYT (workers/db-backup).
+# Runs only on its schedule or when started by hand from the Actions tab,
+# never on a pull request, so its secrets never reach a fork.
+name: Database backup
+
+on:
+  schedule:
+    - cron: '37 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Dump, encrypt and keep
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET: myadspace
+          S3_REGION: ap-southeast-5
+        run: bash workers/db-backup/backup.sh
