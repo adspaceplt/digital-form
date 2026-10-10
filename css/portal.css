@@ -5418,27 +5418,44 @@ body > .shell { width: 100%; }
 .perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .perm input:disabled { opacity: .45; }
 .perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
-/* One block per section (the revamp of 2026-09-25): the name and the
-   Advanced fold on the head line, the four levels as a segment the panel's
-   width, and one line saying what the chosen level allows. */
-.permsec { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line-soft); }
-.permsec:first-child { padding-top: 4px; border-top: 0; }
-.permsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px; }
-.permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
-.permsec-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
-/* Four levels across a phone's panel: "Full Access" ran a pixel past its
-   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03), and again
-   once a finger's options took 14px type (2026-10-09). Four pixels each side
-   keep every level whole; narrower still, the segment's own measure wraps it
-   into two columns. */
-.permsec .seg-opt { padding: 0 4px; }
-/* The fold names what it holds and how many differ from the section; it
-   clears the control floor with the negative block margin the ⋯ uses, so the
-   head line keeps the name's height. */
+/* The panel, simpler (2026-10-10): the sections in the rail's two chunks,
+   each one row (the name, its levels at the right edge, the line of what the
+   level allows with Customise under them), then Admin tools. A narrow sheet
+   puts the levels on a line of their own, the panel's width. */
+.permbox { display: flex; flex-direction: column; gap: 24px; }
+.permchunk { display: flex; flex-direction: column; }
+.permchunk > .fsec-h { margin: 0 0 4px; }
+.permsec {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "name seg seg" "desc desc tog" "diff diff diff" "parts parts parts";
+  column-gap: 12px; row-gap: 4px; padding: 12px 0; border-top: 1px solid var(--line-soft);
+}
+.permchunk > .fsec-h + .permsec { border-top: 0; padding-top: 4px; }
+.permsec-name { grid-area: name; align-self: center; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.permsec > .seg { grid-area: seg; justify-self: end; }
+.permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+/* What differs from the section, said while its parts are shut. */
+.permsec-diff { grid-area: diff; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
+.is-narrow .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name tog" "seg seg" "desc desc" "diff diff" "parts parts"; row-gap: 8px; }
+.is-narrow .permsec > .seg { justify-self: stretch; }
+.is-narrow .permsec > .seg.is-sm > .seg-opt { flex: 1 0 auto; }
+/* Four levels across a phone's panel: four pixels each side keep every
+   level whole (Team audit, 2026-10-03); narrower still, the segment's own
+   measure wraps it into two columns. */
+.is-narrow .permsec .seg-opt { padding: 0 4px; }
+/* Admin tools: one fold, its switches in the Settings page's groups. */
+.permtools .permsec { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name tog" "diff diff" "parts parts"; border-top: 0; padding-top: 0; }
+.permtools .permsec-name .fsec-h { margin: 0; }
+.permtool-group { display: flex; flex-direction: column; }
+.permtool-group + .permtool-group { margin-top: 8px; }
+.permtool-h { padding: 4px 0 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+/* The fold names how many differ; it clears the control floor with the
+   negative block margin the ⋯ uses, so its line keeps the words' height. */
 .permsec-toggle {
+  grid-area: tog; justify-self: end; align-self: center;
   display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
-  margin-block: calc((22px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
-  color: var(--ink-soft); font: inherit; font-size: 13px; text-align: right; cursor: pointer;
+  margin-block: calc((18px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
+  color: var(--ink-soft); font: inherit; font-size: 13px; text-align: right; cursor: pointer; white-space: nowrap;
 }
 .permsec-n { color: var(--ink); font-weight: 600; }
 .permsec-n:empty { display: none; }
@@ -5450,16 +5467,39 @@ body > .shell { width: 100%; }
   font-size: 13.5px; line-height: 1.5; color: var(--ink);
 }
 .permpreset-note { margin-left: 6px; color: var(--ink-soft); font-weight: 600; }
+/* What separates the panel from the role it is nearest. */
+.permchanges { margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
 /* Every part select under a fold is one width and ends on one right edge, so
    the levels read down a single column (2026-09-24). */
 .permpart .select { width: 200px; flex: 0 0 auto; }
-@media (max-width: 640px) { .permpart .select { width: 160px; } }
+.is-narrow .permpart .select { width: 160px; }
 .permsec-parts {
-  display: flex; flex-direction: column; gap: 2px;
-  margin-top: 2px; padding-left: 16px; border-left: 2px solid var(--line-soft);
+  grid-area: parts; display: flex; flex-direction: column; gap: 2px;
+  margin-top: 4px; padding-left: 16px; border-left: 2px solid var(--line-soft);
 }
 .permpart { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
 .permpart-name { min-width: 0; font-size: 13.5px; color: var(--ink-soft); }
+/* Compare groups: sections down, groups across, read only. A narrow sheet
+   reads each section as its own block, each group beside its level. */
+.permcmp { display: flex; flex-direction: column; }
+.permcmp-row {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(var(--cols, 3), minmax(0, 1fr));
+  column-gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line-soft);
+}
+.permcmp-head { padding-top: 0; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.permcmp-head .permcmp-cell { overflow-wrap: anywhere; }
+.permcmp-chunk { padding: 16px 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.permcmp-sec { min-width: 0; font-size: 13.5px; color: var(--ink); }
+.permcmp-cell { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.permcmp-cell b { font-weight: 500; color: var(--ink); }
+.permcmp-cell.is-off b { font-weight: 400; color: var(--ink-mute); }
+.permcmp-cell small { font-size: 12px; color: var(--ink-mute); }
+.is-narrow .permcmp-head { display: none; }
+.is-narrow .permcmp-row { grid-template-columns: minmax(0, 1fr); row-gap: 4px; }
+.is-narrow .permcmp-sec { font-weight: 600; }
+.is-narrow .permcmp-cell { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline; }
+.is-narrow .permcmp-cell::before { content: attr(data-g); color: var(--ink-soft); }
+.is-narrow .permcmp-cell small { grid-column: 2; text-align: right; }
 .team-act { text-align: right; }
 .select-sm { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
 

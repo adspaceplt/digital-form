@@ -1466,3 +1466,17 @@ later, and a month being planned lists last month's best and weakest posts;
 a restricted account is marked on the client, red in its rail and listed on
 the Overview. Delays were answered on 2026-10-09 by the three required
 dates; the WhatsApp approval chaser waits on the WhatsApp section.
+
+### 2026-10-10 · The user group panel, simpler
+The user approved a simpler panel: eleven sections at four levels and
+around fifty finer permissions read as one long form. Now the group starts
+from a role and says only what differs from it (Custom: 3 changes from
+Staff, each change listed); the sections read in the rail's two chunks, one
+row each; a section's finer permissions open under its own Customise and,
+shut, are named on one line only where they differ; the acts an admin alone
+took are one Admin tools list of switches in the Settings page's groups;
+the List, Board and Calendar view switches leave the panel, since they
+follow My Work (one stored is kept through a save, so a save never changes
+it unseen); and Compare groups reads every group side by side. Layout only:
+the stored map, `adds()`, `offered()`, `PART_LEVELS` and every database
+check are as they were, so nobody's access changed and nothing was migrated.

@@ -949,13 +949,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `no_team_client_overlap`: one address is never both a colleague and a live
     portal contact. Where a legacy overlap exists, `portal_clients()` returns
     nothing for a team address.
-- The Team group panel:
+- The Team group panel (simplified 2026-10-10; layout only, the stored map
+  and every check unchanged):
   - `#grSum` reads the panel back as one sentence.
-  - Start from Admin / Manager / Staff / View only (Custom when the panel
-    matches none, worked out and never stored). Admin in Start from is the only
-    way to make a group admin.
-  - Each section is a segment with one line for its level (`DESC`).
-  - The parts sit under Advanced (n), where n counts exceptions only.
+  - Start from Admin / Manager / Staff / View only; a panel matching none
+    reads `Custom: n changes from {nearest}` (`#grPresetNote`) with the
+    changes listed under it (`#grChanges`), worked out and never stored.
+    Admin in Start from is the only way to make a group admin.
+  - The sections in the rail's chunks (Work, Internal; `CHUNKS`), one row
+    each: the name, its segment at the right edge, the line for its level
+    (`DESC`).
+  - A section's parts sit under its Customise (n), n counting exceptions;
+    shut, `#grDiff-{section}` names only those that differ.
+  - The acts an admin alone took are Admin tools (`ADMIN_TOOLS`): switches
+    in the Settings page's groups (Portal, Business figures, AI, Records),
+    then Team and Tasks and reports. The My Work views (List, Board,
+    Calendar) are not offered; a stored one is kept through a save.
+  - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
+    the admin tools for every group, read only.
   - Clients they see (`#grScope`, All clients / Own clients only) sits in the
     Clients fold; Own makes the preset Custom.
   - No preset below Admin opens Team, HR letters or performance reviews.

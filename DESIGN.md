@@ -221,6 +221,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
 | Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
 | A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
+| An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
 | A value only read | `.readfield` (the field's height, no box) |
 | A read group with its own act (Brand: Meta) | `.readgroup` > `.readgroup-head` (the `fsec-h` title, then a `.btn-sm` with its glyph at the right edge) over its `dl.ovfacts`; its sheet holds a ticked list (`.meta-accs`, its own scroll past 40dvh) and the selects |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
