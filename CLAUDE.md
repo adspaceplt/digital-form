@@ -144,7 +144,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
-| `js/whatsapp.js`, `supabase/functions/wa-send/`, the WHATSAPP section | whatsapp, smsql, crm, sql, then `ui` |
+| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections | whatsapp, wafn, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -870,7 +870,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   per-person switches. A policy on `team_members` never queries itself.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
-- Sections: `ops` (My Work), `clients`, `review`, `scripts` (Video Scripts),
+- Sections: `ops` (My Work), `clients`, `whatsapp`, `review`, `scripts` (Video Scripts),
   `campaigns`, `reports`, `register` (Documents), `links`, `services`, `team`, `activity`. The
   Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
@@ -3692,7 +3692,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `activity_section()` in SQL restates the map, and `tests/sql.js` §21 compares
   the two.
 - A tag nothing names files as `other` and falls back to the section.
-- One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
+- One part per tab (`activity.clients`, `.whatsapp`, `.ops`, `.team`, `.review`,
   `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
   `.handbook`). The link
   draws where any tab is readable.
@@ -3743,23 +3743,82 @@ Each line is a rule that broke once. Its reason is in the archive.
   and file only.
 - `document.*` and `register.*` rows file under Documents.
 
-### WhatsApp (`js/whatsapp.js`, `wa-send`, `2026-10-09-whatsapp.sql`, `docs/WHATSAPP-SETUP.md`)
+### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `docs/WHATSAPP-SETUP.md`)
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
-  reminders, creator updates, a feedback request sent by hand). One template
-  a purpose (`wa_templates`: `report`, `feedback`, `reminder`, `creator`;
-  name and language as Meta holds them, how many body variables, On), set on
-  the Settings page's WhatsApp (`team.settings`, `wa_template_save`, filed
-  under WhatsApp from and to): Edit asks the name, language and variables,
-  and each row's switch (`.switch`) turns it on or off at the press (one
-  with no template asks for one first); a purpose that is Off sends nothing. The
-  sheet lists the last fifty messages (`wa_recent`, the number cut to its
-  last four).
-- Variables in order: report (the greeting, client or brand, the report and
-  period; the PDF as the document header), feedback (the greeting, client),
-  reminder (first name, title, message), creator (first name, campaign; its
-  link button's variable the creator's code, `wa_outbox.button`); a
-  template takes the first n.
+  reminders, creator updates, a feedback request sent by hand). Phase 1
+  (2026-10-10): the section, the composer, the delivery status; no inbox, no
+  message to a colleague but the queued reminders, nothing sent to an AI
+  service.
+- A section of its own, `whatsapp`, in the Work chunk after Clients: View
+  reads the messages, Work (Manage on the panel) sends, Manage (Full Access)
+  sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback` and
+  `whatsapp.booking` follow it or are shut (No Access), nothing between
+  (`VIEW_PARTS`); they replaced `reports.whatsapp`, `clients.whatsapp` and
+  `campaigns.whatsapp` (a shut one moved across, the old keys taken off). A
+  send asks the section and its purpose's part at Work and the record's own
+  section at View (Reports, Clients, Creator Campaigns), a plain message a
+  contact's Clients: Contacts or a creator's Creators List at View
+  (`wa_may_send`, `ADspaceWhatsApp.may`); at No Access no record offers
+  WhatsApp. Groups started once: Admin Full Access, Clients Work or above
+  Work, Clients View View, else none.
+- Messages (the landing view, `wa_messages(p_month)`, client scope): one
+  card of the month's messages (Malaysia time) newest first, a row who it
+  went to (name; client, Creator or Colleague; the number as
+  `ADspaceCard.phone` writes it), what it was (Report, Feedback request,
+  Booking, Reminder, Message over the template and its category), who sent
+  it (Automatic for the queue) and the status over when: Queued, Sending,
+  Sent, Delivered, Read, or Failed with the reason in the team's words
+  (`REASON`, by Meta's code). Above it the month's templates sent by
+  category (Utility, Marketing; Authentication where any). The bar: search
+  (name, client, template, a number as typed), Month (a view, the last
+  twelve), Type and Status behind Filters, the count, New message (Work).
+- Templates (`tab=templates`, Full Access): the queue (waiting, sending, not
+  sent in 7 days), then one template a purpose (`wa_templates`: `report`,
+  `feedback`, `reminder`, `creator`; name, language, category, how many body
+  variables, On): Edit chooses from Meta's approved list read through
+  `wa-send` (never typed; the report's needs a Document header and no other
+  takes one; a link button's variable the creator's alone), each row's
+  switch (`.switch`) turns it on or off at the press (one with no template
+  asks for one first); `wa_template_set`, filed `wa.template` under
+  WhatsApp from and to. A purpose that is Off sends nothing and its record
+  button is not drawn. The account menu holds no WhatsApp item; Settings'
+  WhatsApp card (Templates, drawn at WhatsApp Full Access) opens this tab
+  (`ADspaceWhatsApp.manage`), never a second copy.
+- The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
+  record shares: To (`wa_recipients`: client contacts named with their
+  client, active creators; never a colleague), the number as it will be
+  sent, else why not (a username alone cannot be messaged); Template
+  (Meta's approved ones the portal can fill: a Document header, a text
+  header with one variable, body variables positional or named, one link
+  button variable); each variable prefilled from the record (the greeting
+  by `contact_greeting`, then the client or the report's brand, or a
+  creator's campaign; the report; a named one by its name; the link button
+  a creator's code), a typed one kept; a Report select only for a Document
+  header, the recipient's client's published reports newest first, its file
+  the kept PDF the client portal hands over (`ADspaceReports.keptPdf`); the
+  message previewed as it will read. Send asks (`ADspaceConfirm`, naming
+  the recipient, the number and the category), then `wa-send` `compose`
+  asks `wa_compose_prepare` as the colleague (the number and the record are
+  the database's), reads the template again from Meta, sends and files
+  `wa_sent` (`wa.sent`, WhatsApp in the Activity record; a booking's under
+  its campaign as `{creator} · Booking sent on WhatsApp`). Purpose: a
+  report attached is `report`; else the record's (`feedback`, `creator`),
+  else `message`. The record buttons stay where they were and open it
+  prefilled: Send on WhatsApp beside Mark as sent (then marked as sent
+  today), Request feedback on WhatsApp in a client's ⋯, Send on WhatsApp in
+  a booked creator's ⋯.
+- Variables of the queued ones in order: reminder (first name, title,
+  message), creator (first name, campaign; its link button's variable the
+  creator's code, `wa_outbox.button`); a template takes the first n.
+- Delivery (`wa-hook`, Verify JWT off): Meta's verification answered only
+  with `WHATSAPP_VERIFY_TOKEN`; a POST believed only with its
+  `X-Hub-Signature-256` over the raw body keyed by `META_APP_SECRET`; each
+  status recorded by `wa_status_record` (the service role's alone) against
+  `wa_outbox.wa_id`: `delivered_at`, `read_at`, `failed_at` with
+  `fail_code` / `fail_title`, Meta's pricing category; a delivered or read
+  message never turns failed. Messages sent in and coexistence echoes are
+  not read.
 - A number is `wa_number`'s international form, read as the team types it
   (`2026-10-09-whatsapp-numbers-resend.sql`): a leading 0 is Malaysia (60
   for the 0), any other eight digits Singapore (65), nine or ten starting 1
@@ -3768,35 +3827,26 @@ Each line is a rule that broke once. Its reason is in the archive.
   messaged (`no-number`). A client's main contact's WhatsApp number, else
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
-- By hand, through `wa-send` as the colleague: Send on WhatsApp beside Mark
-  as sent on a published report not yet sent (the template on; asks; the
-  kept PDF uploaded as the header document, then marked as sent today);
-  Request feedback on WhatsApp in a client's ⋯ (the template on; asks).
-  Each is its own part, following its section unless a group shuts it
-  (`reports.whatsapp`, `clients.whatsapp` at Work;
-  `2026-10-09-whatsapp-by-group.sql`: the prepare functions and
-  `wa_record` ask the part). `wa_report_prepare` / `wa_feedback_prepare`
-  answer the number, the greeting (`contact_greeting`: "Dato' Lim Wei Ming",
-  else the first name) and template; `wa_record` files `wa.sent` under the
-  client (Clients in the Activity record). A booked creator's ⋯ in the
-  campaign holds Send on WhatsApp (shown once the creator template is on;
-  asks; `wa_creator_send`, part `campaigns.whatsapp`, queued as the
-  confirmation is with the creator's code for the button, filed
-  `campaign.whatsapp` under the campaign). A refusal is one line in the
-  team's words (`SAID` in js/whatsapp.js), never Meta's.
+- `wa_report_prepare`, `wa_feedback_prepare`, `wa_record` and
+  `wa_creator_send` (the sends before the composer) are kept for a page
+  loaded before it and ask the same section and parts. A refusal is one
+  line in the team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
   bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
   `health.remind`; `ops_notifications_wa`) and a creator's booking
   confirmed, with their code for the link button (`campaign_options_wa`,
   `wa_enqueue`; `2026-10-09-whatsapp-creator-link.sql`; changes requested
   and cleared to post stay on the creator's page and push) go to
-  `wa_outbox`; `wa_kick` (pg_net) wakes `wa-send`, which claims with the
-  service role (`wa_claim`, `wa_done`; three tries, then Not sent). The
-  queue and its tables are closed to every page.
-- Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`,
-  the user's choice, 2026-10-09: one system user holds both), `META_APP_SECRET`
-  (`appsecret_proof` on every call, as `meta-import`), `META_GRAPH_VERSION`;
-  Verify JWT off (pg_net calls with no session).
+  `wa_outbox` with their template's category; `wa_kick` (pg_net) wakes
+  `wa-send`, which claims with the service role (`wa_claim`, `wa_done`;
+  three tries, then Failed). The queue and its tables are closed to every
+  page.
+- Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_WABA_ID` (the templates),
+  `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`, the user's choice, 2026-10-09:
+  one system user holds both), `META_APP_SECRET` (`appsecret_proof` on every
+  call, as `meta-import`; `wa-hook`'s signature), `WHATSAPP_VERIFY_TOKEN`
+  (`wa-hook`), `META_GRAPH_VERSION`; Verify JWT off on both (pg_net and Meta
+  call with no session).
 
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
@@ -3933,7 +3983,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
