@@ -191,6 +191,11 @@
       if (r.error) {
         state.creators = [];
         UI.failLine($('rosterList'), 'The creators list', r.error.message, function () { loadRoster(then); });
+        /* Add creators reads the same list, and a failed read is never drawn
+           as a list with nobody on it. */
+        if ($('addOptionBox') && !$('addOptionBox').hidden) {
+          UI.failLine($('optionPick'), 'The creators list', r.error.message, function () { loadRoster(then); });
+        }
         return;
       }
       state.creators = r.data || [];
@@ -1349,7 +1354,7 @@
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
 
-  var ncDraft = keepDraft('addOptionBox', ['ncName', 'ncRate', 'optionSearch'], {
+  var ncDraft = keepDraft('addOptionBox', ['ncName', 'ncRate'], {
     get: function () {
       return {
         links: Array.prototype.slice.call(document.querySelectorAll('#ncProfRows .prof-url'))
@@ -1368,18 +1373,15 @@
   ncDraft.restore = function () {
     var d = ncDraft.read();
     if (!d || !d.open || !(d.meta && state.campaign && d.meta.campaign === state.campaign.id)) return;
-    $('addOptionBox').hidden = false;
-    loadRoster(function () {
-      ncDraft.fill(d);
-      /* A half typed creator restored into a folded form is a draft nobody can
-         see: the fold opens for the work that is already in it. */
-      var typed = ($('ncName').value || '').trim() || ($('ncRate').value || '').trim() ||
-        Array.prototype.some.call(document.querySelectorAll('#ncProfRows .prof-url'),
-          function (i) { return (i.value || '').trim(); });
-      $('ncBox').hidden = !typed;
-      $('ncToggle').setAttribute('aria-expanded', String(Boolean(typed)));
-      paintPicker(); warnDupes(NC_CTX);
-    });
+    openAddCreators(true);
+    ncDraft.fill(d);
+    ncDraft.save();
+    /* A half typed creator comes back on the view it was typed in. */
+    var typed = ($('ncName').value || '').trim() || ($('ncRate').value || '').trim() ||
+      Array.prototype.some.call(document.querySelectorAll('#ncProfRows .prof-url'),
+        function (i) { return (i.value || '').trim(); });
+    if (typed) acTab('new');
+    warnDupes(NC_CTX);
   };
   document.addEventListener('input', function (e) {
     if (e.target.closest && e.target.closest('#ncProfRows, #ncPlatforms')) ncDraft.save();
@@ -1578,7 +1580,7 @@
     state.campaign = null;
     $('campWork').hidden = true;
     $('campListView').hidden = false;
-    $('addOptionBox').hidden = true;
+    shutAddCreators();
     ncDraft.clear();
     setUrl();
     loadCampaigns();
@@ -1973,8 +1975,14 @@
      Completed returns it to production, and none in production opens it. */
   function syncCampState() {
     var c = state.campaign;
-    if (!c || (c.state !== 'production' && c.state !== 'completed')) return;
+    if (!c) return;
     var live = state.options.filter(isLive);
+    /* Open with bookings is a selection the team reopened for the slots left,
+       and stays Open until the client confirms. Once the bookings fill every
+       slot again (a creator reinstated on a campaign every booking had left)
+       there is nothing left to choose, so it is in production again. */
+    var full = c.state === 'open' && live.length > 0 && Number(c.slots || 0) > 0 && freeSlots(c) === 0;
+    if (c.state !== 'production' && c.state !== 'completed' && !full) return;
     var done = live.length > 0 && live.every(function (o) { return o.state === 'completed'; });
     var want = !live.length ? 'open' : done ? 'completed' : 'production';
     if (want === c.state) return;
@@ -1984,7 +1992,7 @@
       c.state = want;
       if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
       else log('campaign.stage', c.title, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
-        (want === 'completed' ? ' · every creator completed' : ' · a creator reopened'));
+        (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · every slot booked' : ' · a creator reopened'));
       paintCampState(c);
     });
   }
@@ -2807,160 +2815,341 @@
     });
   }
 
-  $('optionCancel').addEventListener('click', function () {
-    $('addOptionBox').hidden = true;
-  });
-  $('showAddOption').addEventListener('click', function () {
-    $('addOptionBox').hidden = false;
-    $('ncBox').hidden = true;
-    $('ncToggle').setAttribute('aria-expanded', 'false');
-    resetNc();
+  /* ---- Add creators --------------------------------------------------------
+     A sheet over the Creators pane (the user, 2026-10-10: the panel's list was
+     "messy … no proper grouping"). The Creators List is drawn in the fee bands
+     the list itself uses, those already in this campaign in a card of their
+     own at the foot; a tick opens the creator's rate and platforms in place,
+     prefilled from the list, and one Add offers every ticked creator at once.
+     A creator withdrawn or replaced on this campaign is offered again from the
+     same list: the database holds one row a creator a campaign, so the offer
+     is that row moved back to the options, its reason cleared. New creator is
+     the strip's second view. */
+  var addPick = {};        // creator id -> { rate, plats, links } while the sheet is open
+  var addTab = 'list';
+  function pickerOpen() { return !$('addOptionBox').hidden; }
+  function reofferable(o) {
+    return (o.state === 'withdrawn' || o.state === 'replaced') && !o.goodwill;
+  }
+  function platsOfCreator(c) {
+    var plats = (c.creator_profiles || []).map(function (p) { return PLATFORM_LABEL[p.platform] || p.platform; });
+    return plats.filter(function (v, i) { return plats.indexOf(v) === i; });
+  }
+  function acTab(which) {
+    addTab = which;
+    var list = which === 'list';
+    $('optionTabList').classList.toggle('is-on', list);
+    $('optionTabList').setAttribute('aria-pressed', String(list));
+    $('ncToggle').classList.toggle('is-on', !list);
+    $('ncToggle').setAttribute('aria-pressed', String(!list));
+    $('optionBar').hidden = !list;
+    $('optionPick').hidden = !list;
+    $('optionAdd').hidden = !list;
+    $('optionCount').hidden = !list;
+    $('ncBox').hidden = list;
+    $('ncSave').hidden = list;
+    msg('optionMsg', '');
+  }
+  function openAddCreators(restoring) {
+    if (!restoring) { addPick = {}; resetNc(); $('optionSearch').value = ''; $('optionPlatform').value = 'all'; }
+    acTab('list');
+    msg('optionMsg', '');
+    paintSum();
+    if (!state.creators.length) UI.skeleton($('optionPick'), 4);
+    window.ADspaceSheet.show($('addOptionBox'), {
+      opener: $('showAddOption'),
+      onClose: function () { addPick = {}; ncDraft.clear(); }
+    });
     ncDraft.note({ campaign: state.campaign.id });
+    /* Nothing is focused when the sheet opens: on a phone a field taking
+       focus raises the keyboard over the list somebody came to read. */
     loadRoster(paintPicker);
-    /* Nothing is focused when the picker opens: on a phone a field taking
-       focus raises the keyboard and zooms the page past the list
-       somebody came to read, and the first field is rarely the one somebody came to change. */
-  });
-  /* Keying somebody in is the rarer of the two jobs, so it is folded: the
-     panel opens on the creators list, which is what it is usually for. */
-  $('ncToggle').addEventListener('click', function () {
-    var open = $('ncBox').hidden;
-    $('ncBox').hidden = !open;
-    this.setAttribute('aria-expanded', String(open));
-    if (open) $('ncName').focus();
-  });
-  $('ncClose').addEventListener('click', function () {
-    $('ncBox').hidden = true;
-    $('ncToggle').setAttribute('aria-expanded', 'false');
-    resetNc();
-  });
+  }
+  function shutAddCreators() {
+    if (window.ADspaceSheet.isOpen($('addOptionBox'))) window.ADspaceSheet.close();
+    $('addOptionBox').hidden = true;
+    addPick = {};
+  }
+  $('showAddOption').addEventListener('click', function () { openAddCreators(false); });
+  $('optionCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('optionClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('optionTabList').addEventListener('click', function () { acTab('list'); });
+  $('ncToggle').addEventListener('click', function () { acTab('new'); });
   $('optionSearch').addEventListener('input', paintPicker);
+  $('optionPlatform').addEventListener('change', paintPicker);
+
+  /* The count and the sum of the rates ticked, beside Add. */
+  function paintSum() {
+    var ids = Object.keys(addPick);
+    var total = 0, priced = true;
+    ids.forEach(function (id) {
+      var r = Number(addPick[id].rate || 0);
+      if (r > 0) total += r; else priced = false;
+    });
+    $('optionCount').textContent = !ids.length ? ''
+      : ids.length + ' selected' + (priced ? ' · ' + money(total) : '');
+    $('optionAdd').textContent = !ids.length ? 'Add creators'
+      : 'Add ' + ids.length + (ids.length === 1 ? ' creator' : ' creators');
+  }
 
   function paintPicker() {
     var box = $('optionPick');
-    if (!box) return;
-    var already = {};
-    state.options.forEach(function (o) { already[o.creator_id] = true; });
+    if (!box || !state.campaign) return;
+    var inCamp = {};
+    state.options.forEach(function (o) { inCamp[o.creator_id] = o; });
     var q = ($('optionSearch').value || '').trim().toLowerCase();
-    var list = state.creators.filter(function (c) {
+    var plat = $('optionPlatform').value || 'all';
+    var narrowed = Boolean(q) || plat !== 'all';
+    var match = function (c) {
+      if (plat !== 'all' && !(c.creator_profiles || []).some(function (p) { return p.platform === plat; })) return false;
       if (!q) return true;
-      return c.name.toLowerCase().indexOf(q) > -1;
+      var hay = c.name + ' ' + (c.creator_profiles || []).map(function (p) { return p.handle || p.url; }).join(' ');
+      return hay.toLowerCase().indexOf(q) > -1;
+    };
+    /* A creator stood down is not booked, so is not offered; one ticked
+       before the list was cut stays ticked, off screen, until Add or Cancel. */
+    var addable = [], held = [];
+    state.creators.forEach(function (c) {
+      var o = inCamp[c.id];
+      if (o && !reofferable(o)) { if (match(c)) held.push(c); return; }
+      if (c.active === false || !match(c)) return;
+      addable.push(c);
     });
-
-    var free = list.filter(function (c) { return !already[c.id]; }).length;
-    $('optionCount').textContent = !state.creators.length ? ''
-      : free + ' to add';
-
     box.innerHTML = '';
-    if (!list.length) {
-      box.innerHTML = '<div class="empty">No matches.</div>';
+    if (!state.creators.length) {
+      UI.emptyLine(box, 'No creators.', 'Add creator', function () { acTab('new'); });
       return;
     }
-    list.forEach(function (c) {
-      var inCamp = already[c.id];
-      var row = document.createElement('div');
-      row.className = 'pickrow' + (inCamp ? ' is-in' : '');
-      var plats = (c.creator_profiles || []).map(function (p) { return PLATFORM_LABEL[p.platform] || p.platform; });
-      var uniq = plats.filter(function (v, i) { return plats.indexOf(v) === i; });
-      row.innerHTML =
-        '<div><b>' + esc(c.name) + '</b>' +
-        '<span class="muted"> ' + (uniq.join(', ') || 'no links') + '</span></div>' +
-        (inCamp ? '<span class="muted">Already offered</span>'
-                : '<span class="pickadd">' + platformBoxes(uniq, true) +
-                  '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
-                  '<input class="input pickrate" type="number" inputmode="decimal" min="0" step="10" ' +
-                  'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" value="' +
-                  (c.client_rate || '') + '" placeholder="rate"></span>' +
-                  /* Neutral, not the filled action: this is one button per
-                     addable row, so a list of twenty creators drew twenty
-                     filled slabs and the panel's own primary — the one that
-                     actually finishes the job — had nothing left to be. */
-                  '<button class="btn btn-sm" type="button">Add</button></span>');
-      if (!inCamp) {
-        /* Ticking a platform this creator has no link for used to mean leaving
-           the campaign, opening the creators list, adding the link, and coming
-           back; or ticking it and never adding one at all, which is how a
-           client ends up looking at a platform with nowhere to go. The tick
-           opens into the field instead, in place, and what is typed is saved
-           to the creator so it is asked for once and never again. */
-        var have = {};
-        (c.creator_profiles || []).forEach(function (pr) { have[PLATFORM_LABEL[pr.platform] || pr.platform] = true; });
-        var askLinks = function () {
-          Array.prototype.forEach.call(row.querySelectorAll('.pbox'), function (box) {
-            var tick = box.querySelector('.pbox-tick input');
-            var field = box.querySelector('.pbox-link');
-            if (!field) return;
-            var need = tick.checked && !have[tick.value];
-            box.classList.toggle('needs-link', need);
-            field.disabled = !need;
-            if (!need) field.value = '';
+    if (!addable.length && !held.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+        $('optionSearch').value = ''; $('optionPlatform').value = 'all'; paintPicker();
+      });
+      return;
+    }
+    var GRP = window.ADspaceGroup;
+    var byName = function (a) {
+      return a.slice().sort(function (x, y) { return String(x.name || '').localeCompare(String(y.name || '')); });
+    };
+    var groups = BANDS.map(function (band) {
+      return [band[2], band[0], byName(addable.filter(function (c) { return band[1](Number(c.client_rate || 0)); })), false];
+    });
+    groups.push(['held', 'Already in this campaign', byName(held), true]);
+    var all = addable.length + held.length;
+    groups.forEach(function (g) {
+      if (!g[2].length) return;
+      box.appendChild(GRP.section({
+        route: 'addcreators', key: g[0], name: g[1], count: g[2].length,
+        shut: !narrowed && GRP.shut('addcreators', g[0], g[3], g[2].length === all),
+        table: function () {
+          var t = document.createElement('div');
+          t.className = 'crm-table softpanel ac-table';
+          GRP.more(t, g[2], 30, 'creators', function (c) {
+            return g[0] === 'held' ? heldRow(c, inCamp[c.id]) : pickRow(c, inCamp[c.id]);
           });
-        };
-        Array.prototype.forEach.call(row.querySelectorAll('.pbox-tick input'), function (b) {
-          b.addEventListener('change', askLinks);
-        });
-        row.querySelector('button').addEventListener('click', function () {
-          var links = Array.prototype.slice.call(row.querySelectorAll('.pbox.needs-link .pbox-link'))
-            .map(function (i) { return { name: i.getAttribute('data-p'), url: (i.value || '').trim() }; })
-            .filter(function (x) { return x.url; });
-          addOption(c, readBoxes(row), Number(row.querySelector('.pickrate').value || 0), links);
-        });
-      }
-      box.appendChild(row);
+          return t;
+        }
+      }));
     });
   }
 
-  function addOption(c, platformNames, rate, links) {
-    if (!platformNames.length) {
-      msg('optionMsg', 'Tick at least one platform for ' + c.name + ' to post on.', 'err');
-      return;
+  function metaOf(c) {
+    var bits = (c.creator_profiles || []).map(function (p) {
+      var h = String(p.handle || '');
+      var same = h.toLowerCase() === String(c.name || '').trim().toLowerCase();
+      return (PLATFORM_LABEL[p.platform] || p.platform) + (h && h.length <= 18 && !same ? ' ' + h : '');
+    });
+    var rec = state.record && state.record[c.id];
+    if (rec && rec.on.length) bits.push(rec.on.length + (rec.on.length === 1 ? ' campaign' : ' campaigns'));
+    return bits;
+  }
+
+  function heldRow(c, o) {
+    var row = document.createElement('div');
+    row.className = 'ac-row is-in';
+    row.innerHTML = '<div class="ac-pick">' +
+      '<span class="ac-who"><span class="ac-name">' + esc(c.name) + '</span>' +
+        '<span class="ac-meta">' + esc(metaOf(c).concat(o.rate ? ['Offered at ' + money(o.rate)] : []).join(' · ')) + '</span></span>' +
+      '<span class="chip ' + W.tone(o.state) + '">' + esc(OPTION_WORD[o.state] || o.state) + '</span></div>';
+    return row;
+  }
+
+  function pickRow(c, o) {
+    var row = document.createElement('div');
+    var p = addPick[c.id];
+    row.className = 'ac-row' + (p ? ' is-on' : '');
+    var meta = metaOf(c);
+    if (o) meta.push((o.state === 'replaced' ? 'Replaced' : 'Withdrawn') + ' from this campaign');
+    row.innerHTML = '<label class="ac-pick">' +
+      '<input type="checkbox" class="ac-tick" data-nodraft' + (p ? ' checked' : '') + '>' +
+      '<span class="ac-who"><span class="ac-name">' + esc(c.name) + '</span>' +
+        (meta.length ? '<span class="ac-meta">' + esc(meta.join(' · ')) + '</span>' : '') + '</span>' +
+      '<span class="ac-rate">' + (c.client_rate ? esc(money(c.client_rate)) : '<span class="muted">On quote</span>') + '</span>' +
+      '</label>';
+    if (p) row.appendChild(pickMore(c, p));
+    row.querySelector('.ac-tick').addEventListener('change', function () {
+      if (this.checked) addPick[c.id] = { rate: c.client_rate ? String(c.client_rate) : '', plats: platsOfCreator(c), links: {} };
+      else delete addPick[c.id];
+      msg('optionMsg', '');
+      var fresh = pickRow(c, o);
+      row.parentNode.replaceChild(fresh, row);
+      fresh.querySelector('.ac-tick').focus({ preventScroll: true });
+      paintSum();
+    });
+    return row;
+  }
+
+  /* What a tick opens: the rate for this campaign and where they post, both
+     prefilled from the creator. A platform with no link opens into its field,
+     and what is typed is saved to the creator so it is asked for once. */
+  function pickMore(c, p) {
+    var more = document.createElement('div');
+    more.className = 'ac-more';
+    more.innerHTML =
+      '<div class="ac-ratefield"><span class="field-label">Client rate</span>' +
+        '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
+        '<input class="input input-sm pickrate" type="number" inputmode="decimal" min="0" step="10" data-nodraft ' +
+        'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" placeholder="360" value="' + esc(p.rate) + '"></span></div>' +
+      '<div class="ac-platfield"><span class="field-label">Posts on</span>' + platformBoxes(p.plats, true) + '</div>';
+    var have = {};
+    (c.creator_profiles || []).forEach(function (pr) { have[PLATFORM_LABEL[pr.platform] || pr.platform] = true; });
+    var askLinks = function () {
+      Array.prototype.forEach.call(more.querySelectorAll('.pbox'), function (box) {
+        var tick = box.querySelector('.pbox-tick input');
+        var field = box.querySelector('.pbox-link');
+        if (!field) return;
+        var need = tick.checked && !have[tick.value];
+        box.classList.toggle('needs-link', need);
+        field.disabled = !need;
+        field.setAttribute('data-nodraft', '');
+        if (need) field.value = p.links[tick.value] || '';
+        else { field.value = ''; delete p.links[tick.value]; }
+      });
+    };
+    askLinks();
+    more.querySelector('.pickrate').addEventListener('input', function () { p.rate = this.value; paintSum(); });
+    Array.prototype.forEach.call(more.querySelectorAll('.pbox-tick input'), function (b) {
+      b.setAttribute('data-nodraft', '');
+      b.addEventListener('change', function () { p.plats = readBoxes(more); askLinks(); });
+    });
+    Array.prototype.forEach.call(more.querySelectorAll('.pbox-link'), function (f) {
+      f.addEventListener('input', function () { p.links[f.getAttribute('data-p')] = f.value; });
+    });
+    return more;
+  }
+
+  /* One press offers every ticked creator: one insert for those new to the
+     campaign, the row moved back for one withdrawn or replaced here, then any
+     link typed saved to its creator. A refusal is named in the sheet and
+     nothing is half added; what follows the offer (a link) is named under the
+     pane once the sheet has shut. */
+  $('optionAdd').addEventListener('click', function () {
+    var btn = this;
+    var inCamp = {};
+    state.options.forEach(function (o) { inCamp[o.creator_id] = o; });
+    var byId = {};
+    state.creators.forEach(function (c) { byId[c.id] = c; });
+    var list = Object.keys(addPick).filter(function (id) { return byId[id]; }).map(function (id) {
+      var p = addPick[id];
+      return { c: byId[id], o: inCamp[id] || null, rate: Number(p.rate || 0), plats: p.plats.slice(),
+               links: Object.keys(p.links).map(function (k) { return (p.links[k] || '').trim(); })
+                 .filter(function (u) { return u; }) };
+    });
+    if (!list.length) { msg('optionMsg', 'Tick at least one creator.', 'err'); return; }
+    for (var i = 0; i < list.length; i++) {
+      var x = list[i];
+      if (!x.plats.length) { msg('optionMsg', 'Tick a platform for ' + x.c.name + ' to post on.', 'err'); return; }
+      if (!x.rate || x.rate <= 0) { msg('optionMsg', 'Set the client rate for ' + x.c.name + '.', 'err'); return; }
+      var bad = x.links.filter(function (u) { return !readProfile(u); });
+      if (bad.length) { msg('optionMsg', 'Not a profile link for ' + x.c.name + ': ' + bad[0], 'err'); return; }
+      if (x.o && !reofferable(x.o)) { msg('optionMsg', x.c.name + ' is already in this campaign.', 'err'); return; }
     }
-    if (!rate || rate <= 0) {
-      msg('optionMsg', 'Set a rate for ' + c.name + ' on this campaign.', 'err');
-      return;
-    }
-    db.from('campaign_options').insert({
-      campaign_id: state.campaign.id,
-      creator_id: c.id,
-      rate: rate,
-      platforms: platformNames.join(', '),
-      state: 'option',
-      position: state.options.length
-    }).then(function (r) {
-      if (r.error) {
-        msg('optionMsg', /duplicate|unique/i.test(r.error.message)
-          ? c.name + ' is already offered in this campaign.' : r.error.message, 'err');
+    btn.disabled = true;
+    offerCreators(list, 'optionMsg', function () { btn.disabled = false; });
+  });
+
+  function offerCreators(list, msgId, done) {
+    var fresh = list.filter(function (x) { return !x.o; });
+    var again = list.filter(function (x) { return x.o; });
+    var pos = state.options.length;
+    var rows = fresh.map(function (x, i) {
+      return { campaign_id: state.campaign.id, creator_id: x.c.id, rate: x.rate,
+               platforms: x.plats.join(', '), state: 'option', position: pos + i };
+    });
+    var insert = rows.length
+      ? db.from('campaign_options').insert(rows).select('id, creator_id')
+      : Promise.resolve({ data: [] });
+    insert.then(function (r) {
+      if (r.error || (r.data || []).length !== rows.length) {
+        done();
+        msg(msgId, r.error && /duplicate|unique/i.test(r.error.message)
+          ? 'A creator ticked is already in this campaign. The list has been read again.'
+          : (r.error ? r.error.message : 'Not added. The database refused the request.'), 'err');
+        loadOptions(); loadRoster(paintPicker);
         return;
       }
-      msg('optionMsg', c.name + ' added at ' + money(rate) + '.', 'ok');
-      /* An option added after the bookings joins the options folded under
-         them, so that list opens to show it. */
-      unpickedOpen[state.campaign.id] = true;
-      /* A link typed here belongs to the creator, not to this campaign: the
-         next campaign asks nobody for it again. */
-      /* readProfile is what already turns a URL into a platform and an identity
-         everywhere else, so a link typed here is read the same way and a URL
-         that is not a profile we recognise is simply not recorded. */
-      /* Through `creator_save_profiles`, with the links the creator already
-         holds, so the addition is one filed change the history can undo. */
-      var added = (links || []).map(function (x) { return x.url; }).filter(function (u) { return readProfile(u); });
-      var after = function () { loadOptions(); loadRoster(paintPicker); };
-      if (added.length) {
-        var held = (c.creator_profiles || []).map(function (p) { return p.url; });
-        /* The offer stands either way; a link the database refused is named
-           under it rather than dropped without a word. */
-        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(function (res) {
-          var d = (res && res.data) || {};
-          after();
-          if (res.error || d.error) {
-            msg('optionMsg', c.name + ' added at ' + money(rate) + '. ' + (res.error ? 'The link was not saved.'
-              : d.error === 'taken' ? 'Link not saved: this profile belongs to another creator: ' + (d.url || '')
-              : 'Link not saved: not a profile link: ' + (d.url || '')), 'warn');
-          }
-        }).catch(after);
-      }
-      else { loadOptions(); setTimeout(paintPicker, 150); }
+      var added = r.data || [];
+      var was = [];
+      return Promise.all(again.map(function (x) {
+        return db.from('campaign_options')
+          .update({ state: 'option', rate: x.rate, platforms: x.plats.join(', '), drop_reason: null, position: pos + rows.length + again.indexOf(x) })
+          .eq('id', x.o.id).select('id').then(function (u) {
+            if (u.error || !(u.data || []).length) return x.c.name;
+            was.push({ id: x.o.id, state: x.o.state, drop_reason: x.o.drop_reason || null, rate: x.o.rate, platforms: x.o.platforms });
+            log('campaign.reinstated', logSubject(), x.c.name + ' · offered again');
+            return null;
+          });
+      })).then(function (refused) {
+        refused = refused.filter(Boolean);
+        return Promise.all(list.filter(function (x) { return x.links.length; }).map(function (x) {
+          var held = (x.c.creator_profiles || []).map(function (p) { return p.url; });
+          return db.rpc('creator_save_profiles', { p_creator: x.c.id, p_profiles: held.concat(x.links) }).then(function (res) {
+            var d = (res && res.data) || {};
+            if (!res.error && !d.error) return null;
+            return x.c.name + (d.error === 'taken' ? ': the link belongs to another creator' : ': the link was not saved');
+          }, function () { return x.c.name + ': the link was not saved'; });
+        })).then(function (linkFaults) {
+          done();
+          var n = added.length + was.length;
+          unpickedOpen[state.campaign.id] = true;
+          if (msgId === 'ncMsg') resetNc();
+          shutAddCreators();
+          ncDraft.clear();
+          var faults = refused.map(function (nm) { return nm + ' was not offered again.'; })
+            .concat(linkFaults.filter(Boolean).map(function (f) { return f + '.'; }));
+          msg('campWorkMsg', faults.join(' '), faults.length ? 'warn' : '');
+          loadOptions(); loadRoster();
+          if (!n) return;
+          var names = list.filter(function (x) {
+            return added.some(function (a) { return a.creator_id === x.c.id; }) ||
+              was.some(function (w) { return x.o && w.id === x.o.id; });
+          }).map(function (x) { return x.c.name; });
+          undoBar((n === 1 ? names[0] + ' added.' : n + ' creators added.'), function () {
+            undoOffer(added.map(function (a) { return a.id; }), was);
+          }, $('showAddOption').closest('.viewhead'));
+        });
+      });
+    }).catch(function (e) {
+      done();
+      msg(msgId, (e && e.message) || String(e), 'err');
     });
+  }
+
+  /* Undo takes away the offers just made and puts a creator offered again
+     back where they were. */
+  function undoOffer(ids, was) {
+    var go = ids.length
+      ? db.from('campaign_options').delete().in('id', ids).select('id')
+      : Promise.resolve({ data: [] });
+    go.then(function (r) {
+      if (r.error || (r.data || []).length !== ids.length) {
+        msg('campWorkMsg', 'Not undone. The database refused the request.', 'err');
+      }
+      return Promise.all(was.map(function (w) {
+        return db.from('campaign_options').update({ state: w.state, drop_reason: w.drop_reason, rate: w.rate, platforms: w.platforms })
+          .eq('id', w.id).select('id');
+      }));
+    }).then(function () { loadOptions(); })
+      .catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); loadOptions(); });
   }
 
   // ---- A new creator, made from inside the campaign ----------------------
@@ -3002,13 +3191,16 @@
 
     // Kept in the creators list with this as her usual rate, since it is the only
     // number known for her yet. The offer carries it independently.
+    var saveBtn = this;
+    saveBtn.disabled = true;
     db.from('creators').insert({ name: name, client_rate: rate, created_by: who() || null })
       .select().single().then(function (r) {
-        if (r.error) { msg('ncMsg', r.error.message, 'err'); return; }
+        if (r.error) { saveBtn.disabled = false; msg('ncMsg', r.error.message, 'err'); return; }
         var created = r.data;
         var offer = function (res) {
           var d = (res && res.data) || {};
           if (res && (res.error || d.error)) {
+            saveBtn.disabled = false;
             msg('ncMsg', res.error ? res.error.message
               : d.error === 'taken' ? 'This profile belongs to another creator: ' + (d.url || '')
               : 'Not a profile link: ' + (d.url || ''), 'err');
@@ -3016,10 +3208,10 @@
           }
           log('creator.added', name, 'from a campaign');
           created.client_rate = rate;
-          loadRoster(function () {
-            resetNc();
-            ncDraft.note({ campaign: state.campaign.id });
-            addOption(created, plats, rate);
+          /* Offered through the one path every tick takes, so the sheet
+             shuts and Undo is drawn the same way. */
+          offerCreators([{ c: created, o: null, rate: rate, plats: plats, links: [] }], 'ncMsg', function () {
+            $('ncSave').disabled = false;
           });
         };
         if (!raw.length) offer(null);
@@ -4006,7 +4198,7 @@
     window.ADspaceConfirm.ask({
       title: 'Revert to options',
       body: name + ' goes back among the options and their place frees up. '
-          + 'Dates and notes are kept.',
+          + 'Dates and notes are kept. The client chooses again once the selection is reopened.',
       go: 'Revert',
       tone: 'warn'
     }, function () {
