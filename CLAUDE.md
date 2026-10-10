@@ -986,7 +986,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Clients by stage;
   - a client's Engagements by content month;
   - Content Review as one card; a client's sets by content month;
-  - Campaigns by state (Completed shut);
+  - Creator Campaigns as a tab a state (`#campStages`: Draft, Open for
+    selection, In production, Completed, each counted, opening on the first
+    that holds any), a card a month made (MYT) under it, newest open; a row
+    reads Updated where the state would repeat its tab;
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;

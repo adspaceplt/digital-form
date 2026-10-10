@@ -5322,8 +5322,9 @@ body > .shell { width: 100%; }
    they sit in, and an unstated template is the desktop one at 390. */
 .crm-head.camp-row, .crm-row.camp-row {
   grid-template-columns:
-    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px var(--state-w) 18px;
+    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px 110px 18px;
 }
+.crm-row.camp-row .camp-c-upd { display: block; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 /* A heading over a money column ends where the figures end, and is still the
    same eyebrow as the headings beside it. */
 .crm-head .is-end { text-align: right; }
@@ -5336,7 +5337,7 @@ body > .shell { width: 100%; }
      other list, measured against its worst case. "Open for selection" is the
      widest chip a campaign can draw. */
   .crm-row.camp-row {
-    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-columns: minmax(0, 1fr) 110px;
     grid-template-areas: "name stage" "meta stage";
   }
   .crm-row.camp-row .camp-c-client,
