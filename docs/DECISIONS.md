@@ -1497,3 +1497,27 @@ month line under the name now reads the same answer, so opening a record
 reads the client's months once rather than twice. The Engagements rows had
 read a set's state from a column that does not exist (`state`), so every set
 read Draft; they read `published` now. No schema change.
+
+### 2026-10-10 · A brand analysis on each client, with the brand name for web research
+The user: "provide a suggestions or inputs on the deep analysis of this
+clients (either new or existing on their brand part, target audiences,
+SWOTs, advantages disadvantages, ads targetting etc."; on the two open
+questions: "clients name just give the clients brand name, perform detailed
+web research" and "anyone could run it". Every other writer masks the
+client's name as {brand}; this one alone sends the brand name, because web
+research on a masked name finds nothing. Contacts are still never read, and
+an email or a phone number typed into the brief, the notes or a caption is
+masked before it leaves. Any colleague at Clients View on a client in scope
+runs it, so the functions ask `client_seen` at View themselves and the table
+stays out of CLIENT SCOPE's guarded list (whose writes are at Work). The
+answer comes back through a strict custom tool (`submit_analysis`) beside
+the web search tool rather than structured output, which sits badly with
+the search's citations; `pause_turn` is resumed and the whole run is held
+to 140 seconds, the response streaming a space every 8 seconds so the
+connection stays open. A source is kept only where the search returned it.
+An analysis is a draft until a colleague declares it read and confirmed
+(the same declaration as captions and scripts); only the latest confirmed
+one reaches Write with AI, in compact form. Web searches cost US$10 a
+thousand, kept per press and priced as a Business setting beside the token
+prices. Defaults: 3 analyses a colleague a day, 10 an admin.
+

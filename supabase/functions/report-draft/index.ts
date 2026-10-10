@@ -101,6 +101,9 @@ WORDS
 Plain words for a shortfall, always with its figure: lower, fell, fewer, cost more, below, did not reach, short of, the least efficient, weaker than. In Chinese: 下降, 减少, 低于, 未达到, 成本较高, 不及, 较弱, 未达预期.
 ${AVOID}
 
+BRAND
+Where a brand analysis is given, the team has confirmed it: frame the next steps for its positioning and its audiences, and keep to its pillars. Never quote it, and never let it outweigh the month's own figures.
+
 LENGTH
 Write only what the client needs to understand the month and the next step; the tables already show every figure, so a point repeats a figure only to explain a decision. Pick the few ads or posts that matter most, never one point per ad. Each point is one sentence of at most 35 words; a sub-point only where it is essential, at most one under a point. Keep to the counts given for each field.`;
 
@@ -407,6 +410,17 @@ Deno.serve(async (req) => {
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
   const targets: { platforms: string[]; posts: string[] } = { platforms: [], posts: [] };
   if (notes) data.team_notes = mask(notes);
+
+  /* The client's latest confirmed brand analysis (2026-10-10): its
+     positioning, audiences and pillars, masked as the rest; none where no
+     analysis is confirmed or the database is older. */
+  const ba = await db.rpc('brand_analysis_brief', { p_client: r.client_id as string });
+  // deno-lint-ignore no-explicit-any
+  const maskDeep = (v: any): any => typeof v === 'string' ? mask(v).slice(0, 800)
+    : Array.isArray(v) ? v.slice(0, 6).map(maskDeep)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskDeep(x)])) : v;
+  const brandAnalysis = !ba.error && ba.data && typeof ba.data === 'object' ? maskDeep(ba.data) : null;
+  if (brandAnalysis && !check) data.brand_analysis = brandAnalysis;
 
   /* Last period's commentary, so this month follows up on what was said. */
   const keys = FIELDS[kind].map(([k]) => k);

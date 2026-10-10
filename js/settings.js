@@ -70,7 +70,8 @@
         { id: 'due', name: 'Due dates', kind: 'edit',
           meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]) },
         { id: 'prices', name: 'AI prices', kind: 'edit',
-          meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' },
+          meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
+            (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') },
         { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
           meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' }
       ] });
@@ -167,7 +168,8 @@
         ['revision_due_days', 'Revision (Client): days after changes are asked', 'due']] });
       return;
     }
-    if (a === 'prices') { ed({ title: 'AI prices, US$ a million tokens', keys: [['ai_price_in', 'Input', 'usd'], ['ai_price_out', 'Output', 'usd']] }); return; }
+    if (a === 'prices') { ed({ title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],
+      ['ai_price_search', 'Web searches, a thousand', 'usd']] }); return; }
     if (a === 'meta') { flipMeta(btn); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }

@@ -77,7 +77,7 @@ rednote: soft selling and authentic discovery in a first person, benefit led, tr
 
 TRUTH
 Say only what the notes, the titles and the client's industry support. Never invent a price, an offer, a date, an address, an award, a figure or a claim. Where the notes give no offer, the call to action invites the reader to find out more.
-Where a brief is given, write for its audience and their pain points, keep to its pillars and tone, never use what it lists to avoid, never name a competitor, and let a hook that worked shape the opening without copying it; the brand notes are the client's own words on how it speaks. Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
+Where a brief is given, write for its audience and their pain points, keep to its pillars and tone, never use what it lists to avoid, never name a competitor, and let a hook that worked shape the opening without copying it; the brand notes are the client's own words on how it speaks. Where a brand analysis is given, the team has confirmed it: write for its positioning and its audiences' pains and motivations, and keep to its pillars. Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name.
 These brand names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, ADspace.
 
 LANGUAGE
@@ -162,11 +162,21 @@ Deno.serve(async (req) => {
     if (v) brief[k] = mask(v).slice(0, 1000);
   }
   const brandNotes = String(briefIn.brand_notes ?? '').trim();
+  /* The client's latest confirmed brand analysis (2026-10-10): its
+     positioning, audiences and pillars, masked as the rest; none where no
+     analysis is confirmed or the database is older. */
+  const ba = await db.rpc('brand_analysis_brief', { p_client: set.data.client_id as string });
+  // deno-lint-ignore no-explicit-any
+  const maskDeep = (v: any): any => typeof v === 'string' ? mask(v).slice(0, 800)
+    : Array.isArray(v) ? v.slice(0, 6).map(maskDeep)
+    : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, maskDeep(x)])) : v;
+  const brandAnalysis = !ba.error && ba.data && typeof ba.data === 'object' ? maskDeep(ba.data) : null;
 
   const data: Record<string, unknown> = {
     platform, format,
     brief: Object.keys(brief).length ? brief : null,
     brand_notes: brandNotes ? mask(brandNotes).slice(0, 1500) : null,
+    brand_analysis: brandAnalysis,
     market: String(c.market || '').toUpperCase() === 'SG' ? 'Singapore' : 'Malaysia',
     industry: String(c.industry || '').trim() || null,
     set: mask(String(set.data.title || '')),
