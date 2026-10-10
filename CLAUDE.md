@@ -349,13 +349,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADSPACE_TABBAR` (the head script, which sets `:root.has-tabbar` before
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
-  it; five or fewer with no Activity record take the bar whole. More lists
-  only what the bar does not (`.is-tabbed`), then the rail's foot. The
-  rail's foot, at a desk as under the bar, is one line of marks named for a
-  screen reader and on hover (Arrange sections, Settings, the Activity
-  record; the user, 2026-10-10: "just use icons"), the build under them at a
-  desk and at the line's right end under the bar. The
-  menu toggle gives way to it; the drawer stays for a narrow desk window.
+  it; five or fewer take the bar whole. More lists only what the bar does
+  not (`.is-tabbed`), then the rail's foot, which holds the build alone at
+  a desk as under the bar (the user, 2026-10-10: "the side tab bar three
+  icons are so weird"): Settings, Arrange sections and the Activity record
+  are in the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; a sheet covers it; a field taking the
   keyboard under a finger hides it (`is-typing`). The chosen tab is the
@@ -363,8 +361,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`tests/tabbar.js`).
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
   "mobile tab and web … both sync edits"): one order a colleague for the
-  web rail and the phone tab bar alike. `#railEdit` at the rail's foot (in
-  More under the bar; drawn with three sections or more) opens
+  web rail and the phone tab bar alike. `#railEdit` in the account menu
+  (drawn with three sections or more) opens
   `#railSheet`: the rail's groups (Work, Internal) as lists, a section
   dragged by its grip or moved with the arrow keys on it within its group,
   the Overview fixed first; under the bar the rows it will hold read Tab
@@ -379,7 +377,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   standard order. Not filed in the Activity record.
 - Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
   2026-10-09: the account menu grew long and AI usage hid under Reports):
-  a `.railfoot` row above the Activity record (`#settingsOpen`), offered to
+  an item in the account menu (`#settingsOpen`, its Workspace group with
+  Arrange sections and the Activity record, each drawn only where it may be
+  used, the group's hairline leaving with the last), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. A card a group
@@ -389,17 +389,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
   drawn only for its part, its value under its name, a switch, Edit or Open
   at the right edge opening the one sheet that already edits it. The
-  account menu keeps what is the person's own (My records, My namecard,
-  Passkeys, Notifications, Refresh app, Sign out); the Reports bar holds no
-  AI usage. It joins the tab bar's More (`tests/adminparts.js`,
-  `tests/tabbar.js`).
+  account menu reads, in compact rows at a desk (a control's height; 48px
+  docked on a phone): who you are; You (My records, My namecard);
+  Workspace (Settings, Arrange sections, Activity record); This device
+  (Theme, Passkeys, Notifications, Refresh app); Sign out. The Reports bar
+  holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
   `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
   `client/sw.js` holds that alone, at `/client/file/`, registered by
   `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
-- The rail's foot names the build under the Activity record (`#appVersion`,
+- The rail's foot names the build, alone (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from
@@ -1077,7 +1078,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the redirect hosts `hi.adspace.me` and `go.adspace.me` as links.
 
 ### Console search (`js/search.js`)
-- One control in the console head (`#searchOpen`, beside the theme switch);
+- One control in the console head (`#searchOpen`, before the bell and the
+  account);
   Cmd/Ctrl + K opens it anywhere, `/` only when no field has the caret.
   Neither takes over another open sheet or the confirm bar.
 - The panel is a sheet through `js/sheet.js` (`#searchSheet`): under the head

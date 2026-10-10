@@ -171,13 +171,14 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Client pages (`/client/`, `/creators/`, `/creator/`, `/review/`, `/verify/`,
   the covers) are **light only** and never carry `data-theme`.
 - The console follows the device until somebody chooses.
-  - The choice is kept in `localStorage` `adspace-theme` and wins from then on.
-  - Choosing the register the device already shows clears the choice.
-  - A `matchMedia` listener follows the device while nothing is stored.
+  - The choice is Theme in the account menu (`#themePick`, a small segment:
+    Auto, Light, Dark; the user, 2026-10-10: "add the settings into the
+    Name"), kept in `localStorage` `adspace-theme` and winning from then on.
+  - Auto clears the choice; a `matchMedia` listener follows the device while
+    nothing is stored.
   - The head script applies it before first paint.
   - The palette hangs off `:root[data-theme="dark"]`.
-- The switch is `.themeswitch` in the console bar: an icon naming the register
-  it moves to, never an account-menu item.
+  - No theme control sits in the console bar.
 - The post mockups and the client's logo disc stay light in both themes.
 - uxaudit walks the console in both themes.
 
@@ -228,11 +229,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A read group with its own act (Brand: Meta) | `.readgroup` > `.readgroup-head` (the `fsec-h` title, then a `.btn-sm` with its glyph at the right edge) over its `dl.ovfacts`; its sheet holds a ticked list (`.meta-accs`, its own scroll past 40dvh) and the selects |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
-| Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab the `--line-soft` fill behind its glyph and its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. More opens the rail as a card above the bar (`--raised`, `--line-lift` top edge, the large corner), holding only the sections the bar does not, the rail's foot one line of marks (Arrange sections, Settings, the Activity record; 44px here, the control's height at a desk with the build under them) with the build at the right; a sheet covers the bar |
+| Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab the `--line-soft` fill behind its glyph and its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. More opens the rail as a card above the bar (`--raised`, `--line-lift` top edge, the large corner), holding only the sections the bar does not, then the build; a sheet covers the bar |
 | A colleague's own order of the sections | `#railSheet` (Arrange sections, `js/admin.js`): a `.formsheet` of the rail's groups, each an `.fsec` list of `.ro-row`s (the rail glyph, the name, a grey `Tab bar` chip where the phone's bar will hold it, the grip as an icon button at the right edge, 44px under a finger); the row in hand takes `--sunk`; Save, Reset order, Cancel in the foot. The rail and the tab bar follow it |
-| What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen`, a `.railfoot` row above the Activity record: one `ADspaceGroup.section` card a group, a `.set-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch`, Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
+| What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen` in the account menu: one `ADspaceGroup.section` card a group, a `.set-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch`, Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
 | Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet, as its own shaded block after the question's fields (`.askentry.is-declare`: the AI mark and the line naming the person's responsibility, then a `.tickline` that refuses until ticked), never run on into the question's words. Never asked of words typed by hand |
-| Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), Sign out; what changes the portal for everybody is the Settings page, never the menu. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
+| Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), the workspace (`.acct-group`: Settings, Arrange sections, Activity record, each only where it may be used, the group gone with its hairline when none is), this device (Theme as a small segment at the row's right edge, Passkeys, Notifications as a switch, Refresh app), Sign out; what changes the portal for everybody is the Settings page it opens. Compact: rows a control's height, 272px wide. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
 | A message sent on WhatsApp (the WhatsApp section) | `#waList` (`js/whatsapp.js`): `.tally.wam-heads` (white cells, the month's templates sent by category) over one `ADspaceGroup` card of `.wam-row`s: who (name over client and number, a failure's reason in `--err` under it on a narrow pane), what (purpose over template and category), who sent it, the status over when (`.chip-state` with its dot); on a narrow pane who over meta at the left and status over when at the right. Templates: `.wat-row` a purpose over its template, its `button.switch`, Edit |
@@ -440,7 +441,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   hover fill hugs the line (26px, a `::before`), never a slab the height of
   the target.
 - The ⋯ is the lightest control. The account control, the bell and the
-  Activity link carry no outline, only a `--line-soft` fill on hover and while
+  search carry no outline, only a `--line-soft` fill on hover and while
   open.
 
 ### Colour, state, hover
@@ -625,8 +626,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     order within each chunk (Arrange sections), which the tab bar follows;
     everything else keeps this one.
   - **Internal**: Documents, Short Links, Services, Team, Handbook.
-  - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
-    not a section).
+  - The Activity record is in the account menu, not a section; the rail's
+    foot holds the build alone.
   - A chunk whose every route is withheld hides its label.
 - Everything hangs off a client. Only active clients appear in Content Review,
   campaigns and reports.
