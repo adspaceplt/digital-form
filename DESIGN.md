@@ -626,8 +626,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     order within each chunk (Arrange sections), which the tab bar follows;
     everything else keeps this one.
   - **Internal**: Documents, Short Links, Services, Team, Handbook.
-  - The Activity record is a mark at the rail's foot on the build's line
-    (`.sidebar-foot`, a `.railrow`, not a section).
+  - The Activity record is a mark at the rail's foot, at the right edge of
+    the build's line (`.sidebar-foot`, a `.railrow`, not a section).
   - A chunk whose every route is withheld hides its label.
 - Everything hangs off a client. Only active clients appear in Content Review,
   campaigns and reports.

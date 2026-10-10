@@ -1828,8 +1828,8 @@ height at a desk (38px, the floor uxaudit's `target` holds) and 48px docked
 on a phone; it is 272px wide. The Activity record, read more often, stays
 at the rail's foot as one mark on the build's line (the user: "activity log
 can go inline with version code", "just activity record icons would do"):
-the mark left and the build right at a desk; under the tab bar the build
-left and the mark at the right edge, nearest the thumb.
+the build at the left and the mark at the right edge, at a desk as under
+the tab bar, where the right edge is nearest the thumb.
 
 The theme leaves the bar for a segment in the menu: Auto, Light, Dark. This
 reverses the 2026-09-20 rule that put a one-press switch in the bar and kept

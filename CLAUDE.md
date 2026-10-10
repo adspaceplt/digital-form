@@ -352,8 +352,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   it; five or fewer take the bar whole. More lists only what the bar does
   not (`.is-tabbed`), then the rail's foot: one line of the Activity
   record's mark (named for a screen reader and on hover) and the build, the
-  mark at the rail's left edge and the build at the right at a desk, the
-  build left and the mark at the right edge under the bar (the user,
+  build at the left and the mark at the right edge, at a desk as under the
+  bar (the user,
   2026-10-10: "activity log can go inline with version code", "just
   activity record icons would do"); Settings and Arrange sections are in
   the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
