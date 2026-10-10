@@ -165,7 +165,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
-| `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
+| `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |

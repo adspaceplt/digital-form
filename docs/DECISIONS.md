@@ -1766,6 +1766,12 @@ Request change moved onto the shared sheet, and a creator's unsent caption
 is kept a booking.
 
 Where the reviewer's fix was heavier than the problem, the lighter one was
-taken: no structured result line in every suite, no build fingerprints. The
-media pass is narrowed last, once each client page's folders are mapped,
-since every file name is a random UUID and a pass alone opens nothing.
+taken: no structured result line in every suite, no build fingerprints.
+
+A random file name is not an authorization boundary (the user, 2026-10-10):
+the media pass over all of `content/` stays an open finding (F3) until
+CloudFront's own configuration is read and the pass is tested against it.
+
+A suite written for F6 and F7 (`tests/fileworker.js`, ten checks failing on
+main) found the console worker's own clean-up deleting every cache but its
+own whenever it updated; it now clears only the console's older stores.
