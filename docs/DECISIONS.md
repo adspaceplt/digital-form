@@ -1924,4 +1924,6 @@ branch, so `CLAUDE.md` no longer names one: it works on the branch it is
 given, and a release in progress is carried by its PR (its description holds
 the order and rollback, a comment what is still open), never by a session's
 memory. Connectors (GitHub, Supabase) are per account and are connected again
-there; no secret moves.
+there; no secret moves. Only one account works at a time, and "hand over"
+(push both repositories, then one comment on the open PR) is the step
+before switching.

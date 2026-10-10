@@ -4263,6 +4263,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes
   go apart.
+- Two accounts, one at a time (the user, 2026-10-10): the user may move
+  between accounts as credits allow, never with two sessions working at
+  once. "Hand over" means: commit and push both repositories, then post
+  or replace one comment on the open PR (else a draft PR) stating the
+  commits, the checks passed, failed and not run, the steps done and
+  still open in order with their rollback, and what waits on the user. A
+  session opening on an open PR reads its latest handover first and
+  continues its branch.
 - A release with a migration or a function states its order (pages,
   each migration, each function), what an old open tab meets at every
   intermediate state, what a failed step leaves and which steps reverse.
