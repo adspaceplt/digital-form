@@ -215,11 +215,16 @@
      precision on a two week stall is noise, and "487 days" is a number nobody
      reads, so days give way to months once a stage has run long enough that
      the exact day has stopped mattering. */
+  /* Calendar days in Malaysia, as the dates beside them read (2026-10-10:
+     a stage begun at 3:59pm on 9 Oct read Today at noon on 10 Oct, because
+     whole 24 hours were counted rather than days on the calendar). */
+  function myDay(t) { return Math.floor((t + 8 * 3600e3) / 86400000); }
+  function daysBetween(from, to) { return Math.max(0, myDay(to) - myDay(from)); }
   function daysSince(iso) {
     if (!iso) return null;
     var t = Date.parse(iso);
     if (isNaN(t)) return null;
-    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+    return daysBetween(t, Date.now());
   }
   function spanWord(days) {
     if (days === null) return '';
@@ -284,7 +289,7 @@
         word: stageWord(log[i].stage)[1],
         at: log[i].at,
         reason: log[i].reason || '',
-        days: Math.max(0, Math.floor((next - at) / 86400000)),
+        days: daysBetween(at, next),
         now: last
       });
     }
@@ -2064,7 +2069,7 @@
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
-      var spent = ageWord(c) || 'no time';
+      var spent = daysSince(c.stage_since) === 0 ? 'the same day' : (ageWord(c) || 'no time');
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
@@ -3211,7 +3216,7 @@
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
           if (q.error || !(q.data || []).length) return;
-          var spent = ageWord(state.client) || 'no time';
+          var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
           if (mine) mine.stage = 'contacted';
