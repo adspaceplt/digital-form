@@ -128,7 +128,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage |
+| `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting |
@@ -150,7 +151,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
-| `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql |
+| `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
@@ -349,8 +350,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. A card a group
   (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks; AI:
-  AI usage and limits; Records: Document types, Task numbering), each row
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks;
+  WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
   drawn only for its part, its value under its name, a switch, Edit or Open
   at the right edge opening the one sheet that already edits it. The
   account menu keeps what is the person's own (My records, My namecard,
@@ -968,6 +969,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Directories and the command bar
 - Every console directory is a card per group via `js/group.js`:
   - Clients by stage;
+  - a client's Engagements by content month;
   - Content Review as one card;
   - Campaigns by state (Completed shut);
   - the Creators List by fee band (Inactive shut);
@@ -1133,12 +1135,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     holds today, `n of N done` (`ops_engagement_counts`), the overdue count
     and Report due (the span's end plus `report_due_days`) where the month
     owes one, led by its dot (red with any overdue, green when all done,
-    else amber); it opens the client's Months view.
+    else amber); it opens the client's Months view. It is read from the
+    Engagements pane's answer, never a read of its own.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
-  - Overview, Contacts, Billing, Brand, Services, Documents, Reports, Activity;
+  - Overview, Engagements, Contacts, Billing, Brand, Services, Documents,
+    Activity;
   - Requests once a contact has portal access or a request exists.
   - There is no Work pane. `tab=work` lands in My Work's Months view
-    (`view=months&wc=slug`).
+    (`view=months&wc=slug`); there is no Reports pane, and `tab=reports`
+    lands on Engagements.
 - Below 1100 the rail splits. `.rec:not(.cportal) > .rec-rail` is
   `display: contents`, and the blocks take `order`:
   - Next action, the billing gate and Profile come before the tabs.
@@ -1275,8 +1280,42 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
   - Approval never edits a service line.
-- Engagements show only once Active. A campaign's state chip reads
-  `W.campState`.
+- Engagements (`js/engage.js`, `tab=engagements`; the user, 2026-10-09:
+  "one less tab to monitor"): the client's work by content month, its
+  reports included. The tab is drawn for an Active, Paused or Past client,
+  or one holding anything in it (a lead's waits for the answer, and its
+  address falls back to Overview). The head holds Open Content Review /
+  Enable Content Review and New campaign, each behind its own check, while
+  the client is Active.
+  - A card a month (`ADspaceGroup.section`, route `client-months`), newest
+    first: a month from today's on open, an older one shut until opened and
+    remembered; a month starting on its `start_day` states its span on the
+    heading, and the heading counts the month's overdue tasks in red. A month
+    is drawn only where the reader may see something in it.
+  - A row a thing (`.cmonth-row`: the section's rail glyph on a tonal tile,
+    the name over its facts, the state, the chevron), in the rail's order:
+    Content (My Work View: `n of N done` as the month line reads it, red with
+    an overdue task, Completed, Cancelled, No tasks; Report due while ahead;
+    opens the client's Months view), each Content Review set (`review.sets`
+    View; Published or Draft), the month's Video Scripts as one row
+    (`scripts` View; `n scripts · n published`, Published once all are;
+    opens the month's first script), each creator campaign (`campaigns.campaigns`
+    View; `W.campState`), each report (Reports View: Draft, In review,
+    Confirmed, Published with Sent {day} or Not sent, On request and White
+    label as chips; opens the report). A colleague at Clients View without
+    Reports reads the finished reports alone (`sm_client_reports`), each
+    with Download (`ADspaceReports.clientFile`, `sm_report_file`). A row
+    opens its record as search does (the address, then the section).
+  - Filed by content month: a report by the month whose span holds its last
+    day (as `sm_report_gate` finds it), a set and a campaign by the day they
+    were made (MYT), a script by its `period`; with no month holding the day,
+    the calendar month. A reader of Reports without My Work takes the spans
+    from `sm_report_months`.
+  - Each block asks its `may()` before it reads and is read once for the
+    client in one request (never one a month or a row): on opening the
+    record, on entering it again and on a visit to the pane; a repaint reads
+    nothing. A refused read is `failLine` for that block alone, above the
+    months, with Try again. Nothing at all reads No engagements.
 - Delete client:
   - in the record's ⋯, as a sheet counting from the loaded record;
   - the name typed back, plus the delete code where `delete_code_set()`;
@@ -2852,8 +2891,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     stands for the publish it was drawn after (`file_at` not before
     `published_at`), so a version published again keeps the next file.
     Every download of a published version (the head's Preview PDF and
-    Download, Select's Download, the client record's tab, the client
-    portal) hands over that file, read back as bytes through
+    Download, Select's Download, the client record's Engagements, the
+    client portal) hands over that file, read back as bytes through
     `sign-download` `{ reportVersion }` (`sm_report_file_key`, asked as the
     caller: a colleague at Reports or Clients View on a client they see,
     any version; a client's contact only the version the portal shows),
@@ -2915,8 +2954,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     platforms only on a report that holds some; an account sheet shows its
     own remarks only where it is not its group's lead and holds some. The
     step counts the summary and each platform (`commentaryState`).
-- The client record's tab shows finished reports only (`sm_client_reports`,
-  `sm_report_file`).
+- The client record lists a client's reports on its Engagements pane, each
+  in its content month (Clients: Engagements); there is no Reports tab on
+  the record.
 - The client portal reads only the newest version that has not been withdrawn
   (`portal_reports`, `portal_report`), and names it as its cover does
   (`ADspaceSmReport.titleOf`).

@@ -436,7 +436,7 @@
                          age: x.late ? daysWord(over) + ' late' : 'Due ' + dateWord(x.due), ageTone: x.late ? 'err' : '',
                          url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
                            : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
-                           : may('clients') ? clientUrl(c, 'reports') : '/admin/?s=reports',
+                           : may('clients') ? clientUrl(c, 'engagements') : '/admin/?s=reports',
                          section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
               }) };
           });
