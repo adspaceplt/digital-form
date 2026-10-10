@@ -11269,10 +11269,14 @@ button.vs-row { cursor: pointer; }
 .wat-act .btn { flex: 0 0 auto; }
 .is-narrow .crm-head.wat-row { display: none; }
 .is-narrow .wat-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name on" "name act";
-  align-items: start; gap: 8px 12px; padding: 12px 15px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "name act on";
+  align-items: start; gap: 0 8px; padding: 12px 15px;
 }
+/* The pen alone, a square of the control's height, its name kept for a
+   screen reader by the button's own label. */
+.is-narrow .wat-row > .wat-act .btn { min-width: 0; width: var(--ctl-h); height: var(--ctl-h); min-height: var(--ctl-h); padding: 0; justify-content: center; }
+.is-narrow .wat-row > .wat-act .wat-word { display: none; }
 .is-narrow .wat-row > .wat-name { grid-area: name; }
 .is-narrow .wat-row > .wat-on { grid-area: on; justify-content: flex-end; }
 .is-narrow .wat-row > .wat-act { grid-area: act; }
@@ -11311,3 +11315,41 @@ button.vs-row { cursor: pointer; }
 .eng-results .eng-val { display: grid; gap: 2px; }
 .eng-post { display: block; }
 .eng-fig { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Arrange sections (js/admin.js, #railSheet, 2026-10-10): the rail's groups
+   as lists, a row a section (its rail glyph, the name, Tab bar where the
+   phone's bar will hold it, the grip at the right edge). The row a hand
+   carries takes the sunk ground. */
+.ro-list { display: grid; }
+.ro-row {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) auto var(--ctl-h);
+  grid-template-areas: "glyph name tab grip"; align-items: center; gap: 0 12px;
+  min-height: var(--ctl-h); padding: 3px 0 3px 4px; border-top: 1px solid var(--line-soft);
+  background: var(--card); border-radius: 0;
+  transition: background var(--t-fast) var(--ease);
+}
+.ro-row:first-child { border-top: 0; }
+.ro-glyph { grid-area: glyph; display: flex; color: var(--ink-soft); }
+.ro-glyph svg { width: 15px; height: 15px; stroke-width: 1.8; }
+.ro-name { grid-area: name; font-size: 14px; color: var(--ink); overflow-wrap: anywhere; }
+.ro-tab { grid-area: tab; align-self: center; margin: 0; }
+.ro-grip { grid-area: grip; cursor: grab; touch-action: none; }
+.ro-row.is-drag { background: var(--sunk); border-radius: var(--radius-sm); }
+.ro-row.is-drag .ro-grip { cursor: grabbing; }
+.ro-msg:empty { display: none; }
+
+/* Under the tab bar, More's foot is one line of marks (the user, 2026-10-10:
+   "just use icons since i alr know what is it"): Arrange sections,
+   Settings and the Activity record, each a 44px mark whose name stays for a
+   screen reader, the build at the line's right end. A desk keeps the rows. */
+:root.has-tabbar .sidebar-foot { display: flex; align-items: center; gap: 4px; }
+:root.has-tabbar .sidebar-foot .railrow {
+  flex: 0 0 auto; width: 44px; min-width: 44px; height: 44px; min-height: 44px;
+  margin: 0; padding: 0; justify-content: center; gap: 0;
+}
+:root.has-tabbar .sidebar-foot .railrow svg { width: 20px; height: 20px; }
+:root.has-tabbar .sidebar-foot .railrow > span {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+:root.has-tabbar .sidebar-foot .appver { margin: 0 0 0 auto; padding: 0 4px; }

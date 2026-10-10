@@ -673,7 +673,7 @@
     var img = files.filter(function (f) { return f.kind === 'image'; })[0];
     if (img) return '<span class="cx-cover"><img src="' + esc(img.url) + '" alt="" loading="lazy"></span>';
     var vid = files.filter(function (f) { return f.kind === 'video'; })[0];
-    if (vid && window.ADspaceMedia) return '<span class="cx-cover">' + ADspaceMedia.tag(vid.url, 'muted playsinline preload="metadata"') + '</span>';
+    if (vid && window.ADspaceMedia) return '<span class="cx-cover">' + ADspaceMedia.still(vid.url) + '</span>';
     return '';
   }
 

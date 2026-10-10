@@ -487,6 +487,7 @@
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
       menuOf('vsRecMore', '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
         (may('work') ? '<button class="kmenu-item" data-a="reset" type="button"><b>Reset access link</b></button>' : ''));
+    wireHead();
     paintLink();
     var inMonth = st.mode === 'month';
     $('vsMonthList').hidden = !inMonth;
@@ -554,29 +555,38 @@
     wireRecord();
   }
 
+  function onAct(root, a, fn) { var b = root && root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); }
+  /* A ⋯ and its items: opened on its button, placed on the viewport. */
+  function wireMenu(id) {
+    var mb = $(id);
+    if (!mb) return;
+    var menu = mb.parentNode.querySelector('[data-menu]');
+    mb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutMenu();
+      menu.hidden = !open;
+      mb.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(mb, menu);
+    });
+    onAct(menu, 'download', function () { shutMenu(); drawPdf(mb, true); });
+    onAct(menu, 'reset', function () { shutMenu(); resetLink(); });
+    onAct(menu, 'del', function () { shutMenu(); remove(); });
+  }
+  /* The record's head (Preview PDF and its ⋯) is wired as it is drawn, on
+     the month as on a script (the user, 2026-10-10: the month's ⋯ opened
+     nothing). */
+  function wireHead() {
+    onAct($('vsRecCtl'), 'pdf', function (b) { drawPdf(b, false); });
+    wireMenu('vsRecMore');
+  }
   function wireRecord() {
-    var on = function (root, a, fn) { var b = root && root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
-    var ctl = $('vsRecCtl'), body = $('vsRecBody');
-    on(ctl, 'pdf', function (b) { drawPdf(b, false); });
+    var on = onAct;
+    var body = $('vsRecBody');
     on(body, 'edit', function (b) { openEdit(b); });
     on(body, 'publish', function (b) { publish(true, b); });
     on(body, 'unpublish', function (b) { publish(false, b); });
-    [['vsRecMore', ctl], ['vsCardMore', body]].forEach(function (pair) {
-      var mb = $(pair[0]);
-      if (!mb) return;
-      var menu = mb.parentNode.querySelector('[data-menu]');
-      mb.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var open = menu.hidden;
-        shutMenu();
-        menu.hidden = !open;
-        mb.setAttribute('aria-expanded', String(open));
-        if (open) window.ADspaceMenu.place(mb, menu);
-      });
-      on(menu, 'download', function () { shutMenu(); drawPdf(mb, true); });
-      on(menu, 'reset', function () { shutMenu(); resetLink(); });
-      on(menu, 'del', function () { shutMenu(); remove(); });
-    });
+    wireMenu('vsCardMore');
     var fields = Array.prototype.slice.call(body.querySelectorAll('input[data-vc]'));
     fields.forEach(function (input, k) {
       var row = input.closest('[data-scene]');

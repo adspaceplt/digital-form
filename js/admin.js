@@ -668,6 +668,8 @@
       if (me && window.ADspaceGuide) window.ADspaceGuide.useServer(function () {
         return db.rpc('guides_seen').then(function (g) { if (g.error) throw g.error; return g.data || []; });
       }, function (key) { db.rpc('guide_seen_mark', { p_guide: key }).then(function () {}, function () {}); });
+      /* The rail and the tab bar as this colleague arranged them. */
+      if (me) loadRail();
       meLoaded = true;
       go();
     }).catch(function () { me = null; meFailed = true; meLoaded = true; go(); });
@@ -679,7 +681,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -702,7 +704,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -888,6 +890,59 @@
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
   var tabMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   var tabbed = [];
+  /* The person's own order (the user, 2026-10-10: "Add in the phone tab
+     bar rearrange"; "mobile tab and web … both sync edits"): one list a
+     colleague, kept by `rail_order_set` with a copy in this browser so the
+     first paint is theirs. It orders each of the rail's groups (Work,
+     Internal; the Overview stays first), a section it does not name after
+     in the standard order, and the tab bar takes the rail as it then reads,
+     so the web and the phone follow the one arrangement. */
+  var railPick = [];
+  var railStd = null;
+  var tabRoom = 4;
+  function railKey() { return me && me.id ? 'adspace-rail:' + me.id : ''; }
+  function railGroups() {
+    return Array.prototype.filter.call(document.querySelectorAll('#sidebar .navgroup'), function (g) {
+      return g.querySelector('.sidebar-label');
+    });
+  }
+  function applyRail(list) {
+    var groups = railGroups();
+    if (!railStd) railStd = groups.map(function (g) {
+      return Array.prototype.map.call(g.querySelectorAll('.navitem[data-section]'), function (b) { return b.getAttribute('data-section'); });
+    });
+    groups.forEach(function (g, n) {
+      var std = railStd[n] || [];
+      var want = (list || []).filter(function (k) { return std.indexOf(k) > -1; });
+      std.forEach(function (k) { if (want.indexOf(k) < 0) want.push(k); });
+      want.forEach(function (k) {
+        var b = g.querySelector('.navitem[data-section="' + k + '"]');
+        if (b) g.appendChild(b);
+      });
+    });
+  }
+  function keepRail(list) {
+    railPick = (list || []).filter(function (k) { return typeof k === 'string'; });
+    applyRail(railPick);
+    var k = railKey();
+    if (!k) return;
+    try {
+      if (railPick.length) localStorage.setItem(k, JSON.stringify(railPick));
+      else localStorage.removeItem(k);
+    } catch (e) {}
+  }
+  function loadRail() {
+    var k = railKey();
+    var kept = [];
+    if (k) { try { var v = JSON.parse(localStorage.getItem(k) || '[]'); if (Array.isArray(v)) kept = v; } catch (e) {} }
+    keepRail(kept);
+    db.rpc('rail_order_mine').then(function (r) {
+      if (r.error || !r.data || r.data.error || !Array.isArray(r.data.sections)) return;
+      if (r.data.sections.join(',') === railPick.join(',')) return;
+      keepRail(r.data.sections);
+      if (meLoaded) paintTabbar();
+    }).catch(function () {});
+  }
   function tabbarOn() { return Boolean(tabMedia && tabMedia.matches); }
   function paintTabbar() {
     var bar = $('tabBar');
@@ -897,8 +952,11 @@
     var act = $('activityOpen'), sets = $('settingsOpen');
     var withAct = Boolean((act && !act.hidden) || (sets && !sets.hidden));
     var room = open.length <= 5 && !withAct ? 5 : 4;
+    tabRoom = room;
     var tabs = open.slice(0, room);
     var more = open.length > room || withAct;
+    var edit = $('railEdit');
+    if (edit) edit.hidden = !(open.length > 2 && (!tabbarOn() || more));
     tabbed = tabs.map(function (b) { return b.getAttribute('data-section'); });
     navItems().forEach(function (b) {
       b.classList.toggle('is-tabbed', tabbed.indexOf(b.getAttribute('data-section')) > -1);
@@ -949,6 +1007,141 @@
       if (name === 'more') { rail.isOpen() ? rail.shut() : rail.open(); return; }
       if (rail.isOpen()) rail.shut();
       visitSection(name);
+    });
+    /* Arrange sections (the rail's foot; under the tab bar, More's): the
+       rail's two groups as lists, each section dragged by its grip (or
+       moved with the arrow keys on it) within its group. Under the tab bar
+       the sections it will hold read Tab bar as they move. Save keeps the
+       order for the rail and the bar alike; Reset order puts the standard
+       back in the sheet. */
+    var RO_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+    var RO_GRIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg>';
+    var roBox = null;
+    function roSheet() {
+      if (roBox) return roBox;
+      roBox = document.createElement('div');
+      roBox.className = 'sheet'; roBox.id = 'railSheet'; roBox.hidden = true;
+      roBox.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="railSheetH" data-narrow="560">' +
+        '<div class="sheet-head"><h3 id="railSheetH">Arrange sections</h3>' +
+        '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + RO_X + '</button></div>' +
+        '<div class="sheet-body"><div id="railLists"></div><div class="msg ro-msg" id="railMsg" role="status"></div></div>' +
+        '<div class="sheet-foot">' +
+          '<button class="btn btn-primary" type="button" id="railSave">Save</button>' +
+          '<button class="btn" type="button" id="railReset">Reset order</button>' +
+          '<button class="btn btn-quiet" type="button" id="railCancel">Cancel</button>' +
+        '</div></div>';
+      document.body.appendChild(roBox);
+      roBox.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      $('railCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      $('railReset').addEventListener('click', function () { roFill(railStd ? [].concat.apply([], railStd) : []); });
+      $('railSave').addEventListener('click', roSave);
+      var lists = $('railLists');
+      /* The drag: a press on a grip carries its row; the row moves before
+         the first row whose middle is below the hand, within its own list. */
+      var drag = null;
+      lists.addEventListener('pointerdown', function (e) {
+        var g = e.target.closest('.ro-grip');
+        if (!g || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        e.preventDefault();
+        var row = g.closest('.ro-row');
+        drag = { row: row, list: row.parentNode, id: e.pointerId };
+        row.classList.add('is-drag');
+        try { g.setPointerCapture(e.pointerId); } catch (x) {}
+      });
+      lists.addEventListener('pointermove', function (e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        var rows = Array.prototype.filter.call(drag.list.children, function (r) { return r !== drag.row; });
+        var before = null;
+        for (var i = 0; i < rows.length; i++) {
+          var q = rows[i].getBoundingClientRect();
+          if (e.clientY < q.top + q.height / 2) { before = rows[i]; break; }
+        }
+        if (before !== drag.row.nextElementSibling || (!before && drag.list.lastElementChild !== drag.row)) {
+          drag.list.insertBefore(drag.row, before);
+          roMarks();
+        }
+      });
+      function drop() {
+        if (!drag) return;
+        drag.row.classList.remove('is-drag');
+        drag = null;
+        roMarks();
+      }
+      lists.addEventListener('pointerup', drop);
+      lists.addEventListener('pointercancel', drop);
+      lists.addEventListener('keydown', function (e) {
+        var g = e.target.closest('.ro-grip');
+        if (!g || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+        e.preventDefault();
+        var row = g.closest('.ro-row');
+        if (e.key === 'ArrowUp' && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
+        else if (e.key === 'ArrowDown' && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
+        else return;
+        g.focus();
+        roMarks();
+      });
+      return roBox;
+    }
+    function roFill(order) {
+      var lists = $('railLists');
+      lists.innerHTML = railGroups().map(function (g, n) {
+        var label = g.querySelector('.sidebar-label');
+        var items = Array.prototype.filter.call(g.querySelectorAll('.navitem[data-section]'), function (b) { return !b.hidden; });
+        if (order) items.sort(function (x, y) {
+          var ix = order.indexOf(x.getAttribute('data-section')), iy = order.indexOf(y.getAttribute('data-section'));
+          return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy);
+        });
+        if (!items.length) return '';
+        return '<section class="fsec ro-sec"><h4 class="fsec-h" id="roH' + n + '">' + esc(label ? label.textContent.trim() : '') + '</h4>' +
+          '<div class="ro-list" role="list" aria-labelledby="roH' + n + '">' + items.map(function (b) {
+            var k = b.getAttribute('data-section'), w = b.querySelector('span'), glyph = b.querySelector('svg');
+            var name = (w && w.textContent.trim()) || k;
+            return '<div class="ro-row" role="listitem" data-k="' + esc(k) + '">' +
+              '<span class="ro-glyph">' + (glyph ? glyph.outerHTML : '') + '</span>' +
+              '<span class="ro-name">' + esc(name) + '</span>' +
+              '<span class="chip ro-tab" hidden>Tab bar</span>' +
+              '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown">' + RO_GRIP + '</button></div>';
+          }).join('') + '</div></section>';
+      }).join('');
+      roMarks();
+    }
+    /* Under the tab bar, the rows it will hold: the Overview first where
+       it is open, then the rail as the sheet reads it. */
+    function roMarks() {
+      var rows = Array.prototype.slice.call($('railLists').querySelectorAll('.ro-row'));
+      var ov = navItems().some(function (b) { return !b.hidden && b.getAttribute('data-section') === 'overview'; });
+      var room = tabRoom - (ov ? 1 : 0);
+      rows.forEach(function (r, i) { r.querySelector('.ro-tab').hidden = !(tabbarOn() && i < room); });
+    }
+    function roOrder() {
+      return Array.prototype.map.call($('railLists').querySelectorAll('.ro-row'), function (r) { return r.getAttribute('data-k'); });
+    }
+    function roSave() {
+      var btn = $('railSave'), m = $('railMsg');
+      var list = roOrder();
+      var std = [].concat.apply([], railStd || []).filter(function (k) { return list.indexOf(k) > -1; });
+      var send = list.join(',') === std.join(',') ? [] : list;
+      m.textContent = ''; m.className = 'msg ro-msg';
+      btn.disabled = true;
+      db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
+        btn.disabled = false;
+        var why = r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
+          ? 'This needs a database update.' : 'Not saved. Try again.')
+          : (r.data && r.data.error) ? 'Not saved. Try again.' : '';
+        if (why) { m.textContent = why; m.className = 'msg ro-msg err'; return; }
+        keepRail(send);
+        paintTabbar();
+        window.ADspaceSheet.clean();
+        window.ADspaceSheet.close();
+      }).catch(function () { btn.disabled = false; m.textContent = 'Not saved. Try again.'; m.className = 'msg ro-msg err'; });
+    }
+    var edit = $('railEdit');
+    if (edit) edit.addEventListener('click', function () {
+      if (rail.isOpen()) rail.shut();
+      roSheet();
+      $('railMsg').textContent = '';
+      roFill(null);
+      window.ADspaceSheet.show(roBox, { opener: edit });
     });
     function follow() {
       var was = document.documentElement.classList.contains('has-tabbar');
@@ -1163,7 +1356,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports', 'register', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1832,9 +2025,9 @@
      a person who has learned one sequence should not have to learn a second.
      Everything leads, being the view somebody lands on. */
   var ACT_SECTION = { all: 'Everything',
-                      ops: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp',
+                      ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-                      register: 'Documents', reports: 'Reports', links: 'Short Links',
+                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */
@@ -4696,8 +4889,7 @@
   function thumbOf(m) {
     if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="">';
     if (m.poster) return '<img src="' + esc(m.poster) + '" alt="">';
-    return '<video muted playsinline preload="metadata">' +
-      ADspaceMedia.sources(m.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
+    return ADspaceMedia.still(m.url);
   }
 
   function coverWord(p, videos) {

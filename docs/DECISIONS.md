@@ -1691,3 +1691,55 @@ one reaches Write with AI, in compact form. Web searches cost US$10 a
 thousand, kept per press and priced as a Business setting beside the token
 prices. Defaults: 3 analyses a colleague a day, 10 an admin.
 
+
+### 2026-10-10 · Creator Campaigns by stage tab, and stage days by the calendar
+
+The user asked the Work sections to read alike. Creator Campaigns now opens
+on a tab a state (Draft, Open for selection, In production, Completed), as
+Reports opens on a tab a stage, with the campaigns under it in a card a
+month made. Each row's State column became Updated: inside a tab every row
+held the same state, which repeated the tab. A search still crosses every
+stage; the tab counts say where the matches are.
+
+A client's Timeline read Today at noon on 10 Oct for a stage begun at 3:59pm
+on 9 Oct (the user, with a screenshot). The record counted whole 24 hours
+from the moment of the move, while the dates beside it are calendar days.
+Days now count Malaysian calendar days (`myDay`, `daysBetween` in
+`js/crm.js`), so a stage begun late yesterday reads 1 day at any hour, and a
+stage left the day it began is filed "after the same day" rather than
+"after Today". Entries filed before keep their words.
+
+
+### 2026-10-10 · One order for the rail and the tab bar; WhatsApp last in Work
+
+The user asked first for the phone tab bar to be rearranged per person, then
+for the web and the phone to follow one edit. Three readings were put to
+them (order the whole rail; a pinned group on top; a free order with no
+groups); they chose ordering the whole rail. Each colleague drags the
+sections into their own order within Work and within Internal, the Overview
+staying first; the web rail shows that order and the tab bar takes the
+first sections of it, so one arrangement serves both. A section in Internal
+reaches the bar only where Work leaves room, which the sheet shows by the
+Tab bar mark on the rows the bar will hold. The order is kept in the
+database (`rail_orders`, one row a colleague, through two functions) so it
+follows the person to every device, with a copy in the browser for the
+first paint. The Activity record's tabs, the Team panel and search keep the
+standard order: they are lists of the portal, not the person's way in.
+
+The same day the user moved WhatsApp to the end of Work. The Activity
+record's tabs were also put in the rail's order (Reports had stayed after
+Documents since Reports joined Work).
+
+The approval reminder's link was a body variable, on the reasoning that its
+two pages (a set's review page, a campaign's selection page) could not share
+a button. They can: a link button's base `https://digital.adspace.me/{{1}}`
+takes `review/?k=…` or `creators/?k=…`, which reads cleaner for the client.
+The composer now fills either shape, and the setup guide shows the button.
+
+The same day: a creator's post on the selection page showed an empty box on
+an iPhone, which draws a video blank until it plays; the post's picture is
+now the video's first frame (`ADspaceMedia.still`, the console's thumbnail
+rule made one). Under the tab bar, More's foot became one line of marks
+(the user: the three rows took room for words already known). The Video
+Scripts month's ⋯ and Preview PDF were drawn but wired only when a script
+was open; they are wired with the head now.

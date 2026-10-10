@@ -3,7 +3,7 @@
 The portal sends WhatsApp messages through the WhatsApp Business Platform
 (Cloud API), each with a template Meta has approved, and reads back what
 became of each one (Sent, Delivered, Read, Failed). Everything is in the
-console's **WhatsApp** section (after Clients in the rail):
+console's **WhatsApp** section (the last of Work in the rail):
 
 - **Messages**: every message the portal sent, with its status, and **New
   message**, the composer (a client contact or a creator, an approved
@@ -18,7 +18,7 @@ console's **WhatsApp** section (after Clients in the rail):
 | Feedback request | Request feedback on WhatsApp, in a client's ⋯ | 1 the contact's greeting, 2 the client |
 | Team reminders | Each reminder in a colleague's bell (no open task, the outstation record, self-rating, reflection, health check-in) | 1 the colleague's first name, 2 the notice's title, 3 its message |
 | Creator updates | A creator's booking confirmed, and Send on WhatsApp in a booked creator's ⋯ | 1 the creator's first name, 2 the campaign. A **Visit website** button with a dynamic URL, `https://digital.adspace.me/creator/?k={{1}}`, opens the creator's own page |
-| Approval reminder | Remind, in My Work's Waiting for you, once a published content set or a creator's draft at Reviewing has waited on the client for the Business setting's days (Settings → Due dates, 3 by default) | 1 the contact's greeting, 2 the client, 3 what waits ("2 posts in October posts", "Jane's draft for Raya creators"), 4 the link to approve it (the client's review page or the campaign's selection page). Category **Utility**, no header, no button |
+| Approval reminder | Remind, in My Work's Waiting for you, once a published content set or a creator's draft at Reviewing has waited on the client for the Business setting's days (Settings → Due dates, 3 by default) | 1 the contact's greeting, 2 the client, 3 what waits ("2 posts in October posts", "Jane's draft for Raya creators"). A **Visit website** button with a dynamic URL, `https://digital.adspace.me/{{1}}`, opens the page to approve it (the client's review page or the campaign's selection page). Category **Utility**, no header |
 
 The composer can send any other approved template too; it fills the
 greeting first, then the client (or a creator's campaign), and a named
@@ -89,6 +89,43 @@ purpose and choose the template from Meta's approved list (the name,
 language and category come from Meta; nothing is typed), then turn its
 switch on. A purpose that is off sends nothing, and its record button is not
 drawn.
+
+### The approval reminder, step by step
+
+The link to approve rides a **Visit website** button with a dynamic URL.
+The button's base is the portal's address, and the portal fills in the
+rest: `review/?k=…` for a content set, `creators/?k=…` for a creator's
+draft. Nothing is typed when sending.
+
+1. WhatsApp Manager → **Message templates** → **Create template**.
+2. Category **Utility**, type **Default**. Name `approval_reminder`,
+   language **English**. Header **None**.
+3. Body (Meta refuses a body that starts or ends with a variable, so it ends
+   on words):
+
+   ```
+   Hi {{1}},
+
+   This is a gentle reminder from ADspace. The following is waiting for your approval:
+   {{3}} ({{2}})
+
+   Please tap the button below to review it. Thank you.
+   ```
+
+4. Variable type **Number**. Samples, which Meta asks for: `{{1}}` Ms Jane
+   Doe · `{{2}}` ADspace Advertising · `{{3}}` 2 posts in October posts.
+5. Footer optional (`ADspace`).
+6. **Buttons** → **Visit website**: text `Review now`, URL type **Dynamic**,
+   URL `https://digital.adspace.me/{{1}}`, sample
+   `https://digital.adspace.me/review/?k=abcd2345`. Submit.
+7. Once Meta shows it **Active**: the console's **WhatsApp** → **Templates**
+   → Approval reminder → **Edit** → choose `approval_reminder` → turn its
+   switch on. **Remind** then shows in My Work's Waiting for you on a set or
+   draft that has waited the Due dates setting's days.
+
+A template made the earlier way, with the link as a fourth body variable
+and no button, still works: the portal fills whichever shape the template
+has.
 
 ## 3. Delivery reports (the webhook), once
 

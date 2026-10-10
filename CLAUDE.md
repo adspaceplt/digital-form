@@ -340,13 +340,32 @@ Each line is a rule that broke once. Its reason is in the archive.
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
   it; five or fewer with no Activity record take the bar whole. More lists
-  only what the bar does not (`.is-tabbed`), and the Activity record. The
+  only what the bar does not (`.is-tabbed`), then its foot as one line of
+  marks named for a screen reader (Arrange sections, Settings, the Activity
+  record; the user, 2026-10-10: "just use icons") with the build at its
+  right end. The
   menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; a sheet covers it; a field taking the
   keyboard under a finger hides it (`is-typing`). The chosen tab is the
   fill behind its glyph; a section More holds chooses More
   (`tests/tabbar.js`).
+- Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
+  "mobile tab and web … both sync edits"): one order a colleague for the
+  web rail and the phone tab bar alike. `#railEdit` at the rail's foot (in
+  More under the bar; drawn with three sections or more) opens
+  `#railSheet`: the rail's groups (Work, Internal) as lists, a section
+  dragged by its grip or moved with the arrow keys on it within its group,
+  the Overview fixed first; under the bar the rows it will hold read Tab
+  bar; Reset order puts the standard back in the sheet; Save keeps it
+  (`rail_order_set(p_sections)`, known keys once each, `bad-order`; empty
+  is the standard). `rail_orders` has RLS on, no policy, no grant;
+  `rail_order_mine()` is read once `me()` answers, a copy in this browser
+  (`adspace-rail:{id}`) for the first paint. The page reorders the rail's
+  own items (`applyRail`), so the bar, which takes the rail's first
+  sections, follows. A section not named comes after in the standard
+  order. The Activity record's tabs, the Team panel and search keep the
+  standard order. Not filed in the Activity record.
 - Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
   2026-10-09: the account menu grew long and AI usage hid under Reports):
   a `.railfoot` row above the Activity record (`#settingsOpen`), offered to
@@ -584,6 +603,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every video player: it names the H.264 copy `name.web.mp4` first (typed
   MP4) and the original after, so a browser plays the copy once it exists
   and the original until then. Never `<video src>` for an uploaded file.
+  A thumbnail of a video is `ADspaceMedia.still(url)`, its first frame
+  (`#t=0.1`; iPhone Safari draws a bare video blank until it plays): a
+  console row, and the selection page's post rows (the user, 2026-10-10).
   It also holds the media pass (`ADspaceMedia.pass(proof)`, 2026-10-03):
   with `ADSPACE_CONFIG.s3.privateMedia` on, a page that has proved its link
   (`{review}`, `{campaign}` with the passcode), a creator's code
@@ -3859,7 +3881,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (2026-10-10): the section, the composer, the delivery status; no inbox, no
   message to a colleague but the queued reminders, nothing sent to an AI
   service.
-- A section of its own, `whatsapp`, in the Work chunk after Clients: View
+- A section of its own, `whatsapp`, the last of the Work chunk (the user,
+  2026-10-10: "whatsapp tab should go to the last inside work"): View
   reads the messages, Work (Manage on the panel) sends, Manage (Full Access)
   sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback`,
   `whatsapp.booking` and `whatsapp.approval` (2026-10-10) follow it or are
@@ -3890,7 +3913,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
-  takes one; a link button's variable the creator's alone), each row's
+  takes one; a link button's variable refused only for the team reminders, which the portal sends by itself (`NO_BUTTON`)), each row's
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record
@@ -3928,7 +3951,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   published set of their client or a booking at Reviewing on a campaign of
   theirs (`not-found`, `not-waiting`), filed against it (`ref_kind` `set` /
   `option`) as "Approval reminder sent on WhatsApp to …"; variables in order
-  the greeting, the client, what waits, the link to approve it. Its purpose
+  the greeting, the client, what waits; the link to approve it rides a
+  link button (`https://digital.adspace.me/{{1}}`, filled `review/?k=…` or
+  `creators/?k=…`), else a fourth body variable. Its purpose
   is added to the check in `2026-10-10-whatsapp-approval-purpose.sql`, run
   in the SQL Editor (the connector stops on the check's replacement).
 - Delivery (`wa-hook`, Verify JWT off): Meta's verification answered only

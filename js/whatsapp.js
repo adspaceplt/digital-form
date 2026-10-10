@@ -37,9 +37,14 @@
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
     creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
-    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits, the link to approve it.']
+    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.']
   };
   /* What each message in the list was. */
+  /* A link button's variable is filled where the purpose can fill it: a
+     creator's code, the approval link, or typed in the composer. Only a
+     purpose the portal sends by itself with nothing to put there refuses
+     one (the user, 2026-10-10: not a list of the purposes allowed). */
+  var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
@@ -438,7 +443,9 @@
         (held ? '' : '<small class="wam-why">Not among Meta\'s approved templates.</small>') + '</span>' +
       '<span class="wat-on"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(w[0]) + '" data-a="on"></button></span>' +
-      '<span class="wat-act"><button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button></span>';
+      /* On a phone the pen alone, beside the switch on the name's line
+         (2026-10-10: the word put Edit on a line of its own). */
+      '<span class="wat-act"><button class="btn btn-sm" type="button" data-a="edit" aria-label="Edit ' + esc(w[0]) + '">' + PEN + '<span class="wat-word">Edit</span></button></span>';
     row.querySelector('[data-a="edit"]').addEventListener('click', function () { choose(t, false); });
     row.querySelector('[data-a="on"]').addEventListener('click', function () { flip(t, row, this); });
     return row;
@@ -483,7 +490,7 @@
           if (t.purpose !== 'report' && x.header === 'DOCUMENT') return 'A template with a Document header sends a report alone.';
           if (x.header_var) return 'The portal cannot fill this template\'s header.';
           if (x.body_vars.length > 5) return SAID['bad-params'];
-          if (t.purpose !== 'creator' && x.button_var) return 'Only the creator template takes a link button with a variable.';
+          if (x.button_var && NO_BUTTON[t.purpose]) return NO_BUTTON[t.purpose];
           return '';
         }
       }, function (v) {
@@ -657,7 +664,18 @@
     if (!r) return '';
     var o = cx.o, kind = key.charAt(0), v = key.slice(2), low = v.toLowerCase();
     var rep = reportWord();
-    if (kind === 'u') return r.kind === 'creator' ? (r.code || '') : '';
+    /* A link button's variable: a creator's code; on the approval
+       reminder, the link to approve past the button's own fixed base
+       (`https://digital.adspace.me/{{1}}` takes `review/?k=…` or
+       `creators/?k=…`). */
+    if (kind === 'u') {
+      if (approving(r)) {
+        var base = String((t.button_var && t.button_var.url) || '').split('{{')[0];
+        var link = String(o.link || '');
+        return base && link.indexOf(base) === 0 ? link.slice(base.length) : '';
+      }
+      return r.kind === 'creator' ? (r.code || '') : '';
+    }
     if (kind === 'h') return '';
     if (/^\d+$/.test(v)) {
       if (v === '1') return r.greeting || r.name || '';
