@@ -174,6 +174,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
 | the Short Links route | qr, run |
+| `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
 **What the two walks measure:**
 - **uxaudit** walks every page and state at 1280, and at 390 with a coarse
@@ -484,7 +485,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   specific team member(s)"): Team: Notices (`team.notice`) on the Settings
   page opens the list (`#ntcSheet`: every notice sent, newest first, To,
   when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
-  push already on a phone stays) and Restore (never asks)) and New
+  push already on a phone stays) and Restore (never asks), and once
+  withdrawn the row's ⋯ Delete (asked, no restore; `team_notice_delete`,
+  refused `live` until withdrawn, the notice and every copy;
+  `2026-10-10-notice-delete.sql`, run in the SQL Editor)) and New
   (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
   colleagues ticked code first, Title (one line, 120) and Message (1,000),
   the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
@@ -4093,6 +4097,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     clients.
 - Sign-in never says whether an address has an account ("If {email} is
   registered, …").
+- An email is matched as itself in every edge function (`exactEmail`: `_`
+  and `%` are letters, never wildcards; audit P2, 2026-10-10).
+- A colleague's upload names its purpose and record, and `sign-upload`
+  signs it only for that (audit P1, 2026-10-10): `review` a content set
+  (`batchId`, Content Review: Sets at Work), `logo` the client (Clients or
+  Content Review: Client settings at Work), `campaign` a booking whose draft
+  is owed (`optionId`, Creator Campaigns: Campaigns at Work), `invoice` a
+  campaign (`campaignId`, Creator Campaigns: Finance at Work, private where
+  set up), `report` a report version (`versionId`, Reports at Work, always
+  private); the record must be the named client's and the caller's client
+  scope must reach it, each asked as the caller. Work in one section signs
+  nothing for another; a page that names no purpose is asked to reload.
 - A client's review link and a campaign's selection link carry an
   eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
   made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in
@@ -4122,6 +4138,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   judges only objects over 7 days old, and files the counts in `s3_sweeps`.
   Its code has no delete request, and `tests/s3sweep.js` holds that. A
   video's `.web.mp4` copy counts as in use while its original is.
+- The database is kept every night (`workers/db-backup/`,
+  `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the
+  Free plan keeps no backups): Supabase's own dump (roles, schema, data),
+  refused when it holds no clients, encrypted with `BACKUP_PASSPHRASE`, put
+  at `private/backups/db/db-{MYT day}.tar.gz.gpg` by a key that may only add
+  there; it runs on its schedule or by hand, never on a pull request, and
+  reads, lists and deletes nothing (`tests/dbbackup.js`). Storage objects
+  (the Handbook) are not in it.
 - Video conversion (`workers/video-convert/`, AWS Lambda `adspace-video-convert`
   on the bucket's ObjectCreated under `content/`, the user's own setup from
   its README): every video that is not already H.264 in an MP4 indexed first

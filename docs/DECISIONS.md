@@ -1775,3 +1775,44 @@ CloudFront's own configuration is read and the pass is tested against it.
 A suite written for F6 and F7 (`tests/fileworker.js`, ten checks failing on
 main) found the console worker's own clean-up deleting every cache but its
 own whenever it updated; it now clears only the console's older stores.
+
+### 2026-10-10 · A withdrawn notice can be deleted
+
+The user, from the Notices list: "why notices cannot be deleted?" Notices were
+built with Withdraw and Restore alone; nothing decided against a delete, and
+announcements had gained one on the same question on 2026-10-07. A withdrawn
+notice's row now keeps Restore and gains a ⋯ holding Delete, asked with the
+notice named and no restore; `team_notice_delete` removes the notice and every
+colleague's copy, refuses one still live (Withdraw first, so nothing leaves a
+bell unseen), and files it under Notices. A push already on a phone stays.
+
+### 2026-10-10 · The database is kept every night
+
+The audit asked for backup and restore evidence; the user: "no backups for
+supabase yet since its on freemium?", then "First use the free method"
+rather than the Pro plan's daily backups. A GitHub Actions run each night
+takes Supabase's own dump (the three files its restore guide uses: roles,
+schema, data), refuses one that holds no clients, encrypts it with a
+passphrase kept in the company's password manager, and puts it under the
+bucket's `private/` with a key that may only add files there. It runs on its
+schedule or by hand, never on a pull request, so a fork never reaches its
+secrets; it lives in this public repository because only its secrets are
+secret. A raw `pg_dump` was refused: Supabase's guide says its internals
+break a restore. Handbook files in Supabase Storage are not covered.
+
+### 2026-10-10 · An upload is signed only for its own purpose and record
+
+The outside review (P1) found `sign-upload` signing an upload into any client
+for any signed-in colleague, and a first fix let Work in any upload section
+sign every kind. The user: "P1 must check the specific upload purpose, parent
+record, section permission and client scope. Having Work permission in any
+upload-capable section must not authorize every upload type." Each upload
+now names what it is for and its record (a content set's file, a client's
+logo, a booking's draft, a campaign's invoice, a report's kept PDF); the
+function reads the record with the service role, checks it is the named
+client's, then asks the database as the caller for that purpose's own
+section or part at Work and the client scope. A report's PDF is always
+private and a logo never. P2 in the same release: an email is matched as
+itself in every edge function, so an address holding `_` or `%` never stands
+for another's (`portal-login` had made logins on such a match).
+

@@ -3626,8 +3626,11 @@
     });
   }
 
-  function storeBlob(blob, ext, contentType, onProgress, clientId) {
+  /* `ref` names what the upload is for and its record (sign-upload signs
+     nothing else, audit P1): a content set's file unless it says otherwise. */
+  function storeBlob(blob, ext, contentType, onProgress, clientId, ref) {
     var cid = clientId || state.client.id;
+    ref = ref || { purpose: 'review', batchId: state.batch && state.batch.id };
     if (!usingS3()) {
       var path = cid + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
       return db.storage.from(cfg.storageBucket)
@@ -3641,7 +3644,7 @@
     // Ask our own function to sign one upload, then send the file straight to
     // S3. The file never passes through Supabase, so there is no size ceiling.
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
-      body: { ext: ext || 'bin', clientId: cid, size: blob.size }
+      body: Object.assign({ ext: ext || 'bin', clientId: cid, size: blob.size }, ref)
     }).then(function (r) {
       if (r.error) {
         var hint = /failed to send|fetch/i.test(r.error.message || '')
@@ -3706,7 +3709,7 @@
       img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('That image could not be read.')); };
       img.src = url;
     }).then(function (b) {
-      return storeBlob(b, png ? 'png' : 'jpg', png ? 'image/png' : 'image/jpeg', null, clientId);
+      return storeBlob(b, png ? 'png' : 'jpg', png ? 'image/png' : 'image/jpeg', null, clientId, { purpose: 'logo' });
     });
   }
   /* One wiring for every logo field: the Upload button beside it opens its

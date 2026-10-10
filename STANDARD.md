@@ -631,6 +631,11 @@ section holds only what is true of the project as a whole.
   SST, DCC, GST: statutory, not ours); the scorecard and department
   criteria maxima (the form's shape). The Creators List price bands stay
   fixed (the user, 2026-10-05: not needed).
+- Backups (2026-10-10): the Supabase project is on the Free plan, which
+  keeps none; the nightly encrypted dump to `private/backups/db/` stands in
+  (`workers/db-backup/README.md`) once the owner sets its key and secrets.
+  Not covered: Handbook files in Supabase Storage. A restore has not been
+  rehearsed.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
