@@ -812,7 +812,7 @@
   /* A group starts from one of four shapes and is adjusted from there; a
      change that matches none of them reads as Custom. Sensitive parts (HR
      letters, performance reviews, Team) are never in a preset below Admin:
-     they are opened deliberately, in Advanced. */
+     they are opened deliberately, in Customise. */
   var PRESETS = {
     manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
@@ -833,7 +833,7 @@
      Work. Only the screen changed: the stored map, `adds()`, `offered()`,
      `PART_LEVELS` and every database check are as they were. */
   var CHUNKS = [
-    ['Work', ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports']],
+    ['Work', ['ops', 'clients', 'whatsapp', 'review', 'scripts', 'campaigns', 'reports']],
     ['Internal', ['register', 'links', 'services', 'team', 'activity']]
   ];
   /* Each is on or off, and each is an admin's alone until a group is given
@@ -847,6 +847,8 @@
     ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']],
     ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel']]
   ];
+  /* The three My Work views follow My Work and are not offered here. */
+  var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
   var TOOL = {};
   ADMIN_TOOLS.forEach(function (g) { g[1].forEach(function (k) { TOOL[k] = 1; }); });
   function secOf(key) { return SECTIONS.filter(function (s) { return s[0] === key; })[0]; }
@@ -857,7 +859,7 @@
   /* The parts a section's Customise offers: its own, less the admin tools
      and the views that follow My Work. */
   function ownParts(sec) {
-    return (PARTS[sec] || []).filter(function (p) { var k = sec + '.' + p[0]; return !TOOL[k] && !VIEW_PARTS[k]; });
+    return (PARTS[sec] || []).filter(function (p) { var k = sec + '.' + p[0]; return !TOOL[k] && !UNDRAWN[k]; });
   }
   var SEG_ICON = '<span class="disclosure-caret" aria-hidden="true">&#9656;</span>';
   function partRow(sec, p) {
@@ -869,7 +871,9 @@
          still be shut on its own. */
       (granted ? '<option value="">No Access</option>'
                : '<option value="">Same as section</option><option value="none">No Access</option>') +
-      partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('') +
+      /* A part that follows its section or is shut has those two lines. */
+      (VIEW_PARTS[key] ? '' :
+        partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
       '</select></label>';
   }
   function secBlock(key) {
@@ -1215,7 +1219,7 @@
     });
     setTools(acc);
     carried = {};
-    Object.keys(VIEW_PARTS).forEach(function (k) {
+    Object.keys(UNDRAWN).forEach(function (k) {
       var v = exceptionOf(acc, k);
       if (v) carried[k] = v;
     });
