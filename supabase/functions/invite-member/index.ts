@@ -20,6 +20,10 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
+/* An email compared as itself, never as a pattern: `_` and `%` in an
+   address are letters here, not wildcards (audit P2, 2026-10-10). */
+const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
+
 const ALLOWED_ORIGINS = [
   'https://digital.adspace.me',
   'http://localhost:8899',
@@ -64,7 +68,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
   const { data: caller } = await admin.from('team_members')
-    .select('role, is_admin, active').ilike('email', user.email).maybeSingle();
+    .select('role, is_admin, active').ilike('email', exactEmail(user.email)).maybeSingle();
   if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
   // 3. What they want. kind "client" invites a client contact to /client/
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
     if (!isAdmin && may !== true) return json({ error: 'not_admin' }, 403, origin);
     // Only an address the console has marked for portal access is invited.
     const { data: contact } = await asCaller.from('client_contacts')
-      .select('id').ilike('email', email).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
+      .select('id').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
   }
 

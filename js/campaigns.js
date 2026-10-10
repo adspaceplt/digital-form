@@ -3439,7 +3439,7 @@
       show(i, n, file, 0, false);
       var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
       return db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
-        body: { ext: ext, clientId: state.campaign.client_id, size: file.size }
+        body: { ext: ext, clientId: state.campaign.client_id, size: file.size, purpose: 'campaign', optionId: o.id }
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message || 'could not be signed');
         if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
@@ -4521,7 +4521,8 @@
       ? db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
           /* Private once the bucket is set up for it (`privateInvoices`,
              docs/S3-STORAGE.md §5): the row then keeps the key, not an address. */
-          body: { ext: 'pdf', clientId: c.client_id, size: file.size, private: !!(cfg.s3 && cfg.s3.privateInvoices) }
+          body: { ext: 'pdf', clientId: c.client_id, size: file.size, private: !!(cfg.s3 && cfg.s3.privateInvoices),
+                  purpose: 'invoice', campaignId: c.id }
         }).then(function (r) {
           if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
           if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));

@@ -29,6 +29,10 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
+/* An email compared as itself, never as a pattern: `_` and `%` in an
+   address are letters here, not wildcards (audit P2, 2026-10-10). */
+const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
+
 const ALLOWED_ORIGINS = [
   'https://digital.adspace.me',
   'http://localhost:8899',
@@ -68,7 +72,7 @@ Deno.serve(async (req) => {
      anything the browser sent: has the team given this address access to a
      client, and is that contact still live? */
   const { data: contact } = await admin.from('client_contacts')
-    .select('id, name').ilike('email', email)
+    .select('id, name').ilike('email', exactEmail(email))
     .eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
   if (!contact) return json({ ok: true }, 200, origin);
 

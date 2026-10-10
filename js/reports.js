@@ -246,7 +246,7 @@
     if (!v || !v.id || keptOf(v) || !s3 || !s3.privateInvoices || !bridge.putToS3 || !may('work')) return Promise.resolve(null);
     if (keeping[v.id]) return keeping[v.id];
     var job = db.functions.invoke(s3.functionName || 'sign-upload', {
-      body: { ext: 'pdf', clientId: clientId, size: bytes.length, private: true }
+      body: { ext: 'pdf', clientId: clientId, size: bytes.length, private: true, purpose: 'report', versionId: v.id }
     }).then(function (r) {
       var d = r.data || {};
       if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || (r.error && r.error.message) || 'refused');

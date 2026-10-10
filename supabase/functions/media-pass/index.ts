@@ -31,6 +31,10 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
+/* An email compared as itself, never as a pattern: `_` and `%` in an
+   address are letters here, not wildcards (audit P2, 2026-10-10). */
+const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
+
 const ALLOWED_ORIGINS = [
   'https://digital.adspace.me',
   'http://localhost:8899'
@@ -150,7 +154,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await supa.auth.getUser();
     if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', user.email).maybeSingle();
+      .select('active').ilike('email', exactEmail(user.email)).maybeSingle();
     if (!member || !member.active) {
       /* A client's contact signed in to the client portal (2026-10-08): their
          logos and reports sit under content/ too. Live portal access only,
@@ -159,7 +163,7 @@ Deno.serve(async (req) => {
       if (member) return json({ error: 'not_team' }, 403, origin);
       const { data: contact } = await admin.from('client_contacts')
         .select('id').eq('portal_access', true).is('archived_at', null)
-        .ilike('email', user.email.replace(/[\\%_]/g, (c) => '\\' + c)).limit(1);
+        .ilike('email', exactEmail(user.email)).limit(1);
       if (!contact || !contact.length) return json({ error: 'not_allowed' }, 403, origin);
     }
   }

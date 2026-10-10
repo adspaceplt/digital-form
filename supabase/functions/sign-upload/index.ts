@@ -15,12 +15,55 @@
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
+/* An email compared as itself, never as a pattern: `_` and `%` in an
+   address are letters here, not wildcards (audit P2, 2026-10-10). */
+const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
+
 const ALLOWED_ORIGINS = [
   'https://digital.adspace.me',
   'http://localhost:8899'
 ];
 
 const EXT_OK = /^[a-z0-9]{1,5}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/* What a colleague may upload, and what each needs. `field` names the
+   parent record in the request; `clientOf` reads it with the service role
+   (its client, and its state where the purpose waits on one); `sections`
+   are the sections or parts whose Work allows it; `kind` and `level` are
+   the client scope asked of the database as the caller. */
+type Owner = { client: string; state?: string } | null;
+// deno-lint-ignore no-explicit-any
+type Admin = any;
+const one = async (q: Promise<{ data: unknown }>) => ((await q).data ?? null) as Record<string, unknown> | null;
+const PURPOSES: Record<string, {
+  field: string; sections: string[]; kind: string; level: string; private?: 'may' | 'must'; states?: string[];
+  clientOf: (admin: Admin, id: string) => Promise<Owner>;
+}> = {
+  // A content set's assets, their cover frames and a post's replaced file.
+  review: { field: 'batchId', sections: ['review.sets'], kind: 'batch', level: 'work',
+    clientOf: async (a, id) => { const r = await one(a.from('batches').select('client_id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.client_id) } : null; } },
+  // A client's logo, from its Brand or its Content Review settings.
+  logo: { field: 'clientId', sections: ['clients', 'review.settings'], kind: 'client', level: 'work',
+    clientOf: async (a, id) => { const r = await one(a.from('clients').select('id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.id) } : null; } },
+  // A file the team hands in for a creator, while the draft is owed.
+  campaign: { field: 'optionId', sections: ['campaigns.campaigns'], kind: 'option', level: 'work',
+    states: ['pending_draft', 'changes', 'submitted'],
+    clientOf: async (a, id) => { const r = await one(a.from('campaign_options').select('state, campaigns(client_id)').eq('id', id).maybeSingle());
+      const c = r && (r.campaigns as Record<string, unknown> | null);
+      return c ? { client: String(c.client_id), state: String(r!.state) } : null; } },
+  // A campaign's invoice PDF, private once the bucket is set up for it.
+  invoice: { field: 'campaignId', sections: ['campaigns.finance'], kind: 'campaign', level: 'work', private: 'may',
+    clientOf: async (a, id) => { const r = await one(a.from('campaigns').select('client_id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.client_id) } : null; } },
+  // A published report version's PDF, kept as it went out, kept private.
+  report: { field: 'versionId', sections: ['reports'], kind: 'report', level: 'view', private: 'must',
+    clientOf: async (a, id) => { const r = await one(a.from('sm_report_versions').select('report_id, sm_reports(client_id)').eq('id', id).maybeSingle());
+      const c = r && (r.sm_reports as Record<string, unknown> | null);
+      return c ? { client: String(c.client_id) } : null; } }
+};
 const MAX_BYTES = 2 * 1024 * 1024 * 1024;   // 2 GB, a sane ceiling for a review copy
 
 function cors(origin: string | null) {
@@ -51,6 +94,7 @@ Deno.serve(async (req) => {
   let body: {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
+    purpose?: string; batchId?: string; campaignId?: string; versionId?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -93,11 +137,36 @@ Deno.serve(async (req) => {
     // itself is not enough: the person has to be an active member of the team,
     // asked of the database with the service role.
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', user.email).maybeSingle();
+      .select('active').ilike('email', exactEmail(user.email)).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
     const clientId = String(body.clientId ?? '');
-    if (!/^[0-9a-f-]{36}$/.test(clientId)) return json({ error: 'bad_client' }, 400, origin);
+    if (!UUID.test(clientId)) return json({ error: 'bad_client' }, 400, origin);
+    /* Every upload names what it is for and the record it belongs to, and
+       is signed only for that (audit P1, 2026-10-10): the record exists and
+       is the named client's, the caller holds Work in that purpose's own
+       section or part, and their client scope reaches the record, each asked
+       of the database as the caller. Work elsewhere signs nothing here. A
+       page from before sends no purpose and is asked to reload. */
+    const purpose = String(body.purpose ?? '');
+    const rule = PURPOSES[purpose];
+    if (!rule) return json({ error: 'Reload the page to upload.' }, 400, origin);
+    const parent = String((body as Record<string, unknown>)[rule.field] ?? '');
+    if (!UUID.test(parent)) return json({ error: 'bad_parent' }, 400, origin);
+    const owner = await rule.clientOf(admin, parent);
+    if (!owner || owner.client !== clientId) return json({ error: 'bad_parent' }, 400, origin);
+    if (rule.states && !rule.states.includes(owner.state ?? '')) return json({ error: 'not_waiting' }, 403, origin);
+    let mayUpload = false;
+    for (const section of rule.sections) {
+      const { data: ok } = await supa.rpc('allowed', { p_section: section, p_level: 'work' });
+      if (ok === true) { mayUpload = true; break; }
+    }
+    if (!mayUpload) return json({ error: 'not_allowed' }, 403, origin);
+    const { data: inScope, error: scopeErr } = await supa.rpc('client_scope_ok',
+      { p_kind: rule.kind, p_id: parent, p_level: rule.level });
+    if (scopeErr || inScope !== true) return json({ error: 'not_allowed' }, 403, origin);
+    if (body.private === true && !rule.private) return json({ error: 'bad_private' }, 400, origin);
+    if (rule.private === 'must' && body.private !== true) return json({ error: 'bad_private' }, 400, origin);
     scope = clientId;
   }
 

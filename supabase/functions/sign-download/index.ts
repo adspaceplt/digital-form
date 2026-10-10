@@ -37,6 +37,10 @@
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
+/* An email compared as itself, never as a pattern: `_` and `%` in an
+   address are letters here, not wildcards (audit P2, 2026-10-10). */
+const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
+
 const ALLOWED_ORIGINS = [
   'https://digital.adspace.me',
   'http://localhost:8899'
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', user.email).maybeSingle();
+      .select('active').ilike('email', exactEmail(user.email)).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
     const campaignId = String(body.campaignId ?? '');
