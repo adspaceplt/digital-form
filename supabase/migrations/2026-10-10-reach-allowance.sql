@@ -5,7 +5,7 @@
 -- figure stays exact.
 -- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
 -- in supabase/schema.sql under the same banner; tests/smsql.js compares the
--- two. Runs after META CHECKS SWITCH.
+-- two. Runs after WHATSAPP APPROVAL REMINDER, whose settings it keeps.
 --
 -- WHAT CHANGED (the user, 2026-10-10, from a report imported from Meta and
 -- audited 27 seconds later, two ads' Reach moved by 12 and 9 people while
@@ -19,8 +19,9 @@
 --      filed as before.
 --
 -- ROLLBACK
---   Run app_settings_set from META CHECKS SWITCH again; the setting's row may
---   stay (the page then compares Reach exactly where it reads none).
+--   Run app_settings_set from WHATSAPP APPROVAL REMINDER again; the
+--   setting's row may stay (the page then compares Reach exactly where it
+--   reads none).
 -- ===========================================================================
 
 insert into public.app_settings (key, from_date, value)
@@ -35,7 +36,7 @@ declare
   v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
   v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
     'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_24', 'report_due_days', 'revision_due_days',
-    'ai_price_in', 'ai_price_out', 'meta_checks', 'reach_allowance_pct'];
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'reach_allowance_pct'];
   v_moved text[] := '{}';
 begin
   if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
@@ -52,6 +53,7 @@ begin
        or (v_k = 'proposal_followup_days' and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
        or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
        or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
        or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
        or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
        or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
@@ -71,8 +73,10 @@ begin
         when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
         when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 23 months' when 'term_24' then '24 months and more'
         when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
-        when 'ai_price_out' then 'AI output, a million tokens' when 'meta_checks' then 'Meta checks' when 'reach_allowance_pct' then 'Reach allowance' else 'Report due' end;
-      v_unit := case when v_k = 'lead_followup_hours' then ' hours' when v_k in ('proposal_followup_days', 'report_due_days', 'revision_due_days') then ' days'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        else 'Report due' end;
+      v_unit := case when v_k = 'lead_followup_hours' then ' hours' when v_k in ('proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days') then ' days'
         else '%' end;
       insert into public.activity_log (actor, action, subject, detail)
       values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',

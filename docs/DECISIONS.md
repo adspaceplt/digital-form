@@ -1325,6 +1325,29 @@ read Published and Unpublished, and the stored keys (`status` `shared`,
 press with the drawn file in it, and the ⋯ carries Download, as a report's
 head does; both ask one script or the whole month once there are two.
 
+### 2026-10-10 · The WhatsApp approval reminder
+The user said yes to the chaser proposed after the WhatsApp section: a
+reminder to a client whose content set or creator draft has waited on their
+approval. It is sent by hand, never by itself, because a reminder the team did
+not mean to send costs the client relationship more than a late approval
+does. It sits in My Work's Waiting for you, on the clients a colleague holds
+and the campaigns they run, where the person who chases already looks:
+Awaiting approval, with Remind. A set waits from its publishing and a draft
+from its last quality check (the release to the client), each once it has
+waited `approval_reminder_days`, a Business setting (3) in Due dates, as
+every figure the team may change is. Remind opens the one composer with
+what waits and the link to approve it filled in; the database checks the
+record named is the contact's client's and is still waiting, and files the
+message against it. It is a purpose of its own with its own part, so a
+group may chase clients without sending anything else. The purpose check
+on `wa_templates` had to be replaced, which the Supabase connector will not
+run, so that one statement is its own file for the SQL Editor; the settings
+key list is now checked against every seeded setting (`tests/sql.js`),
+because another branch restates `app_settings_set` the same day. The
+Overview was left as it is: its Sets waiting on the client card already
+lists the sets, and a second place to send from would be the same act
+twice.
+
 ### 2026-10-10 · WhatsApp, a section of its own (Phase 1)
 Approved by the user as WhatsApp Phase 1; the inbox and messages to
 colleagues (Phase 2) were left out. WhatsApp had grown three buttons on
@@ -1630,3 +1653,17 @@ month change is a new activity tag, so the activity map is restated in a file
 of its own for the SQL Editor (it names `*.deleted` tags the connector holds);
 it restates the WhatsApp map too, so running it alone files both. The sets'
 post counts were one request a set; they are one request for the client.
+
+### 2026-10-10 · The user group panel, simpler
+The user approved a simpler panel: eleven sections at four levels and
+around fifty finer permissions read as one long form. Now the group starts
+from a role and says only what differs from it (Custom: 3 changes from
+Staff, each change listed); the sections read in the rail's two chunks, one
+row each; a section's finer permissions open under its own Customise and,
+shut, are named on one line only where they differ; the acts an admin alone
+took are one Admin tools list of switches in the Settings page's groups;
+the List, Board and Calendar view switches leave the panel, since they
+follow My Work (one stored is kept through a save, so a save never changes
+it unseen); and Compare groups reads every group side by side. Layout only:
+the stored map, `adds()`, `offered()`, `PART_LEVELS` and every database
+check are as they were, so nobody's access changed and nothing was migrated.

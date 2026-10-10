@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261010z">
+<link rel="stylesheet" href="/css/portal.css?v=20261010zb">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -62,10 +62,10 @@
 <script src="/js/words.js?v=20261009s"></script>
 <script src="/js/icons.js?v=20261008c"></script>
 <script src="/js/copy.js?v=20261001a"></script>
-<script src="/js/acts.js?v=20261010z"></script>
+<script src="/js/acts.js?v=20261010zb"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261008c"></script>
-<script src="/js/confirm.js?v=20261010z"></script>
+<script src="/js/confirm.js?v=20261010zb"></script>
 <script src="/js/sheet.js?v=20261004a"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261004b"></script>
@@ -79,11 +79,11 @@
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261009s"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
-<script src="/js/announce.js?v=20261010z"></script>
+<script src="/js/announce.js?v=20261010zb"></script>
 <script src="/js/notice.js?v=20261009c"></script>
-<script src="/js/whatsapp.js?v=20261010y"></script>
+<script src="/js/whatsapp.js?v=20261010zb"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261010z"></script>
+<script src="/js/money.js?v=20261010zb"></script>
 <script src="/js/media.js?v=20261003b"></script>
 <script src="/js/mockups.js?v=20261004a"></script>
 </head>
@@ -3515,6 +3515,7 @@
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+            <button class="btn btn-sm" id="groupCompare" type="button">Compare groups</button>
           </span>
         </span>
       </div>
@@ -3526,7 +3527,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
-          <div class="sheet-body">
+          <div class="sheet-body" data-narrow="540">
             <div class="row">
               <div><label class="field-label" for="grName">Name</label>
                 <input class="input" id="grName" aria-required="true" placeholder="Marketing"></div>
@@ -3536,24 +3537,38 @@
                 <p class="permsum" id="grSum" aria-live="polite"></p></div>
             </div>
             <div class="row">
-              <div><label class="field-label" for="grPreset">Start from <span class="permpreset-note" id="grPresetNote" hidden>Custom settings</span></label>
+              <div><label class="field-label" for="grPreset">Start from <span class="permpreset-note" id="grPresetNote" hidden></span></label>
                 <select class="select" id="grPreset" data-seg>
                   <option value="admin">Admin</option>
                   <option value="manager">Manager</option>
                   <option value="staff">Staff</option>
                   <option value="viewer">View only</option>
                   <option value="custom" hidden>Custom</option>
-                </select></div>
+                </select>
+                <p class="permchanges" id="grChanges" hidden></p></div>
             </div>
             <div class="row">
-              <div><span class="field-label">Sections</span>
-                <div class="permbox" id="grFlags"></div></div>
+              <div class="permbox" id="grFlags"></div>
             </div>
             <div class="msg" id="grMsg"></div>
           </div>
           <div class="sheet-foot">
             <button class="btn btn-primary" id="grSave" type="button">Add</button>
             <button class="btn btn-quiet" id="grCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <!-- Compare groups (2026-10-10): every group side by side, read only. -->
+      <div class="sheet" id="groupCmpBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="grCmpTitle">
+          <div class="sheet-head">
+            <h3 id="grCmpTitle">Compare groups</h3>
+            <button class="iconbtn" id="grCmpClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body" data-narrow="540">
+            <div class="permcmp" id="grCmp"></div>
           </div>
         </div>
       </div>
@@ -5192,26 +5207,26 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261010z"></script>
+<script src="/js/admin.js?v=20261010zb"></script>
 <script src="/js/documents.js?v=20261007i"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
-<script src="/js/reports.js?v=20261010z"></script>
-<script src="/js/register.js?v=20261010z"></script>
-<script src="/js/engage.js?v=20261010z"></script>
-<script src="/js/crm.js?v=20261010z"></script>
+<script src="/js/reports.js?v=20261010zb"></script>
+<script src="/js/register.js?v=20261010zb"></script>
+<script src="/js/engage.js?v=20261010zb"></script>
+<script src="/js/crm.js?v=20261010zb"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261010z"></script>
+<script src="/js/team.js?v=20261010zb"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
-<script src="/js/scripts.js?v=20261010z"></script>
+<script src="/js/scripts.js?v=20261010zb"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
-<script src="/js/campaigns.js?v=20261010z"></script>
-<script src="/js/ops.js?v=20261010z"></script>
+<script src="/js/campaigns.js?v=20261010zb"></script>
+<script src="/js/ops.js?v=20261010zb"></script>
 <script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261009s"></script>
 <script src="/js/overview.js?v=20261010e"></script>
-<script src="/js/settings.js?v=20261010z"></script>
+<script src="/js/settings.js?v=20261010zb"></script>
 </body>
 </html>

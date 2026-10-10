@@ -1036,6 +1036,14 @@
     if (!me || !me.id) { state.waiting = []; paintWaiting(); return; }
     var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
     var jobs = [];
+    /* What has waited on a client's approval past the Business setting
+       (2026-10-10) is offered Remind on WhatsApp, where the approval
+       reminder's template is on and this colleague may send it. */
+    var MONEY = window.ADspaceMoney, WA = window.ADspaceWhatsApp;
+    var waitDays = MONEY && MONEY.setting ? Number(MONEY.setting('approval_reminder_days')) || 3 : 3;
+    var overdue = function (at) { return at && Date.now() - Date.parse(at) >= waitDays * 86400000; };
+    var remind = false;
+    if (WA && WA.may && WA.may('approval')) jobs.push(WA.on('approval').then(function (yes) { remind = yes; }, function () {}));
     // An extension asked of you: you set the date it would move.
     if (may('ops', 'view')) jobs.push(settled(db.from('ops_due_requests')
       .select('id, task_id, kind, wants_at, reason, asked_by, asked_at').eq('decider_id', me.id).eq('state', 'asked'))
@@ -1072,22 +1080,43 @@
       }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
     if (name) {
-      if (may('campaigns.campaigns', 'view')) jobs.push(settled(db.from('campaigns').select('id, title').eq('owner', name))
+      if (may('campaigns.campaigns', 'view')) jobs.push(settled(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name))
         .then(function (camps) {
           if (!camps || !camps.length) return;
-          var title = {};
-          camps.forEach(function (c0) { title[c0.id] = c0.title; });
-          return settled(db.from('campaign_options').select('id, campaign_id, submitted_at, revision_round, creators(name)')
-            .in('campaign_id', camps.map(function (c0) { return c0.id; })).eq('state', 'submitted')).then(function (opts) {
+          var title = {}, campById = {};
+          camps.forEach(function (c0) { title[c0.id] = c0.title; campById[c0.id] = c0; });
+          return settled(db.from('campaign_options').select('id, campaign_id, state, submitted_at, revision_round, creators(name)')
+            .in('campaign_id', camps.map(function (c0) { return c0.id; })).in('state', ['submitted', 'reviewing'])).then(function (opts) {
+              var urlOf = function (o) { return '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators'; };
               (opts || []).forEach(function (o) {
+                if (o.state !== 'submitted') return;
                 rows.push({ key: 'qc:' + o.id, section: 'campaigns', at: o.submitted_at,
                   title: 'Draft to check · ' + ((o.creators && o.creators.name) || 'Creator'),
                   meta: [title[o.campaign_id], o.revision_round > 1 ? 'Round ' + o.revision_round : ''].filter(Boolean).join(' · '),
-                  url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators' });
+                  url: urlOf(o) });
               });
+              /* A draft released to the client waits on them from its last
+                 quality check. */
+              var asked = (opts || []).filter(function (o) { return o.state === 'reviewing'; });
+              if (!asked.length) return;
+              return settled(db.from('option_qc').select('option_id, checked_at').in('option_id', asked.map(function (o) { return o.id; })))
+                .then(function (checks) {
+                  var since = {};
+                  (checks || []).forEach(function (q) { if (!since[q.option_id] || q.checked_at > since[q.option_id]) since[q.option_id] = q.checked_at; });
+                  asked.forEach(function (o) {
+                    var at = since[o.id], cp = campById[o.campaign_id] || {}, who = (o.creators && o.creators.name) || 'Creator';
+                    if (!overdue(at) || !cp.client_id) return;
+                    rows.push({ key: 'ap:' + o.id, section: 'campaigns', at: at,
+                      title: 'Awaiting approval · ' + ((cp.clients && cp.clients.name) || 'Client'),
+                      meta: [who + '\'s draft', cp.title].filter(Boolean).join(' · '),
+                      url: urlOf(o),
+                      remind: { clientId: cp.client_id, ref: o.id, what: who + '\'s draft for ' + (String(cp.title || '').trim() || 'your campaign'),
+                        link: cp.access_token ? location.origin + '/creators/?k=' + encodeURIComponent(cp.access_token) : '' } });
+                  });
+                });
             });
         }));
-      if (may('clients', 'view')) jobs.push(settled(db.from('clients').select('id, name, slug').eq('owner', name))
+      if (may('clients', 'view')) jobs.push(settled(db.from('clients').select('id, name, slug, access_token').eq('owner', name))
         .then(function (mine) {
           if (!mine || !mine.length) return;
           var byId = {}, ids = mine.map(function (c0) { byId[c0.id] = c0; return c0.id; });
@@ -1104,7 +1133,7 @@
                   url: '/admin/?client=' + keyOf(c0) + '&tab=requests' });
               });
             }));
-          if (may('review.sets', 'view')) sub.push(settled(db.from('batches').select('id, title, client_id')
+          if (may('review.sets', 'view')) sub.push(settled(db.from('batches').select('id, title, client_id, published_at')
             .in('client_id', ids).eq('published', true)).then(function (sets) {
               if (!sets || !sets.length) return;
               var setById = {};
@@ -1143,6 +1172,24 @@
                           meta: [perSet[bid].n + (perSet[bid].n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
                           url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid) });
                       });
+                      /* A published set with posts the client has not decided,
+                         waiting from its publishing. */
+                      var pending = {};
+                      posts.forEach(function (po) {
+                        if (latest[po.id]) return;
+                        pending[po.batch_id] = (pending[po.batch_id] || 0) + 1;
+                      });
+                      Object.keys(pending).forEach(function (bid) {
+                        var b = setById[bid], c0 = byId[b.client_id] || {}, n = pending[bid];
+                        if (!overdue(b.published_at)) return;
+                        rows.push({ key: 'ap:' + bid, section: 'review', at: b.published_at,
+                          title: 'Awaiting approval · ' + (c0.name || 'Client'),
+                          meta: [n + (n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
+                          url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid),
+                          remind: { clientId: b.client_id, ref: bid,
+                            what: n + (n === 1 ? ' post' : ' posts') + (b.title ? ' in ' + b.title : ''),
+                            link: c0.access_token ? location.origin + '/review/?k=' + encodeURIComponent(c0.access_token) : '' } });
+                      });
                     });
                 });
             }));
@@ -1155,6 +1202,7 @@
         if (Boolean(a.late) !== Boolean(b.late)) return a.late ? -1 : 1;
         return String(a.at || '') < String(b.at || '') ? -1 : 1;
       });
+      if (!remind) rows.forEach(function (r) { delete r.remind; });
       state.waiting = rows;
       paintWaiting();
     });
@@ -1186,7 +1234,8 @@
               (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</button>' +
             '<span class="wfy-acts">' + (r.request && mayDecide()
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
-                '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>' : '') + '</span>' +
+                '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
+              : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind">Remind</button>' : '') + '</span>' +
             '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
           '</div>';
         }).join('');
@@ -1204,6 +1253,14 @@
             return;
           }
           if (b.disabled) return;
+          /* Remind opens the composer on the client's main contact with the
+             approval reminder, what waits and its link filled in. */
+          if (a === 'remind') {
+            window.ADspaceWhatsApp.compose({ purpose: 'approval', clientId: r.remind.clientId, ref: r.remind.ref,
+              what: r.remind.what, link: r.remind.link, opener: b,
+              onSent: function (d, line) { msg('workMsg', line, 'ok'); } });
+            return;
+          }
           Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = true; });
           call('ops_decide_due_change', { p_request: r.request, p_approve: a === 'yes', p_note: null }, 'workMsg', function () {
             msg('workMsg', a === 'yes' ? 'Extension approved.' : 'Extension declined.', 'ok');
@@ -7321,7 +7378,8 @@
            2026-10-06). */
         if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Due dates', msg: 'workMsg',
           keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-                 ['revision_due_days', 'Revision (Client): days after changes are asked', 'due']] }, $('workMoreBtn'));
+                 ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
+                 ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] }, $('workMoreBtn'));
       });
     }
     // Several at once

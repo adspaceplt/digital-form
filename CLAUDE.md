@@ -146,7 +146,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
-| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections | whatsapp, wafn, smsql, crm, perms, sql, then `ui` |
+| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections | whatsapp, wafn, waapprove, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -965,13 +965,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `no_team_client_overlap`: one address is never both a colleague and a live
     portal contact. Where a legacy overlap exists, `portal_clients()` returns
     nothing for a team address.
-- The Team group panel:
+- The Team group panel (simplified 2026-10-10; layout only, the stored map
+  and every check unchanged):
   - `#grSum` reads the panel back as one sentence.
-  - Start from Admin / Manager / Staff / View only (Custom when the panel
-    matches none, worked out and never stored). Admin in Start from is the only
-    way to make a group admin.
-  - Each section is a segment with one line for its level (`DESC`).
-  - The parts sit under Advanced (n), where n counts exceptions only.
+  - Start from Admin / Manager / Staff / View only; a panel matching none
+    reads `Custom: n changes from {nearest}` (`#grPresetNote`) with the
+    changes listed under it (`#grChanges`), worked out and never stored.
+    Admin in Start from is the only way to make a group admin.
+  - The sections in the rail's chunks (Work, Internal; `CHUNKS`), one row
+    each: the name, its segment at the right edge, the line for its level
+    (`DESC`).
+  - A section's parts sit under its Customise (n), n counting exceptions;
+    shut, `#grDiff-{section}` names only those that differ.
+  - The acts an admin alone took are Admin tools (`ADMIN_TOOLS`): switches
+    in the Settings page's groups (Portal, Business figures, AI, Records),
+    then Team and Tasks and reports. The My Work views (List, Board,
+    Calendar) are not offered; a stored one is kept through a save.
+  - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
+    the admin tools for every group, read only.
   - Clients they see (`#grScope`, All clients / Own clients only) sits in the
     Clients fold; Own makes the preset Custom.
   - No preset below Admin opens Team, HR letters or performance reviews.
@@ -2061,7 +2072,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     campaign they run, a client request Requested and a set with Changes
     requested on a client they hold (Person in charge); each read asks its
     own `may()`, late first, then oldest, each row opening its record. Drawn
-    only while it holds something.
+    only while it holds something. Awaiting approval (2026-10-10): a
+    published set on a client they hold with posts the client has not
+    decided, from `published_at`, and a booking at Reviewing on a campaign
+    they run, from its last `option_qc` check, once either has waited
+    `approval_reminder_days` (3, Due dates); Remind (tonal, while the
+    approval reminder's template is on and `ADspaceWhatsApp.may('approval')`)
+    opens the composer on the client's main contact with what waits and its
+    link (the review page, the selection page) filled in.
 - The read is bounded, and open work is not part of the bound. Open work is
   read in full, a thousand rows a page in id order (`readPages`) and put back
   in the final date's order; finished work is read from the period on (three
@@ -3801,7 +3819,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   and file only.
 - `document.*` and `register.*` rows file under Documents.
 
-### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `docs/WHATSAPP-SETUP.md`)
+### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `2026-10-10-whatsapp-approval-reminder.sql`, `docs/WHATSAPP-SETUP.md`)
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1
@@ -3810,13 +3828,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   service.
 - A section of its own, `whatsapp`, in the Work chunk after Clients: View
   reads the messages, Work (Manage on the panel) sends, Manage (Full Access)
-  sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback` and
-  `whatsapp.booking` follow it or are shut (No Access), nothing between
+  sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback`,
+  `whatsapp.booking` and `whatsapp.approval` (2026-10-10) follow it or are
+  shut (No Access), nothing between
   (`VIEW_PARTS`); they replaced `reports.whatsapp`, `clients.whatsapp` and
   `campaigns.whatsapp` (a shut one moved across, the old keys taken off). A
   send asks the section and its purpose's part at Work and the record's own
   section at View (Reports, Clients, Creator Campaigns), a plain message a
-  contact's Clients: Contacts or a creator's Creators List at View
+  contact's Clients: Contacts or a creator's Creators List at View, an
+  approval reminder Content Review: Content sets or Creator Campaigns:
+  Campaigns at View and the record it names at its own
   (`wa_may_send`, `ADspaceWhatsApp.may`); at No Access no record offers
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
@@ -3833,7 +3854,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   twelve), Type and Status behind Filters, the count, New message (Work).
 - Templates (`tab=templates`, Full Access): the queue (waiting, sending, not
   sent in 7 days), then one template a purpose (`wa_templates`: `report`,
-  `feedback`, `reminder`, `creator`; name, language, category, how many body
+  `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
   takes one; a link button's variable the creator's alone), each row's
@@ -3869,6 +3890,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.
+- The approval reminder (`approval`, 2026-10-10; the user: "yes" to the
+  chaser, sent by hand, never automatic): to a client contact, `p_ref` a
+  published set of their client or a booking at Reviewing on a campaign of
+  theirs (`not-found`, `not-waiting`), filed against it (`ref_kind` `set` /
+  `option`) as "Approval reminder sent on WhatsApp to …"; variables in order
+  the greeting, the client, what waits, the link to approve it. Its purpose
+  is added to the check in `2026-10-10-whatsapp-approval-purpose.sql`, run
+  in the SQL Editor (the connector stops on the check's replacement).
 - Delivery (`wa-hook`, Verify JWT off): Meta's verification answered only
   with `WHATSAPP_VERIFY_TOKEN`; a POST believed only with its
   `X-Hub-Signature-256` over the raw body keyed by `META_APP_SECRET`; each
