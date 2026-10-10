@@ -11,9 +11,10 @@
  *   ADspaceWhatsApp.urlState()       the address while the section is open
  *   ADspaceWhatsApp.compose(o)       the one composer every record shares:
  *                                    o = { purpose: 'message' | 'report' |
- *                                    'feedback' | 'creator', clientId,
- *                                    reportId, creatorId, optionId, campaign,
- *                                    opener, onSent(d) }
+ *                                    'feedback' | 'creator' | 'approval',
+ *                                    clientId, reportId, creatorId, optionId,
+ *                                    campaign, ref, what, link, opener,
+ *                                    onSent(d) }
  *   ADspaceWhatsApp.may(purpose)     whether this colleague may send for it:
  *                                    the section and its part at Work, and
  *                                    the record's section at View
@@ -30,20 +31,21 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  /* The four purposes a template is set for, and what each message is. */
+  /* The five purposes a template is set for, and what each message is. */
   var PURPOSE = {
     report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the greeting (salutation and name), the client or brand, the report and its period.'],
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
-    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.']
+    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
+    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits, the link to approve it.']
   };
   /* What each message in the list was. */
-  var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', reminder: 'Reminder', message: 'Message' };
+  var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
                 ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['failed', 'Failed', 'is-danger']];
   /* The part each purpose sends under, and the record's own section. */
-  var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking' };
+  var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking', approval: 'whatsapp.approval' };
   var RECORD = { report: 'reports', feedback: 'clients', creator: 'campaigns' };
   var SECRET = { WHATSAPP_PHONE_ID: 'Phone number ID', WHATSAPP_TOKEN: 'token', WHATSAPP_WABA_ID: 'Business Account ID' };
 
@@ -166,6 +168,8 @@
   function maySend(purpose) {
     if (!may('whatsapp', 'work')) return false;
     if (purpose === 'message') return may('clients.contacts', 'view') || may('campaigns.creators', 'view');
+    /* An approval reminder reads the set or the booking it names. */
+    if (purpose === 'approval') return may(PART.approval, 'work') && (may('review.sets', 'view') || may('campaigns.campaigns', 'view'));
     return Boolean(PART[purpose]) && may(PART[purpose], 'work') && may(RECORD[purpose], 'view');
   }
 
@@ -233,7 +237,7 @@
     sel.innerHTML = opts.join('');
     sel.value = st.month;
     sel.setAttribute('data-default', st.month);
-    $('waPurpose').innerHTML = '<option value="">All types</option>' + ['report', 'feedback', 'creator', 'reminder', 'message'].map(function (k) {
+    $('waPurpose').innerHTML = '<option value="">All types</option>' + ['report', 'feedback', 'creator', 'approval', 'reminder', 'message'].map(function (k) {
       return '<option value="' + k + '">' + esc(KIND[k]) + '</option>';
     }).join('');
     $('waStatus').innerHTML = '<option value="">All statuses</option>' + STATUS.map(function (s) {
@@ -531,6 +535,8 @@
     });
   }
 
+  /* A purpose sent to one client's contacts, its main contact first. */
+  function forClient(o) { return o.purpose === 'report' || o.purpose === 'feedback' || o.purpose === 'approval'; }
   function fillTo(d) {
     var o = cx.o, sel = $('waTo');
     if (d.error) {
@@ -541,14 +547,14 @@
     }
     var list = [];
     (d.contacts || []).forEach(function (k) {
-      if ((o.purpose === 'report' || o.purpose === 'feedback') && k.client_id !== o.clientId) return;
+      if (forClient(o) && k.client_id !== o.clientId) return;
       if (o.purpose === 'creator') return;
       list.push({ kind: 'contact', id: k.id, name: k.name, client: k.client, client_id: k.client_id, greeting: k.greeting,
         number: k.number, username: k.username, primary: k.is_primary,
         label: k.name + ' · ' + k.client + (k.is_primary ? ' · Main contact' : '') });
     });
     (d.creators || []).forEach(function (k) {
-      if (o.purpose === 'report' || o.purpose === 'feedback') return;
+      if (forClient(o)) return;
       if (o.purpose === 'creator' && k.id !== o.creatorId) return;
       list.push({ kind: 'creator', id: k.id, name: k.name, client: '', greeting: k.greeting, number: k.number, code: k.code,
         label: k.name + ' · Creator' });
@@ -556,7 +562,7 @@
     cx.recips = list;
     list.forEach(function (r) { cx.byVal[r.kind + ':' + r.id] = r; });
     var first = o.purpose === 'creator' ? list[0]
-      : (o.purpose === 'report' || o.purpose === 'feedback') ? (list.filter(function (r) { return r.primary; })[0] || list[0]) : null;
+      : forClient(o) ? (list.filter(function (r) { return r.primary; })[0] || list[0]) : null;
     sel.innerHTML = (first ? '' : '<option value="">Choose a recipient</option>') + list.map(function (r) {
       return '<option value="' + esc(r.kind + ':' + r.id) + '">' + esc(r.label) + '</option>';
     }).join('');
@@ -641,6 +647,8 @@
     if (isDoc && r && r.kind === 'contact') loadReports(r.client_id);
     else preview();
   }
+  /* The approval reminder's own client: what waits and its link fill in. */
+  function approving(r) { return Boolean(cx && cx.o.purpose === 'approval' && r && r.kind === 'contact' && r.client_id === cx.o.clientId); }
   function human(v) { var s = String(v).replace(/_/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
   /* What a variable is filled with, from what the record holds: the
      greeting first, then the client (a creator's campaign), then a report's
@@ -654,9 +662,12 @@
     if (/^\d+$/.test(v)) {
       if (v === '1') return r.greeting || r.name || '';
       if (v === '2') return r.kind === 'creator' ? (o.campaign || '') : (rep ? rep.client : r.client) || '';
-      if (v === '3') return rep ? rep.title : '';
+      if (v === '3') return rep ? rep.title : approving(r) ? (o.what || '') : '';
+      if (v === '4') return approving(r) ? (o.link || '') : '';
       return '';
     }
+    if (approving(r) && /link|url|approve/.test(low)) return o.link || '';
+    if (approving(r) && /what|item|waiting|set|draft|content/.test(low)) return o.what || '';
     if (/campaign|job|booking/.test(low)) return r.kind === 'creator' ? (o.campaign || '') : '';
     if (/report|period|month/.test(low)) return rep ? rep.title : '';
     if (/client|brand|company|business/.test(low)) return r.kind === 'contact' ? ((rep ? rep.client : r.client) || '') : '';
@@ -776,9 +787,9 @@
       empty.focus();
       return;
     }
-    var purpose = isDoc ? 'report' : (o.purpose === 'feedback' || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message';
+    var purpose = isDoc ? 'report' : (o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message';
     if (!maySend(purpose)) { say(m, SAID.denied, 'err'); return; }
-    var ref = purpose === 'report' ? rep.id : purpose === 'creator' ? o.optionId : null;
+    var ref = purpose === 'report' ? rep.id : purpose === 'creator' ? o.optionId : purpose === 'approval' ? o.ref : null;
     var values = {}, header = '', button = '';
     Array.prototype.forEach.call($('waFields').querySelectorAll('[data-var]'), function (f) {
       var key = f.getAttribute('data-var'), v = String(f.value || '').trim();

@@ -692,7 +692,7 @@
     clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
     /* WhatsApp (2026-10-10): a send for a report, a feedback request or a
        creator's booking follows the section unless a group shuts it. */
-    whatsapp:  ['report', 'feedback', 'booking'],
+    whatsapp:  ['report', 'feedback', 'booking', 'approval'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any
