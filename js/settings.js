@@ -68,7 +68,8 @@
         { id: 'tax', name: 'Tax and terms', kind: 'edit',
           meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))]) },
         { id: 'due', name: 'Due dates', kind: 'edit',
-          meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]) },
+          meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]
+            .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])) },
         { id: 'prices', name: 'AI prices', kind: 'edit',
           meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' },
         { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
@@ -163,7 +164,8 @@
     }
     if (a === 'due') {
       ed({ title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-        ['revision_due_days', 'Revision (Client): days after changes are asked', 'due']] });
+        ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
+        ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] });
       return;
     }
     if (a === 'prices') { ed({ title: 'AI prices, US$ a million tokens', keys: [['ai_price_in', 'Input', 'usd'], ['ai_price_out', 'Output', 'usd']] }); return; }
