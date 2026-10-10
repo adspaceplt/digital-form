@@ -315,5 +315,28 @@
     setTimeout(function () { try { land.focus(); } catch (e) {} }, 0);
   }
 
-  window.ADspaceConfirm = { ask: ask, close: shut };
+  /* Content written with AI (the user, 2026-10-10: "a warning dialog for
+     all AI assisted write out … if they proceed to submit or confirm, they
+     declare that the contents are read and confirmed"): asked before what AI
+     wrote is kept (a caption or a script saved, a report submitted), never
+     for words typed by hand. The tick is the declaration; the page files it
+     under the record. One copy of the words, one glyph for every AI act. */
+  var AI_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+    'stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 4.4L17 10l-4.4 1.6L11 16l-1.6-4.4L5 10l4.4-1.6z"/>' +
+    '<path d="M18 14.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>';
+  var AI_TICK = 'I have read and checked it, and I take responsibility for its accuracy.';
+  function aiLine(what) {
+    return 'This ' + what + ' was written with AI. Read it in full and check every fact, figure, name, price and claim. ' +
+      'Errors in confirmed content are the responsibility of the person who confirms it, and may be raised as an issue in their performance review.';
+  }
+  function aiField() { return { name: 'ai_ok', label: AI_TICK, tick: true, value: false }; }
+  function aiRefused(v) { return v && v.ai_ok === 'on' ? '' : 'Tick the declaration to continue.'; }
+  /* what: 'caption', 'script' or 'commentary'; go: the act's own word. */
+  function declare(what, go, onYes) {
+    ask({ title: 'Written with AI', body: aiLine(what), go: go || 'Confirm and save',
+      fields: [aiField()], check: aiRefused }, function () { onYes(); });
+  }
+
+  window.ADspaceConfirm = { ask: ask, close: shut,
+    ai: { glyph: AI_GLYPH, line: aiLine, field: aiField, refused: aiRefused, declare: declare } };
 }());

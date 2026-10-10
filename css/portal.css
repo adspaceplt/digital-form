@@ -2360,8 +2360,8 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (hover: hover) {
   .navitem:hover { background: var(--sunk); color: var(--ink); }
 }
-.navitem.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
-.navitem.is-on svg { color: var(--ink); }
+.navitem.is-on, .railfoot.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
+.navitem.is-on svg, .railfoot.is-on svg { color: var(--ink); }
 
 /* Who you are, the register you read in and the way out. Three things
    touched a few times a year each, which took a 150px block at the foot of
@@ -2448,9 +2448,10 @@ body.is-plain .topbar { background: var(--chrome); }
 /* A switch (`button.switch`, role="switch", aria-checked): a setting that
    takes effect at the press, drawn as the iPhone draws one, a track with a
    thumb that slides; off is the control's grey, on the green of live. The
-   button is the control's height and the track sits inside it. */
+   button is a full control's height (its target, 38 or 44 under a finger)
+   and the track sits inside it. */
 .switch {
-  position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h-sm);
+  position: relative; flex: 0 0 auto; width: 46px; height: var(--ctl-h);
   padding: 0; border: 0; background: none; border-radius: 999px; cursor: pointer;
 }
 .switch::before {
@@ -6440,6 +6441,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railgate > .ovgo-chev { grid-column: 3; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--err); }
 /* Without a Billing pane to open there is nothing to press. */
 .railgate:not([data-go]) { cursor: default; }
+/* A restricted account (2026-10-10): the same red block, its Clear at the
+   right edge in place of the chevron. */
+.railgate.is-restricted { cursor: default; }
+.railgate > .railgate-act { grid-column: 3; grid-row: 1 / -1; flex: 0 0 auto; }
 .railgate:not([data-go]) > .ovgo-chev { display: none; }
 @media (hover: hover) { .railgate[data-go]:hover { filter: brightness(.985); } }
 /* A next action is a thing to go and do, so the whole block is the control
@@ -6592,7 +6597,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .tl-pen {
   justify-self: end; width: var(--ctl-h); height: var(--ctl-h);
   margin-block: calc((20px - var(--ctl-h)) / 2);
-  border: 0; background: none; color: var(--ink-mute);
+  border: 0; border-radius: var(--radius-sm); background: none; color: var(--ink-mute);
 }
 .tl-pen svg { width: 15px; height: 15px; }
 @media (hover: hover) { .tl-pen:hover { background: var(--line-soft); color: var(--ink); } }
@@ -7997,7 +8002,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tsteps-bar { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
 .tsteps-bar li { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--line); }
 .tsteps-bar li.is-done { background: var(--line-ctl); }
-.tsteps-bar li.is-now { background: var(--action); }
+.tsteps-bar li.is-now { background: var(--fill); }
 .tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .tsteps-word b { color: var(--ink); font-weight: 600; }
 .tnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
@@ -10435,7 +10440,7 @@ button.aiu-row:first-child::before { content: none; }
    own pill. */
 .tab, .tab.is-on, .rectabs .tab, .rectabs .tab.is-on, .tabrow .tab, .tabrow .tab.is-on,
 .cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
-.seg-opt, .seg-opt.is-on, .navitem.is-on, .picker-opt.is-on { font-weight: 400; }
+.seg-opt, .seg-opt.is-on, .navitem.is-on, .railfoot.is-on, .picker-opt.is-on { font-weight: 400; }
 
 /* =========================================================================
    SALES (js/sales.js, ?s=clients&view=sales, 2026-10-05)
@@ -10927,13 +10932,17 @@ button.vs-row { cursor: pointer; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .msg { margin: 0; }
-.vs-head .rec-linktools { margin-top: 0; }
+.vs-head .rec-linktools { margin-top: 0; grid-template-columns: minmax(0, 1fr); }
+.vs-head .linkbox { flex-wrap: nowrap; }
+.vs-head .linkbox .input { min-width: 0; }
+.is-narrow .vs-head .linkbox { flex-wrap: wrap; }
+.is-narrow .vs-head .linkbox .input { flex: 1 1 100%; }
+.is-narrow .vs-head .linkbox .btn { flex: 1 1 0; min-width: 0; }
 .vs-head .msg:empty { display: none; }
 .vs-head .rec-ctl { gap: 8px; }
 .vs-pdf-short { display: none; }
 .is-narrow .vs-head .vs-pdf-long { display: none; }
 .is-narrow .vs-head .vs-pdf-short { display: inline; }
-.vs-rec { margin-top: 0; }
 .vs-sheetview { display: grid; gap: 24px; }
 .facts.vs-facts { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .is-narrow .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -10941,7 +10950,8 @@ button.vs-row { cursor: pointer; }
 .vs-block > .fsec-h { margin: 0; }
 .vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
-.vs-ref .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-ref .plink { max-width: 100%; min-width: 0; }
+.vs-ref-url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* A scene: its number, what is seen (and on a detailed script what is
    said), then the clip number and the tick. */
@@ -10955,8 +10965,7 @@ button.vs-row { cursor: pointer; }
 .vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; }
 .vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; }
 .vs-vc .input { width: 100%; }
-.vs-shot { display: flex; justify-content: center; }
-.vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; }
+.vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; accent-color: var(--accent); }
 .vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
 .vs-vo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .vs-vo .input { width: 104px; }
@@ -10971,15 +10980,54 @@ button.vs-row { cursor: pointer; }
 .is-narrow .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
 .is-narrow .vs-scene > .vs-vc { grid-area: vc; }
 .is-narrow .vs-scene > .vs-shot { grid-area: shot; }
+/* The client reads the script alone: the scene and, on a detailed script,
+   its words, and no clip number or tick (the user, 2026-10-09). */
+.vs-scenes.is-read .vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
+.vs-scenes.is-read.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr); }
+.is-narrow .vs-scenes.is-read .vs-scene, .is-narrow .vs-scenes.is-read.is-two .vs-scene {
+  grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line";
+}
+/* On the day (the console and the installed app): the clip number field is
+   the row's one stop, Enter records it, ticks Shot and moves to the next
+   scene; Shot is a full-size target. */
+.vs-shot { display: flex; justify-content: center; }
+.vs-shot label { display: inline-flex; align-items: center; justify-content: center; width: var(--ctl-h-sm); height: var(--ctl-h-sm); cursor: pointer; }
+.vs-shot label input { margin: 0; }
+@media (pointer: coarse) { .vs-shot label { width: var(--ctl-h); height: var(--ctl-h); margin: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) 0; } }
 
-/* The shoot's videos in the rail, the one open chosen. */
-.vs-vrow { width: 100%; justify-content: flex-start; }
-.vs-vrow.is-on { background: var(--line-soft); }
-.vs-next { margin-top: 8px; }
-
-/* A script's record: its facts in one card, the script in the next (the
-   user, 2026-10-09: key information apart from the scenes). */
-.vs-rec > .cr-main { display: grid; gap: 12px; align-content: start; }
+/* A content month's record (the user, 2026-10-09): the head with the
+   client's link once, a tab a script with Add script at the line's end,
+   then the script on show: its own head (code and title over the type; the
+   state, Edit, Publish and the ⋯ at the right edge) over its facts, and the
+   script in the next card. */
+.vs-tabline { margin: 0 0 12px; }
+.vs-tabline > .rectabs { margin: 0; flex: 1 1 auto; min-width: 0; }
+.vs-tabline > .vs-next { flex: 0 0 auto; }
+.vs-rec { display: grid; gap: 12px; min-width: 0; }
+.vs-rec > .panel { margin: 0; }
+.vs-factcard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.vs-factcard > .msg { margin: 0; }
+.vs-factcard > .msg:empty { display: none; }
+.vs-factcard > .undobar-here { margin: 0; }
+.vs-cardhead {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
+}
+.vs-cardwho { min-width: 0; flex: 1 1 240px; }
+.vs-cardwho h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.vs-cardwho p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.vs-cardctl { position: relative; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.vs-cardctl > .chip-state { margin-right: 4px; }
+/* Narrow, the acts take the line under the name, Edit and Publish as equal
+   halves between the state and the ⋯. */
+.is-narrow .vs-cardctl { flex: 1 1 100%; }
+.is-narrow .vs-cardctl > .btn { flex: 1 1 0; min-width: 0; }
+/* Tight (a phone at 320 to 460), the state takes its own line above the
+   acts, so Edit, Publish and the ⋯ keep their words whole. */
+.is-tight .vs-cardctl { flex-wrap: wrap; row-gap: 8px; }
+.is-tight .vs-cardctl > .chip-state { flex: 1 0 100%; margin-right: 0; }
+.vs-sheetview .vs-shot-msg { margin: 0; }
+.vs-sheetview .vs-shot-msg:empty { display: none; }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
 .facts.vs-facts .vs-ref dd { min-width: 0; }
 
@@ -10992,15 +11040,11 @@ button.vs-row { cursor: pointer; }
 .vs-editform > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .vs-editform :where(.row) { margin-top: 16px; row-gap: 16px; }
 .vs-editform .fsec > .fsec-h + .row, .vs-editform .vs-writehead + .msg + .row { margin-top: 0; }
-.vs-rec > .cr-main > .panel { margin: 0; }
-/* Narrow, the month's other scripts follow the script, never come before it. */
-@media (max-width: 1100px) {
-  .vs-rec > .cr-rail { order: 1; margin: 12px 0 0; }
-}
 .vs-editfoot {
   position: sticky; bottom: var(--tabbar-space); z-index: 5;
   display: grid; gap: 8px; padding: 12px 0 max(12px, env(safe-area-inset-bottom, 0px));
-  background: var(--page); border-top: 1px solid var(--line);
+  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--line);
 }
 .vs-editfoot .msg { margin: 0; }
 .vs-editfoot .msg:empty { display: none; }
@@ -11022,7 +11066,30 @@ button.vs-row { cursor: pointer; }
 .shell-script { max-width: 960px; }
 .shell-script > .rec-head { margin-top: 16px; }
 .shell-script > .rec-head + .stagestrip { margin-top: 0; }
-#vsContent { display: grid; gap: 32px; margin-top: 12px; }
+#vsContent { display: grid; gap: 12px; margin-top: 12px; }
+/* A month is a list, a row a script (the user, 2026-10-09: "if i have 30
+   videos = one whole long page"): the code and title over the type and the
+   shoot, where the crew stands at the right, a chevron. One script opens on
+   its own under a line holding the way back to the list, where it stands in
+   the month, and Previous and Next. */
+.vs-index { padding: 0; overflow: hidden; }
+.vs-pick {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; align-items: center; gap: 4px 12px;
+  width: 100%; padding: 14px 20px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.vs-pick:last-child { border-bottom: 0; }
+@media (hover: hover) { .vs-pick:hover { background: var(--sunk); } }
+.vs-pick-name { display: grid; gap: 2px; min-width: 0; }
+.vs-pick-name b { font-weight: 600; overflow-wrap: anywhere; }
+.vs-pick-name small { font-size: 13px; color: var(--ink-mute); }
+.vs-pick-state { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.vs-pick > svg { width: 16px; height: 16px; color: var(--ink-mute); }
+.vs-open { display: grid; gap: 12px; min-width: 0; }
+.vs-openbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.vs-openbar .backlink { margin: 0; }
+.vs-steps { display: flex; align-items: center; gap: 8px; }
+.vs-pos { margin-right: 4px; font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
 .vs-video { display: grid; gap: 12px; min-width: 0; }
 .vs-video-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .vs-video-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
@@ -11031,6 +11098,9 @@ button.vs-row { cursor: pointer; }
 .vs-shot-msg { margin: 0; }
 .vs-shot-msg:empty { display: none; }
 @media (max-width: 640px) {
+  .vs-pick { padding: 12px 14px; }
+  .vs-steps { flex: 1 1 100%; }
+  .vs-steps > .btn { flex: 1 1 0; min-width: 0; }
   .vs-card { padding: 14px; gap: 20px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -11114,3 +11184,22 @@ button.vs-row { cursor: pointer; }
 .wa-btns li { display: grid; gap: 2px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
 .wa-btns small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
 #waCompose .fsec > .msg:empty { display: none; }
+/* Settings (js/settings.js, 2026-10-10): a card a group, a row a setting.
+   The name over its value as it stands, the control at the right edge (a
+   switch, Edit or Open), one row's height whatever the control. */
+.set-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
+  padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
+}
+.set-row:last-child { border-bottom: 0; }
+.set-what { min-width: 0; }
+.set-name { margin: 0; font-weight: 500; color: var(--ink); }
+.set-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.set-ctl { display: flex; align-items: center; justify-content: flex-end; }
+.set-ctl .btn { flex: 0 0 auto; }
+
+/* A month being planned lists last month's best and weakest posts by views
+   (js/ops.js, 2026-10-10): a line a post, its figure in the soft ink. */
+.eng-results .eng-val { display: grid; gap: 2px; }
+.eng-post { display: block; }
+.eng-fig { color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }

@@ -47,6 +47,7 @@
     var d = dayStart(String(v).length === 10 ? v + 'T00:00:00' : v);
     return isNaN(d.getTime()) ? 0 : Math.max(0, Math.round((today() - d) / 86400000));
   }
+  var RESTRICT_WORD = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', other: 'Other account' };
   function daysWord(n) { return n === 1 ? '1 day' : n + ' days'; }
   function sinceWord(v) { var n = daysSince(v); return n ? daysWord(n) : 'Today'; }
   function dateWord(v) {
@@ -237,6 +238,21 @@
               fmt: function (v) { return String(v); } };
           });
         } },
+      /* A client's social account restricted by its platform (2026-10-10;
+         the user: "account restricted"), the longest first. */
+      { key: 'restricted', title: 'Restricted accounts', can: function () { return may('clients', 'manage'); },
+        all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No accounts restricted.',
+        load: function () {
+          return db.from('clients').select('id, name, slug, stage, owner, restricted_platform, restricted_since, restricted_note')
+            .not('restricted_since', 'is', null).order('restricted_since', { ascending: true }).then(rows).then(function (list) {
+              list = list || [];
+              return { count: list.length, rows: list.map(function (c) {
+                return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', c.restricted_note].filter(Boolean).join(' · '),
+                         fig: 'Restricted', figTone: 'err', age: sinceWord(c.restricted_since),
+                         url: clientUrl(c), section: 'clients' };
+              }) };
+            });
+        } },
       { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests', 'manage'); },
         all: ['/admin/?s=clients', 'clients'], empty: 'No requests waiting.',
         load: function () {
@@ -366,24 +382,6 @@
         } }
     ] },
 
-    { head: 'Documents', key: 'register', cards: [
-      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
-        all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
-        load: function () {
-          return db.from('client_documents')
-            .select('id, number, issued_at, client_id, clients(id, name, slug)')
-            .in('kind', LETTERS).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
-            .order('issued_at', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (d) {
-                var c = d.clients || {};
-                return { name: c.name || 'Client', meta: d.number, fig: daysWord(daysSince(d.issued_at)) + ' out',
-                         age: 'Issued ' + dateWord(d.issued_at), url: clientUrl(c, 'documents'), section: 'clients' };
-              }) };
-            });
-        } }
-    ] },
-
     { head: 'Reports', key: 'reports', cards: [
       { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports', 'manage'); },
         all: ['/admin/?s=reports', 'reports'], empty: 'No reports waiting.',
@@ -442,6 +440,24 @@
                          section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
               }) };
           });
+        } }
+    ] },
+
+    { head: 'Documents', key: 'register', cards: [
+      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
+        all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
+        load: function () {
+          return db.from('client_documents')
+            .select('id, number, issued_at, client_id, clients(id, name, slug)')
+            .in('kind', LETTERS).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
+            .order('issued_at', { ascending: true }).then(rows).then(function (list) {
+              list = list || [];
+              return { count: list.length, rows: list.map(function (d) {
+                var c = d.clients || {};
+                return { name: c.name || 'Client', meta: d.number, fig: daysWord(daysSince(d.issued_at)) + ' out',
+                         age: 'Issued ' + dateWord(d.issued_at), url: clientUrl(c, 'documents'), section: 'clients' };
+              }) };
+            });
         } }
     ] },
 

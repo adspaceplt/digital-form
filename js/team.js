@@ -82,6 +82,11 @@
        (2026-10-09). */
     ['scripts',   'Video Scripts',     ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
+    /* Client reports are prepared here and published to the client portal.
+       Their own section (2026-09-25), so a colleague can prepare reports
+       without reading client records; Clients View still reads a client's
+       finished reports on the record. */
+    ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -89,11 +94,6 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
-    /* Client reports are prepared here and published to the client portal.
-       Their own section (2026-09-25), so a colleague can prepare reports
-       without reading client records; Clients View still reads a client's
-       finished reports on the record. */
-    ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
@@ -128,7 +128,7 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'], ['whatsapp', 'WhatsApp'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['register', 'Documents'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -165,7 +165,11 @@
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
-    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits']]
+    reports:   [['whitelabel', 'White label'], ['transfer', 'Transfer client'], ['ai', 'AI usage and limits'],
+                /* Import from Meta and the audit against Meta (2026-10-10):
+                   granted, an admin's by itself, and read only while the
+                   Business setting Meta checks is On. */
+                ['meta', 'Meta import and audit']]
   };
   /* The parts that are granted rather than inherited: each opens more than
      its section does, so silence means no. The same list the console reads
@@ -173,7 +177,7 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1 };
+    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -195,7 +199,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -790,7 +794,7 @@
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
-               work: 'Write scripts, share them with the client and tick scenes on the day.', manage: 'Also delete scripts.' },
+               work: 'Write scripts, publish them to the client and record the clips on the day.', manage: 'Also delete scripts.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',

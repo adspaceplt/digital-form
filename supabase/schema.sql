@@ -39754,6 +39754,558 @@ grant execute on function public.activity_section(text) to authenticated;
 -- END OF WHATSAPP NUMBERS AND RESEND ------------------------------------------
 
 -- ===========================================================================
+-- SCRIPT SHOTS INTERNAL — a script's clip numbers (VC#) and Shot ticks are
+-- the team's alone: the client link reads the script and never the crew's
+-- record of the day.
+-- 2026-10-09. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/vssql.js compares the
+-- two.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "the VC# and shot check box, remove
+-- from all client-facing site; just internal admin or the pwa key in would
+-- do")
+--   1. `get_scripts(p_token)` sends each published script's facts, its
+--      context, voice-over, scenes and notes, and no longer any scene's clip
+--      number or tick, nor the voice-over's.
+--   2. `script_shot_link(…)` answers `closed`: the clip numbers are recorded
+--      in the console (`video_script_shot`, Video Scripts at Work). Its
+--      signature and grant stay, so an open page is answered rather than
+--      refused.
+--
+-- ROLLBACK
+--   Restate get_scripts and script_shot_link from the SCRIPTS BY MONTH band.
+-- ===========================================================================
+
+create or replace function public.get_scripts(p_token text)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_cl public.clients;
+begin
+  select * into v_cl from public.clients c
+   where c.script_key = p_token and p_token is not null and c.active;
+  if v_cl.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  return jsonb_build_object(
+    'client', jsonb_build_object('name', v_cl.name, 'logo_url', v_cl.logo_url),
+    'scripts', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', s.id, 'code', s.code, 'period', s.period, 'kind', s.kind,
+               'title', s.title, 'reference_url', s.reference_url, 'platform', s.platform,
+               'language', s.language, 'shoot_on', s.shoot_on, 'shoot_time', s.shoot_time,
+               'venue', s.venue, 'duration_minutes', s.duration_minutes, 'cast_names', s.cast_names,
+               'context', s.context, 'vo', s.vo, 'remarks', s.remarks,
+               'shared_at', s.shared_at, 'updated_at', s.updated_at,
+               'scenes', coalesce((select jsonb_agg(jsonb_build_object('id', sc.id, 'position', sc.position,
+                                                     'visual', sc.visual, 'line', sc.line)
+                                                     order by sc.position)
+                                     from public.video_script_scenes sc where sc.script_id = s.id), '[]'::jsonb))
+             order by s.period desc, s.seq)
+        from public.video_scripts s
+       where s.client_id = v_cl.id and s.status = 'shared'), '[]'::jsonb));
+end $$;
+
+revoke all on function public.get_scripts(text) from public;
+
+grant execute on function public.get_scripts(text) to anon;
+
+grant execute on function public.get_scripts(text) to authenticated;
+
+create or replace function public.script_shot_link(p_token text, p_script uuid, p_scene uuid, p_on boolean,
+                                                   p_vc text default null)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('error', 'closed')
+$$;
+
+revoke all on function public.script_shot_link(text, uuid, uuid, boolean, text) from public;
+
+grant execute on function public.script_shot_link(text, uuid, uuid, boolean, text) to anon;
+
+grant execute on function public.script_shot_link(text, uuid, uuid, boolean, text) to authenticated;
+
+-- END OF SCRIPT SHOTS INTERNAL ------------------------------------------------
+
+-- ===========================================================================
+-- PIECE DATES REQUIRED — every new content piece carries its draft due, its
+-- due date and its post date; none may be left blank.
+-- 2026-10-09. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js (§43) compares
+-- the two. Runs after THREE DATES A POST.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "force to have required first draft
+-- date, due date and the post date (as required) to curb delays")
+--   1. `ops_create_pieces` refuses a piece missing any of the three dates
+--      with `dates-required` and the piece's place (`piece`, from 1); the
+--      pieces before it are undone, as any refusal part way is. Tasks made
+--      before keep their dates as they are; Add task (an everyday task),
+--      templates, copies, repeats and a month's report tasks are unchanged.
+--
+-- ROLLBACK
+--   Run ops_create_pieces from THREE DATES A POST again.
+-- ===========================================================================
+
+/* The New sheet's one act: the pieces, each through ops_create_task, and the
+   repeat on every one of them, all or none; each piece with its three
+   dates. */
+create or replace function public.ops_create_pieces(p_payload jsonb, p_idem text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m      public.team_members;
+  n      integer;
+  pc     jsonb;
+  i      integer := 0;
+  w      integer;
+  k      integer;
+  inweek integer;
+  per    text;
+  first_day date;
+  last_off integer;
+  spread boolean;
+  base   jsonb;
+  one    jsonb;
+  made   jsonb := '[]'::jsonb;
+  rep    jsonb;
+  rule   jsonb;
+  ids    uuid[] := '{}';
+  gen    jsonb := '[]'::jsonb;
+  pp     text;
+  said   text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if jsonb_typeof(p_payload -> 'pieces') is distinct from 'array' then
+    return jsonb_build_object('error', 'bad-count');
+  end if;
+  n := jsonb_array_length(p_payload -> 'pieces');
+  if n < 1 or n > 60 then return jsonb_build_object('error', 'bad-count'); end if;
+  rep := case when jsonb_typeof(p_payload -> 'repeat') = 'object' then p_payload -> 'repeat' end;
+  if rep is not null then
+    if coalesce(rep ->> 'frequency', '') not in ('weekly', 'monthly', 'custom') then
+      return jsonb_build_object('error', 'bad-frequency');
+    end if;
+    if rep ->> 'frequency' = 'custom' and coalesce((rep ->> 'interval_days')::integer, 0) < 1 then
+      return jsonb_build_object('error', 'interval-required');
+    end if;
+  end if;
+
+  /* What every piece shares: whose it is, what kind, who does it. A piece
+     names its own description, format, week and dates; only a sheet's one
+     piece carries a brief. */
+  base := jsonb_strip_nulls(jsonb_build_object(
+    'scope', p_payload ->> 'scope', 'client_id', p_payload ->> 'client_id',
+    'engagement_id', p_payload ->> 'engagement_id',
+    'code_period', p_payload ->> 'code_period',
+    'task_type', p_payload ->> 'task_type',
+    'owner_id', p_payload ->> 'owner_id',
+    'priority_level', p_payload -> 'priority_level',
+    'complexity', p_payload ->> 'complexity',
+    'description', case when n = 1 then p_payload ->> 'description' end));
+  per := p_payload ->> 'code_period';
+  if per ~ '^\d{4}-\d{2}$' and coalesce(p_payload ->> 'scope', 'client') <> 'internal' then
+    first_day := (per || '-01')::date;
+    last_off := ((first_day + interval '1 month')::date - first_day) - 1;
+  end if;
+  /* Only a repeat needs a day to count from; plain pieces take the dates
+     typed on their rows and nothing else. */
+  spread := first_day is not null and rep is not null;
+  base := base || jsonb_build_object('dates_as_given', true);
+
+  begin
+    for pc in select x from jsonb_array_elements(p_payload -> 'pieces') x loop
+      i := i + 1;
+      w := least(5, greatest(1, coalesce((pc ->> 'code_week')::integer, 1)));
+      one := base || jsonb_strip_nulls(jsonb_build_object(
+        'content_desc', nullif(btrim(coalesce(pc ->> 'content_desc', '')), ''),
+        'deliverable_type', nullif(pc ->> 'deliverable_type', ''),
+        'code_week', case when first_day is not null then w end));
+      /* Every piece carries the three dates typed on its row: the draft
+         due (ready for AQC review), the due date (to the client) and the
+         post date (2026-10-06). */
+      one := one || jsonb_strip_nulls(jsonb_build_object(
+        'first_draft_due_at', nullif(pc ->> 'first_draft_due_at', ''),
+        'final_due_at', nullif(pc ->> 'final_due_at', ''),
+        'publish_at', nullif(pc ->> 'publish_at', '')));
+      /* None of the three may be left blank (2026-10-09): a piece without
+         its dates is refused by its place, and nothing is made. */
+      if not (one ? 'first_draft_due_at' and one ? 'final_due_at' and one ? 'publish_at') then
+        raise exception using message = jsonb_build_object('error', 'dates-required', 'piece', i)::text;
+      end if;
+      /* A tentative day inside the piece's week, the week's pieces spread
+         across its seven days, so the calendar has somewhere to put each one
+         and a repeat a day to count from; the content meeting fixes the real
+         date. Never past the month's last day, which only week 5 reaches. */
+      if spread and not (one ? 'publish_at') then
+        select count(*) filter (where least(5, greatest(1, coalesce((y ->> 'code_week')::integer, 1))) = w),
+               count(*) filter (where least(5, greatest(1, coalesce((y ->> 'code_week')::integer, 1))) = w and o < i)
+          into inweek, k
+          from jsonb_array_elements(p_payload -> 'pieces') with ordinality as a(y, o);
+        one := one || jsonb_build_object('publish_at',
+          (first_day + least((w - 1) * 7 + (k * 7) / greatest(inweek, 1), last_off))::timestamptz);
+      end if;
+      one := public.ops_create_task(one, case when p_idem is null then null else p_idem || ':' || i end);
+      if one ? 'error' then raise exception using message = one::text; end if;
+      made := made || jsonb_build_object('id', one ->> 'id', 'code', one ->> 'code', 'title', one ->> 'title');
+      ids := ids || (one ->> 'id')::uuid;
+      if rep is not null then
+        rule := public.ops_set_recurring((one ->> 'id')::uuid, jsonb_strip_nulls(jsonb_build_object(
+          'frequency', rep ->> 'frequency',
+          'interval_days', case when rep ->> 'frequency' = 'custom' then rep -> 'interval_days' end,
+          'ends_on', nullif(rep ->> 'ends_on', ''),
+          'max_count', rep -> 'max_count')));
+        if rule ? 'error' then raise exception using message = rule::text; end if;
+      end if;
+    end loop;
+  exception when raise_exception then
+    /* A refusal part way leaves nothing behind: the block's writes are
+       undone and the refusal is answered as it was given. */
+    said := sqlerrm;
+    begin
+      return said::jsonb;
+    exception when others then
+      return jsonb_build_object('error', said);
+    end;
+  end;
+
+  /* What the new rules already owe is made now rather than tomorrow morning. */
+  if rep is not null then
+    foreach pp in array public.ops_recurring_periods() loop
+      gen := gen || public.ops_generate_recurring(pp,
+        array(select r.id from public.ops_recurring_rules r where r.active and r.source_task_id = any (ids)));
+    end loop;
+  end if;
+  return jsonb_build_object('count', n, 'tasks', made, 'repeats', gen);
+end $$;
+grant execute on function public.ops_create_pieces(jsonb, text) to authenticated;
+
+-- END OF PIECE DATES REQUIRED ------------------------------------------------
+
+-- ===========================================================================
+-- META CHECKS SWITCH — Import from Meta and the report audit against Meta
+-- are on only while Business settings says so and for those holding the
+-- part; off, no report waits on Meta and figures are typed as before.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after REPORT AUDIT and CAPTION WRITER AND AI COST.
+--
+-- WHAT CHANGED (the user, 2026-10-10: Import from Meta "found it to have
+-- quite a number of bugs and the numbers not really tally with actual Meta
+-- records … hidden from all team members at this moment, without
+-- compromising the usage of manual input"; "agility and not hardcoded")
+--   1. `meta_checks` is a Business setting (0 Off, 1 On, from a day), seeded
+--      Off. `app_settings_set` takes it, filed "Meta checks: Off → On".
+--   2. `reports.meta` (Reports: Meta import and audit) is a granted part, an
+--      admin's by itself, read with `ops_granted`.
+--   3. `meta_checks_on()` answers both for the caller; `sm_report_audit_needed`
+--      asks it first, so with Meta checks off (or without the part) Submit
+--      and Publish never wait on Meta and a reading is not filed.
+--
+-- ROLLBACK
+--   Run sm_report_audit_needed from REPORT AUDIT and app_settings_set from
+--   CAPTION WRITER AND AI COST again; the setting's row may stay.
+-- ===========================================================================
+
+insert into public.app_settings (key, from_date, value)
+select 'meta_checks', date '2023-08-14', 0
+ where not exists (select 1 from public.app_settings s where s.key = 'meta_checks');
+
+/* Whether Meta is read for the caller: the switch on today (MYT) and the
+   part held. */
+create or replace function public.meta_checks_on()
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(public.app_setting('meta_checks', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) = 1
+     and public.ops_granted('reports.meta', 'work')
+$$;
+grant execute on function public.meta_checks_on() to authenticated;
+
+/* Whether the report's client (or brand) links what it is read from, and
+   Meta is read at all. */
+create or replace function public.sm_report_audit_needed(p_id uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.meta_checks_on() and coalesce((
+    select case when r.kind = 'ads' then jsonb_array_length(coalesce(l.ad_accounts, '[]'::jsonb)) > 0
+                else (jsonb_typeof(l.page) = 'object' and exists (
+                        select 1 from public.sm_report_platforms f where f.report_id = r.id and f.platform = 'facebook'))
+                  or (jsonb_typeof(l.instagram) = 'object' and exists (
+                        select 1 from public.sm_report_platforms f where f.report_id = r.id and f.platform = 'instagram'))
+           end
+      from public.sm_reports r
+      join public.meta_links l on l.client_id = r.client_id and l.brand_id is not distinct from r.brand_id
+     where r.id = p_id), false)
+$$;
+revoke all on function public.sm_report_audit_needed(uuid) from public, anon, authenticated;
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks'];
+  v_moved text[] := '{}';
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, 2) <> v_v
+       or (v_k = 'lead_followup_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'proposal_followup_days' and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      insert into public.app_settings (key, from_date, value, set_by, set_at)
+      values (v_k, p_from, v_v, v_me.id, now())
+      on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'meta_checks' then 'Meta checks' else 'Report due' end;
+      v_unit := case when v_k = 'lead_followup_hours' then ' hours' when v_k in ('proposal_followup_days', 'report_due_days', 'revision_due_days') then ' days'
+        else '%' end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else case when v_k like 'ai_price_%' then 'US$' else '' end ||
+              trim(to_char(v_was, 'FM999999990.99'), '.') || case when v_k like 'ai_price_%' then '' else v_unit end || ' → ' ||
+              case when v_k like 'ai_price_%' then 'US$' else '' end ||
+              trim(to_char(v_v, 'FM999999990.99'), '.') || case when v_k like 'ai_price_%' then '' else v_unit end ||
+              ' · from ' || public.register_day(p_from) end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+
+-- END OF META CHECKS SWITCH ---------------------------------------------------
+
+-- ===========================================================================
+-- AI WRITTEN — whether Write with AI drafted a report's commentary, so its
+-- Submit asks the colleague to declare it read and checked.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after DRAFT WITH AI LIMITS and SCRIPT WRITER.
+--
+-- WHAT CHANGED (the user, 2026-10-10: "a warning dialog for all AI assisted
+-- write out … if they proceed to submit or confirm, they declare that the
+-- contents are read and confirmed")
+--   1. `ai_written(p_report)` (Reports View) answers whether a draft written
+--      with AI was saved to the report. The page asks the declaration in
+--      Submit's own question and files it with the report; a caption or a
+--      script asks it before its own Save.
+--
+-- ROLLBACK
+--   Nothing calls it but the page; it may stay.
+-- ===========================================================================
+
+create or replace function public.ai_written(p_report uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.allowed('reports', 'view') and exists (
+    select 1 from public.ai_drafts d
+     where d.report_id = p_report and d.purpose = 'draft' and d.outcome = 'drafted')
+$$;
+grant execute on function public.ai_written(uuid) to authenticated;
+
+-- END OF AI WRITTEN -----------------------------------------------------------
+
+-- ===========================================================================
+-- CHECKLISTS FOR REACH — four checks on Reels and three on Graphics against
+-- low views and restricted accounts, before a piece goes to AQC review.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js runs it twice.
+-- Run supabase/migrations/2026-10-10-checklists-for-reach-preview.sql first.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "social media contents doesn't have
+-- high views, account restricted, content not interesting")
+--   1. Each line is appended to its template's checklist only where the
+--      template still holds it nowhere, so a line the team already added,
+--      renamed or removed by hand is never put back twice; nothing already
+--      there is moved or changed. Tasks made before keep their own lists.
+--
+-- ROLLBACK
+--   Remove the lines in My Work, Templates. Nothing else reads them.
+-- ===========================================================================
+
+do $$
+declare
+  want record;
+begin
+  for want in
+    select * from (values
+      ('Reels',    1, 'Hook lands in the first 3 seconds'),
+      ('Reels',    2, 'Music licensed for business use'),
+      ('Reels',    3, 'Original footage, no reused or watermarked clips'),
+      ('Reels',    4, 'No absolute claims; prices and offers checked against the brief'),
+      ('Graphics', 1, 'Headline reads at a glance on a phone'),
+      ('Graphics', 2, 'Images and fonts licensed, no watermarks'),
+      ('Graphics', 3, 'No absolute claims; prices and offers checked against the brief')
+    ) as w(template, pos, label)
+    order by template, pos
+  loop
+    update public.ops_task_templates t
+       set checklist = coalesce(t.checklist, '[]'::jsonb) || to_jsonb(want.label),
+           updated_at = now()
+     where t.name = want.template
+       and not coalesce(t.checklist, '[]'::jsonb) @> to_jsonb(array[want.label]);
+  end loop;
+end $$;
+
+-- END OF CHECKLISTS FOR REACH -------------------------------------------------
+
+-- ===========================================================================
+-- CLIENT BRIEF — a client's content brief on its Brand pane: who the content
+-- speaks to, their pain points, the content pillars, the tone, what to
+-- avoid, the competitors and the hooks that worked. Write with AI reads it
+-- for captions and scripts.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js runs it twice.
+-- Runs after CLIENT BILLING COLUMNS.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "content not interesting")
+--   1. `clients.brief` (jsonb, an object of short texts keyed audience,
+--      pains, pillars, tone, avoid, competitors, hooks; 8,000 characters in
+--      all at most), readable to the team as every other non-billing
+--      column, written with the Brand profile at Clients Work under the
+--      client's scope (the guards already on the table).
+--
+-- ROLLBACK
+--   alter table public.clients drop column brief; (in the SQL Editor)
+-- ===========================================================================
+
+alter table public.clients add column if not exists brief jsonb;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'clients_brief_shape') then
+    alter table public.clients add constraint clients_brief_shape
+      check (brief is null or (jsonb_typeof(brief) = 'object' and char_length(brief::text) <= 8000));
+  end if;
+end $$;
+grant select (brief) on table public.clients to authenticated;
+
+-- END OF CLIENT BRIEF ---------------------------------------------------------
+
+-- ===========================================================================
+-- POST RESULTS — a posted content task records its views and engagements a
+-- week after it went live, so the next month is planned from what worked.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js runs it.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "social media contents doesn't have
+-- high views ... content not interesting")
+--   1. `ops_tasks.result_views`, `result_engagements` (whole numbers, none
+--      below 0), `result_at`, `result_by`: stamped only by the function.
+--   2. `ops_set_results(p_task, p_views, p_engagements)`: My Work at Work on
+--      a task the colleague may see that has gone live (`not-live`); both
+--      figures required (`bad-number`); filed `results_set` from and to.
+--      The Months view lists last month's best and weakest posts by views
+--      on a month still being planned; nothing is worked out in the
+--      database.
+--
+-- ROLLBACK
+--   drop function public.ops_set_results(uuid, integer, integer); the
+--   columns may stay. (In the SQL Editor.)
+-- ===========================================================================
+
+alter table public.ops_tasks add column if not exists result_views integer;
+alter table public.ops_tasks add column if not exists result_engagements integer;
+alter table public.ops_tasks add column if not exists result_at timestamptz;
+alter table public.ops_tasks add column if not exists result_by uuid references public.team_members(id) on delete set null;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'ops_tasks_results_whole') then
+    alter table public.ops_tasks add constraint ops_tasks_results_whole
+      check ((result_views is null or result_views >= 0) and (result_engagements is null or result_engagements >= 0));
+  end if;
+end $$;
+
+create or replace function public.ops_set_results(p_task uuid, p_views integer, p_engagements integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; t public.ops_tasks;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') or not public.ops_may_see_task(p_task) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if t.live_at is null then return jsonb_build_object('error', 'not-live'); end if;
+  if p_views is null or p_engagements is null or p_views < 0 or p_engagements < 0 then
+    return jsonb_build_object('error', 'bad-number');
+  end if;
+  update public.ops_tasks
+     set result_views = p_views, result_engagements = p_engagements,
+         result_at = now(), result_by = m.id, version = version + 1, updated_at = now()
+   where id = p_task;
+  perform public.ops_log(p_task, 'results_set',
+    jsonb_build_object('views', t.result_views, 'engagements', t.result_engagements),
+    jsonb_build_object('views', p_views, 'engagements', p_engagements), '{}'::jsonb);
+  return (select to_jsonb(x) from public.ops_tasks x where x.id = p_task);
+end $$;
+revoke all on function public.ops_set_results(uuid, integer, integer) from public, anon;
+grant execute on function public.ops_set_results(uuid, integer, integer) to authenticated;
+
+-- END OF POST RESULTS ---------------------------------------------------------
+
+
+-- ===========================================================================
+-- ACCOUNT RESTRICTED — a client's social account restricted by its platform
+-- is marked on the client, so the team sees it on the record and the
+-- Overview before planning or posting.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js runs it twice.
+-- Runs after CLIENT BILLING COLUMNS.
+--
+-- WHAT CHANGED (the user, 2026-10-09: "account restricted")
+--   1. `clients.restricted_platform` (instagram, facebook, tiktok, xhs,
+--      other), `restricted_since` (a day) and `restricted_note` (500
+--      characters at most): all set or none. Readable to the team as every
+--      other non-billing column; written on the client record at Clients
+--      Work under the client's scope (the guards already on the table),
+--      filed by the page under client.edited.
+--
+-- ROLLBACK
+--   The columns may stay unread.
+-- ===========================================================================
+
+alter table public.clients add column if not exists restricted_platform text;
+alter table public.clients add column if not exists restricted_since date;
+alter table public.clients add column if not exists restricted_note text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'clients_restricted_shape') then
+    alter table public.clients add constraint clients_restricted_shape
+      check ((restricted_platform is null) = (restricted_since is null)
+         and (restricted_platform is null or restricted_platform in ('instagram', 'facebook', 'tiktok', 'xhs', 'other'))
+         and (restricted_note is null or (restricted_platform is not null and char_length(restricted_note) <= 500)));
+  end if;
+end $$;
+grant select (restricted_platform, restricted_since, restricted_note) on table public.clients to authenticated;
+
+-- END OF ACCOUNT RESTRICTED ---------------------------------------------------
 -- WHATSAPP SECTION — WhatsApp is a section of its own: every message the
 -- portal sent, with Meta's delivery status; one composer every record
 -- shares; the templates chosen from Meta's approved list.

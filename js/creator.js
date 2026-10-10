@@ -538,13 +538,11 @@
     if (b.push_format === 'seeding') words[1] = t().journeyDelivery;
     return window.ADspaceIcons.journey(words, at);
   }
-  /* A number to reach on the day: WhatsApp and a call. A Malaysian number
-     with a leading zero takes 6 in front, as every wa.me link here does. */
+  /* A number to reach on the day: WhatsApp and a call, read as every wa.me
+     link reads one (`ADspaceAPI.waNumber`). */
   function reachHtml(phone) {
-    var d = String(phone || '').replace(/[^0-9+]/g, '').replace(/^\+/, '');
-    if (d.length < 8) return '';
-    if (/^0/.test(d)) d = '6' + d;
-    else if (d.length === 8) d = '65' + d;
+    if (String(phone || '').replace(/\D/g, '').length < 8) return '';
+    var d = window.ADspaceAPI.waNumber(phone);
     var I = window.ADspaceIcons;
     return '<div class="cx-chips">' +
       '<a class="plink" href="https://wa.me/' + d + '" target="_blank" rel="noopener">' + (I ? I.svg('chat') : '') + esc(t().whatsapp) + '</a>' +

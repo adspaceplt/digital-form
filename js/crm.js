@@ -968,9 +968,13 @@
     if (!same) {
       /* White label and its wide logo (2026-10-07) are read with the record
          alone, never with the list: the logo is a picture. */
-      db.from('clients').select('white_label, report_logo').eq('id', c.id).maybeSingle().then(function (r) {
+      db.from('clients').select('white_label, report_logo, brief, restricted_platform, restricted_since, restricted_note').eq('id', c.id).maybeSingle().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
         c.white_label = Boolean(r.data.white_label); c.report_logo = r.data.report_logo || null;
+        c.brief = r.data.brief || null;
+        c.restricted_platform = r.data.restricted_platform || null; c.restricted_since = r.data.restricted_since || null;
+        c.restricted_note = r.data.restricted_note || null;
+        paintRestrict(c);
         paintBrandRead(c);
       }).catch(function () {});
       db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
@@ -1024,6 +1028,7 @@
         $('crmClientMenuWrap').hidden = false;
       });
     }
+    paintRestrict(c);
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1410,7 +1415,7 @@
       return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
-    var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
+    var rows = [['Main contact', '<b>' + esc((m.salutation ? m.salutation + ' ' : '') + (m.name || '')) + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     var mUser = waHandle(m.whatsapp);
     if (m.phone) {
@@ -1502,6 +1507,62 @@
   /* ---- The rail ---------------------------------------------------------
      What is true whichever pane is open. Every block leaves entirely when the
      data behind it is not there, so nothing on it is a placeholder. */
+  /* A restricted account (2026-10-10; the user: "account restricted"): which
+     platform, since when and why, red in the rail while it stands, set from
+     the ⋯ and cleared in place. Filed under client.edited from and to. */
+  var RESTRICT = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote'], ['other', 'Other account']];
+  function restrictWord(k) { var r = RESTRICT.filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : 'Account'; }
+  function paintRestrict(c) {
+    var box = $('crmRestrict');
+    if (!box) return;
+    var on = Boolean(c && c.restricted_since);
+    var canWork = bandMay((c && c.stage) || 'lead', 'work');
+    box.hidden = !on;
+    $('crmRestrictSet').hidden = on || !canWork;
+    if (!on) return;
+    $('crmRestrictWord').textContent = restrictWord(c.restricted_platform) + ' restricted';
+    $('crmRestrictText').textContent = ['Since ' + niceDate(c.restricted_since), c.restricted_note].filter(Boolean).join(' · ');
+    $('crmRestrictClear').hidden = !canWork;
+    lastRule();
+  }
+  function saveRestrict(c, patch, words, after) {
+    var was = { p: c.restricted_platform, s: c.restricted_since, n: c.restricted_note };
+    db.from('clients').update(patch).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+      log('client.edited', c.name, words(was));
+      paintRestrict(c);
+      if (after) after(was);
+    }).catch(function (e) { msg('crmWorkMsg', String((e && e.message) || e), 'err'); });
+  }
+  function askRestrict(c) {
+    var day = today();
+    window.ADspaceConfirm.ask({
+      title: 'Mark account restricted', go: 'Save',
+      fields: [{ name: 'p', label: 'Platform', choices: RESTRICT, value: 'instagram', half: true },
+               { name: 's', label: 'Since', type: 'date', value: day, max: day, required: true, half: true },
+               { name: 'n', label: 'Note', placeholder: 'Optional', required: false }],
+      check: function (v) { return !v.s ? 'Since is required.' : v.s > day ? 'Since is today or earlier.' : String(v.n || '').length > 500 ? 'The note is 500 characters at most.' : ''; }
+    }, function (v) {
+      saveRestrict(c, { restricted_platform: v.p, restricted_since: v.s, restricted_note: String(v.n || '').trim() || null }, function () {
+        return 'Account restricted: ' + restrictWord(v.p) + ' since ' + niceDate(v.s) + (String(v.n || '').trim() ? ' · ' + String(v.n).trim() : '');
+      });
+    });
+  }
+  if ($('crmRestrictClear')) $('crmRestrictClear').addEventListener('click', function () {
+    var c = state.client;
+    if (!c) return;
+    saveRestrict(c, { restricted_platform: null, restricted_since: null, restricted_note: null }, function (was) {
+      return 'Account restriction cleared: ' + restrictWord(was.p) + ' since ' + niceDate(was.s);
+    }, function (was) {
+      undoBar('Restriction cleared.', function () {
+        saveRestrict(c, { restricted_platform: was.p, restricted_since: was.s, restricted_note: was.n }, function () {
+          return 'Account restricted: ' + restrictWord(was.p) + ' since ' + niceDate(was.s);
+        });
+      }, $('crmRestrict'));
+    });
+  });
   function paintRail(c) {
     railNext(c);
     railDone(c);
@@ -1930,6 +1991,7 @@
         if (a === 'delclient') { openClientDelete(); return; }
         if (a === 'take') { takeLead(state.client); return; }
         if (a === 'feedback') { askFeedback(state.client); return; }
+        if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);
@@ -2159,6 +2221,15 @@
   });
   sheetClose('crmBillClose', 'crmBillCancel');
 
+  /* The content brief (2026-10-10; the user, 2026-10-09: "content not
+     interesting"): read first on the Brand pane, edited in the Brand
+     profile, kept as one object on the client, and read by Write with AI
+     for captions and scripts. */
+  var BRIEF = [['crmBrAudience', 'audience', 'Audience'], ['crmBrPains', 'pains', 'Pain points'],
+    ['crmBrPillars', 'pillars', 'Content pillars'], ['crmBrTone', 'tone', 'Tone of voice'],
+    ['crmBrAvoid', 'avoid', 'Topics and words to avoid'], ['crmBrRivals', 'competitors', 'Competitors'],
+    ['crmBrHooks', 'hooks', 'Hooks that worked']];
+  function briefOf(c) { return (c && c.brief && typeof c.brief === 'object') ? c.brief : {}; }
   function paintBrandRead(c) {
     var box = $('crmBrandRead');
     if (!box) return;
@@ -2175,6 +2246,7 @@
         ['TikTok', handle('handle_tiktok')], ['rednote', c.handle_xhs ? esc(c.handle_xhs) : '']
       ]) +
       readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
+      readGroup('Content brief', BRIEF.map(function (f) { var v = briefOf(c)[f[1]]; return [f[2], v ? esc(v) : '', false, true]; })) +
       (c.white_label ? readGroup('Reports', [['White label', 'On'],
         ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) +
         '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '') +
@@ -2390,6 +2462,7 @@
   function fillBrand(c) {
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
+    BRIEF.forEach(function (f) { $(f[0]).value = briefOf(c)[f[1]] || ''; });
     paintLogoPreview();
     /* Reports: White label at Work (2026-10-07), a granted part. */
     $('crmWlSec').hidden = !mayPart('reports.whitelabel', 'work');
@@ -2512,6 +2585,15 @@
       $('crmWlUp').focus();
       return;
     }
+    /* The brief is one object; only the parts that hold words are kept,
+       and it is sent only where a part changed. */
+    var brief = {}, briefWas = briefOf(was), briefMoved = [];
+    BRIEF.forEach(function (f) {
+      var v = val(f[0]);
+      if (v) brief[f[1]] = v;
+      if ((v || '') !== (briefWas[f[1]] || '')) briefMoved.push(f[2]);
+    });
+    if (briefMoved.length) patch.brief = Object.keys(brief).length ? brief : null;
     if (!$('crmWlSec').hidden) {
       if ($('crmWl').checked !== was.white_label) patch.white_label = $('crmWl').checked;
       if (wlLogo !== was.report_logo) patch.report_logo = wlLogo;
@@ -2524,6 +2606,7 @@
         log('client.brand', state.client.name, [changed(was, patch, [
           ['website', 'Website'], ['phone', 'Phone'], ['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
           ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote'], ['logo_url', 'Logo'], ['brand_notes', 'Brand notes']]),
+          briefMoved.length ? 'Content brief: ' + briefMoved.join(', ') + ' changed' : '',
           'white_label' in patch ? 'White label: ' + (was.white_label ? 'On → Off' : 'Off → On') : '',
           'report_logo' in patch ? (patch.report_logo ? (was.report_logo ? 'Wide logo replaced' : 'Wide logo set') : 'Wide logo removed') : ''
         ].filter(Boolean).join('; '));
@@ -2587,17 +2670,10 @@
      A number already carrying its country code is left exactly as it is, and
      one with no leading zero takes its client's market, because a Singapore
      mobile has eight digits and no national prefix to replace. */
-  function waNumber(raw, market) {
-    var d = String(raw || '').replace(/\D/g, '');
-    if (!d) return '';
-    /* As the team types numbers (the user, 2026-10-09): a leading 0 is
-       Malaysia, eight digits Singapore, nine or ten starting 1 a Malaysian
-       mobile without its 0; anything else already carries its country code
-       (`wa_number` reads them the same way). */
-    if (d.charAt(0) === '0') return '6' + d;
-    if (d.length === 8) return '65' + d;
-    if ((d.length === 9 || d.length === 10) && d.charAt(0) === '1') return '60' + d;
-    return d;
+  function waNumber(raw) {
+    /* As the team types numbers (the user, 2026-10-09): the one reading is
+       `ADspaceAPI.waNumber`, which `wa_number` matches in SQL. */
+    return window.ADspaceAPI.waNumber(raw);
   }
   /* WhatsApp lets a person hide their number behind a username, and some
      contacts now reach us that way only: `wa.me/@name` opens the chat where

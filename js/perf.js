@@ -16,6 +16,7 @@
  */
 (function () {
   'use strict';
+  var FILE_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6"/><path d="m9 15 3 3 3-3"/></svg>';
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -761,8 +762,12 @@
     $('pvRef').hidden = !r.serial;
     $('pvRef').textContent = r.serial || '';
     $('pvRef').setAttribute('aria-label', r.serial ? 'Copy ' + r.serial : '');
+    /* Download is offered once on the screen: in the next card where it
+       stands there (the member's any shared month, management's final one),
+       else in the ⋯. */
+    var inCard = manage() ? r.status === 'final' : r.status !== 'draft';
     var items = {
-      print: Boolean(r.id) && r.status !== 'draft',
+      print: Boolean(r.id) && r.status !== 'draft' && !inCard,
       'return': canWork() && r.status === 'released' && !(r.disputes || []).length,
       reopen: manage() && may('team.performance', 'manage') && r.status === 'final',
       'delete': manage() && may('team.perfadmin', 'work') && Boolean(r.id)
@@ -845,7 +850,7 @@
         title = 'Final';
         line = 'Finalised on ' + timeWord(r.finalised_at) +
           (r.final_auto ? ', when queries closed' : r.finalised_by ? ' by ' + r.finalised_by : '') + '.';
-        acts = '<button class="btn btn-sm" id="pvPrint" type="button">Download PDF</button>';
+        acts = '<button class="btn btn-sm btn-icon" id="pvPrint" type="button">' + FILE_GLYPH + 'Download</button>';
       }
     } else {
       if (r.status === 'released' && open) {
@@ -871,7 +876,7 @@
         title = 'Final';
         line = 'This is the record for ' + r.month + '.';
       }
-      if (r.status !== 'draft') acts += '<button class="btn btn-sm btn-quiet" id="pvPrint" type="button">Download PDF</button>';
+      if (r.status !== 'draft') acts += '<button class="btn btn-sm btn-icon" id="pvPrint" type="button">' + FILE_GLYPH + 'Download</button>';
     }
     var ackNote = !manage() && acts.indexOf('pvAck') > -1
       ? '<p class="perf-note">Acknowledging records that the review was discussed and the result was shown. It is not necessarily agreement with the rating.</p>' : '';
@@ -1745,7 +1750,8 @@
       pageNo++;
       y = first ? p.head() - SP.under : p.H - M - SP.block;
       var st0 = r.__stamp;
-      p.text('PRIVATE & CONFIDENTIAL', M, FOOT, TY.small, reg, INK);
+      /* Slate Medium, as every portal PDF's foot is (the Reports PDF's). */
+      p.text('PRIVATE & CONFIDENTIAL', M, FOOT, TY.small, med, INK);
       p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month +
         (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
         M, FOOT + RS(1), TY.small, book, SOFT);

@@ -73,11 +73,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - A `cut()` of `schema.sql` always ends at the next banner.
 
 **One command, one result:** `bash tests/gate.sh <suites… | all | ui>`.
-- The test commands run without a permission prompt (`.claude/settings.json`:
-  `tests/snap.sh`, `tests/gate.sh`, `node tests/…`, `node --check`; the user,
-  2026-10-01), as do the read-only GitHub and Supabase lookups (workflow
-  runs, a PR, edge functions, logs, migrations; 2026-10-04). Nothing that
-  writes, merges, deploys or runs SQL is pre-approved.
+- Every shell command runs without a permission prompt (`.claude/settings.json`
+  `Bash`; the user, 2026-10-10: "Auto allow bash"), as do the read-only GitHub
+  and Supabase lookups (workflow runs, a PR, edge functions, logs,
+  migrations; 2026-10-04). No connector act that writes, merges, deploys or
+  runs SQL is pre-approved.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
@@ -342,6 +342,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   keyboard under a finger hides it (`is-typing`). The chosen tab is the
   fill behind its glyph; a section More holds chooses More
   (`tests/tabbar.js`).
+- Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
+  2026-10-09: the account menu grew long and AI usage hid under Reports):
+  a `.railfoot` row above the Activity record (`#settingsOpen`), offered to
+  a colleague holding any of `team.upgrade`, `team.announce`,
+  `team.notice`, `team.settings`, `reports.ai`, `register.types`,
+  `ops.numbering`; its address falls back for anyone else. A card a group
+  (Portal: Upgrade mode, Announcements, Notices; Business figures:
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks; AI:
+  AI usage and limits; Records: Document types, Task numbering), each row
+  drawn only for its part, its value under its name, a switch, Edit or Open
+  at the right edge opening the one sheet that already edits it. The
+  account menu keeps what is the person's own (My records, My namecard,
+  Passkeys, Notifications, Refresh app, Sign out); the Reports bar holds no
+  AI usage. It joins the tab bar's More (`tests/adminparts.js`,
+  `tests/tabbar.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
   `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
@@ -390,8 +405,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The console covers itself for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Turn off).
-    The switch is the account menu's Upgrade mode (`role="switch"`, Off /
-    On / Set, `team.upgrade`): on asks for Starts, Ends (each a date beside
+    The switch is the Settings page's Upgrade mode (`button.switch`, its
+    value Off / On until … / Starts … under the name, `team.upgrade`): on asks for Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's) and a note, refusing in the sheet a window that does not end
     after its start and now; off never
@@ -414,7 +429,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   follow the page's language (中文 where given); an https link opens in a
   new tab; the reader's × hides the one on show in this browser
   (`adspace-ann-hide:{id}:{updated_at}`, so an edit returns it). Team:
-  Announcements (`team.announce`, granted) in the account menu opens the
+  Announcements (`team.announce`, granted) on the Settings page opens the
   list (`#annSheet`: Team and Clients, each every line, live with Edit /
   Stop, which asks, stopped or ended with Restore (never asks, while its end
   is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
@@ -427,8 +442,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   would sit outside its `inert`).
 - Notices (`js/notice.js`, `2026-10-09-team-notices.sql`; the user,
   2026-10-09: "send custom in-app notifications to all members, or to
-  specific team member(s)"): Team: Notices (`team.notice`) in the account
-  menu opens the list (`#ntcSheet`: every notice sent, newest first, To,
+  specific team member(s)"): Team: Notices (`team.notice`) on the Settings
+  page opens the list (`#ntcSheet`: every notice sent, newest first, To,
   when, by whom, Read by n of N, Withdraw (asked: it leaves every bell; a
   push already on a phone stays) and Restore (never asks)) and New
   (`#ntcNewSheet`: Send to All colleagues / Selected colleagues, the
@@ -855,7 +870,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `whatsapp`, `review`, `scripts` (Video Scripts),
-  `campaigns`, `register` (Documents), `reports`, `links`, `services`, `team`, `activity`. The
+  `campaigns`, `reports`, `register` (Documents), `links`, `services`, `team`, `activity`. The
   Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
@@ -874,7 +889,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
   2026-10-07), `register.types` (Document types, 2026-10-07) and
   `team.health` (Health check-ins, every colleague's answers by name,
-  2026-10-07) and `team.notice` (Notices, 2026-10-09); each offers Manage
+  2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
+  (Meta import and audit, 2026-10-10); each offers Manage
   alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1001,7 +1017,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   sequence number throws away a late answer to an older query.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
-- Groups run in the rail's order (Creators List after Creator Campaigns).
+- Groups run in the rail's order (Creators List after Creator Campaigns);
+  Video Scripts by code or title, opening its record (`script=`).
   Each group's label leads with its rail glyph (`ADspaceAdmin.glyph`).
   A row is the name, its code in the token face, one mute line; the match
   in weight, never colour. No recent searches, no explanatory copy.
@@ -1182,6 +1199,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
   Work, `bad-brand`, `bad-asset`) files `client.brand` from and to, a brand's
   under its name; `meta_links_list` at Reports or Clients View.
+- The content brief (`clients.brief`, `2026-10-10-client-brief.sql`; the
+  user, 2026-10-09: "content not interesting"): one object of short texts
+  (audience, pains, pillars, tone, avoid, competitors, hooks; 8,000
+  characters in all), read with the record alone, read first on the Brand
+  pane (Content brief) and edited in the Brand profile (Audience and pillars;
+  Voice and references), sent only where a part changed, filed
+  `client.brand` by the parts' names. Write with AI reads it and the brand
+  notes for captions and scripts, masked as the rest (`{brand}`,
+  `{handle}`); never a competitor named back.
+- A restricted account (`2026-10-10-account-restricted.sql`; the user: "account
+  restricted"): `clients.restricted_platform` (Instagram, Facebook, TikTok,
+  rednote, Other account), `restricted_since` and `restricted_note`, all or
+  none, read with the record alone. The record's ⋯ Mark account restricted
+  (Clients Work; asks the platform, since when, a note) and the rail's red
+  block (`#crmRestrict`, `.railgate.is-restricted`) with Clear (never asks,
+  Undo where it happened), each filed `client.edited` from and to. Overview's
+  Clients tab lists them (Restricted accounts, the longest first).
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`;
     each logo field has Upload (`wireLogoUpload`): the picture is drawn down
@@ -1202,8 +1236,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
     `@name` or the number.
-  - One builder for every wa.me link: a Malaysian number with a leading zero
-    takes `6` in front; a number with no leading zero takes its market's code.
+  - One builder for every wa.me link, `ADspaceAPI.waNumber` (the console,
+    the client portal, the creator's page, the namecard), reading a number
+    as `wa_number` does in SQL (WhatsApp, below).
   - Remove is soft, then Delete permanently at Manage.
 - Portal access is one switch per contact (Enable / Revoke in the ⋯, with
   Undo), shown as Portal access after its green dot.
@@ -1611,12 +1646,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-03-hidden-from-content-review.sql`).
 - Every everyday write leaves an activity row. An edit names the fields it
   changed.
-- Write caption (2026-10-08; the user: "1 2 ok"): under a post's caption
-  fields in Add assets' drafts and a saved post's Edit, at Content Review:
-  Sets at Work (`.capwrite`, `writeCaption()`). It asks first (`ADspaceConfirm`:
-  n captions left today; Caption language English / Bahasa Melayu, a segment
-  from the main contact's preferred language; 中文 caption, ticked where the
-  post or the set holds Chinese or the contact prefers it; XHS Safe Mode on a
+- Write with AI (2026-10-08, one caption from 2026-10-10; the user: "one
+  post only allowed one caption"): under a post's caption field in Add
+  assets' drafts and a saved post's Edit, at Content Review: Sets at Work
+  (`.capwrite`, `writeCaption()`, the AI mark before the words). A post has
+  one caption; the 中文 field is drawn only on a saved post that already
+  holds Chinese. It asks first (`ADspaceConfirm`: n captions left today;
+  Language, a select of English, Bahasa Melayu, 中文, English and 中文
+  (`CAP_LANGS`; both languages in the one caption, English first), from the
+  main contact's preferred language; XHS Safe Mode on a
   rednote post alone, unticked until the colleague ticks it; Notes for the
   caption, kept in this browser under `adspace-caption-notes:{post id}` or
   `{set id}:{draft key}`, else the brief of a task naming the set), then
@@ -1628,9 +1666,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   and post's titles, the notes, industry and market, never an image, a
   contact or the client's name: the name reads `{brand}` and a handle
   `{handle}`, filled on the page with the name and the platform's `@handle`).
-  The words go into `caption` / `caption_zh` in place, saved only by the
-  post's own Save (Add to set for a draft), with Undo where it happened
-  putting the earlier words back; a refusal is one line under the button.
+  The words go into `caption` in place, saved only by the post's own Save
+  (Add to set for a draft), with Undo where it happened (Written by AI. Read
+  before saving.) putting the earlier words back; a refusal is one line
+  under the button. Saving words written with AI asks the declaration
+  first (`ADspaceConfirm.ai.declare`: Written with AI, read in full, the
+  person who confirms is responsible and an error may be raised in their
+  performance review; a tick that refuses until ticked), filed with the
+  save (… written with AI, read and confirmed). Words typed by hand ask
+  nothing.
   The house style (benefit first, a hook, an emoji and bold title where it
   suits, one CTA, no dashes, MY/SG context, Chinese written as Chinese, the
   platform's own voice, brand names exactly) and XHS Safe Mode's rules live
@@ -1879,8 +1923,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   requests, `clients.requests`), Content Review (Sets waiting on the client,
   by `batches.published_at`; Active clients with no set this month),
   Creator Campaigns (Bookings past their date; Waiting for the quality
-  check), Documents (Letters of Offer not yet signed, `clients.documents`),
-  Reports (Waiting for confirmation; Reports for last month), Team (last
+  check), Reports (Waiting for confirmation; Reports for last month),
+  Documents (Letters of Offer not yet signed, `clients.documents`), Team (last
   month's reviews through `perf_overview`: names and steps only).
 - Reports for last month (`sm_reports_owed(p_period)`,
   `2026-10-07-reports-owed.sql`, Reports Full Access, client scope): the
@@ -2051,9 +2095,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip,
     Urgent in red.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
-  - The post date is tentative and never required. It seeds the
-    content month and week until they are touched (`ntTouched`). My Work
-    says post, never publish (Post date, Set the post date).
+  - The post date is required on a new content piece (below). It seeds
+    the content month and week until they are touched (`ntTouched`). My
+    Work says post, never publish (Post date, Set the post date).
 - Duplicate (`ops_duplicate_task`: a new code, none of the history).
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
@@ -2184,6 +2228,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ops_workflow_stages.retired`): the month holds planning and the meeting.
   On hold and Cancelled are reachable from every open stage on the line.
   General and Video are retired for new tasks.
+- Results (`2026-10-10-post-results.sql`; the user, 2026-10-09: "doesn't
+  have high views"): a client's task gone live records its views and
+  engagements (`ops_set_results`, My Work at Work, `not-live`,
+  `bad-number`; stamped `result_at` / `result_by`; filed `results_set` from
+  and to) from the card's Details (Results, Not recorded until then), the
+  week after it went live at Performance review. A month in Planning or
+  Ready lists last month's best and weakest posts by views
+  (`lastMonthRows`, three each), worked out on the page.
+- Checklists for reach (`2026-10-10-checklists-for-reach.sql`, with its
+  preview): Reels gains four checks (the hook in the first 3 seconds,
+  licensed music, original footage, no absolute claims) and Graphics three,
+  appended once each where the template holds them nowhere; the team edits
+  them in Templates as any other.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
 - Time records: one stage table in workflow order (Stage, Visits, Time, a
   Total row); the sheet shows it open, with Recorded only where there is any.
@@ -2365,11 +2422,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every piece's line carries three dates, typed by whoever plans it and
     never worked out (`2026-10-06-three-dates-a-post.sql`,
     `dates_as_given`: no template offsets): Draft due (ready for AQC
-    review), Due date (for client review) and Post date. A blank one reads
-    Not set; a passed date, a draft due after the due date, or a post date
-    before it is refused on its line. One piece also keeps its brief; with
-    several the button reads Create N tasks. Only a repeat takes a
-    tentative post day inside its week, to count from.
+    review), Due date (for client review) and Post date, each required
+    (the user, 2026-10-09: "to curb delays";
+    `2026-10-09-piece-dates-required.sql`): a line missing one is refused
+    on the page and by `ops_create_pieces` (`dates-required` with the
+    `piece`, "Post 2 needs its Draft due, Due date and Post date."), and
+    nothing is made; a passed date, a draft due after the due date, or a
+    post date before it is refused on its line. A task made before keeps
+    what it has (Not set where blank); Add task, templates, copies, repeats
+    and report tasks are unchanged. One piece also keeps its brief; with
+    several the button reads Create N tasks.
   - A move into Revision (Client) pushes the due date to today (MYT) plus
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
@@ -2647,7 +2709,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Flow:
   - Draft → Submit for review (Work) → Confirm (Manage; never the submitter,
     but an admin may confirm their own after a question saying nobody else
-    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
+    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish
     (Manage).
   - A report is submitted to a named reviewer (`sm_reports.reviewer_id`,
     `2026-10-04-report-reviewer.sql`), asked for in Submit's question from
@@ -2815,7 +2877,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Select reports (the bar's ⋯, Reports View) turns each row of the tab into
   its tick (`.rh-row.is-picking`, the row a `label`) under a bar
   (`#rhBulk`: a tick for the whole tab, `n selected`, Download, Mark as
-  sent on Published at Work, Publish to client on Confirmed at Manage,
+  sent on Published at Work, Publish on Confirmed at Manage,
   Done); changing tab clears the ticks. Each act runs one report after
   another through the function one report uses (`sm_report_sent`,
   `sm_report_publish`), and what is refused is named against its report
@@ -2935,7 +2997,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF
     (`ADspaceSmReport.adName`).
-  - Draft with AI on the Commentary step of both kinds (`report-draft` edge
+  - Write with AI on the Commentary step of both kinds (`report-draft` edge
     function, secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
     `docs/REPORT-DRAFT-SETUP.md`): sends the report id and Notes for the
     draft (`#rpAiNotes`: reasons, changes, goal, next month's budget; kept
@@ -3056,7 +3118,7 @@ Each line is a rule that broke once. Its reason is in the archive.
       its note. Meta not answering (not connected, token, not shared, busy,
       failed) reads Not checked: Meta unavailable and holds it; an admin
       alone continues without it (Continue without Meta, a reason, filed),
-      at Publish since confirmation. Reports Select's Publish to client does
+      at Publish since confirmation. Reports Select's Publish does
       not read Meta: an Advertising Report it holds is refused by name.
   - The Commentary (the figures check until 2026-10-09; `report-draft` with
     `mode: 'check'`, `2026-10-04-ai-check.sql`):
@@ -3097,9 +3159,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     left and Write draft at the right edge with what is left before it
     (`.rp-airow`; on a phone a line each), then Notes for the draft under a
     hairline; the hint and the fields follow it (the user, 2026-10-05).
-  - The words: Write draft (Commentary), Run audit (Check and submit), AI usage
-    (the bar's ⋯), filed under subject AI; never "Draft with AI".
-  - AI usage (the Reports bar's ⋯, `reports.ai`;
+  - The words: Write with AI (Commentary, Write caption and Write script
+    alike, the AI mark before the words; 2026-10-10, the user: "not clear
+    that this is going to be written by AI"), Writing while it runs, Written
+    by AI. Read before submitting. on the Undo line; Run audit (Check and
+    submit); AI usage (the Settings page); filed under subject AI; never
+    "Draft with AI" or "Write draft".
+  - Commentary written with AI is declared read at Submit (2026-10-10):
+    `ai_written(p_report)` (`2026-10-10-ai-written.sql`, Reports View)
+    answers whether Write with AI drafted the report; where it did, Submit's
+    question carries the declaration (`ADspaceConfirm.ai`: the line and a
+    tick that refuses until ticked), and the submit files `report.saved`
+    Commentary written with AI, read and confirmed.
+  - AI usage (the Settings page, `reports.ai`;
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
@@ -3123,7 +3195,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
     Captions and Scripts, each colleague and each admin; Edit limits is ten
     fields in five pairs; Captions today and Scripts today list the team and
-    each colleague who wrote one; This month prices Video scripts apart.
+    each colleague who wrote one; This month prices Scripts apart.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
     (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
@@ -3189,6 +3261,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
+- Meta checks (2026-10-10, `2026-10-10-meta-checks-switch.sql`; the user,
+  2026-10-09: the imported figures did not tally with Meta, so hide it
+  without touching manual entry, and keep it a setting): Import from Meta
+  and the Report audit's Meta part run only while `meta_checks_on()`: the
+  setting `meta_checks` is 1 (Business settings, the Settings page's switch,
+  from today; 0 from the start) and the colleague holds `reports.meta` at
+  Work (granted). Off, the import buttons are not drawn, `meta-import`
+  answers `meta-off` for ads and posts, `sm_report_audit_needed` answers
+  false so Submit and Publish never wait on Meta, and every manual import
+  (spreadsheet, Ads Manager export) is untouched. The stand-in seeds it on.
 - Import from Meta (`meta-import`, `docs/META-SETUP.md`, 2026-10-08): beside
   Import from Ads Manager (Advertising) and Import from spreadsheet (Accounts),
   drawn only on a draft at Work whose client (or brand) has a link
@@ -3352,24 +3434,35 @@ Each line is a rule that broke once. Its reason is in the archive.
   month (unique), `engagement_id` the client's My Work month where one
   exists (never required). New script asks the client, the month (last
   month, this month and the next six, as My Work offers) and the type
-  (`video_script_new`); Add next script (the rail, the month's scripts)
-  makes the month's next number with the header copied (platform, language,
+  (`video_script_new`); Add script (at the end of the month's tabs) makes
+  the month's next number with the header copied (platform, language,
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.
 - The list is a card a client, a row a script (code and title over the month
   and type, the shoot, the state: Draft or Published), newest month first. A
-  script is a record: the head (code and title; client, type and the month,
-  which opens the client's Months in My Work where it is there; the state,
-  Preview PDF, one ⋯ of Download, Edit, Reset client link, Delete; the
-  user, 2026-10-09: the portal's words, as a report's), under it the
-  client link laid as a campaign's (`.rec-linktools`: the address, Copy
-  link, Preview, then Publish in blue or Unpublish, which asks), the
-  key read once a client and made at Work the first time; then the facts in
-  one card (`.vs-factcard`, the reference video with them) and the script in
-  the next (the user, 2026-10-09: key information apart from the scenes),
-  each scene's VC# (the clip number on the camera) and Shot tick saved as
-  they change and put back on a refusal (`video_script_shot`).
+  script opens in its content month's record (the user, 2026-10-09: one link
+  for the client, the videos as tabs on top): the head names the client and
+  the month (`n scripts · n published`; the month opens the client's Months
+  in My Work where it is there), Preview PDF and one ⋯ of Download and Reset
+  client link, then the client's link once (`.rec-linktools`: the address,
+  Copy link, Preview), the key read once a client and made at Work the first
+  time; under it a tab a script (`#vsTabs`, the view strip, VS01 in number
+  order, the arrows moving along it, `script=` in the address) with Add
+  script at the line's end; then the script on show, its card headed by its
+  code and title over its type with the state, Edit (the pen), Publish in
+  blue or Unpublish (asks) and a ⋯ of Delete at the right edge
+  (`.vs-cardhead`), its facts under it (`.vs-factcard`, the reference video
+  with them), and the script in the next card (the user, 2026-10-09: key
+  information apart from the scenes). A script deleted opens the month's
+  next one, the last one gone the list.
+- On the day, in the console and the installed app alone (the user,
+  2026-10-09: "make it simple to enter"): each scene's VC# (the clip number
+  on the camera) is one field; Enter records it, ticks the scene shot and
+  moves to the next scene's field, and an empty field offers the number
+  after the last one recorded (C0042, then C0043), which Enter takes; a
+  Shot tick is its own press; each saves as it changes and is put back on a
+  refusal (`video_script_shot`).
 - Edit is a page of its own (`#vsEditView`, `edit=1` in the address; the
   user, 2026-10-09: a sheet shut by a stray press would lose a long
   script): the head, the facts card (Video, Shoot), the script card, and
@@ -3379,7 +3472,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   ("Save or cancel the changes first."), and closing the tab asks
   (`beforeunload`). Saved by `video_script_save` (from and to, `stale` with
   the row).
-- Write script (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
+- Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
   Safe Mode on a rednote script alone, unticked; Notes for the script, kept
@@ -3394,31 +3487,46 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ai_script_left`), and answers the type's fields by structured output
   (secrets `ANTHROPIC_API_KEY`, `SCRIPT_MODEL`, unset `claude-opus-5-5`;
   Verify JWT off). The words fill the fields in place, `{brand}` and
-  `{handle}` filled on the page; Undo where it happened; Save keeps them; an
-  answer landing after the editor shut is put in at its next open. The house
+  `{handle}` filled on the page; Undo where it happened (Written by AI.
+  Read before saving.); Save asks the declaration first (as Write caption,
+  2026-10-10) and files `script.saved` Script written with AI, read and
+  confirmed; an answer landing after the editor shut is put in at its next
+  open. The house
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
 - Publish (`video_script_share`, Undo where it happened) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
-  `script_link`; Reset client link asks and retires the old key). The link is
-  for the team and the client to read the script and, on site, to record the
-  clip numbers (the user, 2026-10-09: "no need show the approve or changes
-  at client side"): the name card, a tab a content month (drawn where there
-  are two), each script's code and title, its facts card and its script
-  card, each scene's VC# and Shot saved as they change through
-  `script_shot_link` (anon, filed by `Client link`, a refusal put back with
-  `W.notSent`). It reads only `get_scripts` (shared scripts by month, their
-  scenes with clip numbers and ticks; never who ticked, a colleague's name
-  or a version). Nobody decides there: `script_decide` answers `closed`.
-- The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored) is
-  the user's template: the wordmark at each page's head, Video Script, the
-  header table (Video # reads the codes, Platform, Client/Brand, Language,
-  Shooting Date & Time, Venue, Est. Shooting Duration, Cast Members/Talent),
-  each script's title and reference and its script by kind with a VC# column
-  (a recorded clip number printed, an empty cell left for the pen), Notes /
-  Remarks, PRIVATE & CONFIDENTIAL and the page count. Scripts of a month
-  sharing kind and header share one header table; Preview PDF (a tab opened
-  at the press) and Download ask one script or the whole month once there
-  are two.
+  `script_link`; Reset access link asks and retires the old key). The link is
+  for the client to read the scripts (the user, 2026-10-09: "no need show the
+  approve or changes at client side"; "remove from all client-facing
+  site"): the name card, a tab a content month (drawn where there are two),
+  then the month as a list, a row a script (code and title over its type,
+  the shoot at the right); a row opens its script alone (All scripts, n of
+  N, Previous and Next, a sideways swipe on a phone; `#id` in the address,
+  Back returning to the list), its facts card and its script card. A month
+  of one script opens it. It reads only `get_scripts` (shared scripts by
+  month and their scenes; never a clip number, a tick, who ticked, a
+  colleague's name or a version; `2026-10-09-script-shots-internal.sql`).
+  Nobody decides or records there: `script_decide` and `script_shot_link`
+  answer `closed`.
+- The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored)
+  carries the Reports PDF's furniture and scale (the user, 2026-10-09:
+  "refer back to the Reports style"): the Optima wordmark in ink at the head
+  of every page and the client in small capitals at its right, PRIVATE &
+  CONFIDENTIAL in Slate Medium on the margin's line with the page count, the
+  S(5) margin and S(k) type, white cells under a #f2f2f2 title row. Its
+  content is the user's template: Video Script over its month (its type, or
+  the count of scripts), the header table (Video # reads the codes,
+  Platform, Client/Brand, Language, Shooting Date & Time, Venue, Est.
+  Shooting Duration, Cast Members/Talent), each script under its code and
+  title (its type and reference under it) by kind, every scene numbered
+  with a Shot box and a VC# cell (a tick and a clip number recorded in the
+  console printed, empty ones left for the pen; the context box has
+  neither), the words said in Slate Regular and what is seen in Slate Book,
+  and its own Notes / Remarks with room to write (2026-10-10: the crew reads
+  one sheet a shoot day). Scripts of a month sharing their header share one
+  header table, whatever their kind; Preview PDF (a tab
+  opened at the press) and Download ask one script or the whole month once
+  there are two.
 - Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
@@ -3634,7 +3742,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record
-  button is not drawn. The account menu no longer holds WhatsApp.
+  button is not drawn. The account menu holds no WhatsApp item; Settings'
+  WhatsApp card (Templates, drawn at WhatsApp Full Access) opens this tab
+  (`ADspaceWhatsApp.manage`), never a second copy.
 - The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
   record shares: To (`wa_recipients`: client contacts named with their
   client, active creators; never a colleague), the number as it will be

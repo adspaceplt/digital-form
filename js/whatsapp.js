@@ -32,10 +32,10 @@
 
   /* The four purposes a template is set for, and what each message is. */
   var PURPOSE = {
-    report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the contact\'s greeting, the client, the report.'],
-    feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the contact\'s greeting, the client.'],
+    report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the greeting (salutation and name), the client or brand, the report and its period.'],
+    feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
-    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button: https://digital.adspace.me/creator/?k={{1}}, the creator\'s own code.']
+    creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.']
   };
   /* What each message in the list was. */
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', reminder: 'Reminder', message: 'Message' };
@@ -54,6 +54,7 @@
     'bad-params': 'A template set for a purpose takes 5 variables at most.',
     'bad-category': 'Choose a template Meta holds.',
     'bad-request': 'Not sent. Try again.',
+    'bad-purpose': 'This template is not sent by hand.',
     'wa-off': 'Turn this template on in WhatsApp first.',
     'no-number': 'This contact has no number to message. Add one in Contacts.',
     username: 'A WhatsApp username cannot be messaged. Add the contact\'s number in Contacts.',
@@ -177,7 +178,7 @@
         var on = {};
         (d.templates || []).forEach(function (t) { on[t.purpose] = t.active && Boolean(t.name); });
         return { on: on, list: d.templates || [], error: r.error || d.error || null };
-      }, function (e) { return { on: {}, list: [], error: e }; });
+      }).catch(function (e) { return { on: {}, list: [], error: e }; });
     }
     return known;
   }
@@ -838,8 +839,16 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireComposer);
   else wireComposer();
 
+  /* Settings' WhatsApp card (2026-10-10) opens the section's Templates:
+     one copy of the templates, where WhatsApp is worked. */
+  function manage() {
+    history.pushState(null, '', '/admin/?s=whatsapp&tab=templates');
+    if (bridge().show) bridge().show('whatsapp');
+  }
+
   window.ADspaceWhatsApp = {
     enter: enter,
+    manage: manage,
     urlState: function () { return { tab: st.tab === 'templates' ? 'templates' : '' }; },
     compose: function (o) { wireComposer(); compose(o); },
     may: maySend,

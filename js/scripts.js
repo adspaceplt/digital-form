@@ -9,10 +9,12 @@
  * One script is one full video, made in a client's content month and
  * numbered in it, YYMMVSNN (2026-10-09-scripts-by-month.sql; the user: "we
  * are working on content month, monthly basis"). The list is a card a
- * client, a row a script. A script opens as a record: its facts in one card,
- * the script in another, and on the day each scene's tick and clip number
- * (VC#). Edit is a page of its own; Add next script makes the next number of
- * the same month with its header copied. Publish shows it on the client link
+ * client, a row a script. A script opens in its content month's record:
+ * the client and the month with the client's link once, a tab a script, and
+ * the script on show with its own head (state, Edit, Publish), its facts in
+ * one card, the script in another, and on the day each scene's tick and clip
+ * number (VC#). Edit is a page of its own; Add script makes the next number
+ * of the same month with its header copied. Publish shows it on the client link
  * (`/script/?k=`), where it is read and the clip numbers can be recorded on
  * site; nobody decides on it there. Every write is a function
  * (`video_script_*`); the PDF is drawn here, never stored.
@@ -27,12 +29,16 @@
   var UI = window.ADspaceState;
 
   var KINDS = [['scenes', 'Detailed scenes'], ['products', 'Products and scenes'], ['story', 'Story and voice-over']];
+  /* Unpublish carries the mark it carries on a campaign (one glyph an act). */
+  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>';
   var KIND_WORD = {};
   KINDS.forEach(function (k) { KIND_WORD[k[0]] = k[1]; });
   var CONTEXT_WORD = { products: 'Products and context', story: 'Hook and story' };
   var SCENE_WORD = { scenes: 'Visual', products: 'Scene', story: 'Scene' };
   var PLATFORMS = ['Instagram', 'TikTok', 'Facebook', 'rednote', 'YouTube'];
   var LANGS = ['English', 'Chinese', 'Malay', 'English and Chinese'];
+  /* The stored word stays; the page says Bahasa Melayu, as Write caption does. */
+  function langWord(v) { return v === 'Malay' ? 'Bahasa Melayu' : v; }
   var DURATIONS = [30, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var STATE = { draft: ['Draft', 'is-off'], shared: ['Published', 'is-live'] };
@@ -114,7 +120,7 @@
     denied: 'This needs Video Scripts at Work.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.',
-    'bad-kind': 'Choose the type of script.',
+    'bad-kind': 'Choose the script type.',
     'bad-period': 'Choose the content month.',
     'bad-title': 'A title is 200 characters at most.',
     'bad-link': 'A reference link starts with https://.',
@@ -123,7 +129,8 @@
     'too-long': 'A field is too long to save.',
     'too-many': 'A month holds 99 scripts, and a script 60 scenes, at most.',
     'bad-scenes': 'The scenes could not be read.',
-    stale: 'Somebody changed this script. It has been read again; make the change once more.',
+    stale: 'This script was changed elsewhere and has been read again. Enter the change again.',
+    'denied-delete': 'Deleting a script needs Video Scripts at Full Access.',
     name: 'The name does not match.'
   };
   function said(e) {
@@ -295,7 +302,7 @@
     UI.skeleton($('vsRecBody'), 3);
     return readScript(id).then(function () {
       paintRecord();
-      if (edit && may('work')) openEdit($('vsRecMore'), push);
+      if (edit && may('work')) openEdit($('vsRecBody').querySelector('[data-a="edit"]'), push);
     }).catch(function (e) {
       if (e && e.message === 'not-found') {
         backToList();
@@ -306,7 +313,7 @@
     });
   }
   function readScript(id) {
-    return db.from('video_scripts').select('*, clients(name, client_code, slug)').eq('id', id).maybeSingle().then(function (r) {
+    return db.from('video_scripts').select('*, clients(name, client_code, slug, logo_url)').eq('id', id).maybeSingle().then(function (r) {
       if (r.error) throw r.error;
       if (!r.data) throw new Error('not-found');
       st.open = r.data;
@@ -333,22 +340,51 @@
   function facts(s) {
     var f = [];
     f.push(['Platform', s.platform || '']);
-    f.push(['Language', s.language || '']);
+    f.push(['Language', langWord(s.language) || '']);
     f.push(['Shooting date', [dayWord(s.shoot_on), timeWord(s.shoot_time)].filter(Boolean).join(', ')]);
     f.push(['Venue', s.venue || '']);
     f.push(['Estimated duration', durWord(s.duration_minutes)]);
     f.push(['Cast', s.cast_names || '']);
     var ref = s.reference_url
       ? '<div class="vs-ref"><dt>Reference video</dt><dd><a class="plink" href="' + esc(s.reference_url) +
-        '" target="_blank" rel="noopener">' + esc(s.reference_url.replace(/^https:\/\//, '')) + ' ' + ICON.out + '</a></dd></div>'
+        '" target="_blank" rel="noopener">' + '<span class="vs-ref-url">' + esc(s.reference_url.replace(/^https:\/\//, '')) + '</span>' + ICON.out + '</a></dd></div>'
       : '';
     return '<dl class="facts vs-facts">' + f.map(function (x) {
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
     }).join('') + ref + '</dl>';
   }
 
-  /* The script as the client reads it, with the crew's tick and clip number
-     on each scene. */
+  /* ON THE DAY (the user, 2026-10-09: "make it simple to enter"): each
+     scene's clip number is one field; Enter records it, ticks Shot and moves
+     to the next scene's field, and an empty field offers the next number
+     after the last one recorded (C0042, then C0043), which Enter takes. */
+  function clipField(v, name, id) {
+    return '<input class="input input-sm" type="text" maxlength="40" value="' + esc(v || '') + '" data-saved="' + esc(v || '') + '"' +
+      (id ? ' id="' + id + '"' : '') + ' aria-label="' + esc(name) + '" placeholder="VC#" data-vc autocomplete="off"' +
+      ' autocapitalize="characters" spellcheck="false" enterkeyhint="next">';
+  }
+  function nextClip(v) {
+    var m = /^(.*?)(\d+)(\D*)$/.exec(String(v || '').trim());
+    if (!m) return '';
+    var n = String(Number(m[2]) + 1);
+    while (n.length < m[2].length) n = '0' + n;
+    return m[1] + n + m[3];
+  }
+  /* Every empty field's suggestion, read down the page from the last number
+     recorded above it. */
+  function suggest() {
+    var last = '';
+    Array.prototype.forEach.call($('vsRecBody').querySelectorAll('input[data-vc]'), function (i) {
+      var v = i.value.trim();
+      if (v) { last = v; i.placeholder = 'VC#'; i.removeAttribute('data-next'); return; }
+      var next = last ? nextClip(last) : '';
+      i.placeholder = next || 'VC#';
+      if (next) { i.setAttribute('data-next', next); last = next; } else i.removeAttribute('data-next');
+    });
+  }
+
+  /* The script as the team reads it, with the crew's tick and clip number on
+     each scene. */
   function sceneRows(s) {
     var work = may('work');
     var kind = s.kind;
@@ -362,11 +398,9 @@
         '<span class="vs-n">' + (i + 1) + '</span>' +
         '<span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
         (kind === 'scenes' ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
-        '<span class="vs-vc">' + (work
-          ? '<input class="input input-sm" type="text" maxlength="40" value="' + esc(sc.vc || '') + '" aria-label="Clip number for scene ' + (i + 1) + '" placeholder="VC#" data-vc>'
-          : esc(sc.vc || '—')) + '</span>' +
-        '<span class="vs-shot"><input type="checkbox" ' + (sc.shot_at ? 'checked ' : '') + (work ? '' : 'disabled ') +
-          'aria-label="Scene ' + (i + 1) + ' shot" data-shot></span>' +
+        '<span class="vs-vc">' + (work ? clipField(sc.vc, 'Clip number for scene ' + (i + 1)) : esc(sc.vc || '—')) + '</span>' +
+        '<span class="vs-shot"><label><input type="checkbox" ' + (sc.shot_at ? 'checked ' : '') + (work ? '' : 'disabled ') +
+          'aria-label="Scene ' + (i + 1) + ' shot" data-shot></label></span>' +
       '</div>';
     }).join('') + '</div>';
   }
@@ -376,14 +410,15 @@
       out += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4>' +
         '<p class="vs-prose">' + (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
     }
-    out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) + '</section>';
+    out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) +
+      '<p class="msg vs-shot-msg" id="vsShotMsg" role="status"></p></section>';
     if (s.kind === 'story') {
       var work = may('work');
       out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4>' +
         '<p class="vs-prose">' + (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p>' +
         '<div class="vs-vo" data-vo>' +
           '<label class="field-label" for="vsVoVc">VC#</label>' +
-          (work ? '<input class="input input-sm" id="vsVoVc" type="text" maxlength="40" value="' + esc(s.vo_vc || '') + '" placeholder="VC#">' : '<span>' + esc(s.vo_vc || '—') + '</span>') +
+          (work ? clipField(s.vo_vc, 'Clip number for the voice-over', 'vsVoVc') : '<span>' + esc(s.vo_vc || '—') + '</span>') +
           '<label class="tickline"><input type="checkbox" id="vsVoShot" ' + (s.vo_shot_at ? 'checked ' : '') + (work ? '' : 'disabled ') + '> <span>Shot</span></label>' +
         '</div></section>';
     }
@@ -392,116 +427,182 @@
     return out;
   }
 
-  function moreMenu(s) {
-    /* Download sits here, Preview PDF in the head, as a report's do. */
-    var items = '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>';
-    if (may('work')) {
-      items += '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>';
-      items += '<button class="kmenu-item" data-a="reset" type="button"><b>Reset client link</b></button>';
-    }
-    if (may('manage')) items += '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>';
-    return '<button class="kmenu-btn" id="vsRecMore" type="button" aria-label="More actions" aria-expanded="false">' + ICON.dots + '</button>' +
+  /* The month's ⋯: Download, and Reset access link at Work (Preview PDF
+     sits in the head, as a report's). A script's ⋯: Delete at Full Access. */
+  function menuOf(id, items) {
+    if (!items) return '';
+    return '<button class="kmenu-btn" id="' + id + '" type="button" aria-label="More actions" aria-expanded="false">' + ICON.dots + '</button>' +
       '<div class="kmenu" data-menu hidden>' + items + '</div>';
   }
 
+  /* THE RECORD IS THE CLIENT'S CONTENT MONTH (the user, 2026-10-09: "show
+     similar link in one card for different videos?", "why is the tab
+     selection of each video below?"): the head names the client and the
+     month and holds the client's link once; a tab a script runs under it;
+     the script on show carries its own head, with its state, Edit and
+     Publish. */
   function paintRecord() {
     var s = st.open;
     var c = s.clients || {};
-    var key = stateOf(s);
-    $('vsRecName').textContent = label(s);
+    /* The client's logo, else its initials, as every client's record. */
+    var mark = $('vsRecMark'), initials = window.ADspaceState ? window.ADspaceState.initials(c.name) : '';
+    if (c.logo_url) {
+      mark.className = 'rec-mark has-logo';
+      mark.innerHTML = '<img src="' + esc(c.logo_url) + '" alt="">';
+      mark.querySelector('img').addEventListener('error', function () { mark.className = 'rec-mark'; mark.textContent = initials; });
+    } else { mark.className = 'rec-mark'; mark.textContent = initials; }
+    $('vsRecName').textContent = c.name || 'Client';
     /* The content month, opening the client's Months in My Work where the
        month is there and the colleague reads My Work. */
     var month = monthWord(s.period);
     var toMonth = s.engagement_id && c.slug && bridge.may && bridge.may('ops', 'view');
-    $('vsRecMeta').innerHTML = esc([c.name, KIND_WORD[s.kind]].filter(Boolean).join(' · ')) +
-      (month ? ' · ' + (toMonth ? '<button class="linkbtn" type="button" data-a="month">' + esc(month) + '</button>' : esc(month)) : '');
+    var n = st.series.length, pub = st.series.filter(function (x) { return x.status === 'shared'; }).length;
+    $('vsRecMeta').innerHTML = (month ? (toMonth ? '<button class="linkbtn" type="button" data-a="month">' + esc(month) + '</button>' : esc(month)) + ' · ' : '') +
+      esc(n + (n === 1 ? ' script' : ' scripts') + (pub ? ' · ' + pub + ' published' : ''));
     var mb2 = $('vsRecMeta').querySelector('[data-a="month"]');
     if (mb2) mb2.addEventListener('click', function () {
       history.pushState(null, '', '?s=work&view=months&wc=' + encodeURIComponent(c.slug));
       if (bridge.restore) bridge.restore();
     });
-    var ctl = $('vsRecCtl');
-    ctl.innerHTML = chip(key) +
+    $('vsRecCtl').innerHTML =
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
-      moreMenu(s);
+      menuOf('vsRecMore', '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
+        (may('work') ? '<button class="kmenu-item" data-a="reset" type="button"><b>Reset access link</b></button>' : ''));
+    paintLink();
+    paintTabs();
+    paintScript();
+  }
+
+  /* A tab a script of the month, its number within the month (VS01). */
+  function tabWord(x) { var c = codeOf(x); return /VS\d+$/.test(c) ? c.replace(/^\d{4}/, '') : c; }
+  function paintTabs() {
+    var strip = $('vsTabs');
+    strip.innerHTML = st.series.map(function (x) {
+      var on = x.id === st.open.id;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-v="' + esc(x.id) + '" aria-selected="' + on +
+        '" tabindex="' + (on ? 0 : -1) + '" aria-label="' + esc(label(x)) + '">' + esc(tabWord(x)) + '</button>';
+    }).join('');
+    $('vsNextVideo').hidden = !may('work');
+    var cur = strip.querySelector('.is-on');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  $('vsTabs').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tab');
+    if (b && st.open && b.getAttribute('data-v') !== st.open.id) openScript(b.getAttribute('data-v'), true);
+  });
+  /* A tab list: the arrows move along it, Home and End to its ends. */
+  $('vsTabs').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    tabs[to].focus();
+    openScript(tabs[to].getAttribute('data-v'), true);
+  });
+  $('vsNextVideo').addEventListener('click', function () { nextVideo($('vsNextVideo')); });
+
+  /* The script on show: its head (code and title over its type; the state,
+     Edit, Publish or Unpublish and the ⋯ at the right edge), its facts, then
+     the script. */
+  function paintScript() {
+    var s = st.open;
+    var key = stateOf(s);
     var acts = '';
     if (may('work')) {
-      acts = s.status === 'shared'
-        ? '<button class="btn btn-warn" type="button" data-a="unpublish">Unpublish</button>'
-        : '<button class="btn btn-go" type="button" data-a="publish">Publish</button>';
+      acts += '<button class="btn btn-sm btn-icon" type="button" data-a="edit">' + ICON.pen + 'Edit</button>';
+      acts += s.status === 'shared'
+        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">' + EYE_OFF + 'Unpublish</button>'
+        : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
     }
-    $('vsRecActs').innerHTML = acts;
-    $('vsRecActs').hidden = !acts;
-    paintLink();
-    $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' + facts(s) + '</section>' +
+    $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' +
+        '<div class="vs-cardhead"><div class="vs-cardwho"><h3 id="vsScriptName">' + esc(label(s)) + '</h3>' +
+          '<p>' + esc(KIND_WORD[s.kind] || '') + '</p></div>' +
+          '<div class="vs-cardctl">' + chip(key) + acts +
+            menuOf('vsCardMore', may('manage') ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
+          '</div></div>' +
+        '<div class="msg" id="vsCardMsg" role="status"></div>' +
+        facts(s) + '</section>' +
       '<section class="panel vs-sheetview">' + scriptBody(s) + '</section>';
-    paintSeries();
     wireRecord();
   }
 
-  /* The client's other scripts of the content month, and Add next script. */
-  function paintSeries() {
-    var box = $('vsSeries');
-    box.innerHTML = '<h3 class="railtitle">' + esc(monthWord(st.open.period) || 'This month') + '</h3>' + st.series.map(function (x) {
-      var on = x.id === st.open.id;
-      return '<button class="railrow vs-vrow' + (on ? ' is-on' : '') + '" type="button" data-v="' + esc(x.id) + '"' +
-        (on ? ' aria-current="page"' : '') + '><span>' + esc(label(x)) + '</span></button>';
-    }).join('') +
-      (may('work') ? '<button class="btn btn-sm vs-next" type="button" id="vsNextVideo">' + ICON.plus + 'Add next script</button>' : '');
-    Array.prototype.forEach.call(box.querySelectorAll('[data-v]'), function (b) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-v');
-        if (id !== st.open.id) openScript(id, true);
-      });
-    });
-    if ($('vsNextVideo')) $('vsNextVideo').addEventListener('click', function () { nextVideo($('vsNextVideo')); });
-  }
-
   function wireRecord() {
-    var on = function (root, a, fn) { var b = root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
-    var ctl = $('vsRecCtl');
+    var on = function (root, a, fn) { var b = root && root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
+    var ctl = $('vsRecCtl'), body = $('vsRecBody');
     on(ctl, 'pdf', function (b) { drawPdf(b, false); });
-    on($('vsRecActs'), 'publish', function (b) { publish(true, b); });
-    on($('vsRecActs'), 'unpublish', function (b) { publish(false, b); });
-    var mb = $('vsRecMore');
-    if (mb) {
-      var menu = ctl.querySelector('[data-menu]');
+    on(body, 'edit', function (b) { openEdit(b); });
+    on(body, 'publish', function (b) { publish(true, b); });
+    on(body, 'unpublish', function (b) { publish(false, b); });
+    [['vsRecMore', ctl], ['vsCardMore', body]].forEach(function (pair) {
+      var mb = $(pair[0]);
+      if (!mb) return;
+      var menu = mb.parentNode.querySelector('[data-menu]');
       mb.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = menu.hidden;
+        shutMenu();
         menu.hidden = !open;
         mb.setAttribute('aria-expanded', String(open));
         if (open) window.ADspaceMenu.place(mb, menu);
       });
       on(menu, 'download', function () { shutMenu(); drawPdf(mb, true); });
-      on(menu, 'edit', function () { shutMenu(); openEdit(mb); });
       on(menu, 'reset', function () { shutMenu(); resetLink(); });
       on(menu, 'del', function () { shutMenu(); remove(); });
-    }
-    Array.prototype.forEach.call($('vsRecBody').querySelectorAll('[data-scene]'), function (row) {
-      var id = row.getAttribute('data-scene');
-      var vc = row.querySelector('[data-vc]'), shot = row.querySelector('[data-shot]');
-      if (vc) vc.addEventListener('change', function () { tick(id, null, vc.value, vc); });
-      if (shot) shot.addEventListener('change', function () { tick(id, shot.checked, null, shot); });
     });
-    if ($('vsVoVc')) $('vsVoVc').addEventListener('change', function () { tick(null, null, $('vsVoVc').value, $('vsVoVc')); });
-    if ($('vsVoShot')) $('vsVoShot').addEventListener('change', function () { tick(null, $('vsVoShot').checked, null, $('vsVoShot')); });
+    var fields = Array.prototype.slice.call(body.querySelectorAll('input[data-vc]'));
+    fields.forEach(function (input, k) {
+      var row = input.closest('[data-scene]');
+      var id = row ? row.getAttribute('data-scene') : null;
+      var box = row ? row.querySelector('[data-shot]') : $('vsVoShot');
+      var commit = function (enter) {
+        var v = input.value.trim();
+        if (!v && enter && input.getAttribute('data-next')) { v = input.getAttribute('data-next'); input.value = v; }
+        if (v !== (input.getAttribute('data-saved') || '')) {
+          /* A clip number recorded is a scene shot. */
+          var on = v && box && !box.checked ? true : null;
+          if (on) box.checked = true;
+          input.setAttribute('data-saved', v);
+          tick(id, on, v, input, box);
+          suggest();
+        }
+        if (enter) {
+          var to = fields[k + 1];
+          if (to) { to.focus(); if (to.select) to.select(); } else input.blur();
+        }
+      };
+      input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        commit(true);
+      });
+      input.addEventListener('change', function () { commit(false); });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-scene] [data-shot]'), function (shot) {
+      var id = shot.closest('[data-scene]').getAttribute('data-scene');
+      shot.addEventListener('change', function () { tick(id, shot.checked, null, null, shot); });
+    });
+    if ($('vsVoShot')) $('vsVoShot').addEventListener('change', function () { tick(null, $('vsVoShot').checked, null, null, $('vsVoShot')); });
+    suggest();
   }
   function shutMenu() {
-    var m = $('vsRecCtl').querySelector('[data-menu]'), b = $('vsRecMore');
-    if (m) m.hidden = true;
-    if (b) b.setAttribute('aria-expanded', 'false');
+    Array.prototype.forEach.call(document.querySelectorAll('#vsRecord [data-menu]'), function (m) { m.hidden = true; });
+    ['vsRecMore', 'vsCardMore'].forEach(function (id) { if ($(id)) $(id).setAttribute('aria-expanded', 'false'); });
   }
   document.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('#vsRecCtl .kmenu, #vsRecMore')) shutMenu();
+    if (!e.target.closest || !e.target.closest('#vsRecord .kmenu, #vsRecMore, #vsCardMore')) shutMenu();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenu(); });
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutMenu);
 
   /* On the day: a tick or a clip number, saved as it changes, put back on a
      refusal. */
-  function tick(sceneId, on, vc, el) {
-    var m = $('vsRecMsg');
+  /* One save for a clip number, a tick or both; a refusal puts back what
+     changed. */
+  function tick(sceneId, on, vc, input, box) {
+    var m = $('vsShotMsg');
     say(m, '');
     rpc('video_script_shot', { p_script: st.open.id, p_scene: sceneId, p_on: on, p_vc: vc }).then(function () {
       var sc = sceneId && st.scenes.filter(function (x) { return x.id === sceneId; })[0];
@@ -510,10 +611,12 @@
       if (!sceneId) { if (on != null) st.open.vo_shot_at = on ? stamp : null; if (vc != null) st.open.vo_vc = vc.trim() || null; }
       say(m, 'Saved.', 'ok');
     }).catch(function (e) {
-      if (el.type === 'checkbox') el.checked = !el.checked;
-      else {
-        var sc2 = sceneId && st.scenes.filter(function (x) { return x.id === sceneId; })[0];
-        el.value = sceneId ? (sc2 && sc2.vc) || '' : st.open.vo_vc || '';
+      var sc2 = sceneId && st.scenes.filter(function (x) { return x.id === sceneId; })[0];
+      if (box && on != null) box.checked = sceneId ? Boolean(sc2 && sc2.shot_at) : Boolean(st.open.vo_shot_at);
+      if (input && vc != null) {
+        input.value = sceneId ? (sc2 && sc2.vc) || '' : st.open.vo_vc || '';
+        input.setAttribute('data-saved', input.value);
+        suggest();
       }
       say(m, said(e));
     });
@@ -553,9 +656,8 @@
     var show = function () {
       if (!st.open || st.open.id !== s.id) return;
       var has = Boolean(st.key && st.keyFor === s.client_id);
-      $('vsLinkBox').hidden = !has;
       if (has) { $('vsLink').value = clientLink(st.key); $('vsOpen').href = clientLink(st.key); }
-      $('vsLinkTools').hidden = !has && $('vsRecActs').hidden;
+      $('vsLinkTools').hidden = !has;
     };
     show();
     if (st.keyFor === s.client_id || st.keyTried === s.client_id) return;
@@ -566,15 +668,15 @@
     if (st.key) window.ADspaceCopy.to($('vsCopy'), clientLink(st.key));
   });
   function publish(on, btn, quiet) {
-    var m = $('vsRecMsg');
+    var m = $('vsCardMsg');
     var go = function () {
       if (btn) btn.disabled = true;
       rpc('video_script_share', { p_ids: [st.open.id], p_on: on }).then(function () {
         return readScript(st.open.id);
       }).then(function () {
         paintRecord();
-        say($('vsRecMsg'), on ? '' : 'Unpublished.', 'ok');
-        if (on) undoBar('Published to the client.', function () { publish(false, null, true); }, $('vsRecMsg'));
+        say($('vsCardMsg'), on ? '' : 'Unpublished.', 'ok');
+        if (on) undoBar('Published to the client.', function () { publish(false, null, true); }, $('vsCardMsg'));
       }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e)); });
     };
     if (on || quiet) { go(); return; }
@@ -582,9 +684,10 @@
       go: 'Unpublish', tone: 'warn' }, go);
   }
   function resetLink() {
-    window.ADspaceConfirm.ask({ title: 'Reset client link?',
-      body: 'The link the client holds stops working. Send them the new one.', go: 'Reset', tone: 'warn' }, function () {
-      withKey(true).then(function () { paintLink(); say($('vsRecMsg'), 'Link reset. Copy the new link for the client.', 'ok'); })
+    window.ADspaceConfirm.ask({ title: 'Reset the script link',
+      body: 'The current link for ' + (((st.open || {}).clients || {}).name || 'this client') + ' stops working immediately. The new one has to be sent to the client.',
+      go: 'Reset link', tone: 'warn' }, function () {
+      withKey(true).then(function () { paintLink(); say($('vsRecMsg'), 'Link reset.', 'ok'); })
         .catch(function (e) { say($('vsRecMsg'), said(e)); });
     });
   }
@@ -593,14 +696,21 @@
     var nm = typedName(s);
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: label(s) + ', its scenes and the client\'s decisions will be deleted. There is no restore.',
+      body: label(s) + ', its scenes and their clip numbers will be deleted. There is no restore.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Type ' + (s.title ? 'the title' : nm) + ' to confirm', match: nm, mismatch: 'The name does not match.' }
     }, function (typed) {
       rpc('video_script_delete', { p_id: s.id, p_typed: typed }).then(function () {
+        /* The month's next script opens in its place; the last one gone,
+           the list. */
+        var rest = st.series.filter(function (x) { return x.id !== s.id; });
+        if (rest.length) {
+          openScript(rest[0].id, false).then(function () { say($('vsRecMsg'), label(s) + ' deleted.', 'ok'); });
+          return;
+        }
         backToList();
         say($('vsListMsg'), 'Deleted.', 'ok');
-      }).catch(function (e) { say($('vsRecMsg'), said(e)); });
+      }).catch(function (e) { say($('vsCardMsg'), said(e) === SAID.denied ? SAID['denied-delete'] : said(e)); });
     });
   }
   function nextVideo(btn) {
@@ -672,7 +782,7 @@
     $('vsTitle').value = s.title || '';
     $('vsRef').value = s.reference_url || '';
     fillSelect($('vsPlatform'), PLATFORMS, s.platform);
-    fillSelect($('vsLang'), LANGS, s.language);
+    fillSelect($('vsLang'), LANGS, s.language, langWord);
     $('vsDate').value = s.shoot_on || '';
     $('vsTime').value = s.shoot_time ? String(s.shoot_time).slice(0, 5) : '';
     $('vsVenue').value = s.venue || '';
@@ -688,7 +798,8 @@
     var ub = $('vsWriteMsg').parentNode.querySelector(':scope > .undobar-here');
     if (ub) ub.parentNode.removeChild(ub);
     $('vsWrite').disabled = st.writing === s.id;
-    $('vsWrite').textContent = st.writing === s.id ? 'Writing' : 'Write script';
+    writeWord(st.writing === s.id);
+    st.ai = null;
     st.editing = s.id;
     showEditor();
     window.scrollTo(0, 0);
@@ -750,6 +861,15 @@
   });
   $('vsCancel').addEventListener('click', function () { leaveEditor(); });
   $('vsSave').addEventListener('click', function () {
+    /* A script written with AI is declared read before it is kept
+       (2026-10-10). */
+    if (st.ai && st.open && st.ai === st.open.id && window.ADspaceConfirm.ai) {
+      window.ADspaceConfirm.ai.declare('script', 'Confirm and save', function () { saveScript(true); });
+      return;
+    }
+    saveScript(false);
+  });
+  function saveScript(declared) {
     var m = $('vsMsg'), btn = $('vsSave'), s = st.open;
     var ref = $('vsRef').value.trim().replace(/^https:\/\//i, 'https://');
     if (ref && !/^https:\/\//.test(ref)) { say(m, SAID['bad-link']); $('vsRef').focus(); return; }
@@ -768,11 +888,16 @@
     say(m, '');
     rpc('video_script_save', { p_id: s.id, p_head: head, p_scenes: scenes, p_version: s.version }).then(function (d) {
       btn.disabled = false;
+      if (declared) {
+        st.ai = null;
+        if (bridge.log) bridge.log('script.saved', ((s.clients || {}).name || '') + ' · ' + codeOf(s),
+          'Script written with AI, read and confirmed');
+      }
       closeEditor();
       return readScript(s.id).then(function () {
         paintRecord();
         if (bridge.setUrl) bridge.setUrl();
-        say($('vsRecMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
+        say($('vsCardMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
       });
     }).catch(function (e) {
       btn.disabled = false;
@@ -781,7 +906,7 @@
       }
       say(m, said(e));
     });
-  });
+  }
 
   /* ---- Write script (AI) ------------------------------------------------------ */
   /* The sheet's script drafted by `script-draft` from the colleague's notes
@@ -817,7 +942,7 @@
   }
   function writeLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Write script is turned off for you. An admin can turn it on.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Scripts with AI are turned off for you. An admin can turn them on.';
     var n = d.limit || 10;
     return 'You have used your ' + n + (n === 1 ? ' script' : ' scripts') + ' for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
   }
@@ -866,10 +991,14 @@
     m.textContent = text || '';
     m.className = 'msg capmsg' + (text ? ' err' : '');
   }
+  /* The AI mark and the act's one word (2026-10-10): Write with AI. */
+  var AI_GLYPH = (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '';
+  function writeWord(busy) { $('vsWrite').innerHTML = AI_GLYPH + (busy ? 'Writing' : 'Write with AI'); }
   function showWritten(w, before) {
     putWords(w);
+    st.ai = st.editing;
     sayWrite('');
-    undoBar('Script written. Save keeps it.', function () { putWords(before); }, $('vsWriteMsg'));
+    undoBar('Written by AI. Read before saving.', function () { putWords(before); st.ai = null; }, $('vsWriteMsg'));
   }
   $('vsWrite').addEventListener('click', function () {
     var btn = $('vsWrite'), s = st.open;
@@ -887,7 +1016,7 @@
         placeholder: 'What the video is for, the product or offer, the call to action',
         value: keep('adspace-script-notes:' + s.id) });
       window.ADspaceConfirm.ask({
-        title: 'Write script',
+        title: 'Write with AI',
         body: (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
@@ -898,11 +1027,11 @@
         var cur = sheetWords();
         var settle = function () {
           st.writing = null;
-          if (st.open && st.open.id === s.id) { btn.disabled = false; btn.textContent = 'Write script'; }
+          if (st.open && st.open.id === s.id) { btn.disabled = false; writeWord(false); }
         };
         st.writing = s.id;
         btn.disabled = true;
-        btn.textContent = 'Writing';
+        writeWord(true);
         db.functions.invoke('script-draft', { body: {
           script_id: s.id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
           length: Number(v.length) || 30, venue: $('vsVenue').value.trim(),
@@ -959,14 +1088,14 @@
       });
     };
     if (!many) { go(false); return; }
-    window.ADspaceConfirm.ask({ title: save ? 'Download PDF' : 'Preview PDF', go: save ? 'Download' : 'Preview',
+    window.ADspaceConfirm.ask({ title: save ? 'Download' : 'Preview PDF', go: save ? 'Download' : 'Preview',
       field: { label: 'Scripts', choices: [['one', label(st.open)], ['all', 'The whole month (' + st.series.length + ' scripts)']], seg: false, value: 'all' }
     }, function (v) { go(v === 'all'); });
   }
   function gather(ids) {
     return Promise.all([
       db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
-      db.from('video_script_scenes').select('script_id, position, visual, line, vc').in('script_id', ids).order('position')
+      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       var by = {};
@@ -977,6 +1106,7 @@
         s.context_word = CONTEXT_WORD[s.kind] || '';
         s.when = [dayWord(s.shoot_on), timeWord(s.shoot_time)].filter(Boolean).join(', ');
         s.duration = durWord(s.duration_minutes);
+        s.month_word = monthWord(s.period);
         return s;
       });
     });
