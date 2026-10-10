@@ -9711,6 +9711,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   transform-origin: top center; animation: mk-menu-in var(--t) var(--ease-out);
 }
 .guidecard[hidden] { display: none; }
+/* A guide inside a sheet (Arrange sections, a new WhatsApp message) stands
+   above it, under a question asked over it (95). */
+.guidecard.is-insheet { z-index: 92; }
 .guide-head { align-items: baseline; }
 .guide-title { min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .guide-n { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }

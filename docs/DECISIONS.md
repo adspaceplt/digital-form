@@ -1927,3 +1927,19 @@ memory. Connectors (GitHub, Supabase) are per account and are connected again
 there; no secret moves. Only one account works at a time, and "hand over"
 (push both repositories, then one comment on the open PR) is the step
 before switching.
+
+### 2026-10-10 · A guide for every screen of the newer parts
+
+The user asked for guides across the whole of Settings, WhatsApp, the phone's
+tab bar, Arrange sections, Health and Reports, not only the first landing.
+A guide is now a screen's: a route, a tab, a report's step or a sheet
+(`guideKey()`), offered when that screen first appears, met once, and
+reopened from Show me around. Two were sheets (a new WhatsApp message,
+Arrange sections), so a guide may live inside its sheet (`within`), above it,
+Escape ending the guide before the sheet. Health has two states on one
+address, so its two guides are told apart by whether the colleague has
+agreed. The phone's tab bar guide comes before the screen's on a colleague's
+first phone visit, its last step naming Arrange sections in the account menu,
+which no guide could reach otherwise. Guides are offered from the page's own
+changes (the address, a sheet or step drawn), read a moment after the page
+settles, so no screen calls the guide itself.

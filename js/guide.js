@@ -28,8 +28,15 @@
  *                                  mark(key) records one. Until read answers,
  *                                  nothing is offered.
  *
- * A guide is { name, steps: [{ at, text, title? }] }; `name`, `title` and
- * `text` are a string or { en, zh } (client pages follow their 中文 switch).
+ * A guide is { name, steps: [{ at, text, title? }], within?, then? };
+ * `name`, `title` and `text` are a string or { en, zh } (client pages follow
+ * their 中文 switch). `within` names the sheet a guide lives in (Arrange
+ * sections, a new WhatsApp message): that sheet does not count as something
+ * over the page, and the card stands above it. `then` runs once the guide is
+ * finished or skipped (never when the route changes under it): the phone's
+ * tab bar guide hands on to the section's. Of a guide's steps, the first
+ * three whose control is drawn are shown, so a screen with two states (Health
+ * before and after agreeing) holds the steps of both.
  */
 (function () {
   var LOCAL = 'adspace-guide:';
@@ -71,23 +78,26 @@
     return null;
   }
   function liveSteps(guide) {
-    return (guide.steps || []).slice(0, 3).filter(function (s) { return targetOf(s); });
+    return (guide.steps || []).filter(function (s) { return targetOf(s); }).slice(0, 3);
   }
   /* Something else is over the page: a sheet, a menu or popover card, a
      question, the review canvas, the finder, a cover. Drawn, not merely
      present: the console's Access denied cover sits in a hidden shell. */
   var LAYERS = '.sheet, #askSheet, .kmenu, .popcard, .canvas, #pickerBox, .maint-cover, .cover';
-  function covered() {
+  function covered(within) {
+    var own = within ? document.querySelector(within) : null;
     var list = document.querySelectorAll(LAYERS);
     for (var i = 0; i < list.length; i++) {
       var el = list[i];
       if (el === card || el.classList.contains('is-off') || el.closest('[hidden]')) continue;
+      // The sheet the guide lives in, and what that sheet holds.
+      if (own && (el === own || own.contains(el))) continue;
       if (el.getClientRects().length) return true;
     }
     return false;
   }
   // Or the console is still booting.
-  function busy() { return covered() || !!document.querySelector('.console.is-booting'); }
+  function busy(within) { return covered(within) || !!document.querySelector('.console.is-booting'); }
   // A list on the page still drawing its loading rows.
   function loading() {
     return Array.prototype.some.call(document.querySelectorAll('.skel'), function (s) {
@@ -149,6 +159,7 @@
     c.querySelector('#guideNext').textContent = cur.i === n - 1 ? w.done : w.next;
     c.querySelector('#guideSkip').textContent = w.skip;
     c.querySelector('#guideSkip').hidden = cur.i === n - 1;
+    c.classList.toggle('is-insheet', !!cur.guide.within);
     c.hidden = false;
     /* On a phone the card docks at the foot of the screen, so the control is
        brought to the middle, clear of it, never to the edge it covers. */
@@ -167,14 +178,16 @@
     paint(true);
   }
 
-  function close(done) {
+  /* `why` 'leave': the route changed under it, so nothing follows. */
+  function close(done, why) {
     clearTimeout(waitT);
     if (!cur) return;
     unring();
-    var key = cur.key;
+    var key = cur.key, then = why !== 'leave' && cur.guide.then;
     cur = null;
     if (card) card.hidden = true;
     if (done !== false) markSeen(key);
+    if (typeof then === 'function') setTimeout(then, 0);
   }
 
   function show(key, guide, focus) {
@@ -196,7 +209,7 @@
     clearTimeout(settleT);
     settleT = setTimeout(function () {
       if (!cur) return;
-      if (covered()) close(true); else paint(false);
+      if (covered(cur.guide.within)) close(true); else paint(false);
     }, 60);
   }
   /* Pressing the control a step points at is doing what it says: the guide
@@ -206,12 +219,13 @@
     if (cur.t && cur.t.contains(e.target)) { close(true); return; }
     settle();
   }, true);
-  /* Escape ends it, before anything under it hears the key; while something
-     else is over the page, that hears it first. */
-  document.addEventListener('keydown', function (e) {
+  /* Escape ends it, before anything under it hears the key (the window
+     hears it before the page's own listeners, a sheet's among them); while
+     something else is over the page, that hears it first. */
+  window.addEventListener('keydown', function (e) {
     if (!cur || !card || card.hidden) return;
     if (e.key === 'Enter' || e.key === ' ') { if (!card.contains(e.target)) settle(); return; }
-    if (e.key !== 'Escape' || covered()) return;
+    if (e.key !== 'Escape' || covered(cur.guide.within)) return;
     close(true);
     e.stopPropagation();
   }, true);
@@ -236,7 +250,7 @@
           /* Shown once what it can point at has stopped changing: a list
              still loading draws its rows a moment after its bar, and a step
              counted before them would be left out. */
-          var n = busy() || loading() ? 0 : liveSteps(guide).length;
+          var n = busy(guide.within) || loading() ? 0 : liveSteps(guide).length;
           if (n && (n === all || n === last)) { show(key, guide, false); return; }
           last = n;
           if (++tries < 24) waitT = setTimeout(wait, 250);
@@ -248,7 +262,7 @@
     open: function (key, guide) { return show(key, guide, true); },
     // A step of it is on the screen now.
     can: function (guide) { return !!guide && liveSteps(guide).length > 0; },
-    leave: function () { offerSeq++; close(true); },
+    leave: function () { offerSeq++; close(true, 'leave'); },
     isOpen: function () { return !!cur; },
     seen: seen,
     useServer: function (read, mark) {
