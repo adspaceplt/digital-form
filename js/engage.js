@@ -286,7 +286,7 @@
       rows.push({ kind: 'scripts', glyph: 'scripts', name: 'Video Scripts',
         meta: parts([plural(list.length, 'script'), pub + ' published']),
         state: pub === list.length ? state('Published', 'is-ok') : state('Draft', 'is-off'),
-        url: '/admin/?s=scripts&script=' + encodeURIComponent(list[0].id), section: 'scripts' });
+        url: '/admin/?s=scripts&month=' + encodeURIComponent(list[0].id), section: 'scripts' });
     }
     m.camps.forEach(function (k) {
       rows.push({ kind: 'campaign', glyph: 'campaigns', name: named(k.title, W.en.untitled),

@@ -4089,15 +4089,24 @@
           </div>
           <div class="msg" id="vsRecMsg"></div>
         </section>
-        <!-- A tab a script of the month, in number order, and Add script at
-             the line's end. -->
-        <div class="tabline vs-tabline">
-          <nav class="rectabs" id="vsTabs" role="tablist" aria-label="Scripts of the month"></nav>
-          <button class="btn btn-sm vs-next" id="vsNextVideo" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add script</button>
+        <!-- The month (2026-10-10, the user: thirty to fifty scripts a client
+             a year): its scripts as rows, a row opening its script on a page
+             of its own; Add script in the card's head. -->
+        <section class="panel vs-monthlist" id="vsMonthList" hidden>
+          <div class="vs-monthhead"><h3>Scripts</h3>
+            <button class="btn btn-sm" id="vsNextVideo" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add script</button></div>
+          <div id="vsMonthRows"></div>
+        </section>
+        <!-- One script: Previous, where it stands in the month and Next, then
+             its own head over its facts, then the script. -->
+        <div class="vs-nav" id="vsNav" hidden>
+          <span class="vs-pos" id="vsPos" aria-live="polite"></span>
+          <span class="vs-navbtns">
+            <button class="btn btn-sm" id="vsPrev" type="button">Previous</button>
+            <button class="btn btn-sm" id="vsNextS" type="button">Next</button>
+          </span>
         </div>
-        <!-- The script on show: its own head (the state, Edit, Publish or
-             Unpublish, and the ⋯) over its facts, then the script. -->
-        <div class="vs-rec" id="vsRecBody" data-swipe="vsTabs"></div>
+        <div class="vs-rec" id="vsRecBody" data-swipe-prev="vsPrev" data-swipe-next="vsNextS"></div>
       </div>
 
       <!-- The script's editor is a page of its own (the user, 2026-10-09: a

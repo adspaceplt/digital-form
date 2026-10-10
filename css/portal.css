@@ -11038,9 +11038,18 @@ button.vs-row { cursor: pointer; }
    then the script on show: its own head (code and title over the type; the
    state, Edit, Publish and the ⋯ at the right edge) over its facts, and the
    script in the next card. */
-.vs-tabline { margin: 0 0 12px; }
-.vs-tabline > .rectabs { margin: 0; flex: 1 1 auto; min-width: 0; }
-.vs-tabline > .vs-next { flex: 0 0 auto; }
+/* The month's scripts (2026-10-10): a card of rows under the head, Add
+   script in its head; one script's pager over its own page. */
+.vs-monthlist { padding: 0; overflow: hidden; }
+.vs-monthhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 15px 12px; }
+.vs-monthhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.vs-monthhead .btn { flex: 0 0 auto; }
+.vs-mtable { border-top: 1px solid var(--line-soft); }
+.vs-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+.vs-nav.is-one .vs-navbtns { display: none; }
+.vs-pos { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.vs-navbtns { display: flex; gap: 8px; }
+.vs-navbtns .btn { flex: 0 0 auto; min-width: 96px; }
 .vs-rec { display: grid; gap: 12px; min-width: 0; }
 .vs-rec > .panel { margin: 0; }
 .vs-factcard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }

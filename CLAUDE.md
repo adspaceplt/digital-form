@@ -1315,7 +1315,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     opens the client's Months view), each Content Review set (`review.sets`
     View; Published or Draft), the month's Video Scripts as one row
     (`scripts` View; `n scripts · n published`, Published once all are;
-    opens the month's first script), each creator campaign (`campaigns.campaigns`
+    opens the month's scripts), each creator campaign (`campaigns.campaigns`
     View; `W.campState`), each report (Reports View: Draft, In review,
     Confirmed, Published with Sent {day} or Not sent, On request and White
     label as chips; opens the report). A colleague at Clients View without
@@ -3531,15 +3531,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   in My Work where it is there), Preview PDF and one ⋯ of Download and Reset
   client link, then the client's link once (`.rec-linktools`: the address,
   Copy link, Preview), the key read once a client and made at Work the first
-  time; under it a tab a script (`#vsTabs`, the view strip, VS01 in number
-  order, the arrows moving along it, `script=` in the address) with Add
-  script at the line's end; then the script on show, its card headed by its
+  time; under it the month (`month=` in the address; the user, 2026-10-10:
+  thirty to fifty scripts a client a year) is a card of its scripts
+  (`#vsMonthList`: Scripts with Add script in its head, a row a script, VS01
+  and its title over its type, the shoot, the state, in number order), a
+  row opening its script on a page of its own (`script=`): Previous, `n of
+  N` and Next over it (`#vsNav`, a sideways swipe on a phone), Back
+  returning to the month and the month's Back to the list; the script's
+  card headed by its
   code and title over its type with the state, Edit (the pen), Publish in
   blue or Unpublish (asks) and a ⋯ of Delete at the right edge
   (`.vs-cardhead`), its facts under it (`.vs-factcard`, the reference video
   with them), and the script in the next card (the user, 2026-10-09: key
-  information apart from the scenes). A script deleted opens the month's
-  next one, the last one gone the list.
+  information apart from the scenes). A script deleted opens its month,
+  the last one gone the list.
 - On the day, in the console and the installed app alone (the user,
   2026-10-09: "make it simple to enter"): each scene's VC# (the clip number
   on the camera) is one field; Enter records it, ticks the scene shot and
