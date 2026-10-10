@@ -3003,8 +3003,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     (Leads · Meta, Traffic · TikTok), Step 1 asks TikTok's figures apart,
     the summary is a By platform table (impressions and spend totalled,
     reach not), the tax note reads On Meta, and Open in Ads Manager is
-    Meta's alone. TikTok's export columns are provisional until the team's
-    first TikTok export is read.
+    Meta's alone. TikTok's campaign report (the team's first export,
+    2026-10-10) is read as it comes: a row named by its campaign where no
+    ad is named, Spend the amount spent, Results its result (Conversions
+    only where no Results column), a CTR given as a fraction read as a
+    percentage where clicks over impressions say so, and its Total of N
+    results row the account's figures for Step 1, never an ad. It holds no
+    reach, age or video figures: an ad level export with them is asked for.
   - `first_month` carries the reading guidance; a later month compares against
     the previous period, which is carried forward. A new report is never a
     first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
@@ -3343,7 +3348,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   copy of a creative that never ran is read after the copies that did and
   never writes over the ad they fed (its result type and zeros); posts go
   to the report's account on their platform; filed `Imported from Meta` /
-  `From Meta`. A refusal is one line under the step's head (`META_SAID`:
+  `From Meta`. Then each ad or post with no picture of its own takes
+  Meta's (an ad's creative, a post's image or a reel's cover frame), read
+  through `meta-import` `pictures` (Meta's own image hosts alone, six a
+  call, 4 MB each; Meta's addresses expire within days), drawn down to the
+  320px JPEG and kept on the row (`.is('thumb_data', null)`: a picture the
+  team chose is never replaced), filed `From Meta: n pictures added`; a
+  picture Meta refuses leaves the row without, never the import. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),
   never Meta's words. Every figure is Meta's; none is AI's.
 - The PDF:

@@ -3076,6 +3076,7 @@
           if (bad) return fail(bad.error || { message: 'Not saved. The database refused the request.' });
           go.disabled = false;
           window.ADspaceSheet.clean(); window.ADspaceSheet.close();
+          if (pre && pre.pics) metaPictures('posts', pre.pics);
         });
       }).catch(fail);
     };
@@ -4113,9 +4114,10 @@
   var AD_HEAD = [
     [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|ad group name|ad group|audience)$/, 'audience'], [/^(objective|campaign objective|advertising objective)$/, 'objective'],
     [/^(account name|ad account name|ad account|advertiser name)$/, 'account'], [/^ad id$/, 'ad_id'], [/^(account id|ad account id|advertiser id)$/, 'account_id'],
-    [/^(result type|result indicator|results? type|optimi[sz]ation event)$/, 'result_label'], [/^(results?|conversions)$/, 'results'],
-    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^(amount spent|cost$|total cost$)/, 'spend'],
-    [/^ctr/, 'ctr'], [/^cost per (results?|conversion)/, 'cpr'],
+    [/^(result type|result indicator|results? type|optimi[sz]ation event)$/, 'result_label'], [/^results?$/, 'results'], [/^conversions$/, 'conversions'],
+    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^(amount spent|cost$|total cost$|spend$)/, 'spend'],
+    [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'], [/^cost per conversion$/, 'cpc_conv'],
+    [/^(clicks \((destination|all)\)|clicks|link clicks)$/, 'clicks'], [/^campaign name$/, 'campaign'],
     [/^reporting starts$/, 'rep_start'], [/^reporting ends$/, 'rep_end'], [/^(day|week|month|date|by day)$/, 'day'],
     [/^(starts?|start date|start time)$/, 'starts_on'], [/^(ends?|end date|end time|stop time)$/, 'ends_on'],
     [/^age$/, 'age'],
@@ -4124,7 +4126,7 @@
     [/^(video average play time|average play time per video view)/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
   ];
   /* Headers only TikTok's export carries, so a paste names its platform. */
-  var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%)$/;
+  var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%|primary status|secondary status|campaign budget|cpc \(destination\)|clicks \(destination\)|ctr \(destination\)|goal-based budget increase|qualified conversion)$/;
   function objectiveOf(v) {
     var x = String(v || '').toLowerCase().replace(/^outcome_/, '').replace(/_/g, ' ').trim();
     if (!x) return null;
@@ -4151,7 +4153,16 @@
       var hit = AD_HEAD.filter(function (x) { return x[0].test(k); })[0];
       return hit ? hit[1] : null;
     });
+    /* TikTok's campaign report (the user's export, 2026-10-10) names each
+       row by its campaign alone: the campaign is the row's name where no ad
+       is named; Results is TikTok's optimisation result, Conversions only
+       where it has none; and its last row, Total of N results, is the
+       account's own figures. */
+    if (head.indexOf('name') < 0 && head.indexOf('campaign') > -1) head = head.map(function (k) { return k === 'campaign' ? 'name' : k; });
+    if (head.indexOf('results') < 0) head = head.map(function (k) { return k === 'conversions' ? 'results' : k; });
+    if (head.indexOf('cpr') < 0) head = head.map(function (k) { return k === 'cpc_conv' ? 'cpr' : k; });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
+    var TOTAL_ROW = /^total of \d+ results?$/i;
     var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
     var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord, AN = window.ADspaceSmReport && window.ADspaceSmReport.adName;
     var hasAge = head.indexOf('age') > -1;
@@ -4166,7 +4177,13 @@
       var c = numIn(raw.cpr); if (c !== null) a.n.cpr = c;
       var pl = playIn(raw.avg_play), pw = numIn(raw.plays) || numIn(raw.plays3) || im || 1;
       if (pl !== null) { a.n.avg_play = (a.n.avg_play || 0) + pl * pw; a.w.avg_play = (a.w.avg_play || 0) + pw; }
-      var ctr = numIn(raw.ctr);
+      var ctr = numIn(raw.ctr), clk = numIn(raw.clicks);
+      /* A CTR given as a fraction (TikTok's 0.0056 for 0.56%) is read as a
+         percentage where the clicks over impressions say so. */
+      if (ctr !== null && clk !== null && im) {
+        var pc = clk / im * 100;
+        if (Math.abs(ctr * 100 - pc) < Math.abs(ctr - pc)) ctr = Math.round(ctr * 10000) / 100;
+      }
       if (ctr !== null) { a.n.ctrSum = (a.n.ctrSum || 0) + ctr * (im || 1); a.ctrw += (im || 1); }
     };
     var cellsOf = function (l) {
@@ -4187,7 +4204,7 @@
     var CN = function (x) { return AN ? AN(x) : x; };
     lines.slice(1).forEach(function (l) {
       var raw = cellsOf(l);
-      if (!raw.name) return;
+      if (!raw.name || TOTAL_ROW.test(raw.name)) return;
       var obj = objectiveOf(raw.objective) || fallbackObj, base = [CN(raw.name), obj, raw.audience || ''].join('|');
       if (raw.ad_id) {
         var id = raw.ad_id + '|' + raw.name;
@@ -4215,7 +4232,7 @@
     var summary = null;
     lines.slice(1).forEach(function (l, li) {
       var raw = cellsOf(l);
-      if (!raw.name && li === 0 && !String(raw.age || '').trim()) {
+      if ((!raw.name && li === 0 || TOTAL_ROW.test(raw.name || '')) && !String(raw.age || '').trim()) {
         var sr = numIn(raw.reach), si = numIn(raw.impressions), ss = numIn(raw.spend);
         if (sr !== null || si !== null || ss !== null) {
           summary = {};
@@ -4225,6 +4242,7 @@
           return;
         }
       }
+      if (TOTAL_ROW.test(raw.name || '')) return;
       if (!raw.name) { skipped++; return; }
       if (raw.account) accounts[raw.account] = true;
       var obj = objectiveOf(raw.objective) || fallbackObj;
@@ -4362,6 +4380,63 @@
     'not-draft': 'Only a draft takes an import.',
     'needs-update': 'This needs a database update.'
   };
+  /* The pictures (2026-10-10, the user: "build post thumbnails"): after an
+     import from Meta, each post or ad the report holds with no picture of
+     its own takes Meta's (a post's image or cover frame, an ad's creative),
+     read through `meta-import` (Meta's addresses expire within days and a
+     browser cannot read them across origins), drawn down to the 320px JPEG
+     every thumbnail is, and kept on the row. A picture the team chose is
+     never replaced; a creative's other rows take the same picture. */
+  function metaPictures(kind, pics) {
+    var r = st.open;
+    var want = [];
+    if (kind === 'ads') {
+      st.ads.forEach(function (a) {
+        if (a.thumb_data) return;
+        var u = (a.ad_ids || []).map(function (x) { return pics[x]; }).filter(Boolean)[0];
+        if (u) want.push({ id: a.id, url: u });
+      });
+    } else {
+      var byKey = {};
+      Object.keys(pics).forEach(function (k) { var lk = linkKey(k); if (lk) byKey[lk] = pics[k]; });
+      st.posts.forEach(function (p) {
+        var u = !p.thumb_data && p.url ? byKey[linkKey(p.url)] : null;
+        if (u) want.push({ id: p.id, url: u });
+      });
+    }
+    if (!want.length) return Promise.resolve(0);
+    var table = kind === 'ads' ? 'sm_report_ads' : 'sm_report_posts';
+    var urls = want.map(function (w) { return w.url; }).filter(function (u, i, all) { return all.indexOf(u) === i; });
+    var got = {}, kept = 0;
+    var batch = function (i) {
+      if (i >= urls.length) return Promise.resolve();
+      return db.functions.invoke('meta-import', { body: { action: 'pictures', report_id: r.id, urls: urls.slice(i, i + 6) } }).then(function (res) {
+        var d = (res && res.data) || {};
+        return Promise.all((d.pictures || []).map(function (x) {
+          if (!x || !x.b64 || !/^image\//.test(x.type || '')) return null;
+          var bin = atob(x.b64), buf = new Uint8Array(bin.length);
+          for (var j = 0; j < bin.length; j++) buf[j] = bin.charCodeAt(j);
+          return shrink(new Blob([buf], { type: x.type })).then(function (data) { got[x.url] = data; }).catch(function () { /* left without */ });
+        }));
+      }).catch(function () { /* this batch is left without */ }).then(function () { return batch(i + 6); });
+    };
+    return batch(0).then(function () {
+      return Promise.all(want.filter(function (w) { return got[w.url]; }).map(function (w) {
+        return db.from(table).update({ thumb_data: got[w.url] }).eq('id', w.id).is('thumb_data', null).select('*').then(function (res) {
+          var row = (res && res.data || [])[0];
+          if (!row) return;
+          kept++;
+          if (kind === 'ads') st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
+          else st.posts = st.posts.map(function (x) { return x.id === row.id ? row : x; });
+        });
+      }));
+    }).then(function () {
+      if (!st.open || st.open.id !== r.id) return kept;
+      if (kept) fileReport('report.saved', 'From Meta: ' + plural(kept, 'picture') + ' added');
+      if (kind === 'ads') paintAds(); else paintPosts();
+      return kept;
+    });
+  }
   function metaImport(kind, btn) {
     var m0 = st.meta || {}, sec = btn.closest('.rp-sec'), head = sec && sec.querySelector('.rp-sec-head');
     var line = sec && sec.querySelector('[data-m="meta"]');
@@ -4381,8 +4456,8 @@
         if ((res && res.error) || d.error) { say(line, META_SAID[d.error] || 'Meta did not answer. Try again.', 'err'); return; }
         if (!d.text) { say(line, kind === 'ads' ? 'Meta has no ads in this period.' : 'Meta has no posts in this period.', 'warn'); return; }
         if (line && line.parentNode) line.parentNode.removeChild(line);
-        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '' });
-        else pasteSheet(btn, { text: d.text, platform: d.source });
+        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '', pics: d.pics || null });
+        else pasteSheet(btn, { text: d.text, platform: d.source, pics: d.pics || null });
       }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
     };
     if (choices.length === 1) { fetchIt(choices[0][0]); return; }
@@ -4491,6 +4566,7 @@
     /* Meta's age split follows the figures, matched by Ad ID, in the same
        press. */
     var ageNext = pre && pre.age ? pre.age : '';
+    var pics = pre && pre.pics ? pre.pics : null;
     var ageOnly = false;
     var from = pre ? 'Imported from Meta: ' : 'Imported from Ads Manager: ';
     /* The platform follows the paste (TikTok's own headers) until the
@@ -4572,6 +4648,7 @@
         }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals(); paintSteps();
+        if (pics) metaPictures('ads', pics);
       }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); paintSteps(); say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });

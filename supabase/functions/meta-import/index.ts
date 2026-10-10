@@ -21,6 +21,14 @@
  *                        published in the period with their lifetime
  *                        insights, as Meta Business Suite's export. Reports
  *                        at Work, a Social Media Accounts Report in draft.
+ *   pictures { report_id, urls }
+ *                        the pictures the ads or posts read named (2026-10-10:
+ *                        a post's image or cover frame, an ad's creative),
+ *                        fetched from Meta's own image hosts alone (at most
+ *                        six, 4 MB each) and answered as base64, so the page
+ *                        draws them down to its 320px thumbnail and keeps
+ *                        them: Meta's addresses expire within days. Reports
+ *                        at Work, a draft.
  *   `audit: true` on either (the Report audit, 2026-10-09) reads the same for
  *                        the page to compare, never to import: an Advertising
  *                        Report in review or confirmed too, since Meta is
@@ -161,7 +169,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
   const action = String(body.action || '');
-  if (['assets', 'ads', 'posts'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
+  if (['assets', 'ads', 'posts', 'pictures'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
@@ -202,6 +210,27 @@ Deno.serve(async (req) => {
     const r = rep.data as Record<string, string | null>;
     const audit = body.audit === true && action === 'ads' && (r.status === 'review' || r.status === 'confirmed');
     if (r.status !== 'draft' && !audit) return json({ error: 'not-draft' }, 200, origin);
+    if (action === 'pictures') {
+      /* Only Meta's own image hosts are fetched: the addresses came from
+         this report's own read, and nothing else is reached from here. */
+      const urls = (Array.isArray(body.urls) ? body.urls : []).map(String)
+        .filter((u) => { try { const h = new URL(u); return h.protocol === 'https:' && /(^|\.)(fbcdn\.net|cdninstagram\.com)$/.test(h.hostname); } catch { return false; } })
+        .slice(0, 6);
+      const pictures = await Promise.all(urls.map(async (u) => {
+        try {
+          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
+          const res = await fetch(u, { signal: ctl.signal }); clearTimeout(t);
+          const type = res.headers.get('content-type') || '';
+          if (!res.ok || !/^image\//.test(type)) return { url: u, error: 'not-read' };
+          const buf = new Uint8Array(await res.arrayBuffer());
+          if (buf.length > 4 * 1024 * 1024) return { url: u, error: 'too-large' };
+          let bin = '';
+          for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+          return { url: u, type: type.split(';')[0], b64: btoa(bin) };
+        } catch { return { url: u, error: 'not-read' }; }
+      }));
+      return json({ pictures }, 200, origin);
+    }
     if ((action === 'ads') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
     const lk = await db.rpc('meta_links_list', { p_client: r.client_id });
     const ld = (lk.data || {}) as Record<string, unknown>;
@@ -219,7 +248,22 @@ Deno.serve(async (req) => {
       const ads = await adInsights(act, range, {}, AD_FIELDS);
       const ages = await adInsights(act, range, { breakdowns: 'age' }, ['account_id', 'ad_id', 'ad_name', 'adset_name', 'objective', 'optimization_goal', 'impressions', 'reach', 'actions', 'video_thruplay_watched_actions']);
       const period = { start: r.period_start, end: r.period_end };
-      return json({ account: acc, ads: ads.length, text: ads.length || account ? adsText(account, ads, period) : '', age: ageText(ages) }, 200, origin);
+      /* Each ad's creative picture, for its thumbnail (2026-10-10); a read
+         Meta refuses leaves the ads without, never the import. */
+      const pics: Record<string, string> = {};
+      if (!audit) {
+        const ids = [...new Set(ads.map((a) => String(a.ad_id || '')).filter(Boolean))];
+        for (let i = 0; i < ids.length; i += 50) {
+          try {
+            const got = await graph('', { ids: ids.slice(i, i + 50).join(','), fields: 'creative{image_url,thumbnail_url}' });
+            for (const id of ids.slice(i, i + 50)) {
+              const c = ((got[id] || {}) as Record<string, Record<string, string>>).creative || {};
+              if (c.image_url || c.thumbnail_url) pics[id] = c.image_url || c.thumbnail_url;
+            }
+          } catch (e) { console.error('meta-import: pictures left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300)); }
+        }
+      }
+      return json({ account: acc, ads: ads.length, text: ads.length || account ? adsText(account, ads, period) : '', age: ageText(ages), pics }, 200, origin);
     }
 
     const source = body.source === 'instagram' ? 'instagram' : 'facebook';
@@ -231,23 +275,27 @@ Deno.serve(async (req) => {
       const ptoken = String(pg.access_token || '');
       if (!ptoken) return json({ error: 'not-assigned' }, 200, origin);
       const posts = await all(link.id + '/published_posts', {
-        fields: 'id,created_time,message,permalink_url,status_type,attachments{media_type},shares,reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)',
+        fields: 'id,created_time,message,permalink_url,full_picture,status_type,attachments{media_type},shares,reactions.summary(total_count).limit(0),comments.summary(total_count).limit(0)',
         since: String(win.since), until: String(win.until), limit: '100'
       }, 10, ptoken);
       const m = posts.length ? await metrics(posts.map((p) => String(p.id)), { views: 'post_media_view', reach: 'post_impressions_unique' }, ptoken, 'lifetime') : {};
       posts.forEach((p) => { (p as Record<string, unknown>).metrics = m[String(p.id)] || {}; });
-      return json({ source, name: link.name, posts: posts.length, text: facebookText(posts) }, 200, origin);
+      const pics: Record<string, string> = {};
+      posts.forEach((p) => { if (p.permalink_url && p.full_picture) pics[String(p.permalink_url)] = String(p.full_picture); });
+      return json({ source, name: link.name, posts: posts.length, text: facebookText(posts), pics }, 200, origin);
     }
     /* Instagram lists media newest first; the walk stops at the first one
        before the period. */
     const media = (await all(link.id + '/media', {
-      fields: 'id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count', limit: '100'
+      fields: 'id,caption,media_type,media_product_type,permalink,media_url,thumbnail_url,timestamp,like_count,comments_count', limit: '100'
     }, 10, undefined, (x) => Date.parse(String(x.timestamp).replace(/\+0000$/, 'Z')) / 1000 < win.since))
       .filter((x) => Date.parse(String(x.timestamp).replace(/\+0000$/, 'Z')) / 1000 < win.until);
     const m = media.length ? await metrics(media.map((x) => String(x.id)),
       { views: 'views', reach: 'reach', likes: 'likes', comments: 'comments', shares: 'shares', saved: 'saved' }) : {};
     media.forEach((x) => { (x as Record<string, unknown>).metrics = m[String(x.id)] || {}; });
-    return json({ source, name: link.name, posts: media.length, text: instagramText(media) }, 200, origin);
+    const pics: Record<string, string> = {};
+    media.forEach((x) => { const u = x.thumbnail_url || (x.media_type !== 'VIDEO' ? x.media_url : null); if (x.permalink && u) pics[String(x.permalink)] = String(u); });
+    return json({ source, name: link.name, posts: media.length, text: instagramText(media), pics }, 200, origin);
   } catch (e) {
     const b = e instanceof MetaError ? e.body : { message: String((e as Error).message || e) };
     console.error('meta-import: Meta refused', action, JSON.stringify(b || {}).slice(0, 500));

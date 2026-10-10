@@ -1535,3 +1535,24 @@ month line under the name now reads the same answer, so opening a record
 reads the client's months once rather than twice. The Engagements rows had
 read a set's state from a column that does not exist (`state`), so every set
 read Draft; they read `published` now. No schema change.
+
+### 2026-10-10 · Pictures from Meta, and TikTok's campaign report
+
+Reports showed an empty square for every imported post and ad: the team asked
+for thumbnails without uploading each one. Import from Meta now asks Meta
+for each ad's creative picture and each post's image or cover frame, and the
+page keeps a 320px copy on the row. The pictures are fetched through
+`meta-import`, never by the browser: Meta's image addresses expire within
+days and cannot be read across origins. Only Meta's image hosts are fetched,
+six a call. A picture the team chose is never replaced. The stand-in now
+reads a `.is()` guard on an update against the row as it stood, as
+PostgREST does; it had answered every guarded update with nothing.
+
+The team's first TikTok export was a campaign report, not the ad level
+export the importer was written for: no Ad name (Campaign name), Spend
+rather than Cost, Conversions beside Results, CTR as a fraction, and a
+Total of N results row last. The importer reads it as it comes. It carries
+no reach, age split or video views, so an ad level export with those
+columns is still asked for; the TikTok Business API (ads management and
+reporting) is the later route, through its own developer app and advertiser
+authorisation.
