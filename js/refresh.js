@@ -55,17 +55,34 @@
   }
 
   /* ---- Refresh app ----------------------------------------------------- */
+  /* The console's own: its worker (/admin/), its cache (adspace-console-*)
+     and the files it drew (/admin/file/ in adspace-files). The creator's,
+     the selection page's and the client portal's workers on the same
+     browser keep their registrations and their notifications (audit F7,
+     2026-10-10). A page holding unsent work asks before it reloads. */
   function hard() {
     var jobs = [];
     try {
       if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
         jobs.push(navigator.serviceWorker.getRegistrations().then(function (list) {
-          return Promise.all(list.map(function (r) { return r.unregister(); }));
+          return Promise.all(list.filter(function (r) {
+            try { return new URL(r.scope).pathname === '/admin/'; } catch (e) { return false; }
+          }).map(function (r) { return r.unregister(); }));
         }));
       }
       if (window.caches && caches.keys) {
         jobs.push(caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          return Promise.all(keys.map(function (k) {
+            if (/^adspace-console/.test(k)) return caches.delete(k);
+            if (k !== 'adspace-files') return null;
+            return caches.open(k).then(function (c) {
+              return c.keys().then(function (reqs) {
+                return Promise.all(reqs.filter(function (q) {
+                  try { return new URL(q.url).pathname.indexOf('/admin/file/') === 0; } catch (e) { return false; }
+                }).map(function (q) { return c.delete(q); }));
+              });
+            });
+          }));
         }));
       }
     } catch (e) {}

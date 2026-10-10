@@ -20,7 +20,7 @@ var VERSION = 'adspace-console-20261007a';
 // A colleague's notifications, shown and opened (the one copy for every page).
 importScripts('/js/push-sw.js');
 // A PDF the console drew, held under its own name (the one copy for both pages).
-importScripts('/js/file-sw.js?v=20261007a');
+importScripts('/js/file-sw.js?v=20261010a');
 var OFFLINE = '/admin/offline.html';
 var KEEP = [OFFLINE, '/admin/icons/wordmark.png'];
 

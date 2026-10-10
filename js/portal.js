@@ -406,7 +406,9 @@
   });
   $('codeBack').addEventListener('click', function () { msg('stateMsg', ''); showState('sign'); });
   $('portalOut').addEventListener('click', function () {
-    db.auth.signOut().then(function () { location.reload(); });
+    var D = window.ADspaceDocs;
+    (D && D.forgetFiles ? D.forgetFiles() : Promise.resolve()).then(function () { return db.auth.signOut(); })
+      .then(function () { location.reload(); });
   });
 
   // ---- Load ------------------------------------------------------------------
@@ -968,13 +970,20 @@
       }).join('');
     }
     paintRequest();
-    $('reqNote').value = '';
+    /* An unsent note is kept when the dialog is left and comes back when it
+       opens again; sending it is what clears it (audit F8, 2026-10-10). */
+    $('reqNote').value = reqDraft;
     $('reqGo').textContent = w.send;
     $('reqCancel').textContent = w.close;
     msg('reqMsg', '');
-    $('reqSheet').hidden = false;
-    $('reqNote').focus();
+    /* The shared sheet: focus held inside, Escape, focus back to the button
+       that opened it, and a press outside never closes it over typed text. */
+    var opener = document.activeElement;
+    if (window.ADspaceSheet) {
+      window.ADspaceSheet.show($('reqSheet'), { opener: opener, onClose: function () { reqDraft = $('reqNote').value; req = null; } });
+    } else { $('reqSheet').hidden = false; }
   }
+  var reqDraft = '';
   function paintRequest() {
     var w = t();
     if (req.pick) {
@@ -994,10 +1003,12 @@
   ['reqKind', 'reqLine'].forEach(function (id) {
     $(id).addEventListener('change', function () { if (req) paintRequest(); });
   });
-  function shutRequest() { $('reqSheet').hidden = true; req = null; }
+  function shutRequest() {
+    if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('reqSheet'))) { window.ADspaceSheet.close(); return; }
+    $('reqSheet').hidden = true; req = null;
+  }
   $('ovRequest').addEventListener('click', function () { openRequest('details', null, true); });
   $('reqCancel').addEventListener('click', shutRequest);
-  $('reqSheet').addEventListener('click', function (e) { if (e.target === this) shutRequest(); });
   $('reqGo').addEventListener('click', function () {
     if (!req) return;
     var note = ($('reqNote').value || '').trim();
@@ -1008,6 +1019,7 @@
         $('reqGo').disabled = false;
         var d = r.data || {};
         if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : t().notSent, 'err'); return; }
+        $('reqNote').value = ''; reqDraft = '';
         shutRequest();
         showPane('services', true);
         msg('rqMsg', t().sent, 'ok');

@@ -478,7 +478,8 @@
       P.off(true).then(once, once);
       setTimeout(once, 1500);
     };
-    var out = function () { quiet(function () { db.auth.signOut().then(function () { location.reload(); }); }); };
+    var forget = function () { var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve(); };
+    var out = function () { quiet(function () { forget().then(function () { return db.auth.signOut(); }).then(function () { location.reload(); }); }); };
     if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
   $('noTeamRetry').addEventListener('click', function () { location.reload(); });

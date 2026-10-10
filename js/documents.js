@@ -932,8 +932,23 @@
   /* Shut a tab opened at the press when there is nothing to put in it. */
   function shut(tab) { try { if (tab && !tab.closed) tab.close(); } catch (e) {} }
 
+  /* Signing out lets go of the files this page drew for its worker, so the
+     next person at this browser cannot reopen them (audit F6, 2026-10-10).
+     Only this page's own scope; never a stored letter or an S3 file. */
+  function forgetFiles() {
+    var sc = scope();
+    if (!sc || !window.caches || !caches.open) return Promise.resolve();
+    return caches.open('adspace-files').then(function (c) {
+      return c.keys().then(function (reqs) {
+        return Promise.all(reqs.filter(function (q) {
+          try { return new URL(q.url).pathname.indexOf(sc + 'file/') === 0; } catch (e) { return false; }
+        }).map(function (q) { return c.delete(q); }));
+      });
+    }).catch(function () {});
+  }
+
   window.ADspaceDocs = {
-    save: save, tabFor: tabFor, shut: shut, ios: IOS,
+    save: save, tabFor: tabFor, shut: shut, ios: IOS, forgetFiles: forgetFiles,
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,

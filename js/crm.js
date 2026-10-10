@@ -3797,7 +3797,13 @@
       $('svLabel').value = l ? (l.label || '') : '';
       $('svQty').value = l ? Number(l.qty || 1) : 1;
       $('svRate').value = l ? Number(l.rate || 0) : '';
-      $('svState').value = l ? (l.state || 'enquired') : 'enquired';
+      /* Confirmed comes from a verified signed letter alone (audit S1):
+         the sheet offers Enquired and To quote, and a confirmed line reads
+         its state and keeps it. */
+      var fixed = Boolean(l && l.state === 'confirmed');
+      $('svStateRow').hidden = fixed;
+      $('svStateFixed').hidden = !fixed;
+      $('svState').value = l && !fixed ? (l.state || 'enquired') : 'enquired';
       $('svTenure').value = l ? Math.max(1, Number(l.tenure || 1)) : 1;
       $('svStart').value = l ? (l.start_on || '') : '';
       $('svDetail').value = l ? (l.detail || '') : '';
@@ -3838,7 +3844,7 @@
       service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
       qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
       tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
-      state: $('svState').value, note: val('svNote') || null,
+      note: val('svNote') || null,
       detail: val('svDetail') || null,
       // Stored on every save, never left to the column's default, because the
       // rule that reads it treats a missing value as "on".
@@ -3848,20 +3854,26 @@
          out is the one the person saw. */
       term_pct: !$('svAdjRow').hidden ? svPctValue() : null
     };
+    if (!(editingService && editingService.state === 'confirmed')) row.state = $('svState').value;
     if (editingService) { saveService(editingService, row); return; }
     row.client_id = state.client.id;
     db.from('client_services').insert(row).then(function (r) {
-      if (r.error) { msg('svMsg', r.error.message, 'err'); return; }
+      if (r.error) { msg('svMsg', svSaid(r.error), 'err'); return; }
       log('client.service', state.client.name, label + ' · ' + SV_STATE[row.state][0]);
       shutService();
       syncValue();
     });
   });
+  /* A line moved into Confirmed by hand is refused by the database
+     (client_services_confirm_guard): said in the team's words. */
+  function svSaid(e) {
+    return /confirm-needs-letter/.test((e && e.message) || '') ? 'A service is confirmed when its signed letter is verified.' : ((e && e.message) || 'Not saved.');
+  }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */
   function saveService(l, patch, act) {
     db.from('client_services').update(patch).eq('id', l.id).select('id').then(function (r) {
-      if (r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
+      if (r.error) { msg('crmServiceMsg', svSaid(r.error), 'err'); return; }
       if (!(r.data || []).length) { msg('crmServiceMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(act === 'removed' ? 'client.service_removed' : act === 'restored' ? 'client.service_restored' : 'client.service_changed',
           state.client.name, l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));

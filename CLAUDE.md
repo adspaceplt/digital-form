@@ -104,8 +104,17 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
     the wait never ends.
-- A suite passes on exit code 0. **Never count `FAIL` lines**: a suite that
-  throws prints none.
+- A suite passes on exit code 0, some output, and no line starting `FAIL`
+  anywhere in it (2026-10-10, audit T1: a FAIL before the last line, or an
+  empty output, passed). **Never count `FAIL` lines** to call a suite
+  green: a suite that throws prints none. Every suite asserts what it walks;
+  one that only prints what it saw is a diagnostic, never in the gate
+  (audit T3). `tests/gateself.js` runs the gate's own judgement on
+  synthetic suites.
+- The gate never tests another checkout: run alone, it refuses port 8899
+  serving any folder but its own; `snap.sh` names the tests' commit beside
+  the portal's (`snapshot: <sha> · tests <sha>`, `+uncommitted` where the
+  tests held unsaved edits).
 - uxaudit and matrix pass only on their own `: ok` line; they exit 0 on
   PROBLEM too.
 - `SKIP` is not a pass.
@@ -397,7 +406,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
   (no build) or missing, the line is hidden (`tests/appver.js`).
 - Refresh app (account menu):
-  - it unregisters the worker and empties Cache Storage;
+  - it unregisters the console's own worker (`/admin/`) and empties its own
+    caches (`adspace-console-*`, and `/admin/file/` in `adspace-files`),
+    never the creator's, the selection page's or the client portal's
+    (audit F7, 2026-10-10);
   - it never touches localStorage, IndexedDB or the sign-in;
   - notifications survive it: the next load subscribes again without asking
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
@@ -484,7 +496,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   grant. Each is filed `team.changed` under subject Notices.
 
 ### One copy of each mechanism
-- `js/api.js` is the only Supabase client. It retries a GET once when the
+- `js/api.js` is the only Supabase client. Demo content is only for a copy
+  with no database configured: a configured page whose database library
+  failed to load reads Unable to load and records nothing, and a review
+  decision is shown only on the database's own `ok` (audit F5, 2026-10-10). It retries a GET once when the
   connection drops before the answer (`steadyFetch`); a write is never sent
   twice.
 - `js/money.js` is the only money formatter and the only place a price is
@@ -1333,7 +1348,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Send invitation stays in the ⋯. Undo emails nobody.
 - Services:
   - Quantity × rate × months from a start date.
-  - Enquired / To quote / Confirmed.
+  - Enquired / To quote / Confirmed. Confirmed comes from a verified signed
+    letter (`verify_letter`) or the admin's reasoned override alone: the
+    sheet never offers it (a confirmed line reads its state), and trigger
+    `client_services_confirm_guard` refuses a page that inserts or moves a
+    line into it (`confirm-needs-letter`; `2026-10-10-service-confirm-guard.sql`,
+    audit S1).
   - Remove is soft with Undo; a removed line is listed on asking with
     Restore (`client.service_restored`), never deleted: a letter may have
     quoted it (`client_document_services` restricts it).
@@ -1434,7 +1454,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   tab, zh)` under its own file name (Safari names a `blob:` address
   Unknown.pdf, and names a file after the last part of its address). The
   page's worker (`js/file-sw.js`, imported by `admin/sw.js` and
-  `client/sw.js`) holds the drawn file an hour at `{scope}file/{id}/{name}`,
+  `client/sw.js`) holds the drawn file an hour at `{scope}file/{id}/{name}`
+  (the hour kept on every read; signing out lets go of the page's own,
+  `ADspaceDocs.forgetFiles`; audit F6, 2026-10-10),
   and a tab opened at the press opens there: every Preview, and on an
   iPhone or iPad every save (`ADspaceDocs.tabFor()`, which opens no tab at a
   desk), so Save to Files keeps the name and nothing is asked. A download
@@ -1974,6 +1996,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     each) and upload one by one only on Submit or Update; each row is
     written after its file is stored. A failure keeps that file held and
     hands in nothing; every failure is named after the repaint.
+  - A caption typed and not handed in is kept a booking in this tab's
+    session (`adspace-creator-drafts:{code}`), through a booking switch, the
+    language and a repaint; Submit and Forget this device clear it, and
+    leaving with it asks first. Nothing but Submit sends it (audit F4,
+    `tests/capdraft.js`).
   - Payment details (AP01) are asked for once posted (`payDue`: posted only),
     never on the draft's approval, and the line never says Approved.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
@@ -3557,6 +3584,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Account: Contacts read-only, Portal access (Person · Sign-in email),
     Payment only once `ADSPACE_ORG.bank` is set.
 - The portal never writes a record. A request is a row the team applies.
+  Request change opens through `js/sheet.js` (focus held, Escape, focus back
+  to the button, a press outside never closes it over typed text), and an
+  unsent note comes back when it opens again until it is sent (audit F8,
+  2026-10-10).
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
 - A contact reads its name with Main contact at the right of the line, the

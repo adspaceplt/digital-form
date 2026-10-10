@@ -36,7 +36,15 @@ self.addEventListener('fetch', function (e) {
   if (r.method !== 'GET') return;
   var url = new URL(r.url);
   if (url.origin !== self.location.origin || url.pathname.indexOf(adspaceFilePath()) !== 0) return;
-  e.respondWith(caches.open(ADSPACE_FILES).then(function (c) { return c.match(url.pathname); }).then(function (m) {
-    return m || new Response('This file is no longer held. Open it again from the page.', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+  /* The hour is kept on every read, not only when another file arrives: a
+     file past it is let go and never answered (audit F6, 2026-10-10). */
+  var gone = function () { return new Response('This file is no longer held. Open it again from the page.', { status: 404, headers: { 'Content-Type': 'text/plain' } }); };
+  e.respondWith(caches.open(ADSPACE_FILES).then(function (c) {
+    return c.match(url.pathname).then(function (m) {
+      if (!m) return gone();
+      var at = Number(m.headers.get('X-Kept-At')) || 0;
+      if (Date.now() - at > ADSPACE_FILE_HOURS * 3600000) return c.delete(url.pathname).then(gone, gone);
+      return m;
+    });
   }));
 });
