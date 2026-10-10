@@ -10598,6 +10598,25 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .readgroup-head .fsec-h { margin: 0; }
 .readgroup-head .btn { flex: 0 0 auto; }
 .meta-for { margin: 0 0 12px; font-weight: 600; }
+/* Brand analysis (2026-10-10): the client's AI analysis read first on the
+   Brand pane; Confirm and Run again at the head's right, a section a
+   question under it, each label beside its value as the other groups. */
+.ba-acts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.ba-acts .team-act { margin-block: -3px; }
+.ba .msg.capmsg { margin: 0 0 12px; }
+.ba-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
+.ba-hypo { margin: 12px 0 0; }
+.ba-sec { margin-top: 24px; }
+.ba-sec > .fsec-h { margin: 0 0 12px; }
+.ba dd { overflow-wrap: anywhere; }
+.ba-list { margin: 0; padding-left: 18px; }
+.ba-list li + li { margin-top: 4px; }
+.ba-line { margin: 0; }
+.ba-line + .ba-line { margin-top: 8px; }
+.ba-k { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ba-part { white-space: nowrap; }
+.ba-sources { display: flex; flex-wrap: wrap; gap: 8px; }
+.ba-versions { display: grid; gap: 4px; justify-items: start; }
 .meta-body > .fsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .meta-accs { display: grid; gap: 4px; max-height: 40dvh; overflow-y: auto; }
 .meta-accs .tickline { min-height: var(--ctl-h); }

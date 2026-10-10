@@ -961,7 +961,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.log = []; }
+    if (!same) { state.contacts = []; state.log = []; ba.id = null; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -2191,9 +2191,12 @@
         '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '') +
       '<section class="readgroup meta-links" id="crmMetaRead"><div class="readgroup-head"><h4 class="fsec-h">Meta</h4>' +
         (mayPart('clients', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
-        '</div><div data-m="list"></div></section>';
+        '</div><div data-m="list"></div></section>' +
+      '<section class="readgroup ba" id="crmAnalysis"><div class="readgroup-head"><h4 class="fsec-h">Brand analysis</h4>' +
+        '<span class="ba-acts" data-m="acts"></span></div><p class="msg capmsg" id="crmAnalysisMsg"></p><div data-m="body"></div></section>';
     if (c.white_label) loadBrands(c);
     loadMeta(c);
+    loadAnalysis(c);
     var me0 = $('crmMetaRead').querySelector('[data-a="meta"]');
     if (me0) me0.addEventListener('click', function () { metaSheet(c, null, this); });
   }
@@ -2293,6 +2296,210 @@
       list.innerHTML = dl(metaFacts(own));
     }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be read.</p>'; });
   }
+  /* BRAND ANALYSIS (2026-10-10; the user: "deep analysis of this clients
+     … brand part, target audiences, SWOTs, advantages disadvantages, ads
+     targetting"). Run by any colleague who sees the client, through
+     `brand-analysis`: the record, its reports, post results, Meta where
+     linked and web research on the brand and its competitors. Each run is
+     the next version, read first here; it is a draft until a colleague
+     declares it read and confirmed, and only a confirmed one is read by
+     Write with AI. Read once a client; a repaint draws from what was read. */
+  var ba = { id: null, versions: null, failed: false, show: null, seq: 0, running: null };
+  var BA_SAID = {
+    'needs-update': 'This needs a database update.',
+    'ai-not-set-up': 'AI needs its key in Supabase.',
+    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
+    'ai-model': 'The analysis model name in Supabase is not recognised.',
+    'ai-slow': 'The analysis took too long. Try again.',
+    'ai-failed': 'No analysis came back. Try again.',
+    'ai-incomplete': 'No analysis came back. Try again.',
+    denied: 'This needs Clients at View.',
+    'client-scope': 'This client is outside your access.',
+    'not-found': 'This analysis is no longer available.'
+  };
+  function baDay(iso) { return iso ? niceDate(new Date(Date.parse(iso) + 8 * 36e5).toISOString().slice(0, 10)) : ''; }
+  function baClock(iso) {
+    var at = new Date(iso);
+    return isNaN(at.getTime()) ? '' : ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
+  }
+  function baLimit(d) {
+    d = d || {};
+    if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. An admin can turn them on.';
+    var n = d.limit || 3;
+    return 'You have used your ' + n + (n === 1 ? ' analysis' : ' analyses') + ' for today.' + (d.next ? ' Resets at ' + baClock(d.next) + '.' : '');
+  }
+  function baSaid(e) {
+    var m = String((e && e.message) || '');
+    if (m === 'ai-limit') return baLimit(e.d);
+    if (BA_SAID[m]) return BA_SAID[m];
+    if (/function .* does not exist|schema cache|PGRST20[25]/i.test(m)) return BA_SAID['needs-update'];
+    return BA_SAID['ai-failed'];
+  }
+  function baKeep(key, v) {
+    try {
+      if (v === undefined) return localStorage.getItem(key) || '';
+      if (v) localStorage.setItem(key, v); else localStorage.removeItem(key);
+    } catch (e) {}
+    return '';
+  }
+  function baList(items) {
+    items = (items || []).filter(Boolean);
+    return items.length ? '<ul class="ba-list">' + items.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '';
+  }
+  function baFacts(rows) {
+    return '<dl class="ovfacts">' + rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt>' + (r[1] ? '<dd>' + r[1] + '</dd>' : '<dd class="is-empty">—</dd>') + '</div>';
+    }).join('') + '</dl>';
+  }
+  function baSec(title, rows) { return '<div class="ba-sec"><h5 class="fsec-h">' + esc(title) + '</h5>' + baFacts(rows) + '</div>'; }
+  function baRead(b) {
+    b = b || {};
+    var bits = [];
+    var n = function (v, one, many) { return typeof v === 'number' && v > 0 ? v + ' ' + (v === 1 ? one : many) : ''; };
+    bits.push(n(b.reports, 'report', 'reports'), n(b.post_results, 'post result', 'post results'));
+    var m = b.meta && typeof b.meta === 'object' ? b.meta : {};
+    bits.push(n(m.instagram, 'Instagram post', 'Instagram posts'), n(m.facebook, 'Facebook post', 'Facebook posts'),
+      m.followers ? 'Instagram followers' : '', n(m.ads, 'ad objective', 'ad objectives'), n(b.web_searches, 'web search', 'web searches'));
+    return bits.filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
+  }
+  function paintAnalysis(c) {
+    var host = $('crmAnalysis');
+    if (!host || state.client !== c) return;
+    var acts = host.querySelector('[data-m="acts"]'), body = host.querySelector('[data-m="body"]');
+    var may = mayPart('clients', 'view');
+    var list = ba.versions || [];
+    var v = list.filter(function (x) { return x.id === ba.show; })[0] || list[0] || null;
+    var latest = v && v === list[0];
+    var busy = ba.running === c.id;
+    var AI = (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '';
+    acts.innerHTML = !may ? '' :
+      (v && !v.confirmed_at && !busy ? '<button class="btn btn-sm btn-primary" type="button" data-a="ba-confirm" id="crmAnalysisConfirm">Confirm</button>' : '') +
+      '<button class="btn btn-sm" type="button" data-a="ba-run" id="crmAnalysisRun"' + (busy ? ' disabled aria-busy="true"' : '') + '>' + AI +
+        (busy ? 'Running' : list.length ? 'Run again' : 'Run analysis') + '</button>' +
+      (v && v.confirmed_at ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="ba-withdraw" type="button"><b>Withdraw confirmation</b></button></div></span>' : '');
+    if (acts.querySelector('[data-a="menu"]')) wireMenu(acts);
+    if (ba.failed) { body.innerHTML = '<p class="msg err">The brand analysis could not be read.</p>'; return; }
+    if (!ba.versions) { body.innerHTML = '<p class="ba-none">Loading.</p>'; return; }
+    if (!v) { body.innerHTML = '<p class="ba-none">Not run.</p>'; return; }
+    var a = v.analysis || {}, p = a.positioning || {}, sw = a.swot || {}, ct = a.content || {}, ad = a.ads || {};
+    var earlier = list.filter(function (x) { return x !== v; });
+    body.innerHTML =
+      baFacts([
+        ['State', v.confirmed_at ? '<span class="chip-state is-ok">Confirmed</span>' : '<span class="chip-state is-warn">Draft</span>'],
+        ['Version', esc('Version ' + v.version + ' · ' + baDay(v.created_at) + (v.by ? ' · ' + v.by : '')) +
+          (latest ? '' : ' <button class="linkbtn" type="button" data-a="ba-latest">Show latest</button>')],
+        ['Confirmed', v.confirmed_at ? esc(baDay(v.confirmed_at) + (v.confirmed_by ? ' · ' + v.confirmed_by : '')) : ''],
+        ['Read from', baRead(v.basis)]
+      ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
+      (v.hypothesis ? '<p class="msg warn ba-hypo">A starting hypothesis to test</p>' : '') +
+      baSec('Brand positioning', [['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
+        ['Compared with', esc((p.competitors || []).join(', '))]]) +
+      '<div class="ba-sec"><h5 class="fsec-h">Target audiences</h5>' + baFacts((a.audiences || []).map(function (s) {
+        return [s.name, [['Who they are', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
+          .filter(function (x) { return x[1]; }).map(function (x) { return '<p class="ba-line"><span class="ba-k">' + esc(x[0]) + '</span>' + esc(x[1]) + '</p>'; }).join('')];
+      })) + '</div>' +
+      baSec('SWOT', [['Strengths', baList(sw.strengths)], ['Weaknesses', baList(sw.weaknesses)],
+        ['Opportunities', baList(sw.opportunities)], ['Threats', baList(sw.threats)]]) +
+      baSec('Content', [['What worked', baList(ct.worked)], ['What did not', baList(ct.not_worked)],
+        ['Pillars', baList(ct.pillars)], ['Formats', baList(ct.formats)]]) +
+      baSec('Ad targeting', [['Objectives', baList(ad.objectives)], ['Age bands', esc((ad.ages || []).join(' · '))],
+        ['Interests', esc((ad.interests || []).join(' · '))], ['Placements', esc((ad.placements || []).join(' · '))],
+        ['Budget by objective', esc((ad.budget || []).map(function (x) { return x.objective + ' ' + x.share + '%'; }).join(' · '))],
+        ['Test first', esc(ad.test || '')]]) +
+      ((v.sources || []).length ? '<div class="ba-sec"><h5 class="fsec-h">Sources</h5><div class="ba-sources">' + v.sources.map(function (x) {
+        return /^https:\/\//i.test(x.url || '') ? '<a class="plink" href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || x.url) + '</a>' : '';
+      }).join('') + '</div></div>' : '') +
+      (earlier.length ? '<div class="ba-sec"><h5 class="fsec-h">Other versions</h5><div class="ba-versions">' + earlier.map(function (x) {
+        return '<button class="linkbtn" type="button" data-a="ba-show" data-id="' + esc(x.id) + '">' +
+          esc('Version ' + x.version + ' · ' + baDay(x.created_at) + (x.by ? ' · ' + x.by : '') + (x.confirmed_at ? ' · Confirmed' : ' · Draft')) + '</button>';
+      }).join('') + '</div></div>' : '');
+  }
+  function loadAnalysis(c, force) {
+    if (!$('crmAnalysis')) return;
+    if (ba.id === c.id && ba.versions && !force) { paintAnalysis(c); return; }
+    if (ba.id !== c.id) { ba.versions = null; ba.show = null; }
+    ba.id = c.id; ba.failed = false;
+    var seq = ++ba.seq;
+    paintAnalysis(c);
+    db.rpc('brand_analyses_list', { p_client: c.id }).then(function (q) {
+      if (seq !== ba.seq || state.client !== c) return;
+      var d = (q && q.data) || {};
+      if ((q && q.error) || d.error) { ba.failed = true; ba.versions = null; }
+      else ba.versions = d.versions || [];
+      paintAnalysis(c);
+    }).catch(function () { if (seq === ba.seq) { ba.failed = true; paintAnalysis(c); } });
+  }
+  function baMsg(text, tone) {
+    var el = $('crmAnalysisMsg');
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'msg capmsg' + (text ? ' ' + (tone || 'err') : '');
+  }
+  function runAnalysis(c, btn) {
+    baMsg('');
+    btn.disabled = true;
+    db.rpc('ai_analysis_left').then(function (q) {
+      btn.disabled = false;
+      var left = (q && q.data) || {};
+      if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
+      if (!left.left) { baMsg(baLimit(left)); return; }
+      var key = 'adspace-analysis-notes:' + c.id;
+      window.ADspaceConfirm.ask({
+        title: 'Run analysis',
+        body: 'Reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
+          left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
+        go: 'Run',
+        fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }]
+      }, function (v) {
+        var notes = String(v.notes || '').trim();
+        baKeep(key, notes);
+        ba.running = c.id;
+        paintAnalysis(c);
+        db.functions.invoke('brand-analysis', { body: { client_id: c.id, notes: notes } }).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
+          ba.running = null;
+          if (ba.id === c.id && ba.versions) { ba.versions.unshift(d.analysis); ba.show = null; }
+          paintAnalysis(c);
+          if (ba.id !== c.id) return;
+          baMsg('Written by AI. Read before confirming.', 'ok');
+        }).catch(function (e) {
+          ba.running = null;
+          paintAnalysis(c);
+          if (state.client === c) baMsg(baSaid(e));
+        });
+      });
+    }).catch(function (e) { btn.disabled = false; baMsg(baSaid(e)); });
+  }
+  function confirmAnalysis(c, v, on) {
+    var go = function () {
+      db.rpc('brand_analysis_confirm', { p_id: v.id, p_on: on }).then(function (q) {
+        var d = (q && q.data) || {};
+        if ((q && q.error) || d.error) { baMsg(q && q.error ? baSaid(q.error) : BA_SAID[d.error] || 'Not saved.'); return; }
+        ba.versions = (ba.versions || []).map(function (x) { return x.id === d.id ? d : x; });
+        paintAnalysis(c);
+        undoBar(on ? 'Brand analysis confirmed.' : 'Confirmation withdrawn.', function () { confirmAnalysis(c, d, !on); }, $('crmAnalysisMsg'));
+      }).catch(function (e) { baMsg(baSaid(e)); });
+    };
+    baMsg('');
+    if (!on) { go(); return; }
+    window.ADspaceConfirm.ai.declare('analysis', 'Confirm', go);
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('#crmAnalysis [data-a]');
+    var c = state.client;
+    if (!t || !c) return;
+    var a = t.getAttribute('data-a');
+    var shown = (ba.versions || []).filter(function (x) { return x.id === ba.show; })[0] || (ba.versions || [])[0];
+    if (a === 'ba-run') runAnalysis(c, t);
+    else if (a === 'ba-confirm' && shown) confirmAnalysis(c, shown, true);
+    else if (a === 'ba-withdraw' && shown) confirmAnalysis(c, shown, false);
+    else if (a === 'ba-show') { ba.show = t.getAttribute('data-id'); paintAnalysis(c); }
+    else if (a === 'ba-latest') { ba.show = null; paintAnalysis(c); }
+  });
   var META_SAID = {
     'not-connected': 'Meta is not connected.',
     'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
