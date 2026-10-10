@@ -340,7 +340,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
   it; five or fewer with no Activity record take the bar whole. More lists
-  only what the bar does not (`.is-tabbed`), and the Activity record. The
+  only what the bar does not (`.is-tabbed`), then its foot as one line of
+  marks named for a screen reader (Arrange sections, Settings, the Activity
+  record; the user, 2026-10-10: "just use icons") with the build at its
+  right end. The
   menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; a sheet covers it; a field taking the
@@ -600,6 +603,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every video player: it names the H.264 copy `name.web.mp4` first (typed
   MP4) and the original after, so a browser plays the copy once it exists
   and the original until then. Never `<video src>` for an uploaded file.
+  A thumbnail of a video is `ADspaceMedia.still(url)`, its first frame
+  (`#t=0.1`; iPhone Safari draws a bare video blank until it plays): a
+  console row, and the selection page's post rows (the user, 2026-10-10).
   It also holds the media pass (`ADspaceMedia.pass(proof)`, 2026-10-03):
   with `ADSPACE_CONFIG.s3.privateMedia` on, a page that has proved its link
   (`{review}`, `{campaign}` with the passcode), a creator's code

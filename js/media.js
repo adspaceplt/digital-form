@@ -33,6 +33,13 @@
   function tag(url, attrs) {
     return '<video' + (attrs ? ' ' + attrs : '') + '>' + sources(url) + '</video>';
   }
+  /* A still: a video drawn as its first frame (`#t=0.1`), muted and never
+     playing, for a thumbnail. iPhone Safari draws a bare video blank until
+     it plays (the user, 2026-10-10: a creator's post read as an empty box). */
+  function still(url) {
+    return '<video muted playsinline preload="metadata" tabindex="-1" aria-hidden="true">' +
+      sources(url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
+  }
   /* A player built as an element. */
   function attach(video, url) {
     video.removeAttribute('src');
@@ -154,5 +161,5 @@
     setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
   }
 
-  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, attach: attach, pass: pass };
+  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, still: still, attach: attach, pass: pass };
 })();

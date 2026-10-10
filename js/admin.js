@@ -4889,8 +4889,7 @@
   function thumbOf(m) {
     if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="">';
     if (m.poster) return '<img src="' + esc(m.poster) + '" alt="">';
-    return '<video muted playsinline preload="metadata">' +
-      ADspaceMedia.sources(m.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
+    return ADspaceMedia.still(m.url);
   }
 
   function coverWord(p, videos) {

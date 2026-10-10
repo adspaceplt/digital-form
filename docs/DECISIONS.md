@@ -1735,3 +1735,11 @@ two pages (a set's review page, a campaign's selection page) could not share
 a button. They can: a link button's base `https://digital.adspace.me/{{1}}`
 takes `review/?k=…` or `creators/?k=…`, which reads cleaner for the client.
 The composer now fills either shape, and the setup guide shows the button.
+
+The same day: a creator's post on the selection page showed an empty box on
+an iPhone, which draws a video blank until it plays; the post's picture is
+now the video's first frame (`ADspaceMedia.still`, the console's thumbnail
+rule made one). Under the tab bar, More's foot became one line of marks
+(the user: the three rows took room for words already known). The Video
+Scripts month's ⋯ and Preview PDF were drawn but wired only when a script
+was open; they are wired with the head now.
