@@ -1549,6 +1549,20 @@ reads the client's months once rather than twice. The Engagements rows had
 read a set's state from a column that does not exist (`state`), so every set
 read Draft; they read `published` now. No schema change.
 
+### 2026-10-10 · The user group panel, simpler
+The user approved a simpler panel: eleven sections at four levels and
+around fifty finer permissions read as one long form. Now the group starts
+from a role and says only what differs from it (Custom: 3 changes from
+Staff, each change listed); the sections read in the rail's two chunks, one
+row each; a section's finer permissions open under its own Customise and,
+shut, are named on one line only where they differ; the acts an admin alone
+took are one Admin tools list of switches in the Settings page's groups;
+the List, Board and Calendar view switches leave the panel, since they
+follow My Work (one stored is kept through a save, so a save never changes
+it unseen); and Compare groups reads every group side by side. Layout only:
+the stored map, `adds()`, `offered()`, `PART_LEVELS` and every database
+check are as they were, so nobody's access changed and nothing was migrated.
+
 ### 2026-10-10 · A brand analysis on each client, with the brand name for web research
 The user: "provide a suggestions or inputs on the deep analysis of this
 clients (either new or existing on their brand part, target audiences,
