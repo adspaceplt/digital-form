@@ -1821,12 +1821,15 @@ for another's (`portal-login` had made logins on such a match).
 
 The user asked for the theme to be set from the name menu, for that menu to
 be smaller, and called the three marks at the rail's foot "so weird". The
-menu now reads: who you are; My records and My namecard; Settings, Arrange
-sections and the Activity record (each only where it may be used); Theme,
+menu now reads: who you are; My records and My namecard; Settings and
+Arrange sections (each only where it may be used); Theme,
 Passkeys, Notifications and Refresh app; Sign out. Its rows are a control's
 height at a desk (38px, the floor uxaudit's `target` holds) and 48px docked
-on a phone; it is 272px wide. The rail's foot keeps the build alone, and the
-phone's More panel holds sections and the build.
+on a phone; it is 272px wide. The Activity record, read more often, stays
+at the rail's foot as one mark on the build's line (the user: "activity log
+can go inline with version code", "just activity record icons would do"):
+the mark left and the build right at a desk; under the tab bar the build
+left and the mark at the right edge, nearest the thumb.
 
 The theme leaves the bar for a segment in the menu: Auto, Light, Dark. This
 reverses the 2026-09-20 rule that put a one-press switch in the bar and kept

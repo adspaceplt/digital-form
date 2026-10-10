@@ -268,7 +268,7 @@
   });
   /* Settings, Arrange sections and the Activity record open from the menu,
      which shuts behind them. */
-  ['settingsOpen', 'railEdit', 'activityOpen'].forEach(function (id) {
+  ['settingsOpen', 'railEdit'].forEach(function (id) {
     if ($(id)) $(id).addEventListener('click', function () { shutAcct(); });
   });
   if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });

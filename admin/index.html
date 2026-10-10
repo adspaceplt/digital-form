@@ -247,10 +247,15 @@
          the box every row of the rail draws in, and not `.navitem`, which is
          a *section*: that class carries wiring, and borrowing it for the
          shape alone broke the console for everybody who is not an admin. -->
-    <!-- The rail's foot names the build alone (2026-10-10, the user: the three
-         marks there were rarely pressed and read oddly; Settings, Arrange
-         sections and the Activity record are in the account menu). -->
+    <!-- The rail's foot is one line (2026-10-10, the user: "activity log can
+         go inline with version code", "just activity record icons would
+         do"): the Activity record's mark and the build; under the tab bar the
+         mark takes the right edge, nearest the thumb. Settings and Arrange
+         sections are in the account menu. -->
     <div class="sidebar-foot">
+      <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
+      </button>
       <!-- The build this console is running, from /version.json. -->
       <p class="appver" id="appVersion" hidden></p>
     </div>
@@ -352,9 +357,6 @@
             </button>
             <button class="kmenu-item" id="railEdit" type="button" hidden>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg>Arrange sections
-            </button>
-            <button class="kmenu-item" id="activityOpen" type="button" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>Activity record
             </button>
           </div>
           <!-- This device: its theme, passkeys, notifications and a fresh copy. -->

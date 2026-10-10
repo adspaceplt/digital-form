@@ -11338,7 +11338,18 @@ button.vs-row { cursor: pointer; }
 .ro-row.is-drag .ro-grip { cursor: grabbing; }
 .ro-msg:empty { display: none; }
 
-/* The rail's foot holds the build alone (2026-10-10, the user: "the side
-   tab bar three icons are so weird"): Settings, Arrange sections and the
-   Activity record are in the account menu. */
-.sidebar-foot .appver { margin: 0; }
+/* The rail's foot is one line (2026-10-10, the user: "activity log can go
+   inline with version code", "just activity record icons would do"): the
+   Activity record's mark, named for a screen reader and on hover, and the
+   build. At a desk the mark is on the rail's left edge and the build at the
+   right; under the tab bar the build moves left and the mark to the right
+   edge, nearest the thumb. */
+.sidebar-foot { display: flex; align-items: center; gap: 8px; }
+.sidebar-foot .railrow {
+  flex: 0 0 auto; width: var(--ctl-h); min-width: var(--ctl-h); height: var(--ctl-h); min-height: var(--ctl-h);
+  margin: 0; padding: 0; justify-content: center; gap: 0;
+}
+.sidebar-foot .appver { flex: 0 1 auto; margin: 0 0 0 auto; padding: 0 10px 0 0; white-space: nowrap; }
+:root.has-tabbar .sidebar-foot .railrow { order: 1; width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+:root.has-tabbar .sidebar-foot .railrow svg { width: 20px; height: 20px; }
+:root.has-tabbar .sidebar-foot .appver { margin: 0 auto 0 0; padding: 0 0 0 10px; }
