@@ -116,7 +116,9 @@
                 ['leads', 'Leads'], ['past', 'Past clients']],
     /* Each send from a record follows WhatsApp or is shut (2026-10-10):
        they replaced the Clients, Reports and Creator Campaigns parts. */
-    whatsapp:  [['report', 'Send a published report'], ['feedback', 'Feedback request'], ['booking', 'Booking message']],
+    whatsapp:  [['report', 'Send a published report'], ['feedback', 'Feedback request'], ['booking', 'Booking message'],
+                /* A client reminded of what waits on their approval (2026-10-10). */
+                ['approval', 'Approval reminder']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
@@ -183,7 +185,7 @@
      three My Work views, and each WhatsApp send (2026-10-10), which asks
      the section at Manage as well as itself. */
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
-    'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1 };
+    'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
      checks (2026-09-24, the user found a select offering levels that did
@@ -199,7 +201,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
