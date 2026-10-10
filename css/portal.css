@@ -5492,6 +5492,9 @@ body > .shell { width: 100%; }
    defined is a control that is always drawn and therefore seen. */
 body.no-manage-clients [data-need="clients:manage"],
 body.no-work-clients [data-need="clients:work"],
+body.no-manage-whatsapp [data-need="whatsapp:manage"],
+body.no-work-whatsapp [data-need="whatsapp:work"],
+body.no-view-whatsapp [data-need="whatsapp:view"],
 body.no-manage-review [data-need="review:manage"],
 body.no-work-review [data-need="review:work"],
 body.no-manage-campaigns [data-need="campaigns:manage"],
@@ -5555,6 +5558,7 @@ body.no-work-register-types [data-need="register.types:work"],
    arrive (`activity_section()` and the read policy), so a tab a group cannot
    open would be a tab over an empty list. */
 body.no-view-activity-clients [data-need="activity.clients:view"],
+body.no-view-activity-whatsapp [data-need="activity.whatsapp:view"],
 body.no-view-activity-ops [data-need="activity.ops:view"],
 body.no-view-activity-team [data-need="activity.team:view"],
 body.no-view-activity-review [data-need="activity.review:view"],
@@ -9640,7 +9644,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .guide-on { outline: 2px solid var(--action-ring); outline-offset: 3px; }
 /* A row runs its table's width, and the table clips what falls outside it:
    a row's ring is drawn inside the row. */
-.guide-on:is(.crm-row, .svc-row, .hb-row, .camp-row, .cr-client-row, .ovw-row, .qrow) { outline-offset: -2px; }
+.guide-on:is(.crm-row, .svc-row, .hb-row, .wam-row, .camp-row, .cr-client-row, .ovw-row, .qrow) { outline-offset: -2px; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
@@ -11114,6 +11118,85 @@ button.vs-row { cursor: pointer; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* =========================================================================
+   WHATSAPP (2026-10-10, js/whatsapp.js): every message the portal sent, in
+   one card under the month's count of templates by category. A row is who
+   it went to over their client and number, what it was over its template,
+   who sent it, and its status over when; a failed one says why in the
+   error ink. On a narrow list: who over the meta (and why) on the left, the
+   status over when on the right. Templates (Full Access): a purpose over
+   its template, its switch, Edit.
+   ========================================================================= */
+.tally.wam-heads { margin: 0 0 12px; }
+.wam-head { background: var(--card); padding: 12px 16px; }
+.wam-head b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wam-row, .crm-head.wam-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px var(--state-w);
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.wam-row:last-child { border-bottom: 0; }
+.wam-to, .wam-tpl, .wam-state { display: grid; gap: 2px; min-width: 0; }
+.wam-to b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wam-tpl > span, .wam-by { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wam-to small, .wam-tpl small, .wam-state small {
+  font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wam-by { font-size: 13px; color: var(--ink-soft); }
+.wam-row small.wam-why, .wat-row small.wam-why { color: var(--err); white-space: normal; overflow-wrap: anywhere; }
+.wam-to .wam-why { display: none; }
+.is-narrow .crm-head.wam-row { display: none; }
+.is-narrow .wam-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "to state";
+  align-items: start; gap: 2px 12px; padding: 12px 15px;
+}
+.is-narrow .wam-row > .wam-to { grid-area: to; }
+.is-narrow .wam-row > .wam-state { grid-area: state; justify-items: end; text-align: right; }
+.is-narrow .wam-row > .wam-tpl, .is-narrow .wam-row > .wam-by { display: none; }
+.is-narrow .wam-to .wam-why { display: block; }
+
+.wat-row, .crm-head.wat-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr) 56px 92px;
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.wat-row:last-child { border-bottom: 0; }
+.wat-row.is-off > .wat-name { opacity: .62; }
+.wat-name { display: grid; gap: 2px; min-width: 0; }
+.wat-name b { font-weight: 600; }
+.wat-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.wat-on { display: flex; align-items: center; }
+/* Standing alone in its cell (not a menu row), the switch is its own
+   target: the control's full height, the track centred in it. */
+.wat-on .switch { height: var(--ctl-h); }
+.wat-act { display: flex; justify-content: flex-end; }
+.wat-act .btn { flex: 0 0 auto; }
+.is-narrow .crm-head.wat-row { display: none; }
+.is-narrow .wat-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name on" "name act";
+  align-items: start; gap: 8px 12px; padding: 12px 15px;
+}
+.is-narrow .wat-row > .wat-name { grid-area: name; }
+.is-narrow .wat-row > .wat-on { grid-area: on; justify-content: flex-end; }
+.is-narrow .wat-row > .wat-act { grid-area: act; }
+
+/* The composer's preview: the message as WhatsApp will draw it, on the
+   inset shade, each filled variable at the heavier weight and one still
+   empty left as its mark. */
+.wa-preview { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk); font-size: 14px; }
+.wa-preview p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wa-preview .wa-head { font-weight: 600; }
+.wa-preview .wa-doc { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); white-space: normal; }
+.wa-doc svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.wa-preview .wa-foot { font-size: 12.5px; color: var(--ink-mute); }
+.wa-fill { font-weight: 600; }
+.wa-gap { color: var(--ink-mute); }
+.wa-btns { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--line-soft); display: grid; gap: 6px; }
+.wa-btns li { display: grid; gap: 2px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
+.wa-btns small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
+#waCompose .fsec > .msg:empty { display: none; }
 /* Settings (js/settings.js, 2026-10-10): a card a group, a row a setting.
    The name over its value as it stands, the control at the right edge (a
    switch, Edit or Open), one row's height whatever the control. */
