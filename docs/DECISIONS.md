@@ -1691,3 +1691,20 @@ one reaches Write with AI, in compact form. Web searches cost US$10 a
 thousand, kept per press and priced as a Business setting beside the token
 prices. Defaults: 3 analyses a colleague a day, 10 an admin.
 
+
+### 2026-10-10 · Creator Campaigns by stage tab, and stage days by the calendar
+
+The user asked the Work sections to read alike. Creator Campaigns now opens
+on a tab a state (Draft, Open for selection, In production, Completed), as
+Reports opens on a tab a stage, with the campaigns under it in a card a
+month made. Each row's State column became Updated: inside a tab every row
+held the same state, which repeated the tab. A search still crosses every
+stage; the tab counts say where the matches are.
+
+A client's Timeline read Today at noon on 10 Oct for a stage begun at 3:59pm
+on 9 Oct (the user, with a screenshot). The record counted whole 24 hours
+from the moment of the move, while the dates beside it are calendar days.
+Days now count Malaysian calendar days (`myDay`, `daysBetween` in
+`js/crm.js`), so a stage begun late yesterday reads 1 day at any hour, and a
+stage left the day it began is filed "after the same day" rather than
+"after Today". Entries filed before keep their words.
