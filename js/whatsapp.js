@@ -438,7 +438,9 @@
         (held ? '' : '<small class="wam-why">Not among Meta\'s approved templates.</small>') + '</span>' +
       '<span class="wat-on"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(w[0]) + '" data-a="on"></button></span>' +
-      '<span class="wat-act"><button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button></span>';
+      /* On a phone the pen alone, beside the switch on the name's line
+         (2026-10-10: the word put Edit on a line of its own). */
+      '<span class="wat-act"><button class="btn btn-sm" type="button" data-a="edit" aria-label="Edit ' + esc(w[0]) + '">' + PEN + '<span class="wat-word">Edit</span></button></span>';
     row.querySelector('[data-a="edit"]').addEventListener('click', function () { choose(t, false); });
     row.querySelector('[data-a="on"]').addEventListener('click', function () { flip(t, row, this); });
     return row;
