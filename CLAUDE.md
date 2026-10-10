@@ -3913,7 +3913,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
-  takes one; a link button's variable the creator's and the approval reminder's alone), each row's
+  takes one; a link button's variable refused only for the team reminders, which the portal sends by itself (`NO_BUTTON`)), each row's
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record

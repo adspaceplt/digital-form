@@ -40,6 +40,11 @@
     approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.']
   };
   /* What each message in the list was. */
+  /* A link button's variable is filled where the purpose can fill it: a
+     creator's code, the approval link, or typed in the composer. Only a
+     purpose the portal sends by itself with nothing to put there refuses
+     one (the user, 2026-10-10: not a list of the purposes allowed). */
+  var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
@@ -485,7 +490,7 @@
           if (t.purpose !== 'report' && x.header === 'DOCUMENT') return 'A template with a Document header sends a report alone.';
           if (x.header_var) return 'The portal cannot fill this template\'s header.';
           if (x.body_vars.length > 5) return SAID['bad-params'];
-          if (t.purpose !== 'creator' && t.purpose !== 'approval' && x.button_var) return 'Only the creator and approval reminder templates take a link button with a variable.';
+          if (x.button_var && NO_BUTTON[t.purpose]) return NO_BUTTON[t.purpose];
           return '';
         }
       }, function (v) {
