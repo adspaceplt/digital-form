@@ -115,8 +115,6 @@
       shootOn: 'Shoot',
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
-      measuredOn: 'Measured',
-      platformCol: 'Platform',
       platformsLabel: 'Posting on',
       /* The columns a fee is compared across. Named only where there is room
          to compare: below the phone line the header leaves with them. */
@@ -222,8 +220,6 @@
       shootOn: '拍摄',
       deliveryOn: '寄送',
       postedOn: '发布于',
-      measuredOn: '统计日期',
-      platformCol: '平台',
       platformsLabel: '发布平台',
       colCreator: '博主', colProfiles: '主页', colFee: '费用',
       stageLabel: '当前进度',
@@ -697,6 +693,10 @@
      creator's own page draws them (ADspaceIcons.journey), placed by the one
      map the console shares (ADspaceIcons.stepOf). */
   function stepsOf(o) {
+    /* A completed booking has every step behind it: the track says nothing
+       its Completed chip does not (the user, 2026-10-10: "once completed
+       the progress bar got not much usage"). */
+    if (o.state === 'completed') return '';
     var at = window.ADspaceIcons ? window.ADspaceIcons.stepOf(o.state) : null;
     if (at == null) return '';
     var words = t().journey.slice();
@@ -726,20 +726,21 @@
     var facts = [];
     if (o.state !== 'withdrawn') {
       // Once it is out, when it went out is the date that matters. Before
-      // that, the shoot is the date everyone is planning around. Where the
-      // platforms went out on different days and the figures are in, the
-      // results table dates each post, so the card does not say one again.
+      // that, the shoot is the date everyone is planning around. A post
+      // with its link says its own day on its row, so the card does not
+      // say it again.
       var wentOut = live && (o.posts || []).map(function (p) { return p.published_at; })
         .filter(Boolean).sort()[0];
-      if (wentOut && figuresIn(posts) && byDay(posts)) {
-        /* said by the table */
+      if (wentOut && posts.some(function (p) { return p.published_at; })) {
+        /* said by the post's row */
       } else if (wentOut) {
         facts.push([t().postedOn, fmtDate(wentOut)]);
       } else if (!live) {
         facts.push([seeding ? t().deliveryOn : t().shootOn,
           o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '') : t().tbc]);
       }
-      var plats = platsOf(o);
+      /* Once its post is out, each post's row names its platform. */
+      var plats = posts.length ? [] : platsOf(o);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (o.planned_publish && !live) facts.push([t().goLive, fmtDate(o.planned_publish)]);
       // The one thing a chip cannot say: what happens after this. The card
@@ -764,8 +765,7 @@
       (o.state === 'withdrawn' ? '' : stepsOf(o)) +
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
-      postLinks(posts) +
-      (opts.sole ? '' : resultsOf(posts) || '') +
+      postRows(o, posts, opts.sole) +
       /* Once the post is out, who approved it is history the console keeps;
          the card leads with the post (the user, 2026-09-27: "Is it necessary
          to keep the approved there"). */
@@ -776,65 +776,55 @@
     return row;
   }
 
-  /* The post itself, one button a platform, named for where it opens: the
-     thing a client comes back to the card for once it is live. */
-  function postLinks(posts) {
-    if (!posts.length) return '';
-    return '<div class="postlinks">' + posts.map(function (p) {
-      return '<a class="btn btn-sm postlink" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
-        esc(t().viewPostOn(platWord(p.platform), platKey(p.platform))) + EXT_ICON + '</a>';
-    }).join('') + '</div>';
-  }
-
-  /* One row per platform once there are figures: when the numbers were taken,
-     and the numbers. The measured date is what makes a figure read a year
-     later still make sense. Before the figures there is no table: the post
-     is the button above it and the date is the card's own Posted, and a table
-     of the two said both again. The date a post went out is a column only
-     where the platforms went out on different days. */
+  /* Each post as the campaign's Top post reads (the user, 2026-10-10: "I
+     like this view … for all creators … way better for clients to view the
+     results"): the booking's picture, the platform and the day it went
+     out, its figures as glyphs (views, else impressions, then engagements),
+     when they were measured, and the button to the post, named for where it
+     opens. The measured day is what makes a figure read a year later still
+     make sense. A lone live post's figures are the campaign's, said once in
+     the results card above, so its row keeps only the post (`bare`). */
   function figuresIn(posts) {
     return posts.some(function (p) {
       return p.impressions != null || p.engagements != null || p.views != null;
     });
   }
-  function byDay(posts) {
-    var days = {};
-    posts.forEach(function (p) { days[p.published_at || ''] = true; });
-    return Object.keys(days).length > 1;
+  function measuredOf(p) {
+    if (p.measured_at) return fmtDate(String(p.measured_at).slice(0, 10));
+    if (p.published_at && p.window_days) {
+      var d = new Date(p.published_at + 'T00:00:00');
+      d.setDate(d.getDate() + Number(p.window_days));
+      return fmtDate(d.toISOString().slice(0, 10));
+    }
+    return '';
   }
-  function resultsOf(posts) {
-    if (!posts.length || !figuresIn(posts)) return '';
-    var dated = byDay(posts);
-    var num = function (v) { return v == null ? '<span class="muted">–</span>' : Number(v).toLocaleString(); };
-    var measured = function (p) {
-      if (p.measured_at) return fmtDate(p.measured_at);
-      if (p.published_at && p.window_days) {
-        var d = new Date(p.published_at + 'T00:00:00');
-        d.setDate(d.getDate() + Number(p.window_days));
-        return fmtDate(d.toISOString().slice(0, 10));
-      }
-      return '';
+  function postRows(o, posts, bare) {
+    if (!posts.length) return '';
+    var I = window.ADspaceIcons;
+    var ic = function (n) { return I ? I.svg(n) : ''; };
+    var cover = coverOf(o);
+    var fig = function (glyph, n, word) {
+      var v = Number(n).toLocaleString();
+      return '<span aria-label="' + esc(v + ' ' + word) + '">' + ic(glyph) + '<span aria-hidden="true">' + esc(v) + '</span></span>';
     };
-    return '<div class="results-wrap"><table class="results">' +
-      '<thead><tr>' +
-        '<th>' + esc(t().platformCol) + '</th>' +
-        (dated ? '<th>' + esc(t().postedOn) + '</th>' : '') +
-        '<th>' + esc(t().measuredOn) + '</th>' +
-        '<th class="num">' + esc(t().impressions) + '</th>' +
-        '<th class="num">' + esc(t().engagements) + '</th>' +
-        '<th class="num">' + esc(t().views) + '</th>' +
-      '</tr></thead><tbody>' +
-      posts.map(function (p) {
-        return '<tr>' +
-          '<td data-l="' + esc(t().platformCol) + '"><b class="results-plat">' + esc(platWord(p.platform)) + '</b></td>' +
-          (dated ? '<td data-l="' + esc(t().postedOn) + '">' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' : '') +
-          '<td data-l="' + esc(t().measuredOn) + '">' + esc(measured(p)) + '</td>' +
-          '<td class="num" data-l="' + esc(t().impressions) + '">' + num(p.impressions) + '</td>' +
-          '<td class="num" data-l="' + esc(t().engagements) + '">' + num(p.engagements) + '</td>' +
-          '<td class="num" data-l="' + esc(t().views) + '">' + num(p.views) + '</td>' +
-        '</tr>';
-      }).join('') +
-      '</tbody></table></div>';
+    return '<div class="cx-posts">' + posts.map(function (p) {
+      var figs = !bare && figuresIn([p]);
+      var mini = !figs ? '' : '<span class="cx-mini">' +
+        (p.views != null ? fig('eye', p.views, t().viewsWord) : p.impressions != null ? fig('layers', p.impressions, t().impressions.toLowerCase()) : '') +
+        (p.engagements != null ? fig('heart', p.engagements, t().engagements.toLowerCase()) : '') + '</span>';
+      var when = figs ? measuredOf(p) : '';
+      return '<div class="cx-post-item">' +
+        '<div class="cx-post-row' + (cover ? '' : ' is-bare') + '">' + cover +
+          '<div class="cx-post-who">' +
+            '<span class="cx-plat">' + (I ? I.platform(platKey(p.platform)) : '') + esc(platWord(p.platform)) +
+              (p.published_at ? ' · ' + esc(fmtDate(p.published_at)) : '') + '</span>' +
+            mini +
+            (when ? '<span class="cx-measured">' + esc(t().measuredWord(when)) + '</span>' : '') +
+          '</div></div>' +
+        '<a class="btn btn-sm postlink cx-postbtn" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
+          esc(t().viewPostOn(platWord(p.platform), platKey(p.platform))) + EXT_ICON + '</a>' +
+      '</div>';
+    }).join('') + '</div>';
   }
 
   function absUrl(u) {

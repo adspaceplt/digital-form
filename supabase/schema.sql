@@ -6120,7 +6120,7 @@ language sql immutable parallel safe as $$
                     'post.deleted', 'post.edited', 'reapproval.requested',
                     'review.approved', 'review.changes', 'review.removed',
                     'review.unconfirmed',
-                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.created', 'set.deleted', 'set.month', 'set.published', 'set.renamed',
                     'set.task_linked', 'set.task_unlinked',
                     'set.withdrawn') then 'review'
     when action in ('script.approved', 'script.changes', 'script.created', 'script.deleted',
@@ -41735,6 +41735,225 @@ end $$;
 revoke all on function public.app_settings_set(date, jsonb) from public, anon;
 
 -- END OF BRAND ANALYSIS -------------------------------------------------------
+
+-- ===========================================================================
+-- REACH ALLOWANCE — the Report audit reads an ad's or an account's Reach as
+-- matching Meta's within a small allowance, because Meta itself revises
+-- Reach (an estimate of the people reached) while a period runs; every other
+-- figure stays exact.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after BRAND ANALYSIS, whose settings it keeps.
+--
+-- WHAT CHANGED (the user, 2026-10-10, from a report imported from Meta and
+-- audited 27 seconds later, two ads' Reach moved by 12 and 9 people while
+-- spend, impressions and results held: "Small allowance")
+--   1. `reach_allowance_pct` is a Business setting (0 to 5, two decimals,
+--      from a day), seeded 0.5 from the start. `app_settings_set` takes it,
+--      filed "Reach allowance: 0.5% → 1% · from …".
+--   2. The page compares (js/reports.js `metaCompare`): a Reach within the
+--      allowance of Meta's is a match and holds nothing; the card says how
+--      many were within it. Nothing else in the database changes: a match is
+--      filed as before.
+--
+-- ROLLBACK
+--   Run app_settings_set from BRAND ANALYSIS again; the
+--   setting's row may stay (the page then compares Reach exactly where it
+--   reads none).
+-- ===========================================================================
+
+insert into public.app_settings (key, from_date, value)
+select 'reach_allowance_pct', date '2023-08-14', 0.5
+ where not exists (select 1 from public.app_settings s where s.key = 'reach_allowance_pct');
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct'];
+  v_moved text[] := '{}';
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, 2) <> v_v
+       or (v_k = 'lead_followup_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'proposal_followup_days' and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      insert into public.app_settings (key, from_date, value, set_by, set_at)
+      values (v_k, p_from, v_v, v_me.id, now())
+      on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        else 'Report due' end;
+      v_unit := case when v_k = 'lead_followup_hours' then ' hours' when v_k in ('proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days') then ' days'
+        else '%' end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else case when v_k like 'ai_price_%' then 'US$' else '' end ||
+              trim(to_char(v_was, 'FM999999990.99'), '.') || case when v_k like 'ai_price_%' then '' else v_unit end || ' → ' ||
+              case when v_k like 'ai_price_%' then 'US$' else '' end ||
+              trim(to_char(v_v, 'FM999999990.99'), '.') || case when v_k like 'ai_price_%' then '' else v_unit end ||
+              ' · from ' || public.register_day(p_from) end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+
+-- END OF REACH ALLOWANCE ------------------------------------------------------
+
+-- ===========================================================================
+-- SETS BY MONTH — a content set names its content month (2026-10-10, the
+-- user: a client's sets grow without end; they are listed by month, as
+-- Video Scripts and Reports are).
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   `batches.period` (YYYY-MM, the content month; empty is Ad hoc). It is
+--   added once and, that first time only, each set takes the month it was
+--   made in (Malaysia time), so a second run never undoes a set the team
+--   has since made Ad hoc. A new set takes this month on the page; the set's
+--   menu changes it (`set.month`, from and to).
+--
+-- ROLLBACK
+--   Remove the constraint batches_period_shape and the column period.
+-- ===========================================================================
+
+do $$
+begin
+  if not exists (select 1 from information_schema.columns
+                 where table_schema = 'public' and table_name = 'batches' and column_name = 'period') then
+    alter table public.batches add column period text;
+    update public.batches set period = to_char(created_at at time zone 'Asia/Kuala_Lumpur', 'YYYY-MM');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'batches_period_shape') then
+    alter table public.batches add constraint batches_period_shape
+      check (period is null or period ~ '^[0-9]{4}-(0[1-9]|1[0-2])$');
+  end if;
+end $$;
+
+-- END OF SETS BY MONTH ---------------------------------------------------------
+
+-- ===========================================================================
+-- SETS BY MONTH ACTIVITY MAP — a content set's month changed files under
+-- Content Review.
+-- 2026-10-10. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two. Runs after WHATSAPP ACTIVITY MAP and restates it whole, with
+-- `set.month` added beside the set's other tags, so running this file alone
+-- also files WhatsApp's tags. The map names tags such as `set.deleted`, which
+-- the Supabase connector holds for a confirmation it cannot show: hand it to
+-- the SQL Editor as its own run.
+--
+-- ROLLBACK
+--   Restate the map from 2026-10-10-whatsapp-activity-map.sql.
+-- ===========================================================================
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.whatsapp', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.service_restored', 'client.stage', 'client.touch',
+                    'client.touch_deleted', 'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('wa.sent', 'wa.template') then 'whatsapp'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.audited', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.month', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('script.approved', 'script.changes', 'script.created', 'script.deleted',
+                    'script.link', 'script.saved', 'script.shared', 'script.shot',
+                    'script.unshared') then 'scripts'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF SETS BY MONTH ACTIVITY MAP --------------------------------------------
 
 -- ===========================================================================
 -- FUNCTION HYGIENE, APPLIED — the file's last statement. Every function above

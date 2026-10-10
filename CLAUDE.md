@@ -141,6 +141,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
+| `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
+| a Delete anywhere, `confirm.js` | deletes, then the area's suite |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
@@ -323,9 +325,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   keeps pinch).
   - Never on Android.
   - Never `user-scalable=no`.
-- Under a coarse pointer `.console-head` and `.topbar` take `--chrome-solid`
-  with no backdrop filter, because Safari colours the status bar from an opaque
-  bar. The `theme-color` meta follows the console's own theme (the head script
+- Under a coarse pointer `.console-head` takes `--chrome-solid` with no
+  backdrop filter, because Safari colours the status bar from an opaque bar.
+  A client page's `.topbar` keeps its glass there (2026-10-10), the root
+  painted `--card` so the status bar takes white, never the grey page. The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
@@ -351,7 +354,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. A card a group
   (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks;
+  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks,
+  Reach allowance;
   WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
   drawn only for its part, its value under its name, a switch, Edit or Open
   at the right edge opening the one sheet that already edits it. The
@@ -438,7 +442,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   sheet: Tone, English, 中文, Link, Starts and Ends as a date beside its
   time, MYT; posting one adds it, never ending another),
   `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
-  restore; refused `live` until stopped or ended); each filed `team.changed`
+  restore; refused `live` until stopped or ended; a row's own act is Edit,
+  else Restore, its ⋯ Stop, or Delete last once stopped or ended); each filed `team.changed`
   under subject Announcements. A plain line, never a scrolling marquee. No
   bar is made while upgrade mode's cover is up (a box made after the cover
   would sit outside its `inert`).
@@ -531,7 +536,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     while an input method is composing (pinyin's Enter picks the word).
   - `check(values)` refuses in place what the fields cannot state alone (an
     end before its start): the sheet and what was typed stay.
-  - A destructive question opens on Cancel.
+  - A destructive question opens on Cancel; one that asks a name typed back
+    opens on that field, where an empty Enter is refused.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
     above any sheet.
   - The way back (reinstate, set active, restore) never asks.
@@ -590,6 +596,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.
+- `js/acts.js` (`ADspaceActs`) is the one table of act glyphs and the one
+  pending state (the user, 2026-10-10): every console `.btn` whose words are
+  an act carries its mark (Publish the plane, Unpublish the struck eye,
+  Edit the pen, Download the file, Copy the copy mark, Preview and Preview
+  PDF the leaving mark after the words, Add and New the plus), given as the
+  button is drawn where a screen wrote words alone; a form's own commit
+  stays words. A press whose write disables its button shows, after 150ms,
+  a turning ring in the button's ink at the button's width until it is let
+  go. A new act joins the table, never a screen (`tests/acts.js`).
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
@@ -982,8 +997,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every console directory is a card per group via `js/group.js`:
   - Clients by stage;
   - a client's Engagements by content month;
-  - Content Review as one card;
-  - Campaigns by state (Completed shut);
+  - Content Review as one card; a client's sets by content month;
+  - Creator Campaigns as a tab a state (`#campStages`: Draft, Open for
+    selection, In production, Completed, each counted, opening on the first
+    that holds any), a card a month made (MYT) under it, newest open; a row
+    reads Updated where the state would repeat its tab;
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;
@@ -1308,7 +1326,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `null` uses the older factor table; only an explicit `false` turns it off.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
-- Calls and visits carry next actions and an Undo; a removed entry is listed
+- Calls and visits carry next actions and an Undo (Done or Reopen on the
+  row; Edit and Remove, or Restore and Delete, in the row's ⋯); a removed entry is listed
   on asking with Restore and Delete (Clients: Calls at Manage, asked first,
   `client.touch_deleted`). A Meeting entry
   (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
@@ -1340,7 +1359,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     opens the client's Months view), each Content Review set (`review.sets`
     View; Published or Draft), the month's Video Scripts as one row
     (`scripts` View; `n scripts · n published`, Published once all are;
-    opens the month's first script), each creator campaign (`campaigns.campaigns`
+    opens the month's scripts), each creator campaign (`campaigns.campaigns`
     View; `W.campState`), each report (Reports View: Draft, In review,
     Confirmed, Published with Sent {day} or Not sent, On request and White
     label as chips; opens the report). A colleague at Clients View without
@@ -1678,8 +1697,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
-    Review); the sets are rows (name, the state at the right, the post
-    count) beside the review link. A post is a row: the placement with the
+    Review), the review link under it as every record's client link
+    (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10); the
+    sets are a card a content month (`batches.period`, YYYY-MM, empty for
+    Ad hoc; `2026-10-10-sets-by-month.sql`), newest first and open, Ad hoc
+    last, a row a set (name, the state at the right, the post count read for
+    every set in one request) the page's width. A new set takes this month
+    (MYT); the set's ⋯ Content month changes it (last month to six ahead, or
+    Ad hoc; filed `set.month` from and to), and the set's head names it
+    before whether the client sees it. Engagements files a set by its month,
+    an Ad hoc one by the day it was made. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
   - A set is a page of its own (`set=`): its head is the record head (the
@@ -1842,6 +1869,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   offers Undo in place.
 - A campaign name that would render as nothing reads `Untitled campaign` and
   stays editable. A new one is refused on save.
+- The campaign's form is one sheet for New campaign and Edit (`#addCampBox`);
+  the record's ⋯ holds Edit and Delete, last.
 - The campaign record:
   - Its panes (`pane=`) are Overview, Creators, Schedule, Deliverables, Client
     selection, Finance, Activity.
@@ -1961,16 +1990,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     the decision) and leaves the list below while it waits; each booking is
     numbered, never a photo (the user, 2026-10-07), the numbers carrying on
     through Available creators, with its six steps by name (a Submitted draft
-    is the client's Draft step); the results lead with one figure (views,
-    else impressions), then impressions, engagements, engagement rate and per
-    engagement, the top post where more than one is live, and a booking's
-    own results table is not drawn while it is the campaign's one live post.
-  - A live booking reads View post on {platform} (`.postlink`, one button a
-    platform; 查看小红书笔记 in Chinese), each the card's full width on a
-    phone, one or several. The results table appears only with
-    figures, and dates each post only where they went out on different
-    days (then the card's own Posted leaves). The approval line leaves once
-    the post is out.
+    is the client's Draft step; none once Completed, 2026-10-10); the results
+    lead with one figure (views, else impressions), then impressions,
+    engagements, engagement rate and per engagement, and the top post where
+    more than one is live.
+  - Each live post on a booking reads as the Top post does (`postRows`,
+    `.cx-post-item`; the user, 2026-10-10): the booking's picture, the
+    platform and its day, views (else impressions) and engagements as glyphs
+    named for a screen reader, Measured {day}, and View post on {platform}
+    (`.postlink`; 查看小红书笔记 in Chinese) at the row's right edge at a
+    desk, the card's full width on a phone. Never a results table. The
+    campaign's one live post keeps its figures in the results card alone.
+    The card's Posted and Posting on facts leave once a post row says them;
+    the approval line leaves once the post is out.
   - A draft is decided on the card (`draftPreview`).
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.
@@ -3046,8 +3078,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     (Leads · Meta, Traffic · TikTok), Step 1 asks TikTok's figures apart,
     the summary is a By platform table (impressions and spend totalled,
     reach not), the tax note reads On Meta, and Open in Ads Manager is
-    Meta's alone. TikTok's export columns are provisional until the team's
-    first TikTok export is read.
+    Meta's alone. TikTok's campaign report (the team's first export,
+    2026-10-10) is read as it comes: a row named by its campaign where no
+    ad is named, Spend the amount spent, Results its result (Conversions
+    only where no Results column), a CTR given as a fraction read as a
+    percentage where clicks over impressions say so, and its Total of N
+    results row the account's figures for Step 1, never an ad. It holds no
+    reach, age or video figures: an ad level export with them is asked for.
   - `first_month` carries the reading guidance; a later month compares against
     the previous period, which is carried forward. A new report is never a
     first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
@@ -3166,13 +3203,20 @@ Each line is a rule that broke once. Its reason is in the archive.
       a post matched by `linkKey`: Instagram by its shortcode, else host and
       path without www., trailing slash or tracking query), so a difference
       is exactly what an import would change. Exact, at the precision held,
-      no tolerance: each figure Meta gives an ad (by Ad IDs, else name,
+      but Reach (Meta's estimate, revised while a period runs), which
+      matches within `reach_allowance_pct` (Business settings, 0.5 from
+      the start, 0 to 5; `2026-10-10-reach-allowance.sql`; the card then
+      says Reach within n% of Meta on n figures): each figure Meta gives an
+      ad (by Ad IDs, else name,
       audience, objective, result type), its age split, Step 1's impressions
       and amount spent (reach only where one ad account answers), an ad Meta
       ran with spend and results that the report lacks (Add; one with no
       spend or no results is never asked for), one with figures Meta shows no
       delivery for (Remove, its own press alone), each post figure and a
-      post on either side. A row reads where, the figure, Report and Meta;
+      post on either side. The differences are one table (`.rp-metatable`:
+      Where, Figure, Report, Meta in ink at 600, Difference, the act at the
+      row's end; in a narrow pane the three figures side by side under their
+      labels; words and splits wrap, figures keep their line);
       Use Meta's figure, Add, Remove, and Update all from Meta (the figures
       and missing rows, never a Remove) write through the rows' own writes
       with one Undo, file `report.saved` (Report audit · n figures taken
@@ -3382,7 +3426,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   copy of a creative that never ran is read after the copies that did and
   never writes over the ad they fed (its result type and zeros); posts go
   to the report's account on their platform; filed `Imported from Meta` /
-  `From Meta`. A refusal is one line under the step's head (`META_SAID`:
+  `From Meta`. Then each ad or post with no picture of its own takes
+  Meta's (an ad's creative, a post's image or a reel's cover frame), read
+  through `meta-import` `pictures` (Meta's own image hosts alone, six a
+  call, 4 MB each; Meta's addresses expire within days), drawn down to the
+  320px JPEG and kept on the row (`.is('thumb_data', null)`: a picture the
+  team chose is never replaced), filed `From Meta: n pictures added`; a
+  picture Meta refuses leaves the row without, never the import. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),
   never Meta's words. Every figure is Meta's; none is AI's.
 - The PDF:
@@ -3530,23 +3580,31 @@ Each line is a rule that broke once. Its reason is in the archive.
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.
-- The list is a card a client, a row a script (code and title over the month
-  and type, the shoot, the state: Draft or Published), newest month first. A
+- The list is a card a content month, newest first, the newest open (the
+  user, 2026-10-10: thirty to fifty videos a client a year), a row a
+  client's month (the client over its codes and count, the next shoot else
+  the last, Published or n of N), opening its record on its first script
+  (on the script a search found). A
   script opens in its content month's record (the user, 2026-10-09: one link
   for the client, the videos as tabs on top): the head names the client and
   the month (`n scripts · n published`; the month opens the client's Months
   in My Work where it is there), Preview PDF and one ⋯ of Download and Reset
   client link, then the client's link once (`.rec-linktools`: the address,
   Copy link, Preview), the key read once a client and made at Work the first
-  time; under it a tab a script (`#vsTabs`, the view strip, VS01 in number
-  order, the arrows moving along it, `script=` in the address) with Add
-  script at the line's end; then the script on show, its card headed by its
+  time; under it the month (`month=` in the address; the user, 2026-10-10:
+  thirty to fifty scripts a client a year) is a card of its scripts
+  (`#vsMonthList`: Scripts with Add script in its head, a row a script, VS01
+  and its title over its type, the shoot, the state, in number order), a
+  row opening its script on a page of its own (`script=`): Previous, `n of
+  N` and Next over it (`#vsNav`, a sideways swipe on a phone), Back
+  returning to the month and the month's Back to the list; the script's
+  card headed by its
   code and title over its type with the state, Edit (the pen), Publish in
   blue or Unpublish (asks) and a ⋯ of Delete at the right edge
   (`.vs-cardhead`), its facts under it (`.vs-factcard`, the reference video
   with them), and the script in the next card (the user, 2026-10-09: key
-  information apart from the scenes). A script deleted opens the month's
-  next one, the last one gone the list.
+  information apart from the scenes). A script deleted opens its month,
+  the last one gone the list.
 - On the day, in the console and the installed app alone (the user,
   2026-10-09: "make it simple to enter"): each scene's VC# (the clip number
   on the camera) is one field; Enter records it, ticks the scene shot and

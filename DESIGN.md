@@ -46,7 +46,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
-| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
+| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
 | `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--raised` / `--line-lift` | `#ffffff` / ink at 16% | `#272727` / white at 14% | What floats over the page (a ⋯ menu, a popover card, the finder): its own ground and a crisper edge than a card's rule, under `--shadow-lift`, so it never melts into the card beneath (the user, 2026-10-07) |
@@ -230,7 +230,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
 | Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab the `--line-soft` fill behind its glyph and its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. More opens the rail as a card above the bar (`--raised`, `--line-lift` top edge, the large corner), holding only the sections the bar does not; a sheet covers the bar |
 | What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen`, a `.railfoot` row above the Activity record: one `ADspaceGroup.section` card a group, a `.set-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch`, Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
-| Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet: one line naming the person's responsibility and a `.tickline` that refuses until ticked. Never asked of words typed by hand |
+| Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet, as its own shaded block after the question's fields (`.askentry.is-declare`: the AI mark and the line naming the person's responsibility, then a `.tickline` that refuses until ticked), never run on into the question's words. Never asked of words typed by hand |
 | Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My records, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), Sign out; what changes the portal for everybody is the Settings page, never the menu. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
@@ -411,12 +411,26 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`.cmdbar-find .input:focus`).
 - A value only read is not a field.
 - A destructive item is red on the item itself.
+- Delete has one place and one question (the user, 2026-10-10): the last
+  item of the thing's own ⋯, red, never inside an Edit form and never a
+  button on a row; it asks `ADspaceConfirm` (what goes, no restore), a
+  record or anything holding other work with its name typed back, one item
+  inside a record once, kept open on a refusal (`wait`). Remove is the soft
+  way, asking nothing, with Undo where it happened. Several at once is the
+  selection bar's red Delete with the count typed back (`tests/deletes.js`).
 - A button that acts carries its action's glyph wherever it is drawn: a plus
   to add, a pen to edit, the copy mark, the file mark to download, the leaving
   mark after anything that opens in a new tab (Preview, Open), the chevron
   after a way to another console page. A form's own commit (Save, Cancel, a
-  submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
-  label drawn both ways. The glyph is drawn in the button's own ink: a
+  submit, a sheet's foot, a confirm) is words. The act table is
+  `js/acts.js` (Publish the plane, Unpublish the struck eye, Edit the pen,
+  Download the file, Copy, Preview after the words, Add and New the plus):
+  a button drawn as words alone takes its act's mark, so a new screen
+  follows it untold. `uxaudit` `glyph` fails a label drawn both ways.
+- A press is answered on the button (Doherty): while its write is out the
+  button keeps its width and shows a turning ring in its own ink, after
+  150ms so a quick answer never flickers (`js/acts.js`), then the outcome
+  where it happened. The glyph is drawn in the button's own ink: a
   head's rule for its own mark never reaches a button inside it (`uxaudit`
   `glyphink`).
 - A border inside a border groups nothing, so the inner one is shaded.

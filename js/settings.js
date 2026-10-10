@@ -26,7 +26,7 @@
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
   function allowed() { return KEYS.some(may); }
   function say(text, tone) {
-    var m = $('setMsg');
+    var m = $('settingsMsg');
     if (!m) return;
     m.textContent = text || '';
     m.className = 'msg' + (tone ? ' ' + tone : '');
@@ -74,7 +74,9 @@
           meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
             (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') },
         { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
-          meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' }
+          meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' },
+        { id: 'reach', name: 'Reach allowance', kind: 'edit',
+          meta: num('reach_allowance_pct') == null ? '' : 'The Report audit accepts Reach within ' + num('reach_allowance_pct') + '% of Meta' }
       ] });
     }
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
@@ -149,7 +151,7 @@
   function press(a, btn) {
     say('');
     var edit = bridge.editSettings;
-    var again = { msg: 'setMsg', done: paint };
+    var again = { msg: 'settingsMsg', done: paint };
     function ed(spec) { Object.keys(again).forEach(function (k) { spec[k] = again[k]; }); edit(spec, btn); }
     if (a === 'upgrade') { if (bridge.upgradeToggle) bridge.upgradeToggle(btn); return; }
     if (a === 'announce') { if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage(btn); return; }
@@ -172,10 +174,11 @@
     if (a === 'prices') { ed({ title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],
       ['ai_price_search', 'Web searches, a thousand', 'usd']] }); return; }
     if (a === 'meta') { flipMeta(btn); return; }
+    if (a === 'reach') { ed({ title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow']] }); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
-    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('setMsg'); return; }
+    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('settingsMsg'); return; }
   }
 
   function enter() {

@@ -742,7 +742,8 @@
         title: 'Delete',
         body: 'The ' + r.name + ' group and the access it carries go. There is no restore.',
         go: 'Delete',
-        tone: 'danger'
+        tone: 'danger',
+        field: { label: 'Type the group name to confirm', placeholder: r.name, match: r.name, need: 'Type the group name to confirm.', mismatch: 'The group name does not match.' }
       }, function () {
         /* PostgREST answers a delete a policy refused with no error and no
            row gone, so ask for the row back: an empty answer is a refusal,

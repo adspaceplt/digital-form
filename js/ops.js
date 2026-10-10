@@ -3036,7 +3036,7 @@
     var me = myId();
     $('dwComments').innerHTML = comments.length ? '<ul class="qcomments">' + comments.map(function (c) {
       var mine = work && (c.actor_id === me || may('ops', 'manage'));
-      var menu = mine ? itemMenu('remark', [['edit', 'Edit'], ['remove', 'Delete', true]]) : '';
+      var menu = mine ? itemMenu('remark', [['edit', 'Edit'], ['remove', 'Remove', true]]) : '';
       return '<li class="qitem" data-comment="' + esc(c.id) + '"><div><p>' + esc(c.body) + '</p>' +
         '<small>' + esc(whoName(c.e)) + ' · ' + esc(niceTime(c.at)) + (c.edited ? ' · edited' : '') + '</small></div>' + menu + '</li>';
     }).join('') + '</ul>' : (work ? '<p class="qempty">No remarks.</p>' : '');
@@ -3296,7 +3296,7 @@
     if (!c) return;
     call('ops_remove_comment', { p_event: c.id, p_on: true }, msgHere(), function () {
       readTask(t.id, function () {
-        undoBar('Remark deleted.', function () {
+        undoBar('Remark removed.', function () {
           call('ops_remove_comment', { p_event: c.id, p_on: false }, msgHere(), function () { readTask(t.id); });
         }, host);
       });
@@ -4959,7 +4959,7 @@
     publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
-    comment_edited: 'Remark edited', comment_removed: 'Remark deleted', comment_restored: 'Remark restored'
+    comment_edited: 'Remark edited', comment_removed: 'Remark removed', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
      it; the record printed the key. Named once, with sentence case as the
@@ -5663,14 +5663,28 @@
         (state.detail.links.length === 1 ? ' link' : ' links') : '',
       state.detail.checklist.length ? state.detail.checklist.length + ' checklist items' : ''
     ].filter(Boolean);
-    $('tdelWhat').textContent = serialOf(t) + ' · ' + (t.title || 'Untitled task') +
-      ' goes, with its ' + goes.join(', ') + '. There is no restore.';
-    $('tdelConfirm').value = '';
-    $('tdelReason').value = '';
-    $('tdelConfirm').setAttribute('placeholder', serialOf(t));
-    msg('tdelMsg', '');
-    sheet('tdelSheet', true);
-    $('tdelConfirm').focus();
+    /* The one question every Delete asks (2026-10-10): what goes, the
+       number typed back, an optional reason. */
+    var serial = serialOf(t);
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: serial + ' · ' + (t.title || 'Untitled task') + ' goes, with its ' + goes.join(', ') + '. There is no restore.',
+      go: 'Delete', tone: 'danger',
+      fields: [
+        { name: 'serial', label: 'Type the task number to confirm', placeholder: serial, match: serial,
+          need: 'Type the task number to confirm.', mismatch: 'That is not this task\'s number.' },
+        { name: 'why', label: 'Reason', rows: 2, required: false, placeholder: 'Optional' }
+      ]
+    }, function (v) {
+      call('ops_delete_task', { p_task: t.id, p_confirm: String(v.serial || '').trim().toUpperCase(), p_reason: v.why || null },
+        'dwMsg', function () {
+          closeDrawer(true);
+          /* The record is gone, so there is nothing to repaint it from: back
+             to the queue, which re-reads. */
+          showList();
+          load();
+        });
+    });
   }
 
   /* `row` is a list row's task (`{ t, done }`): the sheet moves that task and
@@ -7615,28 +7629,6 @@
       if (!stepTick.checked) $('stepHandTo').focus();
     });
 
-    // Deleting the task keyed in twice
-    ['tdelClose', 'tdelCancel'].forEach(function (id) {
-      var b = $(id); if (b) b.addEventListener('click', function () { sheet('tdelSheet', false); });
-    });
-    var tdg = $('tdelGo');
-    if (tdg) tdg.addEventListener('click', function () {
-      var t = state.task;
-      if (!t) return;
-      call('ops_delete_task', {
-        p_task: t.id,
-        p_confirm: String($('tdelConfirm').value || '').trim().toUpperCase(),
-        p_reason: String($('tdelReason').value || '').trim() || null
-      }, 'tdelMsg', function () {
-        sheet('tdelSheet', false);
-        closeDrawer(true);
-        /* The record is gone, so there is nothing to repaint it from: back to
-           the queue, which re-reads. */
-        showList();
-        load();
-      });
-    });
-
     // Links
     var dk = $('dwLinkKind');
     if (dk) dk.addEventListener('change', function () {
@@ -7806,7 +7798,7 @@
         return;
       }
       var open = ['dueSheet', 'taskSheet', 'dupSheet', 'recSheet',
-       'engSheet', 'meetSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet', 'tdelSheet'].filter(function (id) {
+       'engSheet', 'meetSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet'].filter(function (id) {
         return $(id) && !$(id).hidden;
       });
       open.forEach(function (id) { sheet(id, false); });

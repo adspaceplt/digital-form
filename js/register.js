@@ -1151,7 +1151,7 @@
   }
 
   // ---- Void and delete -------------------------------------------------------
-  var voiding = null, deleting = null;
+  var voiding = null;
   function openVoid(d, onChange) {
     voiding = { d: d, then: onChange };
     $('rvoidWhat').textContent = 'Voiding ' + d.serial + ' marks it as no longer standing. ' +
@@ -1161,18 +1161,32 @@
     $('rvoidSheet').hidden = false;
     $('rvoidReason').focus();
   }
+  /* The one question every Delete asks (2026-10-10): what goes, the
+     reference typed back, a reason. */
   function openDelete(d, onChange) {
-    deleting = { d: d, then: onChange };
-    $('rdelWhat').textContent = 'Deleting ' + d.serial + ' removes the record. ' +
-      (d.source === 'portal' ? 'The file is drawn from the record on Download and is not stored, so nothing is left to recover: ' : '') +
-      'this is immediate and cannot be undone. The reference is remembered and never reused.';
-    $('rdelConfirm').value = ''; $('rdelReason').value = '';
-    msg('rdelMsg', '');
-    $('rdelSheet').hidden = false;
-    $('rdelConfirm').focus();
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: 'Deleting ' + d.serial + ' removes the record. ' +
+        (d.source === 'portal' ? 'The file is drawn from the record on Download and is not stored, so nothing is left to recover: ' : '') +
+        'this is immediate and cannot be undone. The reference is remembered and never reused.',
+      go: 'Delete', tone: 'danger', wait: true,
+      fields: [
+        { name: 'serial', label: 'Type the reference to confirm', placeholder: d.serial, match: d.serial,
+          need: 'Type ' + d.serial + ' to confirm.', mismatch: 'Type ' + d.serial + ' to confirm.' },
+        { name: 'why', label: 'Reason', rows: 3, need: 'A reason is required.' }
+      ]
+    }, function (v) {
+      return new Promise(function (done) {
+        LET.remove(d, v.serial, v.why, function (err) {
+          if (err) { done(err); return; }
+          say(d.serial + ' deleted.', 'ok');
+          after({ d: d, then: onChange });
+          done('');
+        });
+      });
+    });
   }
   function shutVoid() { voiding = null; $('rvoidSheet').hidden = true; }
-  function shutDel() { deleting = null; $('rdelSheet').hidden = true; }
   function after(v) { if (v && v.then) v.then(); else load(); }
 
   function wire() {
@@ -1182,7 +1196,6 @@
     on('docClose', shutIssue); on('docCancel', shutIssue); on('docGo', sendIssue); on('docPreview', previewIssue);
     on('regAddClose', shutAdd); on('regAddCancel', shutAdd); on('regAddGo', sendAdd);
     on('rvoidClose', shutVoid); on('rvoidCancel', shutVoid);
-    on('rdelClose', shutDel); on('rdelCancel', shutDel);
     if ($('docKind')) $('docKind').addEventListener('change', seed);
     if ($('docClient')) $('docClient').addEventListener('change', seed);
     if ($('docMember')) $('docMember').addEventListener('change', seed);
@@ -1237,28 +1250,11 @@
         after(v);
       });
     });
-    on('rdelGo', function () {
-      if (!deleting) return;
-      var typed = $('rdelConfirm').value.trim(), why = $('rdelReason').value.trim();
-      if (typed.toUpperCase() !== String(deleting.d.serial).toUpperCase()) {
-        msg('rdelMsg', 'Type ' + deleting.d.serial + ' to confirm.', 'err'); $('rdelConfirm').focus(); return;
-      }
-      if (!why) { msg('rdelMsg', 'A reason is required.', 'err'); $('rdelReason').focus(); return; }
-      var v = deleting, go = $('rdelGo');
-      go.disabled = true;
-      LET.remove(v.d, typed, why, function (err) {
-        go.disabled = false;
-        if (err) { msg('rdelMsg', err, 'err'); return; }
-        shutDel();
-        say(v.d.serial + ' deleted.', 'ok');
-        after(v);
-      });
-    });
     /* A click outside the card closes a sheet only while nothing has been
        typed, ticked or picked in it, as js/sheet.js holds for every other
        sheet: a stray click never costs somebody their letter (the user,
        2026-10-01). The close mark, Cancel and Escape still close it. */
-    ['docSheet', 'regAddSheet', 'rvoidSheet', 'rdelSheet'].forEach(function (id) {
+    ['docSheet', 'regAddSheet', 'rvoidSheet'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       var touch = function (e) { if (e.isTrusted) el.__touched = true; };
@@ -1269,7 +1265,7 @@
         if (e.target !== this) return;
         if (el.__touched) return;
         if (id === 'docSheet') shutIssue(); else if (id === 'regAddSheet') shutAdd();
-        else if (id === 'rvoidSheet') shutVoid(); else shutDel();
+        else if (id === 'rvoidSheet') shutVoid();
       });
     });
     document.addEventListener('keydown', function (e) {
@@ -1277,7 +1273,6 @@
       if ($('docSheet') && !$('docSheet').hidden) shutIssue();
       else if ($('regAddSheet') && !$('regAddSheet').hidden) shutAdd();
       else if ($('rvoidSheet') && !$('rvoidSheet').hidden) shutVoid();
-      else if ($('rdelSheet') && !$('rdelSheet').hidden) shutDel();
     });
   }
   wire();

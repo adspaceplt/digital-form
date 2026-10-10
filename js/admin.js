@@ -1815,6 +1815,7 @@
     /* Content Review wrote nothing for the everyday acts on a set. */
     'set.created':           ['Set created', 'is-ok', 'review'],
     'set.renamed':           ['Set renamed', '', 'review'],
+    'set.month':             ['Content month changed', '', 'review'],
     'set.task_linked':       ['Task linked', '', 'review'],
     'set.task_unlinked':     ['Task unlinked', '', 'review'],
     'post.added':            ['Posts added', 'is-ok', 'review'],
@@ -2511,6 +2512,18 @@
 
 
   // ---- Content sets -------------------------------------------------------
+  /* A set's content month (`batches.period`, YYYY-MM; empty is Ad hoc;
+     2026-10-10). This month is Malaysia's. */
+  var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  function ymNow() { return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 7); }
+  function ymAdd(ym, n) { var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return y + '-' + String(m + 1).padStart(2, '0'); }
+  function ymWord(ym) { return /^\d{4}-\d{2}$/.test(ym || '') ? MON3[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4) : 'Ad hoc'; }
+
+  /* The client's sets by content month, newest first, the newest open and
+     Ad hoc last (2026-10-10, the user: a client's sets grow without end);
+     a row a set, its state at the right, its post count under it. The
+     posts are counted in one read for every set (a read a row was a line
+     Supabase logs and meters). */
   function loadBatches() {
     db.from('batches').select('*').eq('client_id', state.client.id)
       .order('created_at', { ascending: false }).then(function (r) {
@@ -2518,29 +2531,53 @@
         box.innerHTML = '';
         if (r.error) { failLine(box, 'Content sets', r.error.message, loadBatches); return; }
         if (!r.data.length) {
-          box.innerHTML = '<div class="empty">No content sets.</div>';
+          box.innerHTML = '<div class="crm-table softpanel cr-sets"><div class="empty">No content sets.</div></div>';
           return;
         }
-        /* A set is a row: its name with the state at the right of the line,
-           its post count under it (2026-09-28; it was a 125px card). */
-        r.data.forEach(function (b) {
-          var card = document.createElement('button');
-          card.className = 'set-row' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
-          card.type = 'button';
-          card.innerHTML =
-            '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
-              '<span class="tone ' + (b.published ? 'is-ok' : 'is-off') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
-            '<span class="set-row-sub" data-role="sub">Loading…</span>';
-          card.addEventListener('click', function () { openBatch(b); });
-          box.appendChild(card);
-
-          /* A count that could not be read is not a count of nothing: it
-             said "0 posts" over a failed request and the set looked empty. */
-          db.from('posts').select('id').eq('batch_id', b.id).then(function (p) {
-            var sub = card.querySelector('[data-role="sub"]');
-            if (p.error) { sub.textContent = 'Posts unavailable'; sub.className = 'set-row-sub is-warn'; return; }
-            var n = (p.data || []).length;
-            sub.textContent = n + ' post' + (n === 1 ? '' : 's');
+        var sets = r.data, byMonth = {}, months = [];
+        sets.forEach(function (b) {
+          var k = /^\d{4}-\d{2}$/.test(b.period || '') ? b.period : 'adhoc';
+          if (!byMonth[k]) { byMonth[k] = []; months.push(k); }
+          byMonth[k].push(b);
+        });
+        months.sort(function (a, z) { return a === 'adhoc' ? 1 : z === 'adhoc' ? -1 : z.localeCompare(a); });
+        var subs = {};
+        var GRP = window.ADspaceGroup;
+        months.forEach(function (k, i) {
+          box.appendChild(GRP.section({
+            route: 'review-sets', key: k, name: k === 'adhoc' ? 'Ad hoc' : ymWord(k), count: byMonth[k].length,
+            shut: GRP.shut('review-sets', k, i > 0, months.length === 1),
+            table: function () {
+              var t = document.createElement('div');
+              t.className = 'crm-table softpanel cr-sets';
+              byMonth[k].forEach(function (b) {
+                var card = document.createElement('button');
+                card.className = 'set-row' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
+                card.type = 'button';
+                card.innerHTML =
+                  '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
+                    '<span class="tone ' + (b.published ? 'is-ok' : 'is-off') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
+                  '<span class="set-row-sub" data-role="sub">' + esc(subs[b.id] || 'Loading…') + '</span>';
+                card.setAttribute('data-set', b.id);
+                card.addEventListener('click', function () { openBatch(b); });
+                t.appendChild(card);
+              });
+              return t;
+            }
+          }));
+        });
+        /* A count that could not be read is not a count of nothing: it
+           said "0 posts" over a failed request and the set looked empty. */
+        db.from('posts').select('batch_id').in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
+          var n = {};
+          (p.data || []).forEach(function (x) { n[x.batch_id] = (n[x.batch_id] || 0) + 1; });
+          sets.forEach(function (b) {
+            subs[b.id] = p.error ? 'Posts unavailable' : (n[b.id] || 0) + ((n[b.id] || 0) === 1 ? ' post' : ' posts');
+          });
+          Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
+            var sub = row.querySelector('[data-role="sub"]');
+            sub.textContent = subs[row.getAttribute('data-set')];
+            sub.className = 'set-row-sub' + (p.error ? ' is-warn' : '');
           });
         });
       });
@@ -2559,7 +2596,7 @@
   });
   function makeBatch(title) {
     db.from('batches').insert({
-      client_id: state.client.id, title: title, published: false
+      client_id: state.client.id, title: title, published: false, period: ymNow()
     }).select().single().then(function (r) {
       if (r.error) { msg('setsMsg', r.error.message, 'err'); return; }
       logAction('set.created', state.client.name + ' — ' + title, '');
@@ -2628,9 +2665,9 @@
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
-    $('setNote').textContent = live
+    $('setNote').textContent = ymWord(state.batch.period) + ' · ' + (live
       ? 'Visible to the client on their review link.'
-      : 'Not visible to the client.';
+      : 'Not visible to the client.');
     msg('setMsg', '');
   }
 
@@ -2849,7 +2886,8 @@
             + (b.published ? ' This set is published to the client.' : '')
             + ' There is no restore.',
         go: 'Delete',
-        tone: 'danger'
+        tone: 'danger',
+        field: { label: 'Type the set name to confirm', placeholder: b.title, match: b.title, need: 'Type the set name to confirm.', mismatch: 'The set name does not match.' }
       }, function () {
 
       /* `.select()` so the answer says what was removed. A delete the database
@@ -4449,7 +4487,7 @@
      reads the figures again and repaints. `spec`: { title, keys: [[key,
      label, kind]], msg (an element id), done }. Kinds: hours, days, pct
      (0 to 100), adj (-100 to 100). */
-  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false] };
+  var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false] };
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
@@ -4815,6 +4853,30 @@
     });
   }
   $('selectPosts').addEventListener('click', function () { shutSetMenu(); setPostPicking(true); });
+  /* The set's content month: last month, this month and the next six, the
+     month it holds, or Ad hoc; filed from and to (2026-10-10). */
+  $('setMonth').addEventListener('click', function () {
+    shutSetMenu();
+    var b = state.batch, now = ymNow(), opts = [];
+    for (var i = -1; i <= 6; i++) opts.push(ymAdd(now, i));
+    if (b.period && opts.indexOf(b.period) < 0) opts.unshift(b.period);
+    window.ADspaceConfirm.ask({
+      title: 'Content month', go: 'Save',
+      field: { label: 'Month', required: false, choices: opts.map(function (m) { return [m, ymWord(m)]; }).concat([['', 'Ad hoc']]), value: b.period || '' }
+    }, function (v) {
+      var next = v || null;
+      if ((b.period || null) === next) return;
+      db.from('batches').update({ period: next }).eq('id', b.id).select('id, period').then(function (r) {
+        if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        logAction('set.month', state.client.name + ' — ' + b.title, 'Content month: ' + ymWord(b.period) + ' → ' + ymWord(next));
+        b.period = next;
+        paintSetHeader();
+        msg('setMsg', 'Saved.', 'ok');
+        loadBatches();
+      }).catch(function (e) { msg('setMsg', (e && e.message) || String(e), 'err'); });
+    });
+  });
   $('postBulkDone').addEventListener('click', function () { setPostPicking(false); });
   $('postBulkConfirm').addEventListener('click', bulkPostConfirm);
   $('postBulkReask').addEventListener('click', bulkPostReask);
@@ -5508,7 +5570,8 @@
       body: 'Anywhere /' + l.slug + ' is already printed, posted or sent stops working. '
           + 'There is no restore. To turn it off and keep it, pause it instead.',
       go: 'Delete',
-      tone: 'danger'
+      tone: 'danger',
+      field: { label: 'Type the short link to confirm', placeholder: l.slug, match: l.slug, need: 'Type the short link to confirm.', mismatch: 'The short link does not match.' }
     }, function () {
       db.from('links').delete().eq('slug', l.slug).select('slug').then(function (r) {
         if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }

@@ -29,6 +29,7 @@
  *   ADspaceConfirm.ask({ …, field: { …, match: 'HKL LIM' } }, onYes)
  *   ADspaceConfirm.ask({ …, field: { …, choices: [['a','A'], …] } }, onYes)
  *   ADspaceConfirm.ask({ …, fields: […], check: function (values) { return 'Why not' or '' } }, onYes)
+ *   ADspaceConfirm.ask({ …, wait: true }, function (v) { return promiseOf('' or 'Why not') })
  *
  * A field may be `tick: true` (a checkbox with its label, answering 'on' or
  * '', never required), and a field of two to four `choices` may be
@@ -132,6 +133,9 @@
     /* Enter answers the question from a field, a one-line box included,
        but never while an input method is composing: there it picks the
        word (pinyin's Enter), and sending then sent half a reason. */
+    /* The chord (Cmd or Ctrl + Enter) never presses a red answer, as
+       js/sheet.js holds for every sheet: a delete is pressed, never chorded. */
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && opts && opts.tone === 'danger') { e.preventDefault(); return; }
     if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229
         && e.target !== elCancel && e.target !== elClose
         && (e.target.tagName !== 'TEXTAREA' || e.target.hasAttribute('data-oneline'))) {
@@ -195,6 +199,22 @@
       var why = opts.check(arg);
       if (why) { say(why); if (rows[0]) rows[0].input.focus(); return; }
     }
+    /* `wait`: the act answers before the question shuts (a delete the
+       server refuses, a wrong delete code): `onYes` returns a promise of ''
+       when done or the refusal's words, said in place with what was typed
+       kept; meanwhile the answer is out and cannot be pressed twice. */
+    if (opts && opts.wait && fn) {
+      elGo.disabled = true;
+      Promise.resolve().then(function () { return fn(arg); }).then(function (why) {
+        elGo.disabled = false;
+        if (why) { say(String(why)); return; }
+        shut();
+      }).catch(function (e) {
+        elGo.disabled = false;
+        say((e && e.message) || String(e));
+      });
+      return;
+    }
     shut();
     if (fn) fn(arg);
   }
@@ -221,6 +241,7 @@
     elBody.hidden = !o.body;
     say('');
 
+    elGo.disabled = false;
     elGo.textContent = o.go || 'Confirm';
     elGo.className = 'btn ' + (o.tone === 'danger' ? 'btn-danger'
                              : o.tone === 'warn' ? 'btn-warn' : 'btn-primary');
@@ -243,6 +264,15 @@
       /* `half` sets a field beside the next half one (a date and its time). */
       var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
       if (f.tick) {
+        /* A tick with a lead line (the AI declaration) is one shaded block:
+           the line, then its tick. */
+        if (f.lead) {
+          wrap.className += ' is-declare';
+          var ld = el('p', 'askdeclare');
+          ld.innerHTML = (f.leadMark || '') + '<span></span>';
+          ld.lastChild.textContent = f.lead;
+          wrap.appendChild(ld);
+        }
         var tl = el('label', 'tickline');
         var tk = el('input');
         tk.type = 'checkbox';
@@ -329,12 +359,15 @@
     return 'This ' + what + ' was written with AI. Read it in full and check every fact, figure, name, price and claim. ' +
       'Errors in confirmed content are the responsibility of the person who confirms it, and may be raised as an issue in their performance review.';
   }
-  function aiField() { return { name: 'ai_ok', label: AI_TICK, tick: true, value: false }; }
+  /* The declaration is its own shaded block, the line over its tick, never
+     run on into the question's own words (the user, 2026-10-10: "one whole
+     chunk isnt reader friendly"). */
+  function aiField(what) { return { name: 'ai_ok', label: AI_TICK, tick: true, value: false, lead: aiLine(what || 'content'), leadMark: AI_GLYPH }; }
   function aiRefused(v) { return v && v.ai_ok === 'on' ? '' : 'Tick the declaration to continue.'; }
   /* what: 'caption', 'script' or 'commentary'; go: the act's own word. */
   function declare(what, go, onYes) {
-    ask({ title: 'Written with AI', body: aiLine(what), go: go || 'Confirm and save',
-      fields: [aiField()], check: aiRefused }, function () { onYes(); });
+    ask({ title: 'Written with AI', go: go || 'Confirm and save',
+      fields: [aiField(what)], check: aiRefused }, function () { onYes(); });
   }
 
   window.ADspaceConfirm = { ask: ask, close: shut,

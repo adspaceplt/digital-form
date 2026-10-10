@@ -1041,13 +1041,24 @@
     if (na || nb) return na && nb;
     return Number(a) === Number(b);
   }
+  /* Reach is Meta's estimate of the people reached, which Meta revises while
+     a period runs (the user, 2026-10-10: two ads' Reach moved by 12 and 9
+     in the 27 seconds after an import, every other figure held): within the
+     allowance of Meta's (Business settings, `reach_allowance_pct`) it is a
+     match. Every other figure is exact. */
+  function nearReach(a, b) {
+    var M = window.ADspaceMoney, pct = M && M.setting ? Number(M.setting('reach_allowance_pct')) : 0;
+    if (!(pct > 0) || a == null || a === '' || b == null || b === '') return false;
+    var x = Number(a), y = Number(b);
+    return y > 0 && Math.abs(x - y) <= y * pct / 100;
+  }
   /* The report against Meta's reading, through the importer's own plan, so
      what the audit calls a difference is exactly what an import would
      change. Each row: where it is, the figure, the report's and Meta's;
      beside it, what puts it right (a figure taken, an ad or post added, or
      one Meta does not hold removed), or nothing where no one ad answers. */
   function metaCompare(reads) {
-    var r = st.open, rows = [], fixes = [];
+    var r = st.open, rows = [], fixes = [], within = 0;
     var put = function (row, fix) { rows.push(row); fixes.push(fix || null); };
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
@@ -1060,6 +1071,7 @@
           var ids = u.patch.ad_ids ? { ad_ids: u.patch.ad_ids } : {};
           AD_FIGS.forEach(function (k) {
             if (!(k in u.patch) || sameFig(k, a[k], u.patch[k])) return;
+            if (k === 'reach' && nearReach(a[k], u.patch[k])) { within++; return; }
             var set = Object.assign({}, ids); set[k] = u.patch[k];
             put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set });
           });
@@ -1093,6 +1105,7 @@
       if (had === 1 && reach.length === 1) tot.reach = reach[0];
       ['reach', 'impressions', 'spend'].forEach(function (k) {
         if (!(k in tot) || sameFig(k, t0[k], tot[k])) return;
+        if (k === 'reach' && nearReach(t0[k], tot[k])) { within++; return; }
         var set = {}; set[k] = tot[k];
         put({ where: step, field: FIG_WORD[k], report: figText(k, t0[k]), meta: figText(k, tot[k]) }, { t: 'totals', set: set });
       });
@@ -1103,7 +1116,7 @@
               report: Number(a.spend) > 0 ? money2(a.spend) + ' spent' : fmt(a.impressions) + ' impressions',
               meta: 'No delivery in this period' }, { t: 'ad-remove', id: a.id });
       });
-      return { rows: rows, fixes: fixes };
+      return { rows: rows, fixes: fixes, within: within };
     }
     var year = Number(String(r.period_start).slice(0, 4)), period = [String(r.period_start).slice(0, 10), String(r.period_end).slice(0, 10)];
     reads.forEach(function (rd) {
@@ -1124,6 +1137,7 @@
         }
         cols.forEach(function (c) {
           if (x[c] == null || sameFig(c, p[c], x[c])) return;
+          if (c === 'reach' && nearReach(p[c], x[c])) { within++; return; }
           var set = {}; set[c] = x[c];
           put({ where: where, field: METRIC_WORD[c], report: figText(c, p[c]), meta: figText(c, x[c]) }, { t: 'post', id: p.id, set: set });
         });
@@ -1134,9 +1148,30 @@
               meta: 'Not in Meta for this period' }, { t: 'post-remove', id: p.id });
       });
     });
-    return { rows: rows, fixes: fixes };
+    return { rows: rows, fixes: fixes, within: within };
   }
 
+  /* How far Meta's figure is from the report's, in the figure's own terms
+     (a count, money, a percentage); nothing where either is not a figure. */
+  function gapOf(a, b) {
+    var num = function (t) { var m = String(t || '').replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m && !/[A-Za-z]{3,}/.test(String(t).replace(/^(RM|S\$)\s*/, '').replace(/%$/, '')) ? Number(m[0]) : null; };
+    var x = num(a), y = num(b);
+    if (x === null || y === null || x === y) return '';
+    var d = y - x, sign = d > 0 ? '+' : '\u2212', abs = Math.abs(d);
+    var cur = (String(b).match(/^(RM|S\$)\s*/) || [])[1];
+    if (cur) return sign + cur + ' ' + abs.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (/%$/.test(String(b))) return sign + (Math.round(abs * 100) / 100) + ' pts';
+    var out = sign + (abs % 1 ? Math.round(abs * 100) / 100 : abs).toLocaleString('en');
+    /* The share only where it says something: a base of a hundred or
+       more, and a gap under the base itself. */
+    var share = Math.abs(x) >= 100 && abs < Math.abs(x) ? Math.round(abs / Math.abs(x) * 1000) / 10 : null;
+    return share !== null ? out + ' (' + share + '%)' : out;
+  }
+  /* What the allowance let through, said once on the card. */
+  function withinWord(n) {
+    var M = window.ADspaceMoney, pct = M && M.setting ? Number(M.setting('reach_allowance_pct')) : 0;
+    return 'Reach within ' + pct + '% of Meta on ' + n + (n === 1 ? ' figure' : ' figures');
+  }
   /* One reading: Meta read, compared, and filed, so the reviewer and the
      database read the same. Meta not answering is filed too (Submit then
      waits, unless an admin continues without it, with a reason). */
@@ -1159,7 +1194,7 @@
       if (got.down) return fileMeta(r, 'unavailable', [], got.down).then(function () { return { outcome: 'unavailable' }; });
       a.reads = got.reads;
       var cmp = metaCompare(got.reads);
-      a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false;
+      a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false; a.within = cmp.within;
       var outcome = cmp.rows.length ? 'mismatch' : 'match';
       return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
     }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
@@ -1394,7 +1429,7 @@
       } else if (lst.outcome === 'match' || lst.outcome === 'override') {
         mark = lst.current ? ' is-done' : ' is-missing';
         note = !lst.current ? 'A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.'
-          : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at)
+          : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at) + (a.within ? ' · ' + withinWord(a.within) : '')
           : 'Not checked: Meta unavailable · ' + (lst.by || 'An admin') + ' continued on ' + whenWord(lst.at) + ': ' + (lst.note || '');
       } else if (lst.outcome === 'mismatch') {
         mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
@@ -1409,15 +1444,28 @@
         var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
         if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
         var show = a.all ? rows : rows.slice(0, 10);
-        list = show.map(function (x, i) {
+        /* One line a difference, read across as a table (the user,
+           2026-10-10: "not showing very clearly … not reader friendly"):
+           where, the figure, the report's, Meta's, how far apart, and what
+           puts it right at the row's end. In a narrow pane the three
+           figures sit side by side under their labels. */
+        list = '<div class="rp-metatable" role="table" aria-label="Differences from Meta">' +
+          '<div class="rp-metahead" role="row"><span role="columnheader">Where</span><span role="columnheader">Figure</span>' +
+          '<span role="columnheader" class="num">Report</span><span role="columnheader" class="num">Meta</span>' +
+          '<span role="columnheader" class="num">Difference</span><span role="columnheader"><span class="sr">Action</span></span></div>' +
+          show.map(function (x, i) {
           var f = draft ? fixes[i] : null;
           var word = !f ? '' : f.t === 'ad-add' || f.t === 'post-add' ? 'Add' : f.t === 'ad-remove' || f.t === 'post-remove' ? 'Remove' : 'Use Meta\'s figure';
-          return '<div class="rp-finding rp-metarow"><span class="rp-f-where">' + esc(x.where) + '</span>' +
-            '<span class="rp-f-issue">' + esc(x.field) + '</span>' +
-            '<span class="rp-f-fix"><span class="rp-f-label">Report</span>' + esc(x.report) + '</span>' +
-            '<span class="rp-f-fix"><span class="rp-f-label">Meta</span>' + esc(x.meta) + '</span>' +
-            (word ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button></span>' : '') + '</div>';
-        }).join('') + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
+          var gap = gapOf(x.report, x.meta);
+          /* Words or a split (an ad missing, an age split) wrap as words; a
+             figure keeps its line. */
+          return '<div class="rp-metarow' + (gap ? '' : ' is-words') + '" role="row"><span class="rp-m-where" role="cell">' + esc(x.where) + '</span>' +
+            '<span class="rp-m-field" role="cell">' + esc(x.field) + '</span>' +
+            '<span class="rp-m-num" role="cell" data-l="Report">' + esc(x.report) + '</span>' +
+            '<span class="rp-m-num rp-m-meta" role="cell" data-l="Meta">' + esc(x.meta) + '</span>' +
+            '<span class="rp-m-num rp-m-gap" role="cell" data-l="Difference">' + esc(gap || '—') + '</span>' +
+            '<span class="rp-m-act" role="cell">' + (word ? '<button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button>' : '') + '</span></div>';
+        }).join('') + '</div>' + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
       }
       meta = '<div class="rp-check rp-part' + mark + '" data-part="meta">' +
           '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
@@ -1800,7 +1848,7 @@
       if (ask.reason || ask.ai) {
         var fs = [who];
         if (ask.reason) fs.push({ name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' });
-        if (ask.ai) fs.push(AIQ.field());
+        if (ask.ai) fs.push(AIQ.field('commentary'));
         window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go, fields: fs,
           check: ask.ai ? AIQ.refused : null },
           function (v) { then(v.who, v.why); });
@@ -1831,7 +1879,7 @@
       db.rpc('ai_written', { p_report: r.id }).then(function (res) { return !res.error && res.data === true; })
         .catch(function () { return false; }).then(function (ai) {
           b.disabled = false;
-          if (ai && AIQ) { ask.ai = true; ask.body += ' ' + AIQ.line('commentary'); }
+          if (ai && AIQ) ask.ai = true;
           pickReviewer(r, b, m, ask, function (who, why) {
             var args = { p_id: r.id, p_reviewer: who };
             if (why) args.p_reason = why;
@@ -3017,6 +3065,7 @@
           if (bad) return fail(bad.error || { message: 'Not saved. The database refused the request.' });
           go.disabled = false;
           window.ADspaceSheet.clean(); window.ADspaceSheet.close();
+          if (pre && pre.pics) metaPictures('posts', pre.pics);
         });
       }).catch(fail);
     };
@@ -4054,9 +4103,10 @@
   var AD_HEAD = [
     [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|ad group name|ad group|audience)$/, 'audience'], [/^(objective|campaign objective|advertising objective)$/, 'objective'],
     [/^(account name|ad account name|ad account|advertiser name)$/, 'account'], [/^ad id$/, 'ad_id'], [/^(account id|ad account id|advertiser id)$/, 'account_id'],
-    [/^(result type|result indicator|results? type|optimi[sz]ation event)$/, 'result_label'], [/^(results?|conversions)$/, 'results'],
-    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^(amount spent|cost$|total cost$)/, 'spend'],
-    [/^ctr/, 'ctr'], [/^cost per (results?|conversion)/, 'cpr'],
+    [/^(result type|result indicator|results? type|optimi[sz]ation event)$/, 'result_label'], [/^results?$/, 'results'], [/^conversions$/, 'conversions'],
+    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^(amount spent|cost$|total cost$|spend$)/, 'spend'],
+    [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'], [/^cost per conversion$/, 'cpc_conv'],
+    [/^(clicks \((destination|all)\)|clicks|link clicks)$/, 'clicks'], [/^campaign name$/, 'campaign'],
     [/^reporting starts$/, 'rep_start'], [/^reporting ends$/, 'rep_end'], [/^(day|week|month|date|by day)$/, 'day'],
     [/^(starts?|start date|start time)$/, 'starts_on'], [/^(ends?|end date|end time|stop time)$/, 'ends_on'],
     [/^age$/, 'age'],
@@ -4065,7 +4115,7 @@
     [/^(video average play time|average play time per video view)/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
   ];
   /* Headers only TikTok's export carries, so a paste names its platform. */
-  var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%)$/;
+  var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%|primary status|secondary status|campaign budget|cpc \(destination\)|clicks \(destination\)|ctr \(destination\)|goal-based budget increase|qualified conversion)$/;
   function objectiveOf(v) {
     var x = String(v || '').toLowerCase().replace(/^outcome_/, '').replace(/_/g, ' ').trim();
     if (!x) return null;
@@ -4092,7 +4142,16 @@
       var hit = AD_HEAD.filter(function (x) { return x[0].test(k); })[0];
       return hit ? hit[1] : null;
     });
+    /* TikTok's campaign report (the user's export, 2026-10-10) names each
+       row by its campaign alone: the campaign is the row's name where no ad
+       is named; Results is TikTok's optimisation result, Conversions only
+       where it has none; and its last row, Total of N results, is the
+       account's own figures. */
+    if (head.indexOf('name') < 0 && head.indexOf('campaign') > -1) head = head.map(function (k) { return k === 'campaign' ? 'name' : k; });
+    if (head.indexOf('results') < 0) head = head.map(function (k) { return k === 'conversions' ? 'results' : k; });
+    if (head.indexOf('cpr') < 0) head = head.map(function (k) { return k === 'cpc_conv' ? 'cpr' : k; });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
+    var TOTAL_ROW = /^total of \d+ results?$/i;
     var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
     var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord, AN = window.ADspaceSmReport && window.ADspaceSmReport.adName;
     var hasAge = head.indexOf('age') > -1;
@@ -4107,7 +4166,13 @@
       var c = numIn(raw.cpr); if (c !== null) a.n.cpr = c;
       var pl = playIn(raw.avg_play), pw = numIn(raw.plays) || numIn(raw.plays3) || im || 1;
       if (pl !== null) { a.n.avg_play = (a.n.avg_play || 0) + pl * pw; a.w.avg_play = (a.w.avg_play || 0) + pw; }
-      var ctr = numIn(raw.ctr);
+      var ctr = numIn(raw.ctr), clk = numIn(raw.clicks);
+      /* A CTR given as a fraction (TikTok's 0.0056 for 0.56%) is read as a
+         percentage where the clicks over impressions say so. */
+      if (ctr !== null && clk !== null && im) {
+        var pc = clk / im * 100;
+        if (Math.abs(ctr * 100 - pc) < Math.abs(ctr - pc)) ctr = Math.round(ctr * 10000) / 100;
+      }
       if (ctr !== null) { a.n.ctrSum = (a.n.ctrSum || 0) + ctr * (im || 1); a.ctrw += (im || 1); }
     };
     var cellsOf = function (l) {
@@ -4128,7 +4193,7 @@
     var CN = function (x) { return AN ? AN(x) : x; };
     lines.slice(1).forEach(function (l) {
       var raw = cellsOf(l);
-      if (!raw.name) return;
+      if (!raw.name || TOTAL_ROW.test(raw.name)) return;
       var obj = objectiveOf(raw.objective) || fallbackObj, base = [CN(raw.name), obj, raw.audience || ''].join('|');
       if (raw.ad_id) {
         var id = raw.ad_id + '|' + raw.name;
@@ -4156,7 +4221,7 @@
     var summary = null;
     lines.slice(1).forEach(function (l, li) {
       var raw = cellsOf(l);
-      if (!raw.name && li === 0 && !String(raw.age || '').trim()) {
+      if ((!raw.name && li === 0 || TOTAL_ROW.test(raw.name || '')) && !String(raw.age || '').trim()) {
         var sr = numIn(raw.reach), si = numIn(raw.impressions), ss = numIn(raw.spend);
         if (sr !== null || si !== null || ss !== null) {
           summary = {};
@@ -4166,6 +4231,7 @@
           return;
         }
       }
+      if (TOTAL_ROW.test(raw.name || '')) return;
       if (!raw.name) { skipped++; return; }
       if (raw.account) accounts[raw.account] = true;
       var obj = objectiveOf(raw.objective) || fallbackObj;
@@ -4303,6 +4369,63 @@
     'not-draft': 'Only a draft takes an import.',
     'needs-update': 'This needs a database update.'
   };
+  /* The pictures (2026-10-10, the user: "build post thumbnails"): after an
+     import from Meta, each post or ad the report holds with no picture of
+     its own takes Meta's (a post's image or cover frame, an ad's creative),
+     read through `meta-import` (Meta's addresses expire within days and a
+     browser cannot read them across origins), drawn down to the 320px JPEG
+     every thumbnail is, and kept on the row. A picture the team chose is
+     never replaced; a creative's other rows take the same picture. */
+  function metaPictures(kind, pics) {
+    var r = st.open;
+    var want = [];
+    if (kind === 'ads') {
+      st.ads.forEach(function (a) {
+        if (a.thumb_data) return;
+        var u = (a.ad_ids || []).map(function (x) { return pics[x]; }).filter(Boolean)[0];
+        if (u) want.push({ id: a.id, url: u });
+      });
+    } else {
+      var byKey = {};
+      Object.keys(pics).forEach(function (k) { var lk = linkKey(k); if (lk) byKey[lk] = pics[k]; });
+      st.posts.forEach(function (p) {
+        var u = !p.thumb_data && p.url ? byKey[linkKey(p.url)] : null;
+        if (u) want.push({ id: p.id, url: u });
+      });
+    }
+    if (!want.length) return Promise.resolve(0);
+    var table = kind === 'ads' ? 'sm_report_ads' : 'sm_report_posts';
+    var urls = want.map(function (w) { return w.url; }).filter(function (u, i, all) { return all.indexOf(u) === i; });
+    var got = {}, kept = 0;
+    var batch = function (i) {
+      if (i >= urls.length) return Promise.resolve();
+      return db.functions.invoke('meta-import', { body: { action: 'pictures', report_id: r.id, urls: urls.slice(i, i + 6) } }).then(function (res) {
+        var d = (res && res.data) || {};
+        return Promise.all((d.pictures || []).map(function (x) {
+          if (!x || !x.b64 || !/^image\//.test(x.type || '')) return null;
+          var bin = atob(x.b64), buf = new Uint8Array(bin.length);
+          for (var j = 0; j < bin.length; j++) buf[j] = bin.charCodeAt(j);
+          return shrink(new Blob([buf], { type: x.type })).then(function (data) { got[x.url] = data; }).catch(function () { /* left without */ });
+        }));
+      }).catch(function () { /* this batch is left without */ }).then(function () { return batch(i + 6); });
+    };
+    return batch(0).then(function () {
+      return Promise.all(want.filter(function (w) { return got[w.url]; }).map(function (w) {
+        return db.from(table).update({ thumb_data: got[w.url] }).eq('id', w.id).is('thumb_data', null).select('*').then(function (res) {
+          var row = (res && res.data || [])[0];
+          if (!row) return;
+          kept++;
+          if (kind === 'ads') st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
+          else st.posts = st.posts.map(function (x) { return x.id === row.id ? row : x; });
+        });
+      }));
+    }).then(function () {
+      if (!st.open || st.open.id !== r.id) return kept;
+      if (kept) fileReport('report.saved', 'From Meta: ' + plural(kept, 'picture') + ' added');
+      if (kind === 'ads') paintAds(); else paintPosts();
+      return kept;
+    });
+  }
   function metaImport(kind, btn) {
     var m0 = st.meta || {}, sec = btn.closest('.rp-sec'), head = sec && sec.querySelector('.rp-sec-head');
     var line = sec && sec.querySelector('[data-m="meta"]');
@@ -4322,8 +4445,8 @@
         if ((res && res.error) || d.error) { say(line, META_SAID[d.error] || 'Meta did not answer. Try again.', 'err'); return; }
         if (!d.text) { say(line, kind === 'ads' ? 'Meta has no ads in this period.' : 'Meta has no posts in this period.', 'warn'); return; }
         if (line && line.parentNode) line.parentNode.removeChild(line);
-        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '' });
-        else pasteSheet(btn, { text: d.text, platform: d.source });
+        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '', pics: d.pics || null });
+        else pasteSheet(btn, { text: d.text, platform: d.source, pics: d.pics || null });
       }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
     };
     if (choices.length === 1) { fetchIt(choices[0][0]); return; }
@@ -4432,6 +4555,7 @@
     /* Meta's age split follows the figures, matched by Ad ID, in the same
        press. */
     var ageNext = pre && pre.age ? pre.age : '';
+    var pics = pre && pre.pics ? pre.pics : null;
     var ageOnly = false;
     var from = pre ? 'Imported from Meta: ' : 'Imported from Ads Manager: ';
     /* The platform follows the paste (TikTok's own headers) until the
@@ -4513,6 +4637,7 @@
         }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals(); paintSteps();
+        if (pics) metaPictures('ads', pics);
       }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); paintSteps(); say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });

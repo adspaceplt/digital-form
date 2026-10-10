@@ -1011,6 +1011,7 @@
         : rows.length + ' of ' + all.length;
     }
     box.innerHTML = '';
+    if ($('campStages')) $('campStages').hidden = !all.length;
     if (!all.length) { box.innerHTML = '<div class="empty">No campaigns.</div>'; return; }
     if (!rows.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
@@ -1020,32 +1021,73 @@
       });
       return;
     }
-    /* A card per state under its own heading, the shape every directory in
-       this console takes: three campaigns as three tiles read as a dashboard
-       and thirty as a wall, and one surface with the states as uppercase
-       divider rows was sent back on Clients. Completed stays shut by
-       default; a filter opens every card. */
+    /* A tab a stage (2026-10-10, the user: the Work sections laid out
+       alike), as Reports runs: Draft, Open, In production, Completed, each
+       with its count, opening on the first that holds any; under it a card
+       a month (the month the campaign was made, Malaysia time), newest
+       first and open. A search looks through every stage. */
     var GRP = window.ADspaceGroup;
     var filtered = rows.length !== all.length;
-    CAMP_GROUPS.forEach(function (g) {
-      var mine = rows.filter(function (c) { return c.state === g; });
-      if (!mine.length) return;
+    var byTab = {};
+    CAMP_GROUPS.forEach(function (g) { byTab[g] = rows.filter(function (c) { return c.state === g; }); });
+    if (!campTab || !byTab[campTab] || (filtered && !byTab[campTab].length)) {
+      campTab = CAMP_GROUPS.filter(function (g) { return byTab[g].length; })[0] || CAMP_GROUPS[0];
+    }
+    var strip = $('campStages');
+    strip.hidden = false;
+    strip.innerHTML = CAMP_GROUPS.map(function (g) {
+      var on = g === campTab, n = byTab[g].length;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-tab="' + g + '" id="campStage-' + g + '"' +
+        ' aria-selected="' + on + '" aria-controls="campCards" tabindex="' + (on ? 0 : -1) + '">' +
+        '<span>' + esc(STATE_WORD[g] || g) + '</span><span class="tab-n"' + (n ? '' : ' hidden') + '>' + n + '</span></button>';
+    }).join('');
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
+    box.setAttribute('aria-labelledby', 'campStage-' + campTab);
+    var mine = byTab[campTab];
+    if (!mine.length) { UI.emptyLine(box, 'No campaigns.'); return; }
+    var monthOf = function (c) { return c.created_at ? new Date(new Date(c.created_at).getTime() + 8 * 3600e3).toISOString().slice(0, 7) : 'none'; };
+    var MW = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+    var months = [];
+    mine.forEach(function (c) { var k = monthOf(c); if (months.indexOf(k) < 0) months.push(k); });
+    months.sort().reverse();
+    months.forEach(function (k, i) {
+      var inMonth = mine.filter(function (c) { return monthOf(c) === k; });
       box.appendChild(GRP.section({
-        route: 'campaigns', key: g, name: STATE_WORD[g] || g, count: mine.length,
-        shut: !filtered && GRP.shut('campaigns', g, g === 'completed', mine.length === rows.length),
+        route: 'campaigns', key: campTab + ':' + k, name: k === 'none' ? 'No date' : MW[Number(k.slice(5, 7)) - 1] + ' ' + k.slice(0, 4), count: inMonth.length,
+        shut: !filtered && GRP.shut('campaigns', campTab + ':' + k, i > 0, months.length === 1),
         table: function () {
           /* The money column's heading is right aligned over the figures it
              names, but it is still an eyebrow: `.svc-rate` carries the row's
              own 13.5px and set the word AMOUNT three sizes above every other
              heading beside it. */
           var table = GRP.table('camp-row',
-            ['Campaign', 'Client', 'Creators', { text: 'Amount', cls: 'is-end' }, 'State', ''], 'crm-register');
-          GRP.more(table, mine, 30, 'campaigns', function (c) { return campRow(c, campSums); });
+            ['Campaign', 'Client', 'Creators', { text: 'Amount', cls: 'is-end' }, { text: 'Updated', cls: 'is-end' }, ''], 'crm-register');
+          GRP.more(table, inMonth, 30, 'campaigns', function (c) { return campRow(c, campSums); });
           return table;
         }
       }));
     });
   }
+  var campTab = '';
+  (function () {
+    var strip = $('campStages');
+    if (!strip) return;
+    strip.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.tab');
+      if (b) { campTab = b.getAttribute('data-tab'); paintCampaigns(); }
+    });
+    strip.addEventListener('keydown', function (e) {
+      var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab'));
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+      if (to === null || !tabs[to]) return;
+      e.preventDefault();
+      tabs[to].click();
+      var again = strip.querySelectorAll('.tab')[to];
+      if (again) again.focus();
+    });
+  })();
 
   /* Draft first, then the two live states, then what is finished: the order a
      campaign actually moves in, which is also the order somebody scans for
@@ -1070,10 +1112,9 @@
          the cell's missing value is the mute dash. */
       '<span class="crm-c svc-rate">' + (amount ? esc(amount)
         : '<span class="muted">\u2014</span>') + '</span>' +
-      /* The state's own dot, as everywhere (2026-10-07): a campaign still
-         open or in production is still running, never green. */
-      '<span class="crm-c crm-c-stage"><span class="tone ' + W.tone(c.state) + '">' +
-        esc(STATE_WORD[c.state] || c.state) + '</span></span>' +
+      /* The tab above names the state, so the row says when the campaign
+         last changed (2026-10-10), as a report row does. */
+      '<span class="crm-c crm-c-stage camp-c-upd">' + esc(updWord(c.updated_at || c.created_at)) + '</span>' +
       /* The one line the phone gets: the client, how many creators, and what
          it is worth where that is known. It may wrap between its parts, never
          inside one: `RM` on one line and `8,640.00` on the next is a value cut
@@ -1086,6 +1127,12 @@
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
     row.addEventListener('click', function () { openCampaign(c); });
     return row;
+  }
+
+  function updWord(ts) {
+    if (!ts) return '\u2014';
+    var d = new Date(new Date(ts).getTime() + 8 * 3600e3).toISOString().slice(0, 10);
+    return niceDate(d);
   }
 
   var CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -1122,27 +1169,8 @@
     });
   };
 
-  /* Editing happens in the campaign's own card: the form takes the place of
-     the summary and gives it back on save or cancel. Creating happens above
-     the list, where the form lives otherwise. */
-  function placeCampForm(inline) {
-    var box = $('addCampBox');
-    if (inline) {
-      $('campHead').appendChild(box);
-      box.classList.add('is-inline');
-      $('campSummary').hidden = true;
-    } else {
-      var list = $('campListView');
-      if (box.parentNode !== list.parentNode) list.parentNode.insertBefore(box, list);
-      box.classList.remove('is-inline');
-      $('campSummary').hidden = false;
-    }
-    $('campDangerRow').hidden = !inline;
-  }
-
   function openCampForm(c, restoring) {
     editingCamp = c || null;
-    placeCampForm(!!c);
     $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
     $('addCamp').textContent = c ? 'Save' : 'Create';
     $('campClient').value = c ? (c.client_id || '') : ($('campClient').value || '');
@@ -1157,20 +1185,20 @@
     var self = bridge.me && bridge.me();
     peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
     msg('campMsg', '');
-    $('addCampBox').hidden = false;
+    window.ADspaceSheet.show($('addCampBox'), { opener: c ? $('campMenuBtn') : $('showAddCamp') });
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
     /* Nothing is focused when the form opens: on a phone a field taking
        focus raises the keyboard and zooms the page past the rest of the
        form, and the first field is rarely the one somebody came to change. */
   }
-  function parkCampForm() { $('addCampBox').hidden = true; placeCampForm(false); }
+  function parkCampForm() { if (!$('addCampBox').hidden) window.ADspaceSheet.close(); $('addCampBox').hidden = true; }
   function shutCampForm() { parkCampForm(); editingCamp = null; campDraft.clear(); }
 
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () { openCampForm(null); });
   });
-  /* The record's ⋯, placed on the viewport like every other one; Edit details
-     is its one item, and choosing it shuts the menu the item sits in. */
+  /* The record's ⋯, placed on the viewport like every other one: Edit, then
+     Delete last; choosing either shuts the menu the item sits in. */
   (function () {
     var btn = $('campMenuBtn'), menu = $('campMenu');
     if (!btn || !menu) return;
@@ -1188,6 +1216,7 @@
     loadClients(function () { openCampForm(state.campaign); });
   });
   $('cancelAddCamp').addEventListener('click', shutCampForm);
+  $('campFormClose').addEventListener('click', shutCampForm);
 
   // Every invoice starts AINV, so the field carries it and only the rest is
   // typed. Stored whole, because that is what is on the document.
@@ -1617,6 +1646,7 @@
   });
 
   $('campDelete').addEventListener('click', function () {
+    shutMenus();
     var c = state.campaign;
     /* A delete through a sheet takes the name typed back, and a refused one
        (204 with nothing removed) is named, never filed and left as gone
@@ -3106,8 +3136,8 @@
          template is on, at WhatsApp Manage and its Booking message part. */
       if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Send on WhatsApp');
       items += menuItem('unbook', 'Revert to options');
-      items += menuItem('withdraw', 'Withdrawn');
-      items += menuItem('replace', 'Replaced', 'is-danger');
+      items += menuItem('withdraw', 'Withdraw');
+      items += menuItem('replace', 'Replace');
     }
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }

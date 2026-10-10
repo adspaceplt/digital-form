@@ -1525,6 +1525,44 @@ account menu when Settings took Upgrade mode, Announcements and Notices.
 It is now the Settings page's WhatsApp card (Templates and recent messages,
 Open, `team.settings`), opening the same sheet; the account menu holds no
 WhatsApp item.
+
+### 2026-10-10 · Client pages keep their glass on a phone
+The user: "The client facing sites header is no longer translucent? Abit of
+glass feel". At a desk it still was; under a finger every bar had been opaque
+since 2026-09-26, because iPhone Safari takes the status bar's colour from
+an opaque bar and, passing over a translucent one, showed the grey page as
+a band. The client pages' bar is glass under a finger again, and their root
+is painted white (the body keeps the grey page over the whole window), so
+Safari passing over the glass should take white. Not measurable in the
+sandbox: the user confirms on an iPhone, and the band returning reverts it.
+The console's head stays solid.
+
+### 2026-10-10 · Every creator's post reads as the Top post
+The user, from the campaign room on a phone: "I like this view possible to
+enhance for the all creators … way better for clients to view the results",
+then "once completed the progress bar got not much usage". Each live post
+on a booking now reads as the Top post card does: the booking's picture,
+the platform and its day, views (else impressions) and engagements as
+glyphs, when they were measured, and the button to the post. The per-booking
+results table (Measured, Impressions, Engagements, Views as labelled cells)
+is gone, with its styles. The card's Posted and Posting on facts leave once
+a post row states them, and a completed booking draws no step track: every
+step is behind it and its Completed chip says so.
+
+### 2026-10-10 · Reach within an allowance, and the audit's differences as a table
+The user imported a running month's ads from Meta and ran the audit 27
+seconds later: two ads' Reach read 12 and 9 people more, while spend,
+impressions and results held. Reach is Meta's estimate of unique people,
+revised while a period runs, so "exact, no tolerance" (2026-10-09) held a
+report Meta itself had moved. Asked, the user chose "Small allowance": Reach
+within `reach_allowance_pct` of Meta's (a Business setting, 0.5% from the
+start, 0 to 5, on the Settings page) matches and holds nothing, and the card
+says how many were within it; every other figure stays exact. The same day,
+of the differences ("not showing very clearly. the ui design is bad, and not
+reader friendly"): five stacked lines a difference became one line in a
+table, Where, Figure, Report, Meta, Difference and the act, the figures in
+tabular columns with Meta's in ink; in a narrow pane the three figures sit
+side by side under their labels.
 ### 2026-10-10 · A client's reports live in its Engagements, by content month
 The user: "Do you think client reports worth going into the client file >
 Engagements so we have one less tab to monitor? … or the engagements part
@@ -1548,6 +1586,73 @@ month line under the name now reads the same answer, so opening a record
 reads the client's months once rather than twice. The Engagements rows had
 read a set's state from a column that does not exist (`state`), so every set
 read Draft; they read `published` now. No schema change.
+
+### 2026-10-10 · Pictures from Meta, and TikTok's campaign report
+
+Reports showed an empty square for every imported post and ad: the team asked
+for thumbnails without uploading each one. Import from Meta now asks Meta
+for each ad's creative picture and each post's image or cover frame, and the
+page keeps a 320px copy on the row. The pictures are fetched through
+`meta-import`, never by the browser: Meta's image addresses expire within
+days and cannot be read across origins. Only Meta's image hosts are fetched,
+six a call. A picture the team chose is never replaced. The stand-in now
+reads a `.is()` guard on an update against the row as it stood, as
+PostgREST does; it had answered every guarded update with nothing.
+
+The team's first TikTok export was a campaign report, not the ad level
+export the importer was written for: no Ad name (Campaign name), Spend
+rather than Cost, Conversions beside Results, CTR as a fraction, and a
+Total of N results row last. The importer reads it as it comes. It carries
+no reach, age split or video views, so an ad level export with those
+columns is still asked for; the TikTok Business API (ads management and
+reporting) is the later route, through its own developer app and advertiser
+authorisation.
+
+### 2026-10-10 · One glyph an act, a press that shows it is working, and lists by month
+
+The user: "all buttons didnt follow the initial ones when newly build". Content
+Review's Publish carried the plane; Video Scripts' and Reports' did not. A rule
+in a file did not hold new screens to it, so the act table is now code
+(`js/acts.js`): a button drawn as an act's words alone is given that act's mark
+as it is drawn. The same day ("pending until its live kind of animations"), a
+press whose write is out shows a turning ring on the button, at its own width,
+from 150ms. The AI declaration ran on into the Submit question's words ("one
+whole chunk isnt reader friendly"); it is now its own shaded block over its
+tick. Content Review's review link left its rail ("taking up that spaces there
+for nothing") for the client's head, laid as the script month's link is. The
+Video Scripts list became a card a content month with a row a client's month,
+since a client writes thirty to fifty scripts a year.
+
+### 2026-10-10 · One place and one question for Delete
+
+The user: "some deletes contained inside the ... > delete, some inside ... >
+edit > delete; audit all these inconsistencies". The audit found nine: the
+campaign's Delete inside its edit form (which also took over the record's
+head), Calls and visits and Announcements drawing Delete as row buttons, five
+record deletes without the name typed back (a content set, a short link, a
+rate line, a user group, a contact), four deletes on sheets of their own
+rather than the one question, a soft removal worded Delete, a lone trash
+glyph, and Replaced as a red menu item. Delete is now the last item of its
+own ⋯, the campaign form a sheet, and every Delete one ADspaceConfirm
+question, which can now wait on the database's answer and keep itself open
+on a refusal (a wrong delete code). The chord never presses a red answer
+there either. The stand-in had never answered `delete_client`, so the
+client's Delete had no test; `tests/deletes.js` drives it and opens every ⋯
+on the main screens. The audit also found the Settings page reusing the id
+`setMsg`, which Content Review's set page holds; it is `settingsMsg`.
+
+### 2026-10-10 · A month for every content set, and a list for every script month
+
+The user, reviewing how the Work sections are laid out: a client writes thirty
+to fifty video scripts a year and keeps adding content sets, so tabs and one
+long card stop working. A script month became a list of its scripts, each
+script a page with Previous and Next. Content sets gained a content month
+(`batches.period`), backfilled once from the day each was made so a second
+run never undoes an Ad hoc set, and a client's sets are a card a month. The
+month change is a new activity tag, so the activity map is restated in a file
+of its own for the SQL Editor (it names `*.deleted` tags the connector holds);
+it restates the WhatsApp map too, so running it alone files both. The sets'
+post counts were one request a set; they are one request for the client.
 
 ### 2026-10-10 · The user group panel, simpler
 The user approved a simpler panel: eleven sections at four levels and

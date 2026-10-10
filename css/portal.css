@@ -2495,6 +2495,19 @@ body.is-plain .topbar { background: var(--chrome); }
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
 }
+/* The client pages keep their glass under a finger (the user, 2026-10-10:
+   "a bit of glass feel"). The canvas behind the status bar is painted white
+   (the root's own background; the body keeps the grey page over the whole
+   window), so Safari, passing over a translucent bar, takes white rather
+   than the grey band. Confirmed on an iPhone, since Safari cannot run in the
+   sandbox. The console keeps its solid head. */
+@media (pointer: coarse) {
+  :root[data-face="client"] { background: var(--card); }
+  :root[data-face="client"] .topbar {
+    background: var(--chrome);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  }
+}
 /* The page label is what gives way when the bar runs out of room, never the
    controls: it clips to an ellipsis rather than pushing a target under 44px. */
 /* It is a control, because the section's name is what explains the section:
@@ -2683,6 +2696,27 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields.has-half > .askentry.is-half { grid-column: auto; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
+/* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
+   words and mark give way to a turning ring in its own ink. */
+.btn.is-busy { position: relative; cursor: progress; }
+.btn.is-busy:disabled { opacity: 1; filter: none; }
+.btn.is-busy > :not(.btn-spin) { visibility: hidden; }
+.btn.is-busy { color: transparent; }
+.btn-spin {
+  position: absolute; left: 50%; top: 50%; width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+  color: var(--ink-soft); animation: btnspin .7s linear infinite;
+}
+.btn-go .btn-spin, .btn-primary .btn-spin { color: var(--on-action); }
+.btn-danger .btn-spin { color: var(--err); }
+@keyframes btnspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn-spin { animation: none; border-right-color: currentColor; opacity: .6; } }
+/* The AI declaration (2026-10-10): its own shaded block under the question,
+   the mark and the line over the tick, never run on into the question. */
+.askentry.is-declare { background: var(--sunk); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 10px; }
+.askdeclare { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.askdeclare svg { flex: 0 0 auto; width: 15px; height: 15px; margin-top: 2px; color: var(--ink); }
+.askentry.is-declare > .tickline { margin: 0; color: var(--ink); }
 .askentry > .datefield { display: flex; width: 100%; }
 @media (max-width: 560px) {
   /* Two actions of the same standing are two halves, never a slab and a
@@ -3565,53 +3599,12 @@ body.is-plain .topbar { background: var(--chrome); }
    shape and the tones are stated once, up by `.chip`. */
 .booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
 
-/* Results as a table: one row per platform, the post link in the first
-   column, the date the numbers were taken beside the numbers. */
-.results-wrap { margin-top: 12px; overflow-x: auto; }
-.results { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-.results th {
-  text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-soft);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute); white-space: nowrap;
-}
-.results td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); white-space: nowrap; }
-.results tr:last-child td { border-bottom: 0; }
-.results th:last-child, .results td:last-child { padding-right: 0; }
-.results .num { text-align: right; font-variant-numeric: tabular-nums; }
-.results-plat { font-weight: 600; color: var(--ink); }
-/* The live post, one button a platform, named for where it opens (the user,
-   2026-09-27: the platform's name alone in a table was "too not obvious").
-   Each keeps its own width and they wrap; the mark says it leaves the page. */
-.postlinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* A live post's button (`.postlink`, inside `.cx-post-item`), named for
+   where it opens (the user, 2026-09-27: the platform's name alone was "too
+   not obvious"); the mark says it leaves the page. On a phone it runs the
+   card's width (`.cx-postbtn`), every card alike. */
 .postlink { gap: 7px; }
 .postlink svg { width: 13px; height: 13px; flex: 0 0 auto; opacity: .7; }
-/* On a phone every post button runs the card's width, each on its line, one
-   or several: a lone one kept its own width and read as a different button
-   from the card beside it (the user, 2026-09-27: "Why are the buttons
-   different"). */
-@media (max-width: 640px) {
-  .postlinks > .postlink { flex: 1 1 100%; justify-content: center; }
-}
-/* On a phone the table becomes one block per platform: the link on top, the
-   figures two abreast under their labels. Nothing scrolls sideways. */
-@media (max-width: 640px) {
-  .results-wrap { overflow: visible; }
-  .results thead { display: none; }
-  .results, .results tbody { display: block; }
-  .results tr {
-    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px;
-    padding: 10px 0; border-bottom: 1px solid var(--line-soft);
-  }
-  .results tr:last-child { border-bottom: 0; }
-  .results td { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; white-space: normal; }
-  .results td::before {
-    content: attr(data-l); font-size: 12px; font-weight: 600; letter-spacing: 0;
-    color: var(--ink-mute);
-  }
-  .results td:first-child { grid-column: 1 / -1; }
-  .results td:first-child::before { display: none; }
-  .results .num { text-align: left; }
-}
 /* One placement's results on the Results step, a hairline between two. */
 .postrow + .postrow { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 12px; }
 .postrow-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
@@ -3728,9 +3721,6 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The form inside the campaign's own card: no second border, no second
    padding. Deletion is at its foot, behind the edit, and looks like what
    it is. */
-#addCampBox.is-inline { border: 0; padding: 0; margin: 0; box-shadow: none; }
-.form-danger { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); display: flex; }
-.form-danger .btn { flex: 0 0 auto; min-width: 0; }
 .btn-quiet.is-danger { color: #a3312a; }
 .btn-quiet.is-danger:hover { color: #a3312a; border-color: #a3312a; }
 
@@ -5332,8 +5322,9 @@ body > .shell { width: 100%; }
    they sit in, and an unstated template is the desktop one at 390. */
 .crm-head.camp-row, .crm-row.camp-row {
   grid-template-columns:
-    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px var(--state-w) 18px;
+    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px 110px 18px;
 }
+.crm-row.camp-row .camp-c-upd { display: block; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 /* A heading over a money column ends where the figures end, and is still the
    same eyebrow as the headings beside it. */
 .crm-head .is-end { text-align: right; }
@@ -5346,7 +5337,7 @@ body > .shell { width: 100%; }
      other list, measured against its worst case. "Open for selection" is the
      widest chip a campaign can draw. */
   .crm-row.camp-row {
-    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-columns: minmax(0, 1fr) 110px;
     grid-template-areas: "name stage" "meta stage";
   }
   .crm-row.camp-row .camp-c-client,
@@ -8957,7 +8948,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-audit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
 .rp-audit-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .rp-audit-head + .rp-check { border-top: 1px solid var(--line-soft); }
-.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check, .rp-metatable + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-f-more { padding: 4px 16px 12px 52px; }
 .is-narrow .rp-part { grid-template-columns: 24px minmax(0, 1fr); }
 .is-narrow .rp-part > .rp-aicheck-acts { grid-column: 2; flex-wrap: wrap; }
@@ -8977,6 +8968,41 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-f-acts .btn { flex: 0 0 auto; min-width: 0; }
 .rp-finding.is-applied > :not(.rp-f-acts) { opacity: .55; }
 .rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--ink-soft); }
+/* Against Meta's differences as a table (2026-10-10, the user: "not
+   showing very clearly"): one line a difference, the figures in tabular
+   columns, Meta's in ink at 600, how far apart beside them, the act at the
+   row's end. Every row states the same tracks, so the columns hold. */
+.rp-metatable { border-top: 1px solid var(--line-soft); padding: 4px 16px 8px 52px; }
+.rp-metahead, .rp-metarow {
+  display: grid; align-items: center; column-gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 120px 104px 104px 120px 156px;
+}
+.rp-metahead { padding: 8px 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-mute); border-bottom: 1px solid var(--line-soft); }
+.rp-metarow { padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+.rp-metarow:last-child { border-bottom: 0; }
+.rp-metahead .num, .rp-m-num { text-align: right; font-variant-numeric: tabular-nums; }
+.rp-m-where { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.rp-m-field { color: var(--ink-soft); }
+.rp-m-num { color: var(--ink-soft); white-space: nowrap; }
+.rp-m-meta { color: var(--ink); font-weight: 600; }
+.rp-m-gap { color: var(--ink-mute); }
+.rp-metarow.is-words .rp-m-num:not(.rp-m-gap) { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.rp-m-act { display: flex; justify-content: flex-end; }
+.rp-m-act .btn { flex: 0 0 auto; min-width: 0; margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
+/* In a narrow pane: where and the figure on top, then Report, Meta and
+   Difference side by side under their labels, the act under them. */
+.is-narrow .rp-metatable { padding-left: 16px; }
+.is-narrow .rp-metahead { display: none; }
+.is-narrow .rp-metarow {
+  grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 6px; padding: 12px 0;
+}
+.is-narrow .rp-m-where { grid-column: 1 / -1; }
+.is-narrow .rp-m-field { grid-column: 1 / -1; margin-top: -4px; font-size: 13px; }
+.is-narrow .rp-m-num { display: grid; gap: 2px; text-align: left; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.is-narrow .rp-m-num::before { content: attr(data-l); font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.is-narrow .rp-m-act { grid-column: 1 / -1; justify-content: flex-start; }
+.is-narrow .rp-m-act:empty { display: none; }
+.is-narrow .rp-m-act .btn { margin-block: 2px 0; }
 .rp-aicheck > .msg { padding: 0 16px 12px 52px; }
 .rp-aicheck > .msg:empty { display: none; }
 .is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
@@ -9869,9 +9895,17 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cr-main > .viewhead:first-child { margin-top: 0; }
 .cr-rail { min-width: 0; }
 .cr-rail .railblock { border-bottom: 0; margin: 0; }
-.cr-rail .linkbox .input { width: 100%; }
-.cr-linkacts { margin-top: 8px; }
-.cr-linkacts > .btn { flex: 1 1 0; min-width: 0; }
+/* The client's sets run the page's width; the review link sits in the
+   head (2026-10-10), as a script month's client link does. */
+.cr-rec-one { grid-template-columns: minmax(0, 1fr); }
+.cr-linktools { grid-template-columns: minmax(0, 1fr); }
+.cr-linktools .linkbox { flex-wrap: nowrap; }
+.cr-linktools .linkbox .input { min-width: 0; }
+@media (max-width: 640px) {
+  .cr-linktools .linkbox { flex-wrap: wrap; }
+  .cr-linktools .linkbox .input { flex: 1 1 100%; }
+  .cr-linktools .linkbox .btn { flex: 1 1 0; min-width: 0; }
+}
 @media (max-width: 1100px) {
   .cr-rec { grid-template-columns: minmax(0, 1fr); }
   .cr-rail { order: -1; margin-bottom: 12px; }
@@ -10385,7 +10419,7 @@ body.is-maint { overflow: hidden; }
 .ann-zh { color: var(--ink-soft); margin-top: 4px; }
 .ann-meta { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .ann-ctl { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-.ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.ann-acts { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .ann-acts .btn { flex: 0 0 auto; }
 .ann-none { margin: 0; color: var(--ink-mute); }
 /* Notices (js/notice.js) reuse the list above: the title, the message in
@@ -10759,6 +10793,17 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .cx-plat { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
 .cx-mini { display: flex; gap: 14px; font-size: 13px; color: var(--ink-soft); }
 .cx-mini > span { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+/* Each live post on a booking's card reads as the Top post does
+   (2026-10-10), one under another with a hairline between. */
+.cx-posts { display: grid; gap: 12px; margin-top: 12px; }
+.cx-post-item + .cx-post-item { padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.cx-measured { font-size: 12px; color: var(--ink-mute); }
+/* At a desk the post's button stands at the row's right edge, beside what
+   it opens; on a phone it runs the card's width under it. */
+@media (min-width: 641px) {
+  .cx-post-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+  .cx-post-item .cx-post-row { margin-bottom: 0; }
+}
 .cx-postbtn { gap: 7px; }
 .cx-postbtn svg { width: 13px; height: 13px; opacity: .7; }
 @media (max-width: 640px) {
@@ -11053,9 +11098,19 @@ button.vs-row { cursor: pointer; }
    then the script on show: its own head (code and title over the type; the
    state, Edit, Publish and the ⋯ at the right edge) over its facts, and the
    script in the next card. */
-.vs-tabline { margin: 0 0 12px; }
-.vs-tabline > .rectabs { margin: 0; flex: 1 1 auto; min-width: 0; }
-.vs-tabline > .vs-next { flex: 0 0 auto; }
+/* The month's scripts (2026-10-10): a card of rows under the head, Add
+   script in its head; one script's pager over its own page. */
+.vs-monthlist { padding: 0; overflow: hidden; }
+.vs-monthhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 15px 12px; }
+.vs-monthhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.vs-monthhead .btn { flex: 0 0 auto; }
+/* The card draws the boundary; the table inside it draws none. */
+.vs-mtable { border: 0; border-radius: 0; margin: 0; }
+.vs-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+.vs-nav.is-one .vs-navbtns { display: none; }
+.vs-pos { font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.vs-navbtns { display: flex; gap: 8px; }
+.vs-navbtns .btn { flex: 0 0 auto; min-width: 96px; }
 .vs-rec { display: grid; gap: 12px; min-width: 0; }
 .vs-rec > .panel { margin: 0; }
 .vs-factcard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
