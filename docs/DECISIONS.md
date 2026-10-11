@@ -2186,6 +2186,54 @@ is missing. It never fails the session: a clone refused for want of GitHub
 access is said and the session goes on. Synchronous, so no suite runs before
 its libraries are in.
 
+### 2026-10-11 · A priority is a deadline from when it is set; a task is owed by whichever comes first
+The queue's task 45, decided with the user over five mockups the same day.
+Levels Urgent, High, Medium, Normal: Low retired (every Low task made Normal
+once, on the migration's first run, known by its settings not yet being
+there), and Medium took Low's key, 4, which the task functions already
+accepted; Urgent 1, High 2 and Normal 3 keep theirs, so no stored key moves
+meaning but the retired one. The look went through four rounds: dots (two on
+a row competed with the stage's), a filled tag (B), the whole row tinted,
+outlined or striped (D1 to D3); the user chose the strip and the filled tag
+together, the tag's words in ink while counting and red once over. The user
+then saw "31h left" beside a due date a week away and moved the tag into the
+Due column; asked which deadline decides late, chose whichever comes first
+(explained with a High task made Monday 9am due next Monday: late after
+Wednesday 9am). Last, the user's own case (a task due the 29th raised to High
+on the 12th) showed the count must run from when the priority is set, not
+from creation: `ops_tasks.priority_at`, stamped by trigger. The hours are
+Business settings read as at the day the priority was set. `ops_report` reads
+the same rule (late, open work by person, on time), and, asked, so does
+`perf_ops_rate`, the reviewer's on-time hint.
+
+### 2026-10-11 · Releases merge themselves, and sessions may run at once
+Asked to approve the priority release, the user answered "auto merge all
+PRs and allow all sessions". Every PR now merges once its own checks pass,
+with its migration and edge function applied in the order it states, and
+`.claude/settings.json` pre-approves exactly those acts (opening, updating
+and merging a PR, applying SQL, deploying a function; any other write still
+asks). The rule of one session at a time (2026-10-10) is lifted: each
+session holds one request on its own branch and merges `main` in where
+another merged first. One gate a machine still holds, because one gate
+fills its four processors.
+
+### 2026-10-11 · The review's rates come first, and two of them read My Work
+Asked whether the rates should sit below the points they suggest, the user
+was right: the rates are what Save turns into each category's suggested
+points, so Rates behind the scores now comes before Scores. The user then
+asked for a Timeline adherence figure beside its rate. The one figure the
+sheet had, beside On-time posting, counted tasks finished by their due date,
+which is the timeline's question, so the two were sorted out together in
+`perf_ops_rate`: On-time posting reads the content tasks whose post date
+fell in the month (Malaysia's day) and has passed, live by that day, a post
+never made counting as missed; Timeline adherence reads the tasks that
+reached their review in the month, met only by every deadline they had, as
+My Work's late rule reads (the due date's day at client review, an everyday
+task's at its finish; a priority's deadline at its review). The answer
+changed shape (`posting`, `timeline` in place of `done`, `on_time`), so a
+page and a database from either side of the release draw no figure rather
+than a wrong one.
+
 ### 2026-10-11 · Settings as macOS and iPhone Settings
 The queue's task 46, from the user's handover: "Vertical list at a desk,
 drill-down on a phone (iPhone/Mac Settings style). Groups: Portal, Clients,

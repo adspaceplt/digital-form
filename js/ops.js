@@ -333,6 +333,8 @@
     return at;
   }
   function isLate(t) {
+    var dl = t && deadlineOf(t);
+    if (dl && dl.over) return true;
     if (!t || !t.current_final_due_at) return false;
     /* A task that is finished was not late for being finished: whether it
        arrived on time is the record's question, not the queue's. */
@@ -382,9 +384,14 @@
   var TASK_TYPE_WORD = { engagement: 'Retainer', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Other' };
   /* `simple` is the stored key and Light is the word the team uses for it. */
   var COMPLEX_WORD = { simple: 'Light', standard: 'Standard', complex: 'Complex' };
-  /* Priority is how soon, on four words; the fifth level a row written before
-     this list can still carry reads as Low. */
-  var PRIORITY_WORD = { '1': 'Urgent', '2': 'High', '3': 'Normal', '4': 'Low', '5': 'Low' };
+  /* Priority is how soon, on four words (2026-10-11): Urgent 1, High 2,
+     Medium 4 (the key Low left when it was retired) and Normal 3; the fifth
+     level an old row may still carry reads as Normal. RANK is the order they
+     read in, since Medium's key sorts after Normal's. */
+  var PRIORITY_WORD = { '1': 'Urgent', '2': 'High', '3': 'Normal', '4': 'Medium', '5': 'Normal' };
+  var PRIORITY_RANK = { 1: 1, 2: 2, 4: 3, 3: 4, 5: 4 };
+  var PRIORITY_OPTS = [['1', 'Urgent'], ['2', 'High'], ['4', 'Medium'], ['3', 'Normal']];
+  function prioValue(t) { var p = Number(t && t.priority_level); return PRIORITY_WORD[p] && p !== 5 ? p : 3; }
   function formatWord(t) {
     if (!t || !t.deliverable_type) return '';
     return DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type);
@@ -413,14 +420,64 @@
     if (t.scope === 'lead') return name ? 'Lead · ' + name : 'Lead';
     return name || '';
   }
-  /* Urgent and High carry a chip because they are the exception; Normal and
-     Low are the ordinary case and say nothing, which is the accent rule.
-     Urgent is red, as late is: it cannot wait (the user, 2026-10-07). */
-  function priorityChip(t) {
-    var p = Number(t.priority_level);
-    if (p === 1) return '<span class="tone is-danger task-pri">Urgent</span>';
-    if (p === 2) return '<span class="tone task-pri">High</span>';
-    return '';
+  /* PRIORITY DEADLINES (2026-10-11, the user): a priority is a deadline from
+     the moment it is set (`priority_at`, stamped by the database on creation
+     and on every change of level; a task made Normal on the 1st and due the
+     29th, raised to High on the 12th at 9am, is owed by the 14th at 9am):
+     Urgent within 24 hours, High within 48, Medium within 72 (Business
+     settings, `priority_{level}_hours`, as at the day it was set); Normal has
+     none. The due date is never changed: a task is owed by whichever comes
+     first, and late past it (`isLate`, `ops_report` alike). The count stops
+     once the task reaches client review (an everyday task's Review, the
+     workflow's first review where it has no client review) or is finished.
+     On hold and Blocked are side lanes: the count goes on there. Worked out
+     on every paint, never stored. */
+  var PRIORITY_KEY = { 1: 'urgent', 2: 'high', 4: 'medium' };
+  var PRIORITY_FIRST = { urgent: 24, high: 48, medium: 72 };
+  function prioHours(key, at) {
+    var M = window.ADspaceMoney, v = M && M.setting ? Number(M.setting('priority_' + key + '_hours', at)) : NaN;
+    return v > 0 ? v : PRIORITY_FIRST[key];
+  }
+  function deliverFloor(wf) {
+    var at = reviewFloor(wf);
+    if (at !== null) return at;
+    Object.keys(state.stages).forEach(function (k) {
+      var s = state.stages[k];
+      if (!s || s.workflow_id !== wf || s.stage_group !== 'internal_review') return;
+      if (at === null || s.position < at) at = s.position;
+    });
+    return at;
+  }
+  function deadlineOf(t) {
+    var key = t && PRIORITY_KEY[Number(t.priority_level)];
+    var setAt = t && (t.priority_at || t.created_at);
+    if (!key || !setAt || isFinished(t)) return null;
+    var made = new Date(setAt);
+    if (isNaN(made.getTime())) return null;
+    var here = stageOf(t), floor = deliverFloor(t.workflow_id);
+    if (here && floor !== null && here.position >= floor && !/^(kiv|blocked)$/.test(here.stage_group || '')) return null;
+    var hours = prioHours(key, setAt);
+    var by = new Date(made.getTime() + hours * 36e5), ms = by.getTime() - Date.now();
+    /* Whichever comes first: the due date is owed to its day's end, as the
+       late rule reads it. */
+    var dueEnd = t.current_final_due_at ? dayOf(t.current_final_due_at) : null;
+    if (dueEnd) dueEnd.setDate(dueEnd.getDate() + 1);
+    var span = Math.abs(ms), n = Math.floor(span / 36e5);
+    var amount = n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
+    return { key: key, word: PRIORITY_WORD[Number(t.priority_level)], hours: hours, set: made, by: by, over: ms < 0,
+             first: !dueEnd || by.getTime() < dueEnd.getTime(),
+             words: PRIORITY_WORD[Number(t.priority_level)] + ' · ' + amount + (ms < 0 ? ' over' : ' left') };
+  }
+  /* The row's and the card's mark (the user's D3 + B): a strip down the
+     left edge in the level's colour, red once the deadline has passed
+     (`.pri-urgent`, `.pri-high`, `.pri-medium`, `.pri-over`), and the
+     deadline's words as a tag filled in the same colour, standing where the
+     due date stands (the row's Due cell, the card's foot) until it is met.
+     Normal, or a deadline met, draws neither. */
+  function prioClass(d) { return d ? ' pri-' + (d.over ? 'over' : d.key) : ''; }
+  function priorityChip(t, d) {
+    d = d === undefined ? deadlineOf(t) : d;
+    return d ? '<span class="task-pri is-' + (d.over ? 'over' : d.key) + '">' + esc(d.words) + '</span>' : '';
   }
   function sentence(s) {
     s = String(s || '').replace(/_/g, ' ');
@@ -779,7 +836,9 @@
     if (isFinished(t)) return doneToday(t) ? 'donetoday' : 'done';
     if (urgentDelivery(t)) return 'urgent';
     if (takeable(t)) return 'open';
-    var n = daysAway(dueOf(t)), p = plainOf(t);
+    var dl = deadlineOf(t), p = plainOf(t);
+    var n = dl && dl.first ? daysAway(dl.by) : daysAway(dueOf(t));
+    if (dl && dl.over) return 'overdue';
     if (n !== null && n < 0) return 'overdue';
     if (n === 0) return 'today';
     if (p === 'waiting') return 'waiting';
@@ -980,7 +1039,7 @@
      owed on Friday sits above a Normal one owed on Thursday, because the band
      has already said which week it is. */
   function byPriority(a, b) {
-    var pa = Number(a.priority_level) || 3, pb = Number(b.priority_level) || 3;
+    var pa = PRIORITY_RANK[prioValue(a)], pb = PRIORITY_RANK[prioValue(b)];
     if (pa !== pb) return pa - pb;
     var da = a.current_final_due_at || '9999', dbb = b.current_final_due_at || '9999';
     return da < dbb ? -1 : da > dbb ? 1 : 0;
@@ -1844,7 +1903,8 @@
      and the same gates as the list, with a refusal named on the card. */
   function cardOf(t) {
     var el = document.createElement('div');
-    el.className = 'bcard' + (isFinished(t) ? ' is-off' : '');
+    var dl = deadlineOf(t);
+    el.className = 'bcard' + (isFinished(t) ? ' is-off' : '') + prioClass(dl);
     el.setAttribute('data-task', t.id);
     /* Late, not merely past: the same rule the queue row draws. */
     var over = isLate(t);
@@ -1872,7 +1932,7 @@
         '<span class="bcard-who">' +
           (who ? '<span class="bcard-name">' + esc(who) + '</span>'
                : '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
-        (dueOf(t)
+        (dl && dl.first ? priorityChip(t, dl) : dueOf(t)
           ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
               esc((dueLead(t) ? dueLead(t) + ' ' : '') + shortDate(dueOf(t))) + '</span>'
           : '') +
@@ -1946,6 +2006,13 @@
   }
   function dayCount(n) {
     return n + (Math.abs(n) === 1 ? ' day' : ' days');
+  }
+  /* How far past: a priority's deadline passed less than a day ago in hours
+     (or minutes), else in days. */
+  function overWords(t) {
+    var m = t.over_minutes == null ? null : Number(t.over_minutes), d = Number(t.days_over) || 0;
+    if (m !== null && d < 1) return m < 60 ? Math.max(1, m) + 'm' : Math.floor(m / 60) + 'h';
+    return dayCount(d);
   }
 
   function repTable(host, title, heads, rowClass, rows, note) {
@@ -2113,7 +2180,7 @@
                 '</button></span>' +
                 '<span class="rep-mid">' + repLab('Assigned to') +
                   (t.owner ? esc(t.owner) : '<span class="mute">—</span>') + '</span>' +
-                '<span class="rep-num is-over">' + esc(dayCount(Number(t.days_over))) + '</span>'
+                '<span class="rep-num is-over">' + esc(overWords(t)) + '</span>'
         };
       }), 'No overdue tasks.');
 
@@ -2445,7 +2512,8 @@
     var fin = isFinished(t);
     var picking = !elsewhere && state.selecting;
     var picked = picking && state.picked[t.id];
-    el.className = 'svc-row task-row' + (fin ? ' is-off' : '') + (picked ? ' is-picked' : '');
+    var dl = deadlineOf(t);
+    el.className = 'svc-row task-row' + (fin ? ' is-off' : '') + (picked ? ' is-picked' : '') + prioClass(dl);
     el.setAttribute('data-task', t.id);
     var over = isLate(t) || (!fin && dueLead(t) && daysAway(dueOf(t)) < 0);
     var work = may('ops', 'work');
@@ -2471,7 +2539,7 @@
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
       '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' +
-        (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : priorityChip(t)) +
+        (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
@@ -2481,10 +2549,14 @@
         ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
             (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
         : (who ? esc(who) : '<span class="mute">—</span>')) + '</span>' +
+      /* While a priority's deadline runs it is the row's date (the user,
+         2026-10-11: two deadlines on one row read wrong); the due date
+         returns once it is met, and stays on the task card throughout. */
+      (dl && dl.first ? '<span class="task-due is-pri" aria-label="' + esc(dl.words + '. ' + dc.label) + '">' + priorityChip(t, dl) + '</span>' :
       '<span class="task-due' + (over ? ' is-over' : '') + '">' + (dueEdit
         ? '<button class="tinline" type="button" data-a="due" aria-label="' + esc(dc.label) + '. Change">' + dueHtml + '</button>'
         : '<span aria-label="' + esc(fin ? 'Finished ' + niceDate(t.completed_at || t.cancelled_at) : dc.label) + '">' +
-            (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>' +
+            (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>') +
       '<span class="task-stage">' + (!elsewhere && takeable(t)
         ? '<button class="btn btn-sm task-take" type="button" data-a="take" aria-label="Take ' + esc(t.title) + '">Take</button>'
         : statusCell(t)) + '</span>' +
@@ -2987,7 +3059,7 @@
     $('dwCtx').hidden = true;
     ['taskPeople', 'taskDates', 'taskFacts', 'taskMore', 'dwSteps', 'dwVideo'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
     ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg', 'dwVideoMsg'].forEach(function (x) { msg(x, ''); });
-    ['dwSteps', 'dwVideo', 'dwVideoH'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
+    ['dwSteps', 'dwVideo', 'dwVideoH', 'dwDeadline'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
     if ($('dueAsk')) $('dueAsk').hidden = true;
     if ($('dwReport')) $('dwReport').hidden = true;
     $('dwNextTitle').textContent = '';
@@ -3060,6 +3132,15 @@
     $('dwCtx').hidden = !ctx && !link;
 
     paintNext(NEXT_DW(), t, n);
+    /* The deadline a priority sets, under the next step while it runs. */
+    var dl = deadlineOf(t), dlBox = $('dwDeadline');
+    if (dlBox) {
+      dl = dl && dl.first ? dl : null;
+      dlBox.className = 'task-deadline' + prioClass(dl);
+      dlBox.innerHTML = dl ? priorityChip(t, dl) + '<span>Set to ' + esc(dl.word) + ' ' + esc(niceTime(dl.set)) + ' · deliver within ' +
+        dl.hours + ' hours, by ' + esc(niceTime(dl.by)) + '</span>' : '';
+      dlBox.hidden = !dl;
+    }
 
     $('dwTitleEdit').hidden = !work || fin;
 
@@ -3710,9 +3791,12 @@
     paintMonth(b, t, n);
     /* The final date is the day the work is owed AT CLIENT REVIEW, so the
        line says which of the two has happened. */
+    /* Late by a priority's deadline alone is said by its own line under the
+       next step; this one is the due date's. */
     var over = daysAway(t.current_final_due_at);
-    b.late.hidden = !isLate(t);
-    b.late.textContent = isLate(t)
+    var dueOver = isLate(t) && over !== null && over < 0;
+    b.late.hidden = !dueOver;
+    b.late.textContent = dueOver
       ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past due, short of client review.'
       : '';
     b.acts.innerHTML = '';
@@ -5478,7 +5562,7 @@
       } else if (t.code_period) {
         rows.push(frow('Month', esc(monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : ''))));
       }
-      rows.push(frow('Priority', detailSelect('priority_level', 'Priority', [['1', 'Urgent'], ['2', 'High'], ['3', 'Normal'], ['4', 'Low']], String(Math.min(4, Number(t.priority_level) || 3)))));
+      rows.push(frow('Priority', detailSelect('priority_level', 'Priority', PRIORITY_OPTS, String(prioValue(t)))));
       rows.push(frow('Complexity', detailSelect('complexity', 'Complexity', pairsOf(COMPLEX_WORD), t.complexity || 'standard')));
     } else {
       [['Format', formatWord(t)], ['Type', TASK_TYPE_WORD[t.task_type] || ''],

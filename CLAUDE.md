@@ -82,8 +82,11 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - Every shell command runs without a permission prompt (`.claude/settings.json`
   `Bash`; the user, 2026-10-10: "Auto allow bash"), as do the read-only GitHub
   and Supabase lookups (workflow runs, a PR, edge functions, logs,
-  migrations; 2026-10-04). No connector act that writes, merges, deploys or
-  runs SQL is pre-approved.
+  migrations; 2026-10-04). So is a release's own work (the user,
+  2026-10-11: "auto merge all PRs and allow all sessions"): opening,
+  updating and merging a PR, applying its migration and deploying its edge
+  function, in the order the release states, and starting or messaging a
+  session and adding a repository it needs; any other write still asks.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
@@ -444,7 +447,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`; its address falls back for anyone else. Grouped as
   macOS and iPhone Settings (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices), Clients (Follow-up limits), My
-  Work (Due dates, Task numbering), Reports (Meta checks, Reach allowance),
+  Work (Due dates, Priority deadlines, Task numbering), Reports (Meta checks, Reach allowance),
   Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
   (Templates and recent messages), Documents (Document types); a group with
   no row drawn is left out. At a desk the groups run down the left beside
@@ -2459,8 +2462,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Other (key
     `special`, 2026-10-09).
   - Format: the rate card's formats, optional.
-  - Priority: Urgent, High, Normal, Low. Urgent and High carry a chip,
-    Urgent in red.
+  - Priority: Urgent, High, Medium, Normal (keys 1, 2, 4, 3: Medium took
+    the key Low left, `2026-10-11-priority-deadlines.sql`, which made every
+    Low task Normal once; an old 5 reads Normal; rows read in that order,
+    `PRIORITY_RANK`). A priority is a deadline from when it was set
+    (`ops_tasks.priority_at`, stamped by trigger `ops_tasks_priority_at` on
+    creation and on every change of level): Urgent 24 hours, High 48,
+    Medium 72 (Business settings `priority_{urgent,high,medium}_hours`, as
+    at the day it was set; the Settings page's Priority deadlines); Normal
+    has none (the user, 2026-10-11: a task due the 29th raised to High on
+    the 12th at 9am is owed by the 14th at 9am). Worked out on every read
+    (`deadlineOf`, `ops_priority_by`), never written; the due date is never
+    changed. It stops once the task reaches client review (an everyday
+    task's Review) or is finished; On hold and Blocked count on. While it
+    runs the row and a board card carry a strip down their left edge in the
+    level's colour (red once over); while it comes before the due date its
+    words stand in the Due column as a filled tag ("High · 31h left", red
+    "High · 5h over"), and the task card says Set to High … · deliver within
+    48 hours, by … under the next step.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
   - The post date is required on a new content piece (below). It seeds
     the content month and week until they are touched (`ntTouched`). My
@@ -2682,8 +2701,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The final date moves only through the creator's approval
     (`ops_request_due_change` → `ops_decide_due_change`), except for its
     creator or an admin, who move it directly.
-  - Late = past the final date and short of client review (`isLate()`,
-    `reviewFloor()`).
+  - Late = past whichever deadline comes first (the user, 2026-10-11): the
+    final date, short of client review (`isLate()`, `reviewFloor()`), or a
+    priority's, short of its review (`deadlineOf`). The Overdue band, the
+    task card, `ops_report`'s late list (`over_minutes` for a priority's,
+    read in hours under a day), open work by person, the on-time figures
+    (met only where both were met) and the performance review's Timeline
+    adherence figure (`perf_ops_rate`) read the same rule.
   - The control is named for what it will do: Request extension, or Change due
     date.
   - A row's date already set opens the due sheet (`openDue('final', row)`),
@@ -2919,6 +2943,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   rate it changed, from and to (`perf_save` files `changed`; a save that
   changed nothing files nothing).
 - Both locks (the master code and the email code) are one centred `.lockcard`.
+- The review sheet reads Rates behind the scores above Scores (the user,
+  2026-10-11: the rates suggest the points): each rate a percentage
+  management types, and Save works out each category's suggested points
+  from them (`perf_calc` `suggested`), never the score. Two carry what My
+  Work knows (`perf_ops_rate`, `2026-10-11-review-my-work-figures.sql`), a
+  press making it the rate: On-time posting, the content tasks the
+  colleague owns whose post date fell in the month (MYT) and has passed, and
+  how many went live by its day; Timeline adherence, the tasks they own
+  that reached their review in the month, and how many by every deadline
+  they had (My Work's late rule).
 - Notifications never carry a score.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
@@ -4389,9 +4423,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes
   go apart.
-- Two accounts, one at a time (the user, 2026-10-10): the user may move
-  between accounts as credits allow, never with two sessions working at
-  once. "Hand over" means: commit and push both repositories, then post
+- Sessions run at once (the user, 2026-10-11: "allow all sessions"; until
+  then one at a time): each holds one request on its own branch and PR,
+  merges `main` in where another merged first, and merges once its own
+  checks pass, never waiting to be asked. One gate a machine still holds.
+  "Hand over" means: commit and push both repositories, then post
   or replace one comment on the open PR (else a draft PR) stating the
   commits, the checks passed, failed and not run, the steps done and
   still open in order with their rollback, and what waits on the user. A

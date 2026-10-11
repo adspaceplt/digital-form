@@ -26,7 +26,8 @@
      existed (the migration's seed), used only where the read fails. */
   var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_24: -10,
     lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
-    ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10 };
+    ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10,
+    priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72 };
   var ROWS = [];
   var loading = null;
   function today() {
