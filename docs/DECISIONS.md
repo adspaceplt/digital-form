@@ -2455,3 +2455,17 @@ hover. A press runs `ADspaceRefresh.hard()` as the account menu's item did,
 and that item is gone. The line is drawn only from a Pages build's
 `/version.json`, so a copy served raw has no Refresh app; the installed app
 always runs a build.
+
+### 2026-10-12 · The day's full gate: a column's figure on the card's ground
+
+The day's full gate on main (cc5eab2, tests 6e0fe5b, `all` with `ui`,
+uxaudit and matrix) ended PROBLEM (4). uxaudit failed the Dashboard's column
+figures (`.cc-fig`, Active clients by month) on contrast: the figure is drawn
+inside its coloured column and stands above it, so the walk read the column
+as its ground (2.10:1 light, 1.45:1 dark). It now stands on the card's own
+ground (`--card`), which also keeps it clear of the gridlines behind it.
+leave and priority read the Dashboard's old cards and now read its one Needs
+attention list; handoff built its due day in Malaysia time while the page
+counts its week by the browser's clock, and now uses the browser's (tests
+1791195). `work.js`, logged as failing on the Dashboard release, passed in
+this gate; the logged line is closed.
