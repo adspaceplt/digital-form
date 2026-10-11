@@ -3123,7 +3123,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     months, newest first, each named as the report will be (a month from the
     16th by its own span), one that does not ask greyed with Not asked for or
     Not in My Work; a brand's report, or a read that fails, offers them all
-    and the database decides.
+    and the database decides. A month already holding the client's report
+    of that type (same brand, same span) reads its stage (`· Published`)
+    and is not offered (the user, 2026-10-11).
   - On request (`2026-10-09-reports-on-request.sql`, `sm_reports.on_request`;
     the user, 2026-10-09: "Sometimes we need to create report on demand"):
     New report's Requested by the client tick (`#rpNewAsked`, every month
@@ -3229,7 +3231,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`#rpVerSheet`) lists every version newest first (published when and
     by whom; On the client portal, or Unpublished and why) with its own
     Download.
-  - A report a client has seen is never deleted.
+  - Delete (the head's ⋯, Reports Full Access, the period typed back) removes
+    a report in any state with every version (`sm_report_delete`,
+    `2026-10-11-report-delete-seen.sql`; the user, 2026-10-11); one the client
+    has read says so in its question and in the record (`report.deleted`:
+    had been published, n versions removed from the client portal).
 - The list is one tab a stage (`#rhTabs`, the view strip, swipe and the
   arrows; `tab=` in the address, Drafts left out): Drafts, In review,
   Confirmed, Published, each with its count, opening on the first that
