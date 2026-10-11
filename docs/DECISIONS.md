@@ -2233,3 +2233,17 @@ task's at its finish; a priority's deadline at its review). The answer
 changed shape (`posting`, `timeline` in place of `done`, `on_time`), so a
 page and a database from either side of the release draw no figure rather
 than a wrong one.
+
+### 2026-10-12 · The whole layout walk runs once a day, never in a release
+The user, on seeing three releases each spend about an hour in their gate:
+"Why is all running full gate? I thot i've said the full gate no need for a
+and once per day only? Dashboard rename only also need a one hour run".
+None of those runs was `all`; each carried `ui` (uxaudit and matrix: every
+page in both themes, then seven widths and 200% zoom), which the tier table
+asked of any CSS, navigation or component change. That walk was forty of
+the sixty minutes. It now runs once a day with `all`, after the day's
+merges; a release gates on the suites that cover it, `cssguard`, and
+screenshots of every screen it reaches, read against the phone checklist.
+A layout fault elsewhere is then found by the next daily walk, logged, and
+fixed in the next release, as the one-request rule already does for older
+defects a new test exposes.
