@@ -2102,3 +2102,11 @@ blue: blue is the view's one next step), the user: "ok go ahead". Every
 `.state-select` takes the buttons' tonal shade with no outline, its dot and
 chevron kept; a press leaves no blue edge and the keyboard gets the buttons'
 ring. An outline now means a place to type, and the contact chip.
+
+### 2026-10-11 · The task card's pens on one edge
+
+The user, on the card's Dates and Details: "the pen is here and there". Each
+date's pen followed its words (Not set, 7 Oct 2026) and a detail's chevron
+its value. A date now takes its row with its words at the left and its pen
+at the right, and a detail's select runs to the same edge, so every mark
+stands in one column.

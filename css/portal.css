@@ -8176,6 +8176,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
+/* On the card the pen ends every date row on one right edge, and a detail's
+   chevron on the same edge (the user, 2026-10-11: "the pen is here and
+   there"): the date takes its row, its words at the left. */
+.tfacts dd > .tdate { flex: 1 1 auto; justify-content: space-between; margin-right: -8px; }
+.tfacts dd > .select.tdetail { width: calc(100% + 9px); max-width: none; }
 
 .tdate:active, .tdate-src:active { transform: scale(.97); }
 .tdate.is-over, .tdate-read.is-over { color: var(--err); font-weight: 600; }

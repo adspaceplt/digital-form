@@ -269,6 +269,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   facts and the amount go on the lines under the name, on a phone as at a
   desk. In a desk table row a chip follows the name, never the far edge of
   a wide cell (a task's Urgent read as the assignee's).
+- A value changed where it is read ends its mark on the facts' one right
+  edge: the task card's date pens and detail chevrons alike (the user,
+  2026-10-11: "the pen is here and there").
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
