@@ -3118,19 +3118,26 @@ Each line is a rule that broke once. Its reason is in the archive.
     report from October 2026 with no white-label brand is made only for a
     month in My Work whose span holds its last day and whose Reports ticks
     ask for its kind (trigger `sm_reports_month_gate`, `month-gate`), unless
-    an admin or Reports Full Access makes it. New report's Month is a select
-    of the client's months (`sm_report_months`) and the last twelve calendar
-    months, newest first, each named as the report will be (a month from the
-    16th by its own span), one that does not ask greyed with Not asked for or
-    Not in My Work; a brand's report, or a read that fails, offers them all
-    and the database decides. A month already holding the client's report
-    of that type (same brand, same span) reads its stage (`· Published`)
-    and is not offered (the user, 2026-10-11).
+    an admin or Reports Full Access makes it. New report asks Monthly or Ad
+    hoc (`#rpNewMode`; the user, 2026-10-11). Monthly offers the client's
+    content months in My Work alone (`sm_report_months`), each named and
+    spanned as the report will be (a month starts on its `start_day`), one
+    report of a type a month: a month already holding it (same brand, same
+    span) reads its stage (`· Published`) and is not offered; one whose
+    Reports ticks do not ask reads Not asked for, offered only to an admin
+    or Reports Full Access; a client's own Accounts Report needs the month's
+    planned content (`No planned content`; `sm_reports_month_gate`
+    `no-content` at every level, `2026-10-11-reports-need-content.sql`).
+    A white-label client is held to neither of the last two, for its own
+    reports and its brands' (a brand takes the partner's months), either
+    type. Ad hoc is a start and an end, any period, made on request. The
+    month sheet's Accounts report tick rests while Posts planned is empty
+    for a client not white label (`ops_engagements_accounts_content`:
+    `accounts-needs-content`; a new month with no plan leaves out the tick
+    it took from the month before).
   - On request (`2026-10-09-reports-on-request.sql`, `sm_reports.on_request`;
     the user, 2026-10-09: "Sometimes we need to create report on demand"):
-    New report's Requested by the client tick (`#rpNewAsked`, every month
-    open), and every custom period, makes a report the client asked for, on
-    any period (`sm_report_create_for(…, p_on_request)`, filed On request).
+    New report's Ad hoc makes a report the client asked for, on any period (`sm_report_create_for(…, p_on_request)`, filed On request).
     No month gate, no month rows under Check and submit (`sm_report_gate`
     answers `applies` false), the month's report task never moved or reset
     by it, never the month's report in `sm_report_months` or
@@ -3624,7 +3631,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Figure fields (`numFields()`, `data-num`) show a count with separators, a
   percentage to 1 decimal, and money as RM or S$. `numIn()` reads them back.
 - Money fields take `inputmode="decimal"`; counts take `numeric`.
-- New report: Month and Custom period are never both live, End's `min` is
+- New report: Monthly and Ad hoc are never both live, End's `min` is
   Start, and an empty date reads Select date.
 - The ads PDF:
   - Ad performance ranks each objective's ads in a table; the cheapest is

@@ -102,6 +102,7 @@
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
     'month-gate': 'Its month in My Work does not ask for this report.',
+    'no-content': 'This content month has no planned content, so it takes no Accounts Report.',
     'bad-period': 'The period must end on or after the day it starts.',
     'not-draft': 'Only a draft can be submitted.',
     'no-platforms': 'Add an account before submitting.',
@@ -351,13 +352,16 @@
       '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>';
   };
 
-  /* Start a report: the type first, as a segment, then the client and the
-     month (or a custom period). The months are the client's months in My
-     Work, each on its own span (a month starting on the 16th runs to the
-     15th); one whose Reports ticks do not ask for this type is greyed, and
-     the database refuses it (`month-gate`) unless an admin or Reports Full
-     Access starts it (the user, 2026-10-09). A white-label brand's report
-     is not the month's, so every month is offered for it. */
+  /* Start a report: the type first, as a segment, then the client, then
+     Monthly or Ad hoc (the user, 2026-10-11). Monthly offers the client's
+     content months in My Work alone, each on its own span (a month may start
+     on any day from the 1st to the 28th), one report of a type a month: a
+     month already made reads its stage, one whose Reports ticks do not ask
+     for the type is greyed (an admin or Reports Full Access may still start
+     it), and a client's own Accounts Report needs the month's planned
+     content. A white-label client is held to neither of the last two, for
+     its own reports and its brands' alike, and a brand takes the partner's
+     months. Ad hoc is any period, made on request. */
   function newSheet(opener) {
     var box = sheetShell('rpNewSheet', 'New report',
       '<section class="fsec">' +
@@ -369,15 +373,11 @@
         /* A white-label client's report is for the client itself or one of
            its brands (2026-10-07): each its own report a month. */
         '<div class="row" id="rpNewForRow" hidden><div><label class="field-label" for="rpNewFor">For</label><select class="select" id="rpNewFor"></select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
-        /* A report the client asked for outside the month's own (the user,
-           2026-10-09: "Sometimes we need to create report on demand"): any
-           month, no month in My Work asked, and the month's report task left
-           alone. A custom period is always one. */
-        '<label class="tickline" id="rpNewAskedLine" for="rpNewAsked"><input type="checkbox" id="rpNewAsked"> <span>Requested by the client</span></label>' +
-      '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
-        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div></details>' +
+        '<div class="row"><div><label class="field-label" for="rpNewMode">Period</label>' +
+          '<select class="select" id="rpNewMode" data-seg><option value="month">Monthly</option><option value="adhoc">Ad hoc</option></select></div></div>' +
+        '<div class="row" id="rpNewMonthRow"><div><label class="field-label" for="rpNewMonth">Content month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
+        '<div class="row fgrid" id="rpNewDates" hidden><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
+        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div>' +
       '</section>', FOOT('Create'));
     $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
       return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
@@ -397,34 +397,23 @@
         if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpNewFor'));
       }).catch(function () {});
     };
-    /* The months a report may be started for. A refused read (an older
-       database) offers the last twelve calendar months, and the database
-       still decides. */
     var monSeq = 0, months = [];
-    var spanWord = function (m) {
-      var a = new Date(m.starts + 'T00:00:00'), b = new Date(m.ends + 'T00:00:00');
-      return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()];
-    };
     var monthWord = function (p) { return MON[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(0, 4); };
-    /* The last twelve calendar months and every month the client has in My
-       Work, newest first; a month in My Work runs on its own span. */
-    var merged = function (mine) {
-      var by = {}, out = [], now = new Date();
-      (mine || []).forEach(function (m) { by[m.period] = m; });
+    /* Where the months cannot be read (an older database), the last twelve
+       calendar months, and the database decides. */
+    var calendar = function () {
+      var out = [], now = new Date();
       for (var i = 0; i < 12; i++) {
         var d = new Date(now.getFullYear(), now.getMonth() - i, 1), e = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-        var key = ymd(d).slice(0, 7);
-        if (!by[key]) by[key] = { period: key, starts: ymd(d), ends: ymd(e), asks: false, cal: true };
+        out.push({ period: ymd(d).slice(0, 7), starts: ymd(d), ends: ymd(e), asks: true, planned: 1 });
       }
-      Object.keys(by).sort().reverse().forEach(function (k) { out.push(by[k]); });
       return out;
     };
     var paintMonths = function () {
       var sel = $('rpNewMonth'), cid = $('rpNewClient').value, kind = $('rpNewKind').value || 'social', seq = ++monSeq;
       var brand = !$('rpNewForRow').hidden && $('rpNewFor').value;
-      var draw = function (list, override, open) {
+      var draw = function (list, override, wl) {
         months = list;
-        open = open || $('rpNewAsked').checked;
         var today = ymd(new Date()), pick = '', keep = sel.value;
         /* A month that already holds this client's report of the kind (for
            the same brand) reads where it stands and is not offered again
@@ -436,56 +425,57 @@
               r.period_start === m.starts && r.period_end === m.ends;
           })[0];
         };
-        var ok = function (m) { return !made(m) && (open || brand || override || m.asks); };
-        sel.innerHTML = list.map(function (m) {
-          if (!pick && ok(m) && m.ends < today) pick = m.period;
-          var has = made(m);
-          var note = has ? ' · ' + (STATUS[has.status] || [has.status])[0] : open || brand || m.asks ? '' : m.cal ? ' · Not in My Work' : ' · Not asked for';
-          /* Named as the report will be: September 2026, or the month's
-             own span where it starts mid-month (16 September to 15 October
-             2026). */
-          var name = SM() ? periodWord(m.starts, m.ends) : monthWord(m.period) + (m.starts.slice(8) !== '01' ? ' · ' + spanWord(m) : '');
-          return '<option value="' + esc(m.period) + '"' + (ok(m) ? '' : ' disabled') + '>' + esc(name + note) + '</option>';
-        }).join('');
+        var free = wl || brand;
+        var empty = function (m) { return kind === 'social' && !free && !m.planned; };
+        var ok = function (m) { return !made(m) && !empty(m) && (free || override || m.asks); };
+        if (!list.length) {
+          sel.innerHTML = '<option value="" disabled>No content months in My Work</option>';
+        } else {
+          sel.innerHTML = list.map(function (m) {
+            if (!pick && ok(m) && m.ends < today) pick = m.period;
+            var has = made(m);
+            var note = has ? ' · ' + (STATUS[has.status] || [has.status])[0] : empty(m) ? ' · No planned content'
+              : free || m.asks ? '' : ' · Not asked for';
+            /* Named as the report will be: September 2026, or the month's
+               own span where it starts on another day (10 September to 9
+               October 2026). */
+            var name = SM() ? periodWord(m.starts, m.ends) : monthWord(m.period);
+            return '<option value="' + esc(m.period) + '"' + (ok(m) ? '' : ' disabled') + '>' + esc(name + note) + '</option>';
+          }).join('');
+        }
         if (keep && list.some(function (m) { return m.period === keep && ok(m); })) pick = keep;
         if (!pick) pick = (list.filter(ok)[0] || {}).period || '';
         sel.value = pick;
         if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
       };
-      /* Before a client is chosen, and where the months cannot be read (an
-         older database), every month is open and the database decides. */
-      if (!cid) { draw(merged([]), true, true); return; }
+      if (!cid) { sel.innerHTML = '<option value="" disabled>Choose a client first</option>'; sel.value = ''; months = []; return; }
       db.rpc('sm_report_months', { p_client: cid, p_kind: kind }).then(function (q) {
         if (seq !== monSeq) return;
         var d = q && q.data;
-        if (q.error || !d || d.error) { draw(merged([]), true, true); return; }
-        draw(merged(d.months), d.may_override, false);
-      }).catch(function () { if (seq === monSeq) draw(merged([]), true, true); });
+        if (q.error || !d || d.error) { draw(calendar(), true, true); return; }
+        draw(d.months || [], d.may_override, d.white_label);
+      }).catch(function () { if (seq === monSeq) draw(calendar(), true, true); });
     };
     $('rpNewClient').onchange = function () { paintFor(); paintMonths(); };
     $('rpNewFor').onchange = paintMonths;
     $('rpNewKind').onchange = paintMonths;
-    $('rpNewAsked').checked = false;
-    $('rpNewAsked').onchange = paintMonths;
     paintFor();
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
-    if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
+    $('rpNewMode').value = 'month';
+    if (window.ADspaceForm) { window.ADspaceForm.paint($('rpNewKind')); window.ADspaceForm.paint($('rpNewMode')); }
     paintMonths();
-    $('rpNewStart').value = ''; $('rpNewEnd').value = '';
-    $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
-    /* A month or a custom period, never both: opening Custom period sets the
-       Month aside, and shutting it clears the two dates and gives the Month
-       back, so what is created is always what is on the screen. The end can
-       never fall before the start. */
-    var fold = box.querySelector('details.fmore');
-    fold.open = false;
+    /* Monthly or Ad hoc, never both: Ad hoc shows the two dates in place of
+       the month, and Monthly clears them, so what is created is always what
+       is on the screen. The end can never fall before the start. */
+    var adhoc = function () { return $('rpNewMode').value === 'adhoc'; };
     var period = function () {
-      $('rpNewMonth').disabled = fold.open;
-      $('rpNewAskedLine').hidden = fold.open;
-      if (!fold.open) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd')); }
+      $('rpNewMonthRow').hidden = adhoc();
+      $('rpNewDates').hidden = !adhoc();
+      if (!adhoc()) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; }
+      $('rpNewEnd').min = $('rpNewStart').value || ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
       if (window.ADspaceForm) { window.ADspaceForm.hint($('rpNewStart')); window.ADspaceForm.hint($('rpNewEnd')); }
     };
-    fold.ontoggle = period;
+    $('rpNewMode').onchange = period;
     $('rpNewStart').onchange = function () {
       var a = $('rpNewStart').value;
       $('rpNewEnd').min = a || ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
@@ -502,18 +492,18 @@
       var m = $('rpNewMonth').value, a = $('rpNewStart').value, b = $('rpNewEnd').value;
       var client = $('rpNewClient').value;
       if (!client) { say(sm, 'Choose a client.', 'err'); $('rpNewClient').focus(); return; }
-      if (fold.open) {
+      if (adhoc()) {
         if (!a) { say(sm, 'Choose a start date.', 'err'); $('rpNewStart').focus(); return; }
         if (!b) { say(sm, 'Choose an end date.', 'err'); $('rpNewEnd').focus(); return; }
         if (b < a) { say(sm, 'The end date is before the start date.', 'err'); $('rpNewEnd').focus(); return; }
       } else {
         var mon = months.filter(function (x) { return x.period === m; })[0];
-        if (!mon) { say(sm, 'Choose a month.', 'err'); $('rpNewMonth').focus(); return; }
+        if (!mon) { say(sm, months.length ? 'Choose a content month.' : 'This client has no content months in My Work. Choose Ad hoc.', 'err'); $('rpNewMonth').focus(); return; }
         a = mon.starts; b = mon.ends;
       }
       go.disabled = true;
       var brand = $('rpNewForRow').hidden ? '' : $('rpNewFor').value;
-      var asked = fold.open || $('rpNewAsked').checked, kind = $('rpNewKind').value || 'social';
+      var asked = adhoc(), kind = $('rpNewKind').value || 'social';
       (asked ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand || null, p_on_request: true })
         : brand ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand })
         : db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: kind })).then(function (r) {
@@ -526,13 +516,17 @@
         }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         if (d.error === 'exists') { openReport(id); return; }
+        /* The month is taken from now on: the list read already holds the
+           new report, so the next New report greys it. */
+        (hub.rows = hub.rows || []).unshift({ id: id, kind: kind, client_id: client, period_start: a, period_end: b,
+          status: 'draft', version_no: 1, brand_id: brand || null, on_request: asked });
         /* A new report is written in the main contact's preferred language. */
         db.from('client_contacts').select('lang').eq('client_id', client).eq('is_primary', true).limit(1).then(function (x) {
           var c = x && !x.error && (x.data || [])[0];
           if (!c || c.lang !== 'zh') return null;
           return db.from('sm_reports').update({ lang: 'zh' }).eq('id', id).select('id');
         }).catch(function () { return null; }).then(function () { openReport(id); });
-      });
+      }).catch(function (e) { go.disabled = false; say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });
   }

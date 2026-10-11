@@ -248,7 +248,8 @@
     'none-selected': 'No tasks selected.',
     'too-many': 'Select up to 500 tasks at a time.',
     'number-taken': 'That number is already used.',
-    'bad-number': 'Enter a number from 1.'
+    'bad-number': 'Enter a number from 1.',
+    'accounts-needs-content': 'An Accounts Report needs posts planned for the month.'
   };
   /* The database refuses Ready with one key for two causes, so the words
      are built from the task it refused: naming an owner beside the owner
@@ -7161,8 +7162,22 @@
     var reps = before.reports || [];
     $('engRepSocial').checked = reps.indexOf('social') > -1;
     $('engRepAds').checked = reps.indexOf('ads') > -1;
+    /* An Accounts Report needs content planned for the month (the user,
+       2026-10-11), unless the client is white label: the tick rests while
+       Posts planned is empty, as the database refuses it. */
+    engWl = false; engWant = reps.indexOf('social') > -1;
+    engAccounts();
+    db.from('clients').select('white_label').eq('id', client.id).maybeSingle().then(function (r) {
+      if (r && !r.error && r.data && r.data.white_label) { engWl = true; engAccounts(); }
+    }).catch(function () {});
     msg('engMsg', '');
     sheet('engSheet', true);
+  }
+  var engWl = false, engWant = false;
+  function engAccounts() {
+    var off = !engWl && !(Number($('engPlanned').value) > 0);
+    $('engRepSocial').disabled = off;
+    $('engRepSocial').checked = !off && engWant;
   }
   function saveEng() {
     var c = cw.client;
@@ -7868,6 +7883,8 @@
     });
     var engGoBtn = $('engGo');
     if (engGoBtn) engGoBtn.addEventListener('click', saveEng);
+    if ($('engPlanned')) $('engPlanned').addEventListener('input', engAccounts);
+    if ($('engRepSocial')) $('engRepSocial').addEventListener('change', function () { engWant = $('engRepSocial').checked; });
     ['meetClose', 'meetCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('meetSheet', false); });
     });
