@@ -253,9 +253,9 @@
     var C = 2 * Math.PI * 15.915, len = total ? part / total * C : 0;
     return '<div class="chart-meter"><svg class="cm-ring" viewBox="0 0 42 42" aria-hidden="true">' +
       '<circle class="cm-track" r="15.915" cx="21" cy="21"></circle>' +
-      '<circle class="cm-arc' + toneClass(rows[0] && rows[0].tone) + '" r="15.915" cx="21" cy="21" transform="rotate(-90 21 21)" ' +
-        'stroke-dasharray="' + len.toFixed(3) + ' ' + (C - len).toFixed(3) + '"></circle></svg>' +
-      '<span class="cm-mid"><b>' + share + '%</b>' + (spec.word ? '<small>' + esc(spec.word) + '</small>' : '') + '</span></div>';
+      (len ? '<circle class="cm-arc' + toneClass(rows[0] && rows[0].tone) + '" r="15.915" cx="21" cy="21" transform="rotate(-90 21 21)" ' +
+        'stroke-dasharray="' + len.toFixed(3) + ' ' + (C - len).toFixed(3) + '"></circle>' : '') + '</svg>' +
+      '<span class="cm-mid"><b>' + (total ? share + '%' : '\u2014') + '</b>' + (spec.word ? '<small>' + esc(spec.word) + '</small>' : '') + '</span></div>';
   }
 
   /* A tile's trend: the values as one line in the tile's own ink, oldest
@@ -330,7 +330,8 @@
     card.className = 'chartcard' + (spec.cls ? ' ' + spec.cls : '');
     if (spec.id) card.id = spec.id;
     var head = spec.title ? '<h3 class="chart-title">' + esc(spec.title) + '</h3>' : '';
-    if (isEmpty(spec)) {
+    /* A meter with nothing to measure still stands, empty, reading a dash. */
+    if (isEmpty(spec) && spec.kind !== 'meter') {
       card.innerHTML = head + '<p class="chart-empty">' + esc(spec.empty || 'No entries.') + '</p>';
       if (host) host.appendChild(card);
       return card;

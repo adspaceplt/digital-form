@@ -2283,11 +2283,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   only hides the page; every card still asks Full Access on its section.
 - One page read top to bottom, the mockup the user approved (2026-10-12,
   task 47; `digital-form-tests` `mockups/dashboard/`), never a tab a
-  section: the period bar (`#ovwPeriod`, a segment of This month, Last
-  month, This quarter, `p=` in the address, This month left out; the span
-  and the time read beside it, at the right edge); the glance
+  section: the period bar (`#ovwPeriod`, a select of This month, Last
+  month, This quarter, Last quarter, This year (five, so never a segment;
+  the user, 2026-10-12), `p=` in the address, This month left out, each
+  measured on the period before it the same days long (Last quarter on
+  the quarter before, This year on last year); the span and the time read
+  beside it, at the right edge); the glance
   (`#ovwGlance`: the on-time ring, `ADspaceChart` `meter` from
-  `ops_report.on_time` for the period, beside Needs attention today, a
+  `ops_report.on_time` for the period, an empty ring reading a dash where
+  nothing reached client review, beside Needs attention today, a
   signal a line: Late tasks, Reports owed for last month, Leads going cold,
   Sets waiting on clients, Unanswered client requests, Active clients, each
   its count and the dot and its word, Open list scrolling to the list);
@@ -2304,14 +2308,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   reports' slices in their status dots), Creator bookings, On-time delivery
   by month, Active clients by month (each figure over its column, this
   month lighter); a row's cards share its height and their Figures one
-  line; then Needs attention (`#ovwAttention`): one list of every source
+  line, Figures' hairline a step below its chart; then Needs attention (`#ovwAttention`): one list of every source
   (late tasks, open work for paused and past clients, reports owed and in
   review, cold leads, restricted accounts, requests, sets waiting, no set
   this month, bookings past their date, the quality check, unsigned
   letters, last month's reviews), What · Section (a grey tag) · Who ·
   Since, late first by the days late, then what waits, the longest first,
   then what has not started; eight rows, then Show N more in place; a row
-  writes the record's address and opens it as search does.
+  writes the record's address and opens it as search does; last, More
+  figures (`#ovwMore`, `details.fmore`, shut until opened, the choice kept
+  in this browser under `adspace-ovw-more`, its charts drawn once opened;
+  the user, 2026-10-12: "too many information in one page"): Where work
+  waits (each stage's median, its slowest 10% the mark), Delivered on time
+  by person (the late share red), New leads by source, Why clients paused
+  or left, read off the answers above with no read of their own.
 - Each tile, signal, chart and list source asks its own `may()` before any
   read, at Full Access (`manage`) on its section or part; the granted parts
   (`ops.reports`, `ops.all`, `team.performance`) at their grant; the lead

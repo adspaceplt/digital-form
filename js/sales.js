@@ -538,6 +538,7 @@
     },
     period: function (p) { st.period = p || 'month'; paint(); },
     figures: figures,
+    reasonWord: reasonWord,
     range: range,
     prev: prevRange
   };
