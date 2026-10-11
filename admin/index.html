@@ -548,7 +548,6 @@
               <span class="cmdbar-count" id="crmCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm" id="crmLimits" type="button" hidden>Follow-up limits</button>
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage">Select clients</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
@@ -3916,9 +3915,10 @@
     <!-- ---- My records: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
-    <!-- Settings (js/settings.js, 2026-10-10): a card a group (Portal,
-         Business figures, AI, Records), a row a setting, each drawn only for
-         the colleague holding its part. -->
+    <!-- Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11): the
+         groups as a list beside the chosen one's rows at a desk, a list
+         opening each group's screen on a phone; a row a setting, each drawn
+         only for the colleague holding its part. -->
     <div class="console-body" id="sectionSettings" hidden>
       <div class="msg" id="settingsMsg" role="status"></div>
       <div id="setList" data-narrow="640"></div>
