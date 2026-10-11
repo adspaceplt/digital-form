@@ -587,7 +587,10 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- None open.
+- `tests/work.js` "ticked, the fold says Repeats and never its rule's
+  parts" fails on main as on the Dashboard two-page release (found
+  2026-10-12); the New sheet's Repeat fold, which the release does not
+  touch.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined

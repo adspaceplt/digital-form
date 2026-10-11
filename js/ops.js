@@ -1050,17 +1050,15 @@
      (who has room this week) is the question being asked. */
   function viewBox() {
     var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
-    var rep = $('workReport'), wc = $('workClients');
+    var wc = $('workClients');
     if (wc) wc.hidden = state.view !== 'months';
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
     if (cal) cal.hidden = state.view !== 'calendar';
     if (cap) cap.hidden = state.view !== 'board';
-    if (rep) rep.hidden = state.view !== 'report';
     return state.view === 'board' ? board
          : state.view === 'months' ? wc
-         : state.view === 'calendar' ? cal
-         : state.view === 'report' ? rep : list;
+         : state.view === 'calendar' ? cal : list;
   }
 
   /* WAITING FOR YOU (2026-10-08, the user: "All yes"). Every decision
@@ -1344,11 +1342,6 @@
     var box = viewBox();
     paintWaiting();
     if (!box) return;
-    /* The report is the same work asked an aggregate question, so it reads
-       its own figures and none of the row filtering below applies to it:
-       "how long does Editing take" is a question about every task there has
-       ever been and not about the rows on this page. */
-    if (state.view === 'report') { paintReport(); return; }
     if (state.view === 'months') { paintClients(false); return; }
     if (!state.tasks) return;
     /* The count is read against the view somebody chose, not against every
@@ -1948,298 +1941,6 @@
   }
 
   // ---- The calendar --------------------------------------------------------
-  // ---- The report ----------------------------------------------------------
-  /* THE SAME WORK, ASKED AN AGGREGATE QUESTION.
-     What is running, what is late, how long each stage takes, whether it was
-     there on time, and the same per person. Every figure comes from one call
-     to `ops_report`, which derives them from rows the system has written since
-     phase 1; the page computes nothing of its own, because a report a page
-     works out for itself is a second definition of the thing.
-
-     Read on arrival and again when the period changes, and kept, so switching
-     to Board and back does not go to the database for numbers that have not
-     moved. */
-  function loadReport(again) {
-    var want = state.period || 'month';
-    if (!may('ops.reports', 'view')) { paint(); return; }
-    /* Kept figures are drawn through `paint` too: straight to `paintReport`
-       they left the view last shown (Workload) on the screen under the
-       Report tab (the user, 2026-09-26). */
-    if (!again && state.report && state.reportFor === want) { paint(); return; }
-    state.reportBusy = true;
-    state.reportFor = want;
-    /* Through `paint` and never straight to `paintReport`: `viewBox` is what
-       hides the queue, the board and the calendar, so a report drawn without
-       it left the list on the screen underneath. */
-    paint();
-    db.rpc('ops_report', { p_from: periodStart().toISOString(), p_to: periodEnd().toISOString() })
-      .then(function (r) {
-        state.reportBusy = false;
-        if (r.error) { state.report = null; state.reportErr = r.error.message || 'denied'; }
-        else if (r.data && r.data.error) { state.report = null; state.reportErr = SAID[r.data.error] || r.data.error; }
-        else { state.report = r.data; state.reportErr = ''; }
-        paint();
-      })
-      .catch(function (e) {
-        state.reportBusy = false; state.report = null;
-        state.reportErr = String((e && e.message) || e);
-        paint();
-      });
-  }
-
-  /* Hours where a figure is hours and days where it is days: "2,880 min" is a
-     number somebody has to divide before it means anything, and the question
-     being asked of a stage is measured in days. */
-  function spanWord(mins) {
-    var m = Math.max(0, Math.round(Number(mins) || 0));
-    if (m < 90) return m + ' min';
-    if (m < 60 * 36) return Math.round(m / 60) + 'h';
-    var d = m / 1440;
-    return (d < 10 ? Math.round(d * 10) / 10 : Math.round(d)) + (d < 1.05 && d >= 0.95 ? ' day' : ' days');
-  }
-
-  /* A column heading is not on the screen on a phone, so a cell that holds a
-     bare number has nothing saying what the number is. The middle cell carries
-     its own word, drawn only where the header is hidden. */
-  function repLab(word) {
-    return '<span class="rep-lab">' + esc(word) + ' </span>';
-  }
-  function dayCount(n) {
-    return n + (Math.abs(n) === 1 ? ' day' : ' days');
-  }
-  /* How far past: a priority's deadline passed less than a day ago in hours
-     (or minutes), else in days. */
-  function overWords(t) {
-    var m = t.over_minutes == null ? null : Number(t.over_minutes), d = Number(t.days_over) || 0;
-    if (m !== null && d < 1) return m < 60 ? Math.max(1, m) + 'm' : Math.floor(m / 60) + 'h';
-    return dayCount(d);
-  }
-
-  function repTable(host, title, heads, rowClass, rows, note) {
-    var h = document.createElement('h3');
-    h.className = 'ovsec-title';
-    h.textContent = title;
-    host.appendChild(h);
-    if (!rows.length) {
-      /* `emptyLine` fills the box it is handed, so the wrapper is what the
-         next heading's gap keys on: the empty card is a block in the stack
-         like the table it stands in for, and both are the same distance from
-         the heading that follows. */
-      var sub = document.createElement('div');
-      sub.className = 'repempty';
-      host.appendChild(sub);
-      UI.emptyLine(sub, note || 'Nothing yet.');
-      return;
-    }
-    var t = GRP.table(rowClass, heads);
-    rows.forEach(function (cells) {
-      var row = document.createElement('div');
-      row.className = rowClass + (cells.cls ? ' ' + cells.cls : '');
-      row.innerHTML = cells.html;
-      if (cells.open) {
-        var b = row.querySelector('[data-open]');
-        if (b) b.addEventListener('click', function () { openTask(cells.open, true); });
-      }
-      t.appendChild(row);
-    });
-    host.appendChild(t);
-  }
-
-  /* A report section drawn as a chart: the heading the tables carry, then
-     the card; an empty section reads as the tables' empty line. */
-  function repChart(host, title, spec, note) {
-    var h = document.createElement('h3');
-    h.className = 'ovsec-title';
-    h.textContent = title;
-    host.appendChild(h);
-    var live = (spec.rows || spec.cats || []).length;
-    if (!live) {
-      var sub = document.createElement('div');
-      sub.className = 'repempty';
-      host.appendChild(sub);
-      UI.emptyLine(sub, note || 'Nothing yet.');
-      return null;
-    }
-    return window.ADspaceChart.draw(host, spec);
-  }
-
-  /* The last six months of on-time delivery, read once a visit. */
-  function loadTrend() {
-    if (state.trendBusy || state.trend) return;
-    state.trendBusy = true;
-    var ms = window.ADspaceChart.months(6);
-    Promise.all(ms.map(function (m) {
-      return db.rpc('ops_report', { p_from: m.start.toISOString(), p_to: m.end.toISOString() })
-        .then(function (x) { return x && !x.error && x.data && !x.data.error ? x.data.on_time || {} : null; })
-        .catch(function () { return null; });
-    })).then(function (all) {
-      state.trendBusy = false;
-      state.trend = all.some(function (x) { return x === null; }) ? { failed: true }
-        : { months: ms, figures: all };
-      if (state.view === 'report') paint();
-    });
-  }
-  function paintTrend(host) {
-    var t = state.trend;
-    if (!t) {
-      var h = document.createElement('h3');
-      h.className = 'ovsec-title';
-      h.textContent = 'On-time delivery by month';
-      host.appendChild(h);
-      var wait = document.createElement('div');
-      wait.className = 'repempty';
-      host.appendChild(wait);
-      UI.skeleton(wait, 2);
-      loadTrend();
-      return;
-    }
-    if (t.failed) {
-      var hf = document.createElement('h3');
-      hf.className = 'ovsec-title';
-      hf.textContent = 'On-time delivery by month';
-      host.appendChild(hf);
-      var bad = document.createElement('div');
-      bad.className = 'repempty';
-      host.appendChild(bad);
-      UI.failLine(bad, 'the monthly figures', 'The report could not be read.', function () { state.trend = null; paint(); });
-      return;
-    }
-    var cats = t.months.map(function (m, i) {
-      var f = t.figures[i] || {}, n = Number(f.reached || 0);
-      return { label: m.label, long: m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
-    });
-    repChart(host, 'On-time delivery by month', {
-      kind: 'line', name: 'On-time delivery by month', max: 100, none: 'None reached client review',
-      cats: cats.some(function (c) { return c.values[0] != null; }) ? cats : [],
-      series: [{ label: 'On time' }],
-      fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
-      table: {
-        heads: ['Month', 'Reached client review', 'On time', 'Rate'],
-        rows: cats.map(function (c) {
-          return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
-        })
-      }
-    }, 'No tasks reached client review in the last six months.');
-  }
-
-  function paintReport() {
-    var box = $('workReport');
-    if (!box) return;
-    var figures = may('ops.reports', 'view');
-    if (figures && state.reportBusy && !state.report) { UI.skeleton(box, 4); return; }
-    box.innerHTML = '';
-    if (may('ops.all', 'view') && state.tasks) paintLoadInto(box);
-    if (!figures) return;
-    var sub = function () { var d = document.createElement('div'); d.className = 'repempty'; box.appendChild(d); return d; };
-    if (state.reportErr) {
-      UI.failLine(sub(), 'the report', state.reportErr, function () { loadReport(true); });
-      return;
-    }
-    var r = state.report;
-    /* Landing on the Report from its address (a refresh, a link) had never
-       asked for the figures, and said there were none. */
-    if (!r && state.reportFor !== (state.period || 'month')) { loadReport(true); return; }
-    if (!r) { UI.emptyLine(sub(), 'No report figures are available for this period.'); return; }
-
-    /* Every figure below but the first is taken over a window, and on a phone
-       the select that sets it is inside the filters sheet — so the window is
-       stated on the report itself rather than left to a control that is not
-       on the screen. */
-    var win = document.createElement('p');
-    win.className = 'routenote repwin';
-    /* A period that ends at midnight ends on the day before it (Last month
-       reads 1 Aug 2026 to 31 Aug 2026, not to 1 Sept). */
-    var endAt = new Date(r.to);
-    if (!isNaN(endAt.getTime()) && !endAt.getHours() && !endAt.getMinutes() && !endAt.getSeconds()) endAt = new Date(endAt.getTime() - 1);
-    win.textContent = 'Reporting period: ' + niceDate(r.from) + ' to ' + niceDate(endAt);
-    /* The period heads the report, above open work by person. */
-    box.insertBefore(win, box.firstChild);
-
-    /* 1. What is running. The first question a manager asks, answered in the
-          words on the stage itself, so "what is on shooting" reads as a row
-          rather than as a group somebody has to translate. */
-    repTable(box, 'Open work by stage', ['Stage', '', 'Tasks'], 'svc-row rep-row',
-      (r.running || []).map(function (s) {
-        return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b></span>' +
-                       '<span class="rep-mid"></span>' +
-                       '<span class="rep-num">' + esc(String(s.count)) + '</span>' };
-      }), 'No open tasks.');
-
-    /* 2. What is late, which is the flag the user asked be put in front of a
-          manager: past the commitment and still short of client review. The
-          title opens the task, because a list of problems nobody can act on
-          from is a list nobody reads twice. */
-    repTable(box, 'Overdue work', ['Task', 'Assigned to', 'Over by'], 'svc-row rep-row',
-      (r.late || []).map(function (t) {
-        return {
-          open: t.task_id,
-          cls: 'is-late',
-          html: '<span class="svc-name"><button class="task-open rep-open" data-open type="button">' +
-                  '<b>' + esc(t.title || 'Untitled') + '</b>' +
-                  '<small>' + esc([t.client, t.stage].filter(Boolean).join(' · ')) + '</small>' +
-                '</button></span>' +
-                '<span class="rep-mid">' + repLab('Assigned to') +
-                  (t.owner ? esc(t.owner) : '<span class="mute">—</span>') + '</span>' +
-                '<span class="rep-num is-over">' + esc(overWords(t)) + '</span>'
-        };
-      }), 'No overdue tasks.');
-
-    /* 3. How long each stage takes. A median, its 90th percentile and the
-          count it was taken over, never a bare figure: a median over two
-          tasks is not a measurement, and the tail is what a person is
-          actually trying to find. */
-    repChart(box, 'Stage duration', {
-      kind: 'bars', name: 'Stage duration', markLabel: 'Slowest 10%',
-      rows: (r.stage_time || []).map(function (s) {
-        return { label: s.label, note: s.n + (s.n === 1 ? ' time' : ' times'),
-                 value: Number(s.median_minutes) || 0, mark: Number(s.p90_minutes) || 0 };
-      }),
-      fmt: function (v) { return spanWord(v); },
-      table: {
-        heads: ['Stage', 'Times', 'Median', 'Slowest 10%'],
-        rows: (r.stage_time || []).map(function (s) {
-          return [s.label, String(s.n), spanWord(s.median_minutes), spanWord(s.p90_minutes)];
-        })
-      }
-    }, 'No stage changes in this period.');
-
-    /* 4. Was it there on time. Replanning sits beside the rate and never
-          inside it: an extension would otherwise erase the miss it was
-          granted for, and a rate that cannot be missed measures nothing. */
-    var ot = r.on_time || {};
-    var reached = Number(ot.reached || 0);
-    repTable(box, 'On-time delivery to client review', ['', '', ''], 'svc-row rep-row',
-      !reached ? [] : [
-        { html: '<span class="svc-name"><b>On time</b></span><span class="rep-mid">' +
-                esc(Math.round((Number(ot.met) / reached) * 100) + '%') +
-                '</span><span class="rep-num">' + esc(String(ot.met)) + '</span>' },
-        { html: '<span class="svc-name"><b>Delivered late</b></span><span class="rep-mid"></span>' +
-                '<span class="rep-num' + (Number(ot.missed) ? ' is-over' : '') + '">' +
-                esc(String(ot.missed)) + '</span>' },
-        { html: '<span class="svc-name"><b>Due date extended</b>' +
-                '<small>Reported separately from the on-time rate</small></span>' +
-                '<span class="rep-mid"></span><span class="rep-num">' +
-                esc(String(ot.replanned || 0)) + '</span>' }
-      ], 'No tasks reached client review in this period.');
-
-    /* 4b. Whether it is getting better: the same rate over the last six
-          months, one call per month to the same function, so the line and
-          the figures above can never disagree. */
-    paintTrend(box);
-
-    /* 5. By person. The foundation of a KPI and not a KPI: what somebody
-          finished, how much of it was on time, and how long their work took
-          end to end. No score and no ranking — a number a person can check is
-          worth more than a league table nobody trusts. */
-    repTable(box, 'Team member summary', ['Team member', 'On time', 'Median cycle'], 'svc-row rep-row',
-      (r.by_person || []).map(function (m) {
-        return { html: '<span class="svc-name"><b>' + esc(m.name) + '</b>' +
-                         '<small>' + esc(m.completed + ' finished') + '</small></span>' +
-                       '<span class="rep-mid">' + repLab('On time') +
-                         esc(m.on_time + ' of ' + m.completed) + '</span>' +
-                       '<span class="rep-num">' + esc(spanWord(m.median_cycle_minutes)) + '</span>' };
-      }), 'No tasks completed in this period.');
-  }
 
   /* Every task on the days it is owed: the due date in the stage's tone,
      and the publish date in its own colour, so one month reads as both the
@@ -2389,12 +2090,10 @@
      list's axis and the workflow select is the board's, so each draws only
      with its view. */
   function applyView(v) {
-    /* The report is refused to anybody the part is not granted to, even from
-       the address: `view=report` in a link somebody was sent must not open a
-       view the database would only deny. */
-    /* Workload is the Report's first section now; an old link lands there. */
-    if (v === 'load') v = 'report';
-    if (v === 'report' && !mayReport()) v = '';
+    /* The Report view is gone (2026-10-12, the user: the Dashboard carries
+       the team's figures); an old `view=report` or `view=load` opens the
+       list. */
+    if (v === 'report' || v === 'load') v = '';
     /* The view was Clients until 2026-09-28; an address that still says so
        lands on Months. */
     if (v === 'clients') v = 'months';
@@ -2404,7 +2103,7 @@
        may, and the list stays when every one of them is shut, because a
        route with no view at all is a blank page. */
     if ((v === 'list' || v === 'board' || v === 'calendar') && !may('ops.' + v, 'view')) v = '';
-    if (!v || ['list', 'board', 'calendar', 'months', 'report'].indexOf(v) < 0) {
+    if (!v || ['list', 'board', 'calendar', 'months'].indexOf(v) < 0) {
       v = ['list', 'board', 'calendar'].filter(function (k) { return may('ops.' + k, 'view'); })[0] || 'list';
     }
     state.view = v;
@@ -2415,20 +2114,17 @@
       b.setAttribute('aria-pressed', String(on));
     });
     if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
-    /* The report and the client's months are not filtered lists, so the
-       list's own controls say nothing about them. */
-    var whole = state.view === 'report' || state.view === 'months';
+    /* The client's months are not a filtered list, so the list's own
+       controls say nothing about them. */
+    var whole = state.view === 'months';
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
-    /* The report is not a filtered list, so the list's own controls say
-       nothing about it: a search box over an aggregate filters nothing, and
-       a stage filter over "what is running" is the question being asked. */
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
     if (find && find.parentElement) find.parentElement.hidden = whole;
     var findMark = find && find.parentElement && find.parentElement.previousElementSibling;
     if (findMark && findMark.classList.contains('cmdbar-search')) findMark.hidden = whole;
     if (stg) stg.hidden = whole;
-    if (cnt && (state.view === 'report' || state.view === 'months')) cnt.textContent = '';
+    if (cnt && state.view === 'months') cnt.textContent = '';
     /* The client's months carry their own New task, which knows the client;
        a second add in the bar above it would be the same act twice. */
     if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'months';
@@ -2449,14 +2145,10 @@
     requestAnimationFrame(function () {
       setTimeout(function () {
         if (mine !== viewDraw) return;
-        /* The report reads its own figures, so entering it is what asks for
-           them. Kept between views, so Board and back does not go to the
-           database for numbers that have not moved. */
-        if (state.view === 'report') loadReport(false);
         /* viewBox() is what shows the months and hides the list, so the
            client's months go through it like every other view: drawn
            straight into a hidden box, they appeared only after a reload. */
-        else if (state.view === 'months') { viewBox(); paintClients(true); }
+        if (state.view === 'months') { viewBox(); paintClients(true); }
         else paint();
       }, 0);
     });
@@ -4329,73 +4021,6 @@
     }, function () { btn.disabled = false; });
   }
 
-  // ---- Open work by person ------------------------------------------------
-  /* Who is carrying what: one row a person, the counts a manager reads on a
-     Monday. The first section of the Report, for whoever may see the team's
-     queue (it was a Workload view of its own until 2026-09-26, and the two
-     read as the same screen). It counts the queue already read. */
-  function paintLoadInto(host) {
-    var h = document.createElement('h3');
-    h.className = 'ovsec-title';
-    h.textContent = 'Open work by person';
-    host.appendChild(h);
-    var ws = weekStart().getTime();
-    var by = {}, order = [];
-    (state.tasks || []).forEach(function (t) {
-      var id = state.ownerIds[t.id] || '';
-      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'Unassigned', open: 0, overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
-      var r = by[id], n = daysAway(dueOf(t)), p = plainOf(t);
-      if (isFinished(t)) {
-        var at = new Date(t.completed_at || t.cancelled_at).getTime();
-        if (t.completed_at && at >= ws) r.done++;
-        return;
-      }
-      r.open++;
-      if (n !== null && n < 0) r.overdue++;
-      if (n === 0) r.today++;
-      if (p === 'doing') r.doing++;
-      if (p === 'waiting') r.waiting++;
-      if (p === 'review') r.review++;
-    });
-    /* The most open work first, so the bars read as who is carrying most;
-       nobody with nothing open is drawn as an empty bar. */
-    order = order.filter(function (id) { return by[id].open; });
-    order.sort(function (a, b) {
-      return (by[b].open - by[a].open) || (a ? (b ? by[a].name.localeCompare(by[b].name) : -1) : 1);
-    });
-    if (!order.length) {
-      var none = document.createElement('div');
-      none.className = 'repempty';
-      host.appendChild(none);
-      UI.emptyLine(none, 'No open tasks.');
-      return;
-    }
-    /* Who is carrying the most, as bars a person reads down (the user,
-       2026-09-26: charts where a table answers more slowly). The overdue
-       count rides beside the name in red; every count a manager reads on a
-       Monday is in the figures folded under the bars. */
-    window.ADspaceChart.draw(host, {
-      kind: 'bars', name: 'Open work by person', cls: 'load-chart',
-      rows: order.map(function (id) {
-        var r = by[id];
-        return { label: r.name, value: r.open,
-                 note: r.overdue ? r.overdue + ' overdue' : '', noteTone: r.overdue ? 'err' : '' };
-      }),
-      fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
-      empty: 'No open tasks.',
-      table: {
-        heads: ['Assigned to', 'Open', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week'],
-        rows: order.map(function (id) {
-          var r = by[id];
-          return [r.name, r.open, r.overdue, r.today, r.doing, r.waiting, r.review, r.done].map(String);
-        })
-      }
-    });
-  }
-  /* The Report is the team's numbers (`ops.reports`) and who carries the
-     open work (`ops.all`); either one opens it, each section drawn only
-     where it is granted. */
-  function mayReport() { return may('ops.reports', 'view') || may('ops.all', 'view'); }
 
   // ---- One task ------------------------------------------------------------
   function showList() {
@@ -7577,9 +7202,7 @@
     var pd = $('workPeriod');
     if (pd) pd.addEventListener('change', function () {
       state.period = pd.value;
-      /* The period is the report's window as well as the queue's bound, so
-         changing it re-asks whichever one is on the screen. */
-      if (state.view === 'report') loadReport(true); else load();
+      load();
     });
     var sc = $('workScope');
     if (sc) sc.addEventListener('change', function () { state.scope = sc.value; paint(); });
@@ -8079,17 +7702,13 @@
      showing, so a caller knows whether the read has to run again. */
   function showPeriod() {
     var pd = $('workPeriod');
-    /* On the queue the period bounds the finished work, so it is drawn only
-       while finished work can be on the page. On the report it is the window
-       every figure is taken over, so it is always drawn there. */
-    var on = state.view === 'report' || state.filter === 'done' || state.filter === 'all';
+    /* The period bounds the finished work, so it is drawn only while
+       finished work can be on the page. */
+    var on = state.filter === 'done' || state.filter === 'all';
     if (pd) {
       pd.hidden = !on;
-      /* Its name says what it bounds: on the queue, finished work by when it
-         was finished (Completed, This month); on the report, the window. */
-      pd.setAttribute('aria-label', state.view === 'report' ? 'Period' : 'Completed');
-      /* The select says the window the figures are taken over: it opened on
-         its first option while the report read the month. */
+      /* Its name says what it bounds: finished work by when it was finished. */
+      pd.setAttribute('aria-label', 'Completed');
       if (pd.value !== (state.period || 'month')) { pd.value = state.period || 'month'; if (window.ADspaceForm) window.ADspaceForm.paint(pd); }
     }
     return on;
@@ -8122,14 +7741,6 @@
       all.disabled = !team;
       if (!team && state.scope === 'all') { state.scope = 'mine'; if ($('workScope')) $('workScope').value = 'mine'; }
     }
-    /* `ops.reports` is granted and never inherited, so a group given
-       `ops: work` is not quietly handed the team's numbers. Hiding the button
-       changes nothing the database does — `ops_report` refuses the same
-       person — but offering a view that can only come back denied is a
-       control somebody has to try before they learn it is not theirs. */
-    var rv = $('workViewReport');
-    if (rv) rv.hidden = !mayReport();
-    if (rv && rv.hidden && state.view === 'report') state.view = 'list';
     showPeriod();
 
     var params = new URLSearchParams(location.search);

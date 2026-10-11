@@ -609,10 +609,44 @@
 
   /* ---- The charts ------------------------------------------------------------------
      Each answers a spec for ADspaceChart.draw, or `{ empty }`. */
-  var CHARTS = [
+  /* The Dashboard in two pages (the user, 2026-10-12: "act as the company
+     ceo"): Summary, what a director reads first, and Detail, the same
+     period read further, a page of its own reached from the strip and from
+     the foot of the Summary, never folded away as if it mattered less. Each
+     row is a grid of cards; the second row of Detail runs three across. */
+  var PAGE1 = [
     [
-      { key: 'funnel', title: function () { return 'Leads to clients, ' + periodName(period); }, can: canLeads,
-        all: ['Sales', '/admin/?s=clients&view=sales', 'clients'], load: function () {
+      { key: 'ontime', title: 'On-time delivery by month', can: canFigures, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+        return R.months().then(function (all) {
+          var cats = all.map(function (x) {
+            var f = x.d.on_time || {}, n = Number(f.reached || 0);
+            return { label: x.m.label, long: x.m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
+          });
+          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks reached client review in the last six months.' };
+          return { kind: 'line', max: 100, none: 'None reached client review', cats: cats, series: [{ label: 'On time' }],
+            fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
+            table: { heads: ['Month', 'Reached client review', 'On time', 'Rate'], rows: cats.map(function (c) {
+              return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
+            }) } };
+        });
+      } },
+      { key: 'active', title: 'Active clients by month', can: canClients,
+        all: function () { return ['Clients', '/admin/?s=clients', 'clients']; }, load: function () {
+        return figuresFor(sixMonths()).then(function (f) {
+          if (!f.months.some(function (m) { return m.active; })) return { empty: 'No active clients in the last six months.' };
+          var last = f.months.length - 1;
+          /* The month still running is drawn lighter: its figure is so far. */
+          return { kind: 'columns', labels: true, cats: f.months.map(function (m, i) { return { label: m.label, long: m.long, values: [m.active], tone: i === last ? 'mute' : '' }; }),
+                   series: [{ label: 'Active clients' }] };
+        });
+      } }
+    ]
+  ];
+  var PAGE2 = [
+    ['Sales', [
+      [
+      { key: 'funnel', title: 'Leads to clients', can: canLeads,
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         return figuresFor(rangeOf(period)).then(function (f) {
           var words = ['New leads', 'Contacted', 'Proposal sent', 'Became clients'];
           var n = f.funnel.map(function (l) { return l.length; });
@@ -624,7 +658,89 @@
           }) } };
         });
       } },
-      { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
+      { key: 'pipeline', title: 'Pipeline now', can: canLeads, all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var p = f.pipeline;
+          if (!p.lead.length && !p.contacted.length && !p.proposal.length) return { empty: 'No open leads.' };
+          return { kind: 'pie', total: true, rows: [{ label: 'Lead', value: p.lead.length }, { label: 'Contacted', value: p.contacted.length },
+                                       { label: 'Proposal sent', value: p.proposal.length }] };
+        });
+      } }
+      ],
+      [
+      /* What else moved in the period, from Clients · Sales (2026-10-12): the
+         leads lost, the clients paused, resumed and won back, how long a lead
+         takes to win, conversion and churn, and for whoever may open client
+         Services the value won and lost. */
+      { key: 'moves', title: 'Sales moves', can: canLeads,
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        var val = canValue();
+        return (val ? R.lines() : Promise.resolve(null)).then(function (lines) { return figuresFor(rangeOf(period), lines); }).then(function (f) {
+          var pct = function (a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; };
+          var decided = f.won.length + f.lost.length;
+          var rowsOf = [
+            ['Lost leads', String(f.lost.length), 'Past before ever Active'],
+            ['Paused', String(f.paused.length), f.pausedNow.length + ' paused now'],
+            ['Resumed', String(f.resumed.length), 'Paused back to Active'],
+            ['Win-backs', String(f.winback.length), 'Past back to Active'],
+            ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
+            ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
+            ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start']
+          ];
+          if (val && f.money) {
+            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won']);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'A month of the lines churned']);
+          }
+          return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
+            return '<div><dt>' + esc(r[0]) + '<small>' + esc(r[2]) + '</small></dt><dd>' + esc(r[1]) + '</dd></div>';
+          }).join('') + '</dl>' };
+        });
+      } },
+      /* Who brought the leads in and who kept the clients (from Clients ·
+         Sales, 2026-10-12): counts only, never a ranking. */
+      { key: 'owners', title: 'By person in charge', can: canLeads,
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var ppl = Object.keys(f.byPerson).sort(function (a, b) { return a.localeCompare(b); }).map(function (k) { return f.byPerson[k]; })
+            .filter(function (q) { return q.newLeads.length || q.won.length || q.lost.length || q.churned.length; });
+          if (!ppl.length) return { empty: 'Nothing moved ' + periodName(period) + '.' };
+          return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl"><thead><tr><th scope="col">Person in charge</th>' +
+            '<th scope="col" class="is-end">New leads</th><th scope="col" class="is-end">Won</th><th scope="col" class="is-end">Lost</th><th scope="col" class="is-end">Churned</th></tr></thead><tbody>' +
+            ppl.map(function (q) {
+              return '<tr><th scope="row">' + esc(q.name) + '</th><td class="is-end">' + q.newLeads.length + '</td><td class="is-end">' + q.won.length +
+                '</td><td class="is-end">' + q.lost.length + '</td><td class="is-end">' + q.churned.length + '</td></tr>';
+            }).join('') + '</tbody></table></div>' };
+        });
+      } }
+      ],
+      [
+      { key: 'sources', title: 'New leads by source', can: canLeads,
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var rowsOf = Object.keys(f.bySource).map(function (k) { return { label: k, value: f.bySource[k].length }; })
+            .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
+          if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
+          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };
+        });
+      } },
+      { key: 'reasons', title: 'Why clients paused or left', can: canClients,
+        all: function () { return ['Clients', '/admin/?s=clients', 'clients']; },
+        load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var word = S().reasonWord || function (k) { return k || 'Not given'; };
+          var rowsOf = Object.keys(f.reasons).map(function (k) {
+            var r = f.reasons[k], pa = r.paused.length, le = r.past.length;
+            return { label: word(k), value: pa + le, note: [pa ? pa + ' paused' : '', le ? le + ' left' : ''].filter(Boolean).join(' · ') };
+          }).sort(function (a, b) { return b.value - a.value; });
+          if (!rowsOf.length) return { empty: 'No client paused or left ' + periodName(period) + '.' };
+          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'Clients' };
+        });
+      } }
+      ]
+    ]],
+    ['Operations', [
+      [
+      { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
           if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
           var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; });
@@ -636,15 +752,42 @@
             fmt: function (v) { return String(v); },
             table: { heads: ['Assigned to', 'Open', 'Late'], rows: list.map(function (r) { return [r.name, String(r.open), String(r.late || 0)]; }) } };
         });
+      } },
+      { key: 'waits', title: 'Where work waits', can: canFigures,
+        all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+        return R.report().then(function (d) {
+          /* Each stage's open work beside its time (the Report's Open work by
+             stage, 2026-10-12). */
+          var openAt = {};
+          (d.running || []).forEach(function (r) { openAt[r.stage_key] = Number(r.count) || 0; });
+          var st = (d.stage_time || []).filter(function (x) { return Number(x.n) > 0; })
+            .sort(function (a, b) { return (Number(b.median_minutes) || 0) - (Number(a.median_minutes) || 0); }).slice(0, 6);
+          if (!st.length) return { empty: 'No task left a stage ' + periodName(period) + '.' };
+          return { kind: 'bars', markLabel: 'Slowest 10%', rows: st.map(function (x) {
+              return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
+                       note: (openAt[x.stage_key] || 0) + ' open' };
+            }), fmt: function (v) { return spanOf(v); },
+            table: { heads: ['Stage', 'Open now', 'Times left', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
+              return [x.label || x.stage_key, String(openAt[x.stage_key] || 0), String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
+            }) } };
+        });
       } }
-    ],
-    [
-      { key: 'pipeline', title: 'Pipeline now', can: canLeads, all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
-          var p = f.pipeline;
-          if (!p.lead.length && !p.contacted.length && !p.proposal.length) return { empty: 'No open leads.' };
-          return { kind: 'pie', total: true, rows: [{ label: 'Lead', value: p.lead.length }, { label: 'Contacted', value: p.contacted.length },
-                                       { label: 'Proposal sent', value: p.proposal.length }] };
+      ],
+      [
+      { key: 'ontimeby', title: 'On time by person', can: canFigures,
+        all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+        return R.report().then(function (d) {
+          var by = (d.by_person || []).filter(function (x) { return Number(x.completed) > 0; })
+            .sort(function (a, b) { return (Number(b.completed) || 0) - (Number(a.completed) || 0); });
+          if (!by.length) return { empty: 'Nothing was delivered ' + periodName(period) + '.' };
+          var pc = function (x) { return Math.round((Number(x.on_time) || 0) / Number(x.completed) * 100); };
+          return { kind: 'bars', inline: true, rows: by.map(function (x) {
+              return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
+                       note: pc(x) + '% on time' + (x.median_cycle_minutes ? ' · ' + spanOf(x.median_cycle_minutes) : '') };
+            }), fmt: function (v) { return String(v); },
+            table: { heads: ['Person', 'Delivered', 'On time', 'Rate', 'Median cycle'], rows: by.map(function (x) {
+              return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%', x.median_cycle_minutes ? spanOf(x.median_cycle_minutes) : '\u2014'];
+            }) } };
         });
       } },
       { key: 'reports', title: function () { return 'Reports for ' + LONG[lastMonth().start.getMonth()]; }, can: canReports, all: ['Reports', '/admin/?s=reports', 'reports'], load: function () {
@@ -666,97 +809,15 @@
             { label: 'To post', value: n(['scheduled']) }], valueHead: 'Bookings' };
         });
       } }
-    ],
-    [
-      { key: 'ontime', title: 'On-time delivery by month', can: canFigures, all: ['Report', '/admin/?s=work&view=report', 'work'], load: function () {
-        return R.months().then(function (all) {
-          var cats = all.map(function (x) {
-            var f = x.d.on_time || {}, n = Number(f.reached || 0);
-            return { label: x.m.label, long: x.m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
-          });
-          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks reached client review in the last six months.' };
-          return { kind: 'line', max: 100, none: 'None reached client review', cats: cats, series: [{ label: 'On time' }],
-            fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
-            table: { heads: ['Month', 'Reached client review', 'On time', 'Rate'], rows: cats.map(function (c) {
-              return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
-            }) } };
-        });
-      } },
-      { key: 'active', title: 'Active clients by month', can: canClients,
-        all: function () { return may('clients.leads', 'work') ? ['Sales', '/admin/?s=clients&view=sales', 'clients'] : ['Clients', '/admin/?s=clients', 'clients']; }, load: function () {
-        return figuresFor(sixMonths()).then(function (f) {
-          if (!f.months.some(function (m) { return m.active; })) return { empty: 'No active clients in the last six months.' };
-          var last = f.months.length - 1;
-          /* The month still running is drawn lighter: its figure is so far. */
-          return { kind: 'columns', labels: true, cats: f.months.map(function (m, i) { return { label: m.label, long: m.long, values: [m.active], tone: i === last ? 'mute' : '' }; }),
-                   series: [{ label: 'Active clients' }] };
-        });
-      } }
-    ],
-    /* More to read off the same answers (the user, 2026-10-12: "more creative
-       data"): where the work waits, who delivered on time, where leads come
-       from and why clients paused or left. No read of their own. */
-    [
-      { key: 'waits', title: function () { return 'Where work waits, ' + periodName(period); }, can: canFigures,
-        all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
-        return R.report().then(function (d) {
-          var st = (d.stage_time || []).filter(function (x) { return Number(x.n) > 0; })
-            .sort(function (a, b) { return (Number(b.median_minutes) || 0) - (Number(a.median_minutes) || 0); }).slice(0, 6);
-          if (!st.length) return { empty: 'No task left a stage ' + periodName(period) + '.' };
-          return { kind: 'bars', markLabel: 'Slowest 10%', rows: st.map(function (x) {
-              return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
-                       note: x.n + (Number(x.n) === 1 ? ' task' : ' tasks') };
-            }), fmt: function (v) { return spanOf(v); },
-            table: { heads: ['Stage', 'Tasks', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
-              return [x.label || x.stage_key, String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
-            }) } };
-        });
-      } },
-      { key: 'ontimeby', title: function () { return 'Delivered on time by person, ' + periodName(period); }, can: canFigures,
-        all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
-        return R.report().then(function (d) {
-          var by = (d.by_person || []).filter(function (x) { return Number(x.completed) > 0; })
-            .sort(function (a, b) { return (Number(b.completed) || 0) - (Number(a.completed) || 0); });
-          if (!by.length) return { empty: 'Nothing was delivered ' + periodName(period) + '.' };
-          var pc = function (x) { return Math.round((Number(x.on_time) || 0) / Number(x.completed) * 100); };
-          return { kind: 'bars', inline: true, rows: by.map(function (x) {
-              return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
-                       note: pc(x) + '% on time' };
-            }), fmt: function (v) { return String(v); },
-            table: { heads: ['Person', 'Delivered', 'On time', 'Rate'], rows: by.map(function (x) {
-              return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%'];
-            }) } };
-        });
-      } },
-      { key: 'sources', title: function () { return 'New leads by source, ' + periodName(period); }, can: canLeads,
-        all: ['Sales', '/admin/?s=clients&view=sales', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
-          var rowsOf = Object.keys(f.bySource).map(function (k) { return { label: k, value: f.bySource[k].length }; })
-            .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
-          if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
-          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };
-        });
-      } },
-      { key: 'reasons', title: function () { return 'Why clients paused or left, ' + periodName(period); }, can: canClients,
-        all: function () { return may('clients.leads', 'work') ? ['Sales', '/admin/?s=clients&view=sales', 'clients'] : ['Clients', '/admin/?s=clients', 'clients']; },
-        load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
-          var word = S().reasonWord || function (k) { return k || 'Not given'; };
-          var rowsOf = Object.keys(f.reasons).map(function (k) {
-            var r = f.reasons[k], pa = r.paused.length, le = r.past.length;
-            return { label: word(k), value: pa + le, note: [pa ? pa + ' paused' : '', le ? le + ' left' : ''].filter(Boolean).join(' · ') };
-          }).sort(function (a, b) { return b.value - a.value; });
-          if (!rowsOf.length) return { empty: 'No client paused or left ' + periodName(period) + '.' };
-          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'Clients' };
-        });
-      } }
-    ]
+      ]
+    ]]
   ];
+  var CHARTS = PAGE1.concat(PAGE2[0][1], PAGE2[1][1]);
 
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
      starts on its first route instead of an empty page. */
-  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, CHARTS[0], CHARTS[1], CHARTS[2], CHARTS[3]);
+  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
 
   // ---- Drawing ----------------------------------------------------------------------
@@ -896,6 +957,9 @@
       Promise.resolve().then(function () { return c.load(); }).then(function (out) {
         if (!el.isConnected) return;
         if (out.empty) { UI.emptyLine(body, out.empty); return; }
+        /* A card of figures or a table rather than a chart (Sales moves, By
+           person in charge) keeps its card and takes the markup. */
+        if (out.html) { body.innerHTML = out.html; return; }
         out.title = title;
         var holder = document.createElement('div');
         CH.draw(holder, out);
@@ -909,40 +973,56 @@
     };
     run();
   }
-  /* The mockup's charts stand on the page; the further four fold under
-     More figures (the user, 2026-10-12: "too many information in one
-     page"), shut until opened, the choice kept in this browser, and drawn
-     only once opened. */
-  var MORE_KEY = 'adspace-ovw-more';
-  function moreOpen() { try { return localStorage.getItem(MORE_KEY) === '1'; } catch (e) { return false; } }
-  function charts(box, from, to) {
-    CHARTS.slice(from, to).forEach(function (row, k) {
-      var i = from + k;
+  /* A page's rows of cards: two across, three where a row holds three, one
+     card alone taking its row. */
+  function charts(box, rows) {
+    rows.forEach(function (row) {
       var live = row.filter(function (c) { return c.can(); });
       if (!live.length) return;
       var grid = document.createElement('div');
-      grid.className = 'chartgrid ovw-grid' + (i === 1 ? ' is-three' : '');
+      grid.className = 'chartgrid ovw-grid' + (live.length === 3 ? ' is-three' : '');
       box.appendChild(grid);
       live.forEach(function (c) { chart(grid, c); });
     });
   }
-  function more(box) {
-    if (!CHARTS[3].some(function (c) { return c.can(); })) return;
-    var d = document.createElement('details');
-    d.className = 'fmore ovw-morefigs';
-    d.id = 'ovwMore';
-    d.innerHTML = '<summary>More figures</summary><div class="ovw-morebody"></div>';
-    box.appendChild(d);
-    var drawn = false;
-    var draw = function () { if (drawn) return; drawn = true; charts(d.querySelector('.ovw-morebody'), 3, 4); };
-    if (moreOpen()) { d.open = true; draw(); }
-    d.addEventListener('toggle', function () {
-      try { localStorage.setItem(MORE_KEY, d.open ? '1' : '0'); } catch (e) {}
-      if (d.open) draw();
+  /* Detail: Sales, then Operations, each under its label. */
+  function detail(box) {
+    PAGE2.forEach(function (g) {
+      if (!g[1].some(function (row) { return row.some(function (c) { return c.can(); }); })) return;
+      var h = document.createElement('h3');
+      h.className = 'ovw-group-h ovw-page-h';
+      h.textContent = g[0];
+      box.appendChild(h);
+      charts(box, g[1]);
     });
   }
+  var PAGES = [['summary', 'Summary'], ['detail', 'Detail']];
+  var page = 'summary';
+  function hasDetail() { return PAGE2.some(function (g) { return g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }); }); }
+  function turn(to) {
+    if (to === page) return;
+    page = to;
+    build(false);
+    window.scrollTo(0, 0);
+    if (bridge.setUrl) bridge.setUrl();
+  }
+  /* The way on at a page's foot: Summary continues to Detail, Detail goes
+     back to Summary. */
+  function foot(box) {
+    if (!hasDetail()) return;
+    var row = document.createElement('div');
+    row.className = 'ovw-foot';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ovw-turn';
+    b.id = 'ovwTurn';
+    b.innerHTML = page === 'summary' ? '<span>Continue to Detail</span>' + CHEV : '<span>Back to Summary</span>';
+    b.addEventListener('click', function () { turn(page === 'summary' ? 'detail' : 'summary'); });
+    row.appendChild(b);
+    box.appendChild(row);
+  }
 
-  var SHOWN = 8;
+  var SHOWN = 5;
   function list(box) {
     if (!SOURCES.some(function (s) { return s.can(); })) return;
     var card = document.createElement('section');
@@ -984,32 +1064,60 @@
         holder.className = 'ovw-att-rows';
         holder.innerHTML = head + html;
         body.appendChild(holder);
-        if (more > 0) body.insertAdjacentHTML('beforeend', '<button class="btn btn-quiet btn-sm ovw-more" type="button" aria-expanded="false">Show ' + more + ' more</button>');
+        /* Five rows, then the rest a press away; pressed again, the list
+           folds back to five (the user, 2026-10-12: "so it is not
+           inadvertently long"; "5 show only"). */
+        var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+        if (more > 0) body.insertAdjacentHTML('beforeend', '<button class="btn btn-sm ovw-more" type="button" aria-expanded="false" aria-controls="ovwAttention">' +
+          '<span>Show ' + more + ' more</span>' + DOWN + '</button>');
         Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row'), function (b) {
           var r = a.rows[Number(b.getAttribute('data-i'))];
           b.addEventListener('click', function () { go(r.url, r.section); });
         });
         var mb = body.querySelector('.ovw-more');
         if (mb) mb.addEventListener('click', function () {
-          var first = null;
-          Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row[hidden]'), function (b) { b.hidden = false; if (!first) first = b; });
-          mb.remove();
-          if (first) first.focus();
+          var open = mb.getAttribute('aria-expanded') !== 'true';
+          var rows = Array.prototype.slice.call(holder.querySelectorAll('.ovw-att-row')).slice(SHOWN);
+          rows.forEach(function (b) { b.hidden = !open; });
+          mb.setAttribute('aria-expanded', String(open));
+          mb.firstChild.textContent = open ? 'Show fewer' : 'Show ' + more + ' more';
+          if (open && rows[0]) rows[0].focus();
+          if (!open) { card.scrollIntoView({ block: 'nearest' }); mb.focus({ preventScroll: true }); }
         });
       }).catch(function (e) { fail(body, 'Needs attention', e, run); });
     };
     run();
   }
 
-  /* The period bar: a segment of the three periods and the span it reads,
-     with the time it was read. */
+  /* The bar: the two pages as the view strip at the left, the period and
+     the span it reads, with the time it was read, at the right. */
   function bar(box) {
     var head = document.createElement('div');
     head.className = 'ovw-bar';
-    head.innerHTML = '<select class="select select-sm" id="ovwPeriod" data-nofind aria-label="Period">' +
+    head.innerHTML = (hasDetail() ? '<nav class="tabrow ovw-pages" id="ovwPages" role="tablist" aria-label="Dashboard pages">' +
+        PAGES.map(function (p) {
+          return '<button class="tab' + (p[0] === page ? ' is-on' : '') + '" type="button" role="tab" data-page="' + p[0] + '" aria-selected="' + (p[0] === page) + '"' +
+            (p[0] === page ? '' : ' tabindex="-1"') + '><span>' + p[1] + '</span></button>';
+        }).join('') + '</nav>' : '') +
+      '<span class="ovw-when"><select class="select select-sm" id="ovwPeriod" data-nofind aria-label="Period">' +
       PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
-      '</select><span class="ovw-span" id="ovwSpan"></span>';
+      '</select><span class="ovw-span" id="ovwSpan"></span></span>';
     box.appendChild(head);
+    var strip = head.querySelector('#ovwPages');
+    if (strip) {
+      if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
+      strip.addEventListener('click', function (e) {
+        var t = e.target.closest && e.target.closest('.tab');
+        if (t) turn(t.getAttribute('data-page'));
+      });
+      strip.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        turn(page === 'summary' ? 'detail' : 'summary');
+        var on = $('ovwPages') && $('ovwPages').querySelector('.tab.is-on');
+        if (on) on.focus();
+      });
+    }
     var sel = head.querySelector('select');
     var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
     head.querySelector('#ovwSpan').textContent = spanWord(rangeOf(period)) + ' · As at ' + ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm');
@@ -1027,15 +1135,19 @@
     var y = keep ? window.scrollY : 0;
     box.innerHTML = '';
     bar(box);
-    glance(box);
-    tiles(box);
-    charts(box, 0, 3);
-    list(box);
-    more(box);
+    if (page === 'detail' && hasDetail()) {
+      detail(box);
+    } else {
+      glance(box);
+      tiles(box);
+      charts(box, PAGE1);
+      list(box);
+    }
+    foot(box);
     if (keep) window.scrollTo(0, y);
     if (keep && $('ovwPeriod')) $('ovwPeriod').focus({ preventScroll: true });
   }
-  function urlState() { return { p: period !== 'month' ? period : '' }; }
+  function urlState() { return { p: period !== 'month' ? period : '', pg: page === 'detail' ? 'detail' : '' }; }
 
   function enter() {
     var box = $('ovwBody');
@@ -1043,6 +1155,7 @@
     memo = {};
     var want = new URLSearchParams(location.search).get('p');
     period = PERIODS.some(function (p) { return p[0] === want; }) ? want : 'month';
+    page = new URLSearchParams(location.search).get('pg') === 'detail' ? 'detail' : 'summary';
     /* Reached with nothing to show (an address from before, or a group whose
        access changed): the console's own first route instead. */
     if (!any() && bridge.show) { bridge.show('work'); return; }

@@ -514,20 +514,6 @@
              one action sit together: everything that changes what is on the
              list is in one place. -->
         <div class="cmdbar" id="crmBar">
-          <!-- List and Sales: the same clients, read as a list or as the
-               figures their stage history makes (2026-10-05); drawn only
-               where Sales is allowed. -->
-          <span class="cmdbar-views" id="crmViews" role="group" aria-label="View" hidden>
-            <button class="acttab btn-sm is-on" data-cview="list" type="button" aria-pressed="true">List</button>
-            <button class="acttab btn-sm" data-cview="sales" type="button" aria-pressed="false">Sales</button>
-          </span>
-          <select class="select select-sm" id="crmSalesPeriod" aria-label="Period" data-nofilter hidden>
-            <option value="month">This month</option>
-            <option value="last">Last month</option>
-            <option value="3m">Last 3 months</option>
-            <option value="6m">Last 6 months</option>
-            <option value="12m">Last 12 months</option>
-          </select>
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
             <input class="input input-sm" id="crmSearch" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
@@ -644,7 +630,6 @@
         </div>
         <div class="msg" id="crmBulkMsg"></div>
         <div id="crmList"></div>
-        <div id="crmSales" hidden></div>
       </section>
 
       <!-- ---- One client ----
@@ -2234,12 +2219,6 @@
                  client is sold and sent. Named Months, so no tab in My Work
                  reads as the Clients section (2026-09-28). -->
             <button class="acttab btn-sm" data-view="months" type="button" aria-pressed="false">Months</button>
-            <!-- The same work, asked an aggregate question rather than a row
-                 one. Drawn only where `ops.reports` is granted, which is a
-                 part the ladder has carried since phase 1 and which is never
-                 inherited: a group given `ops: work` does not quietly gain
-                 the team's numbers. -->
-            <button class="acttab btn-sm" data-view="report" id="workViewReport" type="button" aria-pressed="false" hidden>Report</button>
           </span>
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -2336,10 +2315,6 @@
         <div id="workCap" hidden></div>
         <div id="workBoard" hidden></div>
         <div id="workCal" hidden></div>
-        <!-- The report. It reads its own aggregate rather than the queue's
-             rows, because "how long does Editing take" is a question about
-             every task there has ever been and not about the page. -->
-        <div id="workReport" hidden></div>
         <div id="workClients" hidden></div>
       </div>
     </div>

@@ -2379,3 +2379,26 @@ asked whether the page was already too long (about three screens at a
 desk, five on a phone): the mockup's order stays and the four fold under
 More figures, shut until opened, so the page opens on what needs a
 decision and the analysis is one press away.
+
+### 2026-10-12 · The Dashboard in two pages; My Work's Report and Clients' Sales removed
+Asked to check My Work · Report for duplication, the finding was that five of
+its seven blocks were already on the Dashboard (open work by person, the late
+list, the on-time rate and its trend, delivered by person), and that Clients ·
+Sales repeated the Dashboard's tiles, funnel, pipeline, active by month,
+sources and reasons. A proposal to move figures back into their sections was
+turned down ("Dashboard is the summary of every essential parts ... whats the
+purpose of my dashboard then"), and the user set the rule: "Priority is the
+dashboard, if reports repeats most of the figures and data then remove the tab
+section; same goes to the clients sales. Remove if it couldnt bring value in
+there." Both views went; what only they held moved to the Dashboard (each
+stage's open work beside its time, each person's median cycle, Sales moves,
+by person in charge, value won and lost). Then: "act as the company ceo ...
+or maybe a second page of dashboard instead of hiding it (2nd page as
+continuous instead of hiding like its not important)". More figures, a fold
+shut by default, became Detail, a page reached from a strip and from the foot
+of the Summary. The Summary keeps what a director reads first: today's
+attention, the eight tiles, the two trends and the list, which shows five
+rows with a toggle ("Needs attention part can capped ... so it is not
+inadvertently long"; "5 show only"). Lost with Sales: the popover listing the
+clients behind a figure; the Dashboard's rows open records instead. The
+`ops.reports` part is named Team figures on the Dashboard.

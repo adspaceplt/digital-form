@@ -1393,7 +1393,7 @@
     clients: { name: 'Clients', steps: [
       { at: '#crmNew', text: 'Add a lead the day it comes in. Billing, brand and services follow as the deal firms.' },
       { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client for its contacts, services, documents and every call and visit.' },
-      { at: '#crmViews', text: 'Sales shows the leads won, the clients lost and who needs a call.' }] },
+      { at: '#crmBar .cmdbar-filters', text: 'Filter the list by stage or person in charge.' }] },
     whatsapp: { name: 'WhatsApp', steps: [
       { at: '#waNew', text: 'New message sends a template Meta approved to a client contact or a creator.' },
       { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal sent: Sent, Delivered, Read, or Failed with the reason.' },
