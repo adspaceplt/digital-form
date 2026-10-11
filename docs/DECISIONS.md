@@ -2379,3 +2379,25 @@ asked whether the page was already too long (about three screens at a
 desk, five on a phone): the mockup's order stays and the four fold under
 More figures, shut until opened, so the page opens on what needs a
 decision and the analysis is one press away.
+### 2026-10-12 · Each post is its own task in the New sheet
+The user, looking at the regrouped sheet: "Assign priority and retainer by
+right supposed to go inside each post … Imagine i have 7 posts (6 retainers
+1 adhoc) each have different dues different handling person, different
+urgency." Assigned to, Priority and Task type moved into each post, on one
+line under its dates, the deadline a priority sets said under that post;
+Add another starts the next post as the one above. `ops_create_pieces`
+reads the three on each piece over the shared ones
+(`2026-10-12-pieces-of-their-own.sql`), so a page loaded before still works,
+and the migration runs before the page: a database without it would give
+every post the first one's. The user then: "All the more details part,
+complexity brief and repeat are really not so useful can remove so it looks
+nicer." The fold went; complexity takes the format family's own, and a brief
+or a repeat is set on the task card (Repeat on a schedule). Option A of the
+mockups was chosen over B (chips in a row: "too many small … uneven untidy");
+the posts became one shaded group with Add another inside it ("Posts section
+doesnt look like one group with the add another button"), and a client with
+no confirmed content month shows no posts ("no content month = nothing to
+choose. Unless its for leads or internal"): its line and Open Months, which
+lands on the client's Months in My Work, where the month and its meeting are
+set (the month alone does not take posts until its meeting is set or marked
+not needed, so a button making only the month would leave the person short).

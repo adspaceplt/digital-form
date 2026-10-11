@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261012e">
+<link rel="stylesheet" href="/css/portal.css?v=20261012f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2520,192 +2520,147 @@
               <button class="acttab is-on" type="button" aria-pressed="true">Content task</button>
             </div>
             <!-- In the order the decision is made: whose it is and for which
-                 month, then the pieces (a line each: what, which format,
-                 which week), then who takes it and how soon (a priority is a
-                 deadline, so it stands beside Assigned to with the date it
-                 sets; the user, 2026-10-12); complexity, the brief and the
-                 rare repeat fold under More details with their values on the
-                 line. One sheet makes one
-                 piece or a month of them (2026-09-28: Bulk add folded in).
-                 Whose the task is (Client, Lead, Internal) is checked once at
-                 creation and never again. -->
+                 content month, then the posts. Each post is one task and says
+                 everything that differs between posts: what, which format,
+                 which week, its three dates, who takes it, how soon and what
+                 kind (the user, 2026-10-12: "7 posts (6 retainers 1 adhoc)
+                 each have different dues different handling person,
+                 different urgency"). Complexity, a brief and a repeat are
+                 set on the task card once it exists. Whose the task is
+                 (Client, Lead, Internal) is checked once at creation and
+                 never again. -->
             <section class="fsec">
               <h4 class="fsec-h">Task details</h4>
-              <div class="row fgrid">
-                <div class="field span-all">
+              <div class="ntfor">
+                <div class="ntfor-pick">
                   <label class="field-label" for="ntScope">For</label>
-                  <select class="select" id="ntScope" data-seg>
+                  <select class="select select-sm" id="ntScope" data-seg>
                     <option value="client">Client</option>
                     <option value="lead">Lead</option>
                     <option value="internal">Internal</option>
                   </select>
                 </div>
+                <!-- A past client is offered on request, never by default. -->
+                <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
+                  <span>Include past clients</span></label>
+              </div>
+              <div class="row fgrid" id="ntWhoRow">
                 <div class="field" id="ntClientField">
                   <label class="field-label" for="ntClient" id="ntClientLabel">Client</label>
                   <select class="select" id="ntClient" aria-required="true"></select>
                 </div>
                 <div class="field" id="ntCodeRow">
-                  <label class="field-label" for="ntPeriod">Month</label>
+                  <label class="field-label" for="ntPeriod" id="ntPeriodLabel">Content month</label>
                   <select class="select" id="ntPeriod"></select>
+                  <p class="hint genplan" id="ntMonthHint" hidden></p>
                 </div>
               </div>
-              <!-- A paused client is offered on request, never by default. Its
-                   own line under the pair, so the client and the month keep
-                   one height and the step under them stays 16px. -->
-              <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
-                <span>Include past clients</span></label>
-              <p class="hint genplan" id="ntMonthHint" hidden></p>
+              <!-- A client with no content month confirmed takes no posts:
+                   the month and its meeting are set in My Work, Months, so
+                   the rest of the sheet steps away and the way there is
+                   offered in its place. -->
+              <div class="ntnomonth" id="ntNoMonth" hidden>
+                <span id="ntNoMonthWords"></span>
+                <button class="btn btn-sm" id="ntOpenMonths" type="button">Open Months<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+              </div>
             </section>
-            <!-- A line a piece. The first is the form's own; Add another
-                 draws the next under it, its format and the week after
-                 carried over. Every line carries its three dates, typed:
-                 Draft due (ready for AQC review), Due date (to the client)
-                 and Post date (the user, 2026-10-06). The code is the
+            <!-- The posts are one shaded group, Add another inside it. The
+                 first post is the form's own; Add another draws the next
+                 under it with the format, the person, the priority and the
+                 type carried over and the week after. The code is the
                  database's, given on save. -->
-            <section class="fsec">
-              <h4 class="fsec-h">Posts</h4>
-              <div class="pieces" id="ntPieces">
-                <div class="piece">
-                  <div class="field piece-desc">
-                    <label class="field-label" for="ntDesc">Content description</label>
-                    <textarea class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off" rows="1" data-oneline></textarea>
-                  </div>
-                  <div class="field piece-fmt">
-                    <label class="field-label" for="ntFormat">Format</label>
-                    <select class="select" id="ntFormat">
-                    <option value="">Not set</option>
-                    <option value="ad_campaign">Ad Campaign</option>
-                    <option value="static">Graphic: Static</option>
-                    <option value="gif">Graphic: GIF</option>
-                    <option value="carousel">Graphic: Carousel</option>
-                    <option value="reels_30">Reels: up to 30s</option>
-                    <option value="reels_60">Reels: up to 60s</option>
-                    <option value="reels_120">Reels: up to 120s</option>
-                    <option value="report">Report</option>
-                    <option value="account_mgmt">Account Management</option>
-                    <option value="koc">KOC</option>
-                    <option value="kol">KOL</option>
-                    <option value="other">Other</option>
-                  </select>
-                  </div>
-                  <div class="field piece-week">
-                    <label class="field-label" for="ntWeek">Week</label>
-                    <select class="select" id="ntWeek">
-                    <option value="1">Week 1</option>
-                    <option value="2">Week 2</option>
-                    <option value="3">Week 3</option>
-                    <option value="4">Week 4</option>
-                    <option value="5">Week 5</option>
-                  </select>
-                  </div>
-                  <div class="field piece-draft">
-                    <label class="field-label" for="ntDraft">Draft due</label>
-                    <input class="input" id="ntDraft" type="date" aria-required="true">
-                  </div>
-                  <div class="field piece-due">
-                    <label class="field-label" for="ntDue">Due date</label>
-                    <input class="input" id="ntDue" type="date" aria-required="true">
-                  </div>
-                  <div class="field piece-post">
-                    <label class="field-label" for="ntPublish">Post date</label>
-                    <input class="input" id="ntPublish" type="date" aria-required="true">
-                  </div>
-                  <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-                  </button>
+            <section class="fsec" id="ntPostsSec">
+              <div class="postgroup">
+                <div class="postgroup-head">
+                  <h4 class="fsec-h">Posts</h4>
+                  <span class="postgroup-n" id="ntPostsN" hidden></span>
                 </div>
-              </div>
-              <div class="pieces-foot">
-                <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another</button>
+                <div class="pieces" id="ntPieces">
+                  <div class="piece">
+                    <div class="piece-head">
+                      <b class="piece-name">Post 1</b>
+                      <button class="iconbtn piece-x" type="button" aria-label="Remove post 1">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                      </button>
+                    </div>
+                    <div class="field piece-desc">
+                      <label class="field-label" for="ntDesc">Content description</label>
+                      <textarea class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off" rows="1" data-oneline></textarea>
+                    </div>
+                    <div class="field piece-fmt">
+                      <label class="field-label" for="ntFormat">Format</label>
+                      <select class="select" id="ntFormat">
+                        <option value="">Not set</option>
+                        <option value="ad_campaign">Ad Campaign</option>
+                        <option value="static">Graphic: Static</option>
+                        <option value="gif">Graphic: GIF</option>
+                        <option value="carousel">Graphic: Carousel</option>
+                        <option value="reels_30">Reels: up to 30s</option>
+                        <option value="reels_60">Reels: up to 60s</option>
+                        <option value="reels_120">Reels: up to 120s</option>
+                        <option value="report">Report</option>
+                        <option value="account_mgmt">Account Management</option>
+                        <option value="koc">KOC</option>
+                        <option value="kol">KOL</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div class="field piece-week">
+                      <label class="field-label" for="ntWeek">Week</label>
+                      <select class="select" id="ntWeek">
+                        <option value="1">Week 1</option>
+                        <option value="2">Week 2</option>
+                        <option value="3">Week 3</option>
+                        <option value="4">Week 4</option>
+                        <option value="5">Week 5</option>
+                      </select>
+                    </div>
+                    <div class="field piece-draft">
+                      <label class="field-label" for="ntDraft">Draft due</label>
+                      <input class="input" id="ntDraft" type="date" aria-required="true">
+                    </div>
+                    <div class="field piece-due">
+                      <label class="field-label" for="ntDue">Due date</label>
+                      <input class="input" id="ntDue" type="date" aria-required="true">
+                    </div>
+                    <div class="field piece-post">
+                      <label class="field-label" for="ntPublish">Post date</label>
+                      <input class="input" id="ntPublish" type="date" aria-required="true">
+                    </div>
+                    <div class="field piece-owner">
+                      <label class="field-label" for="ntOwner">Assigned to</label>
+                      <select class="select" id="ntOwner"></select>
+                    </div>
+                    <!-- Priority is how soon: Urgent, High and Medium each set
+                         a deadline from now (Business settings), said under
+                         the post. -->
+                    <div class="field piece-pri">
+                      <label class="field-label" for="ntPriority">Priority</label>
+                      <select class="select" id="ntPriority">
+                        <option value="1">Urgent</option>
+                        <option value="2">High</option>
+                        <option value="4">Medium</option>
+                        <option value="3" selected>Normal</option>
+                      </select>
+                    </div>
+                    <div class="field piece-type">
+                      <label class="field-label" for="ntType">Task type</label>
+                      <select class="select" id="ntType">
+                        <option value="engagement">Retainer</option>
+                        <option value="adhoc">Ad hoc</option>
+                        <option value="goodwill">Goodwill</option>
+                        <option value="special">Other</option>
+                      </select>
+                    </div>
+                    <p class="hint piece-note" id="ntPrioNote" hidden></p>
+                  </div>
+                </div>
+                <div class="pieces-foot">
+                  <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another</button>
+                </div>
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
             </section>
-            <section class="fsec">
-              <h4 class="fsec-h">Assignment and priority</h4>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="ntOwner">Assigned to</label>
-                  <select class="select" id="ntOwner"></select>
-                </div>
-              </div>
-              <!-- Priority is how soon: Urgent, High and Medium each set a
-                   deadline from now (Business settings), said under it. -->
-              <div class="row fgrid">
-                <div class="field">
-                  <label class="field-label" for="ntPriority">Priority</label>
-                  <select class="select" id="ntPriority" data-seg>
-                    <option value="1">Urgent</option>
-                    <option value="2">High</option>
-                    <option value="4">Medium</option>
-                    <option value="3" selected>Normal</option>
-                  </select>
-                  <p class="hint" id="ntPrioNote" hidden></p>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntType">Task type</label>
-                  <select class="select" id="ntType" data-seg>
-                    <option value="engagement">Retainer</option>
-                    <option value="adhoc">Ad hoc</option>
-                    <option value="goodwill">Goodwill</option>
-                    <option value="special">Other</option>
-                  </select>
-                </div>
-              </div>
-            </section>
-            <details class="fmore" id="ntMore">
-              <summary>More details <span class="fmore-sum"></span></summary>
-              <!-- Complexity is how much. -->
-              <div class="row fgrid">
-                <div class="field">
-                  <label class="field-label" for="ntComplex">Complexity</label>
-                  <select class="select" id="ntComplex" data-seg>
-                    <option value="simple">Light</option>
-                    <option value="standard" selected>Standard</option>
-                    <option value="complex">Complex</option>
-                  </select>
-                </div>
-              </div>
-              <div class="row" id="ntBriefRow">
-                <div class="field">
-                  <label class="field-label" for="ntBrief">Brief</label>
-                  <textarea class="input" id="ntBrief" rows="2" placeholder="Optional" data-none="No brief" data-some="Brief"></textarea>
-                </div>
-              </div>
-              <!-- The same rule on every piece, made by the database each
-                   morning and when a client's month is confirmed. Rare, so it
-                   folds here; the line says Repeats or Does not repeat. -->
-              <div class="row">
-                <label class="tickline"><input type="checkbox" id="ntRepeat" data-on="Repeats" data-off="Does not repeat"> <span>Repeat on a schedule</span></label>
-              </div>
-              <div class="ntrepeat" id="ntRepeatBox" data-nosum hidden>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="ntFreq">Repeats</label>
-                    <select class="select" id="ntFreq" data-seg>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly" selected>Monthly</option>
-                      <option value="custom">Every N days</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row" id="ntIntervalField" hidden>
-                  <div class="field">
-                    <label class="field-label" for="ntInterval">Every</label>
-                    <input class="input" id="ntInterval" type="number" min="1" max="365" inputmode="numeric" placeholder="Days">
-                  </div>
-                </div>
-                <div class="row fgrid">
-                  <div class="field">
-                    <label class="field-label" for="ntEnds">End date</label>
-                    <input class="input" id="ntEnds" type="date">
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="ntMax">Or after this number of tasks</label>
-                    <input class="input" id="ntMax" type="number" min="1" max="500" inputmode="numeric" placeholder="No limit">
-                  </div>
-                </div>
-              </div>
-            </details>
           </div>
           <div class="sheet-foot">
             <button class="btn btn-primary" id="ntGo" type="button">Create task</button>
@@ -5246,7 +5201,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261011b"></script>
-<script src="/js/ops.js?v=20261012a"></script>
+<script src="/js/ops.js?v=20261012f"></script>
 <script src="/js/perf.js?v=20261011o"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261011a"></script>

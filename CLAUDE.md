@@ -2863,20 +2863,31 @@ Each line is a rule that broke once. Its reason is in the archive.
   internal and lead tasks are exempt.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
-  - It reads Task details (For, Client, Month), Posts, then Assignment and
-    priority (Assigned to; Priority with the deadline it sets from now under
-    it, `#ntPrioNote`, "Deliver within 48 hours, by 14 Oct, 9:00am.", none
-    for Normal; Task type beside it), then More details (Complexity, Brief,
-    Repeat), its line naming Repeats or Does not repeat (the user,
-    2026-10-12: a priority is a deadline, so it is never folded away).
-  - A content deliverable is pieces: a line each (description, format, week),
-    Add another drawing the next with the format above and the week after
-    (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
-    month, type, assignee, priority and complexity. Month reads
-    `{n} planned · {n} added` (`ops_engagement_counts`).
+  - It reads Task details (For as a small segment with Include past clients
+    at the right; Client and its Content month, Month for a lead, neither
+    for Internal) and Posts, nothing else: complexity, a brief and a repeat
+    are set on the task card (the user, 2026-10-12: "not so useful can
+    remove so it looks nicer"). A client with no confirmed content month
+    takes no posts: the posts step away for its line and Open Months
+    (`#ntOpenMonths`), which shuts the sheet on the client's Months in My
+    Work; a lead and an internal post need no month.
+  - A content deliverable is posts, one shaded group with Add another
+    inside it, each post one task headed Post n with its × once there are
+    two: its description and format; its week and three dates; who it is
+    Assigned to, its Priority and its Task type (the user, 2026-10-12: "7
+    posts (6 retainers 1 adhoc) each have different dues different
+    handling person, different urgency"), the deadline a priority sets
+    from now said under that post ("Deliver within 48 hours, by 14 Oct,
+    9:00am.", none for Normal). Add another draws the next as the post
+    above (format, person, priority, type) with the week after (after
+    Week 4, Week 1). Every post shares the client and month. Month reads
+    `{n} planned · {n} added` (`ops_engagement_counts`); Retainer rests on
+    a post once the other posts take what the plan has left.
   - `ops_create_pieces(p_payload, p_idem)` makes them through
     `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
-    twice the same act.
+    twice the same act; each piece's own `owner_id`, `priority_level` and
+    `task_type` stand over the payload's shared ones
+    (`2026-10-12-pieces-of-their-own.sql`).
   - Every piece's line carries three dates, typed by whoever plans it and
     never worked out (`2026-10-06-three-dates-a-post.sql`,
     `dates_as_given`: no template offsets): Draft due (ready for AQC
@@ -2888,16 +2899,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     nothing is made; a passed date, a draft due after the due date, or a
     post date before it is refused on its line. A task made before keeps
     what it has (Not set where blank); Add task, templates, copies, repeats
-    and report tasks are unchanged. One piece also keeps its brief; with
-    several the button reads Create N tasks.
+    and report tasks are unchanged. With several posts the button reads
+    Create N tasks.
   - A move into Revision (Client) pushes the due date to today (MYT) plus
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
-  - Repeat is a tick under More details (Weekly, Monthly, Every N days; an
-    end date or a count): the same rule on every piece, and what already
-    falls due made at once; a refusal of its rule opens the fold on the
-    field (`ADspaceForm.reveal`).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` (a month) or
