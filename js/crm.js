@@ -4677,14 +4677,9 @@
     openSheet('svcBox');
   }
   $('svcAdd').addEventListener('click', function () { openSvc(null); });
-  /* The business figures, an admin's, from a day on (2026-10-05): how long a
-     lead and a proposal wait before they read Overdue, and SST with the
-     term percentages a quote is prefilled from. */
-  $('crmLimits').addEventListener('click', function () {
-    window.ADspaceAdmin.editSettings({ title: 'Follow-up limits', msg: 'crmListMsg',
-      keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours'], ['proposal_followup_days', 'A proposal waits (days)', 'days']],
-      done: function () { if (!state.client && state.view !== 'sales') paintList(); } }, this);
-  });
+  /* SST and the term percentages a quote is prefilled from, an admin's,
+     from a day on (2026-10-05). Follow-up limits moved to the Settings
+     page's Clients group (2026-10-11). */
   $('svcTax').addEventListener('click', function () {
     window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
       keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
@@ -4755,7 +4750,6 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');
-      $('crmLimits').hidden = !window.ADspaceAdmin.may('team.settings', 'work');
       state.view = params.get('view') === 'sales' ? 'sales' : 'list';
       var sp = params.get('sp');
       state.salesPeriod = /^(month|last|3m|6m|12m)$/.test(sp || '') ? sp : 'month';

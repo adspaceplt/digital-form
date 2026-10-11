@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261012a">
+<link rel="stylesheet" href="/css/portal.css?v=20261011t">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -249,10 +249,14 @@
          shape alone broke the console for everybody who is not an admin. -->
     <!-- The rail's foot is one line (2026-10-10, the user: "activity log can
          go inline with version code", "just activity record icons would
-         do"): the build, then the Activity record's mark at the right edge,
-         at a desk as under the tab bar. Settings and Arrange
-         sections are in the account menu. -->
+         do"): the build, then Settings' mark and the Activity record's at the
+         right edge (2026-10-11, the user: "the settings button to fit beside
+         activity record as just icons same as it"), at a desk as under the
+         tab bar. Arrange sections is in the account menu. -->
     <div class="sidebar-foot">
+      <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
       <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
       </button>
@@ -347,14 +351,11 @@
           <button class="kmenu-item" id="myCard" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/></svg>My namecard
           </button>
-          <!-- What changes the portal for everybody, and the colleague's own
-               arrangement of it (2026-10-10, from the rail's foot): each drawn
-               only where it may be used, the group's hairline with them. -->
+          <!-- The colleague's own arrangement of the sections (2026-10-10, from
+               the rail's foot): drawn only where it may be used, the group's
+               hairline with it. Settings is a mark at the rail's foot. -->
           <div class="acct-group" id="acctWork">
             <hr class="acct-sep">
-            <button class="kmenu-item" id="settingsOpen" type="button" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>Settings
-            </button>
             <button class="kmenu-item" id="railEdit" type="button" hidden>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg>Arrange sections
             </button>
@@ -548,7 +549,6 @@
               <span class="cmdbar-count" id="crmCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm" id="crmLimits" type="button" hidden>Follow-up limits</button>
               <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage">Select clients</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
@@ -3922,9 +3922,10 @@
     <!-- ---- My records: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
-    <!-- Settings (js/settings.js, 2026-10-10): a card a group (Portal,
-         Business figures, AI, Records), a row a setting, each drawn only for
-         the colleague holding its part. -->
+    <!-- Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11): one
+         page of eight groups, each a card under its heading; at a desk a
+         list of the groups beside it scrolls to one; a row a setting, each
+         drawn only for the colleague holding its part. -->
     <div class="console-body" id="sectionSettings" hidden>
       <div class="msg" id="settingsMsg" role="status"></div>
       <div id="setList" data-narrow="640"></div>
@@ -5236,14 +5237,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261012a"></script>
+<script src="/js/admin.js?v=20261011t"></script>
 <script src="/js/documents.js?v=20261010zo"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
 <script src="/js/reports.js?v=20261011c"></script>
 <script src="/js/register.js?v=20261010zc"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261011b"></script>
+<script src="/js/crm.js?v=20261011t"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261011q"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
@@ -5256,6 +5257,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261011a"></script>
 <script src="/js/overview.js?v=20261011b"></script>
-<script src="/js/settings.js?v=20261011a"></script>
+<script src="/js/settings.js?v=20261011t"></script>
 </body>
 </html>

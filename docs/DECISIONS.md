@@ -2305,3 +2305,33 @@ and read; the suites run once, all of them with the layout walk, on main
 after the day's requests are in, and what they find is the next batch. A
 migration keeps its Postgres suite before it touches the live database,
 since a database cannot be rolled back as a page can.
+
+### 2026-10-11 · Settings in eight groups on one page
+The queue's task 46, from the user's handover: "Vertical list at a desk,
+drill-down on a phone (iPhone/Mac Settings style). Groups: Portal, Clients,
+My Work, Reports, Money, AI, WhatsApp, Documents. Follow-up limits moves out
+of the Clients bar into Settings." The cards (Portal, Business figures,
+WhatsApp, AI, Records) became eight groups named for what their rows change.
+Placements that could read either way: Due dates sits under My Work (the
+report and revision days set task dates; the approval reminder is My Work's
+Waiting for you); AI prices under Money with Tax and terms (figures of cost,
+edited as Business settings), leaving AI to the usage page. The Clients bar's
+Follow-up limits button went (one act once on a screen); Tax and terms stays
+on the Services bar and Due dates in My Work's ⋯, where the user kept them.
+A drill-down was built first (a list of groups at a desk beside the chosen
+one's rows; on a phone a screen a group with Back, as iPhone Settings). The
+user refused it before release: "It now takes five layers into the
+individual settings. Name > Settings page > settings each section > each
+individual settings > start making changes." So every group is a card on one
+page at every width, and the desk's list only scrolls to a group, never
+standing between the person and a row: three steps, as before the regroup.
+The rows took their own names (`.stg-`): the page of 2026-10-10 had
+reused `.set-row`, Content Review's set row, and its grid had been laying
+out that set list's name and count side by side.
+
+### 2026-10-11 · Settings is a mark beside the Activity record
+The user, on the same release: "Im thinking the settings button to fit
+beside activity record as just icons same as it." Settings left the account
+menu for the rail's foot, the gear before the Activity record's mark (and so
+in More's foot under the tab bar), chosen while the page is open. The account
+menu's Workspace group keeps Arrange sections alone.
