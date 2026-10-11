@@ -584,6 +584,11 @@ section holds only what is true of the project as a whole.
 - A Revert back into a review stage counts as a new round, because rounds are
   counted from the moves into that stage.
 
+### Logged defects
+Found by a test in code a release did not touch; fixed in the next release
+and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- None open.
+
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
   for now (the user, 2026-09-28) while the team's SOPs are refined; months

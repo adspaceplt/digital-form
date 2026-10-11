@@ -102,6 +102,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     id). `all` runs once a day, after the day's merges, its findings the
     next batch, and never stands in for a release's own checks. Never
     weaken an assertion or change an expectation merely to pass.
+  - One request, one release (the user, 2026-10-11: hours lost holding
+    small changes together): each request ships on its own PR once its
+    own checks pass, never held for the next. A failure a new test or
+    seed exposes in code the request did not touch is logged under
+    `STANDARD.md` Logged defects and fixed in the next release; it holds
+    the release only where it touches what the request changed.
   - Visual checks follow rendered impact, never every gate by default:
     SQL or backend alone takes functional, database and authorization
     suites and no layout walk; copy, markup a script draws, visibility, an
