@@ -3365,7 +3365,11 @@
       /* Send on WhatsApp (2026-10-09; the composer from 2026-10-10): the
          booking and the creator's link again; shown once the creator
          template is on, at WhatsApp Manage and its Booking message part. */
-      if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Send on WhatsApp');
+      /* The booking message goes out by itself on confirming; sent by hand
+         again only before the shoot, as Resend booking (the user,
+         2026-10-11: it read as a message button for every stage). */
+      if ((o.state === 'confirmed' || o.state === 'pending_visit') &&
+          window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Resend booking');
       items += menuItem('unbook', 'Revert to options');
       items += menuItem('withdraw', 'Withdraw');
       items += menuItem('replace', 'Replace');

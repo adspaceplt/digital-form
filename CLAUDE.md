@@ -4166,8 +4166,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   report attached is `report`; else the record's (`feedback`, `creator`),
   else `message`. The record buttons stay where they were and open it
   prefilled: Send on WhatsApp beside Mark as sent (then marked as sent
-  today), Request feedback on WhatsApp in a client's ⋯, Send on WhatsApp in
-  a booked creator's ⋯.
+  today), Request feedback on WhatsApp in a client's ⋯, Resend booking in a
+  booked creator's ⋯ at Confirmed and Pending visit alone (the booking goes
+  out by itself on confirming; the user, 2026-10-11).
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.
