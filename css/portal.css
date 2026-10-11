@@ -2324,6 +2324,15 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 11px; line-height: 1.4; color: var(--ink-mute);
   font-variant-numeric: tabular-nums; letter-spacing: 0;
 }
+/* It is also Refresh app (2026-10-12): a press on the words, which read as
+   words (no box, no underline), the line's full height its target. */
+button.appver {
+  min-height: var(--ctl-h); border: 0; border-radius: var(--radius-sm);
+  background: none; font-family: inherit; font-weight: 400; text-align: left; cursor: pointer;
+}
+@media (hover: hover) {
+  button.appver:hover { color: var(--ink-soft); }
+}
 /* `.railrow` is the box a row of the rail draws in and `.navitem` is a
    *section* of the console: the first is a shape, the second is a meaning
    with wiring behind it (`navItems()` reads every `.navitem` and asks the

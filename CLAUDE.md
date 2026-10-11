@@ -455,7 +455,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
   This device
-  (Theme, Passkeys, Notifications, Refresh app); Sign out. The Reports bar
+  (Theme, Passkeys, Notifications); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
   page load that failed, and a PDF the console drew, for an hour, at
@@ -469,8 +469,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   fb89b43`; the user, 2026-10-06: short, but which build), read from
   `/version.json`, which the Pages build writes through Jekyll
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
-  (no build) or missing, the line is hidden (`tests/appver.js`).
-- Refresh app (account menu):
+  (no build) or missing, the line is hidden (`tests/appver.js`). The line is
+  Refresh app (the user, 2026-10-12): a button drawn as its words (no box,
+  no underline, the mute ink, the soft ink on hover), the line's height its
+  target, named `Refresh app, {build}` for a screen reader and on hover; the
+  account menu holds no Refresh app.
+- Refresh app (the build line):
   - it unregisters the console's own worker (`/admin/`) and empties its own
     caches (`adspace-console-*`, and `/admin/file/` in `adspace-files`),
     never the creator's, the selection page's or the client portal's

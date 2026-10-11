@@ -2418,3 +2418,16 @@ the page sends each stored value back unchanged rather than clearing it; a
 new template takes the content workflow and none of them. The family's own
 Estimate still stands behind a variant with no hours, kept as stored. No
 migration.
+
+### 2026-10-12 · The build line is Refresh app
+
+The user: "Can the refresh app build on tapping the text v26.xx.xx · {commit}
+(no underline decor)", then "Remember to remove the refresh app button after
+adding to the build line". `#appVersion` at the rail's foot (and in More
+under the tab bar) is now a button drawn as its words: no box, no underline,
+the mute ink and the soft ink on hover, the line's height (38, 44 under a
+finger) its target, named `Refresh app, {build}` for a screen reader and on
+hover. A press runs `ADspaceRefresh.hard()` as the account menu's item did,
+and that item is gone. The line is drawn only from a Pages build's
+`/version.json`, so a copy served raw has no Refresh app; the installed app
+always runs a build.
