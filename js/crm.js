@@ -961,7 +961,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.log = []; ba.id = null; }
+    if (!same) { state.contacts = []; state.log = []; state.ovFail = {}; ba.id = null; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -1107,7 +1107,7 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'engagements', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  var PANES = ['overview', 'calls', 'engagements', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
   var pane = 'overview';
 
   function paneFromUrl() {
@@ -1134,6 +1134,9 @@
     var tabOf = document.querySelector('#crmTabs .tab[data-pane="' + key + '"]');
     if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
     pane = key;
+    /* On its own pane the act is the pane's head's: offered once on a screen. */
+    var lc = $('crmLogCall');
+    if (lc) lc.classList.toggle('is-here', key === 'calls');
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
       b.classList.toggle('is-on', on);
@@ -1145,6 +1148,8 @@
     if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
     if (key === 'engagements' && visit) loadEngage(true);
+    /* A visit reads the calls again: a colleague may have logged one since. */
+    if (key === 'calls' && visit) loadTouches();
   }
 
   gateTabs();
@@ -1303,9 +1308,11 @@
     var c = state.client;
     if (!box || !c) return;
 
-    box.innerHTML = '<div class="ovcard">' + [
-      ovContact(c), ovServices(c), ovDocuments(c), ovTouches()
-    ].join('') + '</div>';
+    /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
+       the services and the letters; a section the reader may not open is
+       not drawn, and one whose read was refused says so, never empty. */
+    var secs = [ovTouches(), ovContact(c), ovServices(c), ovDocuments(c)].join('');
+    box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
     paintRail(c);
@@ -1359,7 +1366,16 @@
   /* A section is a heading and the one control that opens what it summarises,
      which is this portal's section head drawn flat rather than as a card. An
      Edit carries the pen and no chevron; a View all carries the chevron. */
+  var OV_PART = { calls: 'clients.calls', contacts: 'clients.contacts', services: 'clients.services', documents: 'clients.documents' };
+  function ovFailed(go, on) {
+    state.ovFail = state.ovFail || {};
+    if (Boolean(state.ovFail[go]) === on) return;
+    state.ovFail[go] = on;
+    paintSummary();
+  }
   function ovSection(title, go, goWord, body, isEdit) {
+    if (OV_PART[go] && !mayPart(OV_PART[go], 'view')) return '';
+    if (state.ovFail && state.ovFail[go]) { body = ovNone('Could not load.'); goWord = 'View all'; isEdit = false; }
     /* A colleague who may only read the pane is offered the way to it, never
        Edit or Manage (audit, 2026-10-03). */
     if (goWord !== 'View all' && state.client &&
@@ -1461,7 +1477,7 @@
 
   function ovTouches() {
     var rows = state.touches || [];
-    if (!rows.length) return ovSection('Calls and visits', 'activity', 'View all', ovNone('Nothing logged.'));
+    if (!rows.length) return ovSection('Calls and visits', 'calls', 'View all', ovNone('Nothing logged.'));
     var body = '<ul class="ovlog">' + rows.slice(0, 3).map(function (t) {
       return '<li class="ovlog-row">' +
         '<span class="ovlog-ico">' + ico(KIND_ICON[t.kind] || 'chat', '') + '</span>' +
@@ -1473,7 +1489,7 @@
           (t.contact_name ? '<span class="ovmeta">with ' + esc(t.contact_name) + '</span>' : '') + '</span>' +
       '</li>';
     }).join('') + '</ul>';
-    return ovSection('Calls and visits', 'activity', 'View all', body);
+    return ovSection('Calls and visits', 'calls', 'View all', body);
   }
 
   /* ---- The rail ---------------------------------------------------------
@@ -1592,7 +1608,7 @@
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
     if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts', icon: 'person' };
-    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'activity', icon: 'phone' };
+    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
       return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents', icon: 'file' };
@@ -2772,7 +2788,8 @@
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
-        if (r.error) { failLine(box, 'Contacts', r.error.message, loadContacts); return; }
+        if (r.error) { failLine(box, 'Contacts', r.error.message, loadContacts); ovFailed('contacts', true); return; }
+        ovFailed('contacts', false);
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         paintSummary();
@@ -3173,7 +3190,8 @@
     db.from('client_touches').select('*').eq('client_id', state.client.id)
       .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
       .then(function (r) {
-        if (r.error) { failLine(box, 'Calls and visits', r.error.message, loadTouches); return; }
+        if (r.error) { failLine(box, 'Calls and visits', r.error.message, loadTouches); ovFailed('calls', true); return; }
+        ovFailed('calls', false);
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
         paintSummary();
@@ -3376,6 +3394,8 @@
   $('tcKind').addEventListener('change', meetFields);
   function shutTouch() { shutSheet('crmTouchBox'); editingTouch = null; }
   $('crmAddTouch').addEventListener('click', function () { openTouch(null); });
+  /* The head's Log call opens the same sheet, the record staying on its pane. */
+  $('crmLogCall').addEventListener('click', function () { openTouch(null); });
   $('tcCancel').addEventListener('click', shutTouch);
 
   $('tcSave').addEventListener('click', function () {
@@ -3569,7 +3589,8 @@
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .order('created_at').then(function (r) {
-          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); return; }
+          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); ovFailed('services', true); return; }
+          ovFailed('services', false);
           var all = r.data || [];
           state.services = all.filter(function (l) { return !l.archived_at; });
           state.servicesGone = all.filter(function (l) { return l.archived_at; });
@@ -4037,7 +4058,8 @@
     if (!DOCS) { box.innerHTML = ''; return; }
     if (!box.querySelector('.crm-table')) skeleton(box, 2);
     DOCS.list(c.id, function (rows, err) {
-      if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); return; }
+      if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); ovFailed('documents', true); return; }
+      ovFailed('documents', false);
       if (!state.client || state.client.id !== c.id) return;
       /* Kept so the Summary can read them without a second call: the record
          has already paid for this. */

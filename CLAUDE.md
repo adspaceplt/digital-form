@@ -102,6 +102,12 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     id). `all` runs once a day, after the day's merges, its findings the
     next batch, and never stands in for a release's own checks. Never
     weaken an assertion or change an expectation merely to pass.
+  - One request, one release (the user, 2026-10-11: hours lost holding
+    small changes together): each request ships on its own PR once its
+    own checks pass, never held for the next. A failure a new test or
+    seed exposes in code the request did not touch is logged under
+    `STANDARD.md` Logged defects and fixed in the next release; it holds
+    the release only where it touches what the request changed.
   - Visual checks follow rendered impact, never every gate by default:
     SQL or backend alone takes functional, database and authorization
     suites and no layout walk; copy, markup a script draws, visibility, an
@@ -390,7 +396,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   right"); a section More holds chooses More. My Work carries a red dot
   while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
   `paintWaiting`; read once on sign-in under the bar), never a profile
-  photo tab (`tests/tabbar.js`, `tests/waiting.js`).
+  photo tab (`tests/tabbar.js`, `tests/waiting.js`). It sits low, 14px
+  less than the home bar's inset above the edge (`--tabbar-bottom`; the
+  user: "can go abit down"), and scrolling down draws it in to its glyphs
+  (`.tabbar-min`: 54px, 56px a tab), scrolling up, the page's top, More or
+  a press bringing the words back; the room the page keeps clear never
+  changes. My Work held half a
+  second opens My Work with Add task (`ADspaceOps.add`, My Work at Work;
+  the user, 2026-10-11); a shorter press is a tap.
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
   "mobile tab and web … both sync edits"): one order a colleague for the
   web rail and the phone tab bar alike. `#railEdit` in the account menu
@@ -595,6 +608,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     - Never on a sheet with no foot.
     - Never while an input method is composing.
     - The primary carries `aria-keyshortcuts`.
+  - A plain Enter presses the top sheet's foot primary too (the user,
+    2026-10-11), from the card or a one-line field only: never from a
+    search box (`type=search`, a combobox, `inputmode=search`,
+    `data-noenter`), a box of lines, a button, a select, a segment or a
+    switch, never inside a form that submits itself, never on the question
+    sheet (it answers its own Enter) or with the finder open, never a red
+    button. A sheet opened by `js/ops.js` holds its card, never its close
+    mark (Enter there had shut the step sheet).
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
@@ -1153,7 +1174,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
 - Groups run in the rail's order (Creators List after Creator Campaigns);
-  Video Scripts by code or title, opening its record (`script=`).
+  Video Scripts by code or title, opening its record (`script=`). What was
+  said is found too (2026-10-11): a task by its brief (`Brief: …`) or a
+  remark as it reads now (`Remark: …`; an edited one by its latest words, a
+  removed one never), and Calls and visits (`clients.calls`) by its notes,
+  next action or who it was with, under its client, opening `tab=calls`.
   Each group's label leads with its rail glyph (`ADspaceAdmin.glyph`).
   A row is the name, its code in the token face, one mute line; the match
   in weight, never colour. No recent searches, no explanatory copy.
@@ -1260,8 +1285,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the first letters of the first two words that start with a letter).
   - The name and its meta (the main contact's preferred language and the person
     in charge; each left out when unknown).
-  - `.rec-ctl`: the stage select plus one ⋯ holding Edit and Delete (the item
-    carries `data-need="clients:manage"`).
+  - `.rec-ctl`: Log call (`#crmLogCall`, Clients: Calls at Work, the phone
+    glyph alone on a narrow pane, given to the pane's own head on Calls and
+    visits, and gone from a head under 300px (`data-narrow="300"`, a 320
+    phone); 2026-10-11), the stage select, then one ⋯ holding Edit and
+    Delete (the item carries `data-need="clients:manage"`).
   - Phone (`.is-narrow`): `"mark . ctl" / "who who who"`.
   - The month line (`#crmMonthLine`, 2026-10-08), under the meta for an
     Active or Paused client and a reader of My Work: the month whose span
@@ -1271,8 +1299,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     else amber); it opens the client's Months view. It is read from the
     Engagements pane's answer, never a read of its own.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
-  - Overview, Engagements, Contacts, Billing, Brand, Services, Documents,
-    Activity;
+  - Overview, Calls and visits (`tab=calls`, Clients: Calls, never behind
+    the Activity record's access; 2026-10-11), Engagements, Contacts,
+    Billing, Brand, Services, Documents, Activity (the Record of changes);
   - Requests once a contact has portal access or a request exists.
   - There is no Work pane. `tab=work` lands in My Work's Months view
     (`view=months&wc=slug`); there is no Reports pane, and `tab=reports`
@@ -1283,7 +1312,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `.rail-after` (Timeline, Details, Recent activity) follows the pane.
 - `.rec` is `grid-template-rows: auto 1fr`.
 - Overview:
-  - One `.ovcard`: Contact details, Services, Letters, Calls and visits.
+  - One `.ovcard` in the tabs' order: Calls and visits, Contact details,
+    Services, Letters; a section whose part the reader may not open is not
+    drawn, and one whose read was refused reads Could not load., never empty
+    (`ovFailed`, 2026-10-11).
   - Built only from what the record has already loaded.
   - Enquired lines are left out.
   - An empty section says so in one line.
@@ -2309,6 +2341,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The name cell opens the task; the row is not one button.
   - The stage select moves the task (`moveTo()` is the one path for the row,
     the card, a drop and the task's head).
+  - Under a finger a row swiped left shows its next step (`rowSwipe`; the
+    user, 2026-10-11: quick actions): the name and date stay in sight, the
+    stage and the ⋯ fade under one blue button at the right edge named as
+    the task's own (`verbFor`), made as the swipe begins and gone as the row
+    settles (a row at rest holds only its cells), pressed through `stepFromRow` as the select
+    is. The swipe shows the act, never takes it, because a sideways swipe
+    elsewhere changes the view (the row is `data-noswipe`); a press
+    elsewhere, a scroll or another row's swipe puts it back.
   - One select for every task (`stageCell`): the whole workflow in position
     order, the current stage chosen, an unreachable stage greyed (never left
     out), a retired stage and Blocked listed only for a task on them.
@@ -2479,8 +2519,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
-  - A hand-off shows the person, with Keep it assigned to me unticked.
-  - The owner's own steps have it ticked.
+  - A hand-off shows the person, with Keep assigned to me off (the
+    portal's switch, never a tick box; the user, 2026-10-11).
+  - The owner's own steps have it on.
+  - The step sheet's act reads Move: its head names where it goes, so the
+    label keeps one line in a phone's half.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
 - Skipping a step is ops Work with a reason, and never into a revision.
 - Reassign (`ops_assign_task`, `ops_hand_over_task`;
@@ -2548,8 +2591,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
 - Time records: one stage table in workflow order (Stage, Visits, Time, a
   Total row); the sheet shows it open, with Recorded only where there is any.
-- A draft link is optional. Without one the step reads Sent on WhatsApp, and
-  the database accepts the link or a note.
+- A draft link is optional. Without one the step asks Sent on (`#stepVia`,
+  WhatsApp / Others; the user, 2026-10-11: "no need type in where to send
+  every single time"): WhatsApp files Sent to the client on WhatsApp., Others
+  asks How it was sent; the database accepts the link or a note.
 - A task is one card beside the list (`#taskDrawer`, `.sheet-side`,
   `open=`; the user, 2026-10-09: the full record was little used): an
   older `task=` address, a new task and a copy open it there; there is no

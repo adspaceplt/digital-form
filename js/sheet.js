@@ -206,6 +206,43 @@
     b.click();
   });
 
+  /* A plain Enter presses it too (the user, 2026-10-11: "does hitting the
+     enter proceed directly of the action button?" … "Yes"): on the sheet on
+     top, from the card itself or a one-line field, never from a box that
+     takes lines, a search box, a button, a select, a choice or a switch (each
+     has its own Enter), never inside a form that submits itself, never on the question
+     sheet (js/confirm.js answers its own Enter) or with the finder open, and
+     never a red, disabled or hidden button. */
+  var LINE = /^(text|email|tel|number|url|password|date|time|month|datetime-local)$/;
+  function submits(form) {
+    return Boolean(form && form.querySelector('button[type="submit"], input[type="submit"], button:not([type])'));
+  }
+  function enterable(t, sheet) {
+    if (!t || !sheet.contains(t)) return false;
+    if (t.classList && t.classList.contains('sheet-card')) return true;
+    /* A search box narrows a list; its Enter never adds what the list holds. */
+    if (t.getAttribute('role') === 'combobox' || t.getAttribute('inputmode') === 'search' || t.hasAttribute('data-noenter')) return false;
+    if (t.tagName === 'INPUT') return LINE.test(t.type || 'text') && !submits(t.form);
+    if (t.tagName === 'TEXTAREA') return t.hasAttribute('data-oneline') && !submits(t.form);
+    return false;
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.metaKey || e.ctrlKey) return;
+    if (e.isComposing || e.keyCode === 229) return;   // an input method is choosing a word
+    var t = e.target;
+    var oneline = t && t.tagName === 'TEXTAREA' && t.hasAttribute('data-oneline');
+    /* A one-line box's own Enter (js/grow.js) is taken back from a new line,
+       and presses nothing where no form holds it, so it is answered here. */
+    if (e.defaultPrevented && !(oneline && !submits(t.form))) return;
+    var sheet = topSheet();
+    if (!sheet || sheet.id === 'askSheet' || !enterable(t, sheet)) return;
+    if (document.querySelector('.picker:not([hidden])')) return;
+    var b = firstIn(sheet.querySelector('.sheet-foot'), GO);
+    if (!b) return;
+    e.preventDefault();
+    b.click();
+  });
+
   /* Say so on the control, for the keyboard and the pointer that hovers. */
   function label() {
     Array.prototype.forEach.call(document.querySelectorAll('.sheet-foot ' + '.btn-primary, .sheet-foot .btn-go, .qform-acts [type="submit"]'), function (b) {

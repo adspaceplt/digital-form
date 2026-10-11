@@ -2003,3 +2003,54 @@ sight under the scrim but out of reach, so a press there is a press on the
 scrim (which keeps a phone form's draft), never a tab leaving the form. The
 height is given back while typing: the keyboard hides the bar, and the card
 then reaches 8px from the floor.
+
+### 2026-10-11 · Quick actions on a phone
+
+Approved from the suggestions after the tab bar ("ok"): a My Work row swiped
+left, and the My Work tab held down. The swipe shows the next step as a
+button rather than moving the task at once, because a sideways swipe on My
+Work already changes the view and a stray swipe must never move work; the
+button takes the select's own path, so a hand-off still asks who and a gate
+still refuses under the row. On a phone a row is a card whose name is what
+the step is about, so the cells drift only a fifth of the button's width and
+the stage and ⋯ fade under it, instead of the whole row sliding out as a
+mail list's does. Held half a second, My Work opens with Add task's sheet;
+a shorter press stays a tap.
+
+### 2026-10-11 · Calls and visits, the bar's place, the step sheet
+
+The user approved Calls and visits as a tab of its own and wider search
+("ok"). Reading the record found the calls inside the Activity pane, which is
+drawn only for the Activity record's readers, so a group of its own clients
+(never given that access) could not read its own calls; the tab now follows
+Clients: Calls. Log call stands in the record's head. Search finds a task by
+its brief or a remark as it reads now, and a call by what was said. Asked
+whether the record's Overview was updated, it followed the old order and
+drew sections the reader could not open and a refused read as empty; it now
+follows the tabs, leaves out what cannot be opened and says Could not load.
+From the user's iPhone beside Instagram's: the bar sits lower, into the home
+bar's inset, and draws in to its glyphs while scrolling down. From a
+screenshot of the step sheet: the act wrapped onto two lines ("bad ui"), so
+it reads Move under a head that names the stage; how a draft went is a
+choice of WhatsApp or Others, typed only for Others; Keep assigned to me is
+the portal's switch, as every on or off is (the user's wording).
+
+### 2026-10-11 · Enter presses the blue button
+
+The user asked whether Enter goes straight to a sheet's action. It did not:
+only Cmd or Ctrl + Enter pressed it (2026-09-24), and on the step sheet a
+plain Enter shut the sheet, because `js/ops.js` focused the first button it
+found, the close mark. Asked whether a plain Enter should press it: "Yes".
+It presses the top sheet's blue button from the card or a one-line field;
+a search box, a box of lines, a choice or a switch keeps its own Enter, so
+typing a creator's name and pressing Enter never adds creators; a red
+button is never pressed by a key. The step sheet now opens on its card.
+
+### 2026-10-11 · One request, one release
+
+The user: "it has been like 3-4 hours" for a bar shift and a few small
+changes. Nine requests had gathered on one branch, the full layout walk ran
+after every fix, and a pre-existing 22px target exposed by a new seed held
+the whole release. The user: "yes, log older defects and ship one request
+at a time". Each request now ships alone once its own checks pass; a defect
+in code a release did not touch is logged in `STANDARD.md` and fixed next.

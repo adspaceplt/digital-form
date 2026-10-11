@@ -2507,6 +2507,7 @@
       inlineDue(t, el, du, done);
     });
     wireStage(el.querySelector('.state-select'), t, el, done);
+    rowSwipe(el, t, done);
     var tk = el.querySelector('[data-a="take"]');
     if (tk) tk.addEventListener('click', function () { takeTask(t, function (x) { rowNote(el, x); }, done); });
     wireRowMenu(el, t, done);
@@ -2574,6 +2575,101 @@
       if (want && want !== t.stage_key) stepFromRow(t, el, want, after);
     });
   }
+  /* A ROW SWIPED LEFT SHOWS ITS NEXT STEP (the user, 2026-10-11: quick
+     actions on a phone). Under a finger, a row whose next step the reader
+     may take slides left and shows that step as one button at its right
+     edge, named as the task's own button names it ("Move to Shooting"); a
+     press takes the same path as the row's select, so a hand-off still asks
+     who and a gate still refuses under the row. The swipe only shows the
+     act, never takes it, because a sideways swipe elsewhere on My Work
+     changes the view (`js/swipe.js`; the row is `data-noswipe`). A swipe
+     back, a press elsewhere, a scroll or another row's swipe puts it back. */
+  var swiped = null;
+  function unswipe(row) {
+    row = row || swiped;
+    if (!row) return;
+    if (swiped === row) swiped = null;
+    row.classList.remove('is-swiping');
+    if (!row.classList.contains('is-swiped')) { row.style.removeProperty('--sx'); if (row.__unact) row.__unact(); return; }
+    row.style.setProperty('--sx', '0px');
+    setTimeout(function () {
+      if (swiped === row) return;
+      row.classList.remove('is-swiped');
+      row.style.removeProperty('--sx');
+      if (row.__unact) row.__unact();
+    }, 220);
+  }
+  function rowSwipe(el, t, after) {
+    if (isFinished(t) || !mayMove(t)) return;
+    var next = nextOf(t);
+    if (!next || howOf(t, next) !== 'step') return;
+    el.setAttribute('data-noswipe', '');
+    el.classList.add('has-swipe');
+    /* The step is made as a swipe begins and goes as the row settles back,
+       so a row at rest holds only its own cells. */
+    var act = null;
+    function makeAct() {
+      if (act && act.parentNode === el) return;
+      act = document.createElement('button');
+      act.type = 'button';
+      act.className = 'btn btn-primary trow-next';
+      act.textContent = verbFor(next, t);
+      act.tabIndex = -1;
+      act.setAttribute('aria-hidden', 'true');
+      el.appendChild(act);
+      act.addEventListener('click', function (e) {
+        e.stopPropagation();
+        unswipe(el);
+        stepFromRow(t, el, next, after);
+      });
+    }
+    el.__unact = function () { if (act && act.parentNode) act.parentNode.removeChild(act); act = null; };
+    var x0 = 0, y0 = 0, base = 0, dx = 0, on = false, gone = false;
+    var wide = function () { return Math.min(((act && act.offsetWidth) || 150) + 16, el.offsetWidth - 48); };
+    el.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var p = e.touches[0];
+      x0 = p.clientX; y0 = p.clientY; dx = 0; on = false; gone = x0 < 24;
+      base = swiped === el ? -wide() : 0;
+      if (swiped && swiped !== el) unswipe();
+    }, { passive: true });
+    el.addEventListener('touchmove', function (e) {
+      if (gone || e.touches.length !== 1) return;
+      var p = e.touches[0], mx = p.clientX - x0, my = p.clientY - y0;
+      if (!on) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        if (Math.abs(my) > Math.abs(mx) || (base === 0 && mx > 0)) { gone = true; return; }
+        on = true;
+        makeAct();
+        el.classList.add('is-swiping', 'is-swiped');
+      }
+      dx = Math.max(-wide() - 24, Math.min(0, base + mx));
+      el.style.setProperty('--sx', dx + 'px');
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+    var end = function () {
+      if (!on) return;
+      on = false;
+      el.classList.remove('is-swiping');
+      if (dx < -Math.min(56, wide() / 2)) {
+        el.classList.add('is-swiped');
+        el.style.setProperty('--sx', -wide() + 'px');
+        swiped = el;
+      } else unswipe(el);
+    };
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+  }
+  /* A press while a row stands open puts it back and does nothing else, as
+     a phone's mail does. */
+  document.addEventListener('click', function (e) {
+    if (!swiped || (e.target.closest && e.target.closest('.trow-next'))) return;
+    var inRow = swiped.contains(e.target);
+    unswipe();
+    if (inRow) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  window.addEventListener('scroll', function () { if (swiped) unswipe(); }, { passive: true });
+
   /* The meeting stage is named for the meeting, not for a claim about it:
      whether it is in the diary is the month's to say, and the head says it.
      One word for the row and the stepper; a band or a board column keeps the
@@ -3772,15 +3868,18 @@
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     $('stepNoteLabel').textContent = g === 'revision' ? 'What needs to change'
       : key === 'taken_down' ? 'Why it is taken down'
-      : toClient ? 'How the draft was sent'
+      : toClient ? 'How it was sent'
       : live ? 'Note (where it is posted, if there is no link)' : 'Note';
     $('stepNote').placeholder = needNote ? 'Required' : 'Optional';
-    $('stepNote').value = toClient ? o.note : '';
+    $('stepNote').value = '';
+    /* A draft sent with no link: WhatsApp is the choice already made; Others
+       asks how (the user, 2026-10-11: "no need type … every single time"). */
+    $('stepViaRow').hidden = !toClient;
+    setVia(toClient ? 'whatsapp' : 'other');
     var perf = key === 'performance_review';
     var cur = state.ownerIds[t.id] || ownerId(t);
     $('stepHandTickWrap').hidden = perf;
-    $('stepHandTick').checked = !perf && !o.assignee && !handsToColleague(key, t);
-    $('stepHandRow').hidden = $('stepHandTick').checked;
+    keepMine(!perf && !o.assignee && !handsToColleague(key, t));
     $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
     $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
@@ -3793,7 +3892,9 @@
     $('stepHandTo').value = def && $('stepHandTo').querySelector('option[value="' + def + '"]') ? def : '';
     $('stepHand').hidden = !may('ops', 'work');
     var go = $('stepGo');
-    go.textContent = verb;
+    /* The head names where it goes; the foot's act is the verb alone, so it
+       keeps one line in a phone's half (the user, 2026-10-11). */
+    go.textContent = 'Move';
     go.className = 'btn ' + (handsOff(key, t) ? 'btn-go' : 'btn-primary');
     go.disabled = false;
     msg('stepMsg', '');
@@ -3802,6 +3903,17 @@
   /* Going live on a day other than the one it was scheduled for is allowed,
      and asks why, because a report that cannot see why a date moved cannot
      see replanning. */
+  /* Keep assigned to me is the portal's switch, never a tick box. */
+  function keepOn() { return $('stepHandTick').getAttribute('aria-checked') === 'true'; }
+  function keepMine(on) {
+    $('stepHandTick').setAttribute('aria-checked', on ? 'true' : 'false');
+    $('stepHandRow').hidden = on;
+  }
+  function setVia(v) {
+    var sel = $('stepVia');
+    if (sel.value !== v) { sel.value = v; if (window.ADspaceForm && ADspaceForm.paint) ADspaceForm.paint(sel); }
+    $('stepNoteRow').hidden = !$('stepViaRow').hidden && v === 'whatsapp';
+  }
   function stepDateChanged() {
     var c = stepCtx;
     var show = Boolean(c && c.key === 'live' && c.t.publish_at && $('stepDate').value &&
@@ -3815,16 +3927,16 @@
     var t = c.t, key = c.key;
     var s = state.stages[t.workflow_id + '|' + key];
     var g = s && s.stage_group;
-    var note = String($('stepNote').value || '').trim();
     var toClient = key === 'client_review' && c.o.note != null;
+    var note = toClient && $('stepVia').value === 'whatsapp' ? WA_NOTE : String($('stepNote').value || '').trim();
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     if (needNote && !note) {
-      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how the draft was sent.' : 'Say why it is taken down.', 'err');
+      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how it was sent.' : 'Say why it is taken down.', 'err');
       $('stepNote').focus();
       return;
     }
     var who = null;
-    if (key === 'performance_review' || !$('stepHandTick').checked) {
+    if (key === 'performance_review' || !keepOn()) {
       who = $('stepHandTo').value || null;
       if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose who it goes to.', 'err'); $('stepHandTo').focus(); return; }
     }
@@ -5736,8 +5848,15 @@
     el.hidden = !on;
     document.body.classList.toggle('sheet-open', !!on);
     if (on) {
+      /* Never the close mark: Enter there shut the sheet the person meant
+         to confirm (2026-10-11). Where no field leads, the card holds the
+         focus, as js/sheet.js holds every sheet's. */
       var f = el.querySelector('input, select, textarea, button');
-      if (f) f.focus();
+      var card = el.querySelector('.sheet-card');
+      if (f && f.tagName === 'BUTTON' && card) {
+        if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+        card.focus({ preventScroll: true });
+      } else if (f) f.focus();
     }
   }
 
@@ -7625,10 +7744,12 @@
     var stepDay = $('stepDate');
     if (stepDay) stepDay.addEventListener('change', stepDateChanged);
     var stepTick = $('stepHandTick');
-    if (stepTick) stepTick.addEventListener('change', function () {
-      $('stepHandRow').hidden = stepTick.checked;
-      if (!stepTick.checked) $('stepHandTo').focus();
+    if (stepTick) stepTick.addEventListener('click', function () {
+      keepMine(!keepOn());
+      if (!keepOn()) $('stepHandTo').focus();
     });
+    var stepVia = $('stepVia');
+    if (stepVia) stepVia.addEventListener('change', function () { setVia(stepVia.value); if (stepVia.value === 'other') $('stepNote').focus(); });
 
     // Links
     var dk = $('dwLinkKind');
@@ -8153,6 +8274,8 @@
        reachable through a press, so a change made to the row underneath it
        has no way to reach the screen. */
     openId: function () { return (state.task && state.task.id) || null; },
+    /* Add task, from anywhere: the tab bar's My Work held down. */
+    add: function () { if (may('ops', 'work')) openQuick(); },
     reload: function () { if (state.task) readTask(state.task.id); },
     /* The client record's Work pane: drawn by this script into that pane. */
     clientWork: clientWork,

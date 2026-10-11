@@ -54,6 +54,57 @@
     return m ? Number(m[1]) : null;
   }
   function clientKey(c) { return (c && (c.slug || c.id)) || ''; }
+  /* The words around a match in a longer text (a brief, a remark, a call's
+     notes), so a row says why it was found. */
+  function around(text, q) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim(), i = t.toLowerCase().indexOf(String(q).toLowerCase());
+    if (i < 0) return t.length > 60 ? t.slice(0, 59) + '…' : t;
+    var from = Math.max(0, i - 24), to = Math.min(t.length, i + q.length + 36);
+    return (from ? '…' : '') + t.slice(from, to) + (to < t.length ? '…' : '');
+  }
+  function has(text, q) { return String(text || '').toLowerCase().indexOf(String(q).toLowerCase()) > -1; }
+  var TOUCH_WORD = { call: 'Call', visit: 'Visit', meeting: 'Meeting', whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
+  function dayOf(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+    return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  /* A task's remarks (2026-10-11): the comment events whose words match,
+     read back with every later edit and removal of them, so a remark is
+     found by what it says now and a removed one is never found. */
+  var REMARK = ['commented', 'comment_edited', 'comment_removed', 'comment_restored'];
+  function remarks(q) {
+    return read(db.from('ops_task_events').select('id, task_id')
+      .in('event_type', ['commented', 'comment_edited']).or('detail->>note.ilike."%' + q + '%"')
+      .order('created_at', { ascending: false }).limit(20)).then(function (r) {
+      if (r.error || !r.rows.length) return r;
+      var ids = [];
+      r.rows.forEach(function (e) { if (ids.indexOf(e.task_id) < 0) ids.push(e.task_id); });
+      return read(db.from('ops_task_events').select('id, task_id, event_type, from_value, detail')
+        .in('task_id', ids).in('event_type', REMARK).order('created_at', { ascending: true }).limit(1000)).then(function (h) {
+        if (h.error) return h;
+        var now = {}, order = [];
+        h.rows.forEach(function (e) {
+          if (e.event_type === 'commented') { now[e.id] = { task: e.task_id, note: (e.detail || {}).note || '', gone: false }; order.push(e.id); return; }
+          var c = now[e.from_value && e.from_value.event_id];
+          if (!c) return;
+          if (e.event_type === 'comment_edited') c.note = (e.detail || {}).note || c.note;
+          else c.gone = e.event_type === 'comment_removed';
+        });
+        var found = {}, tasks = [];
+        order.reverse().forEach(function (k) {
+          var c = now[k];
+          if (c.gone || !has(c.note, q) || found[c.task]) return;
+          found[c.task] = c.note; tasks.push(c.task);
+        });
+        if (!tasks.length) return { rows: [] };
+        return read(db.from('ops_tasks').select('id, task_no, code, title, content_desc, description, scope, client_id, clients(name)')
+          .is('archived_at', null).in('id', tasks.slice(0, LIMIT))).then(function (t) {
+          if (t.error) return t;
+          return { rows: t.rows.map(function (x) { return Object.assign({}, x, { remark: found[x.id] }); }) };
+        });
+      });
+    });
+  }
   function stageOf(v) { return (W.stage && W.stage[v]) || ''; }
   var PLATFORM = { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -107,17 +158,32 @@
 
   var SOURCES = [
     { key: 'ops', head: 'My Work', can: function () { return may('ops'); },
+      /* By number, code, name or brief, then by what a remark says
+         (2026-10-11); a task found by its name leads. */
       read: function (q) {
-        var n = taskNo(q), f = any(['code', 'title', 'content_desc'], q);
+        var n = taskNo(q), f = any(['code', 'title', 'content_desc', 'description'], q);
         if (n != null) f += ',task_no.eq.' + n;
-        return read(db.from('ops_tasks').select('id, task_no, code, title, content_desc, scope, client_id, clients(name)')
+        var direct = read(db.from('ops_tasks').select('id, task_no, code, title, content_desc, description, scope, client_id, clients(name)')
           .is('archived_at', null).or(f).order('task_no', { ascending: false }).limit(LIMIT));
+        if (n != null) return direct;
+        return Promise.all([direct, remarks(q)]).then(function (r) {
+          /* The tasks are the section; a remark only adds to them. */
+          if (r[0].error) return { error: r[0].error };
+          var seen = {}, out = [];
+          (r[0].rows || []).concat(r[1].rows || []).forEach(function (t) {
+            if (seen[t.id]) return;
+            seen[t.id] = 1; out.push(t);
+          });
+          return { rows: out.slice(0, LIMIT) };
+        });
       },
-      row: function (t) {
+      row: function (t, q) {
+        var named = has(t.title, q) || has(t.content_desc, q) || has(t.code, q) || taskNo(q) != null;
+        var why = named ? '' : has(t.description, q) ? 'Brief: ' + around(t.description, q) : t.remark ? 'Remark: ' + around(t.remark, q) : '';
         return {
           id: 'task-' + t.id, name: t.content_desc || t.title,
           code: t.task_no != null ? '#WT' + String(t.task_no).padStart(5, '0') : '',
-          meta: [t.code, (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')],
+          meta: why ? [why] : [t.code, (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')],
           open: function () { go('/admin/?s=work&open=' + encodeURIComponent(t.id), 'work'); }
         };
       } },
@@ -154,6 +220,23 @@
           open: function () {
             go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : ''), 'clients');
           }
+        };
+      } },
+    /* What was said on a call or a visit (2026-10-11), under its client:
+       its notes, its next action or who it was with. */
+    { key: 'calls', glyph: 'clients', head: 'Calls and visits', can: function () { return may('clients.calls'); },
+      read: function (q) {
+        return read(db.from('client_touches').select('id, kind, happened_at, summary, next_action, contact_name, client_id, clients(id, slug, name, client_code)')
+          .is('archived_at', null).or(any(['summary', 'next_action', 'contact_name'], q))
+          .order('happened_at', { ascending: false }).limit(LIMIT));
+      },
+      row: function (tc, q) {
+        var c = tc.clients || {};
+        var said = has(tc.summary, q) ? tc.summary : has(tc.next_action, q) ? tc.next_action : tc.contact_name;
+        return {
+          id: 'touch-' + tc.id, name: c.name || '', code: c.client_code,
+          meta: [(TOUCH_WORD[tc.kind] || 'Note') + ' · ' + dayOf(tc.happened_at), around(said, q)],
+          open: function () { go('/admin/?client=' + encodeURIComponent(clientKey(c)) + '&tab=calls', 'clients'); }
         };
       } },
     { key: 'review', head: 'Content Review', can: function () { return may('review.sets'); },
@@ -337,7 +420,7 @@
     groups.forEach(function (g) {
       if (!g.rows.length) return;
       html += '<div class="sgroup" role="group" aria-labelledby="sg-' + g.key + '">' +
-        '<h4 class="sgroup-h" id="sg-' + g.key + '">' + (bridge.glyph ? bridge.glyph(g.key) : '') + esc(g.head) + '</h4>';
+        '<h4 class="sgroup-h" id="sg-' + g.key + '">' + (bridge.glyph ? bridge.glyph(g.glyph || g.key) : '') + esc(g.head) + '</h4>';
       g.rows.forEach(function (r) {
         var n = shown.length;
         shown.push(r);
@@ -385,7 +468,8 @@
         return;
       }
       var groups = answers.filter(function (a) { return !a.r.error; }).map(function (a) {
-        return { key: a.src.key, head: a.src.head, rows: (a.r.rows || []).slice(0, LIMIT).map(a.src.row) };
+        return { key: a.src.key, glyph: a.src.glyph, head: a.src.head,
+          rows: (a.r.rows || []).slice(0, LIMIT).map(function (x) { return a.src.row(x, q); }) };
       });
       if (!groups.some(function (g) { return g.rows.length; })) {
         status(function (el) { UI.emptyLine(el, 'No matches.'); });
