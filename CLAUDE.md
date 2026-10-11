@@ -122,8 +122,14 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     suites and no layout walk; copy, markup a script draws, visibility, an
     error or an interaction state takes screenshots of the touched screens
     and the suites that walk them; shared layout, navigation, CSS or a
-    component takes `ui` (uxaudit and matrix). The report names the checks
-    chosen and why any was left out.
+    component takes the same screenshots of every screen it reaches, plus
+    `cssguard`. The whole walk (`ui`: uxaudit and matrix, about forty
+    minutes) runs once a day with `all`, after the day's merges, and never
+    in a release's own gate (the user, 2026-10-12: "the full gate … once
+    per day only"; a rename's gate had run an hour); `ui` in the file map
+    below means that daily walk. What it finds is logged and fixed in the
+    next release. The report names the checks chosen and why any was left
+    out.
   - uxaudit and matrix run side by side only where their browser
     profiles, mutable fixtures, output files and server are shown to be
     their own; both exit codes are read and either failing fails the gate;
@@ -161,8 +167,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| Shared layout, navigation, `css/portal.css`, a component | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change) |
-| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus `ui` where what it draws changed; `all` once a day after the merges |
+| Shared layout, navigation, `css/portal.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Before a release | The union of the rows above for everything in it, against the final candidate; never `all` |
