@@ -410,7 +410,14 @@ a { color: inherit; }
   padding-right: 34px; line-height: 1.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
+  /* Every select is a tonal pop-up (the user, 2026-10-11: the same cell
+     everywhere): something picked, not typed, so it wears the buttons'
+     shade and no outline; an outline is left to what is typed into. */
+  border-color: transparent; background-color: var(--tonal);
 }
+@media (hover: hover) { .select:not([disabled]):not(.tdetail):hover { background-color: var(--tonal-hover); } }
+.select:focus { border-color: transparent; box-shadow: none; }
+.select:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 /* Date and time fields bring their own chrome too, and it is taller. On iOS
    it is also a pill with the value centred in it: `appearance: none` takes
    the pill away, and the value's own box is told to start at the left like
@@ -542,7 +549,7 @@ textarea[data-oneline] {
   padding-block: calc((var(--ctl-h) - 2px - 1.45em) / 2);
 }
 textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1.45em) / 2); }
-.input:focus, .select:focus, .textarea:focus {
+.input:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
@@ -564,7 +571,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 :where(button, [role="button"], a[href], summary, [tabindex]):focus-visible {
   outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-sm);
 }
-.input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: none; }
+.input:focus-visible, .textarea:focus-visible { outline: none; }
 .count { color: var(--ink-mute); font-size: 13px; }
 .crm-group-more {
   width: 100%; min-height: 46px; padding: 0 16px; border: 0;
@@ -8181,6 +8188,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    there"): the date takes its row, its words at the left. */
 .tfacts dd > .tdate { flex: 1 1 auto; justify-content: space-between; margin-right: -8px; }
 .tfacts dd > .select.tdetail { width: calc(100% + 9px); max-width: none; }
+/* A detail's select keeps its whole target but gives its height back, as a
+   date does, so a row with a select and a row of words stand the same 8px
+   apart (the user, 2026-10-11: "are you sure this is evenly distributed"). */
+.tfacts dd > .select.tdetail, .tfacts dd > .tdetail-pair { margin-block: calc((20px - var(--ctl-h)) / 2); }
+.tfacts > div:has(> dd > .tdetail, > dd > .tdetail-pair) { align-items: baseline; }
 
 .tdate:active, .tdate-src:active { transform: scale(.97); }
 .tdate.is-over, .tdate-read.is-over { color: var(--err); font-weight: 600; }

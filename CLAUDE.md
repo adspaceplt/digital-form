@@ -201,6 +201,14 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | the Short Links route | qr, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
+**Global > parent > child** (the user, 2026-10-11, the light version): a
+base element (button, field, select, chip) is styled by its own rule and its
+variants; a section arranges it and never restyles it. `tests/cssguard.js`
+(run with `ui`) fails a new section rule that sets a base element's ground,
+edge, corner, height, colour or shadow; the ones standing on 2026-10-11 are
+its baseline, folded into the shared rules as each area is touched, and the
+baseline only shrinks (`--write` refuses to add).
+
 **What the two walks measure:**
 - **uxaudit** walks every page and state at 1280, and at 390 with a coarse
   pointer; the console again in dark at both widths. The review mockups
@@ -2037,7 +2045,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   step is tonal.
 - Each booking's card names its step under its head (`.kcard-steps`), the
   client's six steps as the selection page draws them (`ADspaceIcons.journey`,
-  `stepOf`), a delivery campaign's own; none before the creator is booked.
+  `stepOf`), a delivery campaign's own; none before the creator is booked
+  and none once Completed. A completed campaign offers no state move (no
+  Resume, no Unpublish: its link stays live for the results).
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
   anything else is a `.filepin-row` line.
@@ -2520,10 +2530,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
-  - A hand-off shows the person, with Keep assigned to me off (the
-    portal's switch, never a tick box, on the card and the step sheet
-    alike; the user, 2026-10-11).
-  - The owner's own steps have it on.
+  - One picker, Assign to, on the card and the step sheet alike (the user,
+    2026-10-11: no switch, no tick box): its first choice keeps it with
+    whoever has it (Me (name) for the reader's own; `__keep`), chosen on
+    the owner's own steps; a hand-off opens on the person it usually goes
+    to, else Choose a person.
   - The step sheet's act reads Move: its head names where it goes, so the
     label keeps one line in a phone's half.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
@@ -2567,7 +2578,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     date never reaches the calendar (the user, 2026-10-11).
   - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
     apply), Make a copy, Repeat on a schedule, Delete; who has the task is
-    changed on its Assigned to row (Reassign), a task nobody holds from the
+    changed on its Assigned to row (the name and a pen at the facts' right
+    edge, named Reassign; 2026-10-11), a task nobody holds from the
     next step's Assign, never from the ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
     shows none, the offer, Delete) and is not drawn when empty. No timer,
     Revert, Move to another stage, Mark blocked or Cancel.
@@ -4162,8 +4174,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   report attached is `report`; else the record's (`feedback`, `creator`),
   else `message`. The record buttons stay where they were and open it
   prefilled: Send on WhatsApp beside Mark as sent (then marked as sent
-  today), Request feedback on WhatsApp in a client's ⋯, Send on WhatsApp in
-  a booked creator's ⋯.
+  today), Request feedback on WhatsApp in a client's ⋯, Resend booking in a
+  booked creator's ⋯ at Confirmed and Pending visit alone (the booking goes
+  out by itself on confirming; the user, 2026-10-11).
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.

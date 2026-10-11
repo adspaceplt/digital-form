@@ -2117,3 +2117,38 @@ The user, on More's foot: the gap between the hairline and the build line
 read unlike the gap under it to the card's edge. The foot's top padding and
 the card's bottom padding are now equal (4px), so the 44px mark centres the
 build line 26px from each.
+
+### 2026-10-11 · Every select is tonal; the card's details one pitch apart
+
+After the status select went tonal, the user on the Content meeting sheet:
+"still showing the toned no outline not being adapted properly? including
+the led by?" The rule was an outline means a place to type, so every
+select (Length, Led by, a bar's view, a form's choice) now wears the tonal
+shade with its chevron, its focus the buttons' ring. The task card's
+Details stood further apart where a row held a select ("are you sure this is
+evenly distributed"); a select gives its height back as a date does, so
+every fact stands one 28px pitch from the next.
+
+### 2026-10-11 · Reassign is a pen; a hand-off is one picker
+
+The user, on the task card: "reassign no chevron?" and "is it necessary to
+be the circular on off for the keep assigned to me". Asked, the user chose a
+pen at the right edge (Assigned to reads like a date, its mark in the same
+column) and one picker with Me first instead of a switch beside a picker.
+
+### 2026-10-11 · A completed booking and campaign say Completed alone
+
+The user: a completed booking's six-step track under every row repeated its
+Completed, and a completed campaign offered Resume campaign ("reopens
+what?"). A booking at Completed now draws no track, and a completed
+campaign offers no state move: Completed is derived from its bookings, so a
+Resume was undone at once, and its link stays live for the client's results.
+
+### 2026-10-11 · Global > parent > child, the light version
+
+The user, after finding style issues screen by screen: a global, a parent
+(section) and a child (detail) level. A full stylesheet rewrite was weighed
+against the risk to working screens; the user chose the light version: a
+guard (`tests/cssguard.js`, with `ui`) that fails any new section rule
+restyling a base element, and the 14 standing ones folded in as each area
+is touched.
