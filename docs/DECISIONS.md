@@ -2285,3 +2285,10 @@ standing between the person and a row: three steps, as before the regroup.
 The rows took their own names (`.stg-`): the page of 2026-10-10 had
 reused `.set-row`, Content Review's set row, and its grid had been laying
 out that set list's name and count side by side.
+
+### 2026-10-11 · Settings is a mark beside the Activity record
+The user, on the same release: "Im thinking the settings button to fit
+beside activity record as just icons same as it." Settings left the account
+menu for the rail's foot, the gear before the Activity record's mark (and so
+in More's foot under the tab bar), chosen while the page is open. The account
+menu's Workspace group keeps Arrange sections alone.

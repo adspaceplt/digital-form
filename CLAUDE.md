@@ -398,13 +398,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
   it; five or fewer take the bar whole. More lists only what the bar does
-  not (`.is-tabbed`), then the rail's foot: one line of the Activity
-  record's mark (named for a screen reader and on hover) and the build, the
-  build at the left and the mark at the right edge, at a desk as under the
-  bar (the user,
-  2026-10-10: "activity log can go inline with version code", "just
-  activity record icons would do"); Settings and Arrange sections are in
-  the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
+  not (`.is-tabbed`), then the rail's foot: one line of the build at the
+  left, then Settings' mark and the Activity record's at the right edge
+  (each named for a screen reader and on hover), at a desk as under the
+  bar (the user, 2026-10-10: "activity log can go inline with version
+  code", "just activity record icons would do"; 2026-10-11: "the settings
+  button to fit beside activity record as just icons same as it"); Arrange
+  sections is in the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; every panel (a sheet, a question, search,
   the task, the finder) is a card above it inside the gutters with the
@@ -445,9 +445,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   standard order. Not filed in the Activity record.
 - Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
   2026-10-09: the account menu grew long and AI usage hid under Reports):
-  an item in the account menu (`#settingsOpen`, its Workspace group with
-  Arrange sections, each drawn only where it may be used, the group's
-  hairline leaving with the last), offered to
+  a mark at the rail's foot beside the Activity record's (`#settingsOpen`,
+  the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. Eight groups
@@ -468,7 +467,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   opening the one sheet that already edits it. The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
-  Workspace (Settings, Arrange sections); This device
+  Workspace (Arrange sections, drawn only where it may be used, its
+  hairline leaving with it); This device
   (Theme, Passkeys, Notifications, Refresh app); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
@@ -477,7 +477,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client/sw.js` holds that alone, at `/client/file/`, registered by
   `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
-- The rail's foot names the build beside the Activity record's mark (`#appVersion`,
+- The rail's foot names the build beside Settings' and the Activity record's marks (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from

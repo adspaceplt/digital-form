@@ -266,9 +266,8 @@
     if (seg && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(seg);
     menu.querySelector('button.kmenu-item:not([hidden])').focus();
   });
-  /* Settings, Arrange sections and the Activity record open from the menu,
-     which shuts behind them. */
-  ['settingsOpen', 'railEdit'].forEach(function (id) {
+  /* Arrange sections opens from the menu, which shuts behind it. */
+  ['railEdit'].forEach(function (id) {
     if ($(id)) $(id).addEventListener('click', function () { shutAcct(); });
   });
   if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });
@@ -1647,6 +1646,10 @@
     navItems().forEach(function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
+    if ($('settingsOpen')) {
+      $('settingsOpen').classList.toggle('is-on', name === 'settings');
+      if (name === 'settings') $('settingsOpen').setAttribute('aria-current', 'page'); else $('settingsOpen').removeAttribute('aria-current');
+    }
     showActivityLink();
     // Campaigns reads the address before it writes it, because on a reload the
     // address is the only record of which campaign or tab was open. Writing
