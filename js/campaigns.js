@@ -1627,6 +1627,10 @@
        slots have filled, a slot freed later is offered again only here. */
     // In production with nothing to reopen: no move.
     if (s === 'production') return null;
+    /* Completed is derived from its bookings, so Resume would be undone at
+       once, and the client's link stays live to read its results (the user,
+       2026-10-11: "since its alr completed resume campaign reopens what?"). */
+    if (s === 'completed') return null;
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
       ask: { title: 'Resume the campaign', go: 'Resume',
         body: 'Selection closes and the bookings go back into production.' } };
@@ -3294,7 +3298,9 @@
   function stepsLine(o, dead) {
     var I = window.ADspaceIcons, words = W && W.en && W.en.journey;
     var at = I && I.stepOf ? I.stepOf(o.state) : null;
-    if (dead || at == null || !words) return '';
+    /* A finished booking says Completed in its Step column and nothing more:
+       a full track under every one repeated it (the user, 2026-10-11). */
+    if (dead || at == null || !words || o.state === 'completed') return '';
     words = words.slice();
     if (isDelivery()) words[1] = W.en.journeyDelivery || words[1];
     return '<div class="kcard-steps"><span aria-hidden="true"></span>' + I.journey(words, at) + '</div>';

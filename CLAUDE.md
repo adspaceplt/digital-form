@@ -2037,7 +2037,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   step is tonal.
 - Each booking's card names its step under its head (`.kcard-steps`), the
   client's six steps as the selection page draws them (`ADspaceIcons.journey`,
-  `stepOf`), a delivery campaign's own; none before the creator is booked.
+  `stepOf`), a delivery campaign's own; none before the creator is booked
+  and none once Completed. A completed campaign offers no state move (no
+  Resume, no Unpublish: its link stays live for the results).
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
   anything else is a `.filepin-row` line.

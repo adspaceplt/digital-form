@@ -2135,3 +2135,11 @@ The user, on the task card: "reassign no chevron?" and "is it necessary to
 be the circular on off for the keep assigned to me". Asked, the user chose a
 pen at the right edge (Assigned to reads like a date, its mark in the same
 column) and one picker with Me first instead of a switch beside a picker.
+
+### 2026-10-11 · A completed booking and campaign say Completed alone
+
+The user: a completed booking's six-step track under every row repeated its
+Completed, and a completed campaign offered Resume campaign ("reopens
+what?"). A booking at Completed now draws no track, and a completed
+campaign offers no state move: Completed is derived from its bookings, so a
+Resume was undone at once, and its link stays live for the client's results.
