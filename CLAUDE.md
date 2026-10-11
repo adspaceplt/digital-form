@@ -82,8 +82,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - Every shell command runs without a permission prompt (`.claude/settings.json`
   `Bash`; the user, 2026-10-10: "Auto allow bash"), as do the read-only GitHub
   and Supabase lookups (workflow runs, a PR, edge functions, logs,
-  migrations; 2026-10-04). No connector act that writes, merges, deploys or
-  runs SQL is pre-approved.
+  migrations; 2026-10-04). So is a release's own work (the user,
+  2026-10-11: "auto merge all PRs and allow all sessions"): opening,
+  updating and merging a PR, applying its migration and deploying its edge
+  function, in the order the release states; any other write still asks.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
@@ -4404,9 +4406,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   one deploy where the combined diff, the migration sequence and the
   rollback stay understandable; unrelated or independently risky changes
   go apart.
-- Two accounts, one at a time (the user, 2026-10-10): the user may move
-  between accounts as credits allow, never with two sessions working at
-  once. "Hand over" means: commit and push both repositories, then post
+- Sessions run at once (the user, 2026-10-11: "allow all sessions"; until
+  then one at a time): each holds one request on its own branch and PR,
+  merges `main` in where another merged first, and merges once its own
+  checks pass, never waiting to be asked. One gate a machine still holds.
+  "Hand over" means: commit and push both repositories, then post
   or replace one comment on the open PR (else a draft PR) stating the
   commits, the checks passed, failed and not run, the steps done and
   still open in order with their rollback, and what waits on the user. A

@@ -15,7 +15,17 @@
       "mcp__Supabase__query_logs",
       "mcp__Supabase__list_edge_functions",
       "mcp__Claude_Code_Remote__get_session",
-      "mcp__Supabase__list_migrations"
+      "mcp__Supabase__list_migrations",
+      "mcp__github__create_pull_request",
+      "mcp__github__update_pull_request",
+      "mcp__github__merge_pull_request",
+      "mcp__github__enable_pr_auto_merge",
+      "mcp__github__update_pull_request_branch",
+      "mcp__claude-code-remote__subscribe_pr_activity",
+      "mcp__claude-code-remote__unsubscribe_pr_activity",
+      "mcp__Supabase__apply_migration",
+      "mcp__Supabase__execute_sql",
+      "mcp__Supabase__deploy_edge_function"
     ]
   },
   "hooks": {

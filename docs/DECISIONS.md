@@ -2205,3 +2205,14 @@ from creation: `ops_tasks.priority_at`, stamped by trigger. The hours are
 Business settings read as at the day the priority was set. `ops_report` reads
 the same rule (late, open work by person, on time), and, asked, so does
 `perf_ops_rate`, the reviewer's on-time hint.
+
+### 2026-10-11 · Releases merge themselves, and sessions may run at once
+Asked to approve the priority release, the user answered "auto merge all
+PRs and allow all sessions". Every PR now merges once its own checks pass,
+with its migration and edge function applied in the order it states, and
+`.claude/settings.json` pre-approves exactly those acts (opening, updating
+and merging a PR, applying SQL, deploying a function; any other write still
+asks). The rule of one session at a time (2026-10-10) is lifted: each
+session holds one request on its own branch and merges `main` in where
+another merged first. One gate a machine still holds, because one gate
+fills its four processors.
