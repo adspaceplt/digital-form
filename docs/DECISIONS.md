@@ -2185,3 +2185,21 @@ lock changed (a stamp of its hash), and warns where Postgres 16 or Playwright
 is missing. It never fails the session: a clone refused for want of GitHub
 access is said and the session goes on. Synchronous, so no suite runs before
 its libraries are in.
+
+### 2026-10-11 · Settings as macOS and iPhone Settings
+The queue's task 46, from the user's handover: "Vertical list at a desk,
+drill-down on a phone (iPhone/Mac Settings style). Groups: Portal, Clients,
+My Work, Reports, Money, AI, WhatsApp, Documents. Follow-up limits moves out
+of the Clients bar into Settings." The cards (Portal, Business figures,
+WhatsApp, AI, Records) became eight groups named for what their rows change.
+Placements that could read either way: Due dates sits under My Work (the
+report and revision days set task dates; the approval reminder is My Work's
+Waiting for you); AI prices under Money with Tax and terms (figures of cost,
+edited as Business settings), leaving AI to the usage page. The Clients bar's
+Follow-up limits button went (one act once on a screen); Tax and terms stays
+on the Services bar and Due dates in My Work's ⋯, where the user kept them.
+At a desk the group is in the address and replaced; on a phone it is a
+screen moved to and pushed, so Back and Forward walk it as iPhone Settings
+does. The rows took their own names (`.stg-`): the page of 2026-10-10 had
+reused `.set-row`, Content Review's set row, and its grid had been laying
+out that set list's name and count side by side.

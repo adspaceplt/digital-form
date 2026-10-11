@@ -45,50 +45,51 @@
       ((h % 12) || 12) + ':' + (mi < 10 ? '0' : '') + mi + (h < 12 ? ' am' : ' pm');
   }
 
-  /* The rows, group by group. `kind` is the control at the row's right edge:
-     a switch (saved at the press), Edit (a sheet of figures) or Open (a list
-     in a sheet). `meta` says the value as it stands, where there is one. */
+  /* The rows, group by group (regrouped 2026-10-11, the queue's task 46:
+     "Vertical list at a desk, drill-down on a phone (iPhone/Mac Settings
+     style)"). A group is named for what its rows change; `kind` is the
+     control at the row's right edge: a switch (saved at the press), Edit (a
+     sheet of figures) or Open (a list in a sheet). `meta` says the value as
+     it stands, where there is one. A group with no row drawn is left out. */
   function groups() {
     var up = bridge.upgradeState ? bridge.upgradeState() : { on: false, set: false };
+    var biz = may('team.settings');
     var out = [];
-    var portal = [];
-    if (may('team.upgrade')) portal.push({ id: 'upgrade', name: 'Upgrade mode', kind: 'switch', on: Boolean(up.set),
-      meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' });
-    if (may('team.announce')) portal.push({ id: 'announce', name: 'Announcements', kind: 'open' });
-    if (may('team.notice')) portal.push({ id: 'notice', name: 'Notices', kind: 'open' });
-    if (portal.length) out.push({ key: 'portal', name: 'Portal', rows: portal });
-    if (may('team.settings')) {
-      var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
-      var rep = num('report_due_days'), rev = num('revision_due_days');
-      var pin = num('ai_price_in'), pout = num('ai_price_out');
-      var meta = num('meta_checks') === 1;
-      out.push({ key: 'business', name: 'Business figures', rows: [
-        { id: 'followup', name: 'Follow-up limits', kind: 'edit',
-          meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days')]) },
-        { id: 'tax', name: 'Tax and terms', kind: 'edit',
-          meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))]) },
-        { id: 'due', name: 'Due dates', kind: 'edit',
-          meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]
-            .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])) },
-        { id: 'prices', name: 'AI prices', kind: 'edit',
-          meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
-            (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') },
-        { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
-          meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' },
-        { id: 'reach', name: 'Reach allowance', kind: 'edit',
-          meta: num('reach_allowance_pct') == null ? '' : 'The Report audit accepts Reach within ' + num('reach_allowance_pct') + '% of Meta' }
-      ] });
-    }
+    function add(key, name, rows) { rows = rows.filter(Boolean); if (rows.length) out.push({ key: key, name: name, rows: rows }); }
+    add('portal', 'Portal', [
+      may('team.upgrade') && { id: 'upgrade', name: 'Upgrade mode', kind: 'switch', on: Boolean(up.set),
+        meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' },
+      may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open' },
+      may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open' }]);
+    var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
+    add('clients', 'Clients', [
+      biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
+        meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days')]) }]);
+    var rep = num('report_due_days'), rev = num('revision_due_days');
+    add('work', 'My Work', [
+      biz && { id: 'due', name: 'Due dates', kind: 'edit',
+        meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]
+          .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])) },
+      may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit' }]);
+    var meta = num('meta_checks') === 1;
+    add('reports', 'Reports', [
+      biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
+        meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' },
+      biz && { id: 'reach', name: 'Reach allowance', kind: 'edit',
+        meta: num('reach_allowance_pct') == null ? '' : 'The Report audit accepts Reach within ' + num('reach_allowance_pct') + '% of Meta' }]);
+    var pin = num('ai_price_in'), pout = num('ai_price_out');
+    add('money', 'Money', [
+      biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
+        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))]) },
+      biz && { id: 'prices', name: 'AI prices', kind: 'edit',
+        meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
+          (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') }]);
+    add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }]);
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
-       at Full Access; this card opens them there. */
-    if (window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage')) out.push({ key: 'whatsapp', name: 'WhatsApp', rows: [
-      { id: 'whatsapp', name: 'Templates', kind: 'open' }] });
-    if (may('reports.ai')) out.push({ key: 'ai', name: 'AI', rows: [
-      { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }] });
-    var lists = [];
-    if (may('register.types')) lists.push({ id: 'types', name: 'Document types', kind: 'open' });
-    if (may('ops.numbering')) lists.push({ id: 'numbering', name: 'Task numbering', kind: 'edit' });
-    if (lists.length) out.push({ key: 'records', name: 'Records', rows: lists });
+       at Full Access; this row opens them there. */
+    add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
+      { id: 'whatsapp', name: 'Templates', kind: 'open' }]);
+    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open' }]);
     return out;
   }
 
@@ -98,10 +99,26 @@
       : r.kind === 'edit'
         ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Edit ' + esc(r.name) + '">' + PEN + 'Edit</button>'
         : '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Open ' + esc(r.name) + '">Open' + CHEV + '</button>';
-    return '<div class="set-row" data-row="' + r.id + '">' +
-      '<div class="set-what"><p class="set-name">' + esc(r.name) + '</p>' +
-        (r.meta ? '<p class="set-meta">' + esc(r.meta) + '</p>' : '') + '</div>' +
-      '<div class="set-ctl">' + ctl + '</div></div>';
+    return '<div class="stg-row" data-row="' + r.id + '">' +
+      '<div class="stg-what"><p class="stg-name">' + esc(r.name) + '</p>' +
+        (r.meta ? '<p class="stg-meta">' + esc(r.meta) + '</p>' : '') + '</div>' +
+      '<div class="stg-ctl">' + ctl + '</div></div>';
+  }
+
+  /* Where the page stands: the group in the address (`tab=`), else none.
+     At a desk none is the first group, left out of the address; on a phone
+     (the tab bar's width) none is the list of groups. */
+  var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
+  function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
+  var chosen = '';
+  var pushed = false;
+  function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; }
+
+  function pane(g, back) {
+    return '<section class="stg-pane" aria-labelledby="stgTitle">' +
+      (back ? '<button class="backlink" type="button" data-back="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>' : '') +
+      '<h3 class="stg-title" id="stgTitle" tabindex="-1">' + esc(g.name) + '</h3>' +
+      '<div class="stg-card">' + g.rows.map(rowHtml).join('') + '</div></section>';
   }
 
   function paint() {
@@ -110,17 +127,76 @@
     var list = groups();
     box.innerHTML = '';
     if (!list.length) { window.ADspaceState.emptyLine(box, 'No settings.'); return; }
-    list.forEach(function (g) {
-      box.appendChild(window.ADspaceGroup.section({
-        route: 'settings', key: g.key, name: g.name, count: g.rows.length, shut: false,
-        table: function () {
-          var t = document.createElement('div');
-          t.className = 'crm-table softpanel set-table';
-          t.innerHTML = g.rows.map(rowHtml).join('');
-          return t;
-        }
-      }));
-    });
+    var g = list.filter(function (x) { return x.key === chosen; })[0];
+    if (phone()) {
+      box.className = 'stg is-phone';
+      if (g) { box.innerHTML = pane(g, true); return; }
+      box.innerHTML = '<nav class="stg-nav stg-list" aria-label="Settings">' + list.map(function (x) {
+        return '<button class="stg-go" type="button" data-g="' + x.key + '"><span class="stg-what"><span class="stg-name">' + esc(x.name) + '</span>' +
+          '<span class="stg-meta">' + esc(parts(x.rows.map(function (r) { return r.name; }))) + '</span></span>' + CHEV + '</button>';
+      }).join('') + '</nav>';
+      return;
+    }
+    g = g || list[0];
+    box.className = 'stg is-desk';
+    box.innerHTML = '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
+      return '<button class="stg-go" type="button" data-g="' + x.key + '"' + (x === g ? ' aria-current="page"' : '') + '>' + esc(x.name) + '</button>';
+    }).join('') + '</nav>' + pane(g, false);
+  }
+
+  /* The address names the group unless it is the desk's first. */
+  function urlState() {
+    var list = groups();
+    if (!chosen || !list.some(function (x) { return x.key === chosen; })) return {};
+    if (!phone() && list[0].key === chosen) return {};
+    return { tab: chosen };
+  }
+
+  /* A group opened. At a desk it replaces the address (a note of where you
+     are); on a phone it is a screen moved to, so Back and Forward walk it. */
+  function go(key) {
+    chosen = key;
+    say('');
+    paint();
+    if (phone()) {
+      pushed = true;
+      if (bridge.pushUrl) bridge.pushUrl();
+      window.scrollTo(0, 0);
+      var t = $('stgTitle');
+      if (t) t.focus({ preventScroll: true });
+    } else {
+      if (bridge.setUrl) bridge.setUrl();
+      var cur = document.querySelector('#setList .stg-go[aria-current]');
+      if (cur) cur.focus({ preventScroll: true });
+    }
+  }
+  function back() {
+    var was = chosen;
+    if (pushed) { history.back(); return; }
+    chosen = '';
+    say('');
+    paint();
+    if (bridge.setUrl) bridge.setUrl();
+    land(was);
+  }
+  function land(was) {
+    var b = was && document.querySelector('#setList .stg-go[data-g="' + was + '"]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  function shown() { var s = $('sectionSettings'); return s && !s.hidden; }
+  window.addEventListener('popstate', function () {
+    if (!shown()) return;
+    var was = chosen;
+    fromUrl();
+    pushed = Boolean(chosen);
+    say('');
+    paint();
+    if (!chosen) land(was);
+  });
+  function follow() { if (shown()) { paint(); if (bridge.setUrl) bridge.setUrl(); } }
+  if (phoneMedia) {
+    if (phoneMedia.addEventListener) phoneMedia.addEventListener('change', follow);
+    else if (phoneMedia.addListener) phoneMedia.addListener(follow);
   }
 
   /* Meta checks (2026-10-10): one figure, 0 or 1, from today. Saved at the
@@ -183,6 +259,8 @@
 
   function enter() {
     say('');
+    fromUrl();
+    pushed = false;
     var M = window.ADspaceMoney;
     paint();
     /* The figures are read once a page; a colleague who changed one in
@@ -196,6 +274,9 @@
     if (wired || !$('setList')) return;
     wired = true;
     $('setList').addEventListener('click', function (e) {
+      var gb = e.target.closest('[data-g]');
+      if (gb && $('setList').contains(gb)) { go(gb.getAttribute('data-g')); return; }
+      if (e.target.closest('[data-back]')) { back(); return; }
       var b = e.target.closest('[data-a]');
       if (!b || b.disabled || !$('setList').contains(b)) return;
       press(b.getAttribute('data-a'), b);
@@ -203,6 +284,6 @@
   }
   wire();
 
-  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, allowed: allowed, say: say };
+  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, urlState: urlState, allowed: allowed, say: say };
   if (bridge.settingsReady) bridge.settingsReady();
 })();

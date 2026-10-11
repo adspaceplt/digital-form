@@ -441,13 +441,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   hairline leaving with the last), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`; its address falls back for anyone else. A card a group
-  (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, AI prices, Meta checks,
-  Reach allowance;
-  WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
-  drawn only for its part, its value under its name, a switch, Edit or Open
-  at the right edge opening the one sheet that already edits it. The
+  `ops.numbering`; its address falls back for anyone else. Grouped as
+  macOS and iPhone Settings (2026-10-11, the queue's task 46): Portal
+  (Upgrade mode, Announcements, Notices), Clients (Follow-up limits), My
+  Work (Due dates, Task numbering), Reports (Meta checks, Reach allowance),
+  Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
+  (Templates and recent messages), Documents (Document types); a group with
+  no row drawn is left out. At a desk the groups run down the left beside
+  the chosen group's rows, the group in the address (`tab=`, the first left
+  out; replaced, never pushed); on a phone (`ADSPACE_TABBAR`) the list of
+  groups, each naming its rows, opens a group on a screen of its own with
+  Back, pushed so Back and Forward walk it. Each row drawn only for its
+  part, its value under its name, a switch, Edit or Open at the right edge
+  opening the one sheet that already edits it. The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
   Workspace (Settings, Arrange sections); This device
@@ -993,7 +999,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_values)` an admin's, from today (MYT) or later (`past`), filed
   `team.changed` under Settings. One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
-  is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
+  is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
   bar), Due dates (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.

@@ -1434,9 +1434,9 @@
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
-      { at: '#setList .crm-group-head', text: 'Settings are grouped by what they change. A row shows only to a colleague who holds it.' },
-      { at: '#setList .set-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
-      { at: '#setList .set-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
+      { at: '#setList .stg-nav', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
+      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
+      { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
     'whatsapp.templates': { name: 'Templates', steps: [
       { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent in the last seven days.' },
       { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
@@ -1853,6 +1853,9 @@
     } else if (section === 'whatsapp' && window.ADspaceWhatsApp) {
       var wa = window.ADspaceWhatsApp.urlState();
       Object.keys(wa).forEach(function (k) { if (wa[k]) q.push(k + '=' + encodeURIComponent(wa[k])); });
+    } else if (section === 'settings' && window.ADspaceSettings && window.ADspaceSettings.urlState) {
+      var st = window.ADspaceSettings.urlState();
+      Object.keys(st).forEach(function (k) { if (st[k]) q.push(k + '=' + encodeURIComponent(st[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
