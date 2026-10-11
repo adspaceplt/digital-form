@@ -3538,13 +3538,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
-    used first, the totals added up on the page; then Limits (Each
-    colleague `10 a day`, Each admin `20 a day`, Each colleague, each
-    report `1 draft and 1 check a day`, Each admin, each report `5 drafts
-    and 5 checks a day`). Edit limits in the foot (Limits a day) is the
-    six standards in three pairs, one Save; a colleague's own limit is set
-    by pressing their row (`button.aiu-row`, one field, empty meaning the
-    standard); the totals and Limits rows only read. 0 to 500; only what
+    used first, the totals added up on the page; then Limits, each person:
+    one limit a use for everyone (the user, 2026-10-11: "just unified
+    across everyone"; AI uses, Drafts and Checks each report, Captions,
+    Scripts, Brand analyses), saved to the colleague's and the admin's
+    setting alike, a row reading `· admins n` only while the stored two
+    differ. Edit limits turns those rows into small tonal fields in place
+    (`.aiu-limits.is-editing`, Save and Cancel in the foot; never a sheet
+    of boxes); a colleague's own limit is set by pressing their row
+    (`button.aiu-row`, one field, empty meaning the standard); the totals
+    and Limits rows only read. 0 to 500; only what
     changed goes through `ai_draft_set_limit`, each filed `team.changed`
     under AI from and to. No list of colleagues in a form (the user,
     2026-10-05). No explanatory lines.
@@ -3559,8 +3562,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     2026-10-09) are a count of their own the same way (`script` 10,
     `script_admin` 20, `ai_drafts.script_id`); the reports' limits count
     drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
-    Captions and Scripts, each colleague and each admin; Edit limits is ten
-    fields in five pairs; Captions today and Scripts today list the team and
+    Captions and Scripts with the rest; Captions today and Scripts today list the team and
     each colleague who wrote one; This month prices Scripts apart.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row

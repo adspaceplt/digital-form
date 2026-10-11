@@ -2071,3 +2071,13 @@ our portal is not bilingual except client facing … else we need to provide
 two languages every time". The console reads in English alone, so a team
 announcement asks for one Message; a clients' announcement keeps English and
 an optional 中文, since every client page follows the 中文 switch.
+
+### 2026-10-11 · One AI limit a use, edited in place
+
+The user, on the Limits a day sheet (twelve boxed fields in pairs): "just
+unified across everyone" and "it looks so crazily boxes boxes everywhere";
+asked which, "AI limits: one for all". Each use now has one figure a day,
+written to both the colleague's and the admin's stored setting (no schema
+change), and a colleague's own limit stays on their row. Edit limits turns
+the Limits list's figures into small tonal fields where they are read, with
+Save and Cancel in the foot, instead of a second sheet of boxes.

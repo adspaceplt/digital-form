@@ -10528,6 +10528,20 @@ button.aiu-row:first-child::before { content: none; }
 .aiu-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
 .aiu-bar > i { display: block; height: 100%; width: var(--p, 0%); background: var(--fill); border-radius: inherit; }
 .aiu-bar.is-full > i { background: var(--warn-solid); }
+/* The limits edited in place (2026-10-11; the user: "boxes boxes
+   everywhere"): the read list stays a list, each figure becoming a small
+   tonal field at the row's right edge with its unit after it, as the
+   in-place field is drawn (no box line); one limit a use, for everyone. */
+.aiu-limit { cursor: text; }
+.aiu-field { display: inline-flex; align-items: center; gap: 8px; }
+.input.aiu-num {
+  width: 72px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums;
+  border-color: transparent; background-color: var(--tonal); -moz-appearance: textfield;
+}
+.input.aiu-num::-webkit-outer-spin-button, .input.aiu-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.aiu-unit { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.aiu-limits.is-editing .aiu-row { padding: 6px 0; }
+.aiu-limits.is-editing .aiu-row:first-child { padding-top: 0; }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */
