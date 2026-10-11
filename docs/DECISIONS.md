@@ -2164,3 +2164,13 @@ report a client has seen is never deleted) is retired.
 The same day the user had made a second report for a month whose first was
 taken for gone; New report's Month now names a month already made with its
 stage and does not offer it.
+
+### 2026-10-11 · New report is Monthly or Ad hoc; an Accounts Report needs planned content
+The user: split report creation into Monthly (the client's content months,
+one Accounts and one Advertising Report each) and Ad hoc (any period); a
+month with no planned content takes no Accounts Report; a white-label
+client, its own and its brands' reports, either type, is held to neither
+rule. Monthly replaced the Requested by the client tick and the Custom period
+fold. The rule is held in the database at every level (`no-content`) and on
+the month sheet's Accounts tick (`accounts-needs-content`); a new month
+inheriting the tick with no plan leaves it out rather than failing.
