@@ -2117,3 +2117,14 @@ The user, on More's foot: the gap between the hairline and the build line
 read unlike the gap under it to the card's edge. The foot's top padding and
 the card's bottom padding are now equal (4px), so the 44px mark centres the
 build line 26px from each.
+
+### 2026-10-11 · Every select is tonal; the card's details one pitch apart
+
+After the status select went tonal, the user on the Content meeting sheet:
+"still showing the toned no outline not being adapted properly? including
+the led by?" The rule was an outline means a place to type, so every
+select (Length, Led by, a bar's view, a form's choice) now wears the tonal
+shade with its chevron, its focus the buttons' ring. The task card's
+Details stood further apart where a row held a select ("are you sure this is
+evenly distributed"); a select gives its height back as a date does, so
+every fact stands one 28px pitch from the next.

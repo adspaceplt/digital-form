@@ -272,6 +272,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A value changed where it is read ends its mark on the facts' one right
   edge: the task card's date pens and detail chevrons alike (the user,
   2026-10-11: "the pen is here and there").
+- A row holding a control keeps a row of words' height: the control's
+  target overflows it evenly (a negative block margin), so facts stand one
+  pitch apart whatever each row holds.
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
@@ -372,8 +375,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Buttons:
   - `.btn` is tonal (shaded, never outlined; fields keep the ring). The one
     outlined control is the contact chip `.plink`. An outline means a place to
-    type: a status select acts as a button does and is tonal too (the user,
-    2026-10-11).
+    type: every select (a status, a form's choice, a bar's view) is a
+    tonal pop-up, the chevron at its end (the user, 2026-10-11).
   - No bare text links in the portal: a way somewhere is a button, a chip
     or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
     Inside a line of facts it is `.linkbtn` (quiet, chevron, no underline);
