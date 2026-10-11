@@ -2054,3 +2054,66 @@ after every fix, and a pre-existing 22px target exposed by a new seed held
 the whole release. The user: "yes, log older defects and ship one request
 at a time". Each request now ships alone once its own checks pass; a defect
 in code a release did not touch is logged in `STANDARD.md` and fixed next.
+
+### 2026-10-11 · A strip's surface takes its track's height
+
+The user's iPhone showed New task's Task / Content task surface short and
+against the track's top edge. Chromium drew it right at every step of the
+swap, so the cause was not reproduced; the surface's height and top were
+measured once and kept. An option that fills its track's height now takes
+the height from the stylesheet (`calc(100% - 4px)`, 2px in), so a stale
+reading cannot leave it short; a wrapped segment keeps its measured rows.
+
+### 2026-10-11 · A team announcement is one message
+
+The user, on the New team announcement sheet: "remove the Chinese one since
+our portal is not bilingual except client facing … else we need to provide
+two languages every time". The console reads in English alone, so a team
+announcement asks for one Message; a clients' announcement keeps English and
+an optional 中文, since every client page follows the 中文 switch.
+
+### 2026-10-11 · One AI limit a use, edited in place
+
+The user, on the Limits a day sheet (twelve boxed fields in pairs): "just
+unified across everyone" and "it looks so crazily boxes boxes everywhere";
+asked which, "AI limits: one for all". Each use now has one figure a day,
+written to both the colleague's and the admin's stored setting (no schema
+change), and a colleague's own limit stays on their row. Edit limits turns
+the Limits list's figures into small tonal fields where they are read, with
+Save and Cancel in the foot, instead of a second sheet of boxes.
+
+### 2026-10-11 · An everyday task owes one date; a phone's ⋯ is its words' width
+
+The user, on a report task's card: "only content task has first draft due,
+due date and post date right?", and a press on Draft due had set today's
+date, which could only be moved with a reason. An everyday task (a month's
+report task included) now shows its Due date alone, and a post date held by
+one stays off the calendar. On a phone every ⋯ menu was drawn the screen's
+width (a rule made for creator cards), so the task card's covered its whole
+head ("Layout bug on top"); a menu is now as wide as its words, 260px at
+most. The card's Keep assigned to me is the switch, as the step sheet's.
+
+### 2026-10-11 · The stage select is a tonal pop-up
+
+The user, on a My Work row: "Is outline box still in our design system",
+pills for choices, sliding tabs, tonal buttons: by the law of similarity the
+outlined stage select read as a field among buttons. Shown a mockup (not
+blue: blue is the view's one next step), the user: "ok go ahead". Every
+`.state-select` takes the buttons' tonal shade with no outline, its dot and
+chevron kept; a press leaves no blue edge and the keyboard gets the buttons'
+ring. An outline now means a place to type, and the contact chip.
+
+### 2026-10-11 · The task card's pens on one edge
+
+The user, on the card's Dates and Details: "the pen is here and there". Each
+date's pen followed its words (Not set, 7 Oct 2026) and a detail's chevron
+its value. A date now takes its row with its words at the left and its pen
+at the right, and a detail's select runs to the same edge, so every mark
+stands in one column.
+
+### 2026-10-11 · More's build line, mid-way
+
+The user, on More's foot: the gap between the hairline and the build line
+read unlike the gap under it to the card's edge. The foot's top padding and
+the card's bottom padding are now equal (4px), so the 44px mark centres the
+build line 26px from each.

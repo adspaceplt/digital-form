@@ -518,8 +518,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   list (`#annSheet`: Team and Clients, each every line, live with Edit /
   Stop, which asks, stopped or ended with Restore (never asks, while its end
   is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
-  sheet: Tone, English, 中文, Link, Starts and Ends as a date beside its
-  time, MYT; posting one adds it, never ending another),
+  sheet: Tone, English, 中文 (a team's asks one Message: the console is
+  English alone; the user, 2026-10-11), Link, Starts and Ends as a date
+  beside its time, MYT; posting one adds it, never ending another),
   `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
   restore; refused `live` until stopped or ended; a row's own act is Edit,
   else Restore, its ⋯ Stop, or Delete last once stopped or ended); each filed `team.changed`
@@ -2520,7 +2521,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
   - A hand-off shows the person, with Keep assigned to me off (the
-    portal's switch, never a tick box; the user, 2026-10-11).
+    portal's switch, never a tick box, on the card and the step sheet
+    alike; the user, 2026-10-11).
   - The owner's own steps have it on.
   - The step sheet's act reads Move: its head names where it goes, so the
     label keeps one line in a phone's half.
@@ -2560,6 +2562,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     own progress (`btn-primary`) alike (2026-10-07).
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
+  - Draft due and Post date are a content task's: an everyday task (a
+    month's report task included) shows its Due date alone, and its post
+    date never reaches the calendar (the user, 2026-10-11).
   - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
     apply), Make a copy, Repeat on a schedule, Delete; who has the task is
     changed on its Assigned to row (Reassign), a task nobody holds from the
@@ -3537,13 +3542,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
     12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
     when full): Whole team, then each user group with its colleagues, most
-    used first, the totals added up on the page; then Limits (Each
-    colleague `10 a day`, Each admin `20 a day`, Each colleague, each
-    report `1 draft and 1 check a day`, Each admin, each report `5 drafts
-    and 5 checks a day`). Edit limits in the foot (Limits a day) is the
-    six standards in three pairs, one Save; a colleague's own limit is set
-    by pressing their row (`button.aiu-row`, one field, empty meaning the
-    standard); the totals and Limits rows only read. 0 to 500; only what
+    used first, the totals added up on the page; then Limits, each person:
+    one limit a use for everyone (the user, 2026-10-11: "just unified
+    across everyone"; AI uses, Drafts and Checks each report, Captions,
+    Scripts, Brand analyses), saved to the colleague's and the admin's
+    setting alike, a row reading `· admins n` only while the stored two
+    differ. Edit limits turns those rows into small tonal fields in place
+    (`.aiu-limits.is-editing`, Save and Cancel in the foot; never a sheet
+    of boxes); a colleague's own limit is set by pressing their row
+    (`button.aiu-row`, one field, empty meaning the standard); the totals
+    and Limits rows only read. 0 to 500; only what
     changed goes through `ai_draft_set_limit`, each filed `team.changed`
     under AI from and to. No list of colleagues in a form (the user,
     2026-10-05). No explanatory lines.
@@ -3558,8 +3566,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     2026-10-09) are a count of their own the same way (`script` 10,
     `script_admin` 20, `ai_drafts.script_id`); the reports' limits count
     drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
-    Captions and Scripts, each colleague and each admin; Edit limits is ten
-    fields in five pairs; Captions today and Scripts today list the team and
+    Captions and Scripts with the rest; Captions today and Scripts today list the team and
     each colleague who wrote one; This month prices Scripts apart.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row

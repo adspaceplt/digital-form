@@ -212,7 +212,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A record pane of facts | Read first (`readGroup`, missing required values in warn); Edit opens the same groups in a sheet |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
-| Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (its dot in the box, no tint) only for a state that moves as the work |
+| Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (a tonal pop-up: the buttons' shade, no outline, its dot in the box and the chevron at its end; never blue) only for a state that moves as the work |
 | Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
 | A row's next step under a finger (My Work) | The row swiped left: its cells drift a fifth of the way, the stage and the ⋯ fade, and `.trow-next` (the blue `.btn`, the step's own words) stands at the right edge, 8px in; it shows the act and never takes it |
 | Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |
@@ -269,6 +269,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   facts and the amount go on the lines under the name, on a phone as at a
   desk. In a desk table row a chip follows the name, never the far edge of
   a wide cell (a task's Urgent read as the assignee's).
+- A value changed where it is read ends its mark on the facts' one right
+  edge: the task card's date pens and detail chevrons alike (the user,
+  2026-10-11: "the pen is here and there").
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
@@ -368,7 +371,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   the top, never a form replacing the record's head.
 - Buttons:
   - `.btn` is tonal (shaded, never outlined; fields keep the ring). The one
-    outlined control is the contact chip `.plink`.
+    outlined control is the contact chip `.plink`. An outline means a place to
+    type: a status select acts as a button does and is tonal too (the user,
+    2026-10-11).
   - No bare text links in the portal: a way somewhere is a button, a chip
     or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
     Inside a line of facts it is `.linkbtn` (quiet, chevron, no underline);

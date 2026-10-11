@@ -199,9 +199,19 @@
       /* A track that scrolls (the view strip on a phone) carries the surface
          in its own scrolled content, so the scroll offset is added back. */
       track.style.setProperty('--thumb-x', ((r.left - tr.left) / k - track.clientLeft + track.scrollLeft + 2) + 'px');
-      track.style.setProperty('--thumb-y', ((r.top - tr.top) / k - track.clientTop + track.scrollTop + 2) + 'px');
+      /* An option that fills its track's height (every strip but a wrapped
+         segment) takes the track's own height by the stylesheet, never a
+         measured one: on an iPhone the Task / Content task surface kept a
+         height read before the sheet had settled, short and against the
+         top edge (the user, 2026-10-11). */
+      if (Math.abs(r.height / k - track.clientHeight) < 2) {
+        track.style.setProperty('--thumb-y', '2px');
+        track.style.setProperty('--thumb-h', 'calc(100% - 4px)');
+      } else {
+        track.style.setProperty('--thumb-y', ((r.top - tr.top) / k - track.clientTop + track.scrollTop + 2) + 'px');
+        track.style.setProperty('--thumb-h', Math.max(0, r.height / k - 4) + 'px');
+      }
       track.style.setProperty('--thumb-w', Math.max(0, r.width / k - 4) + 'px');
-      track.style.setProperty('--thumb-h', Math.max(0, r.height / k - 4) + 'px');
       track.style.setProperty('--thumb-o', '1');
     };
     if (snap || from) {

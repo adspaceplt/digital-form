@@ -4692,13 +4692,16 @@
   function aiUseSheet(opener) {
     var box = sheetShell('rpAiUseSheet', 'AI usage',
       '<div data-m="aiuse"></div>',
+      '<button class="btn btn-primary" type="button" data-a="save" hidden>Save</button>' +
       '<button class="btn" type="button" data-a="limits">' + PEN_MARK + 'Edit limits</button>' +
+      '<button class="btn btn-quiet" type="button" data-a="unedit" hidden>Cancel</button>' +
       '<button class="btn btn-quiet" type="button" data-a="cancel">Close</button>');
     box.querySelector('.sheet-card').setAttribute('data-narrow', '560');
     var host = box.querySelector('[data-m="aiuse"]'), m = box.querySelector('[data-m="sheet"]');
     m.id = 'rpAiUseMsg';
     var edit = box.querySelector('[data-a="limits"]');
-    var d = null, people = [];
+    var saveBtn = box.querySelector('[data-a="save"]'), unedit = box.querySelector('[data-a="unedit"]'), closeBtn = box.querySelector('[data-a="cancel"]');
+    var d = null, people = [], editing = false;
     var paint = function () {
       UI.skeleton(host, 3);
       edit.disabled = true;
@@ -4747,20 +4750,7 @@
             return '<section class="fsec"><div class="aiu-list">' + aiUseRow({ name: g, used: t.used, cap: t.cap, sum: true }) +
               list.map(aiUseRow).join('') + '</div></section>';
           }).join('') +
-          '<section class="fsec"><h4 class="fsec-h">Limits</h4><div class="aiu-list">' +
-            aiUseRow({ name: 'Each colleague', text: dayWord(d.person), own: d.person !== AI_STD.person, cap: d.person }) +
-            aiUseRow({ name: 'Each admin', text: dayWord(admDay), own: admDay !== AI_STD.admin, cap: admDay }) +
-            aiUseRow({ name: 'Each colleague, each report', text: rep === 0 && chk === 0 ? 'Stopped' : rep + (rep === 1 ? ' draft' : ' drafts') + ' and ' + chk + (chk === 1 ? ' check' : ' checks') + ' a day',
-              own: rep !== AI_STD.report || chk !== AI_STD.check, cap: rep }) +
-            aiUseRow({ name: 'Each admin, each report', text: adm === 0 && chkA === 0 ? 'Stopped' : adm + (adm === 1 ? ' draft' : ' drafts') + ' and ' + chkA + (chkA === 1 ? ' check' : ' checks') + ' a day',
-              own: adm !== AI_STD.report_admin || chkA !== AI_STD.check_admin, cap: adm }) +
-            aiUseRow({ name: 'Captions, each colleague', text: dayWord(capC), own: capC !== AI_STD.caption, cap: capC }) +
-            aiUseRow({ name: 'Captions, each admin', text: dayWord(capA), own: capA !== AI_STD.caption_admin, cap: capA }) +
-            aiUseRow({ name: 'Scripts, each colleague', text: dayWord(scrC), own: scrC !== AI_STD.script, cap: scrC }) +
-            aiUseRow({ name: 'Scripts, each admin', text: dayWord(scrA), own: scrA !== AI_STD.script_admin, cap: scrA }) +
-            aiUseRow({ name: 'Brand analyses, each colleague', text: dayWord(anC), own: anC !== AI_STD.analysis, cap: anC }) +
-            aiUseRow({ name: 'Brand analyses, each admin', text: dayWord(anA), own: anA !== AI_STD.analysis_admin, cap: anA }) +
-          '</div></section>';
+          limitsHtml(setting);
         /* Captions and scripts are their own counts, so they sit apart from the
            day's AI uses. */
         host.innerHTML +=
@@ -4799,8 +4789,61 @@
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
       }).catch(function (e) { UI.failLine(host, 'AI usage', said(e), paint); });
     };
-    var STD_KEYS = ['person', 'admin', 'report', 'check', 'report_admin', 'check_admin', 'caption', 'caption_admin', 'script', 'script_admin',
-      'analysis', 'analysis_admin'];
+    /* One limit for everyone (the user, 2026-10-11: "just unified across
+       everyone"): each use has one figure a day, saved to the colleague's
+       and the admin's setting alike; a person's own limit is still set
+       from their row. While the stored two still differ the row says the
+       admins' figure, until the next Save makes them one. Edited in place
+       as a list (the user: "boxes boxes everywhere"), never a second sheet. */
+    var LIMITS = [['person', 'admin', 'AI uses'], ['report', 'report_admin', 'Drafts, each report'],
+      ['check', 'check_admin', 'Checks, each report'], ['caption', 'caption_admin', 'Captions'],
+      ['script', 'script_admin', 'Scripts'], ['analysis', 'analysis_admin', 'Brand analyses']];
+    var limitsHtml = function (setting) {
+      var day = function (v) { return v === 0 ? 'Stopped' : v + ' a day'; };
+      return '<section class="fsec aiu-limits' + (editing ? ' is-editing' : '') + '"><h4 class="fsec-h">Limits, each person</h4><div class="aiu-list">' +
+        LIMITS.map(function (l) {
+          var v = setting(l[0]), a = setting(l[1]);
+          if (editing) {
+            return '<label class="aiu-row aiu-limit"><span class="aiu-name"><b>' + esc(l[2]) + '</b></span>' +
+              '<span class="aiu-field"><input class="input input-sm aiu-num" type="number" inputmode="numeric" min="0" max="500" step="1"' +
+              ' data-k="' + l[0] + '" value="' + esc(String(v)) + '" placeholder="' + AI_STD[l[0]] + '" aria-label="' + esc(l[2] + ', a day') + '">' +
+              '<span class="aiu-unit">a day</span></span></label>';
+          }
+          return aiUseRow({ name: l[2], text: day(v) + (a !== v ? ' · admins ' + a : ''), own: v !== AI_STD[l[0]], cap: v });
+        }).join('') +
+      '</div></section>';
+    };
+    var setEditing = function (on) {
+      editing = on;
+      saveBtn.hidden = !on; unedit.hidden = !on; edit.hidden = on; closeBtn.hidden = on;
+      say(m, '', '');
+      var setting = function (k) { return d && d[k] != null ? d[k] : AI_STD[k]; };
+      var sec = host.querySelector('.aiu-limits');
+      if (sec) {
+        sec.outerHTML = limitsHtml(setting);
+        sec = host.querySelector('.aiu-limits');
+        if (on && sec.scrollIntoView) sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+    };
+    unedit.onclick = function () { setEditing(false); };
+    saveBtn.onclick = function () {
+      var bad = null, jobs = [];
+      Array.prototype.forEach.call(host.querySelectorAll('.aiu-num'), function (f) {
+        var x = String(f.value).trim();
+        if (x !== '' && (!/^\d{1,3}$/.test(x) || Number(x) > 500)) { bad = bad || f; return; }
+        var pair = LIMITS.filter(function (l) { return l[0] === f.getAttribute('data-k'); })[0];
+        var v = x === '' ? AI_STD[pair[0]] : Number(x);
+        [pair[0], pair[1]].forEach(function (k) {
+          var want = v === AI_STD[k] ? null : v;
+          var was = d[k] != null ? d[k] : AI_STD[k];
+          if (want !== (was === AI_STD[k] ? null : was)) jobs.push({ scope: k, daily: want });
+        });
+      });
+      if (bad) { say(m, 'A limit is a whole number from 0 to 500.', 'err'); bad.focus(); return; }
+      setEditing(false);
+      if (!jobs.length) { say(m, 'No change.', 'ok'); return; }
+      setLimit(jobs);
+    };
     var setLimit = function (jobs) {
       var fails = [];
       return jobs.reduce(function (chain, j) {
@@ -4820,29 +4863,7 @@
       return bad.length ? 'A limit is a whole number from 0 to 500.' : '';
     };
     var num = function (v) { return v == null ? '' : String(v); };
-    /* The standards, a day each, in pairs: one form, one Save. */
-    edit.onclick = function () {
-      if (!d) return;
-      var LBL = { person: 'Each colleague', admin: 'Each admin', report: 'Drafts a report', check: 'Checks a report',
-        report_admin: 'Admin drafts a report', check_admin: 'Admin checks a report',
-        caption: 'Captions a colleague', caption_admin: 'Captions an admin',
-        script: 'Scripts a colleague', script_admin: 'Scripts an admin',
-        analysis: 'Brand analyses a colleague', analysis_admin: 'Brand analyses an admin' };
-      var fields = STD_KEYS.map(function (k) {
-        return { name: k, label: LBL[k], type: 'number', min: '0', required: false, value: num(d[k] != null ? d[k] : AI_STD[k]), placeholder: String(AI_STD[k]), half: true };
-      });
-      window.ADspaceConfirm.ask({ title: 'Limits a day', go: 'Save', fields: fields, check: limitOk }, function (v) {
-        var jobs = STD_KEYS.map(function (k) {
-          var x = String(v[k] == null ? '' : v[k]).trim();
-          var want = x === '' || Number(x) === AI_STD[k] ? null : Number(x);
-          var was = d[k] != null ? d[k] : AI_STD[k];
-          var now = was === AI_STD[k] ? null : was;
-          return want === now ? null : { scope: k, daily: want };
-        }).filter(Boolean);
-        if (!jobs.length) { say(m, 'No change.', 'ok'); return; }
-        setLimit(jobs);
-      });
-    };
+    edit.onclick = function () { if (d) setEditing(true); };
     /* A colleague's own limit, from their row: one value, empty for the standard. */
     host.addEventListener('click', function (e) {
       if (e.target.closest('[data-a="prices"]')) {
@@ -4866,6 +4887,7 @@
       });
     });
     say(m, '', '');
+    saveBtn.hidden = true; unedit.hidden = true; edit.hidden = false; closeBtn.hidden = false;
     paint();
     window.ADspaceSheet.show(box, { opener: opener });
   }

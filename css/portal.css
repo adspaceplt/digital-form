@@ -3931,7 +3931,9 @@ body.is-plain .topbar { background: var(--chrome); }
   /* Name, then status, then the menu pinned right. The name gives way first. */
   .kcard-head { padding: 11px 8px 11px 14px; gap: 8px; }
   .kcard-name { font-size: 14.5px; flex: 0 1 auto; }
-  .kmenu { right: 6px; top: 46px; width: calc(100vw - 52px); }
+  /* A ⋯ menu is as wide as its words on a phone too (2026-10-11): drawn
+     the screen's width, the task card's covered the card's whole head. */
+  .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
   .kstep { padding: 11px 14px 13px; }
   /* Shoot date and time pair on one line. Publish date would otherwise orphan
      next to an empty half, so it takes the width. */
@@ -4798,6 +4800,19 @@ body > .shell { width: 100%; }
   /* A state longer than its column ends in an ellipsis, never a cut: a word
      sliced mid letter reads as a fault, three dots as a name that goes on. */
   text-overflow: ellipsis;
+  /* A tonal pop-up, never a field's outline (the user, 2026-10-11): it acts
+     as the row's buttons do, so it wears their shade; an outline is left to
+     what is typed into. Never blue: blue is the view's one next step. */
+  border-color: transparent; background-color: var(--tonal);
+}
+@media (hover: hover) {
+  .state-select:not([disabled]):hover, .select.state-select:not([disabled]):hover { background-color: var(--tonal-hover); }
+}
+/* A press leaves no field's blue edge behind; the keyboard's ring is the
+   buttons' own. */
+.state-select:focus, .select.state-select:focus, .select-sm.state-select:focus { border-color: transparent; box-shadow: none; }
+.state-select:focus-visible, .select.state-select:focus-visible, .select-sm.state-select:focus-visible {
+  outline: 2px solid var(--action-ring); outline-offset: 2px;
 }
 .state-select.is-ok     { --sdot: var(--dot-ok); }
 .state-select.is-warn   { --sdot: var(--dot-wait); }
@@ -8161,6 +8176,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
+/* On the card the pen ends every date row on one right edge, and a detail's
+   chevron on the same edge (the user, 2026-10-11: "the pen is here and
+   there"): the date takes its row, its words at the left. */
+.tfacts dd > .tdate { flex: 1 1 auto; justify-content: space-between; margin-right: -8px; }
+.tfacts dd > .select.tdetail { width: calc(100% + 9px); max-width: none; }
 
 .tdate:active, .tdate-src:active { transform: scale(.97); }
 .tdate.is-over, .tdate-read.is-over { color: var(--err); font-weight: 600; }
@@ -8389,6 +8409,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .qhand[hidden] { display: none; }
 .qhand .tickline { margin: 0; }
+.qhand > .stepkeep { flex: 1 1 100%; }
 .qhand .select { flex: 1 1 180px; max-width: 260px; }
 .qhand .select[hidden] { display: none; }
 .qhand .tickline[hidden] { display: none; }
@@ -8500,7 +8521,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    fill takes `--line-ctl` to 2.92:1 in light. The untinted stage select on a
    ticked row takes the mute ink instead, which clears 3:1 on the fill in both
    themes; a tinted one keeps its own colour. */
-.task-row.is-picked .state-select { border-color: var(--ink-mute); }
+.task-row.is-picked .state-select { background-color: var(--tonal-hover); }
 /* On a phone the way out shares the count's line, and the two acts share
    the next as equal halves: three to a line put "Assign task owner" on two
    lines inside its own button. */
@@ -10528,6 +10549,20 @@ button.aiu-row:first-child::before { content: none; }
 .aiu-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
 .aiu-bar > i { display: block; height: 100%; width: var(--p, 0%); background: var(--fill); border-radius: inherit; }
 .aiu-bar.is-full > i { background: var(--warn-solid); }
+/* The limits edited in place (2026-10-11; the user: "boxes boxes
+   everywhere"): the read list stays a list, each figure becoming a small
+   tonal field at the row's right edge with its unit after it, as the
+   in-place field is drawn (no box line); one limit a use, for everyone. */
+.aiu-limit { cursor: text; }
+.aiu-field { display: inline-flex; align-items: center; gap: 8px; }
+.input.aiu-num {
+  width: 72px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums;
+  border-color: transparent; background-color: var(--tonal); -moz-appearance: textfield;
+}
+.input.aiu-num::-webkit-outer-spin-button, .input.aiu-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.aiu-unit { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.aiu-limits.is-editing .aiu-row { padding: 6px 0; }
+.aiu-limits.is-editing .aiu-row:first-child { padding-top: 0; }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */
@@ -11054,7 +11089,11 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 :root.has-tabbar .sidebar-brand,
 :root.has-tabbar .navitem.is-tabbed,
 :root.has-tabbar .navgroup.is-tabbed { display: none; }
-:root.has-tabbar .sidebar-foot { margin-top: 4px; }
+/* The build's line sits mid-way between the hairline and the card's edge:
+   the 44px mark centres it, and the space above the row equals the card's
+   own padding below it (the user, 2026-10-11: uneven gaps). */
+:root.has-tabbar .sidebar-foot { margin-top: 4px; padding-top: 4px; }
+:root.has-tabbar .sidebar { padding-bottom: 4px; }
 :root.has-tabbar .scrim {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 43;
   background: var(--scrim); border: 0; padding: 0;
