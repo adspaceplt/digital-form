@@ -68,7 +68,7 @@
 <script src="/js/confirm.js?v=20261010zc"></script>
 <script src="/js/sheet.js?v=20261011a"></script>
 <script src="/js/refresh.js?v=20261010zi"></script>
-<script src="/js/form.js?v=20261011a"></script>
+<script src="/js/form.js?v=20261012a"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261009g"></script>
@@ -2527,8 +2527,11 @@
             </div>
             <!-- In the order the decision is made: whose it is and for which
                  month, then the pieces (a line each: what, which format,
-                 which week), then when and how often; the rest folds under
-                 More details with its values on the line. One sheet makes one
+                 which week), then who takes it and how soon (a priority is a
+                 deadline, so it stands beside Assigned to with the date it
+                 sets; the user, 2026-10-12); complexity, the brief and the
+                 rare repeat fold under More details with their values on the
+                 line. One sheet makes one
                  piece or a month of them (2026-09-28: Bulk add folded in).
                  Whose the task is (Client, Lead, Internal) is checked once at
                  creation and never again. -->
@@ -2623,12 +2626,64 @@
               </div>
               <p class="hint" id="ntCodeHint" hidden></p>
             </section>
-            <!-- The same rule on every piece, made by the database each
-                 morning and when a client's month is confirmed. -->
             <section class="fsec">
-              <h4 class="fsec-h">Repeat</h4>
-              <label class="tickline"><input type="checkbox" id="ntRepeat"> <span>Repeat on a schedule</span></label>
-              <div class="ntrepeat" id="ntRepeatBox" hidden>
+              <h4 class="fsec-h">Assignment and priority</h4>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="ntOwner">Assigned to</label>
+                  <select class="select" id="ntOwner"></select>
+                </div>
+              </div>
+              <!-- Priority is how soon: Urgent, High and Medium each set a
+                   deadline from now (Business settings), said under it. -->
+              <div class="row fgrid">
+                <div class="field">
+                  <label class="field-label" for="ntPriority">Priority</label>
+                  <select class="select" id="ntPriority" data-seg>
+                    <option value="1">Urgent</option>
+                    <option value="2">High</option>
+                    <option value="4">Medium</option>
+                    <option value="3" selected>Normal</option>
+                  </select>
+                  <p class="hint" id="ntPrioNote" hidden></p>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="ntType">Task type</label>
+                  <select class="select" id="ntType" data-seg>
+                    <option value="engagement">Retainer</option>
+                    <option value="adhoc">Ad hoc</option>
+                    <option value="goodwill">Goodwill</option>
+                    <option value="special">Other</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+            <details class="fmore" id="ntMore">
+              <summary>More details <span class="fmore-sum"></span></summary>
+              <!-- Complexity is how much. -->
+              <div class="row fgrid">
+                <div class="field">
+                  <label class="field-label" for="ntComplex">Complexity</label>
+                  <select class="select" id="ntComplex" data-seg>
+                    <option value="simple">Light</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="complex">Complex</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row" id="ntBriefRow">
+                <div class="field">
+                  <label class="field-label" for="ntBrief">Brief</label>
+                  <textarea class="input" id="ntBrief" rows="2" placeholder="Optional" data-none="No brief" data-some="Brief"></textarea>
+                </div>
+              </div>
+              <!-- The same rule on every piece, made by the database each
+                   morning and when a client's month is confirmed. Rare, so it
+                   folds here; the line says Repeats or Does not repeat. -->
+              <div class="row">
+                <label class="tickline"><input type="checkbox" id="ntRepeat" data-on="Repeats" data-off="Does not repeat"> <span>Repeat on a schedule</span></label>
+              </div>
+              <div class="ntrepeat" id="ntRepeatBox" data-nosum hidden>
                 <div class="row">
                   <div class="field">
                     <label class="field-label" for="ntFreq">Repeats</label>
@@ -2654,55 +2709,6 @@
                     <label class="field-label" for="ntMax">Or after this number of tasks</label>
                     <input class="input" id="ntMax" type="number" min="1" max="500" inputmode="numeric" placeholder="No limit">
                   </div>
-                </div>
-              </div>
-            </section>
-            <section class="fsec">
-              <h4 class="fsec-h">Assignment</h4>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="ntOwner">Assigned to</label>
-                  <select class="select" id="ntOwner"></select>
-                </div>
-              </div>
-            </section>
-            <details class="fmore" id="ntMore">
-              <summary>More details <span class="fmore-sum"></span></summary>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="ntType">Task type</label>
-                  <select class="select" id="ntType" data-seg>
-                    <option value="engagement">Retainer</option>
-                    <option value="adhoc">Ad hoc</option>
-                    <option value="goodwill">Goodwill</option>
-                    <option value="special">Other</option>
-                  </select>
-                </div>
-              </div>
-              <!-- Priority is how soon; complexity is how much. -->
-              <div class="row fgrid">
-                <div class="field">
-                  <label class="field-label" for="ntPriority">Priority</label>
-                  <select class="select" id="ntPriority" data-seg>
-                    <option value="1">Urgent</option>
-                    <option value="2">High</option>
-                    <option value="4">Medium</option>
-                    <option value="3" selected>Normal</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntComplex">Complexity</label>
-                  <select class="select" id="ntComplex" data-seg>
-                    <option value="simple">Light</option>
-                    <option value="standard" selected>Standard</option>
-                    <option value="complex">Complex</option>
-                  </select>
-                </div>
-              </div>
-              <div class="row" id="ntBriefRow">
-                <div class="field">
-                  <label class="field-label" for="ntBrief">Brief</label>
-                  <textarea class="input" id="ntBrief" rows="2" placeholder="Optional" data-none="No brief" data-some="Brief"></textarea>
                 </div>
               </div>
             </details>
@@ -5260,7 +5266,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261011b"></script>
-<script src="/js/ops.js?v=20261011j"></script>
+<script src="/js/ops.js?v=20261012a"></script>
 <script src="/js/perf.js?v=20261011o"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261011a"></script>

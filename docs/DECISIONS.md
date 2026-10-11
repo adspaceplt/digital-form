@@ -2247,3 +2247,17 @@ screenshots of every screen it reaches, read against the phone checklist.
 A layout fault elsewhere is then found by the next daily walk, logged, and
 fixed in the next release, as the one-request rule already does for older
 defects a new test exposes.
+
+### 2026-10-12 · The New task sheet: Priority with who takes the work, Repeat folded
+The regroup offered on 11 Oct, built on the user's "Go" from a mockup of the
+real sheet. Priority had sat folded under More details since before it
+carried a deadline; once Urgent, High and Medium each set 24, 48 or 72 hours
+from the moment they are chosen (2026-10-11), folding it hid a date. It now
+stands under Assigned to, in one section named Assignment and priority, with
+the deadline it sets said under it from the Business setting's hours, the
+date the task card will read; Normal says nothing. Task type moved up beside
+it. Repeat, the least used choice, had a section of its own above
+Assignment; it folds under More details with Complexity and the brief, the
+fold's line naming Repeats or Does not repeat (a tick's `data-off`, and the
+rule's own fields left off the line by `data-nosum`). The sheet reads three
+sections where it read four. The quick Add task sheet is unchanged.

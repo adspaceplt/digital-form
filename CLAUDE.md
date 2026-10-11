@@ -856,7 +856,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
     first placement and resize).
-  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`).
+  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`, a
+    tick's off state from `data-off`; a field not on show, or inside
+    `data-nosum`, stays off the line).
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
   - `ADspaceForm.title` sets formal names in title case.
@@ -2813,6 +2815,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   internal and lead tasks are exempt.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
+  - It reads Task details (For, Client, Month), Posts, then Assignment and
+    priority (Assigned to; Priority with the deadline it sets from now under
+    it, `#ntPrioNote`, "Deliver within 48 hours, by 14 Oct, 9:00am.", none
+    for Normal; Task type beside it), then More details (Complexity, Brief,
+    Repeat), its line naming Repeats or Does not repeat (the user,
+    2026-10-12: a priority is a deadline, so it is never folded away).
   - A content deliverable is pieces: a line each (description, format, week),
     Add another drawing the next with the format above and the week after
     (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
@@ -2838,8 +2846,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
-  - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
-    the same rule on every piece, and what already falls due made at once.
+  - Repeat is a tick under More details (Weekly, Monthly, Every N days; an
+    end date or a count): the same rule on every piece, and what already
+    falls due made at once; a refusal of its rule opens the fold on the
+    field (`ADspaceForm.reveal`).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` (a month) or

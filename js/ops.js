@@ -6030,6 +6030,7 @@
     var leadOpt = $('ntScope').querySelector('option[value="lead"]');
     if (leadOpt) leadOpt.hidden = !leadsWorkable();
     $('ntPriority').value = '3';
+    ntPrioLine();
     $('ntComplex').value = 'standard';
     ntResetPieces();
     $('ntRepeat').checked = false;
@@ -6291,6 +6292,18 @@
     ntRows().slice(1).forEach(function (r) { r.parentNode.removeChild(r); });
     ntPiecesChanged();
   }
+  /* The deadline a priority sets, said where it is chosen: Urgent, High and
+     Medium each give their Business setting's hours from now, the date the
+     task card will read (2026-10-12); Normal says nothing. */
+  function ntPrioLine() {
+    var box = $('ntPrioNote');
+    if (!box) return;
+    var key = PRIORITY_KEY[Number($('ntPriority').value)];
+    if (!key) { box.hidden = true; box.textContent = ''; return; }
+    var now = new Date(), hours = prioHours(key, now.toISOString());
+    box.textContent = 'Deliver within ' + hours + ' hours, by ' + niceTime(new Date(now.getTime() + hours * 36e5)) + '.';
+    box.hidden = false;
+  }
   /* The repeat opens where it is ticked; the number of days only for every
      N days. */
   function ntRepeatChanged() {
@@ -6355,7 +6368,9 @@
     if ($('ntRepeat').checked) {
       var f = $('ntFreq').value;
       if (f === 'custom' && !(Number($('ntInterval').value) >= 1)) {
-        msg('ntMsg', said('interval-required'), 'err'); $('ntInterval').focus(); return;
+        msg('ntMsg', said('interval-required'), 'err');
+        if (window.ADspaceForm && ADspaceForm.reveal) ADspaceForm.reveal($('ntInterval'));
+        $('ntInterval').focus(); return;
       }
       rep = {
         frequency: f,
@@ -7931,6 +7946,8 @@
       ntRemovePiece(x.closest('.piece'));
       $('ntAddPiece').focus();
     });
+    var npri = $('ntPriority');
+    if (npri) npri.addEventListener('change', ntPrioLine);
     var nrep = $('ntRepeat');
     if (nrep) nrep.addEventListener('change', ntRepeatChanged);
     var nfreq = $('ntFreq');
