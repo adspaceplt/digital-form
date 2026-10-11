@@ -102,7 +102,10 @@
      the reviews are last month's whatever it is, as their titles say. Each
      period is [from, to): every one but Last month runs to now, and the one
      before it is the same length on the same days. */
-  var PERIODS = [['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter']];
+  /* Last quarter and This year joined on the user's word (2026-10-12):
+     five choices, so a select, never a segment. */
+  var PERIODS = [['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'],
+                 ['lastq', 'Last quarter'], ['year', 'This year']];
   var period = 'month';
   function addMonths(d, n) {
     var x = new Date(d.getFullYear(), d.getMonth() + n, 1, d.getHours(), d.getMinutes(), d.getSeconds());
@@ -113,16 +116,22 @@
   function rangeOf(p) {
     var now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
     if (p === 'last') return { from: new Date(m0.getFullYear(), m0.getMonth() - 1, 1), to: m0 };
-    if (p === 'quarter') return { from: new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1), to: now };
+    var q0 = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    if (p === 'quarter') return { from: q0, to: now };
+    if (p === 'lastq') return { from: new Date(q0.getFullYear(), q0.getMonth() - 3, 1), to: q0 };
+    if (p === 'year') return { from: new Date(now.getFullYear(), 0, 1), to: now };
     return { from: m0, to: now };
   }
   function prevOf(p) {
-    var r = rangeOf(p), n = p === 'quarter' ? 3 : 1;
+    var r = rangeOf(p), n = p === 'quarter' || p === 'lastq' ? 3 : p === 'year' ? 12 : 1;
     return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
   }
+  function quarterWord(d) { return 'Q' + (Math.floor(d.getMonth() / 3) + 1) + ' ' + d.getFullYear(); }
   // What a change is measured against, in a word: "on Sept", "on last quarter".
   function prevWord(p) {
     if (p === 'quarter') return 'last quarter';
+    if (p === 'lastq') return quarterWord(prevOf(p).from);
+    if (p === 'year') return 'last year';
     return MON[prevOf(p).from.getMonth()];
   }
   // The period in words: "1 to 12 Oct 2026", "Sept 2026", "1 Jul to 12 Oct 2026".
@@ -134,7 +143,8 @@
     return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()] + ' ' + b.getFullYear();
   }
   function periodName(p) {
-    return p === 'last' ? MON[rangeOf('last').from.getMonth()] : p === 'quarter' ? 'this quarter' : 'this month';
+    return p === 'last' ? MON[rangeOf('last').from.getMonth()] : p === 'quarter' ? 'this quarter'
+      : p === 'lastq' ? quarterWord(rangeOf('lastq').from) : p === 'year' ? 'this year' : 'this month';
   }
   function delta(now, before) {
     var d = now - before;
@@ -588,6 +598,15 @@
     } }
   ];
 
+  // Minutes as a person reads them: "45m", "6.5h", "3.2 days".
+  function spanOf(m) {
+    m = Number(m) || 0;
+    if (m < 60) return Math.round(m) + 'm';
+    if (m < 1440) return String(Math.round(m / 6) / 10).replace(/\.0$/, '') + 'h';
+    var d = Math.round(m / 144) / 10;
+    return String(d).replace(/\.0$/, '') + (d === 1 ? ' day' : ' days');
+  }
+
   /* ---- The charts ------------------------------------------------------------------
      Each answers a spec for ADspaceChart.draw, or `{ empty }`. */
   var CHARTS = [
@@ -673,13 +692,71 @@
                    series: [{ label: 'Active clients' }] };
         });
       } }
+    ],
+    /* More to read off the same answers (the user, 2026-10-12: "more creative
+       data"): where the work waits, who delivered on time, where leads come
+       from and why clients paused or left. No read of their own. */
+    [
+      { key: 'waits', title: function () { return 'Where work waits, ' + periodName(period); }, can: canFigures,
+        all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
+        return R.report().then(function (d) {
+          var st = (d.stage_time || []).filter(function (x) { return Number(x.n) > 0; })
+            .sort(function (a, b) { return (Number(b.median_minutes) || 0) - (Number(a.median_minutes) || 0); }).slice(0, 6);
+          if (!st.length) return { empty: 'No task left a stage ' + periodName(period) + '.' };
+          return { kind: 'bars', markLabel: 'Slowest 10%', rows: st.map(function (x) {
+              return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
+                       note: x.n + (Number(x.n) === 1 ? ' task' : ' tasks') };
+            }), fmt: function (v) { return spanOf(v); },
+            table: { heads: ['Stage', 'Tasks', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
+              return [x.label || x.stage_key, String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
+            }) } };
+        });
+      } },
+      { key: 'ontimeby', title: function () { return 'Delivered on time by person, ' + periodName(period); }, can: canFigures,
+        all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
+        return R.report().then(function (d) {
+          var by = (d.by_person || []).filter(function (x) { return Number(x.completed) > 0; })
+            .sort(function (a, b) { return (Number(b.completed) || 0) - (Number(a.completed) || 0); });
+          if (!by.length) return { empty: 'Nothing was delivered ' + periodName(period) + '.' };
+          var pc = function (x) { return Math.round((Number(x.on_time) || 0) / Number(x.completed) * 100); };
+          return { kind: 'bars', inline: true, rows: by.map(function (x) {
+              return { label: x.name, value: Number(x.completed) || 0, part: Math.max(0, Number(x.completed) - (Number(x.on_time) || 0)),
+                       note: pc(x) + '% on time' };
+            }), fmt: function (v) { return String(v); },
+            table: { heads: ['Person', 'Delivered', 'On time', 'Rate'], rows: by.map(function (x) {
+              return [x.name, String(x.completed), String(x.on_time || 0), pc(x) + '%'];
+            }) } };
+        });
+      } },
+      { key: 'sources', title: function () { return 'New leads by source, ' + periodName(period); }, can: canLeads,
+        all: ['Sales', '/admin/?s=clients&view=sales', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var rowsOf = Object.keys(f.bySource).map(function (k) { return { label: k, value: f.bySource[k].length }; })
+            .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
+          if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
+          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };
+        });
+      } },
+      { key: 'reasons', title: function () { return 'Why clients paused or left, ' + periodName(period); }, can: canClients,
+        all: function () { return may('clients.leads', 'work') ? ['Sales', '/admin/?s=clients&view=sales', 'clients'] : ['Clients', '/admin/?s=clients', 'clients']; },
+        load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var word = S().reasonWord || function (k) { return k || 'Not given'; };
+          var rowsOf = Object.keys(f.reasons).map(function (k) {
+            var r = f.reasons[k], pa = r.paused.length, le = r.past.length;
+            return { label: word(k), value: pa + le, note: [pa ? pa + ' paused' : '', le ? le + ' left' : ''].filter(Boolean).join(' · ') };
+          }).sort(function (a, b) { return b.value - a.value; });
+          if (!rowsOf.length) return { empty: 'No client paused or left ' + periodName(period) + '.' };
+          return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'Clients' };
+        });
+      } }
     ]
   ];
 
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
      starts on its first route instead of an empty page. */
-  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, CHARTS[0], CHARTS[1], CHARTS[2]);
+  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, CHARTS[0], CHARTS[1], CHARTS[2], CHARTS[3]);
   function any() { return ALL.some(function (c) { return c.can(); }); }
 
   // ---- Drawing ----------------------------------------------------------------------
@@ -703,8 +780,9 @@
         UI.skeleton(mbox, 2);
         R.report().then(function (d) {
           var f = d.on_time || {}, n = Number(f.reached || 0), met = Number(f.met || 0);
-          if (!n) { mbox.innerHTML = '<p class="chart-empty">No tasks reached client review ' + esc(periodName(period)) + '.</p>'; return; }
           mbox.innerHTML = '';
+          /* The ring stands whatever the period holds (the user, 2026-10-12):
+             with nothing reached client review it is empty and reads a dash. */
           CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
             rows: [{ label: 'On time', value: met, tone: 'ok' }, { label: 'Late', value: n - met }] });
         }).catch(function (e) { fail(mbox, 'On-time delivery', e, runM); });
@@ -831,14 +909,36 @@
     };
     run();
   }
-  function charts(box) {
-    CHARTS.forEach(function (row, i) {
+  /* The mockup's charts stand on the page; the further four fold under
+     More figures (the user, 2026-10-12: "too many information in one
+     page"), shut until opened, the choice kept in this browser, and drawn
+     only once opened. */
+  var MORE_KEY = 'adspace-ovw-more';
+  function moreOpen() { try { return localStorage.getItem(MORE_KEY) === '1'; } catch (e) { return false; } }
+  function charts(box, from, to) {
+    CHARTS.slice(from, to).forEach(function (row, k) {
+      var i = from + k;
       var live = row.filter(function (c) { return c.can(); });
       if (!live.length) return;
       var grid = document.createElement('div');
       grid.className = 'chartgrid ovw-grid' + (i === 1 ? ' is-three' : '');
       box.appendChild(grid);
       live.forEach(function (c) { chart(grid, c); });
+    });
+  }
+  function more(box) {
+    if (!CHARTS[3].some(function (c) { return c.can(); })) return;
+    var d = document.createElement('details');
+    d.className = 'fmore ovw-morefigs';
+    d.id = 'ovwMore';
+    d.innerHTML = '<summary>More figures</summary><div class="ovw-morebody"></div>';
+    box.appendChild(d);
+    var drawn = false;
+    var draw = function () { if (drawn) return; drawn = true; charts(d.querySelector('.ovw-morebody'), 3, 4); };
+    if (moreOpen()) { d.open = true; draw(); }
+    d.addEventListener('toggle', function () {
+      try { localStorage.setItem(MORE_KEY, d.open ? '1' : '0'); } catch (e) {}
+      if (d.open) draw();
     });
   }
 
@@ -906,12 +1006,11 @@
   function bar(box) {
     var head = document.createElement('div');
     head.className = 'ovw-bar';
-    head.innerHTML = '<select class="select select-sm" id="ovwPeriod" data-seg aria-label="Period">' +
+    head.innerHTML = '<select class="select select-sm" id="ovwPeriod" data-nofind aria-label="Period">' +
       PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
       '</select><span class="ovw-span" id="ovwSpan"></span>';
     box.appendChild(head);
     var sel = head.querySelector('select');
-    if (window.ADspaceForm && window.ADspaceForm.segment) window.ADspaceForm.segment(sel);
     var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
     head.querySelector('#ovwSpan').textContent = spanWord(rangeOf(period)) + ' · As at ' + ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm');
     sel.addEventListener('change', function () {
@@ -930,13 +1029,11 @@
     bar(box);
     glance(box);
     tiles(box);
-    charts(box);
+    charts(box, 0, 3);
     list(box);
+    more(box);
     if (keep) window.scrollTo(0, y);
-    if (keep && $('ovwPeriod') && $('ovwPeriod').__seg) {
-      var on = $('ovwPeriod').__seg.querySelector('[data-v="' + period + '"]');
-      if (on) on.focus();
-    }
+    if (keep && $('ovwPeriod')) $('ovwPeriod').focus({ preventScroll: true });
   }
   function urlState() { return { p: period !== 'month' ? period : '' }; }
 

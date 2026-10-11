@@ -2365,6 +2365,20 @@ to settings." Arrange sections left the account menu for the rail's foot,
 its mark before Settings' (in More's foot under the tab bar); the account
 menu's Workspace group, left empty, went with its hairline.
 
+### 2026-10-12 · The Dashboard's first corrections: the ring, the hairline, more periods and More figures
+On an iPhone the user found Figures' hairline sitting against the chart (the
+foot was pushed down with padding below the line, not above it) and the
+on-time ring missing: it was drawn only where something reached client
+review in the period, and the live month held nothing yet. The ring now
+always stands, empty and reading a dash. The user asked for Last quarter and
+the full year (This year), which makes five periods, so the segment became
+a select, as DESIGN.md has it for five choices. Asked for "more creative
+data", four charts read off the answers the page already holds (where work
+waits, on time by person, lead sources, why clients left). The user then
+asked whether the page was already too long (about three screens at a
+desk, five on a phone): the mockup's order stays and the four fold under
+More figures, shut until opened, so the page opens on what needs a
+decision and the analysis is one press away.
 ### 2026-10-12 · Each post is its own task in the New sheet
 The user, looking at the regrouped sheet: "Assign priority and retainer by
 right supposed to go inside each post … Imagine i have 7 posts (6 retainers
