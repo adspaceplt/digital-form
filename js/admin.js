@@ -345,10 +345,6 @@
       pushSay(PUSH_WHY[err] || PUSH_WHY.failed);
     });
   });
-  $('refreshApp').addEventListener('click', function () {
-    shutAcct();
-    if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
-  });
 
   /* ===== Upgrade mode (js/maintenance.js, 2026-10-03). An admin switches
      every portal page to one cover, Upgrading in progress, now or from a set
@@ -2335,10 +2331,18 @@
       var sha = String(v.commit || '').slice(0, 7);
       box.textContent = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.')
         + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : '');
+      box.setAttribute('aria-label', 'Refresh app, ' + box.textContent);
       box.hidden = false;
     }).catch(function () {});
   }
   showVersion();
+  /* A press on the build refreshes the app (the user, 2026-10-12: "refresh
+     app build on tapping the text"): the installed app has no reload
+     button, and this also takes an old copy off the phone (js/refresh.js)
+     and keeps the sign-in. */
+  if ($('appVersion')) $('appVersion').addEventListener('click', function () {
+    if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
+  });
 
   function shutActivity() { $('activitySheet').hidden = true; }
 
