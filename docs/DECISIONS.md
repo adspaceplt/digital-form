@@ -2092,3 +2092,13 @@ one stays off the calendar. On a phone every ⋯ menu was drawn the screen's
 width (a rule made for creator cards), so the task card's covered its whole
 head ("Layout bug on top"); a menu is now as wide as its words, 260px at
 most. The card's Keep assigned to me is the switch, as the step sheet's.
+
+### 2026-10-11 · The stage select is a tonal pop-up
+
+The user, on a My Work row: "Is outline box still in our design system",
+pills for choices, sliding tabs, tonal buttons: by the law of similarity the
+outlined stage select read as a field among buttons. Shown a mockup (not
+blue: blue is the view's one next step), the user: "ok go ahead". Every
+`.state-select` takes the buttons' tonal shade with no outline, its dot and
+chevron kept; a press leaves no blue edge and the keyboard gets the buttons'
+ring. An outline now means a place to type, and the contact chip.

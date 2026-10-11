@@ -4800,6 +4800,19 @@ body > .shell { width: 100%; }
   /* A state longer than its column ends in an ellipsis, never a cut: a word
      sliced mid letter reads as a fault, three dots as a name that goes on. */
   text-overflow: ellipsis;
+  /* A tonal pop-up, never a field's outline (the user, 2026-10-11): it acts
+     as the row's buttons do, so it wears their shade; an outline is left to
+     what is typed into. Never blue: blue is the view's one next step. */
+  border-color: transparent; background-color: var(--tonal);
+}
+@media (hover: hover) {
+  .state-select:not([disabled]):hover, .select.state-select:not([disabled]):hover { background-color: var(--tonal-hover); }
+}
+/* A press leaves no field's blue edge behind; the keyboard's ring is the
+   buttons' own. */
+.state-select:focus, .select.state-select:focus, .select-sm.state-select:focus { border-color: transparent; box-shadow: none; }
+.state-select:focus-visible, .select.state-select:focus-visible, .select-sm.state-select:focus-visible {
+  outline: 2px solid var(--action-ring); outline-offset: 2px;
 }
 .state-select.is-ok     { --sdot: var(--dot-ok); }
 .state-select.is-warn   { --sdot: var(--dot-wait); }
@@ -8503,7 +8516,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    fill takes `--line-ctl` to 2.92:1 in light. The untinted stage select on a
    ticked row takes the mute ink instead, which clears 3:1 on the fill in both
    themes; a tinted one keeps its own colour. */
-.task-row.is-picked .state-select { border-color: var(--ink-mute); }
+.task-row.is-picked .state-select { background-color: var(--tonal-hover); }
 /* On a phone the way out shares the count's line, and the two acts share
    the next as equal halves: three to a line put "Assign task owner" on two
    lines inside its own button. */
