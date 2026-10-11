@@ -2263,6 +2263,29 @@ A layout fault elsewhere is then found by the next daily walk, logged, and
 fixed in the next release, as the one-request rule already does for older
 defects a new test exposes.
 
+### 2026-10-12 · The Dashboard is one page, from the approved mockup
+Task 47. The user approved a mockup (kept in the tests repository,
+`mockups/dashboard/`) and briefed: "Committed monthly value is shown to
+anyone who may open client Services; everyone else sees Active clients in
+that tile." The tab a section is gone: the page reads top to bottom, the
+period, the glance, Sales and Operations tiles, the charts, then one list
+of everything waiting. Every former card's data lives on as a list source
+or a chart, so nothing a group could see before is lost. The rule of
+2026-10-03 holds: each part asks Full Access on its section before it
+reads. "No money anywhere on it" (2026-09-28) gives way to one figure,
+Committed monthly value, for whoever may open a client's Services; the
+lines are read under that part's own policy, so the page reads no money a
+reader could not already open on a client's record. Where the mockup's
+colours differ from DESIGN.md (green deltas, an amber lead going cold, a
+note naming who sees the value), DESIGN.md held: deltas in ink, a lead past
+its follow-up red, no explanatory copy. Figures the portal does not hold
+(open tasks due this week, late tasks a week ago, value over time) were not
+invented: those tiles say what is held (people with open work, the oldest
+late task) and draw no trend. While it was being built the user asked that
+the eight tiles stand one height and that each row's Figures read on one
+line: every tile keeps the trend's room, the two groups share their rows,
+and a chart card puts its Figures at its foot.
+
 ### 2026-10-11 · The Activity record's sections are one select
 On the queue the user approved ("Pick up the Activity record Section select
 next"): fourteen tabs in one sideways strip (All, then every section and

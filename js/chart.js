@@ -12,6 +12,20 @@
  *   line     how one measure moves over time; the figure on hover or a tap.
  *   pie      the share of a whole, only for two to five slices; anything
  *            else is drawn as bars, because a sixth slice cannot be read.
+ *   meter    one share of a whole of two parts (on time of all delivered):
+ *            a ring with the share in its middle, the first row's figure
+ *            against the rest (2026-10-12, the Dashboard).
+ *
+ * Options the Dashboard asked for (2026-10-12, the approved mockup):
+ *   bars    `inline`  the label, the bar and the figure on one line; a row's
+ *           `part` is drawn as a red share of its bar (the late of the open).
+ *   pie     `total`   the whole in the ring's middle; a row's `tone` colours
+ *           its slice as a status dot does (ok, warn, err, off).
+ *   columns `labels`  each figure over its column; a category's `tone` (mute)
+ *           marks the one still running (this month).
+ *
+ * `spark(values, tone)` draws a tile's trend as a small line with no axis,
+ * an image the tile's own words already state (aria-hidden).
  *
  * Under every chart its figures fold as a table (`details.fmore`), so the
  * numbers are there for a keyboard, a screen reader and a person who wants
@@ -106,6 +120,16 @@
     var top = 0;
     rows.forEach(function (r) { top = Math.max(top, num(r.value), num(r.mark)); });
     var max = spec.max || nice(top);
+    if (spec.inline) {
+      return '<div class="chart-bars is-inline">' + rows.map(function (r) {
+        var part = Math.min(num(r.part), num(r.value));
+        return '<div class="cb-row"><span class="cb-label">' + esc(r.label) + '</span>' +
+          '<span class="cb-track"><i class="cb-fill' + toneClass(r.tone) + '" style="width:' + pct(num(r.value) - part, max) + '%"></i>' +
+            (part ? '<i class="cb-fill cb-part is-err" style="width:' + pct(part, max) + '%"></i>' : '') + '</span>' +
+          '<span class="cb-value"><b>' + esc(fmt(r.value, r)) + '</b>' +
+            (r.note ? ' · <small' + (r.noteTone ? ' class="is-' + esc(r.noteTone) + '"' : '') + '>' + esc(r.note) + '</small>' : '') + '</span></div>';
+      }).join('') + '</div>';
+    }
     return '<div class="chart-bars">' + rows.map(function (r) {
       var mark = r.mark != null && num(r.mark) > 0
         ? '<i class="cb-mark" style="left:' + pct(r.mark, max) + '%"></i>' : '';
@@ -147,7 +171,8 @@
         }).join('') + '</span>';
       } else {
         marks = c.values.map(function (v, i) {
-          return '<i class="cc-bar' + toneClass(series[i].tone) + '" style="height:' + pct(v, max) + '%"></i>';
+          return '<i class="cc-bar' + toneClass(c.tone || series[i].tone) + '" style="height:' + pct(v, max) + '%">' +
+            (spec.labels && series.length === 1 ? '<b class="cc-fig">' + esc(fmt(v)) + '</b>' : '') + '</i>';
         }).join('');
       }
       return '<div class="cc-col" data-tip="' + esc(tipOf(c, series, fmt)) + '">' +
@@ -201,7 +226,7 @@
     var C = 2 * Math.PI * 15.915, at = 0;
     var rings = rows.map(function (r, i) {
       var len = num(r.value) / total * C;
-      var s = '<circle class="cp-seg" r="15.915" cx="21" cy="21" style="stroke-opacity:' + SHADES[i] +
+      var s = '<circle class="cp-seg' + toneClass(r.tone) + '" r="15.915" cx="21" cy="21" style="stroke-opacity:' + (r.tone ? 1 : SHADES[i]) +
         '" stroke-dasharray="' + len.toFixed(3) + ' ' + (C - len).toFixed(3) + '" stroke-dashoffset="' + (-at).toFixed(3) + '"></circle>';
       at += len;
       return s;
@@ -212,17 +237,44 @@
       var share = Math.round(num(r.value) / total * 100) + '%', shown = fmt(r.value);
       var same = String(shown).replace(/\s/g, '') === share;
       return '<li class="cp-key" data-tip="' + esc(r.label + ': ' + shown + (same ? '' : ' · ' + share)) + '">' +
-        '<i style="opacity:' + SHADES[i] + '"></i><span class="cp-label">' + esc(r.label) + '</span>' +
+        '<i class="' + toneClass(r.tone).trim() + '" style="opacity:' + (r.tone ? 1 : SHADES[i]) + '"></i><span class="cp-label">' + esc(r.label) + '</span>' +
         '<span class="cp-value">' + esc(shown) + (same ? '' : '<small>' + share + '</small>') + '</span></li>';
     }).join('');
-    return '<div class="chart-pie"><svg class="cp-ring" viewBox="0 0 42 42" aria-hidden="true">' +
-      '<g transform="rotate(-90 21 21)">' + rings + '</g></svg><ul class="cp-keys">' + key + '</ul></div>';
+    return '<div class="chart-pie"><span class="cp-ringbox"><svg class="cp-ring" viewBox="0 0 42 42" aria-hidden="true">' +
+      '<g transform="rotate(-90 21 21)">' + rings + '</g></svg>' +
+      (spec.total ? '<b class="cp-total" aria-hidden="true">' + esc(fmt(total)) + '</b>' : '') + '</span><ul class="cp-keys">' + key + '</ul></div>';
+  }
+
+  // ---- Meter -------------------------------------------------------------------
+  function meter(spec, fmt) {
+    var rows = spec.rows || [];
+    var part = num(rows[0] && rows[0].value), total = rows.reduce(function (a, r) { return a + num(r.value); }, 0);
+    var share = total ? Math.round(part / total * 100) : 0;
+    var C = 2 * Math.PI * 15.915, len = total ? part / total * C : 0;
+    return '<div class="chart-meter"><svg class="cm-ring" viewBox="0 0 42 42" aria-hidden="true">' +
+      '<circle class="cm-track" r="15.915" cx="21" cy="21"></circle>' +
+      '<circle class="cm-arc' + toneClass(rows[0] && rows[0].tone) + '" r="15.915" cx="21" cy="21" transform="rotate(-90 21 21)" ' +
+        'stroke-dasharray="' + len.toFixed(3) + ' ' + (C - len).toFixed(3) + '"></circle></svg>' +
+      '<span class="cm-mid"><b>' + share + '%</b>' + (spec.word ? '<small>' + esc(spec.word) + '</small>' : '') + '</span></div>';
+  }
+
+  /* A tile's trend: the values as one line in the tile's own ink, oldest
+     first, scaled to their own range. Fewer than two values draw nothing. */
+  function spark(values, tone) {
+    var v = (values || []).map(num);
+    if (v.length < 2) return '';
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), span = hi - lo || 1;
+    var pts = v.map(function (x, i) {
+      return (i / (v.length - 1) * 100).toFixed(2) + ',' + (30 - (x - lo) / span * 26).toFixed(2);
+    }).join(' ');
+    return '<svg class="chart-spark' + toneClass(tone) + '" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polyline points="' + pts + '" vector-effect="non-scaling-stroke"/></svg>';
   }
 
   // ---- The table under it ----------------------------------------------------
   function tableOf(spec, fmt) {
     if (spec.table) return spec.table;
-    if (spec.kind === 'bars' || spec.kind === 'pie') {
+    if (spec.kind === 'bars' || spec.kind === 'pie' || spec.kind === 'meter') {
       return { heads: ['', spec.valueHead || 'Figure'],
                rows: (spec.rows || []).map(function (r) { return [r.label, fmt(r.value, r)]; }) };
     }
@@ -251,7 +303,7 @@
   }
 
   function isEmpty(spec) {
-    if (spec.kind === 'bars' || spec.kind === 'pie') {
+    if (spec.kind === 'bars' || spec.kind === 'pie' || spec.kind === 'meter') {
       return !(spec.rows || []).some(function (r) { return num(r.value) > 0 || num(r.mark) > 0; });
     }
     return !(spec.cats || []).some(function (c) { return c.values.some(function (v) { return v != null && num(v) > 0; }); });
@@ -286,6 +338,7 @@
     var body = spec.kind === 'columns' ? columns(spec, fmt)
       : spec.kind === 'line' ? line(spec, fmt)
       : spec.kind === 'pie' ? pie(spec, fmt)
+      : spec.kind === 'meter' ? meter(spec, fmt)
       : bars(spec, fmt);
     card.innerHTML = head +
       '<div class="chart-plot" role="img" aria-label="' + esc(nameOf(spec, fmt)) + '">' + body + '</div>' +
@@ -319,5 +372,5 @@
     return isNaN(d.getTime()) ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
 
-  window.ADspaceChart = { draw: draw, nice: nice, months: months, monthKey: monthKey };
+  window.ADspaceChart = { draw: draw, nice: nice, months: months, monthKey: monthKey, spark: spark };
 })();
