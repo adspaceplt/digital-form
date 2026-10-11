@@ -2701,8 +2701,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     priority's, short of its review (`deadlineOf`). The Overdue band, the
     task card, `ops_report`'s late list (`over_minutes` for a priority's,
     read in hours under a day), open work by person, the on-time figures
-    (met only where both were met) and the performance review's hint
-    (`perf_ops_rate`) read the same rule.
+    (met only where both were met) and the performance review's Timeline
+    adherence figure (`perf_ops_rate`) read the same rule.
   - The control is named for what it will do: Request extension, or Change due
     date.
   - A row's date already set opens the due sheet (`openDue('final', row)`),
@@ -2938,6 +2938,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   rate it changed, from and to (`perf_save` files `changed`; a save that
   changed nothing files nothing).
 - Both locks (the master code and the email code) are one centred `.lockcard`.
+- The review sheet reads Rates behind the scores above Scores (the user,
+  2026-10-11: the rates suggest the points): each rate a percentage
+  management types, and Save works out each category's suggested points
+  from them (`perf_calc` `suggested`), never the score. Two carry what My
+  Work knows (`perf_ops_rate`, `2026-10-11-review-my-work-figures.sql`), a
+  press making it the rate: On-time posting, the content tasks the
+  colleague owns whose post date fell in the month (MYT) and has passed, and
+  how many went live by its day; Timeline adherence, the tasks they own
+  that reached their review in the month, and how many by every deadline
+  they had (My Work's late rule).
 - Notifications never carry a score.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed

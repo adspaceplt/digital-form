@@ -8752,6 +8752,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-rates .perf-use { grid-column: auto; }
 @media (max-width: 460px) { .perf-rates { grid-template-columns: minmax(0, 1fr); } }
 .perf-rate { display: grid; gap: 4px; }
+/* My Work's figure under a rate reads on the label's edge. */
+.perf-rate .perf-use { margin-inline-start: -8px; white-space: nowrap; }
 .perf-pct { display: inline-flex; align-items: center; gap: 4px; }
 .perf-pct small { font-size: 12px; color: var(--ink-mute); }
 .perf-breach, .perf-dispute { padding: 10px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 3px; }
