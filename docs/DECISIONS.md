@@ -2128,3 +2128,10 @@ shade with its chevron, its focus the buttons' ring. The task card's
 Details stood further apart where a row held a select ("are you sure this is
 evenly distributed"); a select gives its height back as a date does, so
 every fact stands one 28px pitch from the next.
+
+### 2026-10-11 · Reassign is a pen; a hand-off is one picker
+
+The user, on the task card: "reassign no chevron?" and "is it necessary to
+be the circular on off for the keep assigned to me". Asked, the user chose a
+pen at the right edge (Assigned to reads like a date, its mark in the same
+column) and one picker with Me first instead of a switch beside a picker.

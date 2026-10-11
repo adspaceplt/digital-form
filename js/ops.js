@@ -3660,7 +3660,7 @@
      say different things about the same task. */
   function NEXT_DW() {
     return { box: $('dwNext'), title: $('dwNextTitle'), line: $('dwNextLine'), list: $('dwNextList'),
-             late: $('dwNextLate'), hand: $('dwHand'), tick: $('dwHandTick'), tickWrap: $('dwHandTickWrap'),
+             late: $('dwNextLate'), hand: $('dwHand'),
              lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw',
              steps: $('dwSteps') };
   }
@@ -3741,28 +3741,31 @@
     if (!show) return;
     var key = t.id + '|' + mv;
     var perf = mv === 'performance_review';
+    b.hand.setAttribute('data-perf', perf ? '1' : '');
     if (b.hand.getAttribute('data-key') === key) return;
     b.hand.setAttribute('data-key', key);
     var cur = ownerId(t);
-    b.to.innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
+    /* One picker, never a switch beside it (the user, 2026-10-11): the one
+       who has it now is the first choice (Me where that is the reader), and
+       a hand-off opens on the person it usually goes to, else asks. */
+    var mine = cur && cur === myId();
+    var keep = !perf && cur ? '<option value="__keep">' + esc(mine ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
+    b.to.innerHTML = keep + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
     }).join('');
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
+    if (!perf && keep && !handsToColleague(mv, t)) def = '__keep';
     b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
-    /* A step that hands the work on asks for the person; a step that
-       records the owner's own progress keeps it with them unless unticked. */
-    b.tick.checked = !perf && !handsToColleague(mv, t);
-    b.tickWrap.hidden = perf;
     b.lab.textContent = perf ? 'Performance review by' : 'Assign to';
-    b.lab.hidden = b.tick.checked;
-    b.to.hidden = b.tick.checked;
+    b.lab.hidden = false;
+    b.to.hidden = false;
   }
   function handOf(b) {
     if (!b || !b.hand || b.hand.hidden) return { who: null };
-    if (!b.tickWrap.hidden && b.tick.checked) return { who: null };
-    if (b.tickWrap.hidden) return { who: b.to.value || null };
+    if (b.to.value === '__keep') return { who: null };
+    if (b.hand.getAttribute('data-perf') === '1') return { who: b.to.value || null };
     if (!b.to.value) return { missing: true };
     return { who: b.to.value };
   }
@@ -3878,10 +3881,11 @@
     setVia(toClient ? 'whatsapp' : 'other');
     var perf = key === 'performance_review';
     var cur = state.ownerIds[t.id] || ownerId(t);
-    $('stepHandTickWrap').hidden = perf;
-    keepMine(!perf && !o.assignee && !handsToColleague(key, t));
+    /* One picker, never a switch beside it (the user, 2026-10-11): the one
+       who has it now is the first choice, Me where that is the reader. */
+    var keepIt = !perf && cur ? '<option value="__keep">' + esc(cur === myId() ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
     $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
-    $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
+    $('stepHandTo').innerHTML = keepIt + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
       return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
@@ -3889,6 +3893,7 @@
     /* The same default as the task's own step: a review goes to whoever
        created the task, where that is somebody else. */
     var def = o.assignee || (perf ? t.created_by : (handsToColleague(key, t) && t.created_by !== cur ? t.created_by : '')) || '';
+    if (!def && keepIt && !handsToColleague(key, t)) def = '__keep';
     $('stepHandTo').value = def && $('stepHandTo').querySelector('option[value="' + def + '"]') ? def : '';
     $('stepHand').hidden = !may('ops', 'work');
     var go = $('stepGo');
@@ -3903,12 +3908,6 @@
   /* Going live on a day other than the one it was scheduled for is allowed,
      and asks why, because a report that cannot see why a date moved cannot
      see replanning. */
-  /* Keep assigned to me is the portal's switch, never a tick box. */
-  function keepOn() { return $('stepHandTick').getAttribute('aria-checked') === 'true'; }
-  function keepMine(on) {
-    $('stepHandTick').setAttribute('aria-checked', on ? 'true' : 'false');
-    $('stepHandRow').hidden = on;
-  }
   function setVia(v) {
     var sel = $('stepVia');
     if (sel.value !== v) { sel.value = v; if (window.ADspaceForm && ADspaceForm.paint) ADspaceForm.paint(sel); }
@@ -3936,7 +3935,7 @@
       return;
     }
     var who = null;
-    if (key === 'performance_review' || !keepOn()) {
+    if ($('stepHandTo').value !== '__keep') {
       who = $('stepHandTo').value || null;
       if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose who it goes to.', 'err'); $('stepHandTo').focus(); return; }
     }
@@ -5209,6 +5208,7 @@
   }
 
   // ---- The rail ------------------------------------------------------------
+  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   function frow(label, value, extra) {
     return '<div><dt>' + esc(label) + '</dt><dd>' + value + (extra || '') + '</dd></div>';
   }
@@ -5268,10 +5268,15 @@
     var who = ownerName(t);
     var made = nameOf(t.created_by);
     var canOwn = mayReassign(t) && !isFinished(t);
+    /* Who has it is changed where it is read, as a date is: the name and a
+       pen at the row's right edge, in line with the dates' and the details'
+       marks (the user, 2026-10-11), opening the Reassign sheet. */
+    var nameHtml = '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>';
     var rows = frow('Assigned to',
-      '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
-      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>',
-      canOwn && who ? '<button class="linkbtn" id="taskOwnerChange" type="button">Reassign</button>' : '');
+      (canOwn && who
+        ? '<button class="tdate" id="taskOwnerChange" type="button" aria-label="' + esc('Assigned to ' + who + '. Reassign') + '">' + nameHtml + PEN_SVG + '</button>'
+        : nameHtml) +
+      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Assigned to" hidden></select>');
     if (made) rows += frow('Created by', esc(made));
     var rev = people.filter(function (a) { return a.responsibility === 'reviewer'; }).map(function (a) { return a.name; }).join(', ');
     var con = people.filter(function (a) { return a.responsibility === 'contributor'; }).map(function (a) { return a.name; }).join(', ');
@@ -5345,8 +5350,7 @@
       var word = r.v ? esc(niceDate(r.v)) : '<span class="mute">Not set</span>';
       var inner = work && !isFinished(t)
         ? '<button class="tdate' + (over ? ' is-over' : '') + '" data-date="' + r.k + '" type="button" aria-label="' +
-            esc(r.label + (r.v ? ', ' + niceDate(r.v) + '. Change' : ', not set. Set')) + '">' + word +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+            esc(r.label + (r.v ? ', ' + niceDate(r.v) + '. Change' : ', not set. Set')) + '">' + word + PEN_SVG + '</button>'
         : '<span class="tdate-read' + (over ? ' is-over' : '') + '">' + word + '</span>';
       return '<div data-row="' + r.k + '"><dt>' + esc(r.label) + '</dt><dd>' + inner +
         (moved ? '<small>moved from ' + esc(niceDate(r.from)) + '</small>' : '') + '</dd></div>';
@@ -7595,27 +7599,6 @@
       var closing = plainOf(t) !== 'done';
       move(closing ? 'complete' : 'todo');
     });
-    /* The tick keeps the task with its owner and puts the list of people
-       away; unticked, the step asks who takes it. */
-    [['dwHandTick', 'dwHandTo', 'dwHandLab']].forEach(function (x) {
-      var tick = $(x[0]), to = $(x[1]), lab = $(x[2]);
-      if (!tick || !to) return;
-      /* The portal's switch, never a tick box (the user, 2026-10-11): read
-         and set as `checked`, as the tick it replaced was. */
-      Object.defineProperty(tick, 'checked', {
-        get: function () { return tick.getAttribute('aria-checked') === 'true'; },
-        set: function (v) { tick.setAttribute('aria-checked', v ? 'true' : 'false'); }
-      });
-      tick.addEventListener('click', function () {
-        tick.checked = !tick.checked;
-        tick.dispatchEvent(new Event('change'));
-      });
-      tick.addEventListener('change', function () {
-        to.hidden = tick.checked;
-        if (lab) lab.hidden = tick.checked;
-        if (!tick.checked) to.focus();
-      });
-    });
     /* Each card's quiet action opens its small form; Cancel and Escape put
        the card back as it was. */
     [['dwCheckOpen', 'dwCheckForm', 'dwCheckAdd'], ['dwLinkOpen', 'dwLinkForm', 'dwLinkUrl'],
@@ -7757,11 +7740,6 @@
     if (stepGoBtn) stepGoBtn.addEventListener('click', doStep);
     var stepDay = $('stepDate');
     if (stepDay) stepDay.addEventListener('change', stepDateChanged);
-    var stepTick = $('stepHandTick');
-    if (stepTick) stepTick.addEventListener('click', function () {
-      keepMine(!keepOn());
-      if (!keepOn()) $('stepHandTo').focus();
-    });
     var stepVia = $('stepVia');
     if (stepVia) stepVia.addEventListener('change', function () { setVia(stepVia.value); if (stepVia.value === 'other') $('stepNote').focus(); });
 

@@ -2520,10 +2520,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
-  - A hand-off shows the person, with Keep assigned to me off (the
-    portal's switch, never a tick box, on the card and the step sheet
-    alike; the user, 2026-10-11).
-  - The owner's own steps have it on.
+  - One picker, Assign to, on the card and the step sheet alike (the user,
+    2026-10-11: no switch, no tick box): its first choice keeps it with
+    whoever has it (Me (name) for the reader's own; `__keep`), chosen on
+    the owner's own steps; a hand-off opens on the person it usually goes
+    to, else Choose a person.
   - The step sheet's act reads Move: its head names where it goes, so the
     label keeps one line in a phone's half.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
@@ -2567,7 +2568,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     date never reaches the calendar (the user, 2026-10-11).
   - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
     apply), Make a copy, Repeat on a schedule, Delete; who has the task is
-    changed on its Assigned to row (Reassign), a task nobody holds from the
+    changed on its Assigned to row (the name and a pen at the facts' right
+    edge, named Reassign; 2026-10-11), a task nobody holds from the
     next step's Assign, never from the ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
     shows none, the offer, Delete) and is not drawn when empty. No timer,
     Revert, Move to another stage, Mark blocked or Cancel.
