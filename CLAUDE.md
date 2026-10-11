@@ -441,8 +441,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`adspace-rail:{id}`) for the first paint. The page reorders the rail's
   own items (`applyRail`), so the bar, which takes the rail's first
   sections, follows. A section not named comes after in the standard
-  order. The Activity record's tabs, the Team panel and search keep the
-  standard order. Not filed in the Activity record.
+  order. The Activity record's Section select, the Team panel and search
+  keep the standard order. Not filed in the Activity record.
 - Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
   2026-10-09: the account menu grew long and AI usage hid under Reports):
   an item in the account menu (`#settingsOpen`, its Workspace group with
@@ -873,7 +873,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     source of truth: a pick sets its value and fires `input` and `change`; a
     value set from outside shuts the finder. A press, Space, Enter, the
     arrows or a key typed on the select opens it (the key typed is the first
-    of the search); Enter or a press picks, Escape, Tab and a press elsewhere
+    of the search; it reads Name or code, else the select's
+    `data-find-hint`); Enter or a press picks, Escape, Tab and a press elsewhere
     shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
     field; at 640 and under, or under a coarse pointer, it is a card above the tab bar of the
     screen's height named by the field's label, with a close mark, and a tap
@@ -1172,7 +1173,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
   wrap cannot split it. An empty count is not drawn.
 - The rail's order (see `DESIGN.md`) drives `SECTIONS`, the Activity record's
-  tabs and `ACT_SECTION`, `PARTS.activity`, and the Team panel's blocks. One
+  sections (`ACT_SECTION`), `PARTS.activity`, and the Team panel's blocks. One
   sequence everywhere.
 - The route's purpose line opens from the route name (`.console-title` button,
   14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
@@ -4131,10 +4132,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `activity_section()` in SQL restates the map, and `tests/sql.js` §21 compares
   the two.
 - A tag nothing names files as `other` and falls back to the section.
-- One part per tab (`activity.clients`, `.whatsapp`, `.ops`, `.team`, `.review`,
-  `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
-  `.handbook`). The link
-  draws where any tab is readable.
+- One part per section (`activity.clients`, `.whatsapp`, `.ops`, `.team`,
+  `.review`, `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`,
+  `.services`, `.handbook`). The link draws where any part is readable.
 - Reports files a report's steps (`report.*`: started, submitted, returned,
   confirmed, published, revised, unpublished, deleted), every save
   (`report.saved`, filed by the page through `fileReport()`: the period and
@@ -4144,8 +4144,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Performance follows Team (`team.performance` View, no master code), read
   through `perf_activity()`: when, the step, whose month, who; never a score,
   a grade, a breach or a dispute's words, and never the caller's own review.
-- The tabs are My Work's view strip (`.cmdbar-views.actviews`), scrolling
-  sideways with faded edges at every width.
+- The sections are one Section select (`#activitySection`, its label at its
+  left; 2026-10-11, in place of a strip of fourteen tabs): All sections
+  first (never Everything), then only the sections whose part the reader
+  holds (Performance at `team.performance`), in the rail's order, opened on
+  the section the record was opened from where it is offered, else All
+  sections; ten or more open the finder. The sheet holds no swipe region.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and

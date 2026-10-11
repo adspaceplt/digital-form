@@ -2279,10 +2279,10 @@
     'campaign.file_deleted': ['Approved file deleted', '', 'campaigns'],
     'campaign.qc':           ['Quality checked', '', 'campaigns']
   };
-  /* The same order as the rail, because they are the same eight sections and
-     a person who has learned one sequence should not have to learn a second.
-     Everything leads, being the view somebody lands on. */
-  var ACT_SECTION = { all: 'Everything',
+  /* The same order as the rail, because they are the same sections and a
+     person who has learned one sequence should not have to learn a second.
+     All sections leads, being the view somebody lands on (never Everything). */
+  var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
                       reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', links: 'Short Links',
@@ -2301,8 +2301,8 @@
 
   function gateActivity() {
     /* The record has parts now, so a group may hold none of the section and
-       one of its tabs: the link is drawn where any tab is readable, and the
-       tabs themselves draw where their own part is. */
+       one of its parts: the link is drawn where any part is readable, and the
+       Section select offers only the parts held. */
     maySeeActivity = may('activity', 'view') || may('team.performance', 'view') || PARTS.activity.some(function (k) {
       return may('activity.' + k, 'view');
     });
@@ -2357,8 +2357,8 @@
 
   /* Filtered by section and grouped by day. Sixty rows in one unbroken column
      was a scroll with no landmarks in it; a date heading gives the eye
-     somewhere to stop, and the tabs answer "what happened in campaigns" without
-     reading past everything else. */
+     somewhere to stop, and the Section select answers "what happened in
+     campaigns" without reading past everything else. */
   var actFilter = 'all';
   var actRows = [];
 
@@ -2374,11 +2374,7 @@
     var rows = actRows.filter(function (a) {
       return actFilter === 'all' || sectionOfRow(a) === actFilter;
     });
-    Array.prototype.forEach.call($('activityTabs').children, function (b) {
-      var on = b.getAttribute('data-af') === actFilter;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-pressed', String(on));
-    });
+    if ($('activitySection').value !== actFilter) $('activitySection').value = actFilter;
     if (!rows.length) {
       box.innerHTML = '<div class="empty">Nothing recorded' +
         (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.</div>';
@@ -2440,9 +2436,27 @@
              tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
   }
 
-  Array.prototype.forEach.call($('activityTabs').children, function (b) {
-    b.addEventListener('click', function () {
-      actFilter = b.getAttribute('data-af');
+  /* The sections a reader may open in the record (its part, or Performance's
+     grant), All sections first, in the rail's order: one select where a
+     strip of fourteen tabs scrolled sideways (2026-10-11). */
+  function actOffered(k) {
+    if (k === 'all') return true;
+    if (k === 'performance') return may('team.performance', 'view');
+    return may('activity.' + k, 'view');
+  }
+  function fillActSections() {
+    var sel = $('activitySection');
+    sel.innerHTML = Object.keys(ACT_SECTION).filter(actOffered).map(function (k) {
+      return '<option value="' + k + '">' + esc(ACT_SECTION[k]) + '</option>';
+    }).join('');
+    sel.value = actFilter;
+  }
+  /* `input` and `change` both fire; only a value that moved repaints. */
+  ['input', 'change'].forEach(function (ev) {
+    $('activitySection').addEventListener(ev, function () {
+      var v = $('activitySection').value;
+      if (!v || v === actFilter) return;
+      actFilter = v;
       paintActivity();
     });
   });
@@ -2452,7 +2466,8 @@
     box.innerHTML = '<div class="empty">Loading…</div>';
     // Opening it from a section starts on that section, since that is almost
     // always what the question was about.
-    actFilter = ACT_SECTION[section] ? section : 'all';
+    actFilter = ACT_SECTION[section] && actOffered(section) ? section : 'all';
+    fillActSections();
     /* Performance's steps come from their own function, read only where the
        part is held, and join the rest by time. A refused or missing read of
        them leaves the other sections as they are. */
