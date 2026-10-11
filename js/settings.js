@@ -121,27 +121,33 @@
       '<div class="stg-card">' + g.rows.map(rowHtml).join('') + '</div></section>';
   }
 
+  /* A repaint that would draw the same page leaves it alone, so what is
+     ringed or focused on it (a first-visit guide's step) stays. */
+  var drawn = '';
   function paint() {
     var box = $('setList');
     if (!box) return;
     var list = groups();
-    box.innerHTML = '';
-    if (!list.length) { window.ADspaceState.emptyLine(box, 'No settings.'); return; }
+    if (!list.length) { drawn = ''; box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No settings.'); return; }
     var g = list.filter(function (x) { return x.key === chosen; })[0];
+    var cls, html;
     if (phone()) {
-      box.className = 'stg is-phone';
-      if (g) { box.innerHTML = pane(g, true); return; }
-      box.innerHTML = '<nav class="stg-nav stg-list" aria-label="Settings">' + list.map(function (x) {
+      cls = 'stg is-phone';
+      html = g ? pane(g, true) : '<nav class="stg-nav stg-list" aria-label="Settings">' + list.map(function (x) {
         return '<button class="stg-go" type="button" data-g="' + x.key + '"><span class="stg-what"><span class="stg-name">' + esc(x.name) + '</span>' +
           '<span class="stg-meta">' + esc(parts(x.rows.map(function (r) { return r.name; }))) + '</span></span>' + CHEV + '</button>';
       }).join('') + '</nav>';
-      return;
+    } else {
+      g = g || list[0];
+      cls = 'stg is-desk';
+      html = '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
+        return '<button class="stg-go" type="button" data-g="' + x.key + '"' + (x === g ? ' aria-current="page"' : '') + '>' + esc(x.name) + '</button>';
+      }).join('') + '</nav>' + pane(g, false);
     }
-    g = g || list[0];
-    box.className = 'stg is-desk';
-    box.innerHTML = '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
-      return '<button class="stg-go" type="button" data-g="' + x.key + '"' + (x === g ? ' aria-current="page"' : '') + '>' + esc(x.name) + '</button>';
-    }).join('') + '</nav>' + pane(g, false);
+    if (html === drawn && box.className === cls && box.firstChild) return;
+    drawn = html;
+    box.className = cls;
+    box.innerHTML = html;
   }
 
   /* The address names the group unless it is the desk's first. */
