@@ -2063,3 +2063,11 @@ swap, so the cause was not reproduced; the surface's height and top were
 measured once and kept. An option that fills its track's height now takes
 the height from the stylesheet (`calc(100% - 4px)`, 2px in), so a stale
 reading cannot leave it short; a wrapped segment keeps its measured rows.
+
+### 2026-10-11 · A team announcement is one message
+
+The user, on the New team announcement sheet: "remove the Chinese one since
+our portal is not bilingual except client facing … else we need to provide
+two languages every time". The console reads in English alone, so a team
+announcement asks for one Message; a clients' announcement keeps English and
+an optional 中文, since every client page follows the 中文 switch.

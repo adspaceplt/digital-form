@@ -345,16 +345,21 @@
       title: (a ? 'Edit' : 'New') + ' ' + NAME[aud].toLowerCase() + ' announcement',
       body: aud === 'team' ? 'Shown at the top of the console.' : 'Shown at the top of every client page.',
       go: a ? 'Save' : 'Post',
+      /* The console reads in English alone, so a team announcement asks for
+         one message; only the clients' pages follow the 中文 switch (the
+         user, 2026-10-11: "not bilingual except client facing"). */
       fields: [
         { name: 'tone', label: 'Tone', choices: [['info', 'Info'], ['important', 'Important']], value: a ? a.tone : 'info' },
-        { name: 'en', label: 'English', rows: 2, value: a ? a.body_en : '', need: 'Enter the announcement.', placeholder: 'Our office is closed on Friday.' },
-        { name: 'zh', label: '中文', rows: 2, value: a && a.body_zh || '', required: false, placeholder: 'Optional' },
+        { name: 'en', label: aud === 'team' ? 'Message' : 'English', rows: 2, value: a ? a.body_en : '', need: 'Enter the announcement.', placeholder: 'Our office is closed on Friday.' }
+      ].concat(aud === 'team' ? [] : [
+        { name: 'zh', label: '中文', rows: 2, value: a && a.body_zh || '', required: false, placeholder: 'Optional' }
+      ]).concat([
         { name: 'link', label: 'Link', value: a && a.link || '', required: false, placeholder: 'https://adspace.me' },
         { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: s ? myDay(s) : '' },
         { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: s ? myTime(s) : '' },
         { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true, value: e ? myDay(e) : '' },
         { name: 'etime', label: 'End time', type: 'time', required: false, half: true, hint: 'Optional', value: e ? myTime(e) : '' }
-      ],
+      ]),
       check: function (v) {
         if (String(v.en || '').trim().length > 300 || String(v.zh || '').trim().length > 300) return SAID['bad-text'];
         if (v.link && !/^https:\/\/\S+$/.test(String(v.link).trim())) return SAID['bad-link'];
@@ -363,7 +368,7 @@
     }, function (v) {
       var w = win(v);
       db().rpc('announcement_save', {
-        p_id: a ? a.id : null, p_audience: aud, p_tone: v.tone || 'info', p_body_en: v.en, p_body_zh: v.zh || null,
+        p_id: a ? a.id : null, p_audience: aud, p_tone: v.tone || 'info', p_body_en: v.en, p_body_zh: aud === 'team' ? null : (v.zh || null),
         p_link: v.link || null, p_starts: w.starts, p_ends: w.ends
       }).then(function (r) {
         var d = (r && r.data) || {};

@@ -518,8 +518,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   list (`#annSheet`: Team and Clients, each every line, live with Edit /
   Stop, which asks, stopped or ended with Restore (never asks, while its end
   is ahead) and Delete, and New): `announcement_save` (an ADspaceConfirm
-  sheet: Tone, English, 中文, Link, Starts and Ends as a date beside its
-  time, MYT; posting one adds it, never ending another),
+  sheet: Tone, English, 中文 (a team's asks one Message: the console is
+  English alone; the user, 2026-10-11), Link, Starts and Ends as a date
+  beside its time, MYT; posting one adds it, never ending another),
   `announcement_end(id, on)` and `announcement_delete(id)` (asked first, no
   restore; refused `live` until stopped or ended; a row's own act is Edit,
   else Restore, its ⋯ Stop, or Delete last once stopped or ended); each filed `team.changed`
