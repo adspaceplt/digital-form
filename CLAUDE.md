@@ -2696,8 +2696,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     final date, short of client review (`isLate()`, `reviewFloor()`), or a
     priority's, short of its review (`deadlineOf`). The Overdue band, the
     task card, `ops_report`'s late list (`over_minutes` for a priority's,
-    read in hours under a day), open work by person and the on-time figures
-    (met only where both were met) read the same rule.
+    read in hours under a day), open work by person, the on-time figures
+    (met only where both were met) and the performance review's hint
+    (`perf_ops_rate`) read the same rule.
   - The control is named for what it will do: Request extension, or Change due
     date.
   - A row's date already set opens the due sheet (`openDue('final', row)`),

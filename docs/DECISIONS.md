@@ -2203,5 +2203,5 @@ Wednesday 9am). Last, the user's own case (a task due the 29th raised to High
 on the 12th) showed the count must run from when the priority is set, not
 from creation: `ops_tasks.priority_at`, stamped by trigger. The hours are
 Business settings read as at the day the priority was set. `ops_report` reads
-the same rule (late, open work by person, on time); `perf_ops_rate`, the
-reviewer's completion hint by due date, is left as it was.
+the same rule (late, open work by person, on time), and, asked, so does
+`perf_ops_rate`, the reviewer's on-time hint.

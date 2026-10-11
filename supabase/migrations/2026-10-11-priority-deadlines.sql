@@ -31,11 +31,12 @@
 --      2026-10-11): `ops_report` counts a task past its priority's deadline
 --      and short of its review as late beside the due date's rule (the late
 --      list with `over_minutes`, open work by person), and on time only
---      where it met both (on time delivery, by person).
+--      where it met both (on time delivery, by person); the performance
+--      review's hint, `perf_ops_rate`, reads the same.
 --
 -- ROLLBACK
---   Run app_settings_set from REACH ALLOWANCE and ops_report from its own
---   latest section again; ops_priority_by, the column priority_at and its
+--   Run app_settings_set from REACH ALLOWANCE, and ops_report and
+--   perf_ops_rate from their own latest sections, again; ops_priority_by, the column priority_at and its
 --   trigger may stay (nothing else reads them); the three settings rows may
 --   stay. A task made Medium reads as Low on a page from before; tasks
 --   that were Low stay Normal (none were Low on 2026-10-11).
@@ -411,6 +412,44 @@ begin
   return out;
 end $$;
 grant execute on function public.ops_report(timestamptz, timestamptz) to authenticated;
+
+/* What My Work already knows, for the reviewer: the tasks this person owned
+   that were finished in the month with a deadline, and how many were on time
+   by the rule the report reads (the user, 2026-10-11): finished by the due
+   date's day and, where a priority set a deadline, at its review by that. A
+   hint for the reviewer, never a score. */
+create or replace function public.perf_ops_rate(p_member uuid, p_period date)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare d integer; o integer;
+begin
+  if to_regclass('public.ops_tasks') is null then return null; end if;
+  select count(*),
+         count(*) filter (where (x.due is null or x.ended::date <= x.due::date)
+                            and (x.prio_by is null or coalesce(x.met_at, x.ended) <= x.prio_by))
+    into d, o
+    from (select t.current_final_due_at as due, coalesce(t.completed_at, t.delivered_at) as ended,
+                 public.ops_priority_by(coalesce(t.priority_at, t.created_at), t.priority_level) as prio_by,
+                 (select min(e.created_at)
+                    from public.ops_task_events e
+                    join public.ops_workflow_stages w
+                      on w.workflow_id = t.workflow_id and w.key = e.to_value ->> 'stage_key'
+                   where e.task_id = t.id and e.event_type = 'stage_changed'
+                     and w.stage_group not in ('kiv', 'blocked', 'cancelled')
+                     and w.position >= coalesce(
+                       (select min(s.position) from public.ops_workflow_stages s
+                         where s.workflow_id = t.workflow_id and s.stage_group = 'client_review'),
+                       (select min(s.position) from public.ops_workflow_stages s
+                         where s.workflow_id = t.workflow_id and s.stage_group = 'internal_review'))) as met_at
+            from public.ops_tasks t
+           where t.completed_at >= p_period and t.completed_at < (p_period + interval '1 month')
+             and (select a.team_member_id from public.ops_task_assignees a
+                   where a.task_id = t.id and a.responsibility = 'owner'
+                   order by a.ended_at nulls first, a.assigned_at desc limit 1) = p_member) x
+   where x.due is not null or x.prio_by is not null;
+  return jsonb_build_object('done', d, 'on_time', o);
+end $$;
+revoke all on function public.perf_ops_rate(uuid, date) from public, anon, authenticated;
 
 -- END OF PRIORITY DEADLINES -------------------------------------------------
 
