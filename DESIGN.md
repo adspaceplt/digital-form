@@ -292,7 +292,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   column, never bleeding past the page's margins. A report's step strip
   (`.rp-steps`, each step's summary under its name) is one too. A record's strip
   (`.rectabs`, the client portal's too) and a strip inside a card (a set's
-  `.poststages`) run the width of that card at every width, as the Overview's
+  `.poststages`) run the width of that card at every width, as the Dashboard's
   does over its grid of cards; a section's switch
   (`.tabrow`, or a view strip on its own row: My records, Performance, the Activity
   record) is its own width at a desk and the column's on a phone, up to a
@@ -301,7 +301,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   has more beyond it faded.
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
   with the soft ink, red (`is-err`) only where what it counts needs acting
-  on now (Content Review: Changes requested, on both sides; Overview: an
+  on now (Content Review: Changes requested, on both sides; Dashboard: an
   item is late); a waiting or done count stays neutral (2026-10-07).
   It gives back its room on a phone (4px under 640, 3px under 400) before a
   tab's word is cut.
@@ -628,7 +628,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - "Unable to load / Please refresh…".
 
 ## 7. Architecture
-- The Overview sits alone above the two chunks, with no label, drawn only for
+- The Dashboard sits alone above the two chunks, with no label, drawn only for
   a group that manages a section (`CLAUDE.md`).
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:

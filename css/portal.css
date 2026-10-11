@@ -5497,6 +5497,8 @@ body > .shell { width: 100%; }
   column-gap: 12px; row-gap: 4px; padding: 12px 0; border-top: 1px solid var(--line-soft);
 }
 .permchunk > .fsec-h + .permsec { border-top: 0; padding-top: 4px; }
+/* The Dashboard's one row stands above the chunks, with no heading (2026-10-11). */
+.permdash > .permsec { border-top: 0; padding-top: 0; }
 .permsec-name { grid-area: name; align-self: center; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
 .permsec > .seg { grid-area: seg; justify-self: end; }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }

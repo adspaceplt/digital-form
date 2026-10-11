@@ -791,8 +791,11 @@
        key of its own; each card asks its own, and the Overview asks them all
        (`ADspaceOverview.any`), so Full Access on a section with no card
        (Short Links, Services, Team) never lands on an empty page (audit,
-       2026-10-03). */
+       2026-10-03). Named the Dashboard on the screen (2026-10-11); a group
+       may hide it (`overview` No Access in its access map), which only hides
+       the page and never opens a card. */
     if (name === 'overview') {
+      if (me && !(me.is_admin || me.role === 'admin') && (me.access || {}).overview === 'none') return false;
       var ov = window.ADspaceOverview;
       return ov && ov.any ? ov.any() : managesAny();
     }
@@ -892,7 +895,7 @@
      bar under a thumb. The bar steps away while a field takes the keyboard,
      so it never sits on what is typed. */
   var TAB_WORD = {
-    overview: 'Overview', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
+    overview: 'Dashboard', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
@@ -1332,7 +1335,7 @@
      has not been established yet. */
   var section = 'clients';
   var SECTION_TITLE = {
-    overview: 'Overview',
+    overview: 'Dashboard',
     clients: 'Clients',
     whatsapp: 'WhatsApp',
     work: 'My Work',
@@ -1384,7 +1387,7 @@
      each on a control the section draws; a step whose control this person
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
   var GUIDES = {
-    overview: { name: 'Overview', steps: [
+    overview: { name: 'Dashboard', steps: [
       { at: '#ovwTabs', text: 'One tab a section. Its count is what waits there, in red where something is late.' },
       { at: '.ovw-grid .ovw-row', text: 'Press a row to open it where it is kept. View all opens the whole section.' }] },
     work: { name: 'My Work', steps: [
@@ -1823,7 +1826,9 @@
        list names itself, because `/admin/` is a manager's Overview
        (2026-09-28), and a refresh on the list must stay on the list. */
     if (section !== 'clients' || !(window.ADspaceCRM && window.ADspaceCRM.urlState().client)) {
-      q.push('s=' + section);
+      /* The Dashboard's address reads `s=dashboard` (the user, 2026-10-11);
+         the route stays `overview` inside, and `s=overview` still opens it. */
+      q.push('s=' + (section === 'overview' ? 'dashboard' : section));
     }
     if (section === 'review') {
       // The same readable address the Clients section uses.
@@ -1921,6 +1926,7 @@
        as Clients before the landing page is asked: a refresh inside a record
        stays inside it (2026-09-28). */
     var where = params.get('s') || (params.get('client') ? 'clients' : firstAllowed());
+    if (where === 'dashboard') where = 'overview';
     if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {
