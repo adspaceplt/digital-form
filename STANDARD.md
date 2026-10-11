@@ -587,13 +587,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `tests/overview.js`, Reports for last month: "a report not started and
-  past its task's date leads" and "a report made with no month shows where
-  it stands" fail on main as on the Dashboard release when run after
-  midnight in Malaysia (2026-10-11 16:50 UTC): Kopi Lane's draft and Orchid
-  Hall's confirmed report read 4 days late against the task's 3, so they
-  lead. The seed's day counts or the page's late days cross the MYT day
-  boundary.
+- None open.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined

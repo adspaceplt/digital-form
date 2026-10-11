@@ -221,6 +221,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
+| A section's figures at a glance (the Dashboard) | `.ovw-kpi` tiles in `.ovw-kpis`, two by two under a group's label with a hairline (`.ovw-group-h`): the label 12/600 mute, the figure 24/600 (21 for money; late in red), its change in the soft ink (never green), its trend (`ADspaceChart.spark`) or a progress track; every tile keeps the trend's room so a row stands one height, and groups side by side share their rows (subgrid) |
+| What needs acting on today (the Dashboard) | `#ovwGlance`: the `meter` ring (one share, its figure in the middle, the arc `--ok-solid`) beside `.ovw-sig` lines (the words, the count, the dot and its word), Open list at the head's right edge; one column in a narrow pane |
+| Everything waiting across sections (the Dashboard) | `#ovwAttention`: What (name over meta) · Section (a grey `.chip`) · Who · Since (late in red words, else the dot and its word), eight rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
 | What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile, the title over its meta, the decision where it is taken in the row (tonal Decline, blue Approve), the age at the right edge (red when late); on a narrow pane the acts take a second line as equal halves |
 | A client's work by month (the record's Engagements) | `ADspaceGroup.section` card a content month of `.cmonth-row`s: the section's glyph on a tonal tile, the name (a fact as a grey chip after it) over its facts wrapping between parts, the state in a `--state-w` track, the chevron last (a finished report's `.btn-sm` Download in its place, `.has-file`); on a narrow pane two columns, the state at the right of the first line, the Download under it |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
@@ -292,8 +295,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   column, never bleeding past the page's margins. A report's step strip
   (`.rp-steps`, each step's summary under its name) is one too. A record's strip
   (`.rectabs`, the client portal's too) and a strip inside a card (a set's
-  `.poststages`) run the width of that card at every width, as the Dashboard's
-  does over its grid of cards; a section's switch
+  `.poststages`) run the width of that card at every width, as the Overview's
+  strip of a client record does; a section's switch
   (`.tabrow`, or a view strip on its own row: My records, Performance, the Activity
   record) is its own width at a desk and the column's on a phone, up to a
   control sharing its line (`uxaudit` `strip`). Tabs in a full strip share what is spare
@@ -301,7 +304,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   has more beyond it faded.
 - A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
   with the soft ink, red (`is-err`) only where what it counts needs acting
-  on now (Content Review: Changes requested, on both sides; Dashboard: an
+  on now (Content Review: Changes requested, on both sides; Overview: an
   item is late); a waiting or done count stays neutral (2026-10-07).
   It gives back its room on a phone (4px under 640, 3px under 400) before a
   tab's word is cut.

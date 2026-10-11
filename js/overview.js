@@ -1,19 +1,23 @@
 /*
- * Overview — the start page for a group that manages a section.
+ * The Dashboard (`?s=dashboard`) — the start page for a group that manages a
+ * section, built from the mockup the user approved (2026-10-12, task 47).
  *
- * One page that answers, section by section, what is waiting: late work and
- * who carries the open work, leads going cold, requests nobody has answered,
- * content sets the client has not decided, bookings past their date, letters
- * out unsigned, reports waiting for confirmation, and the month's reviews not
- * yet final. Each card asks its own permission before it reads anything, so a
- * card the person cannot read is not drawn and a section with no cards takes
- * its heading with it, as the rail's groups do. Every read goes through the
- * section's own tables under row level security or its own function; nothing
- * here is money (the user, 2026-09-28).
+ * One page read top to bottom, never a tab a section: the period (This
+ * month, Last month, This quarter); what needs acting on today beside the
+ * share of work that reached the client on time; Sales and Operations as
+ * tiles, each a figure, its change on the period before and its trend; the
+ * charts that answer faster than a table; then one list of everything
+ * waiting, late first, each row opening its record.
  *
- * The page reads again each time it is opened and never polls. A row opens
- * the record; Show N more lists the rest in the card; View all opens the
- * section.
+ * Every tile, chart, signal and list source asks its own permission before
+ * it reads anything, at Full Access on its section or part, the granted
+ * parts at their grant (2026-10-03), so what a group may not oversee is not
+ * drawn and nothing of it is read. Reads are shared within a visit (one
+ * request a source, whatever draws from it) and made again on the next
+ * visit, never polled. Committed monthly value is the one money figure
+ * (2026-10-12): drawn for whoever may open a client's Services
+ * (`clients.services` at View), read from the lines that part already
+ * opens; anyone else reads Active clients in that tile.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -30,10 +34,9 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  /* A section's cards are for whoever holds Full Access (manage) on it or
-     its part (the user, 2026-10-03: Clients showed to a group at Manage);
-     the granted parts (ops.reports, ops.all, team.performance) are their own
-     grant and are asked at it. */
+  /* Full Access (manage) on a section or its part opens its tiles and cards
+     (the user, 2026-10-03); the granted parts (ops.reports, ops.all,
+     team.performance) are asked at their grant. */
   function may(key, lv) { return Boolean(bridge.may && bridge.may(key, lv || 'view')); }
 
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -54,22 +57,27 @@
     var d = new Date(String(v).length === 10 ? v + 'T00:00:00' : v);
     return isNaN(d.getTime()) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
   }
+  // A date in this year without its year: "7 Oct"; another year keeps it.
+  function shortDate(v) {
+    var d = new Date(String(v).length === 10 ? v + 'T00:00:00' : v);
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() === new Date().getFullYear() ? d.getDate() + ' ' + MON[d.getMonth()] : dateWord(v);
+  }
   // Last month: its first day, its last day, its name and its address key.
   function lastMonth() {
     var now = new Date();
     var a = new Date(now.getFullYear(), now.getMonth() - 1, 1), z = new Date(now.getFullYear(), now.getMonth(), 0);
-    return { start: a, end: z, word: LONG[a.getMonth()] + ' ' + a.getFullYear(),
+    return { start: a, end: z, word: LONG[a.getMonth()] + ' ' + a.getFullYear(), short: MON[a.getMonth()],
              key: a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') };
   }
   function isoDay(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-  var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
   /* A read that answers `{ error }` from a function after the page's own
-     check passed is a refusal, and a refusal is never drawn as an empty card. */
+     check passed is a refusal, and a refusal is never drawn as nothing. */
   function rows(r) {
     if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The read was refused.');
     if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'Not allowed for this group.' : String(r.data.error));
@@ -89,610 +97,861 @@
     return '/admin/?client=' + encodeURIComponent(key) + (tab ? '&tab=' + tab : '');
   }
 
-  // ---- One report read shared by the My Work cards ---------------------------
-  var reportP = null;
-  function report() {
-    if (!reportP) {
-      reportP = db.rpc('ops_report', {}).then(rows);
-      reportP.catch(function () { reportP = null; });
-    }
-    return reportP;
+  // ---- The period ------------------------------------------------------------
+  /* Every figure on the page reads the period chosen; the reports owed and
+     the reviews are last month's whatever it is, as their titles say. Each
+     period is [from, to): every one but Last month runs to now, and the one
+     before it is the same length on the same days. */
+  var PERIODS = [['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter']];
+  var period = 'month';
+  function addMonths(d, n) {
+    var x = new Date(d.getFullYear(), d.getMonth() + n, 1, d.getHours(), d.getMinutes(), d.getSeconds());
+    var last = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+    x.setDate(Math.min(d.getDate(), last));
+    return x;
+  }
+  function rangeOf(p) {
+    var now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (p === 'last') return { from: new Date(m0.getFullYear(), m0.getMonth() - 1, 1), to: m0 };
+    if (p === 'quarter') return { from: new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1), to: now };
+    return { from: m0, to: now };
+  }
+  function prevOf(p) {
+    var r = rangeOf(p), n = p === 'quarter' ? 3 : 1;
+    return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
+  }
+  // What a change is measured against, in a word: "on Sept", "on last quarter".
+  function prevWord(p) {
+    if (p === 'quarter') return 'last quarter';
+    return MON[prevOf(p).from.getMonth()];
+  }
+  // The period in words: "1 to 12 Oct 2026", "Sept 2026", "1 Jul to 12 Oct 2026".
+  function spanWord(r) {
+    var a = r.from, b = new Date(r.to.getTime() - 1);
+    var whole = a.getDate() === 1 && r.to.getDate() === 1 && r.to.getHours() === 0 && r.to.getMinutes() === 0;
+    if (whole && a.getMonth() === b.getMonth()) return MON[a.getMonth()] + ' ' + a.getFullYear();
+    if (a.getMonth() === b.getMonth()) return a.getDate() + ' to ' + b.getDate() + ' ' + MON[a.getMonth()] + ' ' + a.getFullYear();
+    return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()] + ' ' + b.getFullYear();
+  }
+  function periodName(p) {
+    return p === 'last' ? MON[rangeOf('last').from.getMonth()] : p === 'quarter' ? 'this quarter' : 'this month';
+  }
+  function delta(now, before) {
+    var d = now - before;
+    if (!d) return 'Same as ' + prevWord(period);
+    return (d > 0 ? '+' : '−') + Math.abs(d) + ' on ' + prevWord(period);
   }
 
-  /* ---- The cards -------------------------------------------------------------
-     A list card: `load()` answers `{ rows: [{ name, meta, fig, figTone, age,
-     ageTone, url, section }], count, warn, progress }` (warn and progress
-     where the card reads them). A chart card: `load()` answers a spec for
-     ADspaceChart.draw, or `{ empty }`. Sections run in the rail's order. */
-  /* How long a stage may run, from the Clients list's own rule. */
-  function staleH() { return window.ADspaceCRM.staleH(); }
-  var LETTERS = ['offer', 'intent', 'cover'];
-
-  var SECTIONS = [
-    { head: 'My Work', key: 'work', cards: [
-      { key: 'late', title: 'Late tasks', can: function () { return may('ops.reports'); },
-        all: ['/admin/?s=work&view=report', 'work'], warn: true, empty: 'No late tasks.',
-        load: function () {
-          return report().then(function (d) {
-            var list = (d.late || []).slice().sort(function (a, b) { return (b.days_over || 0) - (a.days_over || 0); });
-            return { count: list.length, rows: list.map(function (t) {
-              return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
-                       meta: [t.owner || 'Unassigned', t.client].filter(Boolean).join(' · '),
-                       fig: (t.over_minutes != null && (Number(t.days_over) || 0) < 1
-                         ? (Number(t.over_minutes) < 60 ? Math.max(1, Number(t.over_minutes)) + 'm' : Math.floor(Number(t.over_minutes) / 60) + 'h')
-                         : daysWord(Number(t.days_over) || 0)) + ' over', figTone: 'err', age: t.stage || '',
-                       url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
-            }) };
-          });
-        } },
-      /* A client paused or ended still owed revisions and reviews: its open
-         work, read whole (the team's tasks, so `ops.all`). */
-      { key: 'urgent', title: 'Open work for paused and past clients',
-        can: function () { return may('ops', 'manage') && may('ops.all'); },
-        all: ['/admin/?s=work', 'work'], warn: true, empty: 'No open work for paused or past clients.',
-        load: function () {
-          return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
-            .is('completed_at', null).is('cancelled_at', null).is('archived_at', null)
-            .then(rows).then(function (list) {
-              var due = (list || []).filter(function (t) {
-                var st = t.clients && t.clients.stage;
-                return st === 'paused' || st === 'past';
-              }).sort(function (a, b) {
-                var p = a.current_final_due_at || '9999', q = b.current_final_due_at || '9999';
-                return p < q ? -1 : p > q ? 1 : 0;
-              });
-              return { count: due.length, rows: due.map(function (t) {
-                var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
-                return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
-                         meta: [t.clients.name, (W.stage || {})[t.clients.stage] || t.clients.stage].filter(Boolean).join(' · '),
-                         fig: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' over' : 'On time', figTone: n > 0 ? 'err' : '',
-                         age: 'Urgent delivery',
-                         url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
-              }) };
-            });
-        } },
-      { key: 'load', title: 'Open work by person', chart: true, can: function () { return may('ops.all') && may('ops.reports'); },
-        load: function () {
-          return report().then(function (d) {
-            if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
-            var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; });
-            if (!list.length) return { empty: 'No open tasks.' };
-            return { kind: 'bars', title: 'Open work by person',
-              rows: list.map(function (r) {
-                var late = Number(r.late) || 0;
-                return { label: r.name, value: Number(r.open) || 0,
-                         note: late ? late + ' late' : '', noteTone: late ? 'err' : '' };
-              }),
-              fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
-              table: { heads: ['Assigned to', 'Open', 'Late'],
-                       rows: list.map(function (r) { return [r.name, String(r.open), String(r.late || 0)]; }) } };
-          });
-        } },
-      { key: 'ontime', title: 'On-time delivery', chart: true, can: function () { return may('ops.reports'); },
-        load: function () {
-          var ms = CH.months(6);
-          return Promise.all(ms.map(function (m) {
-            return db.rpc('ops_report', { p_from: m.start.toISOString(), p_to: m.end.toISOString() })
-              .then(rows).then(function (d) { return d.on_time || {}; });
-          })).then(function (all) {
-            var cats = ms.map(function (m, i) {
-              var f = all[i] || {}, n = Number(f.reached || 0);
-              return { label: m.label, long: m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null],
-                       n: n, met: Number(f.met || 0) };
-            });
-            if (!cats.some(function (c) { return c.values[0] != null; })) {
-              return { empty: 'No tasks reached client review in the last six months.' };
-            }
-            return { kind: 'line', title: 'On-time delivery', max: 100, none: 'None reached client review',
-              cats: cats, series: [{ label: 'On time' }],
-              fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
-              table: { heads: ['Month', 'Reached client review', 'On time', 'Rate'],
-                       rows: cats.map(function (c) {
-                         return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
-                       }) } };
-          });
-        } }
-    ] },
-
-    { head: 'Clients', key: 'clients', cards: [
-      /* The two lead cards also ask Leads (`clients.leads`, falling back to
-         Clients where unset): a group at Clients Full Access that may not see
-         leads was told "No leads over their time" (audit, 2026-10-03). The
-         part offers View and Manage, so Manage on it is enough. */
-      { key: 'cold', title: 'Leads going cold', can: function () { return may('clients', 'manage') && may('clients.leads', 'work'); },
-        all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No leads over their time.',
-        load: function () {
-          return db.from('clients').select('id, name, slug, stage, stage_since, owner, created_at')
-            .in('stage', ['lead', 'proposal']).then(rows).then(function (list) {
-              var now = Date.now(), STALE_H = staleH();
-              var over = (list || []).map(function (c) {
-                var since = new Date(c.stage_since || c.created_at).getTime();
-                return { c: c, h: (now - since) / 3600000 };
-              }).filter(function (x) { return x.h > STALE_H[x.c.stage]; })
-                .sort(function (a, b) { return b.h - a.h; });
-              return { count: over.length, rows: over.map(function (x) {
-                var c = x.c;
-                return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, c.owner].filter(Boolean).join(' · '),
-                         fig: daysWord(Math.floor(x.h / 24)), figTone: 'err', age: 'Overdue',
-                         url: clientUrl(c), section: 'clients' };
-              }) };
-            });
-        } },
-      { key: 'intake', title: 'New leads and new clients', chart: true, can: function () { return may('clients', 'manage') && may('clients.leads', 'work'); },
-        load: function () {
-          return db.from('clients').select('id, created_at, stage_log').then(rows).then(function (list) {
-            var ms = CH.months(6), at = {};
-            ms.forEach(function (m, i) { at[m.key] = i; });
-            var leads = ms.map(function () { return 0; }), active = ms.map(function () { return 0; });
-            (list || []).forEach(function (c) {
-              var k = CH.monthKey(c.created_at);
-              if (k in at) leads[at[k]]++;
-              (Array.isArray(c.stage_log) ? c.stage_log : []).forEach(function (e) {
-                if (!e || e.stage !== 'active') return;
-                var ka = CH.monthKey(e.at);
-                if (ka in at) active[at[ka]]++;
-              });
-            });
-            if (!leads.some(Boolean) && !active.some(Boolean)) return { empty: 'No new leads in the last six months.' };
-            return { kind: 'columns', title: 'New leads and new clients',
-              cats: ms.map(function (m, i) { return { label: m.label, long: m.long, values: [leads[i], active[i]] }; }),
-              series: [{ label: 'New leads' }, { label: 'Became active', tone: 'ok' }],
-              fmt: function (v) { return String(v); } };
-          });
-        } },
-      /* A client's social account restricted by its platform (2026-10-10;
-         the user: "account restricted"), the longest first. */
-      { key: 'restricted', title: 'Restricted accounts', can: function () { return may('clients', 'manage'); },
-        all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No accounts restricted.',
-        load: function () {
-          return db.from('clients').select('id, name, slug, stage, owner, restricted_platform, restricted_since, restricted_note')
-            .not('restricted_since', 'is', null).order('restricted_since', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (c) {
-                return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', c.restricted_note].filter(Boolean).join(' · '),
-                         fig: 'Restricted', figTone: 'err', age: sinceWord(c.restricted_since),
-                         url: clientUrl(c), section: 'clients' };
-              }) };
-            });
-        } },
-      { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests', 'manage'); },
-        all: ['/admin/?s=clients', 'clients'], empty: 'No requests waiting.',
-        load: function () {
-          return db.from('client_requests').select('id, kind, service_label, state, created_at, client_id, clients(id, name, slug)')
-            .in('state', ['requested', 'reviewing']).is('withdrawn_at', null).order('created_at', { ascending: true })
-            .then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (q) {
-                var c = q.clients || {};
-                return { name: c.name || 'Client', meta: [(W.rqKind || {})[q.kind] || q.kind, q.service_label].filter(Boolean).join(' · '),
-                         fig: (W.rqState || {})[q.state] || q.state, age: sinceWord(q.created_at),
-                         url: clientUrl(c, 'services'), section: 'clients' };
-              }) };
-            });
-        } }
-    ] },
-
-    { head: 'Content Review', key: 'review', cards: [
-      { key: 'sets', title: 'Sets waiting on the client', can: function () { return may('review.sets', 'manage'); },
-        all: ['/admin/?s=review', 'review'], empty: 'No sets waiting.',
-        load: function () {
-          return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug)')
-            .eq('published', true).order('created_at', { ascending: false }).limit(200).then(rows).then(function (sets) {
-              sets = sets || [];
-              if (!sets.length) return { count: 0, rows: [] };
-              var ids = sets.map(function (s) { return s.id; });
-              return db.from('posts').select('*').in('batch_id', ids).then(rows).then(function (posts) {
-                posts = posts || [];
-                var pids = posts.map(function (p) { return p.id; });
-                var reviews = pids.length
-                  ? db.from('reviews').select('*').in('post_id', pids)
-                      .order('created_at', { ascending: false }).then(rows)
-                  : Promise.resolve([]);
-                return reviews.then(function (revs) {
-                  var latest = {};
-                  var reset = {}, round = {};
-                  posts.forEach(function (p) { reset[p.id] = p.review_reset_at; round[p.id] = p.round || 1; });
-                  (revs || []).forEach(function (r) {
-                    /* A team approval taken back no longer stands. */
-                    if (latest[r.post_id] || r.undone_at) return;
-                    /* Only a decision on the round on show counts: a revised
-                       post waits on the client again (2026-09-30). */
-                    if ((r.round || 1) !== round[r.post_id]) return;
-                    if (reset[r.post_id] && new Date(r.created_at) < new Date(reset[r.post_id])) return;
-                    latest[r.post_id] = r;
-                  });
-                  var out = sets.map(function (s) {
-                    var mine = posts.filter(function (p) { return p.batch_id === s.id; });
-                    var ok = 0, ch = 0;
-                    mine.forEach(function (p) {
-                      var d = latest[p.id];
-                      if (d && d.decision === 'approved') ok++; else if (d) ch++;
-                    });
-                    return { s: s, n: mine.length, ok: ok, ch: ch };
-                  }).filter(function (x) { return x.n && x.ok < x.n; })
-                    .sort(function (a, b) { return new Date(a.s.published_at || a.s.created_at) - new Date(b.s.published_at || b.s.created_at); });
-                  return { count: out.length, rows: out.map(function (x) {
-                    var c = x.s.clients || {};
-                    return { name: c.name || 'Client',
-                             meta: x.s.title + (x.ch ? ' · ' + x.ch + ' changes requested' : ''),
-                             fig: x.ok + ' of ' + x.n + ' approved', age: sinceWord(x.s.published_at || x.s.created_at),
-                             url: '/admin/?s=review&client=' + encodeURIComponent(c.id || x.s.client_id) + '&set=' + encodeURIComponent(x.s.id),
-                             section: 'review' };
-                  }) };
+  // ---- Reads, one request each a visit ----------------------------------------
+  var memo = {};
+  function once(key, fn) {
+    if (!memo[key]) {
+      memo[key] = Promise.resolve().then(fn);
+      memo[key].catch(function () { delete memo[key]; });
+    }
+    return memo[key];
+  }
+  function report(r) {
+    return db.rpc('ops_report', { p_from: r.from.toISOString(), p_to: r.to.toISOString() }).then(rows);
+  }
+  var R = {
+    report: function () { return once('rep:' + period, function () { return report(rangeOf(period)); }); },
+    reportPrev: function () { return once('prev:' + period, function () { return report(prevOf(period)); }); },
+    /* Six months, one call a month, for the on-time line and what was
+       delivered each month. */
+    months: function () {
+      return once('rep6', function () {
+        var ms = CH.months(6);
+        return Promise.all(ms.map(function (m) { return report({ from: m.start, to: m.end }); }))
+          .then(function (all) { return ms.map(function (m, i) { return { m: m, d: all[i] || {} }; }); });
+      });
+    },
+    /* Every client the group reads, once: the sales figures, leads going
+       cold, the pipeline and restricted accounts all draw from it. */
+    clients: function () {
+      return once('clients', function () {
+        return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, ' +
+          'restricted_platform, restricted_since, restricted_note').then(rows).then(function (l) { return l || []; });
+      });
+    },
+    lines: function () {
+      return once('lines', function () {
+        return db.from('client_services').select('client_id, qty, rate, tenure, term_adjust, term_pct, state, archived_at')
+          .then(rows).then(function (l) { return l || []; });
+      });
+    },
+    openTasks: function () {
+      return once('open', function () {
+        return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
+          .is('completed_at', null).is('cancelled_at', null).is('archived_at', null).then(rows).then(function (l) { return l || []; });
+      });
+    },
+    owed: function () {
+      return once('owed', function () {
+        return db.rpc('sm_reports_owed', { p_period: lastMonth().key }).then(rows).then(function (d) { return (d && d.items) || []; });
+      });
+    },
+    inReview: function () {
+      return once('review', function () {
+        return db.from('sm_reports').select('id, kind, title, period_start, period_end, submitted_at, client_id, clients(name, owner)')
+          .eq('status', 'review').order('submitted_at', { ascending: true }).then(rows).then(function (l) { return l || []; });
+      });
+    },
+    requests: function () {
+      return once('requests', function () {
+        return db.from('client_requests').select('id, kind, service_label, state, created_at, client_id, clients(id, name, slug, owner)')
+          .in('state', ['requested', 'reviewing']).is('withdrawn_at', null).order('created_at', { ascending: true })
+          .then(rows).then(function (l) { return l || []; });
+      });
+    },
+    /* Published sets with posts the client has not approved on the round on
+       show (a revised post waits on the client again; a team approval taken
+       back no longer stands). */
+    sets: function () {
+      return once('sets', function () {
+        return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug, owner)')
+          .eq('published', true).order('created_at', { ascending: false }).limit(200).then(rows).then(function (sets) {
+            sets = sets || [];
+            if (!sets.length) return [];
+            return db.from('posts').select('*').in('batch_id', sets.map(function (s) { return s.id; })).then(rows).then(function (posts) {
+              posts = posts || [];
+              var pids = posts.map(function (p) { return p.id; });
+              var reviews = pids.length
+                ? db.from('reviews').select('*').in('post_id', pids).order('created_at', { ascending: false }).then(rows)
+                : Promise.resolve([]);
+              return reviews.then(function (revs) {
+                var latest = {}, reset = {}, round = {};
+                posts.forEach(function (p) { reset[p.id] = p.review_reset_at; round[p.id] = p.round || 1; });
+                (revs || []).forEach(function (r) {
+                  if (latest[r.post_id] || r.undone_at) return;
+                  if ((r.round || 1) !== round[r.post_id]) return;
+                  if (reset[r.post_id] && new Date(r.created_at) < new Date(reset[r.post_id])) return;
+                  latest[r.post_id] = r;
                 });
+                return sets.map(function (s) {
+                  var mine = posts.filter(function (p) { return p.batch_id === s.id; });
+                  var ok = 0, ch = 0;
+                  mine.forEach(function (p) {
+                    var d = latest[p.id];
+                    if (d && d.decision === 'approved') ok++; else if (d) ch++;
+                  });
+                  return { s: s, n: mine.length, ok: ok, ch: ch };
+                }).filter(function (x) { return x.n && x.ok < x.n; });
               });
             });
-        } },
-      { key: 'noset', title: 'No set this month', can: function () { return may('review.sets', 'manage'); },
-        all: ['/admin/?s=review', 'review'], empty: 'Every active client has a set this month.',
-        load: function () {
-          var first = new Date(); first = new Date(first.getFullYear(), first.getMonth(), 1);
-          return Promise.all([
-            db.from('clients').select('id, name, slug').eq('stage', 'active').eq('review_hidden', false).order('name').then(rows),
-            db.from('batches').select('client_id, created_at').order('created_at', { ascending: false }).then(rows)
-          ]).then(function (r) {
-            var last = {};
-            (r[1] || []).forEach(function (b) { if (!last[b.client_id]) last[b.client_id] = b.created_at; });
-            var none = (r[0] || []).filter(function (c) { return !last[c.id] || new Date(last[c.id]) < first; });
-            return { count: none.length, rows: none.map(function (c) {
-              return { name: c.name, meta: last[c.id] ? 'Last set ' + dateWord(last[c.id]) : 'No sets',
-                       fig: '', age: '', url: '/admin/?s=review&client=' + encodeURIComponent(c.id), section: 'review' };
-            }) };
           });
-        } }
-    ] },
+      });
+    },
+    noSet: function () {
+      return once('noset', function () {
+        var first = new Date(); first = new Date(first.getFullYear(), first.getMonth(), 1);
+        return Promise.all([
+          db.from('clients').select('id, name, slug, owner').eq('stage', 'active').eq('review_hidden', false).order('name').then(rows),
+          db.from('batches').select('client_id, created_at').order('created_at', { ascending: false }).then(rows)
+        ]).then(function (r) {
+          var last = {};
+          (r[1] || []).forEach(function (b) { if (!last[b.client_id]) last[b.client_id] = b.created_at; });
+          return (r[0] || []).filter(function (c) { return !last[c.id] || new Date(last[c.id]) < first; })
+            .map(function (c) { return { c: c, last: last[c.id] || null }; });
+        });
+      });
+    },
+    /* Every open booking a campaign holds, once: the bookings chart, those
+       past their date and those waiting for the quality check. */
+    bookings: function () {
+      return once('bookings', function () {
+        return db.from('campaign_options')
+          .select('id, state, visit_date, submission_due, submitted_at, campaign_id, campaigns(id, title, owner), creators(name)')
+          .in('state', ['pending_visit', 'pending_draft', 'changes', 'submitted', 'reviewing', 'scheduled'])
+          .then(rows).then(function (l) { return l || []; });
+      });
+    },
+    letters: function () {
+      return once('letters', function () {
+        return db.from('client_documents').select('id, number, issued_at, client_id, clients(id, name, slug, owner)')
+          .in('kind', ['offer', 'intent', 'cover']).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
+          .order('issued_at', { ascending: true }).then(rows).then(function (l) { return l || []; });
+      });
+    },
+    reviews: function () {
+      return once('perf', function () {
+        return db.rpc('perf_overview', { p_period: lastMonth().key + '-01' }).then(rows).then(function (d) { return (d && d.rows) || []; });
+      });
+    }
+  };
 
-    { head: 'Creator Campaigns', key: 'campaigns', cards: [
-      { key: 'bookings', title: 'Bookings past their date', can: function () { return may('campaigns.campaigns', 'manage'); },
-        all: ['/admin/?s=campaigns', 'campaigns'], warn: true, empty: 'No bookings past their date.',
-        load: function () {
-          var t0 = isoDay(today());
-          return db.from('campaign_options')
-            .select('id, state, visit_date, submission_due, campaign_id, campaigns(id, title), creators(name)')
-            .in('state', ['pending_visit', 'pending_draft', 'changes']).then(rows).then(function (list) {
-              var late = (list || []).map(function (o) {
-                var due = o.state === 'pending_visit' ? o.visit_date : o.submission_due;
-                return { o: o, due: due };
-              }).filter(function (x) { return x.due && String(x.due).slice(0, 10) < t0; })
-                .sort(function (a, b) { return String(a.due) < String(b.due) ? -1 : 1; });
-              return { count: late.length, rows: late.map(function (x) {
-                var o = x.o, cp = o.campaigns || {};
-                return { name: (o.creators && o.creators.name) || 'Creator',
-                         meta: [cp.title, (W.step || {})[o.state] || o.state].filter(Boolean).join(' · '),
-                         fig: daysWord(daysSince(x.due)) + ' over', figTone: 'err',
-                         age: o.state === 'pending_visit' ? 'Visit ' + dateWord(x.due) : 'Draft due ' + dateWord(x.due),
-                         url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=schedule',
-                         section: 'campaigns' };
-              }) };
-            });
-        } },
-      { key: 'qc', title: 'Waiting for the quality check', can: function () { return may('campaigns.campaigns', 'manage'); },
-        all: ['/admin/?s=campaigns', 'campaigns'], empty: 'No drafts waiting.',
-        load: function () {
-          return db.from('campaign_options')
-            .select('id, submitted_at, campaign_id, campaigns(id, title), creators(name)')
-            .eq('state', 'submitted').order('submitted_at', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (o) {
-                var cp = o.campaigns || {};
-                return { name: (o.creators && o.creators.name) || 'Creator', meta: cp.title || '',
-                         fig: (W.step || {}).submitted || 'Submitted', age: sinceWord(o.submitted_at),
-                         url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators',
-                         section: 'campaigns' };
-              }) };
-            });
-        } }
-    ] },
+  // ---- The sales figures --------------------------------------------------------
+  /* Worked out by the Sales view's own rules (`ADspaceSales.figures`), so the
+     Dashboard and Clients · Sales never disagree. */
+  var S = function () { return window.ADspaceSales; };
+  function figuresFor(r, lines) {
+    return R.clients().then(function (cl) { return S().figures(cl, lines || null, r); });
+  }
+  function sixMonths() {
+    var ms = CH.months(6);
+    return { from: ms[0].start, to: new Date() };
+  }
+  function moneyWord(by) {
+    var M = window.ADspaceMoney;
+    var keys = Object.keys(by || {}).filter(function (k) { return by[k]; });
+    if (!keys.length) return M ? M.money(0, 'MY', 2) : '0.00';
+    return keys.sort().map(function (k) { return M ? M.money2(by[k], k) : by[k].toFixed(2); }).join(' · ');
+  }
+  var canLeads = function () { return may('clients', 'manage') && may('clients.leads', 'work'); };
+  var canClients = function () { return may('clients', 'manage'); };
+  var canTeamWork = function () { return may('ops.all') && may('ops.reports'); };
+  var canFigures = function () { return may('ops.reports'); };
+  var canReports = function () { return may('reports', 'manage'); };
+  var canCamps = function () { return may('campaigns.campaigns', 'manage'); };
+  var canSets = function () { return may('review.sets', 'manage'); };
+  var canRequests = function () { return may('clients.requests', 'manage'); };
+  var canValue = function () { return may('clients.services', 'view'); };
 
-    { head: 'Reports', key: 'reports', cards: [
-      { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports', 'manage'); },
-        all: ['/admin/?s=reports', 'reports'], empty: 'No reports waiting.',
-        load: function () {
-          var SM = window.ADspaceSmReport;
-          return db.from('sm_reports').select('id, kind, title, period_start, period_end, submitted_at, client_id, clients(name)')
-            .eq('status', 'review').order('submitted_at', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (r) {
-                return { name: (r.clients && r.clients.name) || 'Client',
-                         meta: [SM && SM.titleOf ? SM.titleOf(r) : r.title,
-                                SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : ''].filter(Boolean).join(' · '),
-                         fig: 'In review', age: sinceWord(r.submitted_at),
-                         url: '/admin/?s=reports&report=' + encodeURIComponent(r.id), section: 'reports' };
-              }) };
-            });
-        } },
-      /* Last month's reports, from the months that ask for them (the user,
-         2026-10-07: "some clients are not monthly engagement"): every report
-         a month's Reports ticks ask for and every report made for the month,
-         with where each stands. A report in review is the card above's, so
-         it is counted in the progress line and listed there. */
-      { key: 'owed', title: function () { return 'Reports for ' + lastMonth().word; },
-        can: function () { return may('reports', 'manage'); },
-        all: ['/admin/?s=reports', 'reports'], empty: 'No reports owed.',
-        load: function () {
-          var SM = window.ADspaceSmReport;
-          var STAGE = { none: 'Not started', draft: 'Draft', confirmed: 'Confirmed' };
-          var RANK = { none: 0, draft: 1, confirmed: 2 };
-          var lateDays = function (x) { return Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)); };
-          return db.rpc('sm_reports_owed', { p_period: lastMonth().key }).then(rows).then(function (d) {
-            var items = (d && d.items) || [];
-            var done = items.filter(function (x) { return x.status === 'published'; }).length;
-            var asked = items.filter(function (x) { return x.status === 'review'; }).length;
-            var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
-            open.sort(function (a, b) {
-              if (a.late !== b.late) return a.late ? -1 : 1;
-              /* Late by the whole days the row reads, so two rows both 3 days
-                 late fall in stage order, never by the hour their dates hold. */
-              if (a.late && lateDays(a) !== lateDays(b)) return lateDays(b) - lateDays(a);
-              if (RANK[a.status] !== RANK[b.status]) return RANK[a.status] - RANK[b.status];
-              return String(a.brand || a.client).localeCompare(String(b.brand || b.client));
-            });
-            return { count: open.length, warn: open.some(function (x) { return x.late; }),
-              empty: !items.length ? '' : done === items.length ? 'Every report is published.' : 'The rest are waiting for confirmation.',
-              progress: items.length ? { done: done, total: items.length,
-                word: done + ' of ' + items.length + ' published' + (asked ? ' · ' + asked + ' in review' : '') } : null,
-              rows: open.map(function (x) {
-                var over = x.late ? lateDays(x) : 0;
-                var c = { slug: x.slug, id: x.client_id };
-                return { name: x.brand || x.client,
-                         meta: [x.brand ? x.client : '', SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind,
-                                x.assignee].filter(Boolean).join(' · '),
-                         fig: STAGE[x.status] || x.status,
-                         age: x.late ? daysWord(over) + ' late' : 'Due ' + dateWord(x.due), ageTone: x.late ? 'err' : '',
-                         url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
-                           : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
-                           : may('clients') ? clientUrl(c, 'engagements') : '/admin/?s=reports',
-                         section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
-              }) };
-          });
-        } }
-    ] },
+  /* ---- Needs attention: one list of everything waiting -------------------------
+     Each source asks its own permission, reads through the shared reads and
+     answers rows `{ name, meta, tag, who, late, days, since, tone, url,
+     section }`. Late rows come first, the most days late first; then what
+     waits on somebody, the longest first; then what has not started. */
+  var STAGE_WORD = { none: 'Not started', draft: 'Draft', confirmed: 'Confirmed', review: 'In review' };
+  function taskName(t) { return t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')); }
+  function overWord(t) {
+    return (t.over_minutes != null && (Number(t.days_over) || 0) < 1
+      ? (Number(t.over_minutes) < 60 ? Math.max(1, Number(t.over_minutes)) + 'm' : Math.floor(Number(t.over_minutes) / 60) + 'h')
+      : daysWord(Number(t.days_over) || 0)) + ' late';
+  }
+  function reportLateDays(x) { return Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)); }
+  var SOURCES = [
+    { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
+      return R.report().then(function (d) {
+        return (d.late || []).map(function (t) {
+          return { name: taskName(t), meta: t.client || 'Internal', tag: 'Task', who: t.owner || 'Unassigned',
+                   late: true, days: Number(t.days_over) || 0, since: overWord(t),
+                   url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
+        });
+      });
+    } },
+    /* A client paused or ended still owes its revisions and reviews. */
+    { key: 'urgent', title: 'Open work for paused and past clients', can: function () { return may('ops', 'manage') && may('ops.all'); }, load: function () {
+      return R.openTasks().then(function (list) {
+        return list.filter(function (t) { var st = t.clients && t.clients.stage; return st === 'paused' || st === 'past'; }).map(function (t) {
+          var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
+          return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '',
+                   late: n > 0, days: n > 0 ? n : 0, since: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' late' : 'Due ' + dateWord(t.current_final_due_at),
+                   tone: n > 0 ? '' : 'warn', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
+        });
+      });
+    } },
+    { key: 'owed', title: function () { return 'Reports for ' + lastMonth().word; }, can: canReports, load: function () {
+      var SM = window.ADspaceSmReport;
+      return R.owed().then(function (items) {
+        return items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; }).map(function (x) {
+          var c = { slug: x.slug, id: x.client_id };
+          return { name: (SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind) + ', ' + lastMonth().short,
+                   meta: [x.brand || x.client, STAGE_WORD[x.status] || x.status].filter(Boolean).join(' · '), tag: 'Report',
+                   who: x.assignee || '', late: Boolean(x.late), days: x.late ? reportLateDays(x) : 0,
+                   since: x.late ? daysWord(reportLateDays(x)) + ' late' : 'Due ' + dateWord(x.due), tone: x.late ? '' : 'off',
+                   url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
+                     : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
+                     : may('clients') ? clientUrl(c, 'engagements') : '/admin/?s=reports',
+                   section: x.report_id ? 'reports' : x.task_id && may('ops') ? 'work' : may('clients') ? 'clients' : 'reports' };
+        });
+      });
+    } },
+    { key: 'confirm', title: 'Reports waiting for confirmation', can: canReports, load: function () {
+      var SM = window.ADspaceSmReport;
+      return R.inReview().then(function (list) {
+        return list.map(function (r) {
+          return { name: SM && SM.titleOf ? SM.titleOf(r) : r.title,
+                   meta: [(r.clients && r.clients.name) || 'Client', 'In review'].join(' · '), tag: 'Report',
+                   who: (r.clients && r.clients.owner) || '', days: daysSince(r.submitted_at), since: sinceWord(r.submitted_at), tone: 'warn',
+                   url: '/admin/?s=reports&report=' + encodeURIComponent(r.id), section: 'reports' };
+        });
+      });
+    } },
+    { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
+      var STALE = window.ADspaceCRM.staleH();
+      return R.clients().then(function (list) {
+        var now = Date.now();
+        return list.filter(function (c) { return c.stage === 'lead' || c.stage === 'proposal'; }).map(function (c) {
+          return { c: c, h: (now - new Date(c.stage_since || c.created_at).getTime()) / 3600000 };
+        }).filter(function (x) { return x.h > STALE[x.c.stage]; }).map(function (x) {
+          var c = x.c, d = Math.floor(x.h / 24);
+          return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, 'Overdue'].join(' · '), tag: 'Lead', who: c.owner || '',
+                   late: true, days: d, since: daysWord(d), url: clientUrl(c), section: 'clients' };
+        });
+      });
+    } },
+    { key: 'restricted', title: 'Restricted accounts', can: canClients, load: function () {
+      return R.clients().then(function (list) {
+        return list.filter(function (c) { return c.restricted_since; }).map(function (c) {
+          return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', 'Restricted', c.restricted_note].filter(Boolean).join(' · '),
+                   tag: 'Client', who: c.owner || '', late: true, days: daysSince(c.restricted_since), since: sinceWord(c.restricted_since),
+                   url: clientUrl(c), section: 'clients' };
+        });
+      });
+    } },
+    { key: 'requests', title: 'Unanswered requests', can: canRequests, load: function () {
+      return R.requests().then(function (list) {
+        return list.map(function (q) {
+          var c = q.clients || {};
+          return { name: [(W.rqKind || {})[q.kind] || q.kind, q.service_label].filter(Boolean).join(': '),
+                   meta: [c.name || 'Client', (W.rqState || {})[q.state] || q.state].join(' · '), tag: 'Request', who: c.owner || '',
+                   days: daysSince(q.created_at), since: sinceWord(q.created_at), tone: 'warn', url: clientUrl(c, 'services'), section: 'clients' };
+        });
+      });
+    } },
+    { key: 'sets', title: 'Sets waiting on the client', can: canSets, load: function () {
+      return R.sets().then(function (list) {
+        return list.map(function (x) {
+          var c = x.s.clients || {};
+          return { name: x.s.title, meta: [c.name || 'Client', x.ok + ' of ' + x.n + ' approved', x.ch ? x.ch + ' changes requested' : ''].filter(Boolean).join(' · '),
+                   tag: 'Content Review', who: c.owner || '', days: daysSince(x.s.published_at || x.s.created_at),
+                   since: sinceWord(x.s.published_at || x.s.created_at), tone: 'warn',
+                   url: '/admin/?s=review&client=' + encodeURIComponent(c.id || x.s.client_id) + '&set=' + encodeURIComponent(x.s.id), section: 'review' };
+        });
+      });
+    } },
+    { key: 'noset', title: 'No set this month', can: canSets, load: function () {
+      return R.noSet().then(function (list) {
+        return list.map(function (x) {
+          return { name: x.c.name, meta: 'No set this month' + (x.last ? ' · Last set ' + dateWord(x.last) : ''), tag: 'Content Review',
+                   who: x.c.owner || '', days: 0, since: 'Not started', tone: 'off',
+                   url: '/admin/?s=review&client=' + encodeURIComponent(x.c.id), section: 'review' };
+        });
+      });
+    } },
+    { key: 'bookings', title: 'Bookings past their date', can: canCamps, load: function () {
+      var t0 = isoDay(today());
+      return R.bookings().then(function (list) {
+        return list.filter(function (o) { return o.state === 'pending_visit' || o.state === 'pending_draft' || o.state === 'changes'; }).map(function (o) {
+          return { o: o, due: o.state === 'pending_visit' ? o.visit_date : o.submission_due };
+        }).filter(function (x) { return x.due && String(x.due).slice(0, 10) < t0; }).map(function (x) {
+          var o = x.o, cp = o.campaigns || {};
+          return { name: (o.creators && o.creators.name) || 'Creator',
+                   meta: [cp.title, o.state === 'pending_visit' ? 'Visit ' + dateWord(x.due) : 'Draft due ' + dateWord(x.due)].filter(Boolean).join(' · '),
+                   tag: 'Campaign', who: cp.owner || '', late: true, days: daysSince(x.due), since: daysWord(daysSince(x.due)) + ' late',
+                   url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=schedule', section: 'campaigns' };
+        });
+      });
+    } },
+    { key: 'qc', title: 'Waiting for the quality check', can: canCamps, load: function () {
+      return R.bookings().then(function (list) {
+        return list.filter(function (o) { return o.state === 'submitted'; }).map(function (o) {
+          var cp = o.campaigns || {};
+          return { name: (o.creators && o.creators.name) || 'Creator', meta: [cp.title, (W.step || {}).submitted || 'Submitted'].filter(Boolean).join(' · '),
+                   tag: 'Campaign', who: cp.owner || '', days: daysSince(o.submitted_at), since: sinceWord(o.submitted_at), tone: 'warn',
+                   url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators', section: 'campaigns' };
+        });
+      });
+    } },
+    { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); }, load: function () {
+      return R.letters().then(function (list) {
+        return list.map(function (d) {
+          var c = d.clients || {};
+          return { name: d.number, meta: [c.name || 'Client', 'Issued ' + dateWord(d.issued_at)].join(' · '), tag: 'Document', who: c.owner || '',
+                   days: daysSince(d.issued_at), since: daysWord(daysSince(d.issued_at)), tone: 'warn', url: clientUrl(c, 'documents'), section: 'clients' };
+        });
+      });
+    } },
+    { key: 'reviews', title: function () { return 'Reviews for ' + lastMonth().word; }, can: function () { return may('team.performance'); }, load: function () {
+      var P = window.ADspacePerf, words = (P && P.status) || {};
+      return R.reviews().then(function (list) {
+        return list.filter(function (r) { return r.status !== 'final'; }).map(function (r) {
+          var w = words[r.status] || [r.status === 'none' ? 'Not started' : r.status, ''];
+          return { name: 'Review, ' + lastMonth().short, meta: w[0], tag: 'Review', who: r.name, days: 0,
+                   since: w[0], tone: r.status === 'none' ? 'off' : 'warn',
+                   url: '/admin/?s=team&tab=performance&m=' + lastMonth().key, section: 'team' };
+        });
+      });
+    } }
+  ];
+  function rank(r) { return r.late ? 0 : r.tone === 'off' ? 2 : 1; }
+  function attention() {
+    var live = SOURCES.filter(function (s) { return s.can(); });
+    return Promise.all(live.map(function (s) {
+      return s.load().then(function (rs) { return { rows: rs }; }, function (e) {
+        return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || 'The read failed.' };
+      });
+    })).then(function (all) {
+      var out = [], failed = [];
+      all.forEach(function (a) { if (a.failed) failed.push(a); else out = out.concat(a.rows); });
+      out.sort(function (a, b) { return rank(a) - rank(b) || b.days - a.days || String(a.name).localeCompare(String(b.name)); });
+      return { rows: out, failed: failed };
+    });
+  }
 
-    { head: 'Documents', key: 'register', cards: [
-      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
-        all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
-        load: function () {
-          return db.from('client_documents')
-            .select('id, number, issued_at, client_id, clients(id, name, slug)')
-            .in('kind', LETTERS).is('signed_at', null).is('voided_at', null).is('superseded_by', null)
-            .order('issued_at', { ascending: true }).then(rows).then(function (list) {
-              list = list || [];
-              return { count: list.length, rows: list.map(function (d) {
-                var c = d.clients || {};
-                return { name: c.name || 'Client', meta: d.number, fig: daysWord(daysSince(d.issued_at)) + ' out',
-                         age: 'Issued ' + dateWord(d.issued_at), url: clientUrl(c, 'documents'), section: 'clients' };
-              }) };
-            });
-        } }
-    ] },
+  /* ---- Today at a glance --------------------------------------------------------
+     A signal a line: its words, its count, its state. Each asks its source's
+     permission and reads through the shared reads. */
+  var SIGNALS = [
+    { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
+      return R.report().then(function (d) { var n = (d.late || []).length; return { n: n, word: n ? 'Late' : 'None', tone: n ? 'danger' : 'off' }; });
+    } },
+    { key: 'owed', title: function () { return 'Reports owed for ' + LONG[lastMonth().start.getMonth()]; }, can: canReports, load: function () {
+      return R.owed().then(function (items) {
+        var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
+        var late = open.filter(function (x) { return x.late; }).length;
+        return { n: open.length, word: late ? late + ' late' : open.length ? 'Waiting' : 'None', tone: late ? 'danger' : open.length ? 'warn' : 'off' };
+      });
+    } },
+    { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
+      return SOURCES.filter(function (s) { return s.key === 'cold'; })[0].load().then(function (l) {
+        return { n: l.length, word: l.length ? 'Overdue' : 'None', tone: l.length ? 'danger' : 'off' };
+      });
+    } },
+    { key: 'sets', title: 'Sets waiting on clients', can: canSets, load: function () {
+      return R.sets().then(function (l) { return { n: l.length, word: l.length ? 'Waiting' : 'None', tone: l.length ? 'warn' : 'off' }; });
+    } },
+    { key: 'requests', title: 'Unanswered client requests', can: canRequests, load: function () {
+      return R.requests().then(function (l) { return { n: l.length, word: l.length ? 'Waiting' : 'None', tone: l.length ? 'warn' : 'off' }; });
+    } },
+    { key: 'active', title: 'Active clients', can: canClients, load: function () {
+      return R.clients().then(function (l) {
+        var n = l.filter(function (c) { return c.stage === 'active'; }).length;
+        return { n: n, word: n ? 'Active' : 'None', tone: n ? 'ok' : 'off' };
+      });
+    } }
+  ];
+  function titleOf(x) { return typeof x.title === 'function' ? x.title() : x.title; }
 
-    { head: 'Team', key: 'team', cards: [
-      { key: 'reviews', title: function () { return 'Reviews for ' + lastMonth().word; },
-        can: function () { return may('team.performance'); }, empty: 'Every review is final.',
-        all: function () { return ['/admin/?s=team&tab=performance&m=' + lastMonth().key, 'team']; },
-        load: function () {
-          var key = lastMonth().key;
-          var P = window.ADspacePerf;
-          var words = (P && P.status) || {};
-          return db.rpc('perf_overview', { p_period: key + '-01' }).then(rows).then(function (d) {
-            var open = (d.rows || []).filter(function (r) { return r.status !== 'final'; });
-            return { count: open.length, rows: open.map(function (r) {
-              var w = words[r.status] || [r.status === 'none' ? 'Not started' : r.status, ''];
-              return { name: r.name, meta: '', fig: w[0], figTone: w[1] === 'is-warn' ? 'warn' : '', age: '',
-                       url: '/admin/?s=team&tab=performance&m=' + key, section: 'team' };
-            }) };
-          });
-        } }
-    ] }
+  /* ---- The tiles -------------------------------------------------------------------
+     A tile: its label, its figure, one line under it and, where the figure
+     has a history, its trend. `load()` answers `{ fig, sub, tone, spark,
+     bar }`. */
+  var SALES = [
+    { key: 'leads', title: 'New leads', can: canLeads, load: function () {
+      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
+        return { fig: String(f[0].newLeads.length), sub: delta(f[0].newLeads.length, f[1].newLeads.length),
+                 spark: f[2].months.map(function (m) { return m.newLeads; }) };
+      });
+    } },
+    { key: 'won', title: 'Won', can: canLeads, load: function () {
+      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
+        return { fig: String(f[0].won.length), sub: delta(f[0].won.length, f[1].won.length),
+                 spark: f[2].months.map(function (m) { return m.won; }) };
+      });
+    } },
+    { key: 'churned', title: 'Churned', can: canLeads, load: function () {
+      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
+        return { fig: String(f[0].churned.length), sub: delta(f[0].churned.length, f[1].churned.length),
+                 spark: f[2].months.map(function (m) { return m.churned; }) };
+      });
+    } },
+    /* Committed monthly value for whoever may open a client's Services, from
+       the lines that part opens; Active clients for everyone else. */
+    { key: 'value', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; }, can: canClients, load: function () {
+      if (canValue()) {
+        return R.lines().then(function (lines) { return figuresFor(rangeOf(period), lines); }).then(function (f) {
+          var won = f.money && f.money.won, any = won && Object.keys(won).some(function (k) { return won[k]; });
+          return { fig: moneyWord(f.money && f.money.active), money: true,
+                   sub: any ? moneyWord(won) + ' won ' + periodName(period) : 'None won ' + periodName(period) };
+        });
+      }
+      return Promise.all([figuresFor(rangeOf(period)), figuresFor(sixMonths())]).then(function (f) {
+        return { fig: String(f[0].activeEnd), sub: delta(f[0].activeEnd, f[0].activeStart),
+                 spark: f[1].months.map(function (m) { return m.active; }) };
+      });
+    } }
+  ];
+  function completed(d) {
+    return (d && Array.isArray(d.by_person) ? d.by_person : []).reduce(function (a, p) { return a + (Number(p.completed) || 0); }, 0);
+  }
+  var OPS = [
+    { key: 'open', title: 'Open tasks', can: canTeamWork, load: function () {
+      return R.report().then(function (d) {
+        if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
+        var people = d.open_by_person.filter(function (p) { return Number(p.open) > 0; });
+        var n = people.reduce(function (a, p) { return a + (Number(p.open) || 0); }, 0);
+        return { fig: String(n), sub: people.length === 1 ? 'With 1 person' : 'Across ' + people.length + ' people' };
+      });
+    } },
+    { key: 'late', title: 'Late', can: canFigures, load: function () {
+      return R.report().then(function (d) {
+        var l = d.late || [], top = l.reduce(function (a, t) { return Math.max(a, Number(t.days_over) || 0); }, 0);
+        return { fig: String(l.length), tone: l.length ? 'err' : '', sub: l.length ? 'Oldest ' + daysWord(top) + ' late' : 'None late' };
+      });
+    } },
+    { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, can: canFigures, load: function () {
+      return Promise.all([R.report(), R.reportPrev(), R.months()]).then(function (r) {
+        var n = completed(r[0]);
+        return { fig: String(n), sub: delta(n, completed(r[1])), spark: r[2].map(function (x) { return completed(x.d); }) };
+      });
+    } },
+    { key: 'published', title: function () { return 'Reports published, ' + lastMonth().short; }, can: canReports, load: function () {
+      return R.owed().then(function (items) {
+        var done = items.filter(function (x) { return x.status === 'published'; }).length;
+        var open = items.filter(function (x) { return x.status !== 'published'; });
+        var due = open.map(function (x) { return x.due; }).filter(Boolean).sort()[0];
+        return { fig: done + ' of ' + items.length, bar: items.length ? done / items.length : 0,
+                 sub: !items.length ? 'None owed' : open.length ? open.length + ' owed' + (due ? ' · due ' + shortDate(due) : '') : 'All published' };
+      });
+    } }
   ];
 
-  var SHOWN = 5;
+  /* ---- The charts ------------------------------------------------------------------
+     Each answers a spec for ADspaceChart.draw, or `{ empty }`. */
+  var CHARTS = [
+    [
+      { key: 'funnel', title: function () { return 'Leads to clients, ' + periodName(period); }, can: canLeads,
+        all: ['Sales', '/admin/?s=clients&view=sales', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var words = ['New leads', 'Contacted', 'Proposal sent', 'Became clients'];
+          var n = f.funnel.map(function (l) { return l.length; });
+          if (!n[0]) return { empty: 'No new leads ' + periodName(period) + '.' };
+          return { kind: 'bars', inline: true, rows: words.map(function (w, i) {
+            return { label: w, value: n[i], note: i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '0%') : '' };
+          }), table: { heads: ['Step', 'Leads', 'Of the step before'], rows: words.map(function (w, i) {
+            return [w, String(n[i]), i ? (n[i - 1] ? Math.round(n[i] / n[i - 1] * 100) + '%' : '—') : '—'];
+          }) } };
+        });
+      } },
+      { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work&view=report', 'work'], load: function () {
+        return R.report().then(function (d) {
+          if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
+          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; });
+          if (!list.length) return { empty: 'No open tasks.' };
+          return { kind: 'bars', inline: true, rows: list.map(function (r) {
+              var late = Number(r.late) || 0;
+              return { label: r.name, value: Number(r.open) || 0, part: late, note: late ? late + ' late' : '', noteTone: late ? 'err' : '' };
+            }),
+            fmt: function (v) { return String(v); },
+            table: { heads: ['Assigned to', 'Open', 'Late'], rows: list.map(function (r) { return [r.name, String(r.open), String(r.late || 0)]; }) } };
+        });
+      } }
+    ],
+    [
+      { key: 'pipeline', title: 'Pipeline now', can: canLeads, all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return figuresFor(rangeOf(period)).then(function (f) {
+          var p = f.pipeline;
+          if (!p.lead.length && !p.contacted.length && !p.proposal.length) return { empty: 'No open leads.' };
+          return { kind: 'pie', total: true, rows: [{ label: 'Lead', value: p.lead.length }, { label: 'Contacted', value: p.contacted.length },
+                                       { label: 'Proposal sent', value: p.proposal.length }] };
+        });
+      } },
+      { key: 'reports', title: function () { return 'Reports for ' + LONG[lastMonth().start.getMonth()]; }, can: canReports, all: ['Reports', '/admin/?s=reports', 'reports'], load: function () {
+        return R.owed().then(function (items) {
+          if (!items.length) return { empty: 'No reports owed.' };
+          var n = function (st) { return items.filter(function (x) { return x.status === st; }).length; };
+          var lateNone = items.some(function (x) { return x.status === 'none' && x.late; });
+          return { kind: 'pie', total: true, rows: [{ label: 'Published', value: n('published'), tone: 'ok' }, { label: 'In review', value: n('review'), tone: 'warn' },
+            { label: 'Confirmed', value: n('confirmed'), tone: 'warn' }, { label: 'Draft', value: n('draft'), tone: 'off' },
+            { label: 'Not started', value: n('none'), tone: lateNone ? 'err' : 'off' }] };
+        });
+      } },
+      { key: 'bookings', title: 'Creator bookings', can: canCamps, all: ['Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
+        return R.bookings().then(function (list) {
+          var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
+          if (!list.length) return { empty: 'No open bookings.' };
+          return { kind: 'bars', inline: true, rows: [{ label: 'To shoot', value: n(['pending_visit']) }, { label: 'Draft owed', value: n(['pending_draft', 'changes']) },
+            { label: 'Quality check', value: n(['submitted']) }, { label: 'With client', value: n(['reviewing']) },
+            { label: 'To post', value: n(['scheduled']) }], valueHead: 'Bookings' };
+        });
+      } }
+    ],
+    [
+      { key: 'ontime', title: 'On-time delivery by month', can: canFigures, all: ['Report', '/admin/?s=work&view=report', 'work'], load: function () {
+        return R.months().then(function (all) {
+          var cats = all.map(function (x) {
+            var f = x.d.on_time || {}, n = Number(f.reached || 0);
+            return { label: x.m.label, long: x.m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
+          });
+          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks reached client review in the last six months.' };
+          return { kind: 'line', max: 100, none: 'None reached client review', cats: cats, series: [{ label: 'On time' }],
+            fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
+            table: { heads: ['Month', 'Reached client review', 'On time', 'Rate'], rows: cats.map(function (c) {
+              return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
+            }) } };
+        });
+      } },
+      { key: 'active', title: 'Active clients by month', can: canClients,
+        all: function () { return may('clients.leads', 'work') ? ['Sales', '/admin/?s=clients&view=sales', 'clients'] : ['Clients', '/admin/?s=clients', 'clients']; }, load: function () {
+        return figuresFor(sixMonths()).then(function (f) {
+          if (!f.months.some(function (m) { return m.active; })) return { empty: 'No active clients in the last six months.' };
+          var last = f.months.length - 1;
+          /* The month still running is drawn lighter: its figure is so far. */
+          return { kind: 'columns', labels: true, cats: f.months.map(function (m, i) { return { label: m.label, long: m.long, values: [m.active], tone: i === last ? 'mute' : '' }; }),
+                   series: [{ label: 'Active clients' }] };
+        });
+      } }
+    ]
+  ];
 
-  // ---- Drawing ------------------------------------------------------------------
-  function listCard(card) {
+  /* Whether anything is allowed: the console offers the Dashboard only then
+     (admin.js `sectionAllowed`), so a group with nothing to oversee here
+     starts on its first route instead of an empty page. */
+  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, CHARTS[0], CHARTS[1], CHARTS[2]);
+  function any() { return ALL.some(function (c) { return c.can(); }); }
+
+  // ---- Drawing ----------------------------------------------------------------------
+  function fail(body, title, e, again) {
+    UI.failLine(body, title || 'This card', (e && e.message) || 'The read failed.', again);
+  }
+  function glance(box) {
+    var meter = canFigures(), sigs = SIGNALS.filter(function (s) { return s.can(); });
+    if (!meter && !sigs.length) return;
+    var card = document.createElement('section');
+    card.className = 'chartcard ovw-glance' + (meter ? '' : ' is-plain');
+    card.id = 'ovwGlance';
+    card.innerHTML = (meter ? '<div class="ovw-meter" id="ovwMeter"></div>' : '') +
+      (sigs.length ? '<div class="ovw-sigs"><div class="ovw-cardhead"><h3>Needs attention today</h3>' +
+        '<button class="btn btn-quiet btn-sm ovgo" type="button" data-a="list"><span class="ovgo-word">Open list</span>' + CHEV + '</button></div>' +
+        '<div class="ovw-sig-rows"></div></div>' : '');
+    box.appendChild(card);
+    if (meter) {
+      var mbox = card.querySelector('#ovwMeter');
+      var runM = function () {
+        UI.skeleton(mbox, 2);
+        R.report().then(function (d) {
+          var f = d.on_time || {}, n = Number(f.reached || 0), met = Number(f.met || 0);
+          if (!n) { mbox.innerHTML = '<p class="chart-empty">No tasks reached client review ' + esc(periodName(period)) + '.</p>'; return; }
+          mbox.innerHTML = '';
+          CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
+            rows: [{ label: 'On time', value: met, tone: 'ok' }, { label: 'Late', value: n - met }] });
+        }).catch(function (e) { fail(mbox, 'On-time delivery', e, runM); });
+      };
+      runM();
+    }
+    var list = card.querySelector('[data-a="list"]');
+    if (list) list.addEventListener('click', function () {
+      var a = $('ovwAttention');
+      if (a) { a.scrollIntoView({ block: 'start', behavior: 'smooth' }); var first = a.querySelector('.ovw-att-row'); if (first) first.focus({ preventScroll: true }); }
+    });
+    var host = card.querySelector('.ovw-sig-rows');
+    sigs.forEach(function (s) {
+      var row = document.createElement('div');
+      row.className = 'ovw-sig';
+      row.setAttribute('data-sig', s.key);
+      row.innerHTML = '<span class="ovw-sig-name"></span><b class="ovw-sig-n"><span class="skel skel-w"></span></b><span class="ovw-sig-word"></span>';
+      row.firstChild.textContent = titleOf(s);
+      host.appendChild(row);
+      s.load().then(function (o) {
+        row.querySelector('.ovw-sig-n').textContent = String(o.n);
+        row.querySelector('.ovw-sig-word').innerHTML = '<span class="chip-state tone is-' + o.tone + '">' + esc(o.word) + '</span>';
+      }).catch(function () {
+        row.querySelector('.ovw-sig-n').textContent = '—';
+        row.querySelector('.ovw-sig-word').innerHTML = '<span class="ovw-sig-fail">Could not load.</span>';
+      });
+    });
+  }
+  function tile(grid, t) {
     var el = document.createElement('article');
-    el.className = 'chartcard ovw-card';
-    el.setAttribute('data-card', card.key);
-    el.innerHTML = '<div class="ovw-cardhead"><h3></h3><span class="ovw-count" hidden></span>' +
-      (card.all ? '<button class="btn btn-quiet btn-sm ovgo" type="button" data-a="all"><span class="ovgo-word">View all</span>' + CHEV + '</button>' : '') +
-      '</div><div class="ovw-body"></div>';
-    el.querySelector('h3').textContent = card.title;
-    return el;
-  }
-  function paintList(el, card, out) {
-    el.querySelector('h3').textContent = card.title;
-    var all = el.querySelector('[data-a="all"]');
-    if (all) all.onclick = function () { go(card.all[0], card.all[1]); };
-    var count = el.querySelector('.ovw-count');
-    count.hidden = !out.count;
-    count.textContent = String(out.count || '');
-    /* A card late only sometimes says so from what it read. */
-    var late = out.warn != null ? Boolean(out.warn) : Boolean(card.warn);
-    count.className = 'ovw-count tone' + (out.count && late ? ' is-danger' : '');
-    if (card.onCount) card.onCount(out.count || 0, late);
-    var body = el.querySelector('.ovw-body');
-    /* A whole being completed (a month's reports) says how far it has got,
-       the ring and the count, over the list of what is left. */
-    var prog = '';
-    if (out.progress) {
-      var pr = out.progress, full = pr.done >= pr.total;
-      var rad = 8, len = 2 * Math.PI * rad, off = len * (1 - (pr.total ? pr.done / pr.total : 0));
-      prog = '<p class="ringline ovw-progress">' + (full ? RING_DONE
-        : '<svg class="ring" viewBox="0 0 20 20" aria-hidden="true"><circle class="ring-track" cx="10" cy="10" r="' + rad + '"/>' +
-          '<circle class="ring-arc" cx="10" cy="10" r="' + rad + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>') +
-        '<span>' + esc(pr.word) + '</span></p>';
-    }
-    if (!out.rows.length) {
-      UI.emptyLine(body, out.empty || card.empty || 'Nothing waiting.');
-      if (prog) body.insertAdjacentHTML('afterbegin', prog);
-      return;
-    }
-    var rowHtml = function (r, i) {
-      return '<button class="ovw-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
-        '<span class="ovw-who"><b>' + esc(r.name) + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
-        ((r.fig || r.age) ? '<span class="ovw-fig">' + (r.fig ? '<b' + (r.figTone ? ' class="is-' + r.figTone + '"' : '') + '>' + esc(r.fig) + '</b>' : '') +
-          (r.age ? '<small' + (r.ageTone ? ' class="is-' + r.ageTone + '"' : '') + '>' + esc(r.age) + '</small>' : '') + '</span>' : '') +
-        '</button>';
-    };
-    /* Five rows, then the rest a press away in the card itself, never in
-       another section that lists something else (the user, 2026-10-07). */
-    var more = out.rows.length - SHOWN;
-    body.innerHTML = prog + '<div class="ovw-rows">' + out.rows.map(rowHtml).join('') + '</div>' +
-      (more > 0 ? '<button class="btn btn-quiet btn-sm ovw-more" type="button" aria-expanded="false">Show ' + more + ' more</button>' : '');
-    Array.prototype.forEach.call(body.querySelectorAll('.ovw-row'), function (b) {
-      var r = out.rows[Number(b.getAttribute('data-i'))];
-      b.addEventListener('click', function () { go(r.url, r.section); });
-    });
-    var mb = body.querySelector('.ovw-more');
-    if (mb) mb.addEventListener('click', function () {
-      var first = null;
-      Array.prototype.forEach.call(body.querySelectorAll('.ovw-row[hidden]'), function (b) { b.hidden = false; if (!first) first = b; });
-      mb.remove();
-      if (first) first.focus();
-    });
-  }
-
-  function drawCard(grid, spec) {
-    /* A title or a way out that names a month is worked out on the visit. */
-    var card = Object.assign({}, spec, {
-      title: typeof spec.title === 'function' ? spec.title() : spec.title,
-      all: typeof spec.all === 'function' ? spec.all() : spec.all
-    });
-    var el;
-    if (card.chart) {
-      el = document.createElement('div');
-      el.className = 'chartcard ovw-card';
-      el.setAttribute('data-card', card.key);
-      el.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
-      el.querySelector('h3').textContent = card.title;
-    } else {
-      el = listCard(card);
-    }
+    el.className = 'chartcard ovw-kpi';
+    el.setAttribute('data-tile', t.key);
+    el.innerHTML = '<span class="ovw-kpi-label"></span><b class="ovw-kpi-fig"><span class="skel skel-w"></span></b>' +
+      '<span class="ovw-kpi-sub"></span><span class="ovw-kpi-trend"></span>';
+    el.querySelector('.ovw-kpi-label').textContent = titleOf(t);
     grid.appendChild(el);
-    var body = el.querySelector('.ovw-body');
-    UI.skeleton(body, 3);
     var run = function () {
-      UI.skeleton(body, 3);
-      Promise.resolve().then(function () { return card.load(); }).then(function (out) {
-        if (!el.isConnected) return;
-        if (card.chart) {
-          if (out.empty) { UI.emptyLine(body, out.empty); return; }
-          var holder = document.createElement('div');
-          CH.draw(holder, out);
-          var drawn = holder.firstElementChild;
-          if (drawn) { drawn.classList.add('ovw-card'); drawn.setAttribute('data-card', card.key); el.replaceWith(drawn); }
-          return;
-        }
-        paintList(el, card, out);
+      t.load().then(function (o) {
+        var fig = el.querySelector('.ovw-kpi-fig');
+        fig.textContent = o.fig;
+        fig.className = 'ovw-kpi-fig' + (o.tone ? ' is-' + o.tone : '') + (o.money ? ' is-money' : '');
+        el.querySelector('.ovw-kpi-label').textContent = titleOf(t);
+        el.querySelector('.ovw-kpi-sub').textContent = o.sub || '';
+        el.querySelector('.ovw-kpi-trend').innerHTML = o.bar != null
+          ? '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(o.bar * 100) + '%"></i></span>'
+          : (o.spark ? CH.spark(o.spark, o.tone) : '');
       }).catch(function (e) {
-        if (!el.isConnected) return;
-        if (!card.chart) el.querySelector('h3').textContent = card.title;
-        UI.failLine(body, card.title || 'This card', (e && e.message) || 'The read failed.', run);
+        el.querySelector('.ovw-kpi-fig').textContent = '—';
+        el.querySelector('.ovw-kpi-sub').innerHTML = '';
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn btn-quiet btn-sm ovw-kpi-again'; b.textContent = 'Try again';
+        b.setAttribute('aria-label', 'Try again: ' + titleOf(t) + '. ' + ((e && e.message) || 'The read failed.'));
+        b.addEventListener('click', function () { el.querySelector('.ovw-kpi-sub').textContent = ''; run(); });
+        el.querySelector('.ovw-kpi-sub').appendChild(document.createTextNode('Could not load. '));
+        el.querySelector('.ovw-kpi-sub').appendChild(b);
       });
     };
     run();
   }
-
-  /* One tab a section, in the rail's order (the user, 2026-10-01: a page
-     read section by section, not one long scroll). Each tab carries how
-     many items its cards hold waiting, red where one of them is late, so
-     the glance across sections survives in the strip. Every card is read
-     once on the visit; a tab only shows its pane. The tab rides in the
-     address (`tab=`), the first left out. */
-  var shown = null;
-  function pick(key, focus) {
-    var strip = $('ovwTabs');
-    if (!strip) return;
-    shown = key;
-    Array.prototype.forEach.call(strip.querySelectorAll('.tab'), function (b) {
-      var on = b.getAttribute('data-sec') === key;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-selected', String(on));
-      b.tabIndex = on ? 0 : -1;
-      if (on && focus) b.focus();
+  function tiles(box) {
+    var groups = [['Sales', SALES, 'ovwSales'], ['Operations', OPS, 'ovwOps']].map(function (g) {
+      return { head: g[0], list: g[1].filter(function (t) { return t.can(); }), id: g[2] };
+    }).filter(function (g) { return g.list.length; });
+    if (!groups.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'ovw-groups' + (groups.length === 1 ? ' is-one' : '');
+    box.appendChild(wrap);
+    groups.forEach(function (g) {
+      var sec = document.createElement('section');
+      sec.className = 'ovw-group';
+      sec.id = g.id;
+      sec.innerHTML = '<h3 class="ovw-group-h"></h3><div class="ovw-kpis"></div>';
+      sec.firstChild.textContent = g.head;
+      wrap.appendChild(sec);
+      var grid = sec.querySelector('.ovw-kpis');
+      g.list.forEach(function (t) { tile(grid, t); });
     });
-    Array.prototype.forEach.call($('ovwBody').querySelectorAll('.ovw-pane'), function (pn) {
-      pn.hidden = pn.getAttribute('data-sec') !== key;
-    });
-    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
-    if (bridge.setUrl) bridge.setUrl();
   }
-  function urlState() {
-    var strip = $('ovwTabs'), first = strip && strip.querySelector('.tab');
-    return { tab: shown && first && shown !== first.getAttribute('data-sec') ? shown : '' };
+  /* A chart's title with its way out at the right edge ("Sales ›"), the
+     section it is read from. */
+  function headOf(card, title, all) {
+    var h = card.querySelector('.chart-title');
+    if (!h) { h = document.createElement('h3'); card.insertBefore(h, card.firstChild); }
+    var head = document.createElement('div');
+    head.className = 'ovw-cardhead';
+    var t = document.createElement('h3');
+    t.textContent = title;
+    head.appendChild(t);
+    if (all) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn btn-quiet btn-sm ovgo';
+      b.innerHTML = '<span class="ovgo-word"></span>' + CHEV;
+      b.firstChild.textContent = all[0];
+      b.setAttribute('aria-label', all[0] + ': ' + title);
+      b.addEventListener('click', function () { go(all[1], all[2]); });
+      head.appendChild(b);
+    }
+    h.replaceWith(head);
+  }
+  function chart(grid, c) {
+    var title = titleOf(c), all = typeof c.all === 'function' ? c.all() : c.all;
+    var el = document.createElement('div');
+    el.className = 'chartcard ovw-card';
+    el.setAttribute('data-card', c.key);
+    el.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
+    headOf(el, title, all);
+    grid.appendChild(el);
+    var body = el.querySelector('.ovw-body');
+    var run = function () {
+      UI.skeleton(body, 3);
+      Promise.resolve().then(function () { return c.load(); }).then(function (out) {
+        if (!el.isConnected) return;
+        if (out.empty) { UI.emptyLine(body, out.empty); return; }
+        out.title = title;
+        var holder = document.createElement('div');
+        CH.draw(holder, out);
+        var drawn = holder.firstElementChild;
+        if (drawn) {
+          drawn.classList.add('ovw-card'); drawn.setAttribute('data-card', c.key);
+          headOf(drawn, title, all);
+          el.replaceWith(drawn); el = drawn;
+        }
+      }).catch(function (e) { if (el.isConnected) fail(body, title, e, run); });
+    };
+    run();
+  }
+  function charts(box) {
+    CHARTS.forEach(function (row, i) {
+      var live = row.filter(function (c) { return c.can(); });
+      if (!live.length) return;
+      var grid = document.createElement('div');
+      grid.className = 'chartgrid ovw-grid' + (i === 1 ? ' is-three' : '');
+      box.appendChild(grid);
+      live.forEach(function (c) { chart(grid, c); });
+    });
   }
 
-  /* Whether any card is allowed: the console offers the Overview only then
-     (admin.js `sectionAllowed`), so a group with nothing to oversee here
-     starts on its first route instead of an empty page. */
-  function any() {
-    return SECTIONS.some(function (sec) { return sec.cards.some(function (c) { return c.can(); }); });
+  var SHOWN = 8;
+  function list(box) {
+    if (!SOURCES.some(function (s) { return s.can(); })) return;
+    var card = document.createElement('section');
+    card.className = 'chartcard ovw-card ovw-att';
+    card.id = 'ovwAttention';
+    card.innerHTML = '<div class="ovw-cardhead"><h3>Needs attention</h3><span class="ovw-count" hidden></span></div><div class="ovw-body"></div>';
+    box.appendChild(card);
+    var body = card.querySelector('.ovw-body');
+    var run = function () {
+      UI.skeleton(body, 4);
+      attention().then(function (a) {
+        var count = card.querySelector('.ovw-count');
+        var late = a.rows.some(function (r) { return r.late; });
+        count.hidden = !a.rows.length;
+        count.textContent = String(a.rows.length);
+        count.className = 'ovw-count tone' + (late ? ' is-danger' : '');
+        body.innerHTML = '';
+        a.failed.forEach(function (f) {
+          var host = document.createElement('div');
+          body.appendChild(host);
+          UI.failLine(host, f.failed, f.why, run);
+        });
+        if (!a.rows.length) {
+          if (!a.failed.length) UI.emptyLine(body, 'Nothing waiting.');
+          return;
+        }
+        var head = '<div class="ovw-att-head" aria-hidden="true"><span>What</span><span>Section</span><span>Who</span><span>Since</span></div>';
+        var html = a.rows.map(function (r, i) {
+          var since = r.late ? '<b class="is-err">' + esc(r.since) + '</b>'
+            : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
+          return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
+            '<span class="ovw-att-what"><b>' + esc(r.name) + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
+            '<span class="ovw-att-sec"><span class="chip">' + esc(r.tag) + '</span></span>' +
+            '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
+            '<span class="ovw-att-since">' + since + '</span></button>';
+        }).join('');
+        var more = a.rows.length - SHOWN;
+        var holder = document.createElement('div');
+        holder.className = 'ovw-att-rows';
+        holder.innerHTML = head + html;
+        body.appendChild(holder);
+        if (more > 0) body.insertAdjacentHTML('beforeend', '<button class="btn btn-quiet btn-sm ovw-more" type="button" aria-expanded="false">Show ' + more + ' more</button>');
+        Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row'), function (b) {
+          var r = a.rows[Number(b.getAttribute('data-i'))];
+          b.addEventListener('click', function () { go(r.url, r.section); });
+        });
+        var mb = body.querySelector('.ovw-more');
+        if (mb) mb.addEventListener('click', function () {
+          var first = null;
+          Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row[hidden]'), function (b) { b.hidden = false; if (!first) first = b; });
+          mb.remove();
+          if (first) first.focus();
+        });
+      }).catch(function (e) { fail(body, 'Needs attention', e, run); });
+    };
+    run();
   }
+
+  /* The period bar: a segment of the three periods and the span it reads,
+     with the time it was read. */
+  function bar(box) {
+    var head = document.createElement('div');
+    head.className = 'ovw-bar';
+    head.innerHTML = '<select class="select select-sm" id="ovwPeriod" data-seg aria-label="Period">' +
+      PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === period ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
+      '</select><span class="ovw-span" id="ovwSpan"></span>';
+    box.appendChild(head);
+    var sel = head.querySelector('select');
+    if (window.ADspaceForm && window.ADspaceForm.segment) window.ADspaceForm.segment(sel);
+    var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
+    head.querySelector('#ovwSpan').textContent = spanWord(rangeOf(period)) + ' · As at ' + ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm');
+    sel.addEventListener('change', function () {
+      if (sel.value === period) return;
+      period = sel.value;
+      build(true);
+      if (bridge.setUrl) bridge.setUrl();
+    });
+  }
+
+  function build(keep) {
+    var box = $('ovwBody');
+    if (!box) return;
+    var y = keep ? window.scrollY : 0;
+    box.innerHTML = '';
+    bar(box);
+    glance(box);
+    tiles(box);
+    charts(box);
+    list(box);
+    if (keep) window.scrollTo(0, y);
+    if (keep && $('ovwPeriod') && $('ovwPeriod').__seg) {
+      var on = $('ovwPeriod').__seg.querySelector('[data-v="' + period + '"]');
+      if (on) on.focus();
+    }
+  }
+  function urlState() { return { p: period !== 'month' ? period : '' }; }
 
   function enter() {
-    var box = $('ovwBody'), strip = $('ovwTabs');
-    if (!box || !strip) return;
-    reportP = null;
-    box.innerHTML = ''; strip.innerHTML = '';
-    var secs = SECTIONS.map(function (sec) {
-      return { sec: sec, cards: sec.cards.filter(function (c) { return c.can(); }) };
-    }).filter(function (x) { return x.cards.length; });
+    var box = $('ovwBody');
+    if (!box) return;
+    memo = {};
+    var want = new URLSearchParams(location.search).get('p');
+    period = PERIODS.some(function (p) { return p[0] === want; }) ? want : 'month';
     /* Reached with nothing to show (an address from before, or a group whose
        access changed): the console's own first route instead. */
-    if (!secs.length && bridge.show) { bridge.show('work'); return; }
-    strip.hidden = !secs.length;
-    secs.forEach(function (x) {
-      var tab = document.createElement('button');
-      tab.type = 'button'; tab.className = 'tab'; tab.setAttribute('role', 'tab');
-      tab.setAttribute('data-sec', x.sec.key);
-      tab.id = 'ovwTab-' + x.sec.key;
-      tab.setAttribute('aria-controls', 'ovwPane-' + x.sec.key);
-      tab.innerHTML = '<span></span><span class="tab-n" hidden></span>';
-      tab.firstChild.textContent = x.sec.head;
-      strip.appendChild(tab);
-      var pane = document.createElement('div');
-      pane.className = 'ovw-pane'; pane.id = 'ovwPane-' + x.sec.key;
-      pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', tab.id);
-      pane.setAttribute('data-sec', x.sec.key); pane.hidden = true;
-      var grid = document.createElement('div');
-      grid.className = 'chartgrid ovw-grid';
-      pane.appendChild(grid);
-      box.appendChild(pane);
-      var counts = {};
-      var mark = function () {
-        var n = 0, late = false;
-        Object.keys(counts).forEach(function (k) { n += counts[k].n; if (counts[k].n && counts[k].warn) late = true; });
-        var badge = tab.querySelector('.tab-n');
-        badge.hidden = !n;
-        badge.textContent = String(n);
-        badge.classList.toggle('is-err', late);
-      };
-      x.cards.forEach(function (c) {
-        drawCard(grid, Object.assign({}, c, { onCount: function (n, warn) { counts[c.key] = { n: n, warn: warn }; mark(); } }));
-      });
-    });
-    var want = new URLSearchParams(location.search).get('tab');
-    var keys = secs.map(function (x) { return x.sec.key; });
-    pick(keys.indexOf(want) > -1 ? want : keys[0]);
+    if (!any() && bridge.show) { bridge.show('work'); return; }
+    build(false);
+    if (bridge.setUrl) bridge.setUrl();
   }
-  (function wire() {
-    var strip = $('ovwTabs');
-    if (!strip) return;
-    strip.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('.tab');
-      if (b) pick(b.getAttribute('data-sec'));
-    });
-    strip.addEventListener('keydown', function (e) {
-      var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab'));
-      var i = tabs.indexOf(document.activeElement);
-      if (i < 0) return;
-      var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
-      if (to === null) return;
-      e.preventDefault();
-      to = (to + tabs.length) % tabs.length;
-      pick(tabs[to].getAttribute('data-sec'), true);
-    });
-  })();
 
   window.ADspaceOverview = { enter: enter, urlState: urlState, any: any };
   if (bridge.overviewReady) bridge.overviewReady();
