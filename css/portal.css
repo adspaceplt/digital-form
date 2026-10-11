@@ -10284,6 +10284,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .tplrow-name { display: grid; gap: 2px; min-width: 0; }
 .tplrow-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .tplrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.teswitch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: var(--ctl-h); margin-top: 16px; }
+.teswitch-name { font-size: 14px; }
 .tefmts { display: grid; gap: 4px; }
 .tefmt { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; min-height: var(--ctl-h-sm); }
 .tefmt .tickline { margin: 0; }

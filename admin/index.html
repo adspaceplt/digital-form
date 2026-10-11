@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261012f">
+<link rel="stylesheet" href="/css/portal.css?v=20261012g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3179,9 +3179,10 @@
         </div>
       </div>
 
-      <!-- One template, added or edited: its name, the title its tasks take,
-           who they go to, when they are due after the day they are made for,
-           and the checklist they carry. -->
+      <!-- One template, added or edited: its name, whether it fills tasks,
+           the formats it serves with the hours each takes, and the checklist
+           those tasks carry. The New sheet fills a task from its format's
+           template alone, so nothing else is asked (the user, 2026-10-12). -->
       <div class="sheet" id="tplEditSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="teHead">
           <div class="sheet-head">
@@ -3191,47 +3192,17 @@
             </button>
           </div>
           <div class="sheet-body">
-            <!-- What the template is, what each task it makes starts with,
-               and its checklist: three sections, the choice of workflow a
-               segment (the form audit of 2026-09-24). -->
             <section class="fsec">
-              <h4 class="fsec-h">Name and workflow</h4>
-              <div class="row fgrid">
-                <div class="field">
-                  <label class="field-label" for="teName">Name</label>
-                  <textarea class="input" id="teName" aria-required="true" placeholder="Monthly social media report" maxlength="120" rows="1" data-oneline></textarea>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="teTitle">Task title</label>
-                  <textarea class="input" id="teTitle" placeholder="Same as the name" maxlength="200" rows="1" data-oneline></textarea>
-                </div>
-              </div>
+              <h4 class="fsec-h">Template</h4>
               <div class="row">
                 <div class="field">
-                  <label class="field-label" for="teKind">Workflow</label>
-                  <select class="select" id="teKind" data-seg>
-                    <option value="task">Everyday task</option>
-                    <option value="content">Content task</option>
-                  </select>
+                  <label class="field-label" for="teName">Name</label>
+                  <textarea class="input" id="teName" aria-required="true" placeholder="Reels" maxlength="120" rows="1" data-oneline></textarea>
                 </div>
               </div>
-              <label class="tickline"><input type="checkbox" id="teActive" checked> <span>Offered when making tasks</span></label>
-            </section>
-            <section class="fsec">
-              <h4 class="fsec-h">Task settings</h4>
-              <div class="row fgrid-3">
-                <div class="field">
-                  <label class="field-label" for="teOwner">Assigned to</label>
-                  <select class="select" id="teOwner"></select>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="teDue">Due, days after</label>
-                  <input class="input" id="teDue" type="number" min="0" max="365" inputmode="numeric" placeholder="0">
-                </div>
-                <div class="field">
-                  <label class="field-label" for="teEst">Estimate, minutes</label>
-                  <input class="input" id="teEst" type="number" min="0" max="6000" inputmode="numeric" placeholder="Optional">
-                </div>
+              <div class="teswitch">
+                <span class="teswitch-name" id="teActiveName">Active</span>
+                <button class="switch" id="teActive" type="button" role="switch" aria-checked="true" aria-labelledby="teActiveName"></button>
               </div>
             </section>
             <section class="fsec" id="teFmtSec">
@@ -3242,7 +3213,7 @@
               <h4 class="fsec-h">Checklist</h4>
               <div class="row">
                 <div class="field">
-                  <label class="field-label" for="teCheck">One item a line</label>
+                  <label class="field-label" for="teCheck">Items</label>
                   <textarea class="input textarea" id="teCheck" rows="4" placeholder="One item a line"></textarea>
                 </div>
               </div>
@@ -5201,7 +5172,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261011b"></script>
-<script src="/js/ops.js?v=20261012f"></script>
+<script src="/js/ops.js?v=20261012g"></script>
 <script src="/js/perf.js?v=20261011o"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261011a"></script>

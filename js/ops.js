@@ -4283,16 +4283,8 @@
     var x = row || {};
     $('teHead').textContent = row ? 'Edit template' : 'New template';
     $('teName').value = x.name || '';
-    $('teTitle').value = x.default_title || '';
-    $('teOwner').innerHTML = '<option value="">Whoever makes it</option>' + pickable().map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (m.id === x.default_owner_id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
-    }).join('');
-    $('teDue').value = x.due_offset_days == null ? '' : String(x.due_offset_days);
-    $('teEst').value = x.default_estimate_minutes == null ? '' : String(x.default_estimate_minutes);
-    var w = (state.workflows || []).filter(function (f) { return f.id === x.workflow_id; })[0];
-    $('teKind').value = w && w.key === 'content' ? 'content' : 'task';
     $('teCheck').value = (x.checklist || []).join('\n');
-    $('teActive').checked = row ? Boolean(x.active) : true;
+    $('teActive').setAttribute('aria-checked', row && !x.active ? 'false' : 'true');
     paintTplFmts(row);
     msg('teMsg', '');
     sheet('tplEditSheet', true);
@@ -4300,19 +4292,26 @@
   function tplSave() {
     var name = String($('teName').value || '').trim();
     if (!name) { msg('teMsg', 'A name is required.', 'err'); $('teName').focus(); return; }
+    var x = tplEditing || {};
+    var wf = (state.workflows || []).filter(function (f) { return f.id === x.workflow_id; })[0];
+    var wfKey = wf ? wf.key : 'content';
     var btn = $('teGo');
     btn.disabled = true;
     call('ops_save_template', {
       p_id: tplEditing ? tplEditing.id : null,
       p_payload: {
         name: name,
-        default_title: String($('teTitle').value || '').trim() || null,
-        default_owner_id: $('teOwner').value || null,
-        due_offset_days: $('teDue').value === '' ? null : Number($('teDue').value),
-        default_estimate_minutes: $('teEst').value === '' ? null : Number($('teEst').value),
-        workflow_key: $('teKind').value,
+        /* What the sheet no longer asks is sent as it stands, so a save
+           never clears it: a task made from a format takes its template's
+           checklist and hours alone (2026-10-12). A new template starts on
+           the content workflow with none of them. */
+        default_title: x.default_title || null,
+        default_owner_id: x.default_owner_id || null,
+        due_offset_days: x.due_offset_days == null ? null : x.due_offset_days,
+        default_estimate_minutes: x.default_estimate_minutes == null ? null : x.default_estimate_minutes,
+        workflow_key: wfKey,
         checklist: String($('teCheck').value || '').split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean),
-        active: $('teActive').checked,
+        active: $('teActive').getAttribute('aria-checked') === 'true',
         variants: tplFmtsPicked()
       }
     }, 'teMsg', function (row) {
@@ -7727,6 +7726,10 @@
     });
     var te = $('teGo');
     if (te) te.addEventListener('click', tplSave);
+    var ta = $('teActive');
+    if (ta) ta.addEventListener('click', function () {
+      ta.setAttribute('aria-checked', ta.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    });
 
     // The task, opened from a list
     var dwc = $('dwClose');
