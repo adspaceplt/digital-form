@@ -70,6 +70,9 @@
         { id: 'due', name: 'Due dates', kind: 'edit',
           meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]
             .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])) },
+        { id: 'priority', name: 'Priority deadlines', kind: 'edit',
+          meta: num('priority_high_hours') == null ? '' : parts(['Urgent ' + plural(num('priority_urgent_hours'), 'hour', 'hours'),
+            'High ' + plural(num('priority_high_hours'), 'hour', 'hours'), 'Medium ' + plural(num('priority_medium_hours'), 'hour', 'hours')]) },
         { id: 'prices', name: 'AI prices', kind: 'edit',
           meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
             (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') },
@@ -169,6 +172,11 @@
       ed({ title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due'],
         ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
         ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] });
+      return;
+    }
+    if (a === 'priority') {
+      ed({ title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours'],
+        ['priority_high_hours', 'High: hours from creation', 'hours'], ['priority_medium_hours', 'Medium: hours from creation', 'hours']] });
       return;
     }
     if (a === 'prices') { ed({ title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],

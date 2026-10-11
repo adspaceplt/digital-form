@@ -97,6 +97,10 @@
   --dot-wait:       #ff9f0a;
   --dot-late:       #ff3b30;
   --dot-off:        #aeaeb2;
+  /* Medium's yellow, Apple's system yellow, on a task's priority strip, and
+     its tag's ground (2026-10-11); nowhere else. */
+  --dot-soon:       #ffcc00;
+  --soon-bg:        #fdf6d8;
   /* The ring is the focus colour at the weight a ring is drawn, so one token
      still drives every control. */
   --action-ring:    #8ab4f8;
@@ -254,6 +258,8 @@
     --dot-wait:       #ff9f0a;
     --dot-late:       #ff453a;
     --dot-off:        #636366;
+    --dot-soon:       #ffd60a;
+    --soon-bg:        #2b2614;
     --tonal:        rgba(242,239,236,.09);
     --tonal-hover:  rgba(242,239,236,.135);
     --tonal-press:  rgba(242,239,236,.18);
@@ -4403,6 +4409,34 @@ body > .shell { width: 100%; }
 .task-top > b { flex: 0 1 auto; }
 .is-narrow .task-top > b { flex: 1 1 auto; }
 .task-top > .task-pri { flex: 0 0 auto; }
+/* PRIORITY DEADLINES (2026-10-11, the user's D3 + B): a task with a
+   deadline carries a strip down its left edge in the level's colour (Urgent
+   red, High amber, Medium yellow), red once the deadline has passed, and the
+   deadline in words as a filled tag in the same colour where the due date
+   stands (the row's Due cell, a board card's foot) until it is met,
+   its words in ink while it counts down and red once over (the user,
+   2026-10-11): the one status drawn filled. Normal draws neither. The strip is an inset shade, so
+   it takes no room and moves nothing. */
+.task-row.pri-urgent, .bcard.pri-urgent, .task-deadline.pri-urgent,
+.task-row.pri-over, .bcard.pri-over, .task-deadline.pri-over { box-shadow: inset 4px 0 0 var(--dot-late); }
+.task-row.pri-high, .bcard.pri-high, .task-deadline.pri-high { box-shadow: inset 4px 0 0 var(--dot-wait); }
+.task-row.pri-medium, .bcard.pri-medium, .task-deadline.pri-medium { box-shadow: inset 4px 0 0 var(--dot-soon); }
+.task-pri:is(.is-urgent, .is-high, .is-medium, .is-over) {
+  font-size: 12px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px; white-space: nowrap;
+}
+.task-pri:is(.is-urgent, .is-over) { background: var(--err-bg); }
+.task-pri.is-high { background: var(--warn-bg); }
+.task-pri.is-medium { background: var(--soon-bg); }
+.task-pri:is(.is-urgent, .is-high, .is-medium) { color: var(--ink); }
+.task-pri.is-over { color: var(--err); }
+.task-due.is-pri { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; min-width: 0; }
+.bcard-foot > .task-pri { flex: 0 0 auto; }
+.task-deadline {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px;
+  margin: 8px 0 0; padding: 8px 12px 8px 14px; border-radius: var(--radius-sm);
+  background: var(--sunk); font-size: 13px; color: var(--ink-soft);
+}
+.task-deadline[hidden] { display: none; }
 .is-narrow .task-row > .task-due > small { display: none; }
 .task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
 .task-go .crm-chev { width: 16px; height: 16px; }
@@ -8714,6 +8748,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-rates .perf-use { grid-column: auto; }
 @media (max-width: 460px) { .perf-rates { grid-template-columns: minmax(0, 1fr); } }
 .perf-rate { display: grid; gap: 4px; }
+/* My Work's figure under a rate reads on the label's edge. */
+.perf-rate .perf-use { margin-inline-start: -8px; white-space: nowrap; }
 .perf-pct { display: inline-flex; align-items: center; gap: 4px; }
 .perf-pct small { font-size: 12px; color: var(--ink-mute); }
 .perf-breach, .perf-dispute { padding: 10px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 3px; }

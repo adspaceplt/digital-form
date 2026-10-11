@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261011n">
+<link rel="stylesheet" href="/css/portal.css?v=20261011q">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -83,7 +83,7 @@
 <script src="/js/notice.js?v=20261010zk"></script>
 <script src="/js/whatsapp.js?v=20261010zg"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261010zc"></script>
+<script src="/js/money.js?v=20261011a"></script>
 <script src="/js/media.js?v=20261010zq"></script>
 <script src="/js/mockups.js?v=20261004a"></script>
 </head>
@@ -185,7 +185,7 @@
            summary of them rather than one of them. -->
       <div class="navgroup">
         <button class="navitem" data-section="overview" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Dashboard</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Overview</span>
         </button>
       </div>
       <div class="navgroup">
@@ -507,7 +507,7 @@
 
     <!-- ---- CRM: the client record everything else points at ---- -->
     <div class="console-body" id="sectionOverview" hidden>
-      <nav class="tabrow ovwtabs" id="ovwTabs" role="tablist" aria-label="Dashboard sections" hidden></nav>
+      <nav class="tabrow ovwtabs" id="ovwTabs" role="tablist" aria-label="Overview sections" hidden></nav>
       <div class="ovw" id="ovwBody" data-swipe="ovwTabs"></div>
     </div>
 
@@ -2686,8 +2686,8 @@
                   <select class="select" id="ntPriority" data-seg>
                     <option value="1">Urgent</option>
                     <option value="2">High</option>
+                    <option value="4">Medium</option>
                     <option value="3" selected>Normal</option>
-                    <option value="4">Low</option>
                   </select>
                 </div>
                 <div class="field">
@@ -2902,8 +2902,8 @@
                   <select class="select" id="qkPri" data-seg>
                     <option value="1">Urgent</option>
                     <option value="2">High</option>
+                    <option value="4">Medium</option>
                     <option value="3" selected>Normal</option>
-                    <option value="4">Low</option>
                   </select>
                 </div>
               </div>
@@ -2985,6 +2985,7 @@
               <div class="tsteps" id="dwSteps" hidden></div>
               <h3 class="qnext-title" id="dwNextTitle"></h3>
               <p class="qnext-line" id="dwNextLine"></p>
+              <p class="task-deadline" id="dwDeadline" hidden></p>
               <ul class="tnext-list" id="dwNextList" hidden></ul>
               <p class="tnext-late" id="dwNextLate" hidden></p>
               <div class="qhand" id="dwHand" hidden>
@@ -5244,7 +5245,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261011n"></script>
+<script src="/js/admin.js?v=20261011q"></script>
 <script src="/js/documents.js?v=20261010zo"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
@@ -5253,17 +5254,17 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/crm.js?v=20261011b"></script>
 <script src="/js/sales.js?v=20261007i"></script>
-<script src="/js/team.js?v=20261011n"></script>
+<script src="/js/team.js?v=20261011q"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
 <script src="/js/handbook.js?v=20261007g"></script>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261011b"></script>
-<script src="/js/ops.js?v=20261011i"></script>
-<script src="/js/perf.js?v=20261009s"></script>
+<script src="/js/ops.js?v=20261011j"></script>
+<script src="/js/perf.js?v=20261011o"></script>
 <script src="/js/health.js?v=20261009a"></script>
 <script src="/js/search.js?v=20261011a"></script>
-<script src="/js/overview.js?v=20261011a"></script>
-<script src="/js/settings.js?v=20261010zc"></script>
+<script src="/js/overview.js?v=20261011b"></script>
+<script src="/js/settings.js?v=20261011a"></script>
 </body>
 </html>

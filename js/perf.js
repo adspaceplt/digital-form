@@ -780,9 +780,10 @@
     $('pvMenuWrap').hidden = !any;
 
     var draft = manage() && canWork() && r.status === 'draft';
+    /* The rates come before the scores they suggest (the user, 2026-10-11). */
     var html = nextCard(r, res) + resultCard(r, res) +
-      (draft ? scoreForm(r, res) : scoreRead(r, res)) +
       (manage() ? (draft ? rateForm(r, res) : rateRead(r)) : '') +
+      (draft ? scoreForm(r, res) : scoreRead(r, res)) +
       (manage() ? ctxCards(r) : '') +
       breachCard(r, draft) + planCard(r) + disputeCard(r, res) +
       (manage() ? historyCard(r) : '');
@@ -955,15 +956,30 @@
   function rateLabel(x, ads) {
     return x[0] === 'pacing' ? x[1] + ', target ' + x[2] + '% or under' : x[1] + ', target ' + x[2] + '%';
   }
+  /* What My Work already knows beside the two delivery rates (2026-10-11):
+     posts live by their post date, and tasks at their review by their
+     deadline, whichever came first. Pressed, it becomes the rate; never a
+     score. */
+  function opsHint(k, ops) {
+    var f = ops && ops[k], n, ok, words;
+    if (!f || (k !== 'posting' && k !== 'timeline')) return '';
+    n = Number(k === 'posting' ? f.due : f.reached) || 0;
+    ok = Number(k === 'posting' ? f.on_time : f.met) || 0;
+    if (!n) return '';
+    /* One line in a half-width column; the whole sentence is its name. */
+    words = k === 'posting'
+      ? (n === 1 ? ' post went live by its post date' : ' posts went live by their post date')
+      : (n === 1 ? ' task reached review by its deadline' : ' tasks reached review by their deadline');
+    return '<button class="linkbtn perf-use" type="button" data-rate="' + k + '" data-v="' + Math.round(ok / n * 1000) / 10 + '"' +
+      ' aria-label="' + esc('My Work: ' + ok + ' of ' + n + ' on time. ' + ok + ' of ' + n + words + '. Use as the rate.') + '">My Work: ' + ok + ' of ' + n + ' on time</button>';
+  }
   function rateForm(r) {
     var ads = r.member && r.member.runs_ads;
-    var ops = r.ops;
     var rows = RATES.filter(function (x) { return x[0] !== 'pacing' || ads; }).map(function (x) {
       var v = (r.rates || {})[x[0]];
       return '<div class="perf-rate"><label class="field-label" for="pvR_' + x[0] + '">' + esc(rateLabel(x)) + '</label>' +
         '<span class="perf-pct"><input class="input input-sm perf-num" id="pvR_' + x[0] + '" type="number" inputmode="decimal" min="0" max="' + (x[0] === 'pacing' ? 1000 : 100) + '" step="0.1" value="' + (v == null ? '' : esc(v)) + '"><small>%</small></span>' +
-        (x[0] === 'posting' && ops && ops.done
-          ? '<button class="linkbtn perf-use" type="button" data-rate="posting" data-v="' + Math.round(ops.on_time / ops.done * 1000) / 10 + '">My Work: ' + ops.on_time + ' of ' + ops.done + ' tasks finished on time</button>' : '') +
+        opsHint(x[0], r.ops) +
         '</div>';
     }).join('');
     return card('Rates behind the scores', '<div class="perf-rates">' + rows + '</div>');

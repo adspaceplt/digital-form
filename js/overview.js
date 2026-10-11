@@ -118,7 +118,9 @@
             return { count: list.length, rows: list.map(function (t) {
               return { name: t.title || ('#WT' + String(t.task_no || '').padStart(5, '0')),
                        meta: [t.owner || 'Unassigned', t.client].filter(Boolean).join(' · '),
-                       fig: daysWord(Number(t.days_over) || 0) + ' over', figTone: 'err', age: t.stage || '',
+                       fig: (t.over_minutes != null && (Number(t.days_over) || 0) < 1
+                         ? (Number(t.over_minutes) < 60 ? Math.max(1, Number(t.over_minutes)) + 'm' : Math.floor(Number(t.over_minutes) / 60) + 'h')
+                         : daysWord(Number(t.days_over) || 0)) + ' over', figTone: 'err', age: t.stage || '',
                        url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
             }) };
           });

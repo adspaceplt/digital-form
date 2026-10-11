@@ -587,11 +587,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `tests/perfui.js` "the review comes up from the floor, the width of the
-  phone" expects the review sheet at 380px or wider on a 390 phone; since
-  2026-10-11 every panel is a card inside the 16px gutters (358px), so the
-  expectation predates the rule (found 2026-10-11 by the Dashboard release;
-  the sheet's code untouched).
+- None open.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
