@@ -2456,8 +2456,6 @@ body.is-plain .topbar { background: var(--chrome); }
 .acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
 /* The group's rows run the menu's width, as the menu's own rows do: a block
    wrapper let a button shrink to its words, its hover a short slab. */
-.acct-group { display: flex; flex-direction: column; }
-.acct-group:not(:has(> .kmenu-item:not([hidden]))) { display: none; }
 /* The theme this device reads the console in: a row, never a press, its
    choice a small segment at the right edge. */
 .acct-menu .kmenu-item.acct-theme { cursor: default; padding-block: 3px; padding-right: 3px; }

@@ -2358,3 +2358,9 @@ beside activity record as just icons same as it." Settings left the account
 menu for the rail's foot, the gear before the Activity record's mark (and so
 in More's foot under the tab bar), chosen while the page is open. The account
 menu's Workspace group keeps Arrange sections alone.
+
+### 2026-10-11 · Arrange sections is a mark beside Settings
+The user, after the gear went in: "Im thinking the rearrange tabs also next
+to settings." Arrange sections left the account menu for the rail's foot,
+its mark before Settings' (in More's foot under the tab bar); the account
+menu's Workspace group, left empty, went with its hairline.
