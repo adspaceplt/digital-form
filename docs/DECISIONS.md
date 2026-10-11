@@ -1975,3 +1975,17 @@ Late reports are ordered by whole days late, then by stage. The same run
 found the geometry suite still expecting the account menu's rows at 40 to
 48px; the compact menu (2026-10-10) draws them at a control's height at a
 desk, 48px docked, and the suite now asserts that.
+
+### 2026-10-11 · The phone tab bar floats, its fill slides
+
+The user showed Instagram's floating tab bar and asked whether the portal's
+could be the same; a mockup was approved with two answers: "allow the
+selected dark shadowed button to slide around left right" and "a red dot on
+my work is good no need profile photo". The bar is now a glass pill 10px
+above the home bar inside the gutters, the chosen tab one fill that slides
+to it and follows a finger along the bar (letting go on a tab opens it, the
+click after a drag swallowed), and My Work carries a red dot while Waiting
+for you holds anything, read once on sign-in where the bar is drawn. The
+glass stays under a finger (the console head's solid bar is for Safari's
+status bar, which the foot does not colour). More became an inset card to
+match. No profile photo tab: the account control stays in the head.

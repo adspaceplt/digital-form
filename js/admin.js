@@ -976,7 +976,7 @@
     var sign = tabbed.join(',') + (more ? ',more' : '');
     if (sign === bar.getAttribute('data-sign')) { paintTabOn(); return; }
     bar.setAttribute('data-sign', sign);
-    bar.innerHTML = tabs.map(function (b) {
+    bar.innerHTML = '<span class="tabbar-thumb is-snap is-none" aria-hidden="true"></span>' + tabs.map(function (b) {
       var name = b.getAttribute('data-section');
       var glyph = b.querySelector('svg');
       return '<button class="tabbar-tab" type="button" data-tab="' + esc(name) + '">' +
@@ -988,6 +988,56 @@
     bar.style.setProperty('--tabs', String(tabs.length + (more ? 1 : 0)));
     bar.hidden = !tabs.length;
     paintTabOn();
+    paintTabDot();
+  }
+  /* The chosen tab's fill is one surface (`.tabbar-thumb`) laid on the tab
+     chosen, sliding there as the choice moves (the user, 2026-10-11: "allow
+     the selected … button to slide around left right"); a first placement,
+     a change of size and no tab chosen snap. `x` lays it under a finger
+     drawn along the bar instead, centred on the finger within the bar. */
+  function placeThumb(snap, x) {
+    var bar = $('tabBar');
+    var th = bar && bar.querySelector('.tabbar-thumb');
+    if (!th) return;
+    var on = bar.querySelector('.tabbar-tab.is-on');
+    var any = bar.querySelector('.tabbar-tab');
+    if (!any || !any.offsetWidth) return;
+    var box = bar.getBoundingClientRect(), w = any.offsetWidth, left;
+    if (x != null) {
+      var pad = any.offsetLeft;
+      left = Math.max(pad, Math.min(x - box.left - bar.clientLeft - w / 2, bar.clientWidth - pad - w));
+    } else if (on) {
+      left = on.offsetLeft;
+    } else {
+      th.classList.add('is-none');
+      return;
+    }
+    if (snap || th.classList.contains('is-none') || !th.__placed) th.classList.add('is-snap');
+    th.style.setProperty('--tw', w + 'px');
+    th.style.setProperty('--tx', left + 'px');
+    th.classList.remove('is-none');
+    th.__placed = true;
+    if (th.classList.contains('is-snap')) {
+      void th.offsetWidth;
+      requestAnimationFrame(function () { th.classList.remove('is-snap'); });
+    }
+  }
+  /* My Work's red dot (the user, 2026-10-11): something waits on you there
+     (an extension asked of you, a report to review, a draft or a request
+     to answer: My Work's Waiting for you), as My Work last read it. */
+  var tabWaiting = 0;
+  function paintTabDot() {
+    var bar = $('tabBar');
+    var t = bar && bar.querySelector('.tabbar-tab[data-tab="work"]');
+    if (!t) return;
+    var dot = t.querySelector('.tabbar-dot');
+    if (tabWaiting && !dot) {
+      dot = document.createElement('span');
+      dot.className = 'tabbar-dot';
+      dot.innerHTML = '<span class="sr">, ' + tabWaiting + ' waiting for you</span>';
+      t.appendChild(dot);
+    } else if (dot && !tabWaiting) dot.remove();
+    else if (dot) dot.querySelector('.sr').textContent = ', ' + tabWaiting + ' waiting for you';
   }
   /* The chosen tab is the section on screen; one the bar does not hold
      chooses More, as an iPhone app does. My records (the account menu)
@@ -1005,17 +1055,68 @@
       t.classList.toggle('is-on', on);
       if (on && name !== 'more') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
+    placeThumb(false);
   }
   (function () {
     var bar = $('tabBar');
     if (!bar) return;
-    bar.addEventListener('click', function (e) {
-      var t = e.target.closest('.tabbar-tab');
-      if (!t) return;
+    /* A finger drawn along the bar carries the chosen fill with it, the tab
+       under it read in ink; let go, and the tab it rests on is pressed. A
+       press that barely moves is an ordinary tap. */
+    var drag = null, swallow = false;
+    function tabAt(x) {
+      var best = null, gap = Infinity;
+      Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (t) {
+        var r = t.getBoundingClientRect(), d = Math.abs(x - (r.left + r.width / 2));
+        if (d < gap) { gap = d; best = t; }
+      });
+      return best;
+    }
+    function nearOnly(t) {
+      Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (x) { x.classList.toggle('is-near', x === t); });
+    }
+    bar.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      drag = { id: e.pointerId, x: e.clientX, moved: false };
+    });
+    bar.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.moved && Math.abs(e.clientX - drag.x) < 8) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        bar.classList.add('is-drag');
+        try { bar.setPointerCapture(e.pointerId); } catch (x) {}
+      }
+      placeThumb(true, e.clientX);
+      nearOnly(tabAt(e.clientX));
+    });
+    function endDrag(e, go) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var was = drag;
+      drag = null;
+      if (!was.moved) return;
+      bar.classList.remove('is-drag');
+      nearOnly(null);
+      try { bar.releasePointerCapture(e.pointerId); } catch (x) {}
+      swallow = true;
+      setTimeout(function () { swallow = false; }, 0);
+      var t = go ? tabAt(e.clientX) : null;
+      if (t && !t.classList.contains('is-on')) choose(t);
+      else placeThumb(false);
+    }
+    bar.addEventListener('pointerup', function (e) { endDrag(e, true); });
+    bar.addEventListener('pointercancel', function (e) { endDrag(e, false); });
+    if (window.ResizeObserver) new ResizeObserver(function () { placeThumb(true); }).observe(bar);
+    function choose(t) {
       var name = t.getAttribute('data-tab');
       if (name === 'more') { rail.isOpen() ? rail.shut() : rail.open(); return; }
       if (rail.isOpen()) rail.shut();
       visitSection(name);
+    }
+    bar.addEventListener('click', function (e) {
+      if (swallow) { e.preventDefault(); e.stopPropagation(); return; }
+      var t = e.target.closest('.tabbar-tab');
+      if (t) choose(t);
     });
     /* Arrange sections (the rail's foot; under the tab bar, More's): the
        rail's two groups as lists, each section dragged by its grip (or
@@ -4839,6 +4940,8 @@
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
+    /* My Work's count of what waits on this colleague, for the tab bar's dot. */
+    waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
     isAdmin: isAdminMe,

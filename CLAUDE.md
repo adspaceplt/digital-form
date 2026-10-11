@@ -378,9 +378,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; a sheet covers it; a field taking the
-  keyboard under a finger hides it (`is-typing`). The chosen tab is the
-  fill behind its glyph; a section More holds chooses More
-  (`tests/tabbar.js`).
+  keyboard under a finger hides it (`is-typing`). It floats (the user,
+  2026-10-11, after Instagram's): a glass pill 10px above the home bar
+  inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
+  slides to it and follows a finger dragged along the bar, letting go
+  on a tab opening it ("allow the selected … button to slide around left
+  right"); a section More holds chooses More. My Work carries a red dot
+  while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
+  `paintWaiting`; read once on sign-in under the bar), never a profile
+  photo tab (`tests/tabbar.js`, `tests/waiting.js`).
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
   "mobile tab and web … both sync edits"): one order a colleague for the
   web rail and the phone tab bar alike. `#railEdit` in the account menu
