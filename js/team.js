@@ -195,6 +195,14 @@
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
      the section at Manage as well as itself. */
+  /* The Dashboard (2026-10-11, option A the user chose): one row above the
+     sections, On or No Access. It is the key `overview` in the access map,
+     stored only as `none`: On stores nothing, which is how every group
+     stood before, so the page is offered where one of its cards is
+     allowed. No Access only hides the page; each card still asks Full
+     Access on its own section. */
+  var DASH = 'overview';
+  var DASH_DESC = { on: 'Shown with the cards of each section the group holds at Full Access.', none: 'The Dashboard is hidden.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
     'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1 };
 
@@ -691,12 +699,16 @@
   function accessMoves(before, after) {
     before = before || {}; after = after || {};
     var name = function (k) {
+      if (k === DASH) return 'Dashboard';
       var bits = k.split('.');
       var sec = SECTIONS.filter(function (x) { return x[0] === bits[0]; })[0];
       var part = bits[1] && (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
       return (sec ? sec[1] : bits[0]) + (bits[1] ? ' · ' + (part ? part[1] : bits[1]) : '');
     };
-    var word = function (k, v) { return v ? (LEVEL_WORD[v] || 'No Access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No Access'); };
+    var word = function (k, v) {
+      if (k === DASH) return v === 'none' ? 'No Access' : 'On';
+      return v ? (LEVEL_WORD[v] || 'No Access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No Access');
+    };
     var keys = Object.keys(before).concat(Object.keys(after)).filter(function (k, i, a) { return a.indexOf(k) === i; });
     return keys.filter(function (k) { return (before[k] || '') !== (after[k] || ''); }).map(function (k) {
       return name(k) + ': ' + word(k, before[k]) + ' → ' + word(k, after[k]);
@@ -729,6 +741,7 @@
     }).filter(Boolean);
     if (only.length) parts.push('Only: ' + only.join(', '));
     if (r.client_scope === 'own') parts.push('Own clients only');
+    if (acc[DASH] === 'none') parts.push('Dashboard: No Access');
     return parts.length ? parts.join(' · ') : 'No Access';
   }
 
@@ -913,6 +926,11 @@
       '</div>';
   }
   $('grFlags').innerHTML =
+    '<div class="permchunk permdash"><div class="permsec" data-sec="' + DASH + '">' +
+      '<span class="permsec-name">Dashboard</span>' +
+      '<select class="select select-sm" data-seg id="grDash" aria-label="Dashboard access">' +
+        '<option value="none">No Access</option><option value="on">On</option></select>' +
+      '<p class="permsec-desc" id="grDesc-' + DASH + '"></p></div></div>' +
     CHUNKS.map(function (c) {
       return '<div class="permchunk"><h4 class="fsec-h">' + esc(c[0]) + '</h4>' + c[1].map(secBlock).join('') + '</div>';
     }).join('') +
@@ -942,6 +960,8 @@
     if (sel.__seg) sel.__seg.setAttribute('aria-describedby', 'grDesc-' + sel.getAttribute('data-sec'));
   });
   if (window.ADspaceForm) window.ADspaceForm.segment($('grPreset'));
+  if (window.ADspaceForm) window.ADspaceForm.segment($('grDash'));
+  if ($('grDash').__seg) $('grDash').__seg.setAttribute('aria-describedby', 'grDesc-' + DASH);
   function foldSec(sec, open) {
     var box = $('grParts-' + sec), btn = $('grFlags').querySelector('.permsec[data-sec="' + sec + '"] .permsec-toggle');
     if (!box || !btn) return;
@@ -976,6 +996,7 @@
      and a part only where it says something its section does not. */
   function readAccess() {
     var access = {};
+    if ($('grDash').value === 'none') access[DASH] = 'none';
     levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
@@ -995,6 +1016,7 @@
      every section, and every part that says something of its own. */
   function canonMap(acc) {
     var out = {};
+    if (acc && acc[DASH] === 'none') out[DASH] = 'none';
     SECTIONS.forEach(function (s) { out[s[0]] = (acc && acc[s[0]]) || 'none'; });
     Object.keys(PARTS).forEach(function (sec) {
       PARTS[sec].forEach(function (p) {
@@ -1011,12 +1033,14 @@
   /* A key's value in the panel's words: a section's level, a part's (Same
      as section where it says nothing of its own), an admin tool On or Off. */
   function valueWord(k, v) {
+    if (k === DASH) return v === 'none' ? 'No Access' : 'On';
     if (TOOL[k]) return v ? 'On' : 'Off';
     if (k.indexOf('.') < 0) return LEVEL_WORD[v] || 'No Access';
     if (!v) return isGranted(k) ? 'No Access' : 'Same as section';
     return LEVEL_WORD[v] || 'No Access';
   }
   function keyName(k) {
+    if (k === DASH) return 'Dashboard';
     if (TOOL[k]) return partName(k);
     var bits = k.split('.'), sec = secOf(bits[0]);
     return bits[1] ? partName(k) + ' (' + (sec ? sec[1] : bits[0]) + ')' : (sec ? sec[1] : bits[0]);
@@ -1026,6 +1050,7 @@
     var a = canonMap(acc), b = canonMap(base), out = [];
     var keys = Object.keys(a).concat(Object.keys(b)).filter(function (k, i, x) { return x.indexOf(k) === i; });
     var order = function (k) {
+      if (k === DASH) return -1;
       var bits = k.split('.'), i = SECTIONS.map(function (s) { return s[0]; }).indexOf(bits[0]);
       var j = bits[1] ? 1 + (PARTS[bits[0]] || []).map(function (p) { return p[0]; }).indexOf(bits[1]) : 0;
       return (TOOL[k] ? 1000 : 0) + i * 50 + j;
@@ -1070,6 +1095,7 @@
     });
     var line = said.length ? 'This group has ' + listWords(said, ', and ') + '.' : 'This group has no access.';
     if (scope === 'own') line += ' Own clients only.';
+    if (acc[DASH] === 'none') line += ' The Dashboard is hidden.';
     if (tuned) line += ' ' + tuned + (tuned === 1 ? ' permission is' : ' permissions are') + ' customised.';
     if (tools) line += ' ' + tools + (tools === 1 ? ' admin tool is' : ' admin tools are') + ' on.';
     return line;
@@ -1081,10 +1107,12 @@
     var adm = adminBox();
     var admin = Boolean(adm && adm.checked), locked = Boolean(state.editing && state.editing.slug === 'admin');
     var tuned = 0;
+    $('grDesc-' + DASH).textContent = admin ? 'Every level, as an admin.' : DASH_DESC[access[DASH] === 'none' ? 'none' : 'on'];
+    $('grDash').disabled = locked || admin;
     SECTIONS.forEach(function (s) {
       var d = $('grDesc-' + s[0]);
       if (d) d.textContent = admin ? 'Every level, as an admin.' : (DESC[s[0]][access[s[0]] || 'none'] || '');
-      /* The team's figures (the Report view, the Overview's My Work cards)
+      /* The team's figures (the Report view, the Dashboard's My Work cards)
          are a grant of their own (2026-10-03). */
       if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
         d.textContent += ' Team figures need Report view in Customise.';
@@ -1135,6 +1163,7 @@
     var adm = adminBox();
     if (adm) adm.checked = k === 'admin';
     $('grScope').value = 'all';
+    $('grDash').value = 'on';
     carried = {};
     if (k !== 'admin') {
       var acc = PRESETS[k];
@@ -1169,7 +1198,12 @@
       return '<span class="permcmp-cell' + (cls ? ' ' + cls : '') + '" data-g="' + esc(g) + '">' + inner + '</span>';
     };
     var html = '<div class="permcmp-row permcmp-head" ' + cols + '><span class="permcmp-sec">Section</span>' +
-      roles.map(function (r) { return cell(r.name, esc(r.name)); }).join('') + '</div>';
+      roles.map(function (r) { return cell(r.name, esc(r.name)); }).join('') + '</div>' +
+      '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">Dashboard</span>' +
+      roles.map(function (r) {
+        var off = !r.is_admin && accessOf(r)[DASH] === 'none';
+        return cell(r.name, '<b>' + (off ? 'No Access' : 'On') + '</b>', off ? 'is-off' : '');
+      }).join('') + '</div>';
     CHUNKS.forEach(function (c) {
       html += '<div class="permcmp-chunk">' + esc(c[0]) + '</div>';
       c[1].forEach(function (sec) {
@@ -1213,6 +1247,7 @@
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
     var acc = r ? accessOf(r) : null;
+    $('grDash').value = acc && acc[DASH] === 'none' ? 'none' : 'on';
     levelPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-sec');
       sel.value = acc ? (acc[k] || 'none') : (k === 'clients' ? 'work' : 'none');

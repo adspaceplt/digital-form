@@ -2185,3 +2185,16 @@ lock changed (a stamp of its hash), and warns where Postgres 16 or Playwright
 is missing. It never fails the session: a clone refused for want of GitHub
 access is said and the session goes on. Synchronous, so no suite runs before
 its libraries are in.
+
+### 2026-10-11 · The Overview is the Dashboard, and a group may hide it
+The user: "could you rename to dashboard instead". The start page reads
+Dashboard in the rail, the tab bar, its heading and its guide; its address
+(`?s=overview`), ids, script and key stay so bookmarks keep opening it. A
+record's first pane keeps Overview: it summarises one record, the Dashboard
+every section. The user then chose option A of three for a setting of its
+own: one Dashboard row at the top of Team's group panel, On or No Access.
+The 2026-10-03 rule stands (each card asks Full Access on its section), so
+the switch can only hide the page. It is the key `overview` in the access
+map, stored only as `none`, so On is how every group already stood and no
+group changed. Nothing in the database reads an unknown key (members copy
+the role's whole map by trigger), so no migration was needed.
