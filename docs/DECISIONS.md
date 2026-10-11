@@ -2174,3 +2174,14 @@ rule. Monthly replaced the Requested by the client tick and the Custom period
 fold. The rule is held in the database at every level (`no-content`) and on
 the month sheet's Accounts tick (`accounts-needs-content`); a new month
 inheriting the tick with no plan leaves it out rather than failing.
+
+### 2026-10-11 · The session prepares its own tests
+The organisation account's first session met a container with no suites and
+no PDF libraries, and the committed `pdfx/package-lock.json` had fallen out
+of step with its package list, so `npm ci` refused (fixed in tests
+`1211e07`). The user asked for a start hook: `.claude/hooks/session-start.sh`
+clones or fast-forwards the suites, links them, runs `npm ci` only when the
+lock changed (a stamp of its hash), and warns where Postgres 16 or Playwright
+is missing. It never fails the session: a clone refused for want of GitHub
+access is said and the session goes on. Synchronous, so no suite runs before
+its libraries are in.

@@ -38,10 +38,16 @@ behaviour wins.
 
 ## 1. Tests and the gate
 
-**Setup, first thing in a new session, before changing behaviour:**
+**Setup** is the cloud session's start hook (`.claude/hooks/session-start.sh`):
+it clones the suites (or fast-forwards a clean clone on main), links them,
+installs `tests/pdfx` with `npm ci` when its lock changed, and warns where
+Postgres 16 or Playwright is missing. Its last line names the tests commit; a
+warning in its place means the setup is not done. By hand, before changing
+behaviour:
 ```
 git clone https://github.com/adspaceplt/digital-form-tests /home/user/digital-form-tests
 ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
+npm ci --prefix /home/user/digital-form-tests/pdfx
 ```
 - The suites are in a private repository because this one is public
   (`_config.yml` also stops Pages publishing the notes and schema). `.gitignore`
