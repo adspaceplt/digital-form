@@ -6,7 +6,9 @@
    business figures; Meta checks; WhatsApp's templates; AI usage and limits; document types and
    task numbering. Each row is drawn only for a colleague holding its granted
    part, and each opens the one sheet that already edits it (one copy of
-   every mechanism). The account menu keeps what is the person's own. */
+   every mechanism). The account menu keeps what is the person's own.
+   Since 2026-10-11: eight groups, each a card under its heading on one
+   page; at a desk a list of them beside it scrolls to one. */
 (function () {
   'use strict';
   var bridge = window.ADspaceAdmin;
@@ -108,19 +110,21 @@
       '<div class="stg-ctl">' + ctl + '</div></div>';
   }
 
-  /* Where the page stands: the group in the address (`tab=`), else none.
-     At a desk none is the first group, left out of the address; on a phone
-     (the tab bar's width) none is the list of groups. */
+  /* One page of every group (the user, 2026-10-11, after a drill-down was
+     tried: "It now takes five layers into the individual settings"): each
+     group a card under its heading, each row opening its own sheet, so a
+     setting is the account menu, Settings, then its sheet. At a desk the
+     groups also run down the left and a press there only scrolls the page
+     to its card; the group pressed is in the address (`tab=`, the first left
+     out), so a refresh lands on it. */
   var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
   var chosen = '';
-  var pushed = false;
   function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; }
 
-  function pane(g, back) {
-    return '<section class="stg-pane" aria-labelledby="stgTitle">' +
-      (back ? '<button class="backlink" type="button" data-back="1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>' : '') +
-      '<h3 class="stg-title" id="stgTitle" tabindex="-1">' + esc(g.name) + '</h3>' +
+  function sec(g) {
+    return '<section class="stg-sec" id="stg-' + g.key + '" data-sec="' + g.key + '" aria-labelledby="stgT-' + g.key + '">' +
+      '<h3 class="stg-title" id="stgT-' + g.key + '">' + esc(g.name) + '</h3>' +
       '<div class="stg-card">' + g.rows.map(rowHtml).join('') + '</div></section>';
   }
 
@@ -131,78 +135,78 @@
     var box = $('setList');
     if (!box) return;
     var list = groups();
-    if (!list.length) { drawn = ''; box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No settings.'); return; }
-    var g = list.filter(function (x) { return x.key === chosen; })[0];
-    var cls, html;
-    if (phone()) {
-      cls = 'stg is-phone';
-      html = g ? pane(g, true) : '<nav class="stg-nav stg-list" aria-label="Settings">' + list.map(function (x) {
-        return '<button class="stg-go" type="button" data-g="' + x.key + '"><span class="stg-what"><span class="stg-name">' + esc(x.name) + '</span>' +
-          '<span class="stg-meta">' + esc(parts(x.rows.map(function (r) { return r.name; }))) + '</span></span>' + CHEV + '</button>';
-      }).join('') + '</nav>';
-    } else {
-      g = g || list[0];
-      cls = 'stg is-desk';
-      html = '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
-        return '<button class="stg-go" type="button" data-g="' + x.key + '"' + (x === g ? ' aria-current="page"' : '') + '>' + esc(x.name) + '</button>';
-      }).join('') + '</nav>' + pane(g, false);
+    if (!list.length) { drawn = ''; box.className = ''; box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No settings.'); return; }
+    var desk = !phone();
+    var cls = 'stg ' + (desk ? 'is-desk' : 'is-phone');
+    var html = (desk ? '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
+      return '<button class="stg-go" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '">' + esc(x.name) + '</button>';
+    }).join('') + '</nav>' : '') + '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
+    if (html !== drawn || box.className !== cls || !box.firstChild) {
+      drawn = html;
+      box.className = cls;
+      box.innerHTML = html;
     }
-    if (html === drawn && box.className === cls && box.firstChild) return;
-    drawn = html;
-    box.className = cls;
-    box.innerHTML = html;
+    mark();
   }
 
-  /* The address names the group unless it is the desk's first. */
+  /* The group in view wears the list's fill; never more than one. */
+  function mark(key) {
+    var box = $('setList');
+    if (!box) return;
+    var secs = box.querySelectorAll('.stg-sec');
+    if (!key) {
+      key = secs[0] ? secs[0].getAttribute('data-sec') : '';
+      var line = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) + 24;
+      Array.prototype.forEach.call(secs, function (x) { if (x.getBoundingClientRect().top <= line) key = x.getAttribute('data-sec'); });
+      if (secs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+        var last = secs[secs.length - 1];
+        if (last.getBoundingClientRect().top < window.innerHeight) key = last.getAttribute('data-sec');
+      }
+      if (pinned && box.querySelector('.stg-sec[data-sec="' + pinned + '"]')) key = pinned;
+    }
+    Array.prototype.forEach.call(box.querySelectorAll('.stg-go'), function (b) {
+      if (b.getAttribute('data-g') === key) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+  }
+
+  /* A group pressed holds the fill until the person scrolls the page
+     themselves (a short last group cannot reach the top). */
+  var pinned = '';
+  ['wheel', 'touchmove', 'keydown'].forEach(function (ev) {
+    window.addEventListener(ev, function (e) {
+      if (ev === 'keydown' && e.target && e.target.closest && e.target.closest('#setList .stg-go')) return;
+      pinned = '';
+    }, { passive: true, capture: true });
+  });
+  function shown() { var s = $('sectionSettings'); return s && !s.hidden; }
+  var spy = 0;
+  window.addEventListener('scroll', function () {
+    if (!shown() || spy) return;
+    spy = requestAnimationFrame(function () { spy = 0; mark(); });
+  }, { passive: true });
+
   function urlState() {
     var list = groups();
-    if (!chosen || !list.some(function (x) { return x.key === chosen; })) return {};
-    if (!phone() && list[0].key === chosen) return {};
+    if (!chosen || !list.some(function (x) { return x.key === chosen; }) || list[0].key === chosen) return {};
     return { tab: chosen };
   }
 
-  /* A group opened. At a desk it replaces the address (a note of where you
-     are); on a phone it is a screen moved to, so Back and Forward walk it. */
+  function reveal(key, smooth) {
+    var el = $('stg-' + key);
+    if (!el) return;
+    var top = el.getBoundingClientRect().top + window.scrollY -
+      (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) - 12;
+    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+  }
   function go(key) {
     chosen = key;
+    pinned = key;
     say('');
-    paint();
-    if (phone()) {
-      pushed = true;
-      if (bridge.pushUrl) bridge.pushUrl();
-      window.scrollTo(0, 0);
-      var t = $('stgTitle');
-      if (t) t.focus({ preventScroll: true });
-    } else {
-      if (bridge.setUrl) bridge.setUrl();
-      var cur = document.querySelector('#setList .stg-go[aria-current]');
-      if (cur) cur.focus({ preventScroll: true });
-    }
-  }
-  function back() {
-    var was = chosen;
-    if (pushed) { history.back(); return; }
-    chosen = '';
-    say('');
-    paint();
+    mark(key);
+    reveal(key, !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches));
     if (bridge.setUrl) bridge.setUrl();
-    land(was);
   }
-  function land(was) {
-    var b = was && document.querySelector('#setList .stg-go[data-g="' + was + '"]');
-    if (b) b.focus({ preventScroll: true });
-  }
-  function shown() { var s = $('sectionSettings'); return s && !s.hidden; }
-  window.addEventListener('popstate', function () {
-    if (!shown()) return;
-    var was = chosen;
-    fromUrl();
-    pushed = Boolean(chosen);
-    say('');
-    paint();
-    if (!chosen) land(was);
-  });
-  function follow() { if (shown()) { paint(); if (bridge.setUrl) bridge.setUrl(); } }
+  function follow() { if (shown()) paint(); }
   if (phoneMedia) {
     if (phoneMedia.addEventListener) phoneMedia.addEventListener('change', follow);
     else if (phoneMedia.addListener) phoneMedia.addListener(follow);
@@ -274,13 +278,16 @@
   function enter() {
     say('');
     fromUrl();
-    pushed = false;
+    pinned = chosen;
     var M = window.ADspaceMoney;
     paint();
     /* The figures are read once a page; a colleague who changed one in
        another tab sees it here on the way in. */
     if (M && M.load) M.load(true).then(paint).catch(function () {});
-    if (bridge.restoreScroll) bridge.restoreScroll();
+    /* A group named in the address is brought to the top, else the page's
+       own scroll. */
+    if (chosen && $('stg-' + chosen)) reveal(chosen, false);
+    else if (bridge.restoreScroll) bridge.restoreScroll();
   }
 
   var wired = false;
@@ -290,7 +297,6 @@
     $('setList').addEventListener('click', function (e) {
       var gb = e.target.closest('[data-g]');
       if (gb && $('setList').contains(gb)) { go(gb.getAttribute('data-g')); return; }
-      if (e.target.closest('[data-back]')) { back(); return; }
       var b = e.target.closest('[data-a]');
       if (!b || b.disabled || !$('setList').contains(b)) return;
       press(b.getAttribute('data-a'), b);

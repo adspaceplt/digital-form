@@ -1434,7 +1434,7 @@
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
-      { at: '#setList .stg-nav', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
+      { at: '#setList .stg-nav, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
       { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
       { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
     'whatsapp.templates': { name: 'Templates', steps: [

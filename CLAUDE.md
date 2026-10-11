@@ -444,17 +444,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   hairline leaving with the last), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`; its address falls back for anyone else. Grouped as
-  macOS and iPhone Settings (2026-10-11, the queue's task 46): Portal
+  `ops.numbering`; its address falls back for anyone else. Eight groups
+  (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices), Clients (Follow-up limits), My
-  Work (Due dates, Priority deadlines, Task numbering), Reports (Meta checks, Reach allowance),
+  Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
+  checks, Reach allowance),
   Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
   (Templates and recent messages), Documents (Document types); a group with
-  no row drawn is left out. At a desk the groups run down the left beside
-  the chosen group's rows, the group in the address (`tab=`, the first left
-  out; replaced, never pushed); on a phone (`ADSPACE_TABBAR`) the list of
-  groups, each naming its rows, opens a group on a screen of its own with
-  Back, pushed so Back and Forward walk it. Each row drawn only for its
+  no row drawn is left out. One page at every width, each group a card under
+  its heading, so a setting is the account menu, Settings, then its sheet
+  (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
+  at a desk the groups also run down the left, the one in view marked, a
+  press scrolling to its card and naming it in the address (`tab=`, the
+  first left out; replaced, never pushed), so a refresh lands on it; it
+  never stands between the person and a row. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
   opening the one sheet that already edits it. The
   account menu reads, in compact rows at a desk (a control's height; 48px

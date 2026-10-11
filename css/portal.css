@@ -11533,19 +11533,29 @@ button.vs-row { cursor: pointer; }
 .wa-btns li { display: grid; gap: 2px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
 .wa-btns small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
 #waCompose .fsec > .msg:empty { display: none; }
-/* Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11, after macOS
-   and iPhone Settings). At a desk the groups are a list in a card beside the
-   chosen group's rows; on a phone a list of groups, each its own screen with
-   Back. A row: the name over its value as it stands, the control at the
-   right edge (a switch, Edit or Open), one row's height whatever the
-   control. Its own names (`stg-`): `.set-row` is Content Review's set. */
+/* Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11). One page:
+   every group a card under its heading, 24 apart as the sections of a list.
+   At a desk the groups also run down the left in a card, sticky, the group
+   in view the `--line-soft` fill; a press there scrolls to the group, never
+   stands between the person and a row. A row: the name over its value as it
+   stands, the control at the right edge (a switch, Edit or Open), one row's
+   height whatever the control. Its own names (`stg-`): `.set-row` is
+   Content Review's set. */
 .stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
-.stg-nav { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
-.is-desk > .stg-nav { display: flex; flex-direction: column; gap: 2px; padding: 6px; position: sticky; top: calc(var(--head-h) + 12px); }
-.stg-go { display: flex; align-items: center; width: 100%; border: 0; background: none; font: inherit; color: var(--ink-soft); text-align: left; cursor: pointer; }
-.is-desk .stg-go { min-height: var(--ctl-h); padding: 0 12px; border-radius: calc(var(--radius) - 6px); font-size: 14px; }
-.is-desk .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
-.stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); outline: none; }
+.stg-nav {
+  display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
+  position: sticky; top: calc(var(--head-h) + 12px);
+}
+.stg-go {
+  display: flex; align-items: center; width: 100%; min-height: var(--ctl-h); padding: 0 12px;
+  border: 0; border-radius: calc(var(--radius) - 6px); background: none;
+  font: inherit; font-size: 14px; color: var(--ink-soft); text-align: left; cursor: pointer;
+}
+.stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
+.stg-groups { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.stg-sec { scroll-margin-top: calc(var(--head-h) + 12px); }
+.stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); }
 .stg-card { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
 .stg-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
@@ -11557,12 +11567,8 @@ button.vs-row { cursor: pointer; }
 .stg-meta { margin: 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .stg-ctl { display: flex; align-items: center; justify-content: flex-end; }
 .stg-ctl .btn { flex: 0 0 auto; }
-.stg-list { overflow: hidden; }
-.stg-list .stg-go { display: grid; grid-template-columns: minmax(0, 1fr) 15px; gap: 16px; min-height: 56px; padding: 10px 15px; border-bottom: 1px solid var(--line-soft); }
-.stg-list .stg-go:last-child { border-bottom: 0; }
-.stg-list .stg-go > svg { width: 15px; height: 15px; stroke-width: 1.8; color: var(--ink-mute); }
 @media (hover: hover) {
-  .is-desk .stg-go:not([aria-current]):hover, .stg-list .stg-go:hover { background: var(--sunk); color: var(--ink); }
+  .stg-go:not([aria-current]):hover { background: var(--sunk); color: var(--ink); }
 }
 
 /* A month being planned lists last month's best and weakest posts by views

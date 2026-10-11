@@ -2234,7 +2234,7 @@ changed shape (`posting`, `timeline` in place of `done`, `on_time`), so a
 page and a database from either side of the release draw no figure rather
 than a wrong one.
 
-### 2026-10-11 · Settings as macOS and iPhone Settings
+### 2026-10-11 · Settings in eight groups on one page
 The queue's task 46, from the user's handover: "Vertical list at a desk,
 drill-down on a phone (iPhone/Mac Settings style). Groups: Portal, Clients,
 My Work, Reports, Money, AI, WhatsApp, Documents. Follow-up limits moves out
@@ -2246,8 +2246,13 @@ Waiting for you); AI prices under Money with Tax and terms (figures of cost,
 edited as Business settings), leaving AI to the usage page. The Clients bar's
 Follow-up limits button went (one act once on a screen); Tax and terms stays
 on the Services bar and Due dates in My Work's ⋯, where the user kept them.
-At a desk the group is in the address and replaced; on a phone it is a
-screen moved to and pushed, so Back and Forward walk it as iPhone Settings
-does. The rows took their own names (`.stg-`): the page of 2026-10-10 had
+A drill-down was built first (a list of groups at a desk beside the chosen
+one's rows; on a phone a screen a group with Back, as iPhone Settings). The
+user refused it before release: "It now takes five layers into the
+individual settings. Name > Settings page > settings each section > each
+individual settings > start making changes." So every group is a card on one
+page at every width, and the desk's list only scrolls to a group, never
+standing between the person and a row: three steps, as before the regroup.
+The rows took their own names (`.stg-`): the page of 2026-10-10 had
 reused `.set-row`, Content Review's set row, and its grid had been laying
 out that set list's name and count side by side.
