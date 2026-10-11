@@ -2216,3 +2216,20 @@ asks). The rule of one session at a time (2026-10-10) is lifted: each
 session holds one request on its own branch and merges `main` in where
 another merged first. One gate a machine still holds, because one gate
 fills its four processors.
+
+### 2026-10-11 · The review's rates come first, and two of them read My Work
+Asked whether the rates should sit below the points they suggest, the user
+was right: the rates are what Save turns into each category's suggested
+points, so Rates behind the scores now comes before Scores. The user then
+asked for a Timeline adherence figure beside its rate. The one figure the
+sheet had, beside On-time posting, counted tasks finished by their due date,
+which is the timeline's question, so the two were sorted out together in
+`perf_ops_rate`: On-time posting reads the content tasks whose post date
+fell in the month (Malaysia's day) and has passed, live by that day, a post
+never made counting as missed; Timeline adherence reads the tasks that
+reached their review in the month, met only by every deadline they had, as
+My Work's late rule reads (the due date's day at client review, an everyday
+task's at its finish; a priority's deadline at its review). The answer
+changed shape (`posting`, `timeline` in place of `done`, `on_time`), so a
+page and a database from either side of the release draw no figure rather
+than a wrong one.
