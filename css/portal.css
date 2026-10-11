@@ -3931,7 +3931,9 @@ body.is-plain .topbar { background: var(--chrome); }
   /* Name, then status, then the menu pinned right. The name gives way first. */
   .kcard-head { padding: 11px 8px 11px 14px; gap: 8px; }
   .kcard-name { font-size: 14.5px; flex: 0 1 auto; }
-  .kmenu { right: 6px; top: 46px; width: calc(100vw - 52px); }
+  /* A ⋯ menu is as wide as its words on a phone too (2026-10-11): drawn
+     the screen's width, the task card's covered the card's whole head. */
+  .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
   .kstep { padding: 11px 14px 13px; }
   /* Shoot date and time pair on one line. Publish date would otherwise orphan
      next to an empty half, so it takes the width. */
@@ -8389,6 +8391,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .qhand[hidden] { display: none; }
 .qhand .tickline { margin: 0; }
+.qhand > .stepkeep { flex: 1 1 100%; }
 .qhand .select { flex: 1 1 180px; max-width: 260px; }
 .qhand .select[hidden] { display: none; }
 .qhand .tickline[hidden] { display: none; }

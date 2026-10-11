@@ -2194,7 +2194,7 @@
       (byDay[d.getTime()] = byDay[d.getTime()] || []).push({ t: t, kind: kind });
     };
     rows.forEach(function (t) {
-      var due = dueOf(t), pub = t.publish_at;
+      var due = dueOf(t), pub = isEveryday(t) ? null : t.publish_at;
       if (due && (!pub || dateValue(due) !== dateValue(pub))) put(due, t, 'due');
       if (pub) put(pub, t, 'pub');
     });
@@ -5330,11 +5330,15 @@
      somebody else's promise, that sheet asks them rather than moving it. */
   function paintDates(t) {
     var work = may('ops', 'work');
+    /* Draft due and Post date belong to content alone: an everyday task (a
+       month's report task included) owes one date, so it shows one, and a
+       press can never set a date it does not keep (the user, 2026-10-11:
+       "accidentally click on it and it prefills today's date"). */
     var rows = [
       { k: 'first_draft', label: 'Draft due', v: t.current_first_draft_due_at, from: t.original_first_draft_due_at },
       { k: 'final', label: 'Due date', v: t.current_final_due_at, from: t.original_final_due_at },
       { k: 'publish', label: 'Post date', v: t.publish_at }
-    ];
+    ].filter(function (r) { return !isEveryday(t) || r.k === 'final'; });
     var html = rows.map(function (r) {
       var over = r.k === 'final' && isLate(t);
       var moved = r.from && r.v && r.from !== r.v;
@@ -7596,6 +7600,16 @@
     [['dwHandTick', 'dwHandTo', 'dwHandLab']].forEach(function (x) {
       var tick = $(x[0]), to = $(x[1]), lab = $(x[2]);
       if (!tick || !to) return;
+      /* The portal's switch, never a tick box (the user, 2026-10-11): read
+         and set as `checked`, as the tick it replaced was. */
+      Object.defineProperty(tick, 'checked', {
+        get: function () { return tick.getAttribute('aria-checked') === 'true'; },
+        set: function (v) { tick.setAttribute('aria-checked', v ? 'true' : 'false'); }
+      });
+      tick.addEventListener('click', function () {
+        tick.checked = !tick.checked;
+        tick.dispatchEvent(new Event('change'));
+      });
       tick.addEventListener('change', function () {
         to.hidden = tick.checked;
         if (lab) lab.hidden = tick.checked;

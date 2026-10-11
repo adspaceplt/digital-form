@@ -2521,7 +2521,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
   - A hand-off shows the person, with Keep assigned to me off (the
-    portal's switch, never a tick box; the user, 2026-10-11).
+    portal's switch, never a tick box, on the card and the step sheet
+    alike; the user, 2026-10-11).
   - The owner's own steps have it on.
   - The step sheet's act reads Move: its head names where it goes, so the
     label keeps one line in a phone's half.
@@ -2561,6 +2562,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     own progress (`btn-primary`) alike (2026-10-07).
   - One next-step button, named for where it goes (`verbFor`: "Move to
     Client review"); no stage move beside it.
+  - Draft due and Post date are a content task's: an everyday task (a
+    month's report task included) shows its Due date alone, and its post
+    date never reaches the calendar (the user, 2026-10-11).
   - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
     apply), Make a copy, Repeat on a schedule, Delete; who has the task is
     changed on its Assigned to row (Reassign), a task nobody holds from the

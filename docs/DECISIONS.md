@@ -2081,3 +2081,14 @@ written to both the colleague's and the admin's stored setting (no schema
 change), and a colleague's own limit stays on their row. Edit limits turns
 the Limits list's figures into small tonal fields where they are read, with
 Save and Cancel in the foot, instead of a second sheet of boxes.
+
+### 2026-10-11 · An everyday task owes one date; a phone's ⋯ is its words' width
+
+The user, on a report task's card: "only content task has first draft due,
+due date and post date right?", and a press on Draft due had set today's
+date, which could only be moved with a reason. An everyday task (a month's
+report task included) now shows its Due date alone, and a post date held by
+one stays off the calendar. On a phone every ⋯ menu was drawn the screen's
+width (a rule made for creator cards), so the task card's covered its whole
+head ("Layout bug on top"); a menu is now as wide as its words, 260px at
+most. The card's Keep assigned to me is the switch, as the step sheet's.
