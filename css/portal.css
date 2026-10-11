@@ -7324,9 +7324,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .readlogo img { width: 100%; height: 100%; object-fit: cover; }
 .pane-form-head > .btn { margin-left: auto; }
 /* When and with whom drop under what was said, rather than squeezing it. */
-.is-narrow .ovlog-row { grid-template-columns: 30px minmax(0, 1fr); }
-.is-narrow .ovlog-when { grid-column: 2; text-align: left; white-space: normal; }
-.is-narrow .ovlog-when .ovmeta { display: inline; margin-left: 6px; }
 /* A header the phone hides is not a header, so the row carries its own
    labels instead: name and money on the first line, what qualifies them on
    the second — the shape every other list in this console takes. */
@@ -7372,13 +7369,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   display: block; font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); margin-bottom: 2px;
 }
+/* The kind and what was said are the main cell's own lines, so on a narrow
+   pane that cell gives them to the row's grid: the glyph, the kind beside
+   when, what was said under both. (The areas were named on lines the row
+   did not hold, and the kind was drawn over the words; 2026-10-11.) */
 .is-narrow .ovlog-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "kind when" "text text"; gap: 3px 12px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-areas: "ico kind when" "ico text text"; gap: 3px 12px;
 }
-.is-narrow .ovlog-kind { grid-area: kind; }
+.is-narrow .ovlog-main { display: contents; }
+.is-narrow .ovlog-ico { grid-area: ico; }
+.is-narrow .ovlog-kind { grid-area: kind; align-self: center; }
 .is-narrow .ovlog-text { grid-area: text; white-space: normal; }
-.is-narrow .ovlog-when { grid-area: when; }
+.is-narrow .ovlog-when { grid-area: when; align-self: center; }
 .is-narrow .ovlog-when .ovmeta { display: inline; margin-left: 7px; }
 
 /* ---------- My Work, phase 3: three views of one set of rows ----------
@@ -8427,6 +8430,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .stephand[hidden] { display: none; }
 .stephand .tickline { margin: 0; }
 .stephand .tickline[hidden] { display: none; }
+/* Keep it assigned to me: the portal's switch at the line's right edge
+   (the user, 2026-10-11: the tick box read as from nowhere). */
+.stepkeep { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.stepkeep[hidden] { display: none; }
+.stepkeep > span { font-size: var(--field-text); color: var(--ink); }
 @media (max-width: 640px) {
   /* On a phone it is the sheet every other form is: from the floor, the
      screen's width, rounded at the top. */
@@ -10953,16 +10961,23 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 /* Floating (the user, 2026-10-11, after Instagram's bar): a glass pill held
    16px from each side and lifted off the home bar; `--tabbar-space` keeps
    the pill and its lift clear. */
-:root.has-tabbar { --tabbar-space: calc(var(--tabbar-h) + var(--tabbar-lift) * 2 + env(safe-area-inset-bottom, 0px)); }
+/* It sits low, as Instagram's does (the user, 2026-10-11: "can go abit
+   down"): into the home bar's inset, 14px above the phone's own edge less
+   than the inset, never closer than the lift where there is no inset. */
+:root.has-tabbar {
+  --tabbar-bottom: max(var(--tabbar-lift), calc(env(safe-area-inset-bottom, 0px) - 14px));
+  --tabbar-space: calc(var(--tabbar-h) + var(--tabbar-bottom) + var(--tabbar-lift));
+}
 .tabbar { display: none; }
 :root.has-tabbar .tabbar:not([hidden]) {
   position: fixed; z-index: 45;
   left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(var(--tabbar-lift) + env(safe-area-inset-bottom, 0px));
+  bottom: var(--tabbar-bottom);
   max-width: calc(var(--tabs, 5) * 120px + 10px); margin: 0 auto;
   display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr));
-  box-sizing: border-box; height: var(--tabbar-h); padding: 4px;
-  border: 1px solid var(--line-lift); border-radius: calc(var(--tabbar-h) / 2);
+  box-sizing: border-box; height: var(--tb-h, var(--tabbar-h)); padding: 4px;
+  border: 1px solid var(--line-lift); border-radius: calc(var(--tb-h, var(--tabbar-h)) / 2);
+  transition: height var(--t-slow) var(--ease), max-width var(--t-slow) var(--ease);
   background: var(--chrome-solid);
   background: color-mix(in srgb, var(--card) 86%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
@@ -10974,19 +10989,27 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .tabbar-tab {
   position: relative; z-index: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  min-width: 0; height: 100%; padding: 4px 2px; border: 0; border-radius: calc((var(--tabbar-h) - 10px) / 2);
+  min-width: 0; height: 100%; padding: 4px 2px; border: 0; border-radius: calc((var(--tb-h, var(--tabbar-h)) - 10px) / 2);
   background: none; color: var(--ink-mute); font: inherit; font-size: 11px; font-weight: 400; line-height: 13px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: color var(--t-fast) var(--ease);
 }
 .tabbar-tab svg { width: 20px; height: 20px; padding: 3px; stroke-width: 1.7; box-sizing: content-box; }
-.tabbar-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabbar-word { max-width: 100%; max-height: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: opacity var(--t) var(--ease), max-height var(--t-slow) var(--ease); }
+/* Scrolling down a page the bar draws in to its glyphs, as Instagram's does
+   (the user, 2026-10-11); scrolling up, the top of the page or More bring
+   the words back. Every tab keeps a finger's target, and the room the page
+   keeps clear stays the same, so nothing under it moves. */
+:root.has-tabbar.tabbar-min { --tb-h: 54px; }
+:root.has-tabbar.tabbar-min .tabbar:not([hidden]) { max-width: calc(var(--tabs, 5) * 56px + 10px); }
+:root.tabbar-min .tabbar-word { opacity: 0; max-height: 0; }
 .tabbar-tab.is-on, .tabbar-tab.is-near { color: var(--ink); }
 /* The chosen tab's fill is one surface that slides to the tab chosen, and
    follows a finger drawn along the bar (js/admin.js `placeThumb`). */
 .tabbar-thumb {
   position: absolute; top: 4px; left: 0; height: calc(100% - 8px); width: var(--tw, 0px);
-  transform: translateX(var(--tx, 0px)); border-radius: calc((var(--tabbar-h) - 10px) / 2);
+  transform: translateX(var(--tx, 0px)); border-radius: calc((var(--tb-h, var(--tabbar-h)) - 10px) / 2);
   background: var(--line-soft); pointer-events: none; opacity: 1;
   transition: transform var(--t-slow) var(--ease), width var(--t-slow) var(--ease), opacity var(--t) var(--ease);
 }
@@ -11088,6 +11111,13 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
   }
 }
 /* ===== end phone tab bar ===== */
+/* Log call in the client record's head (2026-10-11): the small tonal button
+   before the stage, its glyph alone on a narrow pane; on Calls and visits
+   the pane's own head offers it. */
+.crm-logcall { flex: 0 0 auto; min-width: 0; align-self: center; }
+.crm-logcall.is-here { display: none; }
+.console-body.is-narrow .crm-logcall { width: var(--ctl-h-sm); padding: 0; justify-content: center; }
+.console-body.is-narrow .crm-logcall-word { display: none; }
 /* A My Work row swiped left shows its next step (js/ops.js `rowSwipe`, the
    user, 2026-10-11): the row's cells slide with the finger and the step
    waits at the right edge, the one blue act while it stands open. */

@@ -2016,3 +2016,21 @@ the step is about, so the cells drift only a fifth of the button's width and
 the stage and ⋯ fade under it, instead of the whole row sliding out as a
 mail list's does. Held half a second, My Work opens with Add task's sheet;
 a shorter press stays a tap.
+
+### 2026-10-11 · Calls and visits, the bar's place, the step sheet
+
+The user approved Calls and visits as a tab of its own and wider search
+("ok"). Reading the record found the calls inside the Activity pane, which is
+drawn only for the Activity record's readers, so a group of its own clients
+(never given that access) could not read its own calls; the tab now follows
+Clients: Calls. Log call stands in the record's head. Search finds a task by
+its brief or a remark as it reads now, and a call by what was said. Asked
+whether the record's Overview was updated, it followed the old order and
+drew sections the reader could not open and a refused read as empty; it now
+follows the tabs, leaves out what cannot be opened and says Could not load.
+From the user's iPhone beside Instagram's: the bar sits lower, into the home
+bar's inset, and draws in to its glyphs while scrolling down. From a
+screenshot of the step sheet: the act wrapped onto two lines ("bad ui"), so
+it reads Move under a head that names the stage; how a draft went is a
+choice of WhatsApp or Others, typed only for Others; Keep assigned to me is
+the portal's switch, as every on or off is (the user's wording).

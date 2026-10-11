@@ -3859,15 +3859,18 @@
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     $('stepNoteLabel').textContent = g === 'revision' ? 'What needs to change'
       : key === 'taken_down' ? 'Why it is taken down'
-      : toClient ? 'How the draft was sent'
+      : toClient ? 'How it was sent'
       : live ? 'Note (where it is posted, if there is no link)' : 'Note';
     $('stepNote').placeholder = needNote ? 'Required' : 'Optional';
-    $('stepNote').value = toClient ? o.note : '';
+    $('stepNote').value = '';
+    /* A draft sent with no link: WhatsApp is the choice already made; Others
+       asks how (the user, 2026-10-11: "no need type … every single time"). */
+    $('stepViaRow').hidden = !toClient;
+    setVia(toClient ? 'whatsapp' : 'other');
     var perf = key === 'performance_review';
     var cur = state.ownerIds[t.id] || ownerId(t);
     $('stepHandTickWrap').hidden = perf;
-    $('stepHandTick').checked = !perf && !o.assignee && !handsToColleague(key, t);
-    $('stepHandRow').hidden = $('stepHandTick').checked;
+    keepMine(!perf && !o.assignee && !handsToColleague(key, t));
     $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
     $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
@@ -3880,7 +3883,9 @@
     $('stepHandTo').value = def && $('stepHandTo').querySelector('option[value="' + def + '"]') ? def : '';
     $('stepHand').hidden = !may('ops', 'work');
     var go = $('stepGo');
-    go.textContent = verb;
+    /* The head names where it goes; the foot's act is the verb alone, so it
+       keeps one line in a phone's half (the user, 2026-10-11). */
+    go.textContent = 'Move';
     go.className = 'btn ' + (handsOff(key, t) ? 'btn-go' : 'btn-primary');
     go.disabled = false;
     msg('stepMsg', '');
@@ -3889,6 +3894,17 @@
   /* Going live on a day other than the one it was scheduled for is allowed,
      and asks why, because a report that cannot see why a date moved cannot
      see replanning. */
+  /* Keep assigned to me is the portal's switch, never a tick box. */
+  function keepOn() { return $('stepHandTick').getAttribute('aria-checked') === 'true'; }
+  function keepMine(on) {
+    $('stepHandTick').setAttribute('aria-checked', on ? 'true' : 'false');
+    $('stepHandRow').hidden = on;
+  }
+  function setVia(v) {
+    var sel = $('stepVia');
+    if (sel.value !== v) { sel.value = v; if (window.ADspaceForm && ADspaceForm.paint) ADspaceForm.paint(sel); }
+    $('stepNoteRow').hidden = !$('stepViaRow').hidden && v === 'whatsapp';
+  }
   function stepDateChanged() {
     var c = stepCtx;
     var show = Boolean(c && c.key === 'live' && c.t.publish_at && $('stepDate').value &&
@@ -3902,16 +3918,16 @@
     var t = c.t, key = c.key;
     var s = state.stages[t.workflow_id + '|' + key];
     var g = s && s.stage_group;
-    var note = String($('stepNote').value || '').trim();
     var toClient = key === 'client_review' && c.o.note != null;
+    var note = toClient && $('stepVia').value === 'whatsapp' ? WA_NOTE : String($('stepNote').value || '').trim();
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     if (needNote && !note) {
-      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how the draft was sent.' : 'Say why it is taken down.', 'err');
+      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how it was sent.' : 'Say why it is taken down.', 'err');
       $('stepNote').focus();
       return;
     }
     var who = null;
-    if (key === 'performance_review' || !$('stepHandTick').checked) {
+    if (key === 'performance_review' || !keepOn()) {
       who = $('stepHandTo').value || null;
       if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose who it goes to.', 'err'); $('stepHandTo').focus(); return; }
     }
@@ -7712,10 +7728,12 @@
     var stepDay = $('stepDate');
     if (stepDay) stepDay.addEventListener('change', stepDateChanged);
     var stepTick = $('stepHandTick');
-    if (stepTick) stepTick.addEventListener('change', function () {
-      $('stepHandRow').hidden = stepTick.checked;
-      if (!stepTick.checked) $('stepHandTo').focus();
+    if (stepTick) stepTick.addEventListener('click', function () {
+      keepMine(!keepOn());
+      if (!keepOn()) $('stepHandTo').focus();
     });
+    var stepVia = $('stepVia');
+    if (stepVia) stepVia.addEventListener('change', function () { setVia(stepVia.value); if (stepVia.value === 'other') $('stepNote').focus(); });
 
     // Links
     var dk = $('dwLinkKind');

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261011c">
+<link rel="stylesheet" href="/css/portal.css?v=20261011e">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -686,6 +686,9 @@
                  once and cannot be undone, so it sits last and behind the
                  section's manage level. -->
             <div class="rec-ctl">
+              <!-- A call or a visit logged from wherever the record is open
+                   (2026-10-11); the glyph alone on a narrow pane. -->
+              <button class="btn btn-sm crm-logcall" id="crmLogCall" data-need="clients.calls:work" type="button" aria-label="Log call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span class="crm-logcall-word">Log call</span></button>
               <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
               <div class="kmenu-wrap" id="crmClientMenuWrap">
                 <button class="kmenu-btn" id="crmClientMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
@@ -712,6 +715,10 @@
         <div class="rec">
           <nav class="rectabs" id="crmTabs" role="tablist" aria-label="Client record">
             <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
+            <!-- Calls and visits, the sale's own record (2026-10-11): a tab of
+                 its own after Overview, at Clients: Calls, never behind the
+                 Activity record's access. -->
+            <button class="tab" data-pane="calls" data-part="clients.calls" type="button" role="tab" aria-selected="false">Calls and visits</button>
             <!-- The client's work by content month, its reports included
                  (2026-10-10): drawn for a client engaged now or before, or
                  one holding anything there (js/engage.js). -->
@@ -1187,11 +1194,11 @@
           </div>
         </div>
 
-          <div class="rec-pane" data-pane="activity" hidden>
+          <div class="rec-pane" data-pane="calls" hidden>
         <!-- Every call, visit and message, newest first. -->
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
+          <button class="btn btn-primary" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log call</button>
         </div>
               <div class="sheet" id="crmTouchBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmTouchTitle">
@@ -1260,12 +1267,14 @@
         </div>
       </div>
         <div id="crmTouches"></div>
+          </div>
 
+          <div class="rec-pane" data-pane="activity" hidden>
         <!-- The portal's own record of what was done to this client. It keys
              on the client's name, which is the only link activity_log carries;
              a rename therefore leaves the older entries behind. -->
         <div class="viewhead">
-          <span class="headmark"><h3>Record of changes</h3></span>
+          <span class="headmark"><h2>Record of changes</h2></span>
         </div>
         <div id="crmLogList"></div>
           </div>
@@ -2979,7 +2988,7 @@
               <ul class="tnext-list" id="dwNextList" hidden></ul>
               <p class="tnext-late" id="dwNextLate" hidden></p>
               <div class="qhand" id="dwHand" hidden>
-                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Keep it assigned to me</span></label>
+                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Keep assigned to me</span></label>
                 <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Performance review by</label>
                 <select class="select select-sm" id="dwHandTo" aria-label="Assign to" hidden></select>
               </div>
@@ -3158,6 +3167,14 @@
                 <textarea class="input" id="stepLink" placeholder="https://" autocomplete="off" spellcheck="false" rows="1" data-oneline inputmode="url" autocapitalize="off"></textarea>
               </div>
             </div>
+            <!-- How a draft went to the client: a choice, the words asked
+                 only for Others (the user, 2026-10-11). -->
+            <div class="row" id="stepViaRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepVia">Sent on</label>
+                <select class="select" id="stepVia" data-seg><option value="whatsapp">WhatsApp</option><option value="other">Others</option></select>
+              </div>
+            </div>
             <div class="row" id="stepNoteRow">
               <div class="field">
                 <label class="field-label" for="stepNote" id="stepNoteLabel">Note</label>
@@ -3165,7 +3182,7 @@
               </div>
             </div>
             <div class="stephand" id="stepHand">
-              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Keep it assigned to me</span></label>
+              <div class="stepkeep" id="stepHandTickWrap"><span id="stepKeepLabel">Keep assigned to me</span><button class="switch" id="stepHandTick" type="button" role="switch" aria-checked="true" aria-labelledby="stepKeepLabel"></button></div>
               <div class="row" id="stepHandRow" hidden>
                 <div class="field">
                   <label class="field-label" for="stepHandTo" id="stepHandLabel">Assign to</label>
@@ -5229,14 +5246,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261011b"></script>
+<script src="/js/admin.js?v=20261011c"></script>
 <script src="/js/documents.js?v=20261010zo"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
 <script src="/js/reports.js?v=20261010zk"></script>
 <script src="/js/register.js?v=20261010zc"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261010zo"></script>
+<script src="/js/crm.js?v=20261011b"></script>
 <script src="/js/sales.js?v=20261007i"></script>
 <script src="/js/team.js?v=20261010zo"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
@@ -5244,10 +5261,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261010zf"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/campaigns.js?v=20261010zu"></script>
-<script src="/js/ops.js?v=20261011b"></script>
+<script src="/js/ops.js?v=20261011c"></script>
 <script src="/js/perf.js?v=20261009s"></script>
 <script src="/js/health.js?v=20261009a"></script>
-<script src="/js/search.js?v=20261009s"></script>
+<script src="/js/search.js?v=20261011a"></script>
 <script src="/js/overview.js?v=20261011a"></script>
 <script src="/js/settings.js?v=20261010zc"></script>
 </body>
