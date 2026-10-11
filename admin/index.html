@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261011n">
+<link rel="stylesheet" href="/css/portal.css?v=20261011p">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4849,34 +4849,19 @@ raya-2026        https://example.com/raya"></textarea>
 
 <!-- Read once a month, so it opens over the work and gives it back on close. -->
 <div class="sheet" id="activitySheet" hidden>
-  <div class="sheet-card" data-swipe="activityTabs" role="dialog" aria-modal="true" aria-labelledby="activityHeading">
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="activityHeading">
     <div class="sheet-head">
       <h3 id="activityHeading">Activity record</h3>
       <button class="iconbtn" id="activityClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <!-- The rail's own order, because these are the rail's own sections and
-         one sequence is easier to hold than two. The strip is My Work's view
-         strip: one raised surface slides to the chosen section, and it
-         scrolls sideways where it is wider than the sheet. Performance
-         follows Team, as it does on the Team page. -->
-    <div class="actstrip"><span class="cmdbar-views actviews" id="activityTabs" role="group" aria-label="Section">
-      <button class="acttab btn-sm is-on" data-af="all" type="button" aria-pressed="true">Everything</button>
-      <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
-      <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
-      <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
-      <button class="acttab btn-sm" data-af="scripts" data-need="activity.scripts:view" type="button" aria-pressed="false">Video Scripts</button>
-      <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
-      <button class="acttab btn-sm" data-af="reports" data-need="activity.reports:view" type="button" aria-pressed="false">Reports</button>
-      <button class="acttab btn-sm" data-af="whatsapp" data-need="activity.whatsapp:view" type="button" aria-pressed="false">WhatsApp</button>
-      <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
-      <button class="acttab btn-sm" data-af="links" data-need="activity.links:view" type="button" aria-pressed="false">Short Links</button>
-      <button class="acttab btn-sm" data-af="services" data-need="activity.services:view" type="button" aria-pressed="false">Services</button>
-      <button class="acttab btn-sm" data-af="team" data-need="activity.team:view" type="button" aria-pressed="false">Team</button>
-      <button class="acttab btn-sm" data-af="performance" data-need="team.performance:view" type="button" aria-pressed="false">Performance</button>
-      <button class="acttab btn-sm" data-af="handbook" data-need="activity.handbook:view" type="button" aria-pressed="false">Handbook</button>
-    </span></div>
+    <!-- One Section select in place of a strip of fourteen tabs (the user's
+         queue, 2026-10-11): All sections first, then the sections whose part
+         the reader holds, in the rail's own order; ten or more open the
+         finder (js/form.js §8). js/admin.js fills it. -->
+    <div class="actfilter"><label class="field-label" for="activitySection">Section</label>
+      <select class="select select-sm" id="activitySection"></select></div>
     <div class="sheet-body" id="activityList"></div>
   </div>
 </div>
@@ -5245,7 +5230,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261007g"></script>
-<script src="/js/admin.js?v=20261011c"></script>
+<script src="/js/admin.js?v=20261011p"></script>
 <script src="/js/documents.js?v=20261010zo"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261007d"></script>
