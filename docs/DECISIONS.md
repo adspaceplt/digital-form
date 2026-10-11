@@ -2034,3 +2034,14 @@ screenshot of the step sheet: the act wrapped onto two lines ("bad ui"), so
 it reads Move under a head that names the stage; how a draft went is a
 choice of WhatsApp or Others, typed only for Others; Keep assigned to me is
 the portal's switch, as every on or off is (the user's wording).
+
+### 2026-10-11 · Enter presses the blue button
+
+The user asked whether Enter goes straight to a sheet's action. It did not:
+only Cmd or Ctrl + Enter pressed it (2026-09-24), and on the step sheet a
+plain Enter shut the sheet, because `js/ops.js` focused the first button it
+found, the close mark. Asked whether a plain Enter should press it: "Yes".
+It presses the top sheet's blue button from the card or a one-line field;
+a search box, a box of lines, a choice or a switch keeps its own Enter, so
+typing a creator's name and pressing Enter never adds creators; a red
+button is never pressed by a key. The step sheet now opens on its card.

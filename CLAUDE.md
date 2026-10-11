@@ -602,6 +602,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     - Never on a sheet with no foot.
     - Never while an input method is composing.
     - The primary carries `aria-keyshortcuts`.
+  - A plain Enter presses the top sheet's foot primary too (the user,
+    2026-10-11), from the card or a one-line field only: never from a
+    search box (`type=search`, a combobox, `inputmode=search`,
+    `data-noenter`), a box of lines, a button, a select, a segment or a
+    switch, never inside a form that submits itself, never on the question
+    sheet (it answers its own Enter) or with the finder open, never a red
+    button. A sheet opened by `js/ops.js` holds its card, never its close
+    mark (Enter there had shut the step sheet).
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**

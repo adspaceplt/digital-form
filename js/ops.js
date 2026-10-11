@@ -5839,8 +5839,15 @@
     el.hidden = !on;
     document.body.classList.toggle('sheet-open', !!on);
     if (on) {
+      /* Never the close mark: Enter there shut the sheet the person meant
+         to confirm (2026-10-11). Where no field leads, the card holds the
+         focus, as js/sheet.js holds every sheet's. */
       var f = el.querySelector('input, select, textarea, button');
-      if (f) f.focus();
+      var card = el.querySelector('.sheet-card');
+      if (f && f.tagName === 'BUTTON' && card) {
+        if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+        card.focus({ preventScroll: true });
+      } else if (f) f.focus();
     }
   }
 
