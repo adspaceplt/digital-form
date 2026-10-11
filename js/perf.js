@@ -966,11 +966,12 @@
     n = Number(k === 'posting' ? f.due : f.reached) || 0;
     ok = Number(k === 'posting' ? f.on_time : f.met) || 0;
     if (!n) return '';
+    /* One line in a half-width column; the whole sentence is its name. */
     words = k === 'posting'
       ? (n === 1 ? ' post went live by its post date' : ' posts went live by their post date')
       : (n === 1 ? ' task reached review by its deadline' : ' tasks reached review by their deadline');
-    return '<button class="linkbtn perf-use" type="button" data-rate="' + k + '" data-v="' + Math.round(ok / n * 1000) / 10 + '">My Work: ' +
-      ok + ' of ' + n + words + '</button>';
+    return '<button class="linkbtn perf-use" type="button" data-rate="' + k + '" data-v="' + Math.round(ok / n * 1000) / 10 + '"' +
+      ' aria-label="' + esc('My Work: ' + ok + ' of ' + n + ' on time. ' + ok + ' of ' + n + words + '. Use as the rate.') + '">My Work: ' + ok + ' of ' + n + ' on time</button>';
   }
   function rateForm(r) {
     var ads = r.member && r.member.runs_ads;
