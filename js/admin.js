@@ -1826,7 +1826,9 @@
        list names itself, because `/admin/` is a manager's Overview
        (2026-09-28), and a refresh on the list must stay on the list. */
     if (section !== 'clients' || !(window.ADspaceCRM && window.ADspaceCRM.urlState().client)) {
-      q.push('s=' + section);
+      /* The Dashboard's address reads `s=dashboard` (the user, 2026-10-11);
+         the route stays `overview` inside, and `s=overview` still opens it. */
+      q.push('s=' + (section === 'overview' ? 'dashboard' : section));
     }
     if (section === 'review') {
       // The same readable address the Clients section uses.
@@ -1921,6 +1923,7 @@
        as Clients before the landing page is asked: a refresh inside a record
        stays inside it (2026-09-28). */
     var where = params.get('s') || (params.get('client') ? 'clients' : firstAllowed());
+    if (where === 'dashboard') where = 'overview';
     if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {

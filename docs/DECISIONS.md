@@ -2188,8 +2188,10 @@ its libraries are in.
 
 ### 2026-10-11 · The Overview is the Dashboard, and a group may hide it
 The user: "could you rename to dashboard instead". The start page reads
-Dashboard in the rail, the tab bar, its heading and its guide; its address
-(`?s=overview`), ids, script and key stay so bookmarks keep opening it. A
+Dashboard in the rail, the tab bar, its heading and its guide. The user then
+asked for the address to match: it reads `?s=dashboard`, and an old
+`?s=overview` still opens it; the route, ids, script and access key stay
+`overview` inside, so nothing stored moves. A
 record's first pane keeps Overview: it summarises one record, the Dashboard
 every section. The user then chose option A of three for a setting of its
 own: one Dashboard row at the top of Team's group panel, On or No Access.

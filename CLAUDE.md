@@ -2246,10 +2246,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `submit_review`, `confirm_selection`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
-### Dashboard (`js/overview.js`, `?s=overview`)
+### Dashboard (`js/overview.js`, `?s=dashboard`)
 - Named the Dashboard on the screen (the rail, the tab bar, the heading,
-  its guide; the user, 2026-10-11); its address, `sectionOverview`,
-  `ADspaceOverview` and the key `overview` stay, so links still open it. A
+  its guide; the user, 2026-10-11). Its address is `?s=dashboard` (the
+  user, the same day), written by `queryNow()`; an old `?s=overview` opens
+  it and reads `s=dashboard`. Inside, the route, `sectionOverview`,
+  `ADspaceOverview` and the access key stay `overview`. A
   record's first pane (a client, a campaign, the client portal) stays
   Overview.
 - The start page of a group one of whose cards is allowed
