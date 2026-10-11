@@ -2054,3 +2054,12 @@ after every fix, and a pre-existing 22px target exposed by a new seed held
 the whole release. The user: "yes, log older defects and ship one request
 at a time". Each request now ships alone once its own checks pass; a defect
 in code a release did not touch is logged in `STANDARD.md` and fixed next.
+
+### 2026-10-11 · A strip's surface takes its track's height
+
+The user's iPhone showed New task's Task / Content task surface short and
+against the track's top edge. Chromium drew it right at every step of the
+swap, so the cause was not reproduced; the surface's height and top were
+measured once and kept. An option that fills its track's height now takes
+the height from the stylesheet (`calc(100% - 4px)`, 2px in), so a stale
+reading cannot leave it short; a wrapped segment keeps its measured rows.
