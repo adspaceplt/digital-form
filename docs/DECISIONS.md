@@ -1989,3 +1989,17 @@ for you holds anything, read once on sign-in where the bar is drawn. The
 glass stays under a finger (the console head's solid bar is for Safari's
 status bar, which the foot does not colour). More became an inset card to
 match. No profile photo tab: the account control stays in the head.
+
+### 2026-10-11 · Every panel is a card above the tab bar
+
+On 2026-10-09 the user asked that anything popping up from the foot come up
+above the tab bar; sheets were kept covering it then, since a form with a
+live bar under a thumb invites leaving unsaved work and loses 80px of
+height. With the bar floating, the user asked again: "every panel opens a
+card above the bar on mobile". Every sheet, question, search, the task card
+and the finder now stand above the bar as More does, inside the gutters with
+the large corner. The first reason is kept another way: the bar stays in
+sight under the scrim but out of reach, so a press there is a press on the
+scrim (which keeps a phone form's draft), never a tab leaving the form. The
+height is given back while typing: the keyboard hides the bar, and the card
+then reaches 8px from the floor.

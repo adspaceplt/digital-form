@@ -377,7 +377,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   activity record icons would do"); Settings and Arrange sections are in
   the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
-  it through `--tabbar-space`; a sheet covers it; a field taking the
+  it through `--tabbar-space`; every panel (a sheet, a question, search,
+  the task, the finder) is a card above it inside the gutters with the
+  large corner, the bar in sight under its scrim and out of reach
+  (`--sheet-floor`, `--sheet-top`; the user, 2026-10-11: "every panel
+  opens a card above the bar on mobile"); a field taking the
   keyboard under a finger hides it (`is-typing`). It floats (the user,
   2026-10-11, after Instagram's): a glass pill 10px above the home bar
   inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
@@ -826,7 +830,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     arrows or a key typed on the select opens it (the key typed is the first
     of the search); Enter or a press picks, Escape, Tab and a press elsewhere
     shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
-    field; at 640 and under, or under a coarse pointer, it is a sheet of the
+    field; at 640 and under, or under a coarse pointer, it is a card above the tab bar of the
     screen's height named by the field's label, with a close mark, and a tap
     (not a scroll) opens it. Never on a `data-seg`, a multiple, a
     `.state-select`, a disabled select or `data-nofind`. Safari cannot run in
@@ -1138,7 +1142,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Cmd/Ctrl + K opens it anywhere, `/` only when no field has the caret.
   Neither takes over another open sheet or the confirm bar.
 - The panel is a sheet through `js/sheet.js` (`#searchSheet`): under the head
-  at a desk, from the floor and full height on a phone. The field is a
+  at a desk, a card above the tab bar the screen's height on a phone. The field is a
   combobox: the arrows move `aria-activedescendant`, Enter opens, Escape
   closes and focus returns to what opened it. Typing marks the sheet clean.
 - It asks only the sections `may()` grants, each its own table through

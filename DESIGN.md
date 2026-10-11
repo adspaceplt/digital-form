@@ -100,7 +100,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   dims to `.72` instead.
 - A surface arrives from what opened it:
   - a menu from its button;
-  - a sheet lifts, or comes from the floor on a phone;
+  - a sheet lifts, or rises from the floor to stand above the tab bar on a phone;
   - a fold runs `grid-template-rows` 0fr→1fr with opacity;
   - the Undo bar slides down.
 - One `prefers-reduced-motion` block zeroes every duration and press.
@@ -229,7 +229,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A read group with its own act (Brand: Meta) | `.readgroup` > `.readgroup-head` (the `fsec-h` title, then a `.btn-sm` with its glyph at the right edge) over its `dl.ovfacts`; its sheet holds a ticked list (`.meta-accs`, its own scroll past 40dvh) and the selects |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | A section met for the first time | `.guidecard` (`js/guide.js`): a `.popcard` on `--raised` naming the section and `1 of 3`, one sentence a step, Skip then Next or Done; hung from the step's control (ringed with `--action-ring`, `.guide-on`) at a desk, docked at the foot on a phone; never a scrim, never over the command bar |
-| Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): a floating glass pill (`--tabbar-h` 60, 10px above the home bar, inside the 16px gutters, `--line-lift` edge, `--shadow-lift`, the card at 86% over `saturate(180%) blur(20px)`, glass under a finger too) holding the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab is one `--line-soft` thumb (`.tabbar-thumb`) that slides to it and follows a finger dragged along the bar, letting go on a tab opening it, its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. My Work carries the red dot (`.tabbar-dot`, `--dot-late`, named for a screen reader) while Waiting for you holds anything. More opens the rail as an inset card above the bar (`--raised`, `--line-lift` edge, the large corner), holding only the sections the bar does not, then the rail's foot (the build at the left, the Activity record's mark at the right, 44px); a sheet covers the bar |
+| Moving between sections on a phone | `.tabbar` (`#tabBar`, `:root.has-tabbar`): a floating glass pill (`--tabbar-h` 60, 10px above the home bar, inside the 16px gutters, `--line-lift` edge, `--shadow-lift`, the card at 86% over `saturate(180%) blur(20px)`, glass under a finger too) holding the first four sections the person may open and More, a glyph over a short word (`TAB_WORD`: Review, Campaigns, Links), 11px, `--ink-mute`; the chosen tab is one `--line-soft` thumb (`.tabbar-thumb`) that slides to it and follows a finger dragged along the bar, letting go on a tab opening it, its word in ink, never blue, never a weight; tabs share the width up to 120px each, centred beyond. My Work carries the red dot (`.tabbar-dot`, `--dot-late`, named for a screen reader) while Waiting for you holds anything. More opens the rail as an inset card above the bar (`--raised`, `--line-lift` edge, the large corner), holding only the sections the bar does not, then the rail's foot (the build at the left, the Activity record's mark at the right, 44px); every panel (a sheet, a question, search, the task, the finder) is a card above the bar the same way, inside the gutters with the large corner, the bar in sight under its scrim and out of reach; while the keyboard is up the bar steps away and the card takes its room |
 | A colleague's own order of the sections | `#railSheet` (Arrange sections, `js/admin.js`): a `.formsheet` of the rail's groups, each an `.fsec` list of `.ro-row`s (the rail glyph, the name, a grey `Tab bar` chip where the phone's bar will hold it, the grip as an icon button at the right edge, 44px under a finger); the row in hand takes `--sunk`; Save, Reset order, Cancel in the foot. The rail and the tab bar follow it |
 | What changes the portal for everybody (Settings) | `#sectionSettings` (`js/settings.js`), reached from `#settingsOpen` in the account menu: one `ADspaceGroup.section` card a group, a `.set-row` a setting (the name 14/500 over its value in 12.5 mute, the parts of a value never broken inside one), its control at the right edge: a `button.switch`, Edit with the pen or Open with the chevron, each opening the sheet that already edits it |
 | Words written by AI | The AI mark (`ADspaceConfirm.ai.glyph`, a four-point spark) before Write with AI on every writer; Writing while it runs; the Undo line Written by AI. Read before saving. (submitting, on a report); saving or submitting them asks the declaration in the same `ADspaceConfirm` sheet, as its own shaded block after the question's fields (`.askentry.is-declare`: the AI mark and the line naming the person's responsibility, then a `.tickline` that refuses until ticked), never run on into the question's words. Never asked of words typed by hand |
@@ -491,8 +491,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - No horizontal overflow. A 16px side gutter. Never a sideways table (a
   board's columns are not a table).
 - The head card ends above the fold. Nothing is clipped under the sticky bar.
-  Sheets are measured in `dvh` (falling back to `vh`), are full height on a
-  phone, come from the floor, and pad the safe area.
+  Sheets are measured in `dvh` (falling back to `vh`); on a phone each is a
+  card risen from the floor to stand above the tab bar, never taller than
+  the screen less the bar's room, and pads the safe area.
 - A line of parts (`client · 10 creators · RM 8,640.00`) wraps between its
   parts, never inside one: a count and an amount hold their spaces.
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
@@ -500,7 +501,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The phone command bar is one row plus the view segment.
 - On a phone (and a touch screen narrower than a desk) the sections are the
   tab bar at the foot; everything that rises from the foot keeps
-  `--tabbar-space` clear, and a sheet covers the bar.
+  `--tabbar-space` clear, and every panel is a card above the bar.
 - On a phone the bell's panel takes the page gutters
   (`.kmenu.notif-menu`, fixed, 16px each side).
 - The My Work view strip scrolls sideways with faded edges
