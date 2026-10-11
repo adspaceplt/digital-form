@@ -2900,10 +2900,16 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The activity record keeps one height whatever the filter shows; the list
    scrolls inside it rather than the card growing and shrinking. */
 #activitySheet .sheet-card { height: min(82vh, 720px); }
-/* The Activity record's sections are My Work's view strip (the user,
-   2026-09-26): one tonal track, one raised surface sliding to the chosen
-   section, and ten sections scrolling sideways with the far edge faded
-   rather than wrapping, at every width. */
+/* The Activity record's one Section select (2026-10-11): its label at the
+   left and the select beside it at its own width; the row's width on a
+   phone. */
+.actfilter { display: flex; align-items: center; gap: 8px; padding: 4px 0 12px; }
+.actfilter .field-label { margin: 0; white-space: nowrap; }
+.actfilter .select { flex: 0 1 260px; min-width: 0; }
+@media (max-width: 640px) { .actfilter .select { flex: 1 1 auto; } }
+/* A view strip standing on its own row (My records, Performance): one
+   tonal track, one raised surface sliding to the chosen view, scrolling
+   sideways with the far edge faded rather than wrapping, at every width. */
 .actstrip { flex: 0 0 auto; min-width: 0; padding: 4px 0 12px; }
 .cmdbar-views.actviews {
   display: flex; max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
@@ -9565,8 +9571,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    ("E · Performance Review" 172px, "RM 12,345.67" at 13.5px). ---- */
 .perf-views { padding: 0 0 12px; }
 .perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
-/* On a phone a view strip standing on its own row (My HR, Performance, the
-   Activity record) is the column's width with its views sharing what is
+/* On a phone a view strip standing on its own row (My records,
+   Performance) is the column's width with its views sharing what is
    spare, as every strip is (2026-09-28): it kept its desk width and stopped
    short of the card under it (the user, 2026-10-06, the third time). Beside
    the Performance tools it runs up to them; one that cannot fit scrolls with

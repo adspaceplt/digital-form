@@ -290,6 +290,9 @@
     var out = [];
     Array.prototype.forEach.call(det.querySelectorAll('select, input, textarea'), function (f) {
       if (f.closest('.fmore') !== det || f.type === 'hidden') return;
+      /* What is not on show is not on the line, and a box that says itself
+         through its tick (`data-nosum`: the repeat's rule) is left to it. */
+      if (f.closest('[hidden]') || f.closest('[data-nosum]')) return;
       if (f.tagName === 'SELECT') {
         var o = f.options[f.selectedIndex];
         var t = o ? o.text : '';
@@ -297,6 +300,7 @@
         else if (f.getAttribute('data-none')) out.push(f.getAttribute('data-none'));
       } else if (f.type === 'checkbox') {
         if (f.checked && f.getAttribute('data-on')) out.push(f.getAttribute('data-on'));
+        else if (!f.checked && f.getAttribute('data-off')) out.push(f.getAttribute('data-off'));
       } else if (f.getAttribute('data-none') && !String(f.value || '').trim()) {
         out.push(f.getAttribute('data-none'));
       } else if (f.getAttribute('data-some') && String(f.value || '').trim()) {
@@ -951,6 +955,9 @@
     });
     findBox.querySelector('#pickerTitle').textContent = findLabel(sel);
     var q = findBox.querySelector('#pickerQ');
+    /* A list of names alone says so (`data-find-hint`); most hold a name and
+       a code. */
+    q.setAttribute('placeholder', sel.getAttribute('data-find-hint') || 'Name or code');
     q.value = typed || '';
     findBox.hidden = false;
     findPlace();
