@@ -2241,7 +2241,9 @@
         var who = whoseWord(t) || 'No client';
         var what = t.code ? [t.code, formatShort(t)].filter(Boolean).join(' · ') : (t.content_desc || t.title || '');
         return '<button class="cal-chip btn-sm ' + (pub ? 'is-pub' : stageTone(t)) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '"' +
-          ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + who + ', ' + (t.title || '')) + '">' +
+          ' aria-label="' + esc((pub ? 'Post: ' : 'Due: ') + who + ', ' + (t.title || '')) + '"' +
+          /* Pointed at, a chip names its task whole (the user, 2026-10-11). */
+          ' title="' + esc((t.title || what) + (who ? ' · ' + who : '')) + '">' +
           '<span class="cal-chip-who">' + esc(who) + '</span><span class="cal-chip-what">' + esc(what) + '</span></button>';
       }).join('') + (list.length > CAL_SHOW ? '<span class="cal-more">+' + (list.length - CAL_SHOW) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
