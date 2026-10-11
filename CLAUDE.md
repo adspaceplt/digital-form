@@ -867,7 +867,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     source of truth: a pick sets its value and fires `input` and `change`; a
     value set from outside shuts the finder. A press, Space, Enter, the
     arrows or a key typed on the select opens it (the key typed is the first
-    of the search); Enter or a press picks, Escape, Tab and a press elsewhere
+    of the search; it reads Name or code, else the select's
+    `data-find-hint`); Enter or a press picks, Escape, Tab and a press elsewhere
     shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
     field; at 640 and under, or under a coarse pointer, it is a card above the tab bar of the
     screen's height named by the field's label, with a close mark, and a tap

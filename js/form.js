@@ -951,6 +951,9 @@
     });
     findBox.querySelector('#pickerTitle').textContent = findLabel(sel);
     var q = findBox.querySelector('#pickerQ');
+    /* A list of names alone says so (`data-find-hint`); most hold a name and
+       a code. */
+    q.setAttribute('placeholder', sel.getAttribute('data-find-hint') || 'Name or code');
     q.value = typed || '';
     findBox.hidden = false;
     findPlace();
