@@ -2401,3 +2401,20 @@ choose. Unless its for leads or internal"): its line and Open Months, which
 lands on the client's Months in My Work, where the month and its meeting are
 set (the month alone does not take posts until its meeting is set or marked
 not needed, so a button making only the month would leave the person short).
+
+### 2026-10-12 · The template sheet asks only what a format's task takes
+
+The user asked what templates do, then: "Ok proceed the template sheet
+changes". A task made from a format takes its family's checklist and the
+variant's hours, and nothing else from the template: the workflow is the
+caller's (the content workflow), the dates are typed on the post
+(`dates_as_given`), the owner is always sent, and the title is the post's
+description. Only a call naming `template_id` read the Task title, Workflow,
+Assigned to and Due days after, and no page sends one. The sheet now asks
+Name, Active (a switch, in place of the "Offered when making tasks" tick),
+Formats with their hours, and the checklist (Items). The fields it dropped
+stay in the table: `ops_save_template` writes every column on an update, so
+the page sends each stored value back unchanged rather than clearing it; a
+new template takes the content workflow and none of them. The family's own
+Estimate still stands behind a variant with no hours, kept as stored. No
+migration.

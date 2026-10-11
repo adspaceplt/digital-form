@@ -2568,7 +2568,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   inside `ops_create_task` (the checklist and the variant's hours; the
   caller's workflow and the month's dates stand), so every piece of the New
   sheet and every repeat alike. Reels (30s, 60s, 120s), Graphics (Static, GIF, Carousel),
-  Report.
+  Report. Its sheet (`#tplEditSheet`) asks only that: Name, Active (a
+  `button.switch`; an inactive family fills nothing), the formats with their
+  hours and the checklist; a save sends the stored title, owner, due offset,
+  estimate and workflow back unchanged (the user, 2026-10-12).
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock; the owner or an admin corrects it in place
