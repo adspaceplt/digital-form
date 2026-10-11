@@ -2279,3 +2279,29 @@ the strip. The other strips over five choices were looked at and left: the
 Dashboard's tabs (being rebuilt in its own session), a client record's
 panes, a campaign's panes and the client portal's tabs are panes of one
 record, each a different screen, not a filter over one list.
+
+### 2026-10-12 · The New task sheet: Priority with who takes the work, Repeat folded
+The regroup offered on 11 Oct, built on the user's "Go" from a mockup of the
+real sheet. Priority had sat folded under More details since before it
+carried a deadline; once Urgent, High and Medium each set 24, 48 or 72 hours
+from the moment they are chosen (2026-10-11), folding it hid a date. It now
+stands under Assigned to, in one section named Assignment and priority, with
+the deadline it sets said under it from the Business setting's hours, the
+date the task card will read; Normal says nothing. Task type moved up beside
+it. Repeat, the least used choice, had a section of its own above
+Assignment; it folds under More details with Complexity and the brief, the
+fold's line naming Repeats or Does not repeat (a tick's `data-off`, and the
+rule's own fields left off the line by `data-nosum`). The sheet reads three
+sections where it read four. The quick Add task sheet is unchanged.
+
+### 2026-10-12 · Merge as soon as built; one full gate after the day's work
+An hour after the layout walk left the release gates, the user: "Once ready
+pr u can merge then only run the gate right? Since today havent run the full
+gate yet can wait till all tasks completed then run a full gate full suite?
+But first build all and merge first so many PRs opening for what". Three PRs
+were then open, each waiting on its own suites. A request now merges once it
+is built, its scripts pass `node --check` and its screens are screenshotted
+and read; the suites run once, all of them with the layout walk, on main
+after the day's requests are in, and what they find is the next batch. A
+migration keeps its Postgres suite before it touches the live database,
+since a database cannot be rolled back as a page can.

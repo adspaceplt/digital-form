@@ -101,35 +101,21 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
-  - Proportionate testing (the user, 2026-10-10): while building, the
-    changed behaviour's suites and what depends on it; before release, the
-    required regression coverage (the tiers below) against the final
-    candidate; after a fix, the failed and affected suites again, and the
-    whole gate again only where the fix invalidates its broader results. A
-    shared script, the stand-in or a schema change runs the suites that
-    call what changed (`grep -l` over `tests/` for the function, table or
-    id). `all` runs once a day, after the day's merges, its findings the
-    next batch, and never stands in for a release's own checks. Never
-    weaken an assertion or change an expectation merely to pass.
-  - One request, one release (the user, 2026-10-11: hours lost holding
-    small changes together): each request ships on its own PR once its
-    own checks pass, never held for the next. A failure a new test or
-    seed exposes in code the request did not touch is logged under
-    `STANDARD.md` Logged defects and fixed in the next release; it holds
-    the release only where it touches what the request changed.
-  - Visual checks follow rendered impact, never every gate by default:
-    SQL or backend alone takes functional, database and authorization
-    suites and no layout walk; copy, markup a script draws, visibility, an
-    error or an interaction state takes screenshots of the touched screens
-    and the suites that walk them; shared layout, navigation, CSS or a
-    component takes the same screenshots of every screen it reaches, plus
-    `cssguard`. The whole walk (`ui`: uxaudit and matrix, about forty
-    minutes) runs once a day with `all`, after the day's merges, and never
-    in a release's own gate (the user, 2026-10-12: "the full gate … once
-    per day only"; a rename's gate had run an hour); `ui` in the file map
-    below means that daily walk. What it finds is logged and fixed in the
-    next release. The report names the checks chosen and why any was left
-    out.
+  - Merge first, gate once a day (the user, 2026-10-12: "Once ready pr u
+    can merge then only run the gate … wait till all tasks completed then
+    run a full gate full suite … build all and merge first"). A request is
+    built, `node --check` passes on each changed script, its touched
+    screens are screenshotted and read (1280 and 390, both themes in the
+    console; every screen a shared layout, CSS or component change
+    reaches), and it merges at once on its own PR, never held for the next
+    (one request, one release; the user, 2026-10-11). A suite runs by hand
+    only while a fault is being found. A migration still runs `sql` and its
+    area's Postgres suite before it is applied to the live database. Once
+    the day's requests are all merged, one full gate (`all`: every suite,
+    `ui`, uxaudit and matrix, included) runs on main; what it finds is the
+    next batch, each fix its own release. Never weaken an assertion or
+    change an expectation merely to pass. A failure in code a request did
+    not touch is logged under `STANDARD.md` Logged defects until it ships.
   - uxaudit and matrix run side by side only where their browser
     profiles, mutable fixtures, output files and server are shown to be
     their own; both exit codes are read and either failing fails the gate;
@@ -160,7 +146,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &`.
 
-**Tiers: run what the change touched, and everything before a merge that changed behaviour.**
+**Tiers: what checks each kind of change, in the day's full gate and by hand while a fault is found; before a merge, only the row's screenshots and `node --check` (a migration also its Postgres suite).**
 
 | Change | Run |
 |---|---|
@@ -171,7 +157,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a release | The union of the rows above for everything in it, against the final candidate; never `all` |
+| Once the day's requests are merged | `all` on main, `ui` included; its findings are the next batch |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
@@ -856,7 +842,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
     first placement and resize).
-  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`).
+  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`, a
+    tick's off state from `data-off`; a field not on show, or inside
+    `data-nosum`, stays off the line).
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
   - `ADspaceForm.title` sets formal names in title case.
@@ -2830,6 +2818,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   internal and lead tasks are exempt.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
+  - It reads Task details (For, Client, Month), Posts, then Assignment and
+    priority (Assigned to; Priority with the deadline it sets from now under
+    it, `#ntPrioNote`, "Deliver within 48 hours, by 14 Oct, 9:00am.", none
+    for Normal; Task type beside it), then More details (Complexity, Brief,
+    Repeat), its line naming Repeats or Does not repeat (the user,
+    2026-10-12: a priority is a deadline, so it is never folded away).
   - A content deliverable is pieces: a line each (description, format, week),
     Add another drawing the next with the format above and the week after
     (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
@@ -2855,8 +2849,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
-  - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
-    the same rule on every piece, and what already falls due made at once.
+  - Repeat is a tick under More details (Weekly, Monthly, Every N days; an
+    end date or a count): the same rule on every piece, and what already
+    falls due made at once; a refusal of its rule opens the fold on the
+    field (`ADspaceForm.reveal`).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` (a month) or
@@ -4445,8 +4441,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   go apart.
 - Sessions run at once (the user, 2026-10-11: "allow all sessions"; until
   then one at a time): each holds one request on its own branch and PR,
-  merges `main` in where another merged first, and merges once its own
-  checks pass, never waiting to be asked. One gate a machine still holds.
+  merges `main` in where another merged first, and merges as soon as it
+  is built, never waiting to be asked. One gate a machine still holds.
   "Hand over" means: commit and push both repositories, then post
   or replace one comment on the open PR (else a draft PR) stating the
   commits, the checks passed, failed and not run, the steps done and
