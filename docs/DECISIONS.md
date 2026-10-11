@@ -2143,3 +2143,12 @@ Completed, and a completed campaign offered Resume campaign ("reopens
 what?"). A booking at Completed now draws no track, and a completed
 campaign offers no state move: Completed is derived from its bookings, so a
 Resume was undone at once, and its link stays live for the client's results.
+
+### 2026-10-11 · Global > parent > child, the light version
+
+The user, after finding style issues screen by screen: a global, a parent
+(section) and a child (detail) level. A full stylesheet rewrite was weighed
+against the risk to working screens; the user chose the light version: a
+guard (`tests/cssguard.js`, with `ui`) that fails any new section rule
+restyling a base element, and the 14 standing ones folded in as each area
+is touched.
