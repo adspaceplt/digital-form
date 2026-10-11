@@ -2110,3 +2110,10 @@ date's pen followed its words (Not set, 7 Oct 2026) and a detail's chevron
 its value. A date now takes its row with its words at the left and its pen
 at the right, and a detail's select runs to the same edge, so every mark
 stands in one column.
+
+### 2026-10-11 · More's build line, mid-way
+
+The user, on More's foot: the gap between the hairline and the build line
+read unlike the gap under it to the card's edge. The foot's top padding and
+the card's bottom padding are now equal (4px), so the 44px mark centres the
+build line 26px from each.

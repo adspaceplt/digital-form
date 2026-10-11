@@ -11089,7 +11089,11 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 :root.has-tabbar .sidebar-brand,
 :root.has-tabbar .navitem.is-tabbed,
 :root.has-tabbar .navgroup.is-tabbed { display: none; }
-:root.has-tabbar .sidebar-foot { margin-top: 4px; }
+/* The build's line sits mid-way between the hairline and the card's edge:
+   the 44px mark centres it, and the space above the row equals the card's
+   own padding below it (the user, 2026-10-11: uneven gaps). */
+:root.has-tabbar .sidebar-foot { margin-top: 4px; padding-top: 4px; }
+:root.has-tabbar .sidebar { padding-bottom: 4px; }
 :root.has-tabbar .scrim {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 43;
   background: var(--scrim); border: 0; padding: 0;
