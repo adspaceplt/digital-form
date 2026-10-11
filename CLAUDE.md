@@ -85,7 +85,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   migrations; 2026-10-04). So is a release's own work (the user,
   2026-10-11: "auto merge all PRs and allow all sessions"): opening,
   updating and merging a PR, applying its migration and deploying its edge
-  function, in the order the release states; any other write still asks.
+  function, in the order the release states, and starting or messaging a
+  session and adding a repository it needs; any other write still asks.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
