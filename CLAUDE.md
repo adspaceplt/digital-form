@@ -1272,35 +1272,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   activity row carries it. `clients_stage_notice` tells each owner of the client's
   open work once (`client_left`, "{client} moved to Paused · 3 open tasks to
   deliver", opening My Work).
-- Sales (`js/sales.js`, `view=sales&sp=`): the list's second view, List /
-  Sales in the bar (`#crmViews`), for an admin or Clients Full Access
-  (`ADspaceSales.allowed()`); anyone else's address falls back to the list.
-  Read from each client's `stage_log`, `stage_reason`, `source` and `owner`;
-  nothing typed or stored. A period (`#crmSalesPeriod`, This month to Last
-  12 months, Last month ending where this one begins) sets every figure; the
-  search, the filters, the count and Add lead step away. Top down:
-  - the headline (`.tally.sl-heads`, white cells): New leads, Won (a lead's
-    first move to Active, or a client keyed in Active), Churned (to Past
-    after Active), Active clients at the period's end, each with its change
-    on the period before (`prevRange`: the same days of last month for this
-    month so far; "the year before" for twelve months) and opening its
-    clients; an admin's Committed monthly value (confirmed lines, a month
-    each, by market, never added across currencies) opens nothing;
-  - at a desk on the record's 1.618 : 1, the period's leads step by step
-    (bars: New leads, Contacted, Proposal sent, Became clients, each with
-    its share of the step before) beside Needs attention (`.ovw-card` rows:
-    leads over `STALE_H` and paused clients with their reason, longest
-    waiting first, each opening the record); on a phone Needs attention
-    first;
-  - active clients by month (a line) beside leads, won and churned by month
-    (columns);
-  - two across: Pipeline now, Other moves (Lost leads, Paused, Resumed,
-    Win-backs, lead to won as a median, conversion, churn rate), New leads
-    by source, Why clients paused or left, By person in charge (counts
-    only), and an admin's Monthly value moved (won, lost to churn).
-  Every count opens its clients (`#salesPop`, a `.popcard`), each opening
-  the record, whose Back returns to Sales. A refused read of the lines is
-  said under Committed monthly value.
+- No Sales view (removed 2026-10-12, the user: "Priority is the dashboard";
+  what it held that the Dashboard did not moved there); an old
+  `view=sales` address opens the list. `js/sales.js` is the figures alone
+  (`ADspaceSales.figures`, `reasonWord`), read by the Dashboard from each
+  client's `stage_log`, `stage_reason`, `source` and `owner`: Won is a
+  lead's first move to Active (or a client keyed in Active), Lost a lead to
+  Past never Active, Churned Active to Past, Resumed Paused back to Active,
+  a Win-back Past back to Active; Committed monthly value a month of each
+  confirmed line by market, never added across currencies.
 - The follow-up limits (`staleH()`, settings `lead_followup_hours` 48 and
   `proposal_followup_days` 21, calendar days):
   - Lead and Proposal sent read Overdue past theirs;
@@ -2285,47 +2265,57 @@ Each line is a rule that broke once. Its reason is in the archive.
   `sectionAllowed('overview')` for anyone not an admin, page-side alone
   (no policy or function reads it; members copy the map by trigger). It
   only hides the page; every card still asks Full Access on its section.
-- One page read top to bottom, the mockup the user approved (2026-10-12,
-  task 47; `digital-form-tests` `mockups/dashboard/`), never a tab a
-  section: the period bar (`#ovwPeriod`, a select of This month, Last
-  month, This quarter, Last quarter, This year (five, so never a segment;
-  the user, 2026-10-12), `p=` in the address, This month left out, each
-  measured on the period before it the same days long (Last quarter on
-  the quarter before, This year on last year); the span and the time read
-  beside it, at the right edge); the glance
-  (`#ovwGlance`: the on-time ring, `ADspaceChart` `meter` from
-  `ops_report.on_time` for the period, an empty ring reading a dash where
-  nothing reached client review, beside Needs attention today, a
-  signal a line: Late tasks, Reports owed for last month, Leads going cold,
-  Sets waiting on clients, Unanswered client requests, Active clients, each
-  its count and the dot and its word, Open list scrolling to the list);
-  Sales (New leads, Won, Churned, Committed monthly value) and Operations
-  (Open tasks, Late, Delivered, Reports published for last month) as tiles
-  (`.ovw-kpi`: the label, the figure, its change on the period before the
-  same days long (`on Sept`, `on last quarter`) and its trend
-  (`ADspaceChart.spark`) where it has a history; every tile keeps the
-  trend's room and the two groups share their rows, so the eight stand one
-  height); the charts, each with its way out at its title's right edge:
-  Leads to clients (one-line bars, each step's share of the one before),
-  Open work by person (one-line bars, the late share red), Pipeline now
-  and Reports for last month (rings with the whole in the middle, the
-  reports' slices in their status dots), Creator bookings, On-time delivery
-  by month, Active clients by month (each figure over its column, this
-  month lighter); a row's cards share its height and their Figures one
-  line, Figures' hairline a step below its chart; then Needs attention (`#ovwAttention`): one list of every source
-  (late tasks, open work for paused and past clients, reports owed and in
-  review, cold leads, restricted accounts, requests, sets waiting, no set
-  this month, bookings past their date, the quality check, unsigned
-  letters, last month's reviews), What · Section (a grey tag) · Who ·
-  Since, late first by the days late, then what waits, the longest first,
-  then what has not started; eight rows, then Show N more in place; a row
-  writes the record's address and opens it as search does; last, More
-  figures (`#ovwMore`, `details.fmore`, shut until opened, the choice kept
-  in this browser under `adspace-ovw-more`, its charts drawn once opened;
-  the user, 2026-10-12: "too many information in one page"): Where work
-  waits (each stage's median, its slowest 10% the mark), Delivered on time
-  by person (the late share red), New leads by source, Why clients paused
-  or left, read off the answers above with no read of their own.
+- Two pages, from the mockup the user approved (2026-10-12, task 47;
+  `digital-form-tests` `mockups/dashboard/`) and then read as the company's
+  director would (the user, the same day: "act as the company ceo"; the
+  second page "continuous instead of hiding"): Summary, then Detail, the
+  strip `#ovwPages` (the view strip, `pg=detail` in the address, Summary
+  left out) at the bar's left, and at each page's foot the way on
+  (`#ovwTurn`: Continue to Detail, Back to Summary). The bar's right holds
+  the period (`#ovwPeriod`, a select of This month, Last month, This
+  quarter, Last quarter, This year: five, so never a segment; `p=`, This
+  month left out; each measured on the period before it the same days long,
+  Last quarter on the quarter before, This year on last year), with the
+  span and the time read beside it; both pages read the one period.
+  - Summary: the glance (`#ovwGlance`: the on-time ring, `ADspaceChart`
+    `meter` from `ops_report.on_time` for the period, empty and reading a
+    dash where nothing reached client review, beside Needs attention today,
+    a signal a line: Late tasks, Reports owed for last month, Leads going
+    cold, Sets waiting on clients, Unanswered client requests, Active
+    clients, each its count and the dot and its word, Open list scrolling
+    to the list); Sales (New leads, Won, Churned, Committed monthly value)
+    and Operations (Open tasks, Late, Delivered, Reports published for last
+    month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
+    period before (`on Sept`, `on last quarter`) and its trend
+    (`ADspaceChart.spark`) where it has a history; every tile keeps the
+    trend's room and the two groups share their rows, so the eight stand
+    one height); the two trends, On-time delivery by month and Active
+    clients by month (each figure over its column, this month lighter);
+    then Needs attention (`#ovwAttention`): one list of every source (late
+    tasks, open work for paused and past clients, reports owed and in
+    review, cold leads, restricted accounts, requests, sets waiting, no set
+    this month, bookings past their date, the quality check, unsigned
+    letters, last month's reviews), What · Section (a grey tag) · Who ·
+    Since, late first by the days late, then what waits, the longest first,
+    then what has not started; five rows, then Show N more, a tonal toggle
+    with its chevron that reads Show fewer once open and folds the list
+    back to five (the user, 2026-10-12: "5 show only"); a row writes the
+    record's address and opens it as search does.
+  - Detail, under its labels: Sales (Leads to clients, one-line bars, each
+    step's share of the one before; Pipeline now, a ring with the whole in
+    its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
+    won as a median, conversion of the leads decided, churn of those active
+    at the start, and for Services View the monthly value won and lost; By
+    person in charge, a table of counts, never a ranking; New leads by
+    source; Why clients paused or left), then Operations (Open work by
+    person, one-line bars, the late share red; Where work waits, each
+    stage's median with its slowest 10% the mark and its open work beside
+    it; On time by person, the late share red, with the median cycle; Reports
+    for last month, its slices in their status dots; Creator bookings). These
+    were Clients · Sales and My Work · Report, both removed the same day.
+  - Each chart names its way out at its title's right edge (its section);
+    a row's cards share its height, their Figures on one line, Figures'
+    hairline a step below its chart; three in a row run three across.
 - Each tile, signal, chart and list source asks its own `may()` before any
   read, at Full Access (`manage`) on its section or part; the granted parts
   (`ops.reports`, `ops.all`, `team.performance`) at their grant; the lead
@@ -2335,9 +2325,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `js/overview.js`: one read of the clients serves the sales figures, cold
   leads, the pipeline and restricted accounts; one of the bookings serves
   the chart, those past their date and the quality check), read again on
-  every visit and on a period change, never polled. The sales figures are
-  `ADspaceSales.figures`, so the Dashboard and Clients · Sales never
-  disagree. A refused read is `failLine` with Try again (in the list, that
+  every visit and on a period change (a page turn reads nothing again),
+  never polled. The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
   source alone; a tile reads Could not load with Try again; a signal Could
   not load), never nothing.
 - Committed monthly value is its one money figure (the user, 2026-10-12):
@@ -2359,9 +2348,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):
   - list (default, out of the address), board, calendar, months (an older
-    `view=clients` reads as it), report.
-  - Report opens on Open work by person (`ops.all`), then the figures
-    (`ops.reports`); either part opens it. `view=load` lands there.
+    `view=clients` reads as it). No Report view (removed 2026-10-12: the
+    Dashboard carries the team's figures, its Detail page what only the
+    Report held); an old `view=report` or `view=load` opens the list.
   - Each draws through `paint()` and `viewBox()`, never straight into a hidden
     box (`setView` draws a frame after the press).
   - A view without its permission falls back to the list.
@@ -2478,18 +2467,6 @@ Each line is a rule that broke once. Its reason is in the archive.
   per browser. A month's ⋯ is Add tasks (the New sheet on that client and
   month), Edit, Cancel month, Delete. A month whose tasks the filter hides
   says No matches (Show all), never No tasks this month.
-- The report (`ops_report(p_from, p_to)`, `ops.reports`, no new schema):
-  - It reads its figures on arrival, from its address too.
-  - Open work by person is bars, most open first, the overdue count beside
-    the name in red; the Monday counts fold under them.
-  - Stage duration is bars: the median, with the slowest 10% as the mark.
-  - On-time delivery by month is a line over the last six months, one
-    `ops_report` call a month (`loadTrend`), under the period's own figures.
-  - Median with the 90th percentile and a count.
-  - Replanning counted beside on-time, never inside it.
-  - By person, with no score and no ranking.
-  - The period is always stated in dates.
-  - Formal headings.
 - The phase 1 model:
   - The original commitment is written once; a date move takes a reason
     category and files the old and new value.
@@ -2608,8 +2585,6 @@ Each line is a rule that broke once. Its reason is in the archive.
   task (`.kindseg`). Switching swaps the sheet in place.
 - Add task is one act: it saves, the sheet shuts, the list is read again and
   the new row says Added. (`state.rowSaid`).
-- Kept report figures are drawn through `paint()` (which hides the other
-  views), never straight to `paintReport()`.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
 - Every colleague picker on a create form starts on the person creating it

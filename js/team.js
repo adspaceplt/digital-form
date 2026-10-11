@@ -156,7 +156,7 @@
        rules on which tasks arrive are unchanged. Workload reads the whole
        team's queue and Report the team's figures, so those two are granted. */
     ops:       [['list', 'List view'], ['board', 'Board view'], ['calendar', 'Calendar view'],
-                ['all', 'Workload and the whole team\'s tasks'], ['reports', 'Report view'],
+                ['all', 'The whole team\'s tasks'], ['reports', 'Team figures on the Dashboard'],
                 ['workflows', 'Templates and recurring tasks'], ['time', 'Another person\'s time records'],
                 /* What an admin alone did before (2026-10-07): an admin's by
                    itself, any other group's once set. */
@@ -1112,10 +1112,10 @@
     SECTIONS.forEach(function (s) {
       var d = $('grDesc-' + s[0]);
       if (d) d.textContent = admin ? 'Every level, as an admin.' : (DESC[s[0]][access[s[0]] || 'none'] || '');
-      /* The team's figures (the Report view, the Dashboard's My Work cards)
+      /* The team's figures (the Dashboard's My Work tiles and charts)
          are a grant of their own (2026-10-03). */
       if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
-        d.textContent += ' Team figures need Report view in Customise.';
+        d.textContent += ' Team figures on the Dashboard need their part in Customise.';
       }
       var diff = (PARTS[s[0]] || []).filter(function (p) { var k = s[0] + '.' + p[0]; return !TOOL[k] && (k in access); })
         .map(function (p) { var k = s[0] + '.' + p[0]; return p[1] + ': ' + valueWord(k, access[k]); });
