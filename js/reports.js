@@ -126,7 +126,6 @@
     'not-published': 'This report is not published.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
-    'has-versions': 'A report the client has seen cannot be deleted. Unpublish it instead.',
     'confirm-mismatch': 'That does not match the period.',
     'sm-not-draft': 'This report is no longer a draft, so it cannot be changed. Refresh to see where it stands.',
     'sm-status-by-function': 'The status changes only through its own step.',
@@ -427,10 +426,21 @@
         months = list;
         open = open || $('rpNewAsked').checked;
         var today = ymd(new Date()), pick = '', keep = sel.value;
-        var ok = function (m) { return open || brand || override || m.asks; };
+        /* A month that already holds this client's report of the kind (for
+           the same brand) reads where it stands and is not offered again
+           (the user, 2026-10-11: a published report was taken for gone and
+           its month made twice). The database holds one a period. */
+        var made = function (m) {
+          return cid && (hub.rows || []).filter(function (r) {
+            return r.client_id === cid && r.kind === kind && (r.brand_id || '') === (brand || '') &&
+              r.period_start === m.starts && r.period_end === m.ends;
+          })[0];
+        };
+        var ok = function (m) { return !made(m) && (open || brand || override || m.asks); };
         sel.innerHTML = list.map(function (m) {
           if (!pick && ok(m) && m.ends < today) pick = m.period;
-          var note = open || brand || m.asks ? '' : m.cal ? ' · Not in My Work' : ' · Not asked for';
+          var has = made(m);
+          var note = has ? ' · ' + (STATUS[has.status] || [has.status])[0] : open || brand || m.asks ? '' : m.cal ? ' · Not in My Work' : ' · Not asked for';
           /* Named as the report will be: September 2026, or the month's
              own span where it starts mid-month (16 September to 15 October
              2026). */
@@ -1799,7 +1809,7 @@
       items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
     }
     if (live && may('manage')) items.push('<button class="kmenu-item" data-soft type="button" data-a="unpublish">Unpublish</button>');
-    if (!(st.openVersions || []).length && may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
+    if (may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
     if (!items.length) return '';
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false" data-a="more">' + ICON.more + '</button>' +
       '<div class="kmenu" hidden>' + items.join('') + '</div></span>';
@@ -2089,14 +2099,16 @@
     on('delete', function (b) {
       b.closest('.kmenu').hidden = true;
       var word = periodWord(r.period_start, r.period_end);
-      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and text go with it.' : 'Its accounts, posts and text go with it.') + ' There is no restore.', go: 'Delete', tone: 'danger',
+      var seen = (st.openVersions || []).length;
+      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and text go with it.' : 'Its accounts, posts and text go with it.') +
+        (seen ? ' It has been published: ' + (seen === 1 ? 'its version leaves' : 'its ' + seen + ' versions leave') + ' the client portal.' : '') + ' There is no restore.', go: 'Delete', tone: 'danger',
         field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period.' } },
         function (typed) {
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
             var d = res.data || {};
             if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
             st.open = null; goReport('');
-          });
+          }).catch(function (e) { say(m, said(e), 'err'); });
         });
     });
   }

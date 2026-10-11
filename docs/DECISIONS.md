@@ -2152,3 +2152,15 @@ against the risk to working screens; the user chose the light version: a
 guard (`tests/cssguard.js`, with `ui`) that fails any new section rule
 restyling a base element, and the 14 standing ones folded in as each area
 is touched.
+
+### 2026-10-11 · A published report may be deleted at Full Access
+The user deleted a test report, which came back: it had been published, and
+`sm_report_delete` refused any report with a version (`has-versions`), so the
+⋯ never offered Delete. The user: "there should have an option to delete the
+report (those with full control access)". `sm_report_delete` now deletes a
+report in any state at Reports Manage with its versions; the question and
+the activity record say when the client had read it. The earlier rule (a
+report a client has seen is never deleted) is retired.
+The same day the user had made a second report for a month whose first was
+taken for gone; New report's Month now names a month already made with its
+stage and does not offer it.
