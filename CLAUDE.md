@@ -433,7 +433,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (drawn with three sections or more) opens
   `#railSheet`: the rail's groups (Work, Internal) as lists, a section
   dragged by its grip or moved with the arrow keys on it within its group,
-  the Overview fixed first; under the bar the rows it will hold read Tab
+  the Dashboard fixed first; under the bar the rows it will hold read Tab
   bar; Reset order puts the standard back in the sheet; Save keeps it
   (`rail_order_set(p_sections)`, known keys once each, `bad-order`; empty
   is the standard). `rail_orders` has RLS on, no policy, no grant;
@@ -1118,6 +1118,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     reads `Custom: n changes from {nearest}` (`#grPresetNote`) with the
     changes listed under it (`#grChanges`), worked out and never stored.
     Admin in Start from is the only way to make a group admin.
+  - The Dashboard's row first (`#grDash`, On / No Access, no heading; a
+    preset leaves it On), filed `Dashboard: On → No Access`, read in the
+    group's line, the sentence, the Custom changes and Compare groups.
   - The sections in the rail's chunks (Work, Internal; `CHUNKS`), one row
     each: the name, its segment at the right edge, the line for its level
     (`DESC`).
@@ -1439,8 +1442,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   none, read with the record alone. The record's ⋯ Mark account restricted
   (Clients Work; asks the platform, since when, a note) and the rail's red
   block (`#crmRestrict`, `.railgate.is-restricted`) with Clear (never asks,
-  Undo where it happened), each filed `client.edited` from and to. Overview's
-  Clients tab lists them (Restricted accounts, the longest first).
+  Undo where it happened), each filed `client.edited` from and to. The
+  Dashboard's Clients tab lists them (Restricted accounts, the longest first).
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`;
     each logo field has Upload (`wireLogoUpload`): the picture is drawn down
@@ -2254,7 +2257,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   `submit_review`, `confirm_selection`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
-### Overview (`js/overview.js`, `?s=overview`)
+### Dashboard (`js/overview.js`, `?s=dashboard`)
+- Named the Dashboard on the screen (the rail, the tab bar, the heading,
+  its guide; the user, 2026-10-11). Its address is `?s=dashboard` (the
+  user, the same day), written by `queryNow()`; an old `?s=overview` opens
+  it and reads `s=dashboard`. Inside, the route, `sectionOverview`,
+  `ADspaceOverview` and the access key stay `overview`. A
+  record's first pane (a client, a campaign, the client portal) stays
+  Overview.
 - The start page of a group one of whose cards is allowed
   (`ADspaceOverview.any()`, asked by `sectionAllowed('overview')`): Full
   Access on a section with no card (Short Links, Services, Team) is never
@@ -2262,8 +2272,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   order with My Work first, the Handbook the floor, so `/admin/` with no
   `?s=` lands there, and every other page names itself (the Clients list
   writes `s=clients`; a client's record reads as Clients from `client=`
-  alone). It has no key of its own; anyone else is never offered the row
-  and its address falls back. The two lead cards also ask `clients.leads`.
+  alone). Anyone else is never offered the row and its address falls back.
+  The two lead cards also ask `clients.leads`.
+- A group may hide it (Team's group panel, Dashboard On / No Access; the
+  user, 2026-10-11, option A): `overview` in the access map, stored only
+  as `none` (On stores nothing, as every group stood before), read by
+  `sectionAllowed('overview')` for anyone not an admin, page-side alone
+  (no policy or function reads it; members copy the map by trigger). It
+  only hides the page; every card still asks Full Access on its section.
 - Each section is a tab (`#ovwTabs`, the view strip, swipe and the arrows;
   `tab=` in the address, the first left out) over its own pane, every card
   read once on the visit. A tab counts the items its list cards hold, in
