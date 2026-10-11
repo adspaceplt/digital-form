@@ -266,9 +266,8 @@
     if (seg && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(seg);
     menu.querySelector('button.kmenu-item:not([hidden])').focus();
   });
-  /* Settings, Arrange sections and the Activity record open from the menu,
-     which shuts behind them. */
-  ['settingsOpen', 'railEdit'].forEach(function (id) {
+  /* Arrange sections opens from the menu, which shuts behind it. */
+  ['railEdit'].forEach(function (id) {
     if ($(id)) $(id).addEventListener('click', function () { shutAcct(); });
   });
   if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });
@@ -1438,9 +1437,9 @@
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
-      { at: '#setList .crm-group-head', text: 'Settings are grouped by what they change. A row shows only to a colleague who holds it.' },
-      { at: '#setList .set-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
-      { at: '#setList .set-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
+      { at: '#setList .stg-nav, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
+      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
+      { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
     'whatsapp.templates': { name: 'Templates', steps: [
       { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent in the last seven days.' },
       { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
@@ -1648,6 +1647,10 @@
     navItems().forEach(function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
+    if ($('settingsOpen')) {
+      $('settingsOpen').classList.toggle('is-on', name === 'settings');
+      if (name === 'settings') $('settingsOpen').setAttribute('aria-current', 'page'); else $('settingsOpen').removeAttribute('aria-current');
+    }
     showActivityLink();
     // Campaigns reads the address before it writes it, because on a reload the
     // address is the only record of which campaign or tab was open. Writing
@@ -1859,6 +1862,9 @@
     } else if (section === 'whatsapp' && window.ADspaceWhatsApp) {
       var wa = window.ADspaceWhatsApp.urlState();
       Object.keys(wa).forEach(function (k) { if (wa[k]) q.push(k + '=' + encodeURIComponent(wa[k])); });
+    } else if (section === 'settings' && window.ADspaceSettings && window.ADspaceSettings.urlState) {
+      var st = window.ADspaceSettings.urlState();
+      Object.keys(st).forEach(function (k) { if (st[k]) q.push(k + '=' + encodeURIComponent(st[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
@@ -2280,10 +2286,10 @@
     'campaign.file_deleted': ['Approved file deleted', '', 'campaigns'],
     'campaign.qc':           ['Quality checked', '', 'campaigns']
   };
-  /* The same order as the rail, because they are the same eight sections and
-     a person who has learned one sequence should not have to learn a second.
-     Everything leads, being the view somebody lands on. */
-  var ACT_SECTION = { all: 'Everything',
+  /* The same order as the rail, because they are the same sections and a
+     person who has learned one sequence should not have to learn a second.
+     All sections leads, being the view somebody lands on (never Everything). */
+  var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
                       reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', links: 'Short Links',
@@ -2302,8 +2308,8 @@
 
   function gateActivity() {
     /* The record has parts now, so a group may hold none of the section and
-       one of its tabs: the link is drawn where any tab is readable, and the
-       tabs themselves draw where their own part is. */
+       one of its parts: the link is drawn where any part is readable, and the
+       Section select offers only the parts held. */
     maySeeActivity = may('activity', 'view') || may('team.performance', 'view') || PARTS.activity.some(function (k) {
       return may('activity.' + k, 'view');
     });
@@ -2358,8 +2364,8 @@
 
   /* Filtered by section and grouped by day. Sixty rows in one unbroken column
      was a scroll with no landmarks in it; a date heading gives the eye
-     somewhere to stop, and the tabs answer "what happened in campaigns" without
-     reading past everything else. */
+     somewhere to stop, and the Section select answers "what happened in
+     campaigns" without reading past everything else. */
   var actFilter = 'all';
   var actRows = [];
 
@@ -2375,11 +2381,7 @@
     var rows = actRows.filter(function (a) {
       return actFilter === 'all' || sectionOfRow(a) === actFilter;
     });
-    Array.prototype.forEach.call($('activityTabs').children, function (b) {
-      var on = b.getAttribute('data-af') === actFilter;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-pressed', String(on));
-    });
+    if ($('activitySection').value !== actFilter) $('activitySection').value = actFilter;
     if (!rows.length) {
       box.innerHTML = '<div class="empty">Nothing recorded' +
         (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.</div>';
@@ -2441,9 +2443,27 @@
              tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
   }
 
-  Array.prototype.forEach.call($('activityTabs').children, function (b) {
-    b.addEventListener('click', function () {
-      actFilter = b.getAttribute('data-af');
+  /* The sections a reader may open in the record (its part, or Performance's
+     grant), All sections first, in the rail's order: one select where a
+     strip of fourteen tabs scrolled sideways (2026-10-11). */
+  function actOffered(k) {
+    if (k === 'all') return true;
+    if (k === 'performance') return may('team.performance', 'view');
+    return may('activity.' + k, 'view');
+  }
+  function fillActSections() {
+    var sel = $('activitySection');
+    sel.innerHTML = Object.keys(ACT_SECTION).filter(actOffered).map(function (k) {
+      return '<option value="' + k + '">' + esc(ACT_SECTION[k]) + '</option>';
+    }).join('');
+    sel.value = actFilter;
+  }
+  /* `input` and `change` both fire; only a value that moved repaints. */
+  ['input', 'change'].forEach(function (ev) {
+    $('activitySection').addEventListener(ev, function () {
+      var v = $('activitySection').value;
+      if (!v || v === actFilter) return;
+      actFilter = v;
       paintActivity();
     });
   });
@@ -2453,7 +2473,8 @@
     box.innerHTML = '<div class="empty">Loading…</div>';
     // Opening it from a section starts on that section, since that is almost
     // always what the question was about.
-    actFilter = ACT_SECTION[section] ? section : 'all';
+    actFilter = ACT_SECTION[section] && actOffered(section) ? section : 'all';
+    fillActSections();
     /* Performance's steps come from their own function, read only where the
        part is held, and join the rest by time. A refused or missing read of
        them leaves the other sections as they are. */

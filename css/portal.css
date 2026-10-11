@@ -2900,10 +2900,16 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The activity record keeps one height whatever the filter shows; the list
    scrolls inside it rather than the card growing and shrinking. */
 #activitySheet .sheet-card { height: min(82vh, 720px); }
-/* The Activity record's sections are My Work's view strip (the user,
-   2026-09-26): one tonal track, one raised surface sliding to the chosen
-   section, and ten sections scrolling sideways with the far edge faded
-   rather than wrapping, at every width. */
+/* The Activity record's one Section select (2026-10-11): its label at the
+   left and the select beside it at its own width; the row's width on a
+   phone. */
+.actfilter { display: flex; align-items: center; gap: 8px; padding: 4px 0 12px; }
+.actfilter .field-label { margin: 0; white-space: nowrap; }
+.actfilter .select { flex: 0 1 260px; min-width: 0; }
+@media (max-width: 640px) { .actfilter .select { flex: 1 1 auto; } }
+/* A view strip standing on its own row (My records, Performance): one
+   tonal track, one raised surface sliding to the chosen view, scrolling
+   sideways with the far edge faded rather than wrapping, at every width. */
 .actstrip { flex: 0 0 auto; min-width: 0; padding: 4px 0 12px; }
 .cmdbar-views.actviews {
   display: flex; max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
@@ -9589,8 +9595,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    ("E · Performance Review" 172px, "RM 12,345.67" at 13.5px). ---- */
 .perf-views { padding: 0 0 12px; }
 .perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
-/* On a phone a view strip standing on its own row (My HR, Performance, the
-   Activity record) is the column's width with its views sharing what is
+/* On a phone a view strip standing on its own row (My records,
+   Performance) is the column's width with its views sharing what is
    spare, as every strip is (2026-09-28): it kept its desk width and stopped
    short of the card under it (the user, 2026-10-06, the third time). Beside
    the Performance tools it runs up to them; one that cannot fit scrolls with
@@ -11675,19 +11681,43 @@ button.vs-row { cursor: pointer; }
 .wa-btns li { display: grid; gap: 2px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
 .wa-btns small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
 #waCompose .fsec > .msg:empty { display: none; }
-/* Settings (js/settings.js, 2026-10-10): a card a group, a row a setting.
-   The name over its value as it stands, the control at the right edge (a
-   switch, Edit or Open), one row's height whatever the control. */
-.set-row {
+/* Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11). One page:
+   every group a card under its heading, 24 apart as the sections of a list.
+   At a desk the groups also run down the left in a card, sticky, the group
+   in view the `--line-soft` fill; a press there scrolls to the group, never
+   stands between the person and a row. A row: the name over its value as it
+   stands, the control at the right edge (a switch, Edit or Open), one row's
+   height whatever the control. Its own names (`stg-`): `.set-row` is
+   Content Review's set. */
+.stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
+.stg-nav {
+  display: flex; flex-direction: column; gap: 2px; padding: 6px;
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
+  position: sticky; top: calc(var(--head-h) + 12px);
+}
+.stg-go {
+  display: flex; align-items: center; width: 100%; min-height: var(--ctl-h); padding: 0 12px;
+  border: 0; border-radius: calc(var(--radius) - 6px); background: none;
+  font: inherit; font-size: 14px; color: var(--ink-soft); text-align: left; cursor: pointer;
+}
+.stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
+.stg-groups { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.stg-sec { scroll-margin-top: calc(var(--head-h) + 12px); }
+.stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); }
+.stg-card { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
+.stg-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center;
   padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
 }
-.set-row:last-child { border-bottom: 0; }
-.set-what { min-width: 0; }
-.set-name { margin: 0; font-weight: 500; color: var(--ink); }
-.set-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
-.set-ctl { display: flex; align-items: center; justify-content: flex-end; }
-.set-ctl .btn { flex: 0 0 auto; }
+.stg-row:last-child { border-bottom: 0; }
+.stg-what { display: grid; gap: 2px; min-width: 0; }
+.stg-name { margin: 0; font-weight: 500; color: var(--ink); }
+.stg-meta { margin: 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.stg-ctl { display: flex; align-items: center; justify-content: flex-end; }
+.stg-ctl .btn { flex: 0 0 auto; }
+@media (hover: hover) {
+  .stg-go:not([aria-current]):hover { background: var(--sunk); color: var(--ink); }
+}
 
 /* A month being planned lists last month's best and weakest posts by views
    (js/ops.js, 2026-10-10): a line a post, its figure in the soft ink. */
@@ -11721,12 +11751,15 @@ button.vs-row { cursor: pointer; }
    inline with version code", "just activity record icons would do", "on
    mobile it should be on the right"): the build on the rail's text edge, the
    Activity record's mark (named for a screen reader and on hover) at the
-   right edge, at a desk as under the tab bar. */
+   right edge with Settings' before it, at a desk as under the tab bar. */
 .sidebar-foot { display: flex; align-items: center; gap: 8px; }
 .sidebar-foot .railrow {
   order: 1; flex: 0 0 auto; width: var(--ctl-h); min-width: var(--ctl-h); height: var(--ctl-h); min-height: var(--ctl-h);
   margin: 0 0 0 auto; padding: 0; justify-content: center; gap: 0;
 }
 .sidebar-foot .appver { flex: 0 1 auto; margin: 0; white-space: nowrap; }
+/* Settings' mark sits beside the Activity record's (2026-10-11): the first
+   mark drawn takes the line's spare room, the next keeps the gap. */
+.sidebar-foot .railrow:not([hidden]) ~ .railrow { margin-left: 0; }
 :root.has-tabbar .sidebar-foot .railrow { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
 :root.has-tabbar .sidebar-foot .railrow svg { width: 20px; height: 20px; }

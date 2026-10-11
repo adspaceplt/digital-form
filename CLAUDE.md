@@ -101,35 +101,21 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     under its `snapshot: <sha>` line, matching the commit it was run for.
   - Give it the two-hour limit (`timeout` 7200000): the background default
     of 30 minutes stops a full gate partway, with no result.
-  - Proportionate testing (the user, 2026-10-10): while building, the
-    changed behaviour's suites and what depends on it; before release, the
-    required regression coverage (the tiers below) against the final
-    candidate; after a fix, the failed and affected suites again, and the
-    whole gate again only where the fix invalidates its broader results. A
-    shared script, the stand-in or a schema change runs the suites that
-    call what changed (`grep -l` over `tests/` for the function, table or
-    id). `all` runs once a day, after the day's merges, its findings the
-    next batch, and never stands in for a release's own checks. Never
-    weaken an assertion or change an expectation merely to pass.
-  - One request, one release (the user, 2026-10-11: hours lost holding
-    small changes together): each request ships on its own PR once its
-    own checks pass, never held for the next. A failure a new test or
-    seed exposes in code the request did not touch is logged under
-    `STANDARD.md` Logged defects and fixed in the next release; it holds
-    the release only where it touches what the request changed.
-  - Visual checks follow rendered impact, never every gate by default:
-    SQL or backend alone takes functional, database and authorization
-    suites and no layout walk; copy, markup a script draws, visibility, an
-    error or an interaction state takes screenshots of the touched screens
-    and the suites that walk them; shared layout, navigation, CSS or a
-    component takes the same screenshots of every screen it reaches, plus
-    `cssguard`. The whole walk (`ui`: uxaudit and matrix, about forty
-    minutes) runs once a day with `all`, after the day's merges, and never
-    in a release's own gate (the user, 2026-10-12: "the full gate … once
-    per day only"; a rename's gate had run an hour); `ui` in the file map
-    below means that daily walk. What it finds is logged and fixed in the
-    next release. The report names the checks chosen and why any was left
-    out.
+  - Merge first, gate once a day (the user, 2026-10-12: "Once ready pr u
+    can merge then only run the gate … wait till all tasks completed then
+    run a full gate full suite … build all and merge first"). A request is
+    built, `node --check` passes on each changed script, its touched
+    screens are screenshotted and read (1280 and 390, both themes in the
+    console; every screen a shared layout, CSS or component change
+    reaches), and it merges at once on its own PR, never held for the next
+    (one request, one release; the user, 2026-10-11). A suite runs by hand
+    only while a fault is being found. A migration still runs `sql` and its
+    area's Postgres suite before it is applied to the live database. Once
+    the day's requests are all merged, one full gate (`all`: every suite,
+    `ui`, uxaudit and matrix, included) runs on main; what it finds is the
+    next batch, each fix its own release. Never weaken an assertion or
+    change an expectation merely to pass. A failure in code a request did
+    not touch is logged under `STANDARD.md` Logged defects until it ships.
   - uxaudit and matrix run side by side only where their browser
     profiles, mutable fixtures, output files and server are shown to be
     their own; both exit codes are read and either failing fails the gate;
@@ -160,7 +146,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &`.
 
-**Tiers: run what the change touched, and everything before a merge that changed behaviour.**
+**Tiers: what checks each kind of change, in the day's full gate and by hand while a fault is found; before a merge, only the row's screenshots and `node --check` (a migration also its Postgres suite).**
 
 | Change | Run |
 |---|---|
@@ -171,7 +157,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before a release | The union of the rows above for everything in it, against the final candidate; never `all` |
+| Once the day's requests are merged | `all` on main, `ui` included; its findings are the next batch |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
@@ -398,13 +384,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   first paint) puts the first four sections the person may open, in the
   rail's order, at the foot with More (`#tabMore`) opening the rest above
   it; five or fewer take the bar whole. More lists only what the bar does
-  not (`.is-tabbed`), then the rail's foot: one line of the Activity
-  record's mark (named for a screen reader and on hover) and the build, the
-  build at the left and the mark at the right edge, at a desk as under the
-  bar (the user,
-  2026-10-10: "activity log can go inline with version code", "just
-  activity record icons would do"); Settings and Arrange sections are in
-  the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
+  not (`.is-tabbed`), then the rail's foot: one line of the build at the
+  left, then Settings' mark and the Activity record's at the right edge
+  (each named for a screen reader and on hover), at a desk as under the
+  bar (the user, 2026-10-10: "activity log can go inline with version
+  code", "just activity record icons would do"; 2026-10-11: "the settings
+  button to fit beside activity record as just icons same as it"); Arrange
+  sections is in the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; every panel (a sheet, a question, search,
   the task, the finder) is a card above it inside the gutters with the
@@ -441,25 +427,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`adspace-rail:{id}`) for the first paint. The page reorders the rail's
   own items (`applyRail`), so the bar, which takes the rail's first
   sections, follows. A section not named comes after in the standard
-  order. The Activity record's tabs, the Team panel and search keep the
-  standard order. Not filed in the Activity record.
+  order. The Activity record's Section select, the Team panel and search
+  keep the standard order. Not filed in the Activity record.
 - Settings (`?s=settings`, `js/settings.js`, 2026-10-10; the user,
   2026-10-09: the account menu grew long and AI usage hid under Reports):
-  an item in the account menu (`#settingsOpen`, its Workspace group with
-  Arrange sections, each drawn only where it may be used, the group's
-  hairline leaving with the last), offered to
+  a mark at the rail's foot beside the Activity record's (`#settingsOpen`,
+  the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`; its address falls back for anyone else. A card a group
-  (Portal: Upgrade mode, Announcements, Notices; Business figures:
-  Follow-up limits, Tax and terms, Due dates, Priority deadlines, AI
-  prices, Meta checks, Reach allowance;
-  WhatsApp: Templates and recent messages; AI: AI usage and limits; Records: Document types, Task numbering), each row
-  drawn only for its part, its value under its name, a switch, Edit or Open
-  at the right edge opening the one sheet that already edits it. The
+  `ops.numbering`; its address falls back for anyone else. Eight groups
+  (2026-10-11, the queue's task 46): Portal
+  (Upgrade mode, Announcements, Notices), Clients (Follow-up limits), My
+  Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
+  checks, Reach allowance),
+  Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
+  (Templates and recent messages), Documents (Document types); a group with
+  no row drawn is left out. One page at every width, each group a card under
+  its heading, so a setting is the account menu, Settings, then its sheet
+  (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
+  at a desk the groups also run down the left, the one in view marked, a
+  press scrolling to its card and naming it in the address (`tab=`, the
+  first left out; replaced, never pushed), so a refresh lands on it; it
+  never stands between the person and a row. Each row drawn only for its
+  part, its value under its name, a switch, Edit or Open at the right edge
+  opening the one sheet that already edits it. The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
-  Workspace (Settings, Arrange sections); This device
+  Workspace (Arrange sections, drawn only where it may be used, its
+  hairline leaving with it); This device
   (Theme, Passkeys, Notifications, Refresh app); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
@@ -468,7 +463,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client/sw.js` holds that alone, at `/client/file/`, registered by
   `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
   would serve yesterday's console). A failed registration is silent.
-- The rail's foot names the build beside the Activity record's mark (`#appVersion`,
+- The rail's foot names the build beside Settings' and the Activity record's marks (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from
@@ -862,7 +857,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
     first placement and resize).
-  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`).
+  - `details.fmore` (its line from `data-none`/`data-some`/`data-on`, a
+    tick's off state from `data-off`; a field not on show, or inside
+    `data-nosum`, stays off the line).
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
   - `ADspaceForm.title` sets formal names in title case.
@@ -879,7 +876,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     source of truth: a pick sets its value and fires `input` and `change`; a
     value set from outside shuts the finder. A press, Space, Enter, the
     arrows or a key typed on the select opens it (the key typed is the first
-    of the search); Enter or a press picks, Escape, Tab and a press elsewhere
+    of the search; it reads Name or code, else the select's
+    `data-find-hint`); Enter or a press picks, Escape, Tab and a press elsewhere
     shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
     field; at 640 and under, or under a coarse pointer, it is a card above the tab bar of the
     screen's height named by the field's label, with a close mark, and a tap
@@ -1008,7 +1006,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_values)` an admin's, from today (MYT) or later (`past`), filed
   `team.changed` under Settings. One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
-  is sent): Follow-up limits (the Clients bar), Tax and terms (the Services
+  is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
   bar), Due dates (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
@@ -1178,7 +1176,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts` is one element, so a
   wrap cannot split it. An empty count is not drawn.
 - The rail's order (see `DESIGN.md`) drives `SECTIONS`, the Activity record's
-  tabs and `ACT_SECTION`, `PARTS.activity`, and the Team panel's blocks. One
+  sections (`ACT_SECTION`), `PARTS.activity`, and the Team panel's blocks. One
   sequence everywhere.
 - The route's purpose line opens from the route name (`.console-title` button,
   14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
@@ -2855,6 +2853,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   internal and lead tasks are exempt.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
   add or Run repeating tasks (`ops_generate_month` stays, uncalled).
+  - It reads Task details (For, Client, Month), Posts, then Assignment and
+    priority (Assigned to; Priority with the deadline it sets from now under
+    it, `#ntPrioNote`, "Deliver within 48 hours, by 14 Oct, 9:00am.", none
+    for Normal; Task type beside it), then More details (Complexity, Brief,
+    Repeat), its line naming Repeats or Does not repeat (the user,
+    2026-10-12: a priority is a deadline, so it is never folded away).
   - A content deliverable is pieces: a line each (description, format, week),
     Add another drawing the next with the format above and the week after
     (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
@@ -2880,8 +2884,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `revision_due_days` (1), only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
-  - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
-    the same rule on every piece, and what already falls due made at once.
+  - Repeat is a tick under More details (Weekly, Monthly, Every N days; an
+    end date or a count): the same rule on every piece, and what already
+    falls due made at once; a refusal of its rule opens the fold on the
+    field (`ADspaceForm.reveal`).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` (a month) or
@@ -4157,10 +4163,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `activity_section()` in SQL restates the map, and `tests/sql.js` §21 compares
   the two.
 - A tag nothing names files as `other` and falls back to the section.
-- One part per tab (`activity.clients`, `.whatsapp`, `.ops`, `.team`, `.review`,
-  `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
-  `.handbook`). The link
-  draws where any tab is readable.
+- One part per section (`activity.clients`, `.whatsapp`, `.ops`, `.team`,
+  `.review`, `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`,
+  `.services`, `.handbook`). The link draws where any part is readable.
 - Reports files a report's steps (`report.*`: started, submitted, returned,
   confirmed, published, revised, unpublished, deleted), every save
   (`report.saved`, filed by the page through `fileReport()`: the period and
@@ -4170,8 +4175,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Performance follows Team (`team.performance` View, no master code), read
   through `perf_activity()`: when, the step, whose month, who; never a score,
   a grade, a breach or a dispute's words, and never the caller's own review.
-- The tabs are My Work's view strip (`.cmdbar-views.actviews`), scrolling
-  sideways with faded edges at every width.
+- The sections are one Section select (`#activitySection`, its label at its
+  left; 2026-10-11, in place of a strip of fourteen tabs): All sections
+  first (never Everything), then only the sections whose part the reader
+  holds (Performance at `team.performance`), in the rail's order, opened on
+  the section the record was opened from where it is offered, else All
+  sections; ten or more open the finder. The sheet holds no swipe region.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
@@ -4467,8 +4476,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   go apart.
 - Sessions run at once (the user, 2026-10-11: "allow all sessions"; until
   then one at a time): each holds one request on its own branch and PR,
-  merges `main` in where another merged first, and merges once its own
-  checks pass, never waiting to be asked. One gate a machine still holds.
+  merges `main` in where another merged first, and merges as soon as it
+  is built, never waiting to be asked. One gate a machine still holds.
   "Hand over" means: commit and push both repositories, then post
   or replace one comment on the open PR (else a draft PR) stating the
   commits, the checks passed, failed and not run, the steps done and
