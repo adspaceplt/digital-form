@@ -2186,6 +2186,21 @@ is missing. It never fails the session: a clone refused for want of GitHub
 access is said and the session goes on. Synchronous, so no suite runs before
 its libraries are in.
 
+### 2026-10-11 · The Overview is the Dashboard, and a group may hide it
+The user: "could you rename to dashboard instead". The start page reads
+Dashboard in the rail, the tab bar, its heading and its guide. The user then
+asked for the address to match: it reads `?s=dashboard`, and an old
+`?s=overview` still opens it; the route, ids, script and access key stay
+`overview` inside, so nothing stored moves. A
+record's first pane keeps Overview: it summarises one record, the Dashboard
+every section. The user then chose option A of three for a setting of its
+own: one Dashboard row at the top of Team's group panel, On or No Access.
+The 2026-10-03 rule stands (each card asks Full Access on its section), so
+the switch can only hide the page. It is the key `overview` in the access
+map, stored only as `none`, so On is how every group already stood and no
+group changed. Nothing in the database reads an unknown key (members copy
+the role's whole map by trigger), so no migration was needed.
+
 ### 2026-10-11 · A priority is a deadline from when it is set; a task is owed by whichever comes first
 The queue's task 45, decided with the user over five mockups the same day.
 Levels Urgent, High, Medium, Normal: Low retired (every Low task made Normal
@@ -2233,6 +2248,20 @@ task's at its finish; a priority's deadline at its review). The answer
 changed shape (`posting`, `timeline` in place of `done`, `on_time`), so a
 page and a database from either side of the release draw no figure rather
 than a wrong one.
+
+### 2026-10-12 · The whole layout walk runs once a day, never in a release
+The user, on seeing three releases each spend about an hour in their gate:
+"Why is all running full gate? I thot i've said the full gate no need for a
+and once per day only? Dashboard rename only also need a one hour run".
+None of those runs was `all`; each carried `ui` (uxaudit and matrix: every
+page in both themes, then seven widths and 200% zoom), which the tier table
+asked of any CSS, navigation or component change. That walk was forty of
+the sixty minutes. It now runs once a day with `all`, after the day's
+merges; a release gates on the suites that cover it, `cssguard`, and
+screenshots of every screen it reaches, read against the phone checklist.
+A layout fault elsewhere is then found by the next daily walk, logged, and
+fixed in the next release, as the one-request rule already does for older
+defects a new test exposes.
 
 ### 2026-10-11 · The Activity record's sections are one select
 On the queue the user approved ("Pick up the Activity record Section select
