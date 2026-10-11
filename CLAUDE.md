@@ -695,8 +695,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/chart.js` (`ADspaceChart.draw(host, spec)`) is the only chart, in the
   page's tokens: bars (label and figure over the bar, a mark for a limit),
   columns, a line, and a ring only for two to five parts of a whole (else
-  bars). The figures fold under every chart as a table; a column, a point
-  and a slice give their figure on hover or a tap. No chart library.
+  bars), and a `meter` ring for one share of two parts (2026-10-12). Options:
+  bars `inline` (label, bar and figure on one line; a row's `part` red at
+  the bar's end), pie `total` (the whole in the middle) and status `tone`s
+  on its slices, columns `labels` (the figure over each) and a category's
+  `tone`. `ADspaceChart.spark(values, tone)` is a tile's trend, an image its
+  words already state. The figures fold under every chart as a table; a
+  column, a point and a slice give their figure on hover or a tap. No chart
+  library.
 - `js/media.js` (`ADspaceMedia.tag(url, attrs)`, `attach(video, url)`) is
   every video player: it names the H.264 copy `name.web.mp4` first (typed
   MP4) and the original after, so a browser plays the copy once it exists
@@ -2271,50 +2277,70 @@ Each line is a rule that broke once. Its reason is in the archive.
   `?s=` lands there, and every other page names itself (the Clients list
   writes `s=clients`; a client's record reads as Clients from `client=`
   alone). Anyone else is never offered the row and its address falls back.
-  The two lead cards also ask `clients.leads`.
 - A group may hide it (Team's group panel, Dashboard On / No Access; the
   user, 2026-10-11, option A): `overview` in the access map, stored only
   as `none` (On stores nothing, as every group stood before), read by
   `sectionAllowed('overview')` for anyone not an admin, page-side alone
   (no policy or function reads it; members copy the map by trigger). It
   only hides the page; every card still asks Full Access on its section.
-- Each section is a tab (`#ovwTabs`, the view strip, swipe and the arrows;
-  `tab=` in the address, the first left out) over its own pane, every card
-  read once on the visit. A tab counts the items its list cards hold, in
-  red where a late card has any (`.tab-n.is-err`).
-- Each card asks its own `may()` before any read, at Full Access (`manage`)
-  on its section or part (Manage below it shows nothing); the granted parts
-  (`ops.reports`, `ops.all`, `team.performance`) at their grant. A card not
-  allowed is not drawn, and a section with no cards takes its tab. Sections in the
-  rail's order: My Work (Late tasks, `ops.reports`; Open work for paused
-  and past clients, My Work Full Access with `ops.all`; Open work by person,
-  `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
-  (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
-  requests, `clients.requests`), Content Review (Sets waiting on the client,
-  by `batches.published_at`; Active clients with no set this month),
-  Creator Campaigns (Bookings past their date; Waiting for the quality
-  check), Reports (Waiting for confirmation; Reports for last month),
-  Documents (Letters of Offer not yet signed, `clients.documents`), Team (last
-  month's reviews through `perf_overview`: names and steps only).
+- One page read top to bottom, the mockup the user approved (2026-10-12,
+  task 47; `digital-form-tests` `mockups/dashboard/`), never a tab a
+  section: the period bar (`#ovwPeriod`, a segment of This month, Last
+  month, This quarter, `p=` in the address, This month left out; the span
+  and the time read beside it, at the right edge); the glance
+  (`#ovwGlance`: the on-time ring, `ADspaceChart` `meter` from
+  `ops_report.on_time` for the period, beside Needs attention today, a
+  signal a line: Late tasks, Reports owed for last month, Leads going cold,
+  Sets waiting on clients, Unanswered client requests, Active clients, each
+  its count and the dot and its word, Open list scrolling to the list);
+  Sales (New leads, Won, Churned, Committed monthly value) and Operations
+  (Open tasks, Late, Delivered, Reports published for last month) as tiles
+  (`.ovw-kpi`: the label, the figure, its change on the period before the
+  same days long (`on Sept`, `on last quarter`) and its trend
+  (`ADspaceChart.spark`) where it has a history; every tile keeps the
+  trend's room and the two groups share their rows, so the eight stand one
+  height); the charts, each with its way out at its title's right edge:
+  Leads to clients (one-line bars, each step's share of the one before),
+  Open work by person (one-line bars, the late share red), Pipeline now
+  and Reports for last month (rings with the whole in the middle, the
+  reports' slices in their status dots), Creator bookings, On-time delivery
+  by month, Active clients by month (each figure over its column, this
+  month lighter); a row's cards share its height and their Figures one
+  line; then Needs attention (`#ovwAttention`): one list of every source
+  (late tasks, open work for paused and past clients, reports owed and in
+  review, cold leads, restricted accounts, requests, sets waiting, no set
+  this month, bookings past their date, the quality check, unsigned
+  letters, last month's reviews), What · Section (a grey tag) · Who ·
+  Since, late first by the days late, then what waits, the longest first,
+  then what has not started; eight rows, then Show N more in place; a row
+  writes the record's address and opens it as search does.
+- Each tile, signal, chart and list source asks its own `may()` before any
+  read, at Full Access (`manage`) on its section or part; the granted parts
+  (`ops.reports`, `ops.all`, `team.performance`) at their grant; the lead
+  tiles, chart, signal and rows ask `clients.leads` too. What is not
+  allowed is not drawn and nothing of it is read. Reads are shared within
+  a visit, one request a source whatever draws from it (`R` in
+  `js/overview.js`: one read of the clients serves the sales figures, cold
+  leads, the pipeline and restricted accounts; one of the bookings serves
+  the chart, those past their date and the quality check), read again on
+  every visit and on a period change, never polled. The sales figures are
+  `ADspaceSales.figures`, so the Dashboard and Clients · Sales never
+  disagree. A refused read is `failLine` with Try again (in the list, that
+  source alone; a tile reads Could not load with Try again; a signal Could
+  not load), never nothing.
+- Committed monthly value is its one money figure (the user, 2026-10-12):
+  for whoever may open a client's Services (`clients.services` at View),
+  a month of each confirmed line by market, read from `client_services`
+  under that part's own policy; anyone else reads Active clients in that
+  tile, and the lines are not read. No other value, revenue or fee.
 - Reports for last month (`sm_reports_owed(p_period)`,
   `2026-10-07-reports-owed.sql`, Reports Full Access, client scope): the
   reports the months of that period ask for (their Reports ticks), found or
   not started, and every report made for the period no tick asked for (a
   report is the month's whose span holds its last day, else its calendar
   month's); a client with neither is never listed (the user, 2026-10-07:
-  not every client is a monthly engagement). The ring reads `n of N
-  published · n in review`; the rows are what is left but review (the card
-  above lists those): Not started, Draft, Confirmed, late first (by the
-  whole days late the row reads, then by stage), each with
-  who has the report task and its due time (else `report_due_days` after the
-  month), late in red; a row opens the report, else its task.
-- No money anywhere on it: no value, revenue or fee.
-- A list card: the title, the count (red only where late), View all to the
-  section; five rows, name over meta, the figure over its age at the right
-  edge, then Show N more listing the rest in the card itself; a row writes
-  the record's address and opens it as search does. A
-  refused read is `failLine` with Try again. Read again on every visit,
-  never polled.
+  not every client is a monthly engagement); a row opens the report, else
+  its task.
 - `batches.published_at` is stamped by `batches_published_at` on the move to
   published and cleared on Unpublish.
 

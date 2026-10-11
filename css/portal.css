@@ -9447,6 +9447,30 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-tight .chart-pie { flex-direction: column; align-items: stretch; }
 .is-tight .cp-ring { align-self: center; }
 
+/* Bars on one line (2026-10-12): the label, the bar, the figure; a red
+   share at the bar's end where part of it is late. */
+.chart-bars.is-inline { gap: 10px; }
+.chart-bars.is-inline .cb-row { display: grid; grid-template-columns: minmax(84px, 26%) minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 13px; }
+.chart-bars.is-inline .cb-track { display: flex; margin-top: 0; overflow: hidden; }
+.chart-bars.is-inline .cb-fill { border-radius: 0; min-width: 0; }
+.chart-bars.is-inline .cb-fill:first-child { border-radius: 4px 0 0 4px; min-width: 2px; }
+.chart-bars.is-inline .cb-fill:last-child { border-radius: 0 4px 4px 0; }
+.chart-bars.is-inline .cb-fill:only-child { border-radius: 4px; }
+.chart-bars.is-inline .cb-value { margin-left: 0; text-align: right; font-weight: 400; color: var(--ink-soft); }
+.chart-bars.is-inline .cb-value b { font-weight: 600; color: var(--ink); }
+.chart-bars.is-inline .cb-value small { font-size: 13px; }
+.chart-bars.is-inline .cb-value small.is-err { color: var(--err); font-weight: 600; }
+/* A ring's whole in its middle, and slices coloured as status dots. */
+.cp-ringbox { position: relative; flex: 0 0 auto; display: grid; place-items: center; }
+.cp-total { position: absolute; font-size: 22px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.cp-seg.is-ok { stroke: var(--dot-ok); } .cp-seg.is-warn { stroke: var(--dot-wait); }
+.cp-seg.is-err { stroke: var(--dot-late); } .cp-seg.is-off { stroke: var(--dot-off); }
+.cp-key > i.is-ok { background: var(--dot-ok); border-radius: 50%; } .cp-key > i.is-warn { background: var(--dot-wait); border-radius: 50%; }
+.cp-key > i.is-err { background: var(--dot-late); border-radius: 50%; } .cp-key > i.is-off { background: var(--dot-off); border-radius: 50%; }
+/* A column's figure over it. */
+.cc-bar { position: relative; }
+.cc-fig { font-style: normal; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 4px; font-size: 11.5px; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 .chart-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-mute); }
 .chart-key li { display: inline-flex; align-items: center; gap: 6px; }
 .chart-key i { width: 10px; height: 10px; border-radius: 3px; background: var(--ink-soft); }
@@ -10059,7 +10083,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    and the chevron ends at the card's edge. */
 .ovw-cardhead .ovgo { margin: -8px -6px -8px auto; flex: 0 0 auto; }
 /* A card left alone on the last row takes the row, never half of it. */
-.ovw-grid > .ovw-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.ovw-grid:not(.is-three) > .ovw-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-rows { display: grid; }
 .ovw-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: start;
@@ -10093,6 +10117,122 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-card .emptyline { padding: 0; }
 .ovw-card .emptyline b { font-weight: 400; color: var(--ink-mute); }
 .ovw-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }
+
+/* ---- The Dashboard (2026-10-12, the mockup the user approved) -----------------
+   One column: the period bar, the glance (the on-time ring beside what needs
+   acting on today), Sales and Operations as tiles, the charts, then one list
+   of everything waiting. Blocks stand 12 apart, as every section's do. */
+.ovw { display: grid; gap: 12px; }
+.ovw > * { margin: 0; }
+.ovw-bar { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; }
+.is-narrow .ovw-bar { justify-content: flex-start; }
+.ovw-span { font-size: 12.5px; color: var(--ink-mute); }
+/* The glance: the ring on the left, the signals on the right; one column
+   in a narrow pane, the ring centred over them. */
+.ovw-glance { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: center; }
+.ovw-glance.is-plain { grid-template-columns: minmax(0, 1fr); }
+.is-narrow .ovw-glance { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.ovw-meter { display: grid; justify-items: center; min-width: 0; }
+.ovw-meter > .chartcard { width: 100%; padding: 0; background: none; box-shadow: none; }
+.ovw-meter .chart-data { display: none; }
+.chart-meter { position: relative; width: 170px; height: 170px; margin: 0 auto; }
+.cm-ring { width: 100%; height: 100%; }
+.cm-track { fill: none; stroke: var(--line-soft); stroke-width: 3.6; }
+.cm-arc { fill: none; stroke: var(--ink-soft); stroke-width: 3.6; stroke-linecap: round; }
+.cm-arc.is-ok { stroke: var(--ok-solid); }
+.cm-mid { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; }
+.cm-mid b { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
+.cm-mid small { font-size: 12px; color: var(--ink-mute); }
+.ovw-sig-rows { display: grid; }
+.ovw-sig {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 124px; gap: 16px; align-items: baseline;
+  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px;
+}
+.ovw-sig:first-child { border-top: 0; padding-top: 0; }
+.ovw-sig-name { min-width: 0; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.ovw-sig-n { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--ink); }
+.ovw-sig-word { min-width: 0; }
+.ovw-sig-fail { font-size: 12.5px; color: var(--ink-mute); }
+.is-tight .ovw-sig { grid-template-columns: minmax(0, 1fr) auto 92px; gap: 12px; }
+/* Sales and Operations: a label over two by two tiles, the two groups side
+   by side at a desk and one over the other in a narrow pane. */
+.ovw-groups { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.ovw-groups.is-one, .is-narrow .ovw-groups { grid-template-columns: minmax(0, 1fr); }
+/* Side by side, the two groups share their rows (subgrid), so a tile that
+   grows lifts its neighbour across the way and the eight stay even. */
+.ovw-groups:not(.is-one) { grid-template-rows: auto auto auto; }
+.ovw-groups:not(.is-one) > .ovw-group { grid-row: span 3; grid-template-rows: subgrid; }
+.ovw-groups:not(.is-one) .ovw-kpis { grid-row: span 2; grid-template-rows: subgrid; }
+.is-narrow .ovw-groups:not(.is-one) { grid-template-rows: none; }
+.is-narrow .ovw-groups:not(.is-one) > .ovw-group { grid-row: auto; grid-template-rows: none; }
+.is-narrow .ovw-groups:not(.is-one) .ovw-kpis { grid-row: auto; grid-template-rows: none; }
+.ovw-group { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.ovw-group-h { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-mute); }
+.ovw-group-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.ovw-kpis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.ovw-groups.is-one .ovw-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.is-narrow .ovw-groups.is-one .ovw-kpis { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
+.ovw-kpi { display: grid; align-content: start; gap: 2px; min-width: 0; }
+.ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovw-kpi-fig { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 30px; overflow-wrap: anywhere; }
+.ovw-kpi-fig.is-money { font-size: 21px; }
+.ovw-kpi-fig.is-err { color: var(--err); }
+.ovw-kpi-fig .skel { display: block; width: 56px; height: 22px; margin: 4px 0 2px; padding: 0; border-radius: var(--radius-sm); background: var(--line-soft); }
+.ovw-sig-n .skel { display: inline-block; width: 18px; height: 12px; padding: 0; border-radius: 4px; background: var(--line-soft); }
+.ovw-kpi-sub { font-size: 12.5px; color: var(--ink-soft); }
+.ovw-kpi-again.btn { min-width: 0; margin: -6px 0 -6px -8px; }
+/* Every tile keeps the trend's room, drawn or not, so the eight tiles of
+   Sales and Operations stand one height (the user, 2026-10-12). */
+.ovw-kpi-trend { display: block; margin-top: 8px; height: 32px; }
+.chart-spark { display: block; width: 100%; height: 32px; overflow: visible; }
+.chart-spark polyline { fill: none; stroke: var(--ink-soft); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.chart-spark.is-err polyline { stroke: var(--err); }
+.ovw-kpi-bar { display: block; height: 6px; margin-top: 13px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.ovw-kpi-bar i { display: block; height: 100%; border-radius: 3px; background: var(--ink-soft); }
+/* Three charts on a row where they fit, each taking the row's share. */
+.ovw-grid.is-three { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.is-narrow .ovw-grid.is-three { grid-template-columns: minmax(0, 1fr); }
+/* Three across, a ring and its legend share a third: a smaller ring, the
+   legend's words whole and its figures without their share. */
+/* The cards of a row share its height, and each card's Figures stands at
+   its foot, so the row's Figures read on one line (the user, 2026-10-12). */
+.ovw-grid > .chartcard { display: flex; flex-direction: column; }
+.ovw-grid > .chartcard > .chart-data { margin-top: auto; padding-top: 12px; }
+.ovw-grid.is-three .chart-pie { gap: 16px; }
+.ovw-grid.is-three .cp-ring { width: 104px; height: 104px; }
+.ovw-grid.is-three .cp-label { overflow-wrap: normal; }
+.ovw-grid.is-three .cp-value small { display: none; }
+/* Needs attention: What, Section, Who, Since; on a narrow pane what over
+   its meta on the left and since at the right, who under the meta. */
+.ovw-att-rows { display: grid; }
+.ovw-att-head, .ovw-att-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px 132px 124px; gap: 2px 16px; align-items: start; }
+.ovw-att-head { padding: 0 0 8px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ovw-att-head > span:last-child, .ovw-att-since { text-align: right; justify-self: end; }
+.ovw-att-row {
+  width: calc(100% + 16px); min-height: var(--ctl-h); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
+  border-radius: 0; background: none; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.ovw-att-head + .ovw-att-row { border-top: 0; }
+.ovw-att-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); border-radius: var(--radius-ctl-sm); }
+@media (hover: hover) { .ovw-att-row:hover { background: var(--sunk); } }
+.ovw-att-what { display: grid; gap: 2px; min-width: 0; }
+.ovw-att-what b { font-weight: 600; overflow-wrap: anywhere; }
+.ovw-att-what small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.ovw-att-who { min-width: 0; color: var(--ink-soft); overflow-wrap: anywhere; }
+.ovw-dash { color: var(--ink-mute); }
+.ovw-att-since { white-space: nowrap; }
+.ovw-att-since b.is-err { font-weight: 600; color: var(--err); }
+.is-narrow .ovw-att-head { display: none; }
+.is-narrow .ovw-att-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "what since" "who since"; }
+.is-narrow .ovw-att-head + .ovw-att-row { border-top: 0; }
+.is-narrow .ovw-att-what { grid-area: what; }
+.is-narrow .ovw-att-who { grid-area: who; font-size: 12.5px; }
+.is-narrow .ovw-att-since { grid-area: since; }
+.is-narrow .ovw-att-sec { display: none; }
+.is-narrow .ovw-att-who:has(.ovw-dash) { display: none; }
 
 /* ---- Template families (2026-09-28) ------------------------------------------
    A template's row reads its name over its formats with their hours; the
