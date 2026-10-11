@@ -10944,54 +10944,76 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
    at the thumb: the first four this person may open, in the rail's order,
    and More, which opens the rest above the bar. The chosen tab is the fill
    behind its glyph, as the rail's chosen row is a fill: never blue (the
-   action's), never a weight. What pops up from the foot (a docked card, the
-   More panel, the confirm bar) rises above the bar; a sheet (z-index 85
-   and up) covers it, as an iPhone app's sheet does. `--tabbar-space` is
+   action's), never a weight. Everything that pops up rises above the bar
+   as a card (a docked card, the More panel, the confirm bar, and every sheet
+   from 2026-10-11, the bar left in sight under its scrim). `--tabbar-space` is
    what every surface at the foot keeps clear: the bar and the home bar
    under it, 0 where there is no bar. ===== */
-:root { --tabbar-h: 56px; --tabbar-space: 0px; }
-:root.has-tabbar { --tabbar-space: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+:root { --tabbar-h: 60px; --tabbar-lift: 10px; --tabbar-space: 0px; }
+/* Floating (the user, 2026-10-11, after Instagram's bar): a glass pill held
+   16px from each side and lifted off the home bar; `--tabbar-space` keeps
+   the pill and its lift clear. */
+:root.has-tabbar { --tabbar-space: calc(var(--tabbar-h) + var(--tabbar-lift) * 2 + env(safe-area-inset-bottom, 0px)); }
 .tabbar { display: none; }
 :root.has-tabbar .tabbar:not([hidden]) {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
-  display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 120px)); justify-content: center;
-  padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px));
-  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
-  border-top: 1px solid var(--line);
-}
-@media (pointer: coarse) {
-  :root.has-tabbar .tabbar:not([hidden]) { background: var(--chrome-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  position: fixed; z-index: 45;
+  left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(var(--tabbar-lift) + env(safe-area-inset-bottom, 0px));
+  max-width: calc(var(--tabs, 5) * 120px + 10px); margin: 0 auto;
+  display: grid; grid-template-columns: repeat(var(--tabs, 5), minmax(0, 1fr));
+  box-sizing: border-box; height: var(--tabbar-h); padding: 4px;
+  border: 1px solid var(--line-lift); border-radius: calc(var(--tabbar-h) / 2);
+  background: var(--chrome-solid);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--shadow-lift);
+  touch-action: none; -webkit-user-select: none; user-select: none;
 }
 /* The keyboard is up: the bar steps away rather than ride on top of it. */
 :root.has-tabbar body.is-typing .tabbar { display: none; }
 .tabbar-tab {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  min-width: 0; height: var(--tabbar-h); padding: 5px 2px 4px; border: 0; background: none;
-  color: var(--ink-mute); font: inherit; font-size: 11px; font-weight: 400; line-height: 13px;
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-width: 0; height: 100%; padding: 4px 2px; border: 0; border-radius: calc((var(--tabbar-h) - 10px) / 2);
+  background: none; color: var(--ink-mute); font: inherit; font-size: 11px; font-weight: 400; line-height: 13px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color var(--t-fast) var(--ease);
 }
-.tabbar-tab svg {
-  box-sizing: content-box; width: 20px; height: 20px; padding: 5px 15px; stroke-width: 1.7;
-  border-radius: 15px; transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
-}
+.tabbar-tab svg { width: 20px; height: 20px; padding: 3px; stroke-width: 1.7; box-sizing: content-box; }
 .tabbar-word { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tabbar-tab.is-on { color: var(--ink); }
-.tabbar-tab.is-on svg { background: var(--line-soft); }
-@media (hover: hover) { .tabbar-tab:not(.is-on):hover svg { background: var(--sunk); } }
+.tabbar-tab.is-on, .tabbar-tab.is-near { color: var(--ink); }
+/* The chosen tab's fill is one surface that slides to the tab chosen, and
+   follows a finger drawn along the bar (js/admin.js `placeThumb`). */
+.tabbar-thumb {
+  position: absolute; top: 4px; left: 0; height: calc(100% - 8px); width: var(--tw, 0px);
+  transform: translateX(var(--tx, 0px)); border-radius: calc((var(--tabbar-h) - 10px) / 2);
+  background: var(--line-soft); pointer-events: none; opacity: 1;
+  transition: transform var(--t-slow) var(--ease), width var(--t-slow) var(--ease), opacity var(--t) var(--ease);
+}
+.tabbar-thumb.is-snap, .tabbar.is-drag .tabbar-thumb { transition: opacity var(--t) var(--ease); }
+.tabbar-thumb.is-none { opacity: 0; }
+@media (hover: hover) { .tabbar-tab:not(.is-on):hover { background: var(--sunk); } }
 .tabbar-tab:active svg { transform: scale(.97); }
-.tabbar-tab:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; border-radius: var(--radius-sm); }
+.tabbar-tab:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+/* Something waits on you in My Work: the late dot on its glyph, named for a
+   screen reader in the tab's own words. */
+.tabbar-dot {
+  position: absolute; top: 7px; left: calc(50% + 7px); width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dot-late); box-shadow: 0 0 0 2px var(--card); pointer-events: none;
+}
 /* The rail's toggle gives way to the bar. */
 :root.has-tabbar .navtoggle { display: none; }
 /* More: the rail as a card risen above the bar, holding the sections the bar
    does not (each offered once on the screen) and the Activity record. It
    rises from behind the bar and is taken out of reach while shut. */
 :root.has-tabbar .sidebar {
-  position: fixed; top: auto; left: 0; right: 0; bottom: var(--tabbar-space); z-index: 44;
+  position: fixed; top: auto; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: var(--tabbar-space); z-index: 44;
   width: auto; height: auto; flex-basis: auto;
   max-height: calc(100vh - var(--tabbar-space) - var(--head-h) - 16px);
-  padding: 8px max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
-  background: var(--raised); border: 0; border-top: 1px solid var(--line-lift);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-lift);
+  padding: 8px 12px;
+  background: var(--raised); border: 1px solid var(--line-lift);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lift);
   transform: translateY(calc(100% + var(--tabbar-space))); visibility: hidden;
   transition: transform var(--t-slow) var(--ease), visibility 0s linear var(--t-slow);
 }
@@ -11007,15 +11029,64 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 :root.has-tabbar .navgroup.is-tabbed { display: none; }
 :root.has-tabbar .sidebar-foot { margin-top: 4px; }
 :root.has-tabbar .scrim {
-  position: fixed; top: 0; left: 0; right: 0; bottom: var(--tabbar-space); z-index: 43;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 43;
   background: var(--scrim); border: 0; padding: 0;
 }
 /* What sits at the foot keeps clear of the bar. */
 :root.has-tabbar .console-body { padding-bottom: calc(32px + var(--tabbar-space)); }
 :root.has-tabbar .confirmbar { bottom: var(--tabbar-space); }
 :root.has-tabbar .confirmbar-in { padding-bottom: 12px; }
-:root.has-tabbar .popcard.is-dock:not(.is-insheet) { bottom: calc(12px + var(--tabbar-space)); }
+:root.has-tabbar .popcard.is-dock { bottom: calc(12px + var(--sheet-floor)); }
 :root.has-tabbar .kmenu.notif-menu { max-height: calc(100vh - var(--head-h) - var(--tabbar-space) - 24px); overflow-y: auto; }
+/* Every panel is a card above the bar (the user, 2026-10-11: "every panel
+   opens a card above the bar on mobile"), as More is: a sheet, a question,
+   search, the task, the finder. Inside the gutters with the large corner,
+   it stands on the bar's own floor, so the bar stays in sight under the
+   scrim, dimmed and out of reach (a press there is a press on the scrim:
+   a form is never left by a tab under a thumb). While the keyboard is up
+   the bar steps away and the card takes its room. */
+:root.has-tabbar {
+  --sheet-floor: var(--tabbar-space);
+  --sheet-top: max(16px, calc(env(safe-area-inset-top, 0px) + 8px));
+}
+:root.has-tabbar body.is-typing { --sheet-floor: calc(8px + env(safe-area-inset-bottom, 0px)); }
+:root.has-tabbar .sheet { padding-bottom: var(--sheet-floor); }
+@keyframes mk-sheet-float { from { transform: translateY(calc(100% + var(--sheet-floor))); } }
+:root.has-tabbar .picker.is-full {
+  inset: var(--sheet-top) max(16px, env(safe-area-inset-right, 0px)) var(--sheet-floor) max(16px, env(safe-area-inset-left, 0px));
+  padding: 12px 16px; border: 1px solid var(--line-lift);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lift);
+  animation: mk-sheet-float var(--t-slow) var(--ease);
+}
+@media (max-width: 640px) {
+  :root.has-tabbar .sheet,
+  :root.has-tabbar .sheet.sheet-side,
+  :root.has-tabbar .sheet.searchsheet {
+    align-items: flex-end; justify-content: center;
+    padding: var(--sheet-top) max(16px, env(safe-area-inset-right, 0px)) var(--sheet-floor) max(16px, env(safe-area-inset-left, 0px));
+  }
+  :root.has-tabbar .sheet-card,
+  :root.has-tabbar .sheet-side > .sheet-card.taskcard {
+    max-height: calc(100vh - var(--sheet-top) - var(--sheet-floor));
+    border-radius: var(--radius-lg); padding-bottom: 8px;
+    animation: mk-sheet-float var(--t-slow) var(--ease);
+  }
+  :root.has-tabbar .sheet-side > .sheet-card.taskcard { padding-bottom: 0; overflow: hidden; }
+  :root.has-tabbar .qhead { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  :root.has-tabbar .sheet-side .qbody { padding-bottom: 20px; }
+  :root.has-tabbar .sheet-card.searchcard {
+    height: calc(100vh - var(--sheet-top) - var(--sheet-floor));
+    max-height: calc(100vh - var(--sheet-top) - var(--sheet-floor));
+  }
+  @supports (height: 100dvh) {
+    :root.has-tabbar .sheet-card,
+    :root.has-tabbar .sheet-side > .sheet-card.taskcard { max-height: calc(100dvh - var(--sheet-top) - var(--sheet-floor)); }
+    :root.has-tabbar .sheet-card.searchcard {
+      height: calc(100dvh - var(--sheet-top) - var(--sheet-floor));
+      max-height: calc(100dvh - var(--sheet-top) - var(--sheet-floor));
+    }
+  }
+}
 /* ===== end phone tab bar ===== */
 
 /* =========================================================================

@@ -1216,6 +1216,7 @@
     var box = $('workWaiting');
     if (!box) return;
     var rows = state.waiting || [];
+    if (bridge.waiting) bridge.waiting(rows.length);
     var on = state.view === 'list' && state.scope === 'mine' && state.filter === 'day' && !state.find && rows.length;
     box.hidden = !on;
     if (!on) { box.innerHTML = ''; return; }
@@ -7941,6 +7942,13 @@
         state.notifPoll = setInterval(function () { if (!document.hidden) loadNotifs(); }, 60000);
         document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
       }
+    }
+    /* Under the phone's tab bar My Work's dot says what waits on you from
+       whichever section the console opens on: Waiting for you is read once
+       here, then again each time My Work loads. */
+    if (!state.waitRead && document.documentElement.classList.contains('has-tabbar') && may('ops', 'view')) {
+      state.waitRead = true;
+      loadWaiting();
     }
   }
   function takeNotifs(b) {
