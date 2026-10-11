@@ -1281,7 +1281,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     in charge; each left out when unknown).
   - `.rec-ctl`: Log call (`#crmLogCall`, Clients: Calls at Work, the phone
     glyph alone on a narrow pane, given to the pane's own head on Calls and
-    visits; 2026-10-11), the stage select, then one ⋯ holding Edit and
+    visits, and gone from a head under 300px (`data-narrow="300"`, a 320
+    phone); 2026-10-11), the stage select, then one ⋯ holding Edit and
     Delete (the item carries `data-need="clients:manage"`).
   - Phone (`.is-narrow`): `"mark . ctl" / "who who who"`.
   - The month line (`#crmMonthLine`, 2026-10-08), under the meta for an
@@ -2337,7 +2338,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Under a finger a row swiped left shows its next step (`rowSwipe`; the
     user, 2026-10-11: quick actions): the name and date stay in sight, the
     stage and the ⋯ fade under one blue button at the right edge named as
-    the task's own (`verbFor`), pressed through `stepFromRow` as the select
+    the task's own (`verbFor`), made as the swipe begins and gone as the row
+    settles (a row at rest holds only its cells), pressed through `stepFromRow` as the select
     is. The swipe shows the act, never takes it, because a sideways swipe
     elsewhere changes the view (the row is `data-noswipe`); a press
     elsewhere, a scroll or another row's swipe puts it back.

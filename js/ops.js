@@ -2590,12 +2590,13 @@
     if (!row) return;
     if (swiped === row) swiped = null;
     row.classList.remove('is-swiping');
-    if (!row.classList.contains('is-swiped')) { row.style.removeProperty('--sx'); return; }
+    if (!row.classList.contains('is-swiped')) { row.style.removeProperty('--sx'); if (row.__unact) row.__unact(); return; }
     row.style.setProperty('--sx', '0px');
     setTimeout(function () {
       if (swiped === row) return;
       row.classList.remove('is-swiped');
       row.style.removeProperty('--sx');
+      if (row.__unact) row.__unact();
     }, 220);
   }
   function rowSwipe(el, t, after) {
@@ -2604,20 +2605,27 @@
     if (!next || howOf(t, next) !== 'step') return;
     el.setAttribute('data-noswipe', '');
     el.classList.add('has-swipe');
-    var act = document.createElement('button');
-    act.type = 'button';
-    act.className = 'btn btn-primary trow-next';
-    act.textContent = verbFor(next, t);
-    act.tabIndex = -1;
-    act.setAttribute('aria-hidden', 'true');
-    el.appendChild(act);
-    act.addEventListener('click', function (e) {
-      e.stopPropagation();
-      unswipe(el);
-      stepFromRow(t, el, next, after);
-    });
+    /* The step is made as a swipe begins and goes as the row settles back,
+       so a row at rest holds only its own cells. */
+    var act = null;
+    function makeAct() {
+      if (act && act.parentNode === el) return;
+      act = document.createElement('button');
+      act.type = 'button';
+      act.className = 'btn btn-primary trow-next';
+      act.textContent = verbFor(next, t);
+      act.tabIndex = -1;
+      act.setAttribute('aria-hidden', 'true');
+      el.appendChild(act);
+      act.addEventListener('click', function (e) {
+        e.stopPropagation();
+        unswipe(el);
+        stepFromRow(t, el, next, after);
+      });
+    }
+    el.__unact = function () { if (act && act.parentNode) act.parentNode.removeChild(act); act = null; };
     var x0 = 0, y0 = 0, base = 0, dx = 0, on = false, gone = false;
-    var wide = function () { return Math.min((act.offsetWidth || 150) + 16, el.offsetWidth - 48); };
+    var wide = function () { return Math.min(((act && act.offsetWidth) || 150) + 16, el.offsetWidth - 48); };
     el.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) return;
       var p = e.touches[0];
@@ -2632,6 +2640,7 @@
         if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
         if (Math.abs(my) > Math.abs(mx) || (base === 0 && mx > 0)) { gone = true; return; }
         on = true;
+        makeAct();
         el.classList.add('is-swiping', 'is-swiped');
       }
       dx = Math.max(-wide() - 24, Math.min(0, base + mx));

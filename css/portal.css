@@ -11118,6 +11118,9 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
 .crm-logcall.is-here { display: none; }
 .console-body.is-narrow .crm-logcall { width: var(--ctl-h-sm); padding: 0; justify-content: center; }
 .console-body.is-narrow .crm-logcall-word { display: none; }
+/* A head under 300px (a 320 phone) has no room beside the stage: Calls and
+   visits offers it there. */
+.rec-id.is-narrow .crm-logcall { display: none; }
 /* A My Work row swiped left shows its next step (js/ops.js `rowSwipe`, the
    user, 2026-10-11): the row's cells slide with the finger and the step
    waits at the right edge, the one blue act while it stands open. */
