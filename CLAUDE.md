@@ -389,8 +389,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (each named for a screen reader and on hover), at a desk as under the
   bar (the user, 2026-10-10: "activity log can go inline with version
   code", "just activity record icons would do"; 2026-10-11: "the settings
-  button to fit beside activity record as just icons same as it"); Arrange
-  sections is in the account menu. The menu toggle gives way to it; the drawer stays for a narrow desk window.
+  button to fit beside activity record as just icons same as it", "the
+  rearrange tabs also next to settings"), Arrange sections' mark first. The menu toggle gives way to it; the drawer stays for a narrow desk window.
   What pops up (a docked card, a ⋯ menu, More, the confirm bar) keeps above
   it through `--tabbar-space`; every panel (a sheet, a question, search,
   the task, the finder) is a card above it inside the gutters with the
@@ -415,8 +415,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the user, 2026-10-11); a shorter press is a tap.
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
   "mobile tab and web … both sync edits"): one order a colleague for the
-  web rail and the phone tab bar alike. `#railEdit` in the account menu
-  (drawn with three sections or more) opens
+  web rail and the phone tab bar alike. `#railEdit`, a mark at the rail's
+  foot before Settings' (drawn with three sections or more; 2026-10-11, the
+  user: "the rearrange tabs also next to settings") opens
   `#railSheet`: the rail's groups (Work, Internal) as lists, a section
   dragged by its grip or moved with the arrow keys on it within its group,
   the Dashboard fixed first; under the bar the rows it will hold read Tab
@@ -453,8 +454,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   opening the one sheet that already edits it. The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
-  Workspace (Arrange sections, drawn only where it may be used, its
-  hairline leaving with it); This device
+  This device
   (Theme, Passkeys, Notifications, Refresh app); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
 - `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a

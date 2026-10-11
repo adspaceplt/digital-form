@@ -266,10 +266,6 @@
     if (seg && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(seg);
     menu.querySelector('button.kmenu-item:not([hidden])').focus();
   });
-  /* Arrange sections opens from the menu, which shuts behind it. */
-  ['railEdit'].forEach(function (id) {
-    if ($(id)) $(id).addEventListener('click', function () { shutAcct(); });
-  });
   if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });
   // Crossing the phone line with the menu open shuts it rather than leave it laid for the other.
   if (acctPhone && acctPhone.addEventListener) acctPhone.addEventListener('change', function () {
@@ -960,8 +956,8 @@
     if (!bar) return;
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     var open = navItems().filter(function (b) { return !b.hidden; });
-    /* Settings and the Activity record are in the account menu, so More
-       holds sections alone. */
+    /* Arrange sections, Settings and the Activity record are marks at the
+       rail's foot, so the bar holds sections alone. */
     var room = open.length <= 5 ? 5 : 4;
     tabRoom = room;
     var tabs = open.slice(0, room);
@@ -1292,7 +1288,7 @@
       roSheet();
       $('railMsg').textContent = '';
       roFill(null);
-      window.ADspaceSheet.show(roBox, { opener: $('acctBtn') });
+      window.ADspaceSheet.show(roBox, { opener: tabbarOn() ? $('tabMore') : edit });
     });
     function follow() {
       var was = document.documentElement.classList.contains('has-tabbar');
