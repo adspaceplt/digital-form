@@ -2402,3 +2402,56 @@ rows with a toggle ("Needs attention part can capped ... so it is not
 inadvertently long"; "5 show only"). Lost with Sales: the popover listing the
 clients behind a figure; the Dashboard's rows open records instead. The
 `ops.reports` part is named Team figures on the Dashboard.
+
+### 2026-10-12 · Each post is its own task in the New sheet
+The user, looking at the regrouped sheet: "Assign priority and retainer by
+right supposed to go inside each post … Imagine i have 7 posts (6 retainers
+1 adhoc) each have different dues different handling person, different
+urgency." Assigned to, Priority and Task type moved into each post, on one
+line under its dates, the deadline a priority sets said under that post;
+Add another starts the next post as the one above. `ops_create_pieces`
+reads the three on each piece over the shared ones
+(`2026-10-12-pieces-of-their-own.sql`), so a page loaded before still works,
+and the migration runs before the page: a database without it would give
+every post the first one's. The user then: "All the more details part,
+complexity brief and repeat are really not so useful can remove so it looks
+nicer." The fold went; complexity takes the format family's own, and a brief
+or a repeat is set on the task card (Repeat on a schedule). Option A of the
+mockups was chosen over B (chips in a row: "too many small … uneven untidy");
+the posts became one shaded group with Add another inside it ("Posts section
+doesnt look like one group with the add another button"), and a client with
+no confirmed content month shows no posts ("no content month = nothing to
+choose. Unless its for leads or internal"): its line and Open Months, which
+lands on the client's Months in My Work, where the month and its meeting are
+set (the month alone does not take posts until its meeting is set or marked
+not needed, so a button making only the month would leave the person short).
+
+### 2026-10-12 · The template sheet asks only what a format's task takes
+
+The user asked what templates do, then: "Ok proceed the template sheet
+changes". A task made from a format takes its family's checklist and the
+variant's hours, and nothing else from the template: the workflow is the
+caller's (the content workflow), the dates are typed on the post
+(`dates_as_given`), the owner is always sent, and the title is the post's
+description. Only a call naming `template_id` read the Task title, Workflow,
+Assigned to and Due days after, and no page sends one. The sheet now asks
+Name, Active (a switch, in place of the "Offered when making tasks" tick),
+Formats with their hours, and the checklist (Items). The fields it dropped
+stay in the table: `ops_save_template` writes every column on an update, so
+the page sends each stored value back unchanged rather than clearing it; a
+new template takes the content workflow and none of them. The family's own
+Estimate still stands behind a variant with no hours, kept as stored. No
+migration.
+
+### 2026-10-12 · The build line is Refresh app
+
+The user: "Can the refresh app build on tapping the text v26.xx.xx · {commit}
+(no underline decor)", then "Remember to remove the refresh app button after
+adding to the build line". `#appVersion` at the rail's foot (and in More
+under the tab bar) is now a button drawn as its words: no box, no underline,
+the mute ink and the soft ink on hover, the line's height (38, 44 under a
+finger) its target, named `Refresh app, {build}` for a screen reader and on
+hover. A press runs `ADspaceRefresh.hard()` as the account menu's item did,
+and that item is gone. The line is drawn only from a Pages build's
+`/version.json`, so a copy served raw has no Refresh app; the installed app
+always runs a build.

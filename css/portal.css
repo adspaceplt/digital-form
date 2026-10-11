@@ -2324,6 +2324,15 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 11px; line-height: 1.4; color: var(--ink-mute);
   font-variant-numeric: tabular-nums; letter-spacing: 0;
 }
+/* It is also Refresh app (2026-10-12): a press on the words, which read as
+   words (no box, no underline), the line's full height its target. */
+button.appver {
+  min-height: var(--ctl-h); border: 0; border-radius: var(--radius-sm);
+  background: none; font-family: inherit; font-weight: 400; text-align: left; cursor: pointer;
+}
+@media (hover: hover) {
+  button.appver:hover { color: var(--ink-soft); }
+}
 /* `.railrow` is the box a row of the rail draws in and `.navitem` is a
    *section* of the console: the first is a shape, the second is a meaning
    with wiring behind it (`navItems()` reads every `.navitem` and asks the
@@ -4521,38 +4530,68 @@ body > .shell { width: 100%; }
    head grows by as little as a field can when the pen is pressed. */
 /* A hint under its own field sits on the field, not a block step away. */
 .field > .hint { margin: 6px 0 0; }
-/* The New sheet's pieces (2026-09-28): a line each, every field named on
-   every line, the remove mark at the end once there is more than one. Three
-   lines a piece: what it is; its format and week; its draft due, due date
-   and post date (the user, 2026-10-06: three dates a post, typed). Pieces
-   sit a hairline apart. On a narrow card the dates go two and one. */
-.pieces { display: grid; gap: 12px; }
+/* The New sheet's posts (2026-10-12): one shaded group holding every post
+   and Add another; each post is one task and names on its own lines what it
+   is and its format; its week and three dates; who takes it, how soon and
+   what kind, the deadline a priority sets under them. Posts sit a hairline
+   apart, each headed Post n with its remove mark once there are two. The
+   tracks of the week and dates line are the post's own, so the lines above
+   and below share their edges. On a narrow card the fields go two across. */
+.ntfor { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin: 0; }
+.ntfor + .row { margin-top: 16px; }
+.ntfor-pick { display: flex; align-items: center; gap: 8px; }
+.ntfor-pick .field-label { margin: 0; }
+.ntfor .tickline { margin: 0; }
+.ntnomonth { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-top: 16px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk); }
+.ntnomonth > span { font-size: 13px; color: var(--ink-soft); }
+.ntnomonth[hidden] { display: none; }
+.postgroup { background: var(--sunk); border-radius: var(--radius); padding: 14px 16px 16px; }
+.postgroup-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; }
+.postgroup-head .fsec-h { margin: 0; }
+.postgroup-n { font-size: 12.5px; color: var(--ink-mute); }
+.postgroup-n[hidden] { display: none; }
+.pieces { display: grid; gap: 0; }
 .piece {
-  display: grid; gap: 12px; align-items: end;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-areas: "desc desc desc" "fmt fmt week" "draft due post";
+  display: grid; gap: 12px; align-items: end; padding: 12px 0 16px;
+  grid-template-columns: minmax(0, .8fr) repeat(3, minmax(0, 1fr));
+  grid-template-areas: "desc desc desc fmt" "week draft due post" "owner owner pri type";
 }
+.piece:last-child { padding-bottom: 4px; }
+.piece + .piece { border-top: 1px solid var(--line); }
+.piece-head { grid-area: head; display: flex; align-items: center; justify-content: space-between; min-height: 24px; }
+.piece-name { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.piece-head .piece-x { margin: -10px -8px -10px 0; }
 .piece-desc { grid-area: desc; }
 .piece-fmt { grid-area: fmt; }
 .piece-week { grid-area: week; }
 .piece-draft { grid-area: draft; }
 .piece-due { grid-area: due; }
 .piece-post { grid-area: post; }
-.piece-x { grid-area: x; }
-.piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
-.pieces.is-many .piece { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--ctl-h); grid-template-areas: "desc desc desc x" "fmt fmt week ." "draft due post ."; }
-.pieces.no-week .piece { grid-template-areas: "desc desc desc" "fmt fmt fmt" "draft due post"; }
-.pieces.no-week.is-many .piece { grid-template-areas: "desc desc desc x" "fmt fmt fmt ." "draft due post ."; }
-.pieces.no-week .piece-week, .pieces:not(.is-many) .piece-x { display: none; }
+.piece-owner { grid-area: owner; }
+.piece-pri { grid-area: pri; }
+.piece-type { grid-area: type; }
+/* The deadline line takes a row of its own only while it is said, so a
+   Normal post keeps no empty row. */
+.piece-note { grid-column: 1 / -1; margin: -6px 0 0; }
+.piece-note[hidden] { display: none; }
+.pieces.is-many .piece { grid-template-areas: "head head head head" "desc desc desc fmt" "week draft due post" "owner owner pri type"; }
+.pieces.no-week .piece { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "desc desc fmt" "draft due post" "owner pri type"; }
+.pieces.no-week.is-many .piece { grid-template-areas: "head head head" "desc desc fmt" "draft due post" "owner pri type"; }
+.pieces.no-week .piece-week, .pieces:not(.is-many) .piece-head { display: none; }
 .pieces-foot { display: flex; margin-top: 12px; }
-/* A piece's fields fill their tracks: a select's own 180px floor would
-   push the week over the remove mark. */
-.piece .input, .piece .select { width: 100%; min-width: 0; }
+/* A post's fields fill their tracks: a select's own 180px floor would push
+   the week over the dates. */
+.piece .input, .piece .select, .piece .dmy { width: 100%; min-width: 0; max-width: none; }
+/* A one-line box is a block, so no line box's descent drops it below the
+   Format beside it. */
+.piece-desc textarea { display: block; }
 #ntCodeHint { margin: 8px 0 0; }
-.is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt week" "draft due" "post post"; }
-.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc x" "fmt week ." "draft due ." "post post ."; }
-.is-narrow .pieces.no-week .piece { grid-template-areas: "desc desc" "fmt fmt" "draft due" "post post"; }
-.is-narrow .pieces.no-week.is-many .piece { grid-template-areas: "desc desc x" "fmt fmt ." "draft due ." "post post ."; }
+#ntMonthHint { text-align: right; }
+.is-narrow .postgroup { padding: 12px 14px 14px; }
+.is-narrow .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt fmt" "week draft" "due post" "owner owner" "pri type"; }
+.is-narrow .pieces.is-many .piece { grid-template-areas: "head head" "desc desc" "fmt fmt" "week draft" "due post" "owner owner" "pri type"; }
+.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "desc desc" "fmt fmt" "draft due" "post post" "owner owner" "pri type"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-areas: "head head" "desc desc" "fmt fmt" "draft due" "post post" "owner owner" "pri type"; }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
@@ -10237,6 +10276,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .tplrow-name { display: grid; gap: 2px; min-width: 0; }
 .tplrow-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .tplrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.teswitch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: var(--ctl-h); margin-top: 16px; }
+.teswitch-name { font-size: 14px; }
 .tefmts { display: grid; gap: 4px; }
 .tefmt { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; min-height: var(--ctl-h-sm); }
 .tefmt .tickline { margin: 0; }

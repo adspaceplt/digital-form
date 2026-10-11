@@ -3975,16 +3975,8 @@
     var x = row || {};
     $('teHead').textContent = row ? 'Edit template' : 'New template';
     $('teName').value = x.name || '';
-    $('teTitle').value = x.default_title || '';
-    $('teOwner').innerHTML = '<option value="">Whoever makes it</option>' + pickable().map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (m.id === x.default_owner_id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
-    }).join('');
-    $('teDue').value = x.due_offset_days == null ? '' : String(x.due_offset_days);
-    $('teEst').value = x.default_estimate_minutes == null ? '' : String(x.default_estimate_minutes);
-    var w = (state.workflows || []).filter(function (f) { return f.id === x.workflow_id; })[0];
-    $('teKind').value = w && w.key === 'content' ? 'content' : 'task';
     $('teCheck').value = (x.checklist || []).join('\n');
-    $('teActive').checked = row ? Boolean(x.active) : true;
+    $('teActive').setAttribute('aria-checked', row && !x.active ? 'false' : 'true');
     paintTplFmts(row);
     msg('teMsg', '');
     sheet('tplEditSheet', true);
@@ -3992,19 +3984,26 @@
   function tplSave() {
     var name = String($('teName').value || '').trim();
     if (!name) { msg('teMsg', 'A name is required.', 'err'); $('teName').focus(); return; }
+    var x = tplEditing || {};
+    var wf = (state.workflows || []).filter(function (f) { return f.id === x.workflow_id; })[0];
+    var wfKey = wf ? wf.key : 'content';
     var btn = $('teGo');
     btn.disabled = true;
     call('ops_save_template', {
       p_id: tplEditing ? tplEditing.id : null,
       p_payload: {
         name: name,
-        default_title: String($('teTitle').value || '').trim() || null,
-        default_owner_id: $('teOwner').value || null,
-        due_offset_days: $('teDue').value === '' ? null : Number($('teDue').value),
-        default_estimate_minutes: $('teEst').value === '' ? null : Number($('teEst').value),
-        workflow_key: $('teKind').value,
+        /* What the sheet no longer asks is sent as it stands, so a save
+           never clears it: a task made from a format takes its template's
+           checklist and hours alone (2026-10-12). A new template starts on
+           the content workflow with none of them. */
+        default_title: x.default_title || null,
+        default_owner_id: x.default_owner_id || null,
+        due_offset_days: x.due_offset_days == null ? null : x.due_offset_days,
+        default_estimate_minutes: x.default_estimate_minutes == null ? null : x.default_estimate_minutes,
+        workflow_key: wfKey,
         checklist: String($('teCheck').value || '').split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean),
-        active: $('teActive').checked,
+        active: $('teActive').getAttribute('aria-checked') === 'true',
         variants: tplFmtsPicked()
       }
     }, 'teMsg', function (row) {
@@ -5644,26 +5643,18 @@
     }).join('');
     $('ntWeek').value = String(weekOfDay(now.toISOString()));
     $('ntDesc').value = '';
-    $('ntBrief').value = '';
     $('ntPublish').value = '';
     $('ntDraft').value = '';
     $('ntDue').value = '';
     $('ntScope').value = 'client';
     $('ntType').value = 'engagement';
+    $('ntType').removeAttribute('data-touched');
     $('ntFormat').value = '';
     $('ntPaused').checked = false;
     var leadOpt = $('ntScope').querySelector('option[value="lead"]');
     if (leadOpt) leadOpt.hidden = !leadsWorkable();
     $('ntPriority').value = '3';
-    ntPrioLine();
-    $('ntComplex').value = 'standard';
     ntResetPieces();
-    $('ntRepeat').checked = false;
-    $('ntFreq').value = 'monthly';
-    $('ntInterval').value = '';
-    $('ntEnds').value = '';
-    $('ntMax').value = '';
-    ntRepeatChanged();
     msg('ntMsg', '');
     if (ntPrefill) {
       var pc = ntPrefill.client;
@@ -5684,8 +5675,10 @@
     var scope = $('ntScope').value;
     var was = $('ntClient').value;
     $('ntClientField').hidden = scope === 'internal';
+    $('ntWhoRow').hidden = scope === 'internal';
     $('ntPausedWrap').hidden = scope !== 'client' || !pastWorkable();
     $('ntClientLabel').textContent = scope === 'lead' ? 'Lead' : 'Client';
+    $('ntPeriodLabel').textContent = scope === 'client' ? 'Content month' : 'Month';
     var list = clientsFor(scope, $('ntPaused').checked);
     $('ntClient').innerHTML = '<option value="">' + (scope === 'lead' ? 'Choose a lead' : 'Choose a client') + '</option>' +
       list.map(function (c) {
@@ -5701,8 +5694,14 @@
        one have nothing to say; and engagement work is for a client. */
     $('ntCodeRow').hidden = scope === 'internal';
     $('ntPieces').classList.toggle('no-week', scope === 'internal');
-    if (scope !== 'client' && $('ntType').value === 'engagement' && !ntTouched.type) $('ntType').value = 'adhoc';
-    if (scope === 'client' && !ntTouched.type) $('ntType').value = 'engagement';
+    /* Retainer is a client's month's own work: a lead's or an internal post
+       starts Ad hoc, each post's type kept where somebody chose it. */
+    ntRows().forEach(function (row) {
+      var ty = row.querySelector('.piece-type select');
+      if (ty.hasAttribute('data-touched')) return;
+      if (scope !== 'client' && ty.value === 'engagement') ty.value = 'adhoc';
+      if (scope === 'client') ty.value = 'engagement';
+    });
     ntLoadMonths();
   }
   /* A client's deliverable goes into one of the client's months that is
@@ -5714,6 +5713,7 @@
     var cid = $('ntClient').value, scope = $('ntScope').value;
     ntEngs = null;
     if (hint) { hint.hidden = true; hint.textContent = ''; }
+    ntNoMonth(null);
     go.disabled = false;
     sel.disabled = false;
     if (scope !== 'client') {
@@ -5740,10 +5740,7 @@
         ntEngs = (r.data || []).filter(monthOpen);
         if (!ntEngs.length) {
           sel.innerHTML = '<option value="">No confirmed month</option>';
-          if (hint) {
-            hint.textContent = 'No content month with a confirmed meeting. Set the month and its meeting in My Work, Months.';
-            hint.hidden = false;
-          }
+          ntNoMonth(clientsFor('client', true).filter(function (c) { return c.id === cid; })[0] || { id: cid });
           go.disabled = true;
           ntCodeHint();
           return;
@@ -5774,6 +5771,25 @@
         ntPlanLine();
       });
   }
+  /* A client with no content month confirmed takes no posts: the line says
+     so where the posts would be, and Open Months goes to the client's months
+     in My Work, where a month and its meeting are set (2026-10-12). */
+  var ntNoMonthFor = null;
+  function ntNoMonth(c) {
+    ntNoMonthFor = c || null;
+    $('ntNoMonth').hidden = !c;
+    $('ntPostsSec').hidden = Boolean(c);
+    $('ntNoMonthWords').textContent = c ? (c.name ? clientName(c) : 'This client') + ' has no confirmed content month.' : '';
+  }
+  function ntOpenMonths() {
+    var c = ntNoMonthFor;
+    if (!c) return;
+    sheet('taskSheet', false);
+    state.wcWant = c.slug || c.id;
+    if ($('sectionWork') && !$('sectionWork').hidden) { setView('months'); return; }
+    history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(c.slug || c.id));
+    if (bridge.show) bridge.show('work');
+  }
   /* The month's plan under the month: what it planned and what it already
      holds. Nothing is drawn for a month with neither. */
   var ntHeld = {};
@@ -5795,12 +5811,26 @@
     if (!e || !e.planned_count || ntHeld[e.id] == null) return null;
     return Math.max(0, e.planned_count - ntHeld[e.id]);
   }
+  /* Counted across the posts (2026-10-12): Retainer rests on a post once the
+     other posts already take what the plan has left, and a post holding it
+     then becomes Ad hoc, from the last post up. */
   function ntPlanGate() {
-    var sel = $('ntType'), opt = sel && sel.querySelector('option[value="engagement"]');
-    if (!opt) return;
-    var left = ntLeft(), full = left === 0;
-    if (opt.disabled !== full) opt.disabled = full;
-    if (full && sel.value === 'engagement') { sel.value = 'adhoc'; sel.dispatchEvent(new Event('change')); ntTouched.type = false; }
+    var left = ntLeft(), rows = ntRows();
+    var types = rows.map(function (r) { return r.querySelector('.piece-type select'); });
+    if (left != null) {
+      var keep = left;
+      types.forEach(function (ty) {
+        if (ty.value !== 'engagement') return;
+        if (keep > 0) keep--; else ty.value = 'adhoc';
+      });
+    }
+    var taken = types.filter(function (ty) { return ty.value === 'engagement'; }).length;
+    types.forEach(function (ty) {
+      var opt = ty.querySelector('option[value="engagement"]');
+      if (!opt) return;
+      var full = left != null && ty.value !== 'engagement' && taken >= left;
+      if (opt.disabled !== full) opt.disabled = full;
+    });
   }
   function ntEng() {
     var per = $('ntPeriod').value;
@@ -5846,13 +5876,18 @@
   var OUT_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
+    var ty = row.querySelector('.piece-type select');
     return {
       desc: row.querySelector('.piece-desc textarea').value,
       fmt: row.querySelector('.piece-fmt select').value,
       week: row.querySelector('.piece-week select').value,
       draft: row.querySelector('.piece-draft input').value,
       due: row.querySelector('.piece-due input').value,
-      post: row.querySelector('.piece-post input').value
+      post: row.querySelector('.piece-post input').value,
+      owner: row.querySelector('.piece-owner select').value,
+      pri: row.querySelector('.piece-pri select').value,
+      type: ty.value,
+      typed: ty.hasAttribute('data-touched')
     };
   }
   function ntRowSet(row, v) {
@@ -5862,6 +5897,12 @@
     row.querySelector('.piece-draft input').value = v.draft || '';
     row.querySelector('.piece-due input').value = v.due || '';
     row.querySelector('.piece-post input').value = v.post || '';
+    if (v.owner) row.querySelector('.piece-owner select').value = v.owner;
+    row.querySelector('.piece-pri select').value = v.pri || '3';
+    var ty = row.querySelector('.piece-type select');
+    if (v.type) ty.value = v.type;
+    if (v.typed) ty.setAttribute('data-touched', ''); else ty.removeAttribute('data-touched');
+    ntPrioLine(row);
   }
   function ntAddPiece() {
     var rows = ntRows();
@@ -5877,17 +5918,25 @@
       return '<div class="field ' + cls + '"><label class="field-label' + req + '" for="' + k + key + '">' + label + '</label>' +
         control.replace('>', ' id="' + k + key + '">') + '</div>';
     };
+    var sel = function (id) { return '<select class="select">' + $(id).innerHTML + '</select>'; };
     row.innerHTML =
+      '<div class="piece-head"><b class="piece-name"></b><button class="iconbtn piece-x" type="button">' + X_MARK + '</button></div>' +
       fld('piece-desc', 'desc', 'Content description', '<textarea class="input" rows="1" data-oneline placeholder="Content Post" autocomplete="off"></textarea>') +
-      fld('piece-fmt', 'fmt', 'Format', '<select class="select">' + $('ntFormat').innerHTML + '</select>') +
-      fld('piece-week', 'week', 'Week', '<select class="select">' + $('ntWeek').innerHTML + '</select>') +
+      fld('piece-fmt', 'fmt', 'Format', sel('ntFormat')) +
+      fld('piece-week', 'week', 'Week', sel('ntWeek')) +
       fld('piece-draft', 'draft', 'Draft due', '<input class="input" type="date" aria-required="true">') +
       fld('piece-due', 'due', 'Due date', '<input class="input" type="date" aria-required="true">') +
       fld('piece-post', 'post', 'Post date', '<input class="input" type="date" aria-required="true">') +
-      '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
+      fld('piece-owner', 'owner', 'Assigned to', sel('ntOwner')) +
+      fld('piece-pri', 'pri', 'Priority', sel('ntPriority')) +
+      fld('piece-type', 'type', 'Task type', sel('ntType')) +
+      '<p class="hint piece-note" hidden></p>';
     $('ntPieces').appendChild(row);
     var wk = Number(last.week) || 1;
-    ntRowSet(row, { desc: '', fmt: last.fmt, week: String(wk >= 4 ? 1 : wk + 1) });
+    /* The next post starts as the one above it: its format, who takes it,
+       how soon and what kind; the week after, and dates of its own. */
+    ntRowSet(row, { desc: '', fmt: last.fmt, week: String(wk >= 4 ? 1 : wk + 1),
+                    owner: last.owner, pri: last.pri, type: last.type, typed: last.typed });
     ntPiecesChanged();
     return row;
   }
@@ -5906,34 +5955,32 @@
     var rows = ntRows(), n = rows.length;
     $('ntPieces').classList.toggle('is-many', n > 1);
     rows.forEach(function (r, i) {
+      r.querySelector('.piece-name').textContent = 'Post ' + (i + 1);
       r.querySelector('.piece-x').setAttribute('aria-label', 'Remove post ' + (i + 1));
     });
-    $('ntBriefRow').hidden = n > 1;
+    $('ntPostsN').textContent = String(n);
+    $('ntPostsN').hidden = n < 2;
     $('ntAddPiece').hidden = n >= 60;
+    ntPlanGate();
     $('ntGo').textContent = n > 1 ? 'Create ' + n + ' tasks' : 'Create task';
     ntCodeHint();
   }
   function ntResetPieces() {
     ntRows().slice(1).forEach(function (r) { r.parentNode.removeChild(r); });
+    ntPrioLine(ntRows()[0]);
     ntPiecesChanged();
   }
-  /* The deadline a priority sets, said where it is chosen: Urgent, High and
+  /* The deadline a priority sets, said under its post: Urgent, High and
      Medium each give their Business setting's hours from now, the date the
      task card will read (2026-10-12); Normal says nothing. */
-  function ntPrioLine() {
-    var box = $('ntPrioNote');
+  function ntPrioLine(row) {
+    var box = row && row.querySelector('.piece-note');
     if (!box) return;
-    var key = PRIORITY_KEY[Number($('ntPriority').value)];
+    var key = PRIORITY_KEY[Number(row.querySelector('.piece-pri select').value)];
     if (!key) { box.hidden = true; box.textContent = ''; return; }
     var now = new Date(), hours = prioHours(key, now.toISOString());
     box.textContent = 'Deliver within ' + hours + ' hours, by ' + niceTime(new Date(now.getTime() + hours * 36e5)) + '.';
     box.hidden = false;
-  }
-  /* The repeat opens where it is ticked; the number of days only for every
-     N days. */
-  function ntRepeatChanged() {
-    $('ntRepeatBox').hidden = !$('ntRepeat').checked;
-    $('ntIntervalField').hidden = $('ntFreq').value !== 'custom';
   }
 
   /* The same press twice is one act. The key is what makes the two presses
@@ -5948,8 +5995,10 @@
       /* Each piece's dates are the ones typed on its line, and a date left
          blank stays without one (the user, 2026-10-05 and 06). */
       var at = function (d) { return d ? d + 'T00:00:00Z' : null; };
+      /* Each post its own person, priority and type (2026-10-12). */
       var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null,
-                first_draft_due_at: at(v.draft), final_due_at: at(v.due), publish_at: at(v.post) };
+                first_draft_due_at: at(v.draft), final_due_at: at(v.due), publish_at: at(v.post),
+                owner_id: v.owner || null, priority_level: Number(v.pri) || 3, task_type: v.type || 'adhoc' };
       if (scope !== 'internal') p.code_week = Number(v.week) || 1;
       return p;
     });
@@ -5966,7 +6015,6 @@
     if (scope === 'client' && !ntEng()) {
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
-    var one = pieces.length === 1;
     /* A date already passed is a slip of the finger, and the three keep
        their order (draft before due, the post not before it); each caught on
        its own line. */
@@ -5989,38 +6037,23 @@
       if (!bad && rv.post && rv.due && rv.post < rv.due) { bad = 'post'; said2 = 'The post date must be on or after the due date.'; }
       if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
     }
-    var rep = null;
-    if ($('ntRepeat').checked) {
-      var f = $('ntFreq').value;
-      if (f === 'custom' && !(Number($('ntInterval').value) >= 1)) {
-        msg('ntMsg', said('interval-required'), 'err');
-        if (window.ADspaceForm && ADspaceForm.reveal) ADspaceForm.reveal($('ntInterval'));
-        $('ntInterval').focus(); return;
-      }
-      rep = {
-        frequency: f,
-        interval_days: f === 'custom' ? Number($('ntInterval').value) : null,
-        ends_on: $('ntEnds').value || null,
-        max_count: Number($('ntMax').value) || null
-      };
-    }
     var left = ntLeft();
-    if ($('ntType').value === 'engagement' && left != null && rows.length > left) {
+    var retainers = pieces.filter(function (p) { return p.task_type === 'engagement'; }).length;
+    if (left != null && retainers > left) {
       msg('ntMsg', said('plan-full', null, { planned: ntEng().planned_count, left: left }), 'err'); return;
     }
+    /* The first post's person, priority and type also ride at the top, as
+       a page from before sent them; each post's own stand over them. */
     var payload = {
       scope: scope,
       client_id: scope === 'internal' ? null : $('ntClient').value,
-      task_type: $('ntType').value || 'adhoc',
-      owner_id: $('ntOwner').value || null,
-      description: one ? (String($('ntBrief').value || '').trim() || null) : null,
-      priority_level: Number($('ntPriority').value) || 3,
-      complexity: $('ntComplex').value || null,
+      task_type: pieces[0].task_type,
+      owner_id: pieces[0].owner_id,
+      priority_level: pieces[0].priority_level,
       code_period: scope === 'internal' ? null : $('ntPeriod').value || null,
       /* A client's deliverable joins the confirmed month it was made for. */
       engagement_id: scope === 'client' ? (ntEng() || {}).id || null : null,
-      pieces: pieces,
-      repeat: rep
+      pieces: pieces
     };
     if (!ntKey) ntKey = 'nt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     var btn = $('ntGo');
@@ -7316,6 +7349,10 @@
     });
     var te = $('teGo');
     if (te) te.addEventListener('click', tplSave);
+    var ta = $('teActive');
+    if (ta) ta.addEventListener('click', function () {
+      ta.setAttribute('aria-checked', ta.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    });
 
     // The task, opened from a list
     var dwc = $('dwClose');
@@ -7547,8 +7584,6 @@
     if (ncl) ncl.addEventListener('change', ntLoadMonths);
     var np = $('ntPaused');
     if (np) np.addEventListener('change', ntScopeChanged);
-    var nty = $('ntType');
-    if (nty) nty.addEventListener('change', function () { ntTouched.type = true; });
     var npub = $('ntPublish');
     if (npub) npub.addEventListener('change', ntPublishChanged);
     var nper = $('ntPeriod');
@@ -7569,12 +7604,16 @@
       ntRemovePiece(x.closest('.piece'));
       $('ntAddPiece').focus();
     });
-    var npri = $('ntPriority');
-    if (npri) npri.addEventListener('change', ntPrioLine);
-    var nrep = $('ntRepeat');
-    if (nrep) nrep.addEventListener('change', ntRepeatChanged);
-    var nfreq = $('ntFreq');
-    if (nfreq) nfreq.addEventListener('change', ntRepeatChanged);
+    /* A post's priority says its deadline under it; a type somebody chose is
+       theirs, and the plan is counted again across the posts. */
+    if (npcs) npcs.addEventListener('change', function (e) {
+      var row = e.target.closest('.piece');
+      if (!row) return;
+      if (e.target.closest('.piece-pri')) ntPrioLine(row);
+      if (e.target.closest('.piece-type')) { e.target.setAttribute('data-touched', ''); ntPlanGate(); }
+    });
+    var nom = $('ntOpenMonths');
+    if (nom) nom.addEventListener('click', ntOpenMonths);
     var nwk = $('ntWeek');
     if (nwk) nwk.addEventListener('change', function () { ntTouched.week = true; ntCodeHint(); });
     var nd = $('ntDesc');
