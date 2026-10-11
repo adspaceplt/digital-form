@@ -2263,6 +2263,23 @@ A layout fault elsewhere is then found by the next daily walk, logged, and
 fixed in the next release, as the one-request rule already does for older
 defects a new test exposes.
 
+### 2026-10-11 · The Activity record's sections are one select
+On the queue the user approved ("Pick up the Activity record Section select
+next"): fourteen tabs in one sideways strip (All, then every section and
+Performance) read as a scroll of names, most of them beyond the sheet's edge
+on a phone, and a group holding two parts still met the strip's frame. One
+Section select now stands in its place, its label at its left: All sections
+first (the directory rule: an option for all reads All …, never
+Everything), then only the sections whose part the reader holds, in the
+rail's order. Ten or more open the finder, so an admin types "perf" and
+Enter; a group holding one or two parts gets the browser's own short list.
+The record still opens on the section it was opened from. The sheet has no
+address of its own, so nothing rides in `tab=`; the swipe region went with
+the strip. The other strips over five choices were looked at and left: the
+Dashboard's tabs (being rebuilt in its own session), a client record's
+panes, a campaign's panes and the client portal's tabs are panes of one
+record, each a different screen, not a filter over one list.
+
 ### 2026-10-12 · The New task sheet: Priority with who takes the work, Repeat folded
 The regroup offered on 11 Oct, built on the user's "Go" from a mockup of the
 real sheet. Priority had sat folded under More details since before it
