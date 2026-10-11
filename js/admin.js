@@ -1075,13 +1075,36 @@
     function nearOnly(t) {
       Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (x) { x.classList.toggle('is-near', x === t); });
     }
+    /* My Work held down adds a task (the user, 2026-10-11: quick actions):
+       half a second still under the finger opens My Work with Add task's
+       sheet, and the tap that would follow is swallowed. A move or a lift
+       before then is a tap or a drag as ever. */
+    var hold = null;
+    function letGo() { if (hold) { clearTimeout(hold); hold = null; } }
     bar.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       drag = { id: e.pointerId, x: e.clientX, moved: false };
+      letGo();
+      var t = e.target.closest && e.target.closest('.tabbar-tab[data-tab="work"]');
+      if (t && window.ADspaceOps && ADspaceOps.add && may('ops', 'work')) {
+        hold = setTimeout(function () {
+          hold = null;
+          if (!drag || drag.moved) return;
+          drag = null;
+          swallow = true;
+          setTimeout(function () { swallow = false; }, 600);
+          if (navigator.vibrate) { try { navigator.vibrate(10); } catch (x) {} }
+          if (rail.isOpen()) rail.shut();
+          if (!t.classList.contains('is-on')) visitSection('work');
+          setTimeout(function () { ADspaceOps.add(); }, 0);
+        }, 500);
+      }
     });
+    bar.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.tabbar-tab')) e.preventDefault(); });
     bar.addEventListener('pointermove', function (e) {
       if (!drag || e.pointerId !== drag.id) return;
       if (!drag.moved && Math.abs(e.clientX - drag.x) < 8) return;
+      letGo();
       if (!drag.moved) {
         drag.moved = true;
         bar.classList.add('is-drag');
@@ -1104,8 +1127,8 @@
       if (t && !t.classList.contains('is-on')) choose(t);
       else placeThumb(false);
     }
-    bar.addEventListener('pointerup', function (e) { endDrag(e, true); });
-    bar.addEventListener('pointercancel', function (e) { endDrag(e, false); });
+    bar.addEventListener('pointerup', function (e) { letGo(); endDrag(e, true); });
+    bar.addEventListener('pointercancel', function (e) { letGo(); endDrag(e, false); });
     if (window.ResizeObserver) new ResizeObserver(function () { placeThumb(true); }).observe(bar);
     function choose(t) {
       var name = t.getAttribute('data-tab');

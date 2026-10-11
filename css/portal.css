@@ -11088,6 +11088,27 @@ button.sl-head:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action
   }
 }
 /* ===== end phone tab bar ===== */
+/* A My Work row swiped left shows its next step (js/ops.js `rowSwipe`, the
+   user, 2026-10-11): the row's cells slide with the finger and the step
+   waits at the right edge, the one blue act while it stands open. */
+.task-row.has-swipe { position: relative; touch-action: pan-y; }
+.trow-next {
+  position: absolute; top: 50%; right: 8px; z-index: 1;
+  width: auto; min-width: 0; max-width: calc(100% - 64px); white-space: nowrap;
+  transform: translateY(-50%); visibility: hidden; opacity: 0;
+  transition: opacity var(--t) var(--ease), visibility 0s linear var(--t);
+}
+.task-row.is-swiped { overflow: hidden; }
+/* The name and the date stay in sight (a phone row is a card, and its name
+   is what the step is about): the cells drift a fifth of the way, and the
+   stage and the ⋯ the step stands over fade. */
+.task-row.is-swiped > :not(.trow-next) {
+  transform: translateX(calc(var(--sx, 0px) * .2));
+  transition: transform var(--t) var(--ease), opacity var(--t) var(--ease);
+}
+.task-row.is-swiped .task-stage, .task-row.is-swiped .task-owner, .task-row.is-swiped > .team-act { opacity: 0; transition: opacity var(--t) var(--ease); }
+.task-row.is-swiping > :not(.trow-next) { transition: none; }
+.task-row.is-swiped > .trow-next { visibility: visible; opacity: 1; transition: opacity var(--t) var(--ease); }
 
 /* =========================================================================
    VIDEO SCRIPTS (2026-10-09, js/scripts.js): a card a client, a row a video

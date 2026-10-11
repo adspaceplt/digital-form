@@ -2507,6 +2507,7 @@
       inlineDue(t, el, du, done);
     });
     wireStage(el.querySelector('.state-select'), t, el, done);
+    rowSwipe(el, t, done);
     var tk = el.querySelector('[data-a="take"]');
     if (tk) tk.addEventListener('click', function () { takeTask(t, function (x) { rowNote(el, x); }, done); });
     wireRowMenu(el, t, done);
@@ -2574,6 +2575,92 @@
       if (want && want !== t.stage_key) stepFromRow(t, el, want, after);
     });
   }
+  /* A ROW SWIPED LEFT SHOWS ITS NEXT STEP (the user, 2026-10-11: quick
+     actions on a phone). Under a finger, a row whose next step the reader
+     may take slides left and shows that step as one button at its right
+     edge, named as the task's own button names it ("Move to Shooting"); a
+     press takes the same path as the row's select, so a hand-off still asks
+     who and a gate still refuses under the row. The swipe only shows the
+     act, never takes it, because a sideways swipe elsewhere on My Work
+     changes the view (`js/swipe.js`; the row is `data-noswipe`). A swipe
+     back, a press elsewhere, a scroll or another row's swipe puts it back. */
+  var swiped = null;
+  function unswipe(row) {
+    row = row || swiped;
+    if (!row) return;
+    if (swiped === row) swiped = null;
+    row.classList.remove('is-swiping');
+    if (!row.classList.contains('is-swiped')) { row.style.removeProperty('--sx'); return; }
+    row.style.setProperty('--sx', '0px');
+    setTimeout(function () {
+      if (swiped === row) return;
+      row.classList.remove('is-swiped');
+      row.style.removeProperty('--sx');
+    }, 220);
+  }
+  function rowSwipe(el, t, after) {
+    if (isFinished(t) || !mayMove(t)) return;
+    var next = nextOf(t);
+    if (!next || howOf(t, next) !== 'step') return;
+    el.setAttribute('data-noswipe', '');
+    el.classList.add('has-swipe');
+    var act = document.createElement('button');
+    act.type = 'button';
+    act.className = 'btn btn-primary trow-next';
+    act.textContent = verbFor(next, t);
+    act.tabIndex = -1;
+    act.setAttribute('aria-hidden', 'true');
+    el.appendChild(act);
+    act.addEventListener('click', function (e) {
+      e.stopPropagation();
+      unswipe(el);
+      stepFromRow(t, el, next, after);
+    });
+    var x0 = 0, y0 = 0, base = 0, dx = 0, on = false, gone = false;
+    var wide = function () { return Math.min((act.offsetWidth || 150) + 16, el.offsetWidth - 48); };
+    el.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var p = e.touches[0];
+      x0 = p.clientX; y0 = p.clientY; dx = 0; on = false; gone = x0 < 24;
+      base = swiped === el ? -wide() : 0;
+      if (swiped && swiped !== el) unswipe();
+    }, { passive: true });
+    el.addEventListener('touchmove', function (e) {
+      if (gone || e.touches.length !== 1) return;
+      var p = e.touches[0], mx = p.clientX - x0, my = p.clientY - y0;
+      if (!on) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        if (Math.abs(my) > Math.abs(mx) || (base === 0 && mx > 0)) { gone = true; return; }
+        on = true;
+        el.classList.add('is-swiping', 'is-swiped');
+      }
+      dx = Math.max(-wide() - 24, Math.min(0, base + mx));
+      el.style.setProperty('--sx', dx + 'px');
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+    var end = function () {
+      if (!on) return;
+      on = false;
+      el.classList.remove('is-swiping');
+      if (dx < -Math.min(56, wide() / 2)) {
+        el.classList.add('is-swiped');
+        el.style.setProperty('--sx', -wide() + 'px');
+        swiped = el;
+      } else unswipe(el);
+    };
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+  }
+  /* A press while a row stands open puts it back and does nothing else, as
+     a phone's mail does. */
+  document.addEventListener('click', function (e) {
+    if (!swiped || (e.target.closest && e.target.closest('.trow-next'))) return;
+    var inRow = swiped.contains(e.target);
+    unswipe();
+    if (inRow) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  window.addEventListener('scroll', function () { if (swiped) unswipe(); }, { passive: true });
+
   /* The meeting stage is named for the meeting, not for a claim about it:
      whether it is in the diary is the month's to say, and the head says it.
      One word for the row and the stepper; a band or a board column keeps the
@@ -8153,6 +8240,8 @@
        reachable through a press, so a change made to the row underneath it
        has no way to reach the screen. */
     openId: function () { return (state.task && state.task.id) || null; },
+    /* Add task, from anywhere: the tab bar's My Work held down. */
+    add: function () { if (may('ops', 'work')) openQuick(); },
     reload: function () { if (state.task) readTask(state.task.id); },
     /* The client record's Work pane: drawn by this script into that pane. */
     clientWork: clientWork,

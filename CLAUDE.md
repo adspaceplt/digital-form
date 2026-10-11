@@ -390,7 +390,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   right"); a section More holds chooses More. My Work carries a red dot
   while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
   `paintWaiting`; read once on sign-in under the bar), never a profile
-  photo tab (`tests/tabbar.js`, `tests/waiting.js`).
+  photo tab (`tests/tabbar.js`, `tests/waiting.js`). My Work held half a
+  second opens My Work with Add task (`ADspaceOps.add`, My Work at Work;
+  the user, 2026-10-11); a shorter press is a tap.
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
   "mobile tab and web … both sync edits"): one order a colleague for the
   web rail and the phone tab bar alike. `#railEdit` in the account menu
@@ -2309,6 +2311,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The name cell opens the task; the row is not one button.
   - The stage select moves the task (`moveTo()` is the one path for the row,
     the card, a drop and the task's head).
+  - Under a finger a row swiped left shows its next step (`rowSwipe`; the
+    user, 2026-10-11: quick actions): the name and date stay in sight, the
+    stage and the ⋯ fade under one blue button at the right edge named as
+    the task's own (`verbFor`), pressed through `stepFromRow` as the select
+    is. The swipe shows the act, never takes it, because a sideways swipe
+    elsewhere changes the view (the row is `data-noswipe`); a press
+    elsewhere, a scroll or another row's swipe puts it back.
   - One select for every task (`stageCell`): the whole workflow in position
     order, the current stage chosen, an unreachable stage greyed (never left
     out), a retired stage and Blocked listed only for a task on them.

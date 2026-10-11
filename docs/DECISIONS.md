@@ -2003,3 +2003,16 @@ sight under the scrim but out of reach, so a press there is a press on the
 scrim (which keeps a phone form's draft), never a tab leaving the form. The
 height is given back while typing: the keyboard hides the bar, and the card
 then reaches 8px from the floor.
+
+### 2026-10-11 · Quick actions on a phone
+
+Approved from the suggestions after the tab bar ("ok"): a My Work row swiped
+left, and the My Work tab held down. The swipe shows the next step as a
+button rather than moving the task at once, because a sideways swipe on My
+Work already changes the view and a stray swipe must never move work; the
+button takes the select's own path, so a hand-off still asks who and a gate
+still refuses under the row. On a phone a row is a card whose name is what
+the step is about, so the cells drift only a fifth of the button's width and
+the stage and ⋯ fade under it, instead of the whole row sliding out as a
+mail list's does. Held half a second, My Work opens with Add task's sheet;
+a shorter press stays a tap.
