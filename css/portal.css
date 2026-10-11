@@ -5114,11 +5114,15 @@ body > .shell { width: 100%; }
 .due-when em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .due-row.is-due .due-when, .due-row.is-due .due-when em { color: var(--err); }
 .due-row.is-soon .due-when em { color: var(--ink); }
+/* The client's name opens the record: the in-line button's whole target
+   (38, 44 under a finger) given back to the row by its margins, and the
+   fill hugging the line, never an underlined word. */
 .due-client {
-  background: none; border: 0; padding: 0; text-align: left; font: inherit;
+  display: block; justify-self: start; max-width: calc(100% + 12px);
+  min-height: var(--ctl-h); line-height: var(--ctl-h); margin: calc((20px - var(--ctl-h)) / 2) -6px;
+  background: none; border: 0; padding: 0 6px; text-align: left; font: inherit;
   font-weight: 600; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.due-client:hover { text-decoration: underline; text-underline-offset: 3px; }
 .due-what { font-size: 13.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .due-what small { display: block; font-size: 12px; color: var(--ink-mute); }
 @media (max-width: 640px) {
@@ -10058,14 +10062,14 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    under a finger, but its fill hugs the line it reads as: drawn full height,
    the hover stood as a grey slab over the rows above and below (the user,
    2026-09-28: "such huge invisible button"). */
-.linkbtn, .tdate, .tdate-src, .tinline, .serial-copy { position: relative; isolation: isolate; }
-.linkbtn::before, .tdate::before, .tdate-src::before, .tinline::before, .serial-copy::before {
+.linkbtn, .tdate, .tdate-src, .tinline, .serial-copy, .due-client { position: relative; isolation: isolate; }
+.linkbtn::before, .tdate::before, .tdate-src::before, .tinline::before, .serial-copy::before, .due-client::before {
   content: ""; position: absolute; z-index: -1; inset: calc(50% - 13px) 0;
   border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
 }
 @media (hover: hover) {
   .linkbtn:hover::before, .tdate:hover::before, .tdate-src:hover::before,
-  .tinline:hover::before { background: var(--line-soft); }
+  .tinline:hover::before, .due-client:hover::before { background: var(--line-soft); }
   .serial-copy:hover::before { background: var(--sunk); }
 }
 
