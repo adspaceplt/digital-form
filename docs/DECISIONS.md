@@ -2525,3 +2525,13 @@ the column as before. And on Sales moves: "break the churn rate monthly
 value won and monthly value lost into one row each", since their labels
 and amounts wrapped in half a card and the last stood alone. They now take
 a row each under the three pairs.
+
+### 2026-10-12 · Admin tools arranged by section
+The user, on the group panel's Admin tools: "not properly rearranged".
+They stood in groups of their own making (Business figures held Business
+settings beside Meta import and audit; Records held Document types beside
+Task numbering; Tasks and reports held acts of three sections). Now Portal
+holds what changes the portal for everybody (Upgrade mode, Announcements,
+Notices, Business settings, AI usage and limits), and every other switch
+sits under its own section in the rail's order: My Work, Creator
+Campaigns, Reports, Documents, Team. Layout only; no stored key moved.

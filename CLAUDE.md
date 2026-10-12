@@ -1133,8 +1133,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A section's parts sit under its Customise (n), n counting exceptions;
     shut, `#grDiff-{section}` names only those that differ.
   - The acts an admin alone took are Admin tools (`ADMIN_TOOLS`): switches
-    in the Settings page's groups (Portal, Business figures, AI, Records),
-    then Team and Tasks and reports. The My Work views (List, Board,
+    under Portal (Upgrade mode, Announcements, Notices, Business settings,
+    AI usage), then each under its own section in the rail's order (My
+    Work, Creator Campaigns, Reports, Documents, Team; 2026-10-12). The My Work views (List, Board,
     Calendar) are not offered; a stored one is kept through a save.
   - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
     the admin tools for every group, read only.
