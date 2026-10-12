@@ -2535,3 +2535,19 @@ holds what changes the portal for everybody (Upgrade mode, Announcements,
 Notices, Business settings, AI usage and limits), and every other switch
 sits under its own section in the rail's order: My Work, Creator
 Campaigns, Reports, Documents, Team. Layout only; no stored key moved.
+
+### 2026-10-12 · Uploads refused by a second media pass
+Add assets on Waringin read "Uploaded to S3, but nothing is served … 2 of 2
+not uploaded". The files were stored and the console held a colleague's
+pass asked a minute earlier (media-pass logs), yet the check that the CDN
+serves the file failed on every try. Since passes per folder (audit F3,
+2026-10-10) a client's review or selection link opened in the same browser
+leaves its three cookies on that client's folder for twelve hours, beside
+the console's on content/; the browser then sends two of each and
+CloudFront refuses the file. The check read the file on a detached image,
+which the media pass's own retry never hears, and blamed an Origin path
+from the setup days. Now every pass keeps the folders it set in this
+browser and the next pass takes them away; a file refused on a folder
+another page left a pass on loads again once those cookies are gone; the
+upload check asks for the pass first and once again before it refuses, in
+words that no longer name an Origin path.

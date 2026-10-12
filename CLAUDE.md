@@ -725,7 +725,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   drafts alone, a client's contact each client they hold access at, a
   colleague the whole of `content/` (path `/content/`). A client page's pass
   takes away a root pass left by an earlier page, and is fresh only for the
-  proof it was asked with (`adspace-media-for`). An answer in the earlier
+  proof it was asked with (`adspace-media-for`). Every pass keeps the folders
+  it set (`adspace-media-paths`, this browser) and the next pass takes them
+  away: CloudFront refuses a file sent two passes, which a client's link
+  opened beside the console left (2026-10-12); a file refused on a folder
+  another page left a pass on loads again once it is taken away
+  (`ADspaceMedia.renew`), and Add assets' check that the CDN serves a stored
+  file reads it with the pass, asked again once before it refuses. An answer in the earlier
   shape (one pass over `content/`, no `passes`) is set on the root as before,
   so a page served before `media-pass` is deployed keeps its media. A file under `content/` that fails asks
   again once and reloads (a video at its second), the page's own `onerror`

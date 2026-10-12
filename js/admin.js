@@ -3941,16 +3941,25 @@
         // is enough. Reading every upload back meant downloading it a second
         // time. Held as a promise rather than a flag so uploads running side by
         // side share the one check instead of each starting their own.
+        /* With the media pass on, the file is read with the pass: asked first
+           where it is not fresh, and asked again once (taking away cookies
+           another page left on the client's folder) before the file is
+           called unserved (2026-10-12). */
         if (!state.storageCheck) {
-          state.storageCheck = probeUrl(r.data.publicUrl).then(function (info) {
-            if (info.ok) return true;
-            state.storageCheck = null;   // a later upload may be worth retrying
-            throw new Error(
-              'Uploaded to S3, but nothing is served at ' + r.data.publicUrl + ' — so the ' +
-              'client would see a broken post. Usually the CloudFront distribution has an ' +
-              'Origin path set, which shifts where files appear. Open that URL in a tab to ' +
-              'confirm, then see docs/S3-UPLOAD-SETUP.md.');
-          });
+          var M = window.ADspaceMedia, url = r.data.publicUrl;
+          state.storageCheck = (M && M.ready ? M.ready() : Promise.resolve())
+            .then(function () { return probeUrl(url); })
+            .then(function (info) {
+              if (info.ok || !M || !M.renew) return info;
+              return M.renew(url).then(function () { return probeUrl(url); });
+            })
+            .then(function (info) {
+              if (info.ok) return true;
+              state.storageCheck = null;   // a later upload may be worth retrying
+              throw new Error(
+                'The file was stored, but the CDN did not return it at ' + url + '. Reload the ' +
+                'page and add the files again. Where it persists, see docs/S3-UPLOAD-SETUP.md.');
+            });
         }
         return state.storageCheck.then(function () { return r.data.publicUrl; });
       });
