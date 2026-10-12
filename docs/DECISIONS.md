@@ -2645,4 +2645,8 @@ CSV importers' date reading is untouched, as the user asked. The suite
 adds a history's Today and Yesterday, a chart's months, the Dashboard's
 period and clock, and every client page's clock, and fails on the code
 before.
+On Malaysia's clock the client portal's suite met a meeting at 10:30pm, and
+on a phone its date and time ("Sun 4 Oct 2026, 10:30pm – 11:15pm") was cut:
+the row now ends the agenda's line with the state and the ⋯, and the date
+and time take the second line whole.
 

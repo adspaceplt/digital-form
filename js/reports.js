@@ -3443,15 +3443,13 @@
      refusal says which and when the next is free. */
   function aiLimit(d) {
     d = d || {};
-    var when = d.next && ADspaceClock.parts(d.next)
-      ? ADspaceClock.date(d.next, { year: false }) + ', ' + ADspaceClock.clock(d.next)
-      : '';
+    var when = d.next && ADspaceClock.parts(d.next) ? aiClock(d.next) : '';
     if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
     var n = d.limit == null ? 1 : d.limit;
     var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
-    return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
+    return who + (when ? ' Resets at ' + when + '.' : '');
   }
   var AI_SAID = {
     'needs-update': 'This needs a database update.',
