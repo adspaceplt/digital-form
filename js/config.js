@@ -117,9 +117,9 @@ window.ADSPACE_CONFIG = {
      with, nothing more. */
   linkHost: 'hi.adspace.me',
   /* The script, selection and creator links are written as short links
-     (/s/, /c/, /p/ on the host above) once the links Worker answers them
-     (workers/links/worker.js, 2026-10-13); until then the long link. */
-  shareLinks: false,
+     (/s/, /c/, /p/ on the host above), answered by the links Worker
+     (workers/links/worker.js, live 2026-10-13); false writes the long link. */
+  shareLinks: true,
 
   /* Cloudflare Turnstile SITE key for the sign-in captcha (js/captcha.js).
      Public by design, like the anon key; the SECRET key lives only in the
