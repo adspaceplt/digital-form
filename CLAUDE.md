@@ -77,6 +77,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
   - A `cut()` of `schema.sql` always ends at the next banner.
+  - Browser suites run on Malaysia's clock (`gate.sh` sets
+    `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
+    suite's today is the page's; one that wants another zone names it
+    (`timezoneId`, `tests/myclock.js`, `tests/tzbar.js`).
 
 **One command, one result:** `bash tests/gate.sh <suites… | all | ui>`.
 - Every shell command runs without a permission prompt (`.claude/settings.json`
@@ -166,7 +170,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
-| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting |
+| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
+| `js/clock.js` | myclock, then the suites of every script that reads it (`grep -l ADspaceClock js/`) |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
@@ -376,7 +381,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Asia/Tokyo). The portal follows Malaysia time (GMT+8)., in Chinese after
   the 中文 switch; its × hides it for the visit (`adspace-tz-hide`). An
   automated browser is not told unless it sets `window.__tzBar`
-  (`tests/tzbar.js`; the suites run on UTC).
+  (`tests/tzbar.js`).
 - Every page carries `viewport-fit=cover`. Sheets, feet, the confirm bar, the
   console body and the rail pad by `env(safe-area-inset-*)`.
 - On iOS alone, `js/chrome.js` adds `maximum-scale=1` (stops the focus zoom,
@@ -761,6 +766,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   stays words. A press whose write disables its button shows, after 150ms,
   a turning ring in the button's ink at the button's width until it is let
   go. A new act joins the table, never a screen (`tests/acts.js`).
+- `js/clock.js` (`ADspaceClock`: `day`, `today`, `parts`, `start`, `at`,
+  `time`, `addDays`, `addMonths`, `between`, `weekday`) is Malaysia's clock
+  (2026-10-12): a page reads a day, a month, a weekday and a time of day
+  from it, never from a Date's own getters, `setHours`, `new Date(y, m, d)`
+  or `toLocaleDateString` without the zone, which answer in the device's
+  zone. A day alone (`2026-10-12`) is that Malaysian day; a date and time
+  with no zone (a date field and a time field) is Malaysian time. Days are
+  counted on the calendar, never by a device's midnight. My Work reads it
+  throughout (`tests/myclock.js`: Tokyo and Los Angeles held across a
+  month's end); the other sections move to it one release each.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
