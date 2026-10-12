@@ -2479,3 +2479,21 @@ summary?" The Dashboard section names its page strip as its swipe region
 Summary opens Detail, a swipe right goes back, written to the address as a
 tap does. Every rule of the one swipe stands (the screen's edges, a field,
 anything scrolling sideways, a menu open). `tests/swipe.js` walks both ways.
+
+### 2026-10-12 · The Dashboard's page turn slides; S3 and backups done; no sign-in policy
+
+The user, on the swipe between Summary and Detail: "the sliding animation
+felt like its too fast, lacking the proper sliding animations". The page
+was swapped in one frame. A turn (swipe, tab or the foot's way on) now
+slides: a still copy of the page left (`.ovw-ghost`, its ids stripped,
+inert, laid where it stood on screen) moves out to one side while the new
+page's blocks come in from the other, Detail from the right and Summary from
+the left, at `--t-slow` on `--ease`; the bar and its strip hold still above
+both, the copy clipped below the bar so nothing of it shows through the
+strip's track; the copy goes when its slide ends (or after 900ms), and
+reduced motion zeroes it as every animation. `tests/swipe.js` reads the two
+slides and the still bar mid-turn, and the copy gone after.
+The user also said S3 and the nightly database backup are done (the
+memory items now say so; the backup's first scheduled run succeeded on
+2026-10-11), and that the sign-in session policy parked earlier is not to
+be applied.
