@@ -92,6 +92,26 @@
     document.cookie = name + '=' + value + scope() + '; path=' + (path || '/') + '; max-age=' + age + '; secure; samesite=lax';
   }
   var CF = ['CloudFront-Policy', 'CloudFront-Signature', 'CloudFront-Key-Pair-Id'];
+  /* The folders a pass was set on, kept in this browser (2026-10-12): a
+     client's link opened beside the console left its own three cookies on
+     that client's folder, and CloudFront refused the file once the browser
+     sent two of each. A new pass takes away every folder of the one before. */
+  var PATHS = 'adspace-media-paths';
+  var FOLDER = /^\/content\/((creator\/)?[A-Za-z0-9-]{1,64}\/)?$/;
+  function known() {
+    try { var a = JSON.parse(localStorage.getItem(PATHS) || '[]'); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function remember(list) {
+    try { localStorage.setItem(PATHS, JSON.stringify(list.slice(0, 200))); } catch (e) { /* private mode */ }
+  }
+  function drop(path) { CF.forEach(function (n) { put(n, '', 0, path); }); }
+  /* The folder a file sits in, as a cookie path: /content/{id}/ or
+     /content/creator/{id}/. */
+  function folderOf(src) {
+    var m = /^https:\/\/mycdn\.adspace\.me(\/content\/(?:creator\/)?[A-Za-z0-9-]{1,64}\/)/i.exec(String(src || ''));
+    return m ? m[1] : '';
+  }
   function ask(force) {
     if (!isOn() || !proof) return Promise.resolve(false);
     if (!force && fresh(2 * HOUR)) return Promise.resolve(true);
@@ -117,13 +137,16 @@
         if (!passes.some(function (x) { return x.path === '/' || x.path === '/content/'; })) {
           CF.forEach(function (n) { put(n, '', 0); put(n, '', 0, '/content/'); });
         }
+        // Only a folder under content/, never another path on adspace.me.
+        passes = passes.filter(function (x) { return x.path === '/' || FOLDER.test(String(x.path || '')); });
+        var now = passes.map(function (x) { return x.path; });
+        known().forEach(function (path) { if (now.indexOf(path) < 0 && FOLDER.test(path)) drop(path); });
         passes.forEach(function (x) {
-          // Only a folder under content/, never another path on adspace.me.
-          if (x.path !== '/' && !/^\/content\/((creator\/)?[A-Za-z0-9-]{1,64}\/)?$/.test(String(x.path || ''))) return;
           put('CloudFront-Policy', x.policy, age, x.path);
           put('CloudFront-Signature', x.signature, age, x.path);
           put('CloudFront-Key-Pair-Id', d.keyPairId, age, x.path);
         });
+        remember(now.filter(function (path) { return path !== '/' && path !== '/content/'; }));
         put(UNTIL, String(d.expires), age);
         put(FOR, tagOf(proof), age);
         resolve(true);
@@ -138,6 +161,16 @@
     proof = p || {};
     return ask(false);
   }
+  /* A file under content/ that did not load: its folder's cookies are taken
+     away (one left by another page's pass), and the pass is asked again. */
+  function renew(src) {
+    if (!isOn() || !proof) return Promise.resolve(false);
+    var f = folderOf(src);
+    if (f) drop(f);
+    return ask(true);
+  }
+  /* The pass as it stands, asked only where it is not fresh. */
+  function ready() { return ask(false); }
 
   function again(media) {
     if (media.tagName === 'IMG') {
@@ -172,12 +205,22 @@
     // A converted copy not made yet fails by design; the original follows it.
     if (el.tagName === 'SOURCE' && /\.web\.mp4$/i.test(src)) return;
     if (media.getAttribute('data-pass-tried')) return;
-    // A pass that is still good and was asked for a moment ago is not the cause.
-    if (fresh(5 * 60 * 1000) && Date.now() - lastAsk < 60000) return;
+    /* A pass that is still good and was asked for a moment ago is not the
+       cause, unless another page left its own cookies on the file's folder:
+       those are taken away and the file is loaded once more. */
+    if (fresh(5 * 60 * 1000) && Date.now() - lastAsk < 60000) {
+      var f = folderOf(src);
+      if (!f || known().indexOf(f) >= 0) return;
+      media.setAttribute('data-pass-tried', '1');
+      e.stopImmediatePropagation();
+      drop(f);
+      again(media);
+      return;
+    }
     media.setAttribute('data-pass-tried', '1');
     // The page's own fallback (an onerror) waits for the answer.
     e.stopImmediatePropagation();
-    ask(true).then(function (ok) {
+    renew(src).then(function (ok) {
       if (ok) again(media);
       else el.dispatchEvent(new Event('error'));
     });
@@ -190,5 +233,5 @@
     setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
   }
 
-  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, still: still, attach: attach, pass: pass };
+  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, still: still, attach: attach, pass: pass, renew: renew, ready: ready };
 })();
