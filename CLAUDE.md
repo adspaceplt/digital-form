@@ -1957,6 +1957,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     read answered for a set already left is thrown away
     (`tests/crswitch.js`).
   - Publish (blue) / Unpublish (tonal).
+  - Enable client (`#crEnable`, the bar's one action, Content Review
+    settings at Work; the user, 2026-10-12, in place of Manage clients):
+    drawn only while an Active client is out of Content Review (one read of
+    the Active clients serves the list and it), it asks which
+    (`ADspaceConfirm`, code first) and puts that client in through the same
+    write as Remove's way back (`client.review_on`), Undo where it happened.
   - Resend with a note.
   - Drive import with progress (a folder link only).
   - S3 signed PUT.
