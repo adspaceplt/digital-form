@@ -2650,3 +2650,27 @@ on a phone its date and time ("Sun 4 Oct 2026, 10:30pm – 11:15pm") was cut:
 the row now ends the agenda's line with the state and the ⋯, and the date
 and time take the second line whole.
 
+
+### 2026-10-12 · The Report audit counts nothing while the period runs
+The user showed an audit of 101 differences on an Advertising Report whose
+period (16 Sep to 12 Oct) ended that day. Read from the live database: the
+export was imported at 6:42pm and Meta read at 11:09pm, and nearly every
+row was an ad still spending (spend RM 2,911.14 against RM 2,958.49); ads
+that had finished in September differed only by Meta's own revisions of
+reach and ad recall lift; twelve rows were figures the export had no column
+for (hold rate, result type). Neither importer was at fault, and neither is
+touched. Decided (A, B, C): while the period runs (today in Malaysia on or
+before its last day) the audit shows Meta's figures for reference, files and
+counts nothing, Submit is not held, and an Advertising Report publishes from
+the day after on a reading since confirmation (`period-running`); a figure
+the report does not hold of the kinds an export may lack is listed apart,
+Not in the report, and never counted; the table keeps a figure's right edge
+when one side is Not set, a play time's gap keeps its seconds, a share under
+a tenth keeps two places (never 0%), and an age split reads youngest first.
+The user also found the card's words "blend together and don't look like
+warning or instructions": each part's line says only its state, and what the
+reader must know or do (the period, a figure changed, Meta not answering, the
+ad account's time zone, the commentary out of date) is a shaded note led by
+the amber dot. Left to check by hand: 2609W3_Balance · Engagement, whose
+impressions agree with Meta (6,811) but whose reach does not (6,484 against
+800).
