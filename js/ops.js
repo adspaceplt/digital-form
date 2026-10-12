@@ -64,15 +64,14 @@
 
   // ---- Dates ---------------------------------------------------------------
   /* One reading of "when", because a queue that calls the same day two
-     different things in two places is a queue nobody trusts. */
-  function dayOf(v) {
-    if (!v) return null;
-    var d = new Date(v);
-    if (isNaN(d.getTime())) return null;
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-  function todayStart() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+     different things in two places is a queue nobody trusts. Every day is
+     Malaysia's (`js/clock.js`; the user, 2026-10-12): a device on another
+     clock reads the same due date, today and overdue as one in Johor. A
+     day is the moment it begins in Malaysia, so days are a whole number of
+     days apart (Malaysia keeps no summer time). */
+  var CK = window.ADspaceClock;
+  function dayOf(v) { return v ? CK.start(v) : null; }
+  function todayStart() { return CK.start(CK.today()); }
   function daysAway(v) {
     var d = dayOf(v);
     if (!d) return null;
@@ -82,38 +81,29 @@
      iPhone prints "Sep" where the portal writes "Sept". */
   var MON_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function niceDate(v) {
-    var d = dayOf(v);
-    if (!d) return '';
-    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ' ' + d.getFullYear();
+    var p = v ? CK.parts(v) : null;
+    if (!p) return '';
+    return p.d + ' ' + MON_SHORT[p.mo] + ' ' + p.y;
   }
   function shortDate(v) {
-    var d = dayOf(v);
-    if (!d) return '';
-    return d.getDate() + ' ' + MON_SHORT[d.getMonth()];
+    var p = v ? CK.parts(v) : null;
+    if (!p) return '';
+    return p.d + ' ' + MON_SHORT[p.mo];
   }
   function niceTime(v) {
-    if (!v) return '';
-    var d = new Date(v);
-    if (isNaN(d.getTime())) return '';
+    var p = v ? CK.parts(v) : null;
+    if (!p) return '';
     /* The clock the message to a client uses (11:30am), so the card and the
        message it copies never write one time two ways. */
-    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ', ' + clock(d);
+    return p.d + ' ' + MON_SHORT[p.mo] + ', ' + clock(v);
   }
-  function dateValue(v) {
-    var d = dayOf(v);
-    if (!d) return '';
-    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'),
-            String(d.getDate()).padStart(2, '0')].join('-');
-  }
+  function dateValue(v) { return v ? CK.day(v) : ''; }
   /* The ceiling a first draft date may reach: the calendar day before the
      commitment, which is what `ops_due_order_ok` compares against. Built off
      `dayOf`, so the page and the database mean the same day. */
   function dayBefore(v) {
-    var d = dayOf(v);
-    if (!d) return '';
-    d = new Date(d.getTime());
-    d.setDate(d.getDate() - 1);
-    return dateValue(d);
+    var d = dateValue(v);
+    return d ? CK.addDays(d, -1) : '';
   }
   /* "In 3 days" is what a person says; "2026-10-02T00:00:00Z" is what the row
      holds. Overdue carries the word as well as the colour, so the mark
@@ -135,11 +125,8 @@
     return h + 'h' + (r ? ' ' + r + 'm' : '');
   }
   function plusDays(v, n) {
-    var d = dayOf(v);
-    if (!d) return null;
-    d = new Date(d.getTime());
-    d.setDate(d.getDate() + n);
-    return d.toISOString();
+    var d = dateValue(v);
+    return d ? CK.start(CK.addDays(d, n)).toISOString() : null;
   }
   /* THE NUMBER A TASK IS QUOTED BY. `#WT` and five figures, the same words
      `ops_serial` gives the database, so a number read off the screen is the
@@ -460,8 +447,7 @@
     var by = new Date(made.getTime() + hours * 36e5), ms = by.getTime() - Date.now();
     /* Whichever comes first: the due date is owed to its day's end, as the
        late rule reads it. */
-    var dueEnd = t.current_final_due_at ? dayOf(t.current_final_due_at) : null;
-    if (dueEnd) dueEnd.setDate(dueEnd.getDate() + 1);
+    var dueEnd = t.current_final_due_at ? CK.start(CK.addDays(dateValue(t.current_final_due_at), 1)) : null;
     var span = Math.abs(ms), n = Math.floor(span / 36e5);
     var amount = n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
     return { key: key, word: PRIORITY_WORD[Number(t.priority_level)], hours: hours, set: made, by: by, over: ms < 0,
@@ -786,14 +772,15 @@
      month, Last 7 days, Last 3 months, Last 6 months, This year. Every one
      runs to now except Last month, which ends where this month begins. */
   function periodStart() {
-    var d = new Date();
+    var today = CK.today();
+    var month = function (n) { return CK.start(CK.addMonths(today, n) + '-01'); };
     if (state.period === 'week') return weekStart();
-    if (state.period === 'lastmonth') return new Date(d.getFullYear(), d.getMonth() - 1, 1);
-    if (state.period === 'd7') { var s = todayStart(); s.setDate(s.getDate() - 6); return s; }
-    if (state.period === 'q') return new Date(d.getFullYear(), d.getMonth() - 2, 1);
-    if (state.period === 'h') return new Date(d.getFullYear(), d.getMonth() - 5, 1);
-    if (state.period === 'year') return new Date(d.getFullYear(), 0, 1);
-    return new Date(d.getFullYear(), d.getMonth(), 1);
+    if (state.period === 'lastmonth') return month(-1);
+    if (state.period === 'd7') return CK.start(CK.addDays(today, -6));
+    if (state.period === 'q') return month(-2);
+    if (state.period === 'h') return month(-5);
+    if (state.period === 'year') return CK.start(today.slice(0, 4) + '-01-01');
+    return month(0);
   }
   /* A SEARCH FINDS ANY TASK (the user, 2026-10-04: a finished task from
      last month could only be found by setting three controls). Whatever is
@@ -810,9 +797,8 @@
     return q.or(ors.join(',')).limit(200);
   }
   function periodEnd() {
-    var d = new Date();
-    if (state.period === 'lastmonth') return new Date(d.getFullYear(), d.getMonth(), 1);
-    return d;
+    if (state.period === 'lastmonth') return CK.start(CK.today().slice(0, 7) + '-01');
+    return new Date();
   }
 
   /* THE DAY, IN THE ORDER IT IS WORKED. What is overdue, what is due today,
@@ -1947,20 +1933,21 @@
      team's deadlines and the content calendar. A task whose next date is the
      publish date shows once, as a publish date. A chip is the task at the
      size a cell can hold and a press opens it. */
-  function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function sameDay(a, b) { return a && b && a.getTime() === b.getTime(); }
+  /* The month on show is a Malaysian month key (2026-10) and each cell a
+     Malaysian day, so a device on another clock lays out the same month. */
+  var WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function paintCalendar(rows) {
     var box = $('workCal');
-    if (!state.month) state.month = monthStart(new Date());
-    var m = state.month, today = todayStart();
+    if (!/^\d{4}-\d{2}$/.test(state.month || '')) state.month = CK.today().slice(0, 7);
+    var m = state.month, today = CK.today();
     var byDay = {};
     /* Each task on the day it is next owed: the commitment until client
        review, the publish date once it is approved, and the review date once
        it is live — which makes the calendar the month's content calendar. */
     var put = function (when, t, kind) {
-      var d = dayOf(when);
+      var d = dateValue(when);
       if (!d) return;
-      (byDay[d.getTime()] = byDay[d.getTime()] || []).push({ t: t, kind: kind });
+      (byDay[d] = byDay[d] || []).push({ t: t, kind: kind });
     };
     rows.forEach(function (t) {
       var due = dueOf(t), pub = isEveryday(t) ? null : t.publish_at;
@@ -1970,10 +1957,11 @@
     Object.keys(byDay).forEach(function (k) {
       byDay[k].sort(function (a, b) { return a.kind === b.kind ? 0 : a.kind === 'due' ? -1 : 1; });
     });
-    var title = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    var MON_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    var title = MON_LONG[Number(m.slice(5, 7)) - 1] + ' ' + m.slice(0, 4);
     /* The short month draws under 360px, where "September 2026" with its two
        arrows and Today ran past the gutter; the day labels already say Sept. */
-    var short = m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept').replace(/^Sep /, 'Sept ');
+    var short = monthWord(m);
     var chev = function (path) {
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
     };
@@ -1984,21 +1972,21 @@
       '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Post</span></span>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
       '</div>';
-    var first = new Date(m), start = new Date(m);
+    var first = m + '-01';
     /* Monday first, as this team's week is. */
-    start.setDate(first.getDate() - ((first.getDay() + 6) % 7));
-    var end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
-    end.setDate(end.getDate() + (7 - ((end.getDay() + 6) % 7) - 1));
+    var start = CK.addDays(first, -((CK.weekday(first) + 6) % 7));
+    var last = CK.addDays(CK.addMonths(m, 1) + '-01', -1);
+    var end = CK.addDays(last, 7 - ((CK.weekday(last) + 6) % 7) - 1);
     var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
       return '<div class="cal-dow">' + d + '</div>';
     }).join('');
     var held = 0, CAL_SHOW = 5;
-    for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      var k = d.getTime(), list = byDay[k] || [];
-      var out = d.getMonth() !== m.getMonth();
+    for (var d = start; d <= end; d = CK.addDays(d, 1)) {
+      var list = byDay[d] || [], wd = CK.weekday(d);
+      var out = d.slice(0, 7) !== m;
       if (!out && list.length) held++;
-      var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
-        ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
+      var cls = 'cal-day' + (out ? ' is-out' : '') + (d === today ? ' is-today' : '') +
+        ((wd === 0 || wd === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
       /* A chip names whose work it is and which piece, never the whole
          description (the user, 2026-10-09: "you dont need show the full card
          name, but few details needed like client name"): the client over the
@@ -2015,9 +2003,9 @@
           ' title="' + esc((t.title || what) + (who ? ' · ' + who : '')) + '">' +
           '<span class="cal-chip-who">' + esc(who) + '</span><span class="cal-chip-what">' + esc(what) + '</span></button>';
       }).join('') + (list.length > CAL_SHOW ? '<span class="cal-more">+' + (list.length - CAL_SHOW) + ' more</span>' : '');
-      cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
-        '<span class="cal-num"><small>' + esc(d.toLocaleDateString('en-GB', { weekday: 'short' })) + '</small>' +
-          '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' }).replace(/\bSep\b/, 'Sept')) + '</small></span>' +
+      cells += '<div class="' + cls + '" data-day="' + esc(d) + '">' +
+        '<span class="cal-num"><small>' + WEEKDAY[wd] + '</small>' +
+          '<b>' + Number(d.slice(8, 10)) + '</b><small>' + MON_SHORT[Number(d.slice(5, 7)) - 1] + '</small></span>' +
         chips + '</div>';
     }
     /* On a phone the month is a list of the days that hold work, so a month
@@ -2028,13 +2016,13 @@
       (held ? '' : '<div class="cal-none"></div>');
     if (!held) UI.emptyLine(box.querySelector('.cal-none'), 'No tasks this month.');
     box.querySelector('[data-cal="prev"]').addEventListener('click', function () {
-      state.month = new Date(m.getFullYear(), m.getMonth() - 1, 1); paintCalendar(rows);
+      state.month = CK.addMonths(m, -1); paintCalendar(rows);
     });
     box.querySelector('[data-cal="next"]').addEventListener('click', function () {
-      state.month = new Date(m.getFullYear(), m.getMonth() + 1, 1); paintCalendar(rows);
+      state.month = CK.addMonths(m, 1); paintCalendar(rows);
     });
     box.querySelector('[data-cal="today"]').addEventListener('click', function () {
-      state.month = monthStart(new Date()); paintCalendar(rows);
+      state.month = CK.today().slice(0, 7); paintCalendar(rows);
     });
     Array.prototype.forEach.call(box.querySelectorAll('.cal-chip'), function (b) {
       b.addEventListener('click', function () { openDrawer(b.getAttribute('data-task')); });
@@ -2048,9 +2036,8 @@
      sat empty beside open tasks), and every task carries its format's
      estimate. Own week alone without `ops.all`; the team's with it. */
   function weekStart() {
-    var d = todayStart();
-    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-    return d;
+    var today = CK.today();
+    return CK.start(CK.addDays(today, -((CK.weekday(today) + 6) % 7)));
   }
   function loadCapacity() { paintCapacity(); }
   function paintCapacity() {
@@ -2058,7 +2045,7 @@
     if (!box || state.view !== 'board') return;
     var me = bridge.me && bridge.me();
     var team = may('ops.all', 'view');
-    var end = weekStart(); end.setDate(end.getDate() + 7);
+    var end = new Date(weekStart().getTime() + 7 * 86400000);
     var mins = {}, open = {};
     (state.tasks || []).forEach(function (t) {
       var who = state.ownerIds[t.id];
@@ -3805,8 +3792,7 @@
      month's and next month's. Read once and kept. */
   function loadEngs(then) {
     if (state.engList) { then(); return; }
-    var d = new Date();
-    var ks = [-1, 0, 1].map(function (k) { return monthKey(new Date(d.getFullYear(), d.getMonth() + k, 1)); });
+    var ks = [-1, 0, 1].map(function (k) { return CK.addMonths(CK.today(), k); });
     db.from('ops_engagements').select('id, client_id, period, status, clients(name, slug, client_code)').in('period', ks)
       .then(function (r) { state.engList = (!r.error && r.data) || []; then(); }, function () { state.engList = []; then(); });
   }
@@ -5147,8 +5133,7 @@
     var m = /^(\d{4})-(\d{2})$/.exec(period || ''), out = [];
     if (!m) return out;
     for (var i = -3; i <= 6; i++) {
-      var d = new Date(Number(m[1]), Number(m[2]) - 1 + i, 1);
-      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      var key = CK.addMonths(period, i);
       out.push([key, monthWord(key)]);
     }
     return out;
@@ -5598,14 +5583,14 @@
      Clients where it is not set. */
   function leadsWorkable() { return may('clients.leads', 'work'); }
   function pastWorkable() { return may('clients.past', 'work'); }
+  /* The Malaysian month of a moment (a month key passes through). */
   function monthKey(d) {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    return /^\d{4}-\d{2}$/.test(String(d)) ? String(d) : CK.day(d).slice(0, 7);
   }
   function monthWord(key) {
     var m = /^(\d{4})-(\d{2})$/.exec(key || '');
     if (!m) return key || '';
-    var d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
-    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    return MON_SHORT[Number(m[2]) - 1] + ' ' + m[1];
   }
   /* The week the code names is the planned publishing week of the content
      month: days 1 to 7 are week 1 and so on, week 5 for the tail. */
@@ -5635,13 +5620,12 @@
     }).join('');
     /* The content month: this one and the six after it, and the one before
        for work being keyed in late. */
-    var now = new Date(), months = [];
-    for (var i = -1; i <= 6; i++) months.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
-    $('ntPeriod').innerHTML = months.map(function (d) {
-      var k = monthKey(d);
-      return '<option value="' + k + '"' + (k === monthKey(now) ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
+    var today = CK.today(), months = [];
+    for (var i = -1; i <= 6; i++) months.push(CK.addMonths(today, i));
+    $('ntPeriod').innerHTML = months.map(function (k) {
+      return '<option value="' + k + '"' + (k === today.slice(0, 7) ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
-    $('ntWeek').value = String(weekOfDay(now.toISOString()));
+    $('ntWeek').value = String(weekOfDay(today));
     $('ntDesc').value = '';
     $('ntPublish').value = '';
     $('ntDraft').value = '';
@@ -6018,7 +6002,7 @@
     /* A date already passed is a slip of the finger, and the three keep
        their order (draft before due, the post not before it); each caught on
        its own line. */
-    var todayMyt = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var todayMyt = CK.today();
     var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
     for (var ri = 0; ri < rows.length; ri++) {
       var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
@@ -6091,10 +6075,10 @@
   /* The content months a select offers: the one before this, this one and
      the six after, so work keyed in late and work planned ahead both fit. */
   function fillMonths(sel, chosen) {
-    var now = new Date(), months = [];
-    for (var i = -1; i <= 6; i++) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() + i, 1)));
+    var now = CK.today(), months = [];
+    for (var i = -1; i <= 6; i++) months.push(CK.addMonths(now, i));
     if (chosen && months.indexOf(chosen) < 0) months.unshift(chosen);
-    var pick = chosen || monthKey(now);
+    var pick = chosen || monthKey(now.slice(0, 7));
     sel.innerHTML = months.map(function (k) {
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
@@ -6128,7 +6112,7 @@
     $('dupPeople').checked = false;
     $('dupCodeRow').hidden = t.scope === 'internal';
     fillMonths($('dupPeriod'), t.code_period || null);
-    $('dupWeek').value = String(t.code_week || weekOfDay(new Date().toISOString()));
+    $('dupWeek').value = String(t.code_week || weekOfDay(CK.today()));
     msg('dupMsg', '');
     sheet('dupSheet', true);
   }
@@ -6366,9 +6350,9 @@
   }
   /* 11:30am, the way the message to a client writes a time. */
   function clock(v) {
-    var d = new Date(v);
-    if (isNaN(d.getTime())) return '';
-    var h = d.getHours(), m = d.getMinutes();
+    var p = CK.parts(v);
+    if (!p) return '';
+    var h = p.h, m = p.mi;
     return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
   }
   /* THE MESSAGE TO THE CLIENT, in the team's own template, filled from the
@@ -6383,7 +6367,7 @@
     var lines = [
       'Meeting Schedule ' + (online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae'),
       '',
-      'Date \u65e5\u671f: ' + String(at.getDate()).padStart(2, '0') + '/' + String(at.getMonth() + 1).padStart(2, '0') + '/' + at.getFullYear(),
+      'Date \u65e5\u671f: ' + CK.day(at).split('-').reverse().join('/'),
       'Time \u65f6\u95f4: ' + clock(at) + ' \u2013 ' + clock(end),
       '',
       'Meeting Agenda \u6458\u8981:',
@@ -6756,8 +6740,7 @@
   function lastMonthRows(e) {
     var m = /^(\d{4})-(\d{2})/.exec(e.period || '');
     if (!m) return '';
-    var d = new Date(Number(m[1]), Number(m[2]) - 2, 1);
-    var prev = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var prev = CK.addMonths(m[1] + '-' + m[2], -1);
     var done = cw.tasks.filter(function (t) { return cwPeriodOf(t) === prev && t.result_views != null; })
       .sort(function (a, b) { return b.result_views - a.result_views; });
     if (!done.length) return '';
@@ -6991,14 +6974,10 @@
   /* The earliest a meeting can be booked: the next half hour from now, so at
      3:00pm the first slot is 3:30pm and at 3:10pm it is 3:30pm too. */
   function nextSlot() {
-    var d = new Date();
-    d.setSeconds(0, 0);
-    d.setMinutes(d.getMinutes() < 30 ? 30 : 60);
-    return d;
+    var half = 30 * 60000;
+    return new Date(Math.floor(Date.now() / half) * half + half);
   }
-  function dayKey(d) {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
+  function dayKey(d) { return CK.day(d); }
   /* The meeting's date and time offer nothing before the next slot. A meeting
      already held keeps its own date: the sheet still opens on it to change the
      note or the link, and only a new time is held to the floor. */
@@ -7016,7 +6995,7 @@
     }
     $('meetDate').setAttribute('min', dayKey(slot));
     if ($('meetDate').value === dayKey(slot)) {
-      $('meetTime').setAttribute('min', String(slot.getHours()).padStart(2, '0') + ':' + String(slot.getMinutes()).padStart(2, '0'));
+      $('meetTime').setAttribute('min', CK.time(slot));
     } else $('meetTime').removeAttribute('min');
   }
   function openMeet(e) {
@@ -7025,8 +7004,8 @@
     meetWarn = null;
     meetAfter = null;
     var at = e.meeting_at ? new Date(e.meeting_at) : null;
-    $('meetDate').value = at ? at.getFullYear() + '-' + String(at.getMonth() + 1).padStart(2, '0') + '-' + String(at.getDate()).padStart(2, '0') : '';
-    $('meetTime').value = at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '';
+    $('meetDate').value = at ? CK.day(at) : '';
+    $('meetTime').value = at ? CK.time(at) : '';
     $('meetChannel').value = e.meeting_channel || 'google_meet';
     meetFloor();
     if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
@@ -7119,7 +7098,8 @@
       if (link && !/^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(link)) {
         msg('meetMsg', said('bad-meeting-link'), 'err'); $('meetLink').focus(); return;
       }
-      var when = new Date($('meetDate').value + 'T' + ($('meetTime').value || '10:00') + ':00');
+      /* The date and time typed are Malaysia's, whatever the device's clock. */
+      var when = CK.at($('meetDate').value, $('meetTime').value || '10:00');
       /* A time before the next free slot is refused unless it is the one the
          meeting already had (a held meeting, opened to change its note). */
       var kept = e.meeting_at && new Date(e.meeting_at).getTime() === when.getTime();

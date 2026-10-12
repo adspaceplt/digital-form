@@ -2607,3 +2607,23 @@ the conversion is proposed separately. Imports from Meta are Malaysia time
 on any device: the suites ran on Tokyo's and Los Angeles' clocks unchanged.
 On a phone the audit row's own act had kept the negative margin that holds
 a desk row to a line of words, which ate the space around it.
+
+### 2026-10-12 · My Work on Malaysia's clock
+The user approved the portal-wide conversion to Malaysia time ("go, start
+with My Work"). One copy now answers every day and time (`js/clock.js`,
+`ADspaceClock`): a Date's own getters, `setHours`, `new Date(y, m, d)` and
+`toLocaleDateString` answer in the device's zone, so on a Tokyo device a
+task due on Malaysia's today read "1 day over", the calendar opened on
+November while Malaysia was still on 31 October, and a meeting at 11:00am
+read 12:00pm and was saved an hour early. My Work's dates, Due today and
+Tomorrow, the overdue band, the periods, the calendar, capacity's week,
+the New sheet's month and week, the content months, the priority
+deadline, the meeting's day and time and the client message now read
+Malaysia's clock; stored days keep their form (`YYYY-MM-DDT00:00:00Z`).
+`tests/myclock.js` holds Tokyo and Los Angeles at moments across a
+month's end, with Kuala Lumpur as the control, and fails 14 checks on the
+code before. The browser suites now run on Malaysia's clock (`gate.sh`),
+because the page's today is Malaysia's and a suite reading the machine's
+(UTC) would disagree from 16:00 UTC every day. Other sections follow, one
+release each.
+
