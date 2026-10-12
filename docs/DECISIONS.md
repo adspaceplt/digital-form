@@ -2717,3 +2717,19 @@ selection's access code or for a draft campaign, and for a creator only a
 single open booking (two would make the preview name one booking over
 another). /verify/ and the namecard need no key-bearing short link: the
 namecard already has its slug on the links host.
+
+### 2026-10-13 · Meta's reach takes in the people of unknown age
+The Report audit read 800 people reached for Laman Waringin's 2609W3_Balance
+Engagement row (two ads, 16 Sept to 12 Oct) against the report's 6,484. The
+user's two Ads Manager exports (by age, and by age and day) showed the cause:
+5,688 of the people the later ad reached on 24 and 25 Sept are under age
+Unknown; the export by age counts them, and the Graph API's ad-level reach
+does not, though its impressions (6,811) and spend (RM 57.68) do. The user:
+"i cannot have empty or unknown figure", "try fix 1". `meta-import` now
+takes an ad's reach as its age bands' sum wherever those bands name an
+Unknown band and each states its reach (`reachWithAges` in shape.mjs), so
+the audit and Import from Meta read reach as the export the team imports.
+The spreadsheet and CSV importers are untouched. Fix 2 (never compare or
+import reach from Meta) is the fallback if Meta's age split carries no
+Unknown band.
+
