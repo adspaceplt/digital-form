@@ -2567,3 +2567,17 @@ read from the page before any script runs. The pages sent to clients and
 creators (review, selection, creator, scripts, client portal, verify) no
 longer name one; the console and the namecard keep it. A link already sent
 keeps the preview WhatsApp made of it.
+
+### 2026-10-12 · Review links that name the set and the brand
+The user wanted the preview of a review link sent on WhatsApp to read
+"{Content Set} {client brand name} - Content Review Portal by ADspace". A
+preview is read from the page before any script runs, and Pages serves the
+same file to every client, so the title is answered by the links Worker on
+hi.adspace.me, which the user chose over putting the whole portal behind
+Cloudflare. The user asked that the links not pile up: none is stored. The
+short link is the client's own review key and the first eight characters of
+the set's id, read back by `review_link_preview` with the public key, so a
+reset key retires its short links with it. A chat app's reader gets the
+titled page; a person is sent straight to the review page, which opens on
+that set. Cost: one Worker request and, for a preview alone, one database
+call a link opened, inside both free plans.

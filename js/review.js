@@ -947,6 +947,24 @@
     });
     var kept = restoring && restoring.stage;
     stage = kept && (kept === 'all' || counts[kept]) ? kept : counts.pending ? 'pending' : 'all';
+    /* A short link naming a set (#s-{the first eight characters of its id},
+       hi.adspace.me/r/…, 2026-10-12) opens on that set alone, unfolded, on
+       the stage that holds its posts. The mark is then taken out of the
+       address, so the reader's own choices are kept from there. */
+    var named = (/^#s-([0-9a-f]{8})$/.exec(location.hash) || [])[1];
+    var target = named ? feed.batches.filter(function (b) { return String(b.id).slice(0, 8) === named; })[0] : null;
+    if (named) history.replaceState(null, '', location.pathname + location.search);
+    if (target) {
+      var own = { pending: 0, changes: 0, approved: 0 };
+      target.posts.forEach(function (p) { own[stageOf(p.review)]++; });
+      stage = own.pending ? 'pending' : own.changes ? 'changes' : 'all';
+      var ts = document.querySelector('.batch[data-batch="' + target.id + '"]');
+      if (ts) {
+        ts.dataset.userSet = '1';
+        ts.classList.remove('is-folded');
+        ts.querySelector('.batch-head').setAttribute('aria-expanded', 'true');
+      }
+    }
     paintStages(counts);
 
     var ff = $('formatFilter');
@@ -982,10 +1000,11 @@
         document.body.classList.add('is-safe');
       }
     }
+    if (target) bf.value = target.id;
     applyFilters();
 
     feedLoaded = true;
-    if (restoring && restoring.y) {
+    if (restoring && restoring.y && !target) {
       var y = restoring.y;
       requestAnimationFrame(function () {
         window.scrollTo(0, y);
