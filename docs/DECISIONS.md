@@ -2551,3 +2551,10 @@ browser and the next pass takes them away; a file refused on a folder
 another page left a pass on loads again once those cookies are gone; the
 upload check asks for the pass first and once again before it refuses, in
 words that no longer name an Origin path.
+
+The same afternoon the user met the refusal again, from a console opened
+before the deploy (the old words). S3 had answered 200 each time, so with
+the media pass on the check no longer refuses a stored file: it asks for the
+pass and reads once more, and the post is kept either way. Behind signed
+cookies a refused read tells about the browser's cookies, not the
+distribution, which was set up once and has not moved.

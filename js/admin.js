@@ -3956,6 +3956,11 @@
             .then(function (info) {
               if (info.ok) return true;
               state.storageCheck = null;   // a later upload may be worth retrying
+              /* Behind the media pass a refusal says more about this browser's
+                 cookies than about the distribution, and S3 has already taken
+                 the file: the post is kept, and the file draws once the pass
+                 holds (2026-10-12). */
+              if (M && M.renew && (cfg.s3 || {}).privateMedia) return true;
               throw new Error(
                 'The file was stored, but the CDN did not return it at ' + url + '. Reload the ' +
                 'page and add the files again. Where it persists, see docs/S3-UPLOAD-SETUP.md.');
