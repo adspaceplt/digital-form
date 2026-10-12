@@ -685,14 +685,16 @@
             ['Win-backs', String(f.winback.length), 'Past back to Active'],
             ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
-            ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start']
+            ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
           ];
           if (val && f.money) {
-            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won']);
-            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'A month of the lines churned']);
+            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won', true]);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'A month of the lines churned', true]);
           }
           return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
-            return '<div><dt>' + esc(r[0]) + '<small>' + esc(r[2]) + '</small></dt><dd>' + esc(r[1]) + '</dd></div>';
+            /* Churn and the two values take a row each, so a long label
+               or an amount never squeezes into half (the user, 2026-10-12). */
+            return '<div' + (r[3] ? ' class="is-wide"' : '') + '><dt>' + esc(r[0]) + '<small>' + esc(r[2]) + '</small></dt><dd>' + esc(r[1]) + '</dd></div>';
           }).join('') + '</dl>' };
         });
       } },

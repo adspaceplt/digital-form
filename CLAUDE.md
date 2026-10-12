@@ -2319,8 +2319,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     for last month, its slices in their status dots; Creator bookings). These
     were Clients · Sales and My Work · Report, both removed the same day.
   - Each chart names its way out at its title's right edge (its section);
-    a row's cards share its height, their Figures on one line, Figures'
-    hairline a step below its chart; three in a row run three across.
+    side by side, a row's cards share four rows (a subgrid: head, chart,
+    key, Figures), so their Figures start on one line, open or shut,
+    whatever each table holds; Figures' hairline a step below the chart;
+    three in a row run three across. In Sales moves, Churn rate and the two
+    monthly values take a row each.
 - Each tile, signal, chart and list source asks its own `may()` before any
   read, at Full Access (`manage`) on its section or part; the granted parts
   (`ops.reports`, `ops.all`, `team.performance`) at their grant; the lead

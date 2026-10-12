@@ -2512,3 +2512,16 @@ cleared the link through `ops_engagement_set_meet`. A refusal is said in
 the question, kept open. The card then offers Create Google Meet again. A
 Zoom or Teams link is changed in the meeting's sheet. No database or
 function change. `tests/work.js` walks it.
+
+### 2026-10-12 · The Dashboard's Figures on one line; Sales moves' long rows
+
+The user, on the Detail page's three cards with Figures open: "the figures
+part so uneven". Each card pushed Figures to its foot (`margin-top: auto`),
+so the line held only while every Figures was shut: opened, a shorter table
+sat lower than a longer one. Side by side, a row's cards now share four
+rows through a subgrid (head, chart, key, Figures), so every Figures starts
+on one line whatever its table holds; stacked on a narrow pane they keep
+the column as before. And on Sales moves: "break the churn rate monthly
+value won and monthly value lost into one row each", since their labels
+and amounts wrapped in half a card and the last stood alone. They now take
+a row each under the three pairs.
