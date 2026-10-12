@@ -595,15 +595,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   stay manual.
 - S3 (`docs/S3-STORAGE.md`), built 2026-09-28. The daily report
   (`s3-sweep`, 03:17 MYT) is deployed and scheduled, and nothing is ever
-  deleted (the user, 2026-09-28). Still with the user:
-  - the sweeper's IAM policy loses `s3:DeleteObject` (it needs the list
-    only), and the old upload key is rotated out once uploads run on
-    `adspace-portal-upload`;
-  - the lifecycle rule's housekeeping half (abort incomplete uploads at 7
-    days; noncurrent versions at 30), if not yet made; never an expiration
-    action;
-  - Held: the storage-class half, until storage nears 100 GB or the Free Tier
-    ends.
+  deleted (the user, 2026-09-28). The user's part is done (2026-10-12: the
+  sweeper's list-only policy, the old upload key retired, the lifecycle
+  rule's housekeeping half). Held: the storage-class half, until storage
+  nears 100 GB or the Free Tier ends.
 - Documents:
   - Expiring links: built for a campaign's invoice PDF (`sign-download`,
     five minutes, 2026-10-02), on since 2026-10-03
@@ -640,9 +635,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   fixed (the user, 2026-10-05: not needed).
 - Backups (2026-10-10): the Supabase project is on the Free plan, which
   keeps none; the nightly encrypted dump to `private/backups/db/` stands in
-  (`workers/db-backup/README.md`) once the owner sets its key and secrets.
-  Not covered: Handbook files in Supabase Storage. A restore has not been
-  rehearsed.
+  (`workers/db-backup/README.md`), running since 2026-10-11 (the owner's
+  key and secrets set; the first scheduled run succeeded). Not covered:
+  Handbook files in Supabase Storage. A restore has not been rehearsed.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);

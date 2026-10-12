@@ -999,11 +999,52 @@
   var PAGES = [['summary', 'Summary'], ['detail', 'Detail']];
   var page = 'summary';
   function hasDetail() { return PAGE2.some(function (g) { return g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }); }); }
+  /* A page turn slides (the user, 2026-10-12: the swap "felt too fast,
+     lacking the proper sliding"): the page left moves out to one side as
+     the new one comes in from the other, Detail from the right and Summary
+     from the left, the bar and its strip holding still. The page left is a
+     still copy laid where it stood on screen, gone once the slide ends. */
+  var ghostGone = null;
   function turn(to) {
     if (to === page) return;
+    var box = $('ovwBody'), sec = $('sectionOverview');
+    var dir = to === 'detail' ? 'next' : 'prev';
+    if (ghostGone) ghostGone();
+    var ghost = null;
+    if (box && sec && box.firstChild) {
+      sec.classList.add('is-turning');
+      ghost = box.cloneNode(true);
+      ghost.removeAttribute('id');
+      Array.prototype.forEach.call(ghost.querySelectorAll('[id]'), function (n) { n.removeAttribute('id'); });
+      ghost.classList.add('ovw-ghost');
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.setAttribute('inert', '');
+      ghost.style.left = box.offsetLeft + 'px';
+      ghost.style.width = box.offsetWidth + 'px';
+      ghost.style.top = (box.offsetTop - window.scrollY) + 'px';
+    }
     page = to;
     build(false);
     window.scrollTo(0, 0);
+    if (ghost) {
+      /* Nothing of the page left shows behind the bar, which holds still. */
+      var barEl = box.querySelector('.ovw-bar');
+      var under = barEl ? box.offsetTop + barEl.offsetTop + barEl.offsetHeight - parseFloat(ghost.style.top) : 0;
+      if (under > 0) ghost.style.clipPath = 'inset(' + Math.round(under) + 'px 0 0 0)';
+      sec.appendChild(ghost);
+      ghost.classList.add('is-out-' + dir);
+      box.classList.add('is-in-' + dir);
+      var timer;
+      ghostGone = function () {
+        clearTimeout(timer);
+        if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+        box.classList.remove('is-in-next', 'is-in-prev');
+        sec.classList.remove('is-turning');
+        ghostGone = null;
+      };
+      ghost.addEventListener('animationend', function () { if (ghostGone) ghostGone(); });
+      timer = setTimeout(function () { if (ghostGone) ghostGone(); }, 900);
+    }
     if (bridge.setUrl) bridge.setUrl();
   }
   /* The way on at a page's foot: Summary continues to Detail, Detail goes

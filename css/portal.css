@@ -9469,6 +9469,21 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cp-seg.is-err { stroke: var(--dot-late); } .cp-seg.is-off { stroke: var(--dot-off); }
 .cp-key > i.is-ok { background: var(--dot-ok); border-radius: 50%; } .cp-key > i.is-warn { background: var(--dot-wait); border-radius: 50%; }
 .cp-key > i.is-err { background: var(--dot-late); border-radius: 50%; } .cp-key > i.is-off { background: var(--dot-off); border-radius: 50%; }
+/* The Dashboard's page turn (2026-10-12): the page left slides out as the
+   new one slides in from the side the person moved toward; the bar holds
+   still. Nothing slides under reduced motion (its durations are zero). */
+#sectionOverview.is-turning { position: relative; overflow-x: clip; }
+#sectionOverview.is-turning > .ovw:not(.ovw-ghost) { position: relative; z-index: 1; }
+.ovw-ghost { position: absolute; margin: 0; pointer-events: none; z-index: 0; }
+.ovw-ghost > .ovw-bar { visibility: hidden; }
+.ovw-ghost.is-out-next { animation: ovw-out-next var(--t-slow) var(--ease) forwards; }
+.ovw-ghost.is-out-prev { animation: ovw-out-prev var(--t-slow) var(--ease) forwards; }
+.ovw.is-in-next > :not(.ovw-bar) { animation: ovw-in-next var(--t-slow) var(--ease) both; }
+.ovw.is-in-prev > :not(.ovw-bar) { animation: ovw-in-prev var(--t-slow) var(--ease) both; }
+@keyframes ovw-out-next { to { transform: translateX(-100%); } }
+@keyframes ovw-out-prev { to { transform: translateX(100%); } }
+@keyframes ovw-in-next { from { transform: translateX(100%); } }
+@keyframes ovw-in-prev { from { transform: translateX(-100%); } }
 /* A column's figure over it. */
 .cc-bar { position: relative; }
 /* It stands on the card's own ground, never the column it rides on, so it
