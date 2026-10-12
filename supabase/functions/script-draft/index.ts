@@ -151,6 +151,16 @@ Deno.serve(async (req) => {
     .eq('id', vid.data.client_id as string).maybeSingle();
   if (cl.error || !cl.data) return json({ error: 'client-scope' }, 200, origin);
   const c = cl.data as Record<string, unknown>;
+
+  /* The client's brand first (2026-10-12): its Content brief's audience,
+     pillars and tone, and a confirmed Brand analysis, asked before a use is
+     claimed, so a refusal counts nothing. */
+  const ready = await db.rpc('ai_brand_ready', { p_client: vid.data.client_id as string });
+  if (ready.error) return json({ error: 'needs-update' }, 200, origin);
+  const rd = (ready.data || {}) as Record<string, unknown>;
+  if (rd.error) return json({ error: String(rd.error) }, 200, origin);
+  if (Array.isArray(rd.missing) && rd.missing.length) return json({ error: 'no-brief', missing: rd.missing }, 200, origin);
+  if (rd.analysis !== true) return json({ error: 'no-analysis' }, 200, origin);
   const ownHandle = String(c[({ Instagram: 'handle_ig', TikTok: 'handle_tiktok', Facebook: 'handle_fb', rednote: 'handle_xhs' } as
     Record<string, string>)[platform] || ''] || '').trim().replace(/^@/, '');
   /* The month's other scripts for this client (scripts-by-month). */

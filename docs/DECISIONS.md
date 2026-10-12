@@ -2693,3 +2693,14 @@ It offers only Active clients removed from Content Review (`review_hidden`),
 which the one read of the Active clients already holds, and writes what
 Enable Content Review on the client's record writes. The button is not drawn
 while every Active client is in Content Review.
+
+### 2026-10-12 · Write with AI waits for the client's brand
+The user asked that no caption, script or analysis be written for a client
+whose brand is empty. Agreed rule: a caption and a script need the Content
+brief's Audience, Content pillars and Tone of voice and a confirmed Brand
+analysis; Run analysis needs the three parts alone (it is how an analysis
+comes to exist); reports are not held, their words come from the report's
+own figures. One database function (`ai_brand_ready`) answers what is
+missing, read by the pages before they ask and by the three functions before
+they claim a use, so a refusal counts nothing and a page loaded earlier is
+refused the same.

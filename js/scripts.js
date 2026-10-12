@@ -1033,8 +1033,11 @@
     if (!s || !may('work')) return;
     sayWrite('');
     btn.disabled = true;
-    rpc('ai_script_left', {}).then(function (left) {
+    var AD = window.ADspaceAdmin;
+    Promise.all([rpc('ai_script_left', {}), AD.brandGate(s.client_id, true)]).then(function (both) {
+      var left = both[0];
       btn.disabled = false;
+      if (both[1]) { AD.brandSay($('vsWriteMsg'), both[1].text, s.client_id); return; }
       if (!left.left) { sayWrite(writeLimit(left)); return; }
       var kind = $('vsKind').value, plat = $('vsPlatform').value;
       var fields = [{ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
@@ -1077,7 +1080,10 @@
           else st.kept = { id: s.id, words: w };
         }).catch(function (e) {
           settle();
-          if (st.open && st.open.id === s.id) sayWrite(writeSaid(e));
+          if (!(st.open && st.open.id === s.id)) return;
+          var code = e && e.message;
+          if (code === 'no-brief' || code === 'no-analysis') AD.brandSay($('vsWriteMsg'), AD.brandWords(code, e.d && e.d.missing), s.client_id);
+          else sayWrite(writeSaid(e));
         });
       });
     }).catch(function (e) { btn.disabled = false; sayWrite(writeSaid(e)); });

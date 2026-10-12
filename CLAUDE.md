@@ -1436,6 +1436,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client.brand` by the parts' names. Write with AI reads it and the brand
   notes for captions and scripts, masked as the rest (`{brand}`,
   `{handle}`); never a competitor named back.
+- Write with AI waits for the brand (`ai_brand_ready(p_client)`,
+  `2026-10-12-ai-needs-the-brand.sql`; the user, 2026-10-12): a caption or a
+  script needs the brief's Audience, Content pillars and Tone of voice and a
+  confirmed Brand analysis, Run analysis the three parts alone; reports are
+  not held. The press asks nothing until then: one `.msg.warn` line under
+  the button names what is missing, with Open Brand where the colleague
+  reads Clients (`ADspaceAdmin.brandGate`, `brandSay`), and `caption-draft`,
+  `script-draft` and `brand-analysis` refuse the same (`no-brief` with
+  `missing`, `no-analysis`) before a use is counted.
 - Brand analysis (`2026-10-10-brand-analysis.sql`, `brand-analysis`; the
   user, 2026-10-10: "deep analysis of this clients … target audiences,
   SWOTs, advantages disadvantages, ads targetting"; "anyone could run it"):
