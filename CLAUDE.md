@@ -348,9 +348,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - white to the edge (`--card`, `theme-color #ffffff`, `color-scheme: light`).
 - The favicon on every portal page is the ADspace wordmark in Optima on white
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
-  `img/apple-touch-icon.png` and `img/icon-512.png`. The share card of every
-  page but `/` is `img/share-1200.png` (1200×630, `summary_large_image`): the
-  wordmark in Optima over Digital Portal in Slate Regular, on white. `js/chrome.js` adds it where a page names none. No icon
+  `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
+  client or a creator (`review/`, `creators/`, `creator/`, `script/`,
+  `client/`, `verify/`) names no share image, so WhatsApp reads it as its
+  title and address as it does a Google Drive link (`twitter:card` summary;
+  the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
+  `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
+  Optima over Digital Portal in Slate Regular, on white. No icon
   hangs on the CDN.
 - Only `/` may be listed: every other page carries noindex, `robots.txt`
   disallows nothing (a blocked page's noindex cannot be read), and

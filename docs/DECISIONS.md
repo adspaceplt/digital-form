@@ -2558,3 +2558,12 @@ the media pass on the check no longer refuses a stored file: it asks for the
 pass and reads once more, and the post is kept either way. Behind signed
 cookies a refused read tells about the browser's cookies, not the
 distribution, which was set up once and has not moved.
+
+### 2026-10-12 · Client links without the large picture
+The user, pasting a review link to a client on WhatsApp: it showed the
+large share picture, where a Google Drive link shows its name and address
+alone. WhatsApp draws the large card whenever a page names a share image,
+read from the page before any script runs. The pages sent to clients and
+creators (review, selection, creator, scripts, client portal, verify) no
+longer name one; the console and the namecard keep it. A link already sent
+keeps the preview WhatsApp made of it.
