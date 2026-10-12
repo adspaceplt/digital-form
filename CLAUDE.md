@@ -731,7 +731,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   opened beside the console left (2026-10-12); a file refused on a folder
   another page left a pass on loads again once it is taken away
   (`ADspaceMedia.renew`), and Add assets' check that the CDN serves a stored
-  file reads it with the pass, asked again once before it refuses. An answer in the earlier
+  file reads it with the pass, asked again once; with the pass on, a file
+  S3 took is never refused by that check. An answer in the earlier
   shape (one pass over `content/`, no `passes`) is set on the root as before,
   so a page served before `media-pass` is deployed keeps its media. A file under `content/` that fails asks
   again once and reloads (a video at its second), the page's own `onerror`
