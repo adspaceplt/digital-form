@@ -28,7 +28,7 @@
  * word stays as its accessible name); a second action goes into a ⋯ beside
  * it, placed by `ADspaceMenu` like every other menu. A bar with no selects
  * (Content Review) draws no Filters button, and a lone action that is not the
- * primary (Manage clients) keeps its word, because it fits; a bar of three
+ * primary keeps its word, because it fits; a bar of three
  * plain actions keeps its first and puts the rest behind the ⋯.
  *
  * At a desk the same button holds the same selects (the user, 2026-10-01:

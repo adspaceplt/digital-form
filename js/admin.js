@@ -1980,15 +1980,20 @@
   function loadClients() {
     var box = $('clientCards');
     if (!state.reviewClients) skeleton(box, 3);
-    db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').eq('review_hidden', false)
+    /* Every Active client in one read: those in Content Review are listed,
+       the rest are what Enable client offers (the user, 2026-10-12). */
+    db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active')
       .order('name').then(function (r) {
       if (r.error) {
-        state.reviewClients = null;
+        state.reviewClients = null; state.reviewOff = [];
+        paintEnable();
         failLine(box, 'Clients', r.error.message, loadClients);
         settleScroll();
         return;
       }
-      state.reviewClients = r.data || [];
+      state.reviewClients = (r.data || []).filter(function (c) { return !c.review_hidden; });
+      state.reviewOff = (r.data || []).filter(function (c) { return c.review_hidden; });
+      paintEnable();
       state.reviewSets = null;
       paintReviewClients();
       settleScroll();
@@ -2056,7 +2061,7 @@
         : rows.length + ' of ' + all.length;
     }
     box.innerHTML = '';
-    if (!all.length) { UI.emptyLine(box, 'No active clients.'); return; }
+    if (!all.length) { UI.emptyLine(box, (state.reviewOff || []).length ? 'No clients in Content Review.' : 'No active clients.'); return; }
     if (!rows.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the search', function () {
         crFind = ''; if ($('crFind')) $('crFind').value = ''; paintReviewClients();
@@ -2514,7 +2519,37 @@
      Campaigns, so the same company could be entered twice with neither place
      owning the record. A client is a company and belongs to the CRM; this
      section publishes their deliverables. */
-  $('goToCrm').addEventListener('click', function () { showSection('clients'); });
+  /* Enable client puts an Active client not yet in Content Review into it,
+     its existing sets and link unchanged: the act Enable Content Review is on
+     the client's record, offered here as well (the user, 2026-10-12: Add
+     client read as making a new client). Drawn only while one is waiting. */
+  function paintEnable() {
+    var b = $('crEnable');
+    if (b) b.hidden = !(state.reviewOff || []).length || !may('review.settings', 'work');
+  }
+  $('crEnable').addEventListener('click', function () {
+    var btn = this, off = (state.reviewOff || []).slice();
+    if (!off.length) return;
+    var F = window.ADspaceForm;
+    off.sort(F.byClient);
+    var choices = off.map(function (c) { return [c.id, F.named(c.client_code, c.name)]; });
+    window.ADspaceConfirm.ask({
+      title: 'Enable Content Review',
+      go: 'Enable',
+      field: { label: 'Client', choices: choices }
+    }, function (id) {
+      var c = off.filter(function (x) { return x.id === id; })[0];
+      if (!c) return;
+      btn.disabled = true;
+      setReviewHidden(c, false, 'clientMsg', function () {
+        btn.disabled = false;
+        loadClients();
+        undoHere(c.name + ' added to Content Review.', function () {
+          setReviewHidden(c, true, 'clientMsg', loadClients);
+        }, $('clientMsg'));
+      }, function () { btn.disabled = false; });
+    });
+  });
 
   function openClient(c) {
     state.client = c;
@@ -2808,14 +2843,15 @@
   });
   /* One write for both ways, taking the row back: a refused update is a 204
      with nothing in it, and is named, never filed. */
-  function setReviewHidden(c, hide, msgId, then) {
+  function setReviewHidden(c, hide, msgId, then, fail) {
+    var no = function (t) { msg(msgId, t, 'err'); if (fail) fail(); };
     db.from('clients').update({ review_hidden: hide }).eq('id', c.id).select('id').then(function (u) {
-      if (u.error) { msg(msgId, u.error.message, 'err'); return; }
-      if (!u.data || !u.data.length) { msg(msgId, 'Not saved. The database refused the request.', 'err'); return; }
+      if (u.error) { no(u.error.message); return; }
+      if (!u.data || !u.data.length) { no('Not saved. The database refused the request.'); return; }
       c.review_hidden = hide;
       logAction(hide ? 'review.removed' : 'client.review_on', c.name, '');
       then();
-    }).catch(function (e) { msg(msgId, (e && e.message) || String(e), 'err'); });
+    }).catch(function (e) { no((e && e.message) || String(e)); });
   }
   /* The way back, drawn where the act lands: one line and Undo, eight
      seconds, under `host`. */

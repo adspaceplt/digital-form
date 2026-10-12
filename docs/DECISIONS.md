@@ -2684,3 +2684,12 @@ analysis for Instagram media; under Graph v26 each failed, was logged and
 left out, so imports carried no picture and Facebook posts' views and
 reach read through `metrics` went missing too. Each object is now asked on
 its own, six at a time; `tests/metashape.js` fails on an `ids` read.
+
+### 2026-10-12 · Content Review: Enable client in place of Manage clients
+Content Review's bar held Manage clients, which only opened the Clients
+section. The user asked for a way to put a client into Content Review from
+there; Add client read as making a new client, so the act is Enable client.
+It offers only Active clients removed from Content Review (`review_hidden`),
+which the one read of the Active clients already holds, and writes what
+Enable Content Review on the client's record writes. The button is not drawn
+while every Active client is in Content Review.
