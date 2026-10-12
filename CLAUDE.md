@@ -2270,7 +2270,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   director would (the user, the same day: "act as the company ceo"; the
   second page "continuous instead of hiding"): Summary, then Detail, the
   strip `#ovwPages` (the view strip, `pg=detail` in the address, Summary
-  left out) at the bar's left, and at each page's foot the way on
+  left out) at the bar's left, a sideways swipe anywhere on the page
+  turning it as the strip does (`data-swipe="ovwPages"`; the user,
+  2026-10-12), and at each page's foot the way on
   (`#ovwTurn`: Continue to Detail, Back to Summary). The bar's right holds
   the period (`#ovwPeriod`, a select of This month, Last month, This
   quarter, Last quarter, This year: five, so never a segment; `p=`, This
