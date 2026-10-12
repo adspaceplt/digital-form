@@ -125,20 +125,22 @@ async function all(path: string, params: Record<string, string>, max: number, to
   }
   return out;
 }
-/* A lifetime metric for many media at once, left out where Meta refuses it. */
+/* A lifetime metric for many media, each asked on its own, six at a time
+   (Graph v26 refuses the `?ids=` read of many at once, 2026-10-12); left
+   out where Meta refuses it. */
 async function metric(ids: string[], name: string): Promise<Record<string, number | null>> {
   const out: Record<string, number | null> = {};
-  for (let i = 0; i < ids.length; i += 50) {
-    const part = ids.slice(i, i + 50);
-    try {
-      const body = await graph('', { ids: part.join(','), fields: 'insights.metric(' + name + ')' });
-      part.forEach((id) => {
+  for (let i = 0; i < ids.length; i += 6) {
+    const part = ids.slice(i, i + 6);
+    await Promise.all(part.map(async (id) => {
+      try {
+        const body = await graph(id + '/insights', { metric: name });
         // deno-lint-ignore no-explicit-any
-        const d: any = ((body[id] || {}) as Record<string, unknown>).insights;
+        const d: any = body;
         const v = d && d.data && d.data[0] && d.data[0].values && d.data[0].values[0] ? Number(d.data[0].values[0].value) : null;
         out[id] = v != null && isFinite(v) ? v : null;
-      });
-    } catch { part.forEach((id) => { out[id] = null; }); }
+      } catch { out[id] = null; }
+    }));
   }
   return out;
 }

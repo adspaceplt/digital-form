@@ -136,16 +136,26 @@ async function adInsights(act: string, range: string, extra: Record<string, stri
   }
 }
 
-/* A metric for many objects at once (`?ids=`), each metric asked on its
-   own so a metric Meta has retired drops only its own column. */
-async function metricFor(ids: string[], metric: string, token?: string, period?: string): Promise<Record<string, number | null>> {
-  const out: Record<string, number | null> = {};
-  for (let i = 0; i < ids.length; i += 50) {
-    const part = ids.slice(i, i + 50);
-    const body = await graph('', { ids: part.join(','), fields: 'insights.metric(' + metric + ')' + (period ? '.period(' + period + ')' : '') }, token);
-    part.forEach((id) => { out[id] = insightOf(((body[id] || {}) as Record<string, unknown>).insights, metric); });
+/* Each object asked on its own, six at a time: Graph v26 refuses the
+   `?ids=` read of many objects at once ("The ids query parameter is
+   deprecated in v26.0+", 2026-10-12), which had left every picture and
+   post metric out. */
+async function eachOf<T>(ids: string[], ask: (id: string) => Promise<T>): Promise<Record<string, T>> {
+  const out: Record<string, T> = {};
+  for (let i = 0; i < ids.length; i += 6) {
+    const part = ids.slice(i, i + 6);
+    const got = await Promise.all(part.map(ask));
+    part.forEach((id, j) => { out[id] = got[j]; });
   }
   return out;
+}
+/* A metric for many objects, each metric asked on its own so a metric Meta
+   has retired drops only its own column. */
+async function metricFor(ids: string[], metric: string, token?: string, period?: string): Promise<Record<string, number | null>> {
+  return eachOf(ids, async (id) => {
+    const body = await graph(id + '/insights', period ? { metric, period } : { metric }, token);
+    return insightOf(body, metric);
+  });
 }
 async function metrics(ids: string[], names: Record<string, string>, token?: string, period?: string) {
   const got: Record<string, Record<string, number | null>> = {};
@@ -253,15 +263,18 @@ Deno.serve(async (req) => {
       const pics: Record<string, string> = {};
       if (!audit) {
         const ids = [...new Set(ads.map((a) => String(a.ad_id || '')).filter(Boolean))];
-        for (let i = 0; i < ids.length; i += 50) {
+        let said = false;
+        await eachOf(ids, async (id) => {
           try {
-            const got = await graph('', { ids: ids.slice(i, i + 50).join(','), fields: 'creative{image_url,thumbnail_url}' });
-            for (const id of ids.slice(i, i + 50)) {
-              const c = ((got[id] || {}) as Record<string, Record<string, string>>).creative || {};
-              if (c.image_url || c.thumbnail_url) pics[id] = c.image_url || c.thumbnail_url;
-            }
-          } catch (e) { console.error('meta-import: pictures left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300)); }
-        }
+            const got = await graph(id, { fields: 'creative{image_url,thumbnail_url}' });
+            const c = ((got || {}) as Record<string, Record<string, string>>).creative || {};
+            if (c.image_url || c.thumbnail_url) pics[id] = c.image_url || c.thumbnail_url;
+          } catch (e) {
+            if (!said) console.error('meta-import: picture left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300));
+            said = true;
+          }
+          return null;
+        });
       }
       /* The ad account's own time zone (2026-10-12): Meta counts the
          period's days in it, as Ads Manager's export does. The page says so

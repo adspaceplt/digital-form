@@ -3864,7 +3864,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `From Meta`. Then each ad or post with no picture of its own takes
   Meta's (an ad's creative, a post's image or a reel's cover frame), read
   through `meta-import` `pictures` (Meta's own image hosts alone, six a
-  call, 4 MB each; Meta's addresses expire within days), drawn down to the
+  call, 4 MB each; Meta's addresses expire within days; each ad's creative,
+  as each post's metric here and in `brand-analysis`, asked of Meta on its
+  own: Graph v26 refuses the `?ids=` read of many at once, 2026-10-12), drawn down to the
   320px JPEG and kept on the row (`.is('thumb_data', null)`: a picture the
   team chose is never replaced), filed `From Meta: n pictures added`; a
   picture Meta refuses leaves the row without, never the import. A refusal is one line under the step's head (`META_SAID`:
