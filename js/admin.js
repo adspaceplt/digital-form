@@ -68,6 +68,15 @@
     if (!host || !c || !/^[A-Za-z0-9_-]{6,64}$/.test(c.access_token || '')) return reviewUrl(c);
     return 'https://' + host + '/r/' + c.access_token + (b ? '/' + String(b.id).slice(0, 8) : '');
   }
+  /* The other links a client or a creator is sent, as short links the same
+     way (2026-10-13): `s` a client's Video Scripts, `c` a campaign's
+     selection, `p` a creator's own page, each the key the long link carries
+     (workers/links, share_link_preview); the long link where none can be. */
+  function shortLink(letter, key, long) {
+    var host = cfg && cfg.linkHost;
+    if (!host || !cfg.shareLinks || !/^[scp]$/.test(letter) || !/^[A-Za-z0-9_-]{6,64}$/.test(key || '')) return long;
+    return 'https://' + host + '/' + letter + '/' + key;
+  }
 
   /* Records the handful of actions that destroy data or change what a client
      can see. Deliberately fire and forget: a failure to log must never stop
@@ -5121,6 +5130,7 @@
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
     /* Write with AI waits for the client's brand (2026-10-12). */
+    shortLink: shortLink,
     brandGate: brandGate,
     brandSay: brandSay,
     brandWords: brandWords,

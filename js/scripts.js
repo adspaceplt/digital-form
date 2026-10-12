@@ -670,6 +670,10 @@
   }
 
   function clientLink(key) { return location.origin + '/script/?k=' + key; }
+  /* The address and Copy link give the short link (hi.adspace.me/s/{key},
+     2026-10-13), so a chat app's preview names the brand; Preview is the
+     page itself. */
+  function shareLink(key) { return bridge.shortLink ? bridge.shortLink('s', key, clientLink(key)) : clientLink(key); }
   function withKey(reset) {
     var cid = st.open.client_id;
     return rpc('script_link', { p_client: cid, p_reset: Boolean(reset) }).then(function (d) {
@@ -686,7 +690,7 @@
     var show = function () {
       if (!st.open || st.open.id !== s.id) return;
       var has = Boolean(st.key && st.keyFor === s.client_id);
-      if (has) { $('vsLink').value = clientLink(st.key); $('vsOpen').href = clientLink(st.key); }
+      if (has) { $('vsLink').value = shareLink(st.key); $('vsOpen').href = clientLink(st.key); }
       $('vsLinkTools').hidden = !has;
     };
     show();
@@ -695,7 +699,7 @@
     withKey(false).then(show).catch(show);
   }
   $('vsCopy').addEventListener('click', function () {
-    if (st.key) window.ADspaceCopy.to($('vsCopy'), clientLink(st.key));
+    if (st.key) window.ADspaceCopy.to($('vsCopy'), shareLink(st.key));
   });
   function publish(on, btn, quiet) {
     var m = $('vsCardMsg');

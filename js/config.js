@@ -116,6 +116,10 @@ window.ADSPACE_CONFIG = {
      host keeps redirecting. This value decides what the next link is built
      with, nothing more. */
   linkHost: 'hi.adspace.me',
+  /* The script, selection and creator links are written as short links
+     (/s/, /c/, /p/ on the host above) once the links Worker answers them
+     (workers/links/worker.js, 2026-10-13); until then the long link. */
+  shareLinks: false,
 
   /* Cloudflare Turnstile SITE key for the sign-in captcha (js/captcha.js).
      Public by design, like the anon key; the SECRET key lives only in the

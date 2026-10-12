@@ -45,6 +45,8 @@ leaves Supabase.
 | The database could not be reached | `502`, "Unable to load" |
 | `/r/{review key}[/{set}]`, a person | `302` to `/review/?k={key}[#s-{set}]` on the portal, asking nothing |
 | `/r/{review key}[/{set}]`, a link preview's reader | `200`, a page titled `{set} {brand} - Content Review Portal by ADspace` (`review_link_preview`, the public key), no image; the plain title where nothing answers |
+| `/s/{key}`, `/c/{key}`, `/p/{code}`, a person | `302` to `/script/?k=`, `/creators/?k=` or `/creator/?k=` on the portal, asking nothing |
+| `/s/{key}`, `/c/{key}`, `/p/{code}`, a link preview's reader | `200`, a page titled `{brand} - Video Scripts by ADspace`, `{campaign} {brand} - Creator Selection by ADspace` or `{campaign} {brand} - Creator Portal by ADspace` (`share_link_preview`, the public key), no image; the plain title where nothing answers |
 | The bare host | `302` to `HOME_URL` |
 | `robots.txt` | `Disallow: /` |
 
