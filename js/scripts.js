@@ -69,8 +69,7 @@
   function may(level) { return Boolean(bridge.may && bridge.may('scripts', level || 'work')); }
   function dayWord(iso) {
     if (!iso) return '';
-    var d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(iso + 'T00:00:00') : new Date(iso);
-    return isNaN(d) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+    return window.ADspaceClock.date(iso);
   }
   function timeWord(t) {
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');
@@ -95,12 +94,8 @@
   /* The months a script is made in: last month, this month and the next
      six (MYT), as My Work offers them, and the month it holds. */
   function monthsAround(cur) {
-    var now = new Date(Date.now() + 8 * 36e5), y = now.getUTCFullYear(), mo = now.getUTCMonth();
-    var out = [];
-    for (var i = -1; i <= 6; i++) {
-      var d = new Date(Date.UTC(y, mo + i, 1));
-      out.push(d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'));
-    }
+    var now = window.ADspaceClock.today(), out = [];
+    for (var i = -1; i <= 6; i++) out.push(window.ADspaceClock.addMonths(now, i));
     if (cur && out.indexOf(cur) < 0) { out.push(cur); out.sort(); }
     return out;
   }
@@ -238,7 +233,7 @@
     var list = g.scripts, n = list.length;
     var pub = list.filter(function (x) { return stateOf(x) === 'shared'; }).length;
     var codes = list.map(function (x) { return tabWord(x); });
-    var today = new Date().toISOString().slice(0, 10);
+    var today = window.ADspaceClock.today();
     var days = list.map(function (x) { return x.shoot_on; }).filter(Boolean).sort();
     var ahead = days.filter(function (d) { return d >= today; })[0], shoot = ahead || days[days.length - 1];
     row.setAttribute('data-id', list[0].id);
@@ -971,9 +966,7 @@
     return '';
   }
   function writeClock(iso) {
-    var at = new Date(iso);
-    if (isNaN(at.getTime())) return '';
-    return ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
+    return window.ADspaceClock.clock(iso);
   }
   function writeLimit(d) {
     d = d || {};

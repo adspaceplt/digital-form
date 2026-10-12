@@ -171,7 +171,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
-| `js/clock.js` | myclock, then the suites of every script that reads it (`grep -l ADspaceClock js/`) |
+| `js/clock.js` | myclock, then `all` (every script reads it) |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
@@ -767,15 +767,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   a turning ring in the button's ink at the button's width until it is let
   go. A new act joins the table, never a screen (`tests/acts.js`).
 - `js/clock.js` (`ADspaceClock`: `day`, `today`, `parts`, `start`, `at`,
-  `time`, `addDays`, `addMonths`, `between`, `weekday`) is Malaysia's clock
-  (2026-10-12): a page reads a day, a month, a weekday and a time of day
-  from it, never from a Date's own getters, `setHours`, `new Date(y, m, d)`
-  or `toLocaleDateString` without the zone, which answer in the device's
-  zone. A day alone (`2026-10-12`) is that Malaysian day; a date and time
-  with no zone (a date field and a time field) is Malaysian time. Days are
-  counted on the calendar, never by a device's midnight. My Work reads it
-  throughout (`tests/myclock.js`: Tokyo and Los Angeles held across a
-  month's end); the other sections move to it one release each.
+  `time`, `addDays`, `addMonths`, `between`, `weekday`; the words `date`,
+  `clock`, `month`, English and Chinese) is Malaysia's clock (2026-10-12),
+  loaded by the console and every client page: every page reads a day, a
+  month, a weekday, a time of day and "today" from it, never from a Date's
+  own getters, `setHours`, `new Date(y, m, d)`, `toLocaleDateString`
+  without the zone (each the device's zone) or `toISOString().slice(0,
+  10)` (the UTC day, yesterday before 8am here). A day alone (`2026-10-12`)
+  is that Malaysian day; a date and time with no zone (a date field and a
+  time field) is Malaysian time; a stored day keeps its form
+  (`YYYY-MM-DDT00:00:00Z`). Days are counted on the calendar, never by a
+  device's midnight. Left as they are: calendar arithmetic in UTC on day
+  strings, the report PDF's days (`dateOf`: the Malaysian day held as a
+  local midnight), and the spreadsheet and CSV importers' own date reading
+  (the user, 2026-10-12: never touched). `tests/myclock.js` holds Tokyo and
+  Los Angeles across a month's end.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,

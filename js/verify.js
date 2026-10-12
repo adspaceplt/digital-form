@@ -39,10 +39,9 @@
 
   function niceDate(d) {
     if (!d) return '';
-    var x = new Date(String(d).slice(0, 10) + 'T00:00:00');
-    if (isNaN(x.getTime())) return String(d);
-    if (lang === 'zh') return x.getFullYear() + '年' + (x.getMonth() + 1) + '月' + x.getDate() + '日';
-    return x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
+    var k = String(d).length > 10 ? ADspaceClock.day(d) : String(d).slice(0, 10);
+    return ADspaceClock.date(k, { zh: lang === 'zh' }) || String(d);
   }
 
   function paintWords() {

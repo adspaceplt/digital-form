@@ -638,12 +638,6 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   (`workers/db-backup/README.md`), running since 2026-10-11 (the owner's
   key and secrets set; the first scheduled run succeeded). Not covered:
   Handbook files in Supabase Storage. A restore has not been rehearsed.
-- Malaysia's clock (2026-10-12): `js/clock.js` is read by My Work alone.
-  The other sections still read days and times off the device's clock
-  (about 150 places: the report PDF, the Dashboard, Reports, Performance,
-  Clients, Creator Campaigns, the client pages and the shared histories),
-  so a device off GMT+8 can show a day or an hour off there. Each moves
-  in its own release, as the user asks for it.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);

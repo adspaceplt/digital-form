@@ -38,8 +38,7 @@
   }
   function day(iso) {
     if (!iso) return '';
-    var d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(iso + 'T00:00:00') : new Date(iso);
-    return isNaN(d) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+    return window.ADspaceClock.date(iso);
   }
   function time(t) {
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');

@@ -42,37 +42,34 @@
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
               'September', 'October', 'November', 'December'];
-  function dayStart(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
-  function today() { return dayStart(new Date()); }
+  /* Every day, month and period is Malaysia's (js/clock.js), whatever the
+     device's clock. */
+  var CK = window.ADspaceClock;
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function dayStart(d) { return CK.start(CK.day(d)); }
+  function today() { return CK.start(CK.today()); }
   // Whole days from a date to today; a future date is 0.
   function daysSince(v) {
-    if (!v) return 0;
-    var d = dayStart(String(v).length === 10 ? v + 'T00:00:00' : v);
-    return isNaN(d.getTime()) ? 0 : Math.max(0, Math.round((today() - d) / 86400000));
+    var d = v ? CK.day(v) : '';
+    return d ? Math.max(0, CK.between(d, CK.today())) : 0;
   }
   var RESTRICT_WORD = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', other: 'Other account' };
   function daysWord(n) { return n === 1 ? '1 day' : n + ' days'; }
   function sinceWord(v) { var n = daysSince(v); return n ? daysWord(n) : 'Today'; }
-  function dateWord(v) {
-    var d = new Date(String(v).length === 10 ? v + 'T00:00:00' : v);
-    return isNaN(d.getTime()) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
-  }
+  function dateWord(v) { return v ? CK.date(v) : ''; }
   // A date in this year without its year: "7 Oct"; another year keeps it.
   function shortDate(v) {
-    var d = new Date(String(v).length === 10 ? v + 'T00:00:00' : v);
-    if (isNaN(d.getTime())) return '';
-    return d.getFullYear() === new Date().getFullYear() ? d.getDate() + ' ' + MON[d.getMonth()] : dateWord(v);
+    var d = v ? CK.day(v) : '';
+    if (!d) return '';
+    return d.slice(0, 4) === CK.today().slice(0, 4) ? CK.date(d, { year: false }) : dateWord(d);
   }
   // Last month: its first day, its last day, its name and its address key.
   function lastMonth() {
-    var now = new Date();
-    var a = new Date(now.getFullYear(), now.getMonth() - 1, 1), z = new Date(now.getFullYear(), now.getMonth(), 0);
-    return { start: a, end: z, word: LONG[a.getMonth()] + ' ' + a.getFullYear(), short: MON[a.getMonth()],
-             key: a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') };
+    var key = CK.addMonths(CK.today(), -1), mo = Number(key.slice(5, 7)) - 1;
+    return { start: CK.start(key + '-01'), end: CK.start(CK.addDays(CK.addMonths(key, 1) + '-01', -1)), mo: mo,
+             word: LONG[mo] + ' ' + key.slice(0, 4), short: MON[mo], key: key };
   }
-  function isoDay(d) {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
+  function isoDay(d) { return CK.day(d); }
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
@@ -107,43 +104,46 @@
   var PERIODS = [['month', 'This month'], ['last', 'Last month'], ['quarter', 'This quarter'],
                  ['lastq', 'Last quarter'], ['year', 'This year']];
   var period = 'month';
+  /* The same Malaysian day and time n months on, the day held to the
+     month's last. */
   function addMonths(d, n) {
-    var x = new Date(d.getFullYear(), d.getMonth() + n, 1, d.getHours(), d.getMinutes(), d.getSeconds());
-    var last = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
-    x.setDate(Math.min(d.getDate(), last));
-    return x;
+    var p = CK.parts(d), key = CK.addMonths(CK.day(d), n);
+    var last = Number(CK.addDays(CK.addMonths(key, 1) + '-01', -1).slice(8, 10));
+    var at = CK.at(key + '-' + pad2(Math.min(p.d, last)), pad2(p.h) + ':' + pad2(p.mi));
+    return new Date(at.getTime() + ((d.getTime() % 60000) + 60000) % 60000);
   }
   function rangeOf(p) {
-    var now = new Date(), m0 = new Date(now.getFullYear(), now.getMonth(), 1);
-    if (p === 'last') return { from: new Date(m0.getFullYear(), m0.getMonth() - 1, 1), to: m0 };
-    var q0 = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    var now = new Date(), t = CK.today(), m0 = CK.start(t.slice(0, 7) + '-01');
+    if (p === 'last') return { from: CK.start(CK.addMonths(t, -1) + '-01'), to: m0 };
+    var qKey = t.slice(0, 4) + '-' + pad2(Math.floor((Number(t.slice(5, 7)) - 1) / 3) * 3 + 1);
+    var q0 = CK.start(qKey + '-01');
     if (p === 'quarter') return { from: q0, to: now };
-    if (p === 'lastq') return { from: new Date(q0.getFullYear(), q0.getMonth() - 3, 1), to: q0 };
-    if (p === 'year') return { from: new Date(now.getFullYear(), 0, 1), to: now };
+    if (p === 'lastq') return { from: CK.start(CK.addMonths(qKey, -3) + '-01'), to: q0 };
+    if (p === 'year') return { from: CK.start(t.slice(0, 4) + '-01-01'), to: now };
     return { from: m0, to: now };
   }
   function prevOf(p) {
     var r = rangeOf(p), n = p === 'quarter' || p === 'lastq' ? 3 : p === 'year' ? 12 : 1;
     return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
   }
-  function quarterWord(d) { return 'Q' + (Math.floor(d.getMonth() / 3) + 1) + ' ' + d.getFullYear(); }
+  function quarterWord(d) { var p = CK.parts(d); return 'Q' + (Math.floor(p.mo / 3) + 1) + ' ' + p.y; }
   // What a change is measured against, in a word: "on Sept", "on last quarter".
   function prevWord(p) {
     if (p === 'quarter') return 'last quarter';
     if (p === 'lastq') return quarterWord(prevOf(p).from);
     if (p === 'year') return 'last year';
-    return MON[prevOf(p).from.getMonth()];
+    return MON[CK.parts(prevOf(p).from).mo];
   }
   // The period in words: "1 to 12 Oct 2026", "Sept 2026", "1 Jul to 12 Oct 2026".
   function spanWord(r) {
-    var a = r.from, b = new Date(r.to.getTime() - 1);
-    var whole = a.getDate() === 1 && r.to.getDate() === 1 && r.to.getHours() === 0 && r.to.getMinutes() === 0;
-    if (whole && a.getMonth() === b.getMonth()) return MON[a.getMonth()] + ' ' + a.getFullYear();
-    if (a.getMonth() === b.getMonth()) return a.getDate() + ' to ' + b.getDate() + ' ' + MON[a.getMonth()] + ' ' + a.getFullYear();
-    return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()] + ' ' + b.getFullYear();
+    var a = CK.parts(r.from), b = CK.parts(r.to.getTime() - 1), z = CK.parts(r.to);
+    var whole = a.d === 1 && z.d === 1 && z.h === 0 && z.mi === 0;
+    if (whole && a.mo === b.mo) return MON[a.mo] + ' ' + a.y;
+    if (a.mo === b.mo) return a.d + ' to ' + b.d + ' ' + MON[a.mo] + ' ' + a.y;
+    return a.d + ' ' + MON[a.mo] + ' to ' + b.d + ' ' + MON[b.mo] + ' ' + b.y;
   }
   function periodName(p) {
-    return p === 'last' ? MON[rangeOf('last').from.getMonth()] : p === 'quarter' ? 'this quarter'
+    return p === 'last' ? MON[CK.parts(rangeOf('last').from).mo] : p === 'quarter' ? 'this quarter'
       : p === 'lastq' ? quarterWord(rangeOf('lastq').from) : p === 'year' ? 'this year' : 'this month';
   }
   function delta(now, before) {
@@ -254,7 +254,7 @@
     },
     noSet: function () {
       return once('noset', function () {
-        var first = new Date(); first = new Date(first.getFullYear(), first.getMonth(), 1);
+        var first = CK.start(CK.today().slice(0, 7) + '-01');
         return Promise.all([
           db.from('clients').select('id, name, slug, owner').eq('stage', 'active').eq('review_hidden', false).order('name').then(rows),
           db.from('batches').select('client_id, created_at').order('created_at', { ascending: false }).then(rows)
@@ -344,7 +344,7 @@
     { key: 'urgent', title: 'Open work for paused and past clients', can: function () { return may('ops', 'manage') && may('ops.all'); }, load: function () {
       return R.openTasks().then(function (list) {
         return list.filter(function (t) { var st = t.clients && t.clients.stage; return st === 'paused' || st === 'past'; }).map(function (t) {
-          var n = t.current_final_due_at ? Math.floor((Date.now() - new Date(t.current_final_due_at).getTime()) / 86400000) : null;
+          var n = t.current_final_due_at ? CK.between(CK.day(t.current_final_due_at), CK.today()) : null;
           return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '',
                    late: n > 0, days: n > 0 ? n : 0, since: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' late' : 'Due ' + dateWord(t.current_final_due_at),
                    tone: n > 0 ? '' : 'warn', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
@@ -497,7 +497,7 @@
     { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
       return R.report().then(function (d) { var n = (d.late || []).length; return { n: n, word: n ? 'Late' : 'None', tone: n ? 'danger' : 'off' }; });
     } },
-    { key: 'owed', title: function () { return 'Reports owed for ' + LONG[lastMonth().start.getMonth()]; }, can: canReports, load: function () {
+    { key: 'owed', title: function () { return 'Reports owed for ' + LONG[lastMonth().mo]; }, can: canReports, load: function () {
       return R.owed().then(function (items) {
         var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
         var late = open.filter(function (x) { return x.late; }).length;
@@ -792,7 +792,7 @@
             }) } };
         });
       } },
-      { key: 'reports', title: function () { return 'Reports for ' + LONG[lastMonth().start.getMonth()]; }, can: canReports, all: ['Reports', '/admin/?s=reports', 'reports'], load: function () {
+      { key: 'reports', title: function () { return 'Reports for ' + LONG[lastMonth().mo]; }, can: canReports, all: ['Reports', '/admin/?s=reports', 'reports'], load: function () {
         return R.owed().then(function (items) {
           if (!items.length) return { empty: 'No reports owed.' };
           var n = function (st) { return items.filter(function (x) { return x.status === st; }).length; };
@@ -1166,8 +1166,7 @@
       });
     }
     var sel = head.querySelector('select');
-    var now = new Date(), h = now.getHours(), m = String(now.getMinutes()).padStart(2, '0');
-    head.querySelector('#ovwSpan').textContent = spanWord(rangeOf(period)) + ' · As at ' + ((h % 12) || 12) + ':' + m + (h < 12 ? ' am' : ' pm');
+    head.querySelector('#ovwSpan').textContent = spanWord(rangeOf(period)) + ' · As at ' + CK.clock(Date.now(), { space: true });
     sel.addEventListener('change', function () {
       if (sel.value === period) return;
       period = sel.value;

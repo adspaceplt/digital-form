@@ -34,16 +34,11 @@
   };
   KIND.intent = KIND.cover = KIND.offer;   // rows issued before the rename
 
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function yymm(d) { return String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1); }
-  function yymmdd(d) { return yymm(d) + pad(d.getDate()); }
-  function dayOf(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
-  function dateOf(s) { var d = new Date(dayOf(s).slice(0, 10) + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
-  function plusDays(s, n) { var d = dateOf(s); if (!d) return ''; d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
-  function longDate(s) {
-    var d = dateOf(s);
-    return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : String(s || '');
-  }
+  /* A day is Malaysia's (js/clock.js): a moment (a letter's issued_at)
+     reads as its day here, whatever the device's clock. */
+  function dayOf(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s.length > 10 ? ADspaceClock.day(s) : s; }
+  function plusDays(s, n) { var d = dayOf(s); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? ADspaceClock.addDays(d, n) : ''; }
+  function longDate(s) { return (s && ADspaceClock.date(dayOf(s), { long: true })) || String(s || ''); }
   /* The rate a line is billed at: the rate that was typed, carrying its term
      adjustment where the line was ticked to take one. One definition, in
      money.js, so the console, the letter and the client's page cannot
@@ -86,11 +81,10 @@
     var n = Math.max(1, Number(l.tenure || 1));
     if (!l.start_on) return n > 1 ? n + ' months' : '';
     if (n === 1) return longDate(l.start_on);
-    var d = dateOf(l.start_on);
-    if (!d) return n + ' months';
-    d.setMonth(d.getMonth() + n);
-    d.setDate(d.getDate() - 1);
-    return longDate(l.start_on) + ' to ' + longDate(d.toISOString().slice(0, 10));
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dayOf(l.start_on));
+    if (!m) return n + ' months';
+    var end = new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1)).toISOString().slice(0, 10);
+    return longDate(l.start_on) + ' to ' + longDate(end);
   }
 
   /* ---- Issuing -----------------------------------------------------------
@@ -425,8 +419,8 @@
   }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function letterDate(s) {
-    var d = dateOf(s);
-    return d ? ordinal(d.getDate()) + ' ' + d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : String(s || '');
+    var p = s ? ADspaceClock.parts(dayOf(s)) : null;
+    return p ? ordinal(p.d) + ' ' + ADspaceClock.LONG[p.mo] + ' ' + p.y : String(s || '');
   }
 
   // ---- The PDF library, fetched on the first drawing ----------------------

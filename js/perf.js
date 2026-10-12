@@ -88,19 +88,14 @@
 
   function dateWord(s) {
     if (!s) return '';
-    var d = new Date(String(s).length === 10 ? s + 'T00:00:00' : s);
-    if (isNaN(d)) return String(s);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days and times are Malaysia's (js/clock.js), whatever the device's clock. */
+    return ADspaceClock.date(s) || String(s);
   }
   function timeWord(s) {
-    var d = new Date(s);
-    if (isNaN(d)) return '';
-    return dateWord(s) + ', ' + d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
+    var w = s ? ADspaceClock.date(s) : '';
+    return w ? w + ', ' + ADspaceClock.clock(s) : '';
   }
-  function monthWord(p) {
-    var d = new Date(String(p).slice(0, 7) + '-01T00:00:00');
-    return isNaN(d) ? String(p) : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  }
+  function monthWord(p) { return ADspaceClock.month(String(p).slice(0, 7), { long: true }) || String(p); }
   function num(v) {
     if (v == null || v === '') return '—';
     var n = Number(v);
@@ -226,8 +221,7 @@
   /* A month is reviewed after it ends, so the page opens on the month just
      gone. */
   function defaultPeriod() {
-    var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1);
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+    return ADspaceClock.addMonths(ADspaceClock.today(), -1) + '-01';
   }
 
   // ---- Team: the two tabs -----------------------------------------------------------
@@ -372,15 +366,13 @@
   // ---- The month ----------------------------------------------------------------------
   var FIRST_MONTH = '2026-06-01';
   function monthOptions() {
-    var sel = $('perfMonth'), out = [], d = new Date();
-    d.setDate(1);
+    var sel = $('perfMonth'), out = [], now = ADspaceClock.today();
     /* Reviews begin with June 2026 (the user, 2026-09-24): no month before
        it is offered. */
     for (var i = 0; i < 13; i++) {
-      var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+      var k = ADspaceClock.addMonths(now, -i) + '-01';
       if (k < FIRST_MONTH) break;
       out.push('<option value="' + k + '">' + esc(monthWord(k)) + '</option>');
-      d.setMonth(d.getMonth() - 1);
     }
     sel.innerHTML = out.join('');
     if (!sel.querySelector('option[value="' + st.period + '"]')) {
@@ -1018,10 +1010,8 @@
     return card('Issues this month', empty + rows + form, act, 'pvBreaches');
   }
   function breachForm(r) {
-    var today = new Date(), p = new Date(r.period + 'T00:00:00');
-    var last = new Date(p.getFullYear(), p.getMonth() + 1, 0);
-    var day = today < last ? today : last;
-    var iso = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
+    var today = ADspaceClock.today(), last = ADspaceClock.addDays(ADspaceClock.addMonths(String(r.period).slice(0, 7), 1) + '-01', -1);
+    var iso = today < last ? today : last;
     var opt = function (o) { return Object.keys(o).map(function (k) { return '<option value="' + k + '">' + esc(o[k]) + '</option>'; }).join(''); };
     /* The points are the month's own settings (`points`, 2026-10-05); a
        result from before them names the level alone. */
@@ -1056,7 +1046,7 @@
     }
     /* The day of the 1-1: in or after the month reviewed, never ahead of
        today in Malaysia, so a month keyed in later keeps its real date. */
-    var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var today = ADspaceClock.today();
     /* Prefilled with today while none is set (the user, 2026-10-05): the 1-1
        is usually the day the sheet is open; it stays editable. */
     var evalOn = r.evaluated_on || (String(r.period) <= today ? today : '');
@@ -2044,7 +2034,7 @@
     var mo = Number(String(p).slice(5, 7));
     return String(p).slice(0, 4) + '-' + String(Math.floor((mo - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
   }
-  function thisMonth() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; }
+  function thisMonth() { return ADspaceClock.today().slice(0, 7) + '-01'; }
   function qWord(q) { return 'Q' + Math.ceil(Number(q.slice(5, 7)) / 3) + ' ' + q.slice(0, 4); }
   function pWord(f) {
     var s = addMonths(f, 3);
@@ -2614,7 +2604,7 @@
     var first = FIRST_QUARTER;
     if (c.quarter && addMonths(c.quarter, 3) > first) first = addMonths(c.quarter, 3);
     if (c.period && addMonths(c.period, 6) > first) first = addMonths(c.period, 6);
-    var now = new Date(), cur = now.getFullYear() + '-' + String(Math.floor(now.getMonth() / 3) * 3 + 1).padStart(2, '0') + '-01';
+    var now = ADspaceClock.today(), cur = now.slice(0, 4) + '-' + String(Math.floor((Number(now.slice(5, 7)) - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
     var last = addMonths(cur > first ? cur : first, 12), out = [];
     for (var q = first; q <= last; q = addMonths(q, 3)) out.push(q);
     return out;

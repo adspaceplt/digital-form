@@ -356,22 +356,20 @@
   /* The last n months, oldest first, as `{ key: 'YYYY-MM', label: 'Sept',
      long: 'Sept 2026' }`, so every monthly chart names its months alike. */
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  /* Malaysia's months (js/clock.js): each starts at Malaysia's midnight on
+     its 1st, whatever the device's clock. */
   function months(n, end) {
-    var d = end ? new Date(end) : new Date();
-    d = new Date(d.getFullYear(), d.getMonth(), 1);
+    var CK = window.ADspaceClock;
+    var last = (end ? CK.day(end) : CK.today()).slice(0, 7);
     var out = [];
     for (var i = n - 1; i >= 0; i--) {
-      var m = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      out.push({ key: m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0'),
-                 label: MON[m.getMonth()], long: MON[m.getMonth()] + ' ' + m.getFullYear(),
-                 start: m, end: new Date(m.getFullYear(), m.getMonth() + 1, 1) });
+      var key = CK.addMonths(last, -i), mo = Number(key.slice(5, 7)) - 1;
+      out.push({ key: key, label: MON[mo], long: MON[mo] + ' ' + key.slice(0, 4),
+                 start: CK.start(key + '-01'), end: CK.start(CK.addMonths(key, 1) + '-01') });
     }
     return out;
   }
-  function monthKey(iso) {
-    var d = new Date(iso);
-    return isNaN(d.getTime()) ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  }
+  function monthKey(iso) { return iso ? window.ADspaceClock.day(iso).slice(0, 7) : ''; }
 
   window.ADspaceChart = { draw: draw, nice: nice, months: months, monthKey: monthKey, spark: spark };
 })();

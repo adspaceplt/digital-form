@@ -47,11 +47,10 @@
   }
   function niceDate(d) {
     if (!d) return '';
-    var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
-    if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* A day is Malaysia's (js/clock.js): a timestamp reads as its day here. */
+    return window.ADspaceClock.date(d) || String(d);
   }
-  function today() { return new Date().toISOString().slice(0, 10); }
+  function today() { return window.ADspaceClock.today(); }
   function may(section, level) { return Boolean(bridge.may && bridge.may(section, level)); }
   /* Client letters answer to the Register's Documents part or to the client
      record's, as the database's register_may() does; HR letters answer to
@@ -443,8 +442,7 @@
   function kindOf(t, k) { var f = (t && t.fields) || {}; return f[k] || (/\bdate\b/.test(k) ? 'date' : 'text'); }
   /* A date in a letter's prose reads as the agreement does: 16 September 2026. */
   function proseDate(v) {
-    var d = new Date(String(v || '').slice(0, 10) + 'T00:00:00');
-    return isNaN(d.getTime()) ? String(v || '') : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    return (v && window.ADspaceClock.date(String(v).slice(0, 10), { long: true })) || String(v || '');
   }
   function fillKinds() {
     var sel = $('docKind');
