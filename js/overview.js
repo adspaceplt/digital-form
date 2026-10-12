@@ -1104,6 +1104,10 @@
       '</select><span class="ovw-span" id="ovwSpan"></span></span>';
     box.appendChild(head);
     var strip = head.querySelector('#ovwPages');
+    /* A sideways swipe anywhere on the Dashboard turns its page, as the
+       strip's tabs do (the user, 2026-10-12; js/swipe.js). */
+    var sec = $('sectionOverview');
+    if (sec) { if (strip) sec.setAttribute('data-swipe', 'ovwPages'); else sec.removeAttribute('data-swipe'); }
     if (strip) {
       if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
       strip.addEventListener('click', function (e) {

@@ -2469,3 +2469,13 @@ attention list; handoff built its due day in Malaysia time while the page
 counts its week by the browser's clock, and now uses the browser's (tests
 1791195). `work.js`, logged as failing on the Dashboard release, passed in
 this gate; the logged line is closed.
+
+### 2026-10-12 · The Dashboard turns its page on a swipe
+
+The user: "Can allow the dashboard to be swiped left or right to details /
+summary?" The Dashboard section names its page strip as its swipe region
+(`data-swipe="ovwPages"`, set only while the strip is drawn), so
+`js/swipe.js` presses the tab beside the chosen one: a swipe left from
+Summary opens Detail, a swipe right goes back, written to the address as a
+tap does. Every rule of the one swipe stands (the screen's edges, a field,
+anything scrolling sideways, a menu open). `tests/swipe.js` walks both ways.
