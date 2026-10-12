@@ -2733,3 +2733,14 @@ The spreadsheet and CSV importers are untouched. Fix 2 (never compare or
 import reach from Meta) is the fallback if Meta's age split carries no
 Unknown band.
 
+### 2026-10-13 · A report's period is written one way
+The user pressed Delete on Laman Waringin's requested report (16 September
+to 10 October 2026), typed the period the question asked for, and was told
+"That does not match the period." The page writes a period that is not a
+whole month as "16 September to 10 October 2026"; `sm_period_word` wrote
+"16 Sep 2026 to 10 Oct 2026", and `sm_report_delete` compares against it,
+so no such report could be deleted. `sm_period_word` now writes the page's
+words (`2026-10-13-period-words.sql`); the Activity record's report lines
+name the period the same way from now on. `tests/smsql.js` §9zm3 runs the
+page's own `periodWord` against it.
+

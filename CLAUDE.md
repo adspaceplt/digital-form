@@ -3405,7 +3405,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`#rpVerSheet`) lists every version newest first (published when and
     by whom; On the client portal, or Unpublished and why) with its own
     Download.
-  - Delete (the head's ⋯, Reports Full Access, the period typed back) removes
+  - Delete (the head's ⋯, Reports Full Access, the period typed back as the
+    page writes it, which `sm_period_word` writes alike: 16 September to 10
+    October 2026; `2026-10-13-period-words.sql`) removes
     a report in any state with every version (`sm_report_delete`,
     `2026-10-11-report-delete-seen.sql`; the user, 2026-10-11); one the client
     has read says so in its question and in the record (`report.deleted`:
