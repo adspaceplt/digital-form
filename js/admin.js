@@ -2878,6 +2878,52 @@
     if (state.client && state.batch) window.ADspaceCopy.to(this, shareUrl(state.client, state.batch));
   });
 
+  /* ---- Write with AI waits for the client's brand (2026-10-12) -------------
+     The user, 2026-10-12: no caption, script or analysis is written for a
+     client whose brand is not written down. `ai_brand_ready` answers what
+     the client still lacks (the Content brief's Audience, Content pillars
+     and Tone of voice; a confirmed Brand analysis), and the press stops
+     there with one line saying so and a way to the client's Brand. The
+     functions refuse the same (`no-brief`, `no-analysis`), so a page loaded
+     before this asks nothing it may not. */
+  var BRIEF_PART = { audience: 'Audience', pillars: 'Content pillars', tone: 'Tone of voice' };
+  function brandWords(code, missing) {
+    if (code === 'no-brief') {
+      var a = (missing && missing.length ? missing : ['audience', 'pillars', 'tone']).map(function (k) { return BRIEF_PART[k] || k; });
+      return 'Fill in the client\'s Content brief first: ' + (a.length < 2 ? a[0] : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]) + '.';
+    }
+    if (code === 'no-analysis') return 'Confirm a Brand analysis for this client first.';
+    return '';
+  }
+  /* Resolves null where the client is ready, else { code, text }. */
+  function brandGate(clientId, needAnalysis) {
+    return db.rpc('ai_brand_ready', { p_client: clientId }).then(function (r) {
+      if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? 'This needs a database update.' : r.error.message };
+      var d = r.data || {};
+      if (d.error) return { code: d.error, text: 'This client is outside your access.' };
+      if ((d.missing || []).length) return { code: 'no-brief', text: brandWords('no-brief', d.missing) };
+      if (needAnalysis && !d.analysis) return { code: 'no-analysis', text: brandWords('no-analysis') };
+      return null;
+    });
+  }
+  /* The line under the button: what is missing, then Open Brand where the
+     colleague reads Clients (the brief and the analysis live there). */
+  function brandSay(box, text, clientId) {
+    if (!box) return;
+    box.className = box.className.replace(/\s*\b(err|ok|warn)\b/g, '') + ' warn';
+    box.textContent = text;
+    if (clientId && may('clients', 'view')) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'linkbtn';
+      b.innerHTML = 'Open Brand' + GO_CHEV.replace('<svg ', '<svg class="ovgo-chev" ');
+      b.addEventListener('click', function () {
+        location.href = '/admin/?s=clients&client=' + encodeURIComponent(clientId) + '&tab=brand';
+      });
+      box.appendChild(document.createTextNode(' '));
+      box.appendChild(b);
+    }
+  }
+
   /* ---- Write caption (2026-10-08) ------------------------------------------
      Beside a post's caption fields (Add assets, and a saved post's Edit), at
      Content Review: Sets at Work. A short question first: the main language
@@ -2966,8 +3012,10 @@
     var btn = o.btn;
     btn.disabled = true;
     say(wrapOf(btn), '');
-    Promise.all([db.rpc('ai_caption_left'), capPrefill(client, set)]).then(function (a) {
+    var capLine = function (b) { var w = wrapOf(b); return w && w.parentNode && w.parentNode.querySelector('[data-m="cap"]'); };
+    Promise.all([db.rpc('ai_caption_left'), capPrefill(client, set), brandGate(client.id, true)]).then(function (a) {
       btn.disabled = false;
+      if (a[2]) { brandSay(capLine(btn), a[2].text, client.id); return; }
       var r = a[0], pre = a[1], left = r.data || {};
       if (r.error || left.error) {
         say(wrapOf(btn), r.error ? (/function|schema cache/i.test(r.error.message) ? CAP_SAID['needs-update'] : r.error.message)
@@ -3015,7 +3063,9 @@
           if (line) undoHere('Written by AI. Read before saving.', function () { o.put({ caption: before.caption, ai: false }); }, line);
         }).catch(function (e) {
           capIdle(btn);
-          say(wrapOf(btn), e && e.message === 'ai-limit' ? capLimit(e.d) : (CAP_SAID[e && e.message] || (e && e.message) || CAP_SAID['ai-failed']), 'err');
+          var code = e && e.message;
+          if (code === 'no-brief' || code === 'no-analysis') { brandSay(capLine(btn), brandWords(code, e.d && e.d.missing), client.id); return; }
+          say(wrapOf(btn), code === 'ai-limit' ? capLimit(e.d) : (CAP_SAID[code] || code || CAP_SAID['ai-failed']), 'err');
         });
       });
     }).catch(function (e) {
@@ -5070,6 +5120,10 @@
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
+    /* Write with AI waits for the client's brand (2026-10-12). */
+    brandGate: brandGate,
+    brandSay: brandSay,
+    brandWords: brandWords,
     isAdmin: isAdminMe,
     ICON: ICON,
     glyph: sectionGlyph,

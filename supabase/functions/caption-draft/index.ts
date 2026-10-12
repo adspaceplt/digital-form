@@ -140,6 +140,16 @@ Deno.serve(async (req) => {
   if (cl.error || !cl.data) return json({ error: 'not-found' }, 200, origin);
   const c = cl.data as Record<string, unknown>;
 
+  /* The client's brand first (2026-10-12): its Content brief's audience,
+     pillars and tone, and a confirmed Brand analysis, asked before a use is
+     claimed, so a refusal counts nothing. */
+  const ready = await db.rpc('ai_brand_ready', { p_client: set.data.client_id as string });
+  if (ready.error) return json({ error: 'needs-update' }, 200, origin);
+  const rd = (ready.data || {}) as Record<string, unknown>;
+  if (rd.error) return json({ error: String(rd.error) }, 200, origin);
+  if (Array.isArray(rd.missing) && rd.missing.length) return json({ error: 'no-brief', missing: rd.missing }, 200, origin);
+  if (rd.analysis !== true) return json({ error: 'no-analysis' }, 200, origin);
+
   /* The client's name and handles never leave: they read {brand} and
      {handle}, longest first, so a handle holding the name is masked whole. */
   const handles = ['handle_ig', 'handle_fb', 'handle_tiktok', 'handle_xhs']

@@ -2450,8 +2450,13 @@
   function runAnalysis(c, btn) {
     baMsg('');
     btn.disabled = true;
-    db.rpc('ai_analysis_left').then(function (q) {
+    var AD = window.ADspaceAdmin;
+    /* The Content brief first (2026-10-12): the analysis reads it, and the
+       brief is on this pane, so the line names what to fill in. */
+    Promise.all([db.rpc('ai_analysis_left'), AD.brandGate(c.id, false)]).then(function (both) {
+      var q = both[0];
       btn.disabled = false;
+      if (both[1]) { AD.brandSay($('crmAnalysisMsg'), both[1].text, null); return; }
       var left = (q && q.data) || {};
       if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
       if (!left.left) { baMsg(baLimit(left)); return; }
@@ -2478,7 +2483,9 @@
         }).catch(function (e) {
           ba.running = null;
           paintAnalysis(c);
-          if (state.client === c) baMsg(baSaid(e));
+          if (state.client !== c) return;
+          if (e && e.message === 'no-brief') AD.brandSay($('crmAnalysisMsg'), AD.brandWords('no-brief', e.d && e.d.missing), null);
+          else baMsg(baSaid(e));
         });
       });
     }).catch(function (e) { btn.disabled = false; baMsg(baSaid(e)); });
