@@ -4029,6 +4029,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   with no image; everyone else a 302 to `/review/?k={key}#s-{set}`, which
   opens on that set alone, unfolded, and takes the mark out of the address
   (`tests/links.js`, `tests/reviewlink.js`).
+- The other links a client or a creator is sent, as short links the same
+  way (2026-10-13; the user: "video script and creator campaigns and creator
+  portal"; the client portal signs in by email and has none): `/s/{script
+  key}` a client's Video Scripts, `/c/{selection key}` a campaign's creator
+  selection, `/p/{creator code}` a creator's own page. A preview reader is
+  answered from `share_link_preview(p_kind, p_key)` (anon): the brand for
+  scripts (a script published), the campaign and the brand for a selection
+  (no access code, not a draft) and for a creator with one open booking,
+  else the plain title. The console's address and Copy link give the short
+  link (`ADspaceAdmin.shortLink`), Preview and Open the page itself.
 
 ### Video Scripts (`js/scripts.js`, `js/scriptpdf.js`, `?s=scripts`; `script/`, `js/script.js`)
 - One script is one full video (the user, 2026-10-09), its own section on

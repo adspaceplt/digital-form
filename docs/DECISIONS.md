@@ -2704,3 +2704,16 @@ own figures. One database function (`ai_brand_ready`) answers what is
 missing, read by the pages before they ask and by the three functions before
 they claim a use, so a refusal counts nothing and a page loaded earlier is
 refused the same.
+
+### 2026-10-13 · Short links for scripts, the creator selection and the creator page
+After the review link moved to hi.adspace.me/r/ with a preview naming the set
+and the brand, the user asked the same for Video Scripts, Creator Campaigns
+and the Creator Portal, and for any other public link (the client portal
+left out: it signs in by email and sends no key). /s/, /c/ and /p/ carry the
+key the long link already held, so nothing is stored and a reset key retires
+its short link with it. The preview names no more than the page opens: no
+brand for a scripts link with nothing published, nothing behind a
+selection's access code or for a draft campaign, and for a creator only a
+single open booking (two would make the preview name one booking over
+another). /verify/ and the namecard need no key-bearing short link: the
+namecard already has its slug on the links host.

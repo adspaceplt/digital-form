@@ -734,8 +734,11 @@
     var v = String(c || '');
     return v.length === 8 ? v.slice(0, 4) + '-' + v.slice(4) : v;
   }
+  /* Sent as the short link (hi.adspace.me/p/{code}, 2026-10-13), so a chat
+     app's preview names the booking's campaign and brand. */
   function creatorLink(c) {
-    return location.origin + '/creator/?k=' + encodeURIComponent(c || '');
+    var long = location.origin + '/creator/?k=' + encodeURIComponent(c || '');
+    return bridge.shortLink ? bridge.shortLink('p', c, long) : long;
   }
   function paintCode(c) {
     var box = $('crCodeBox');
@@ -1346,6 +1349,9 @@
   }
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
+  /* The address and Copy link give the short link (hi.adspace.me/c/{key},
+     2026-10-13); Open is the page itself. */
+  function campaignShare(c) { return bridge.shortLink ? bridge.shortLink('c', c.access_token, campaignUrl(c)) : campaignUrl(c); }
 
   var ncDraft = keepDraft('addOptionBox', ['ncName', 'ncRate'], {
     get: function () {
@@ -1489,7 +1495,7 @@
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
-    $('campLink').value = campaignUrl(c);
+    $('campLink').value = campaignShare(c);
     $('campOpen').href = campaignUrl(c);
     var linkOpen = c.state !== 'draft';
     $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');

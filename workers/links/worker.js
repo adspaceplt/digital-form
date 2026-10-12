@@ -104,6 +104,55 @@ async function review(request, env, key, set) {
   return previewPage(reviewTitle(d), REVIEW_LINE, to);
 }
 
+/* The other links a client or a creator is sent, as short links
+   (2026-10-13; the user: "video script and creator campaigns and creator
+   portal … so we can show client brand name"): /s/{key} a client's Video
+   Scripts, /c/{key} a campaign's creator selection, /p/{code} a creator's
+   own page. As /r/, nothing is stored: the address is the key the link
+   already carried. A chat app is answered a page naming the campaign and the
+   brand where the key may show them (`share_link_preview`); everybody else is
+   sent on to the page itself. The client portal signs in by email and has no
+   such link. */
+const SHARE = /^([scp])\/([A-Za-z0-9_-]{6,64})$/;
+const SHARE_KIND = {
+  s: { kind: 'script', path: '/script/?k=', name: 'Video Scripts by ADspace',
+       line: 'The videos planned for the month, scene by scene.' },
+  c: { kind: 'campaign', path: '/creators/?k=', name: 'Creator Selection by ADspace',
+       line: 'Choose the creators for this campaign, then follow their drafts and posts.' },
+  p: { kind: 'creator', path: '/creator/?k=', name: 'Creator Portal by ADspace',
+       line: 'The brief, the shoot and where to hand in the draft.' }
+};
+
+async function sharePreview(env, kind, key) {
+  const r = await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/share_link_preview', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      apikey: env.SUPABASE_ANON_KEY,
+      authorization: 'Bearer ' + env.SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({ p_kind: kind, p_key: key }),
+    signal: AbortSignal.timeout(4000)
+  });
+  if (!r.ok) throw new Error('rpc ' + r.status);
+  const d = await r.json();
+  return d && typeof d === 'object' ? d : {};
+}
+
+/* "{Campaign} {Brand} - Creator Selection by ADspace", each part only where
+   it is known. */
+async function share(request, env, letter, key) {
+  const k = SHARE_KIND[letter];
+  const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
+  const to = base + k.path + encodeURIComponent(key);
+  if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
+  let d = {};
+  try { d = await sharePreview(env, k.kind, key); }
+  catch (e) { console.error('share_link_preview failed: ' + e.message); }
+  const lead = [d.title, d.brand].filter(Boolean).join(' ');
+  return previewPage(lead ? lead + ' - ' + k.name : k.name, k.line, to);
+}
+
 /* One page, four outcomes. The title says what happened and the line says
    what to do about it, which is the rule every cover in the portal follows;
    neither repeats the other. A short link is opened by people who are not
@@ -234,6 +283,8 @@ export default {
 
     const rv = REVIEW.exec(path);
     if (rv) return review(request, env, rv[1], rv[2]);
+    const sh = SHARE.exec(path);
+    if (sh) return share(request, env, sh[1], sh[2]);
 
     /* A slug is one segment. Anything deeper is not a link we issued, and
        asking the database about it would only be a slower way to say so. */
