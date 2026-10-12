@@ -2674,3 +2674,13 @@ ad account's time zone, the commentary out of date) is a shaded note led by
 the amber dot. Left to check by hand: 2609W3_Balance · Engagement, whose
 impressions agree with Meta (6,811) but whose reach does not (6,484 against
 800).
+
+### 2026-10-12 · Import from Meta takes the ads' pictures again
+The user noticed Import from Meta brought in no ad thumbnails. The
+function's log showed Meta refusing every picture read: "The ids query
+parameter is deprecated in v26.0+." `meta-import` asked for many ads'
+creatives (and many posts' metrics) in one `?ids=` read, as did the brand
+analysis for Instagram media; under Graph v26 each failed, was logged and
+left out, so imports carried no picture and Facebook posts' views and
+reach read through `metrics` went missing too. Each object is now asked on
+its own, six at a time; `tests/metashape.js` fails on an `ids` read.
