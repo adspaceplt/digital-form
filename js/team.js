@@ -864,15 +864,16 @@
     ['Internal', ['register', 'links', 'services', 'team', 'activity']]
   ];
   /* Each is on or off, and each is an admin's alone until a group is given
-     it. Grouped as the Settings page groups what they open (js/settings.js),
-     then the acts with no setting behind them. */
+     it. Portal first (what changes the portal for everybody), then each
+     under its own section in the rail's order (the user, 2026-10-12: "not
+     properly rearranged"). */
   var ADMIN_TOOLS = [
-    ['Portal', ['team.upgrade', 'team.announce', 'team.notice']],
-    ['Business figures', ['team.settings', 'reports.meta']],
-    ['AI', ['reports.ai']],
-    ['Records', ['register.types', 'ops.numbering']],
-    ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']],
-    ['Tasks and reports', ['ops.override', 'reports.transfer', 'reports.whitelabel', 'campaigns.files_delete']]
+    ['Portal', ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai']],
+    ['My Work', ['ops.numbering', 'ops.override']],
+    ['Creator Campaigns', ['campaigns.files_delete']],
+    ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
+    ['Documents', ['register.types']],
+    ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
