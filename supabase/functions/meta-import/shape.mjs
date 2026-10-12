@@ -11,6 +11,7 @@
  *   adsText(account, ads)  Ads Manager's export: the account's own row first
  *                          (no ad name: reach counted once), then an ad a row.
  *   ageText(rows)          the same ads by age, for the age split.
+ *   reachWithAges(ads, ages) an ad's reach with the people of unknown age.
  *   facebookText(posts)    Meta Business Suite's Facebook export, Lifetime.
  *   instagramText(media)   the same for Instagram.
  *
@@ -152,6 +153,31 @@ export function adsText(account, ads, period) {
     lines.push(AD_COLS.map((k) => flat(row[k])).join('\t'));
   });
   return lines.join('\n');
+}
+
+/* An ad's reach as Ads Manager's export by age gives it (2026-10-13): the
+   ad's own reach from the Graph API leaves out the people Meta could not
+   age, though its impressions and spend count them (2609W3_Balance: 800
+   reached of 6,811 impressions, the export's age rows adding to 6,484 with
+   5,688 under Unknown). Where an ad's age rows name an Unknown band and
+   every band states its reach, its reach is their sum, people of one age
+   being none of another's, so it reads as the export the team imports. An
+   ad with no Unknown band, or a band with no reach, keeps Meta's own. */
+export function reachWithAges(ads, ages) {
+  const by = {};
+  (ages || []).forEach((r) => {
+    if (!r || !r.ad_id) return;
+    const k = String(r.ad_id), b = by[k] || (by[k] = { sum: 0, unknown: false, whole: true });
+    const v = num(r.reach);
+    if (v === null) b.whole = false; else b.sum += v;
+    if (/^unknown$/i.test(String(r.age || '').trim())) b.unknown = true;
+  });
+  return (ads || []).map((a) => {
+    const b = a && a.ad_id ? by[String(a.ad_id)] : null;
+    if (!b || !b.unknown || !b.whole) return a;
+    const own = num(a.reach);
+    return own !== null && own >= b.sum ? a : Object.assign({}, a, { reach: b.sum });
+  });
 }
 
 const AGE_COLS = ['Account ID', 'Ad ID', 'Ad name', 'Ad set name', 'Objective', 'Result indicator', 'Age', 'Results', 'Impressions'];

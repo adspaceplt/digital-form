@@ -3876,7 +3876,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   copy of a creative that never ran is read after the copies that did and
   never writes over the ad they fed (its result type and zeros); posts go
   to the report's account on their platform; filed `Imported from Meta` /
-  `From Meta`. Then each ad or post with no picture of its own takes
+  `From Meta`. An ad's reach is its age bands' sum where they name an
+  Unknown band (`reachWithAges`, 2026-10-13): the Graph API's own reach
+  leaves out people Meta could not age, which Ads Manager's export by age
+  counts (2609W3_Balance: 800 against 6,484). Then each ad or post with no picture of its own takes
   Meta's (an ad's creative, a post's image or a reel's cover frame), read
   through `meta-import` `pictures` (Meta's own image hosts alone, six a
   call, 4 MB each; Meta's addresses expire within days; each ad's creative,

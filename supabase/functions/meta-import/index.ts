@@ -57,7 +57,7 @@
  * about the caller itself.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { adsText, ageText, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.mjs';
+import { adsText, ageText, reachWithAges, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.mjs';
 
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
 function cors(origin: string | null) {
@@ -255,8 +255,8 @@ Deno.serve(async (req) => {
       const range = JSON.stringify({ since: String(r.period_start).slice(0, 10), until: String(r.period_end).slice(0, 10) });
       const head = await graph(act + '/insights', { level: 'account', time_range: range, fields: 'account_id,account_name,reach,impressions,spend' });
       const account = ((head.data || []) as Record<string, unknown>[])[0] || null;
-      const ads = await adInsights(act, range, {}, AD_FIELDS);
       const ages = await adInsights(act, range, { breakdowns: 'age' }, ['account_id', 'ad_id', 'ad_name', 'adset_name', 'objective', 'optimization_goal', 'impressions', 'reach', 'actions', 'video_thruplay_watched_actions']);
+      const ads = reachWithAges(await adInsights(act, range, {}, AD_FIELDS), ages);
       const period = { start: r.period_start, end: r.period_end };
       /* Each ad's creative picture, for its thumbnail (2026-10-10); a read
          Meta refuses leaves the ads without, never the import. */
