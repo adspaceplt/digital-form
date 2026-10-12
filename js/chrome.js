@@ -192,6 +192,52 @@
     }
   }
 
+  /* Malaysia's clock (2026-10-12; the user: "this entire portal should
+     follow the timezone of malaysia … push a fixed top bar … timezone
+     difference detected"). A device whose clock is not GMT+8 (Malaysia and
+     Singapore share it) is told so on every page, under its bar: the
+     console's in its column, a client page's edge to edge under the top
+     bar. In English or Chinese as the page reads, following the 中文
+     switch; its close hides it for this visit alone. */
+  var TZ_HIDE = 'adspace-tz-hide';
+  function tzWords(zh, gmt, zone) {
+    return zh
+      ? '检测到时区差异：此设备使用 ' + gmt + (zone ? '（' + zone + '）' : '') + '。本门户以马来西亚时间（GMT+8）为准。'
+      : 'Time zone difference detected: this device is on ' + gmt + (zone ? ' (' + zone + ')' : '') + '. The portal follows Malaysia time (GMT+8).';
+  }
+  function tzBar() {
+    var off = -new Date().getTimezoneOffset();
+    if (off === 480 || document.getElementById('tzBar')) return;
+    /* An automated browser (the test suites, which run on UTC) is not a
+       person to tell; tests/tzbar.js asks for the bar with window.__tzBar. */
+    if (navigator.webdriver && !window.__tzBar) return;
+    try { if (sessionStorage.getItem(TZ_HIDE) === '1') return; } catch (e) { /* shown */ }
+    var zone = '';
+    try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { zone = ''; }
+    var a = Math.abs(off), hh = Math.floor(a / 60), mm = a % 60;
+    var gmt = 'GMT' + (off < 0 ? '\u2212' : '+') + hh + (mm ? ':' + (mm < 10 ? '0' : '') + mm : '');
+    var bar = document.createElement('div');
+    bar.className = 'tzbar'; bar.id = 'tzBar'; bar.setAttribute('role', 'status');
+    var zh = function () { return /^zh/i.test(document.documentElement.lang || ''); };
+    var paint = function () {
+      bar.innerHTML = '<p class="tzbar-text">' + esc(tzWords(zh(), gmt, zone)) + '</p>' +
+        '<button class="iconbtn tzbar-x" type="button" aria-label="' + (zh() ? '关闭' : 'Dismiss') + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
+      bar.querySelector('.tzbar-x').addEventListener('click', function () {
+        try { sessionStorage.setItem(TZ_HIDE, '1'); } catch (e) { /* closes for now only */ }
+        if (bar.parentNode) bar.parentNode.removeChild(bar);
+      });
+    };
+    paint();
+    if (window.MutationObserver) new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    var up = document.getElementById('upgradeBar'), top = document.getElementById('topbar');
+    if (up && up.parentNode) up.parentNode.insertBefore(bar, up);
+    else if (top && top.parentNode) top.parentNode.insertBefore(bar, top.nextSibling);
+    else if (document.body) document.body.insertBefore(bar, document.body.firstChild);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tzBar, { once: true });
+  else tzBar();
+
   /* Pages that build their own chrome (the signed-in console) still want the
      mark handled the same way, so the helper is shared rather than copied. */
   window.ADspaceChrome = {

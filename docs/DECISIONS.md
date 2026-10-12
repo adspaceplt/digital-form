@@ -2581,3 +2581,29 @@ reset key retires its short links with it. A chat app's reader gets the
 titled page; a person is sent straight to the review page, which opens on
 that set. Cost: one Worker request and, for a preview alone, one database
 call a link opened, inside both free plans.
+
+### 2026-10-12 · The Report audit read copy by copy; Malaysia's clock
+The user's Laman Waringin Advertising Report, imported from an Ads Manager
+spreadsheet and checked against Ads Manager by hand, read 204 to fix
+against Meta (Reach 14,053 against 3,861). The spreadsheet had no ad set
+column, so a creative's copies in two ad sets became one row holding both
+Ad IDs; Meta's reading names the ad set, so the audit compared the whole
+row with each copy, and Import from Meta wrote one copy's figures over it.
+A copy that spent with no results was set aside by the audit and counted
+by the spreadsheet. Added up from the stored reading, the copies matched
+the spreadsheet to the ringgit; what remained was the period still running
+(it ended that day) and Reach within the allowance. Meta's rows are now
+gathered into the row holding their Ad IDs, from Meta alone (the user: the
+spreadsheet and CSV imports are accurate and stay as they are), and the
+audit no longer calls the same result type a difference for its name, a
+cost per result the report works out a missing one, or Meta's whole-second
+play time a change. The user approved each change before it was made
+("propose first"). Both use CTR (all). The ad accounts are set to GMT+8;
+the card names one that is not.
+The user then asked that the whole portal follow Malaysia time, with a
+coloured bar where a device is on another clock. The bar is built; about
+200 places still format dates and times with the device's own clock, so
+the conversion is proposed separately. Imports from Meta are Malaysia time
+on any device: the suites ran on Tokyo's and Los Angeles' clocks unchanged.
+On a phone the audit row's own act had kept the negative margin that holds
+a desk row to a line of words, which ate the space around it.
