@@ -3047,7 +3047,7 @@
       }).join('') + '</span></span>';
   }
   function shutItemMenus(except) {
-    Array.prototype.forEach.call(document.querySelectorAll('.qitem .kmenu, .tlink-row .kmenu, .eng-ctl .kmenu'), function (m) {
+    Array.prototype.forEach.call(document.querySelectorAll('.qitem .kmenu, .tlink-row .kmenu, .eng-ctl .kmenu, .eng-meetlink .kmenu'), function (m) {
       if (m === except) return;
       m.hidden = true;
       var b = m.parentNode && m.parentNode.querySelector('.kmenu-btn');
@@ -3074,7 +3074,7 @@
     });
   }
   document.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('.qitem .kmenu-wrap, .tlink-row .kmenu-wrap, .eng-ctl .kmenu-wrap')) return;
+    if (e.target.closest && e.target.closest('.qitem .kmenu-wrap, .tlink-row .kmenu-wrap, .eng-ctl .kmenu-wrap, .eng-meetlink .kmenu-wrap')) return;
     shutItemMenus(null);
   });
 
@@ -6419,7 +6419,13 @@
       (set && e.meeting_link
         ? '<div class="eng-row eng-meetlink"><span class="eng-lab">Link</span>' +
             '<span class="eng-val"><a class="plink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
-              '<span class="plink-text">' + esc(e.meeting_link.replace(/^https:\/\//, '')) + '</span></a></span></div>'
+              '<span class="plink-text">' + esc(e.meeting_link.replace(/^https:\/\//, '')) + '</span></a></span>' +
+            /* A Google Meet is deleted from its own row (2026-10-12): the
+               event leaves the shared calendar and the link goes; the date
+               and time stay, so Create Google Meet books a new one. A Zoom
+               or Teams link is changed in the meeting's sheet. */
+            (can && isMeetLink(e.meeting_link) ? '<span class="eng-meetacts">' + itemMenu('the Google Meet', [['delmeet', 'Delete', true]]) + '</span>' : '') +
+          '</div>'
         : '') +
       (set
         ? '<div class="eng-meetmsg"><div class="eng-row eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
@@ -6432,9 +6438,34 @@
       '</div>' +
       (meetWarn && meetWarn.id === e.id ? '<div class="msg warn eng-meetwarn">' + esc(meetWarn.text) + '</div>' : '');
   }
+  function isMeetLink(u) { return /^https:\/\/meet\.google\.com\//i.test(String(u || '')); }
   function wireMeet(root, e, sayIn, open, after) {
     var mb = root.querySelector('[data-a="meet"]');
     if (mb) mb.addEventListener('click', open);
+    var say = function (d) {
+      if (typeof sayIn === 'string') { msg(sayIn, meetSaid(d), 'warn'); return; }
+      var m = sayIn && sayIn.querySelector('[data-a="msg"]');
+      if (m) { m.textContent = meetSaid(d); m.className = 'msg warn'; }
+    };
+    var lr = root.querySelector('.eng-meetlink');
+    if (lr && lr.querySelector('.kmenu-btn')) wireItemMenu(lr, function (k) {
+      if (k !== 'delmeet') return;
+      meetWarn = null;
+      window.ADspaceConfirm.ask({
+        title: 'Delete Google Meet',
+        body: (e.meeting_event_id
+          ? 'The event is deleted from the shared calendar and its link stops working.'
+          : 'The link is removed from the month.') + ' The meeting keeps its date and time. There is no restore.',
+        go: 'Delete', tone: 'danger', wait: true
+      }, function () {
+        return new Promise(function (res) {
+          meetCall(e, 'delete', function (d) {
+            if (d && !d.error) { res(''); after(); return; }
+            res(meetSaid(d));
+          });
+        });
+      });
+    });
     var bk = root.querySelector('[data-a="book"]');
     if (bk) bk.addEventListener('click', function () {
       meetWarn = null;
@@ -6444,9 +6475,7 @@
         if (d && !d.error) { after(); return; }
         bk.disabled = false;
         bk.textContent = 'Create Google Meet';
-        if (typeof sayIn === 'string') { msg(sayIn, meetSaid(d), 'warn'); return; }
-        var m = sayIn && sayIn.querySelector('[data-a="msg"]');
-        if (m) { m.textContent = meetSaid(d); m.className = 'msg warn'; }
+        say(d);
       });
     });
     var sh = root.querySelector('[data-a="msgshow"]');

@@ -11744,3 +11744,6 @@ button.vs-row { cursor: pointer; }
 .sidebar-foot .railrow:not([hidden]) ~ .railrow { margin-left: 0; }
 :root.has-tabbar .sidebar-foot .railrow { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
 :root.has-tabbar .sidebar-foot .railrow svg { width: 20px; height: 20px; }
+/* The Google Meet's ⋯ on its link row keeps the row a control's small
+   height: its target overflows the row evenly. */
+.eng-meetlink .kmenu-btn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }

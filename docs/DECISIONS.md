@@ -2497,3 +2497,18 @@ The user also said S3 and the nightly database backup are done (the
 memory items now say so; the backup's first scheduled run succeeded on
 2026-10-11), and that the sign-in session policy parked earlier is not to
 be applied.
+
+### 2026-10-12 · A month's Google Meet can be deleted
+
+The user: "can you add the delete meeting room for Google Meet under
+content months part?" A month's Meet left the shared calendar only when its
+meeting changed to another channel or to no meeting. The Link row now
+carries a ⋯ holding Delete (red, the one item), drawn only for a
+meet.google.com link at My Work Work. It asks first (the event leaves the
+shared calendar and its link stops working, or, for a Meet link pasted by
+hand, the link leaves the month; the date and time stay; no restore), then
+calls `meet-create` with `delete`, which already removed the event and
+cleared the link through `ops_engagement_set_meet`. A refusal is said in
+the question, kept open. The card then offers Create Google Meet again. A
+Zoom or Teams link is changed in the meeting's sheet. No database or
+function change. `tests/work.js` walks it.
