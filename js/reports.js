@@ -1040,10 +1040,21 @@
       var v = function (o, x) { return o[x] == null || o[x] === '' ? null : Math.round(Number(o[x]) * 10) / 10; };
       return Object.keys(A).concat(Object.keys(B)).every(function (x) { return v(A, x) === v(B, x); });
     }
-    if (k === 'result_label') return resultWord(a || '') === resultWord(b || '');
+    if (k === 'result_label') return resultKey(a) === resultKey(b);
     var na = a == null || a === '', nb = b == null || b === '';
+    /* A count left empty in the report and Meta's 0 say the same thing. */
+    if (k === 'results' && (na && Number(b) === 0 || nb && Number(a) === 0)) return true;
     if (na || nb) return na && nb;
+    /* Meta answers a play time in whole seconds; Ads Manager's export to a
+       tenth. */
+    if (k === 'avg_play' && Number(b) % 1 === 0) return Math.round(Number(a)) === Number(b);
     return Number(a) === Number(b);
+  }
+  /* One result type however it is named (2026-10-12): Ads Manager's export
+     reads Leads (form) and Estimated ad recall lift (people), Meta's answer
+     Leads and Ad recall lift, and `reach` in lower case. */
+  function resultKey(x) {
+    return resultWord(x || '').toLowerCase().replace(/\([^)]*\)/g, '').replace(/^estimated\s+/, '').replace(/\s+/g, ' ').trim();
   }
   /* Reach is Meta's estimate of the people reached, which Meta revises while
      a period runs (the user, 2026-10-10: two ads' Reach moved by 12 and 9
@@ -1067,7 +1078,7 @@
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
       reads.forEach(function (rd) {
-        var out = rd.text ? adsPlan(rd.text, { platform: 'meta', withResults: true }) : null;
+        var out = rd.text ? adsPlan(rd.text, { platform: 'meta', withResults: true, fromMeta: true }) : null;
         if (!out || out.error) return;
         out.updates.forEach(function (u) {
           var a = u.ad, where = adName(a.name) + ' · ' + (OBJ_WORD[a.objective] || a.objective);
@@ -1075,6 +1086,11 @@
           var ids = u.patch.ad_ids ? { ad_ids: u.patch.ad_ids } : {};
           AD_FIGS.forEach(function (k) {
             if (!(k in u.patch) || sameFig(k, a[k], u.patch[k])) return;
+            /* A cost per result the report does not hold is worked out from
+               its spend and results (the row and the PDF alike): it differs
+               only where that figure does, to the cent. */
+            if (k === 'cpr' && (a.cpr == null || a.cpr === '') && adCpr(a) != null &&
+                Math.round(adCpr(a) * 100) === Math.round(Number(u.patch.cpr) * 100)) return;
             if (k === 'reach' && nearReach(a[k], u.patch[k])) { within++; return; }
             var set = Object.assign({}, ids); set[k] = u.patch[k];
             put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set });
@@ -1087,7 +1103,7 @@
                 meta: money2(r0.spend) + ' spent' }, r0._many ? null : { t: 'ad-add', row: row });
         });
         if (rd.age) {
-          var ag = adsPlan(rd.age, { platform: 'meta', ageOnly: true });
+          var ag = adsPlan(rd.age, { platform: 'meta', ageOnly: true, fromMeta: true });
           if (!ag.error) ag.updates.forEach(function (u) {
             if (!u.patch || !u.patch.age || sameFig('age', u.ad.age, u.patch.age)) return;
             put({ where: adName(u.ad.name) + ' · ' + (OBJ_WORD[u.ad.objective] || u.ad.objective), field: FIG_WORD.age,
@@ -4195,7 +4211,7 @@
        engagements, Interactions) are never added together. With Ad ID each
        row is known to its ad; without it, rows of one name and objective
        that name two result types cannot be told apart, and are refused. */
-    var groupOf = {}, idLabel = {}, idBase = {}, noIdLabels = {};
+    var groupOf = {}, idLabel = {}, idBase = {}, idAd = {}, noIdLabels = {};
     var CN = function (x) { return AN ? AN(x) : x; };
     lines.slice(1).forEach(function (l) {
       var raw = cellsOf(l);
@@ -4204,6 +4220,7 @@
       if (raw.ad_id) {
         var id = raw.ad_id + '|' + raw.name;
         idBase[id] = base;
+        idAd[id] = String(raw.ad_id).trim();
         if (!idLabel[id] && named(raw.result_label)) idLabel[id] = named(raw.result_label);
       } else if (named(raw.result_label)) {
         (noIdLabels[base] = noIdLabels[base] || {})[named(raw.result_label)] = true;
@@ -4219,6 +4236,12 @@
          the creative's other ads with none), and stands alone where the
          creative has more than one kind. */
       groupOf[id] = lab ? b + '|' + lab : kinds.length === 1 ? b + '|' + kinds[0] : kinds.length ? 'id:' + id : b + '|';
+      /* An ad the report already holds gathers every row carrying one of its
+         Ad IDs (2026-10-12): a spreadsheet with no ad set column made one
+         row of a creative's copies in two ad sets, and Meta, which names
+         the ad set, read each copy against the whole row. */
+      var held = period && period.idTo && period.idTo[idAd[id]];
+      if (held) groupOf[id] = held;
     });
     /* Ads Manager's first row under the header has no ad name: it is the
        account's own figures for the period, reach counted once across every
@@ -4486,7 +4509,16 @@
   function adsPlan(text, o) {
     o = o || {};
     var r = st.open;
-    var out = parseAdRows(text, { year: Number(String(r.period_start).slice(0, 4)), start: r.period_start, end: r.period_end },
+    /* From Meta alone (Import from Meta and the Report audit): every Ad ID a
+       row of the report holds, to that row, so Meta's rows carrying them
+       are gathered as that row was made. A spreadsheet or CSV file is read
+       as it always was. */
+    var idTo = null;
+    if (o.fromMeta) {
+      idTo = {};
+      st.ads.forEach(function (a) { (a.ad_ids || []).forEach(function (x) { idTo[String(x)] = 'held:' + a.id; }); });
+    }
+    var out = parseAdRows(text, { year: Number(String(r.period_start).slice(0, 4)), start: r.period_start, end: r.period_end, idTo: idTo },
       o.objective || OBJECTIVES[0][0]);
     if (out.error) return out;
     out.platform = o.platform || (out.tiktok ? 'tiktok' : 'meta');
@@ -4574,7 +4606,7 @@
     sum.textContent = ''; say(sm, '');
     var go = box.querySelector('[data-a="go"]');
     var read = function () {
-      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre });
+      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre, fromMeta: !!pre });
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
       if (!platTouched && out.platform !== plat()) {
         $('rpPAPlat').value = out.platform;
