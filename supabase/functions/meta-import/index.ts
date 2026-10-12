@@ -263,7 +263,16 @@ Deno.serve(async (req) => {
           } catch (e) { console.error('meta-import: pictures left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300)); }
         }
       }
-      return json({ account: acc, ads: ads.length, text: ads.length || account ? adsText(account, ads, period) : '', age: ageText(ages), pics }, 200, origin);
+      /* The ad account's own time zone (2026-10-12): Meta counts the
+         period's days in it, as Ads Manager's export does. The page says so
+         where it is not GMT+8 (Malaysia and Singapore); a read Meta refuses
+         leaves it out, never the import. */
+      let tz: { name: string; offset: number } | null = null;
+      try {
+        const z = await graph(act, { fields: 'timezone_name,timezone_offset_hours_utc' });
+        if (z && z.timezone_name) tz = { name: String(z.timezone_name), offset: Number(z.timezone_offset_hours_utc) };
+      } catch (e) { console.error('meta-import: time zone left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300)); }
+      return json({ account: acc, ads: ads.length, text: ads.length || account ? adsText(account, ads, period) : '', age: ageText(ages), pics, tz }, 200, origin);
     }
 
     const source = body.source === 'instagram' ? 'instagram' : 'facebook';

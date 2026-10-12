@@ -1008,7 +1008,7 @@
           var e = d.error || 'meta-failed';
           return META_DOWN.indexOf(e) > -1 ? { down: e } : { refused: e };
         }
-        reads.push({ action: s.action, account: s.account, source: s.source, text: d.text || '', age: d.age || '' });
+        reads.push({ action: s.action, account: s.account, source: s.source, text: d.text || '', age: d.age || '', tz: d.tz || null });
         return one(i + 1);
       }).catch(function () { return { down: 'meta-failed' }; });
     };
@@ -1215,6 +1215,10 @@
       a.reads = got.reads;
       var cmp = metaCompare(got.reads);
       a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false; a.within = cmp.within;
+      /* An ad account whose own time zone is not GMT+8 counts the period's
+         days in it (2026-10-12), so the card names it. */
+      a.tzOff = got.reads.filter(function (x) { return x.tz && x.tz.name && Number(x.tz.offset) !== 8; })
+        .map(function (x) { return x.tz.name; }).filter(function (v, i, l) { return l.indexOf(v) === i; });
       var outcome = cmp.rows.length ? 'mismatch' : 'match';
       return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
     }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
@@ -1457,6 +1461,7 @@
         mark = ' is-missing'; note = 'Not checked: Meta unavailable' + (META_SAID[lst.note] ? ' · ' + META_SAID[lst.note] : '');
         if (al.may_override && metaOpen(r) && may('work')) acts = '<button class="btn btn-sm" type="button" data-a="metaskip">Continue without Meta</button>';
       }
+      if (a.tzOff && a.tzOff.length && !a.busy) note += ' · Ad account time zone ' + a.tzOff.join(', ') + ', not GMT+8: Meta counts the days in it';
       if (lst && lst.outcome === 'mismatch' && !a.busy) {
         var fixable = fixes.filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }).length;
         if (draft && fixable > 1) acts = '<button class="btn btn-sm" type="button" data-a="metaall">Update all from Meta</button>';

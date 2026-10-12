@@ -367,6 +367,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied), with the same words on
   every client page (`js/words.js`).
+- Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
+  portal should follow the timezone of malaysia"): a device whose clock is
+  not GMT+8 (Malaysia and Singapore share it) is told on every page that
+  loads `chrome.js`, under its bar (`#tzBar`, `.tzbar`, the warn ground led
+  by the amber dot; in the console's column, edge to edge under a client
+  page's bar): Time zone difference detected: this device is on GMT+9
+  (Asia/Tokyo). The portal follows Malaysia time (GMT+8)., in Chinese after
+  the 中文 switch; its × hides it for the visit (`adspace-tz-hide`). An
+  automated browser is not told unless it sets `window.__tzBar`
+  (`tests/tzbar.js`; the suites run on UTC).
 - Every page carries `viewport-fit=cover`. Sheets, feet, the confirm bar, the
   console body and the rail pad by `env(safe-area-inset-*)`.
 - On iOS alone, `js/chrome.js` adds `maximum-scale=1` (stops the focus zoom,
@@ -3598,6 +3608,16 @@ Each line is a rule that broke once. Its reason is in the archive.
       Where, Figure, Report, Meta in ink at 600, Difference, the act at the
       row's end; in a narrow pane the three figures side by side under their
       labels; words and splits wrap, figures keep their line);
+      Meta's rows carrying an Ad ID a report row holds are gathered into
+      that row as it was made (a spreadsheet with no ad set column makes one
+      row of a creative's copies in two ad sets; 2026-10-12), for the audit
+      and Import from Meta alone (`fromMeta`), never a spreadsheet or CSV
+      file. A result type is the same however it is named (Leads (form) and
+      Leads, Estimated ad recall lift (people) and Ad recall lift, Reach and
+      reach; `resultKey`); a cost per result the report does not hold is
+      the one it works out, to the cent; Meta's play time is to the second;
+      an empty count is Meta's 0. The ad account's own time zone
+      (`meta-import` `tz`) is named on the card where it is not GMT+8.
       Use Meta's figure, Add, Remove, and Update all from Meta (the figures
       and missing rows, never a Remove) write through the rows' own writes
       with one Undo, file `report.saved` (Report audit · n figures taken
