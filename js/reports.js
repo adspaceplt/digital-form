@@ -122,6 +122,7 @@
     'late-reason': 'Give the reason it is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'meta-audit': 'The figures must match Meta first: see the Report audit.',
+    'period-running': 'The period has not ended. Publish once the Report audit reads Meta after its last day.',
     'not-linked': 'This client links no Meta accounts.',
     'not-unavailable': 'Meta is answering, so the figures must match it. Run the audit again.',
     'not-published': 'This report is not published.',
@@ -966,6 +967,10 @@
   /* An Advertising Report is read again in review and before Publish; an
      Accounts Report in draft alone (a post's figures are lifetime totals
      that grow by the hour, so the reading it was submitted on stands). */
+  /* The period has not ended: today in Malaysia is on or before its last
+     day, so Meta's figures still move (the database's sm_report_running). */
+  function periodRuns(r) { return !!r && String(r.period_end || '').slice(0, 10) >= ADspaceClock.today(); }
+  function countsFrom(r) { return ADspaceClock.addDays(String(r.period_end).slice(0, 10), 1); }
   function metaOpen(r) { return r.status === 'draft' || (r.kind === 'ads' && (r.status === 'review' || r.status === 'confirmed')); }
   function metaCan(r) { return metaSources(r).length > 0 && metaOpen(r) && may('work'); }
   /* The figures as they stand, read again before Meta is compared with
@@ -1021,7 +1026,10 @@
   function figText(k, v) {
     if (v == null || v === '') return 'Not set';
     if (k === 'retention' || k === 'age') {
-      var ks = Object.keys(v || {}).filter(function (x) { return v[x] != null && v[x] !== ''; });
+      /* Bands in their own order, youngest first (2026-10-12: the report's
+         read 65+ first, Meta's last). */
+      var ks = Object.keys(v || {}).filter(function (x) { return v[x] != null && v[x] !== ''; })
+        .sort(function (x, y) { return (parseInt(x.replace(/^p/, ''), 10) || 0) - (parseInt(y.replace(/^p/, ''), 10) || 0); });
       return ks.length ? ks.map(function (x) { return (k === 'retention' ? x.replace(/^p/, '') + '% watched' : x) + ' ' + Number(v[x]) + '%'; }).join(', ') : 'Not set';
     }
     if (k === 'result_label') return resultWord(v) || 'Not set';
@@ -1070,9 +1078,21 @@
      change. Each row: where it is, the figure, the report's and Meta's;
      beside it, what puts it right (a figure taken, an ad or post added, or
      one Meta does not hold removed), or nothing where no one ad answers. */
+  /* A figure an export may not carry (the result type, a video's rates and
+     play time, the retention and age splits) that the report does not hold
+     is listed apart, Not in the report, and never counted as a difference
+     (the user, 2026-10-12). */
+  var EXTRA_FIGS = ['result_label', 'hook_rate', 'hold_rate', 'avg_play', 'retention', 'age'];
+  function heldNot(k, v) {
+    if (v == null || v === '') return true;
+    return (k === 'retention' || k === 'age') && typeof v === 'object' && !Object.keys(v).some(function (x) { return v[x] != null && v[x] !== ''; });
+  }
   function metaCompare(reads) {
-    var r = st.open, rows = [], fixes = [], within = 0;
-    var put = function (row, fix) { rows.push(row); fixes.push(fix || null); };
+    var r = st.open, rows = [], fixes = [], within = 0, absent = [], absentFixes = [];
+    var put = function (row, fix, k, held) {
+      if (k && EXTRA_FIGS.indexOf(k) > -1 && heldNot(k, held)) { absent.push(row); absentFixes.push(fix || null); return; }
+      rows.push(row); fixes.push(fix || null);
+    };
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
       reads.forEach(function (rd) {
@@ -1091,7 +1111,7 @@
                 Math.round(adCpr(a) * 100) === Math.round(Number(u.patch.cpr) * 100)) return;
             if (k === 'reach' && nearReach(a[k], u.patch[k])) { within++; return; }
             var set = Object.assign({}, ids); set[k] = u.patch[k];
-            put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set });
+            put({ where: where, field: FIG_WORD[k], report: figText(k, a[k]), meta: figText(k, u.patch[k]) }, { t: 'ad', id: a.id, set: set }, k, a[k]);
           });
         });
         out.fresh.forEach(function (r0) {
@@ -1105,7 +1125,7 @@
           if (!ag.error) ag.updates.forEach(function (u) {
             if (!u.patch || !u.patch.age || sameFig('age', u.ad.age, u.patch.age)) return;
             put({ where: adName(u.ad.name) + ' · ' + (OBJ_WORD[u.ad.objective] || u.ad.objective), field: FIG_WORD.age,
-                  report: figText('age', u.ad.age), meta: figText('age', u.patch.age) }, { t: 'ad', id: u.ad.id, set: { age: u.patch.age } });
+                  report: figText('age', u.ad.age), meta: figText('age', u.patch.age) }, { t: 'ad', id: u.ad.id, set: { age: u.patch.age } }, 'age', u.ad.age);
           });
         }
         if (out.summary) {
@@ -1134,7 +1154,7 @@
               report: Number(a.spend) > 0 ? money2(a.spend) + ' spent' : fmt(a.impressions) + ' impressions',
               meta: 'No delivery in this period' }, { t: 'ad-remove', id: a.id });
       });
-      return { rows: rows, fixes: fixes, within: within };
+      return { rows: rows, fixes: fixes, within: within, absent: absent, absentFixes: absentFixes };
     }
     var year = Number(String(r.period_start).slice(0, 4)), period = [String(r.period_start).slice(0, 10), String(r.period_end).slice(0, 10)];
     reads.forEach(function (rd) {
@@ -1166,7 +1186,7 @@
               meta: 'Not in Meta for this period' }, { t: 'post-remove', id: p.id });
       });
     });
-    return { rows: rows, fixes: fixes, within: within };
+    return { rows: rows, fixes: fixes, within: within, absent: absent, absentFixes: absentFixes };
   }
 
   /* How far Meta's figure is from the report's, in the figure's own terms
@@ -1179,10 +1199,14 @@
     var cur = (String(b).match(/^(RM|S\$)\s*/) || [])[1];
     if (cur) return sign + cur + ' ' + abs.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (/%$/.test(String(b))) return sign + (Math.round(abs * 100) / 100) + ' pts';
-    var out = sign + (abs % 1 ? Math.round(abs * 100) / 100 : abs).toLocaleString('en');
+    /* A play time keeps its unit (2026-10-12: "+0.2" read as a count). */
+    var unit = / s$/.test(String(b)) ? ' s' : '';
+    var out = sign + (abs % 1 ? Math.round(abs * 100) / 100 : abs).toLocaleString('en') + unit;
     /* The share only where it says something: a base of a hundred or
-       more, and a gap under the base itself. */
-    var share = Math.abs(x) >= 100 && abs < Math.abs(x) ? Math.round(abs / Math.abs(x) * 1000) / 10 : null;
+       more, and a gap under the base itself; under a tenth it keeps two
+       places, never reading 0%. */
+    var pc = Math.abs(x) >= 100 && abs < Math.abs(x) ? abs / Math.abs(x) * 100 : null;
+    var share = pc === null ? null : pc >= 0.1 ? Math.round(pc * 10) / 10 : pc >= 0.01 ? Math.round(pc * 100) / 100 : '<0.01';
     return share !== null ? out + ' (' + share + '%)' : out;
   }
   /* What the allowance let through, said once on the card. */
@@ -1210,13 +1234,17 @@
       if (got.stale) return { said: '' };
       if (got.refused) return { said: META_SAID[got.refused] || said(got.refused) };
       if (got.down) return fileMeta(r, 'unavailable', [], got.down).then(function () { return { outcome: 'unavailable' }; });
-      a.reads = got.reads;
+      a.reads = got.reads; a.at = new Date().toISOString();
       var cmp = metaCompare(got.reads);
       a.rows = cmp.rows; a.fixes = cmp.fixes; a.all = false; a.within = cmp.within;
+      a.absent = cmp.absent; a.absentFixes = cmp.absentFixes;
       /* An ad account whose own time zone is not GMT+8 counts the period's
          days in it (2026-10-12), so the card names it. */
       a.tzOff = got.reads.filter(function (x) { return x.tz && x.tz.name && Number(x.tz.offset) !== 8; })
         .map(function (x) { return x.tz.name; }).filter(function (v, i, l) { return l.indexOf(v) === i; });
+      /* While the period runs Meta's figures still move: the reading is
+         shown for reference and nothing is filed or counted (2026-10-12). */
+      if (periodRuns(st.open)) return { outcome: 'running' };
       var outcome = cmp.rows.length ? 'mismatch' : 'match';
       return fileMeta(r, outcome, cmp.rows).then(function () { return { outcome: outcome }; });
     }).catch(function (e) { return { said: said(e) }; }).then(function (res) {
@@ -1373,8 +1401,8 @@
     var a = st.audit;
     sortAds(); sortPosts();
     var cmp = metaCompare(a.reads || []);
-    a.rows = cmp.rows; a.fixes = cmp.fixes;
-    var filed = fileMeta(r, cmp.rows.length ? 'mismatch' : 'match', cmp.rows).catch(function () { return null; });
+    a.rows = cmp.rows; a.fixes = cmp.fixes; a.absent = cmp.absent; a.absentFixes = cmp.absentFixes;
+    var filed = periodRuns(r) ? Promise.resolve(null) : fileMeta(r, cmp.rows.length ? 'mismatch' : 'match', cmp.rows).catch(function () { return null; });
     if (n) fileReport('report.saved', 'Report audit · ' + (n === 1 ? 'one figure taken from Meta' : n + ' figures taken from Meta'), r, st.client);
     return filed.then(function () {
       paintEditor();
@@ -1433,44 +1461,66 @@
         '<button class="btn btn-sm" type="button" data-a="audit"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Running' : 'Run audit') + '</button></span>' : '') +
       '</div>';
 
-    /* Against Meta. */
+    /* Against Meta. Its state is one short line beside its name; what the
+       reader must know or do is a note under it, led by the amber dot
+       (2026-10-12, the user: the card's words "blend together and don't
+       look like warning or instructions"). */
     var meta = '';
     if (hasMeta || canMeta) {
-      var lst = al && al.last, mark = '', note = '', acts = '', list = '';
+      var lst = al && al.last, mark = '', note = '', acts = '', list = '', notes = [];
+      var runs = periodRuns(r);
+      /* While the period runs, an earlier reading is not counted either. */
+      if (runs) lst = null;
       var rows = a.rows || (lst && lst.outcome === 'mismatch' ? lst.rows || [] : []);
       var fixes = a.rows ? a.fixes : [];
-      if (al && !al.needed && !lst) {
+      var absent = a.rows ? a.absent || [] : [], absentFixes = a.rows ? a.absentFixes || [] : [];
+      if (al && !al.needed && !lst && !a.rows) {
         note = 'Not linked';
         if (bridge.may && bridge.may('clients', 'work') && st.client && st.client.slug && !r.brand_id) acts = '<button class="btn btn-sm" type="button" data-a="metalink">Link accounts' + ICON.go + '</button>';
       } else if (a.busy) {
         note = 'Reading Meta…';
+      } else if (runs) {
+        note = a.rows ? 'Period running · Read ' + whenWord(a.at) + ' for reference' : 'Period running';
+        notes.push('The period runs until ' + ADspaceClock.date(r.period_end) + ', and Meta\'s figures change until it ends, so no difference is counted yet. ' +
+          'Run the audit again from ' + ADspaceClock.date(countsFrom(r)) + (r.kind === 'ads' ? '; Publish waits for that reading.' : '.'));
       } else if (!lst) {
         mark = ' is-missing'; note = 'Not run';
       } else if (lst.outcome === 'match' || lst.outcome === 'override') {
         mark = lst.current ? ' is-done' : ' is-missing';
-        note = !lst.current ? 'A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.'
+        note = !lst.current ? 'Figures changed since ' + whenWord(lst.at)
           : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at) + (a.within ? ' · ' + withinWord(a.within) : '')
-          : 'Not checked: Meta unavailable · ' + (lst.by || 'An admin') + ' continued on ' + whenWord(lst.at) + ': ' + (lst.note || '');
+          : 'Continued without Meta · ' + (lst.by || 'An admin') + ', ' + whenWord(lst.at);
+        if (!lst.current) notes.push('A figure changed after the reading of ' + whenWord(lst.at) + '. Run the audit again.');
+        else if (lst.outcome === 'override') notes.push('Meta did not answer, so the figures were not read. Reason given: ' + (lst.note || 'none') + '.');
       } else if (lst.outcome === 'mismatch') {
         mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
       } else {
-        mark = ' is-missing'; note = 'Not checked: Meta unavailable' + (META_SAID[lst.note] ? ' · ' + META_SAID[lst.note] : '');
+        mark = ' is-missing'; note = 'Not checked: Meta unavailable';
+        notes.push('Meta did not answer' + (META_SAID[lst.note] ? ': ' + META_SAID[lst.note].replace(/\.$/, '') : '') + '. Run the audit again later' +
+          (al.may_override && metaOpen(r) && may('work') ? ', or continue without Meta with a reason.' : '.'));
         if (al.may_override && metaOpen(r) && may('work')) acts = '<button class="btn btn-sm" type="button" data-a="metaskip">Continue without Meta</button>';
       }
-      if (a.tzOff && a.tzOff.length && !a.busy) note += ' · Ad account time zone ' + a.tzOff.join(', ') + ', not GMT+8: Meta counts the days in it';
-      if (lst && lst.outcome === 'mismatch' && !a.busy) {
-        var fixable = fixes.filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }).length;
+      if (a.tzOff && a.tzOff.length && !a.busy) notes.push('This ad account counts its days in ' + a.tzOff.join(', ') + ' time, not Malaysia time (GMT+8).');
+      var showRows = !a.busy && (runs ? !!a.rows : lst && lst.outcome === 'mismatch');
+      if (!a.busy && a.rows && (showRows || absent.length)) {
+        var fixable = fixes.concat(absentFixes).filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }).length;
         if (draft && fixable > 1) acts = '<button class="btn btn-sm" type="button" data-a="metaall">Update all from Meta</button>';
-        var mine = r.submitted_by && r.submitted_by === myId(), reviewing = r.reviewer_id && r.reviewer_id === myId();
-        var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
-        if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
+      }
+      if (showRows && rows.length) {
+        if (!runs) {
+          var mine = r.submitted_by && r.submitted_by === myId(), reviewing = r.reviewer_id && r.reviewer_id === myId();
+          var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
+          if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
+        }
         var show = a.all ? rows : rows.slice(0, 10);
         /* One line a difference, read across as a table (the user,
            2026-10-10: "not showing very clearly … not reader friendly"):
            where, the figure, the report's, Meta's, how far apart, and what
            puts it right at the row's end. In a narrow pane the three
-           figures sit side by side under their labels. */
-        list = '<div class="rp-metatable" role="table" aria-label="Differences from Meta">' +
+           figures sit side by side under their labels. A figure keeps the
+           figures' right edge even where one side is Not set; only words
+           and splits read from the left. */
+        list = '<div class="rp-metatable" role="table" aria-label="' + (runs ? 'Differences from Meta, for reference' : 'Differences from Meta') + '">' +
           '<div class="rp-metahead" role="row"><span role="columnheader">Where</span><span role="columnheader">Figure</span>' +
           '<span role="columnheader" class="num">Report</span><span role="columnheader" class="num">Meta</span>' +
           '<span role="columnheader" class="num">Difference</span><span role="columnheader"><span class="sr">Action</span></span></div>' +
@@ -1478,9 +1528,8 @@
           var f = draft ? fixes[i] : null;
           var word = !f ? '' : f.t === 'ad-add' || f.t === 'post-add' ? 'Add' : f.t === 'ad-remove' || f.t === 'post-remove' ? 'Remove' : 'Use Meta\'s figure';
           var gap = gapOf(x.report, x.meta);
-          /* Words or a split (an ad missing, an age split) wrap as words; a
-             figure keeps its line. */
-          return '<div class="rp-metarow' + (gap ? '' : ' is-words') + '" role="row"><span class="rp-m-where" role="cell">' + esc(x.where) + '</span>' +
+          var wordy = /^(Age split|Retention|Result type|Ad|Post)$/.test(x.field);
+          return '<div class="rp-metarow' + (wordy ? ' is-words' : '') + '" role="row"><span class="rp-m-where" role="cell">' + esc(x.where) + '</span>' +
             '<span class="rp-m-field" role="cell">' + esc(x.field) + '</span>' +
             '<span class="rp-m-num" role="cell" data-l="Report">' + esc(x.report) + '</span>' +
             '<span class="rp-m-num rp-m-meta" role="cell" data-l="Meta">' + esc(x.meta) + '</span>' +
@@ -1488,10 +1537,31 @@
             '<span class="rp-m-act" role="cell">' + (word ? '<button class="btn btn-sm" type="button" data-a="usemeta" data-i="' + i + '">' + (word === 'Add' ? ICON.plus : '') + esc(word) + '</button>' : '') + '</span></div>';
         }).join('') + '</div>' + (rows.length > show.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (rows.length - show.length) + ' more</button></div>' : '');
       }
+      /* Figures the report does not hold, apart and not counted (2026-10-12):
+         the export carried no column for them; Meta's figure fills one. */
+      if (!a.busy && absent.length) {
+        var showA = a.all ? absent : absent.slice(0, 10);
+        list += '<div class="rp-metatable is-absent" role="table" aria-label="Not in the report">' +
+          '<div class="rp-metacap">Not in the report · ' + absent.length + '</div>' +
+          '<div class="rp-metahead" role="row"><span role="columnheader">Where</span><span role="columnheader">Figure</span>' +
+          '<span role="columnheader" class="num"></span><span role="columnheader" class="num">Meta</span><span role="columnheader" class="num"></span>' +
+          '<span role="columnheader"><span class="sr">Action</span></span></div>' +
+          showA.map(function (x, i) {
+            var f = draft ? absentFixes[i] : null;
+            var wordy = /^(Age split|Retention|Result type)$/.test(x.field);
+            return '<div class="rp-metarow' + (wordy ? ' is-words' : '') + '" role="row"><span class="rp-m-where" role="cell">' + esc(x.where) + '</span>' +
+              '<span class="rp-m-field" role="cell">' + esc(x.field) + '</span>' +
+              '<span class="rp-m-num rp-m-none" role="cell"></span>' +
+              '<span class="rp-m-num rp-m-meta" role="cell" data-l="Meta">' + esc(x.meta) + '</span>' +
+              '<span class="rp-m-num rp-m-none" role="cell"></span>' +
+              '<span class="rp-m-act" role="cell">' + (f ? '<button class="btn btn-sm" type="button" data-a="usemetagap" data-i="' + i + '">Use Meta\'s figure</button>' : '') + '</span></div>';
+          }).join('') + '</div>' + (absent.length > showA.length ? '<div class="rp-f-more"><button class="btn btn-sm btn-quiet" type="button" data-a="metamore">Show ' + (absent.length - showA.length) + ' more</button></div>' : '');
+      }
       meta = '<div class="rp-check rp-part' + mark + '" data-part="meta">' +
           '<span class="rp-check-mark" aria-hidden="true">' + (mark === ' is-done' ? ICON.tick : '') + '</span>' +
           '<span class="rp-check-t"><b>Against Meta</b><small>' + esc(note) + '</small></span>' +
-          (acts ? '<span class="rp-aicheck-acts">' + acts + '</span>' : '') + '</div>' + list;
+          (acts ? '<span class="rp-aicheck-acts">' + acts + '</span>' : '') + '</div>' +
+          notes.map(function (t) { return '<p class="rp-anote">' + esc(t) + '</p>'; }).join('') + list;
     }
 
     /* The commentary, read against the figures by the AI. A finding is put
@@ -1519,7 +1589,8 @@
         '<span class="rp-check-t"><b>Commentary</b><small>' + esc(tnote) + '</small></span>' +
         (openOnes.length > 1 ? '<span class="rp-aicheck-acts"><button class="btn btn-sm" type="button" data-a="applyall">Apply all</button></span>' : '') +
       '</div>' +
-      (stale ? '<p class="rp-f-note">The commentary has changed since this check.</p>' : moved ? '<p class="rp-f-note">The figures have changed since this check.</p>' : '') +
+      (stale ? '<p class="rp-anote">The commentary has changed since this check. Run the audit again to check it as it stands.</p>'
+        : moved ? '<p class="rp-anote">The figures have changed since this check. Run the audit again to check the commentary against them.</p>' : '') +
       found.map(function (f, i) {
         var sx = standing(f);
         return '<div class="rp-finding' + (sx === 'applied' ? ' is-applied' : '') + '"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
@@ -1537,8 +1608,9 @@
     on('apply', function (x) { applyFindings(host, r, [found[Number(x.getAttribute('data-i'))]], x); });
     on('applyall', function (x) { applyFindings(host, r, openOnes, x); });
     on('usemeta', function (x) { useMeta([(a.fixes || [])[Number(x.getAttribute('data-i'))]], x); });
+    on('usemetagap', function (x) { useMeta([(a.absentFixes || [])[Number(x.getAttribute('data-i'))]], x); });
     on('metaall', function (x) {
-      useMeta((a.fixes || []).filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }), x);
+      useMeta((a.fixes || []).concat(a.absentFixes || []).filter(function (f) { return f && f.t !== 'ad-remove' && f.t !== 'post-remove'; }), x);
     });
     on('metamore', function () { a.all = true; repaintAudit(''); });
     on('metaback', function (x) { metaBack(r, x); });
@@ -1929,6 +2001,12 @@
       stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
     });
     on('publish', function (b) {
+      /* Meta's figures still move while the period runs, so an Advertising
+         Report it is read for publishes from the day after (2026-10-12). */
+      if (r.kind === 'ads' && metaCan(r) && periodRuns(r)) {
+        say(m, 'The period runs until ' + ADspaceClock.date(r.period_end) + '. Publish from ' + ADspaceClock.date(countsFrom(r)) + ', once the Report audit reads Meta.', 'warn');
+        return;
+      }
       window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download it in their portal.', go: 'Publish' },
         function () {
           /* An Advertising Report is read against Meta again at the press

@@ -3637,7 +3637,10 @@ Each line is a rule that broke once. Its reason is in the archive.
       Leads, Estimated ad recall lift (people) and Ad recall lift, Reach and
       reach; `resultKey`); a cost per result the report does not hold is
       the one it works out, to the cent; Meta's play time is to the second;
-      an empty count is Meta's 0. The ad account's own time zone
+      an empty count is Meta's 0. A figure an export may carry no column
+      for (result type, hook and hold rate, play time, retention, the age
+      split) that the report does not hold is listed apart, Not in the
+      report, and never counted (2026-10-12); Use Meta's figure fills it. The ad account's own time zone
       (`meta-import` `tz`) is named on the card where it is not GMT+8.
       Use Meta's figure, Add, Remove, and Update all from Meta (the figures
       and missing rows, never a Remove) write through the rows' own writes
@@ -3674,6 +3677,14 @@ Each line is a rule that broke once. Its reason is in the archive.
       alone continues without it (Continue without Meta, a reason, filed),
       at Publish since confirmation. Reports Select's Publish does
       not read Meta: an Advertising Report it holds is refused by name.
+      While the period runs (today in Malaysia on or before its last day;
+      `sm_report_running`, `2026-10-12-audit-while-period-runs.sql`; the
+      user, 2026-10-12) nothing is counted: a reading is shown for
+      reference and never filed, Submit is not held, and an Advertising
+      Report's Publish is refused `period-running` until the day after.
+      What the reader must know or do is a note under its part
+      (`.rp-anote`: `--sunk`, led by the amber dot, ink at 13px), never the
+      part's mute line.
   - The Commentary (the figures check until 2026-10-09; `report-draft` with
     `mode: 'check'`, `2026-10-04-ai-check.sql`):
     the commentary as it stands, drafted or written by hand, read against

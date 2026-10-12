@@ -9089,6 +9089,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-f-acts .btn { flex: 0 0 auto; min-width: 0; }
 .rp-finding.is-applied > :not(.rp-f-acts) { opacity: .55; }
 .rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--ink-soft); }
+/* What the reader must know or do on the audit card (2026-10-12, the user:
+   the card's words "blend together and don't look like warning or
+   instructions"): a shaded note under its part, led by the amber dot, in
+   ink at the body's size; never a tinted slab. A note the card's message
+   line gives (`.msg.warn`) reads the same. */
+.rp-anote, .rp-aicheck > .msg.warn:not(:empty) {
+  display: flex; gap: 8px; margin: 0 16px 12px 52px; padding: 10px 12px;
+  border-radius: var(--radius-sm); background: var(--sunk);
+  font-size: 13px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere;
+}
+.rp-anote::before, .rp-aicheck > .msg.warn:not(:empty)::before {
+  content: ""; flex: 0 0 8px; width: 8px; height: 8px; margin: 6px 0 0; border-radius: 50%; background: var(--dot-wait);
+}
+.is-narrow .rp-anote, .is-narrow .rp-aicheck > .msg.warn:not(:empty) { margin-left: 16px; }
 /* Against Meta's differences as a table (2026-10-10, the user: "not
    showing very clearly"): one line a difference, the figures in tabular
    columns, Meta's in ink at 600, how far apart beside them, the act at the
@@ -9109,6 +9123,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-m-gap { color: var(--ink-mute); }
 .rp-metarow.is-words .rp-m-num:not(.rp-m-gap) { white-space: normal; overflow-wrap: anywhere; text-align: left; }
 .rp-m-act { display: flex; justify-content: flex-end; }
+/* Figures the report does not hold (2026-10-12): apart, under their own
+   caption, Meta's figure in the Meta column of the table above. */
+.rp-metacap { padding: 10px 0 2px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.rp-anote + .rp-metatable, .rp-anote + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-m-act .btn { flex: 0 0 auto; min-width: 0; margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
 /* In a narrow pane: where and the figure on top, then Report, Meta and
    Difference side by side under their labels, the act under them. */
@@ -9122,9 +9140,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-m-num { display: grid; gap: 2px; text-align: left; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
 .is-narrow .rp-m-num::before { content: attr(data-l); font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .is-narrow .rp-m-act { grid-column: 1 / -1; justify-content: flex-start; }
+.is-narrow .rp-m-none { display: none; }
 .is-narrow .rp-m-act:empty { display: none; }
 .is-narrow .rp-m-act .btn { margin-block: 2px 0; }
-.rp-aicheck > .msg { padding: 0 16px 12px 52px; }
+.rp-aicheck > .msg:not(.warn) { padding: 0 16px 12px 52px; }
 .rp-aicheck > .msg:empty { display: none; }
 .is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
 .rp-check.is-missing .rp-check-t small { color: var(--ink-soft); }
