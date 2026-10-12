@@ -43,6 +43,8 @@ leaves Supabase.
 | Slug the team has paused | `404`, "Link expired" (the console still says Paused, with Resume) |
 | `?q=` code that is revoked, or belongs to another slug | `410`, "Code withdrawn" |
 | The database could not be reached | `502`, "Unable to load" |
+| `/r/{review key}[/{set}]`, a person | `302` to `/review/?k={key}[#s-{set}]` on the portal, asking nothing |
+| `/r/{review key}[/{set}]`, a link preview's reader | `200`, a page titled `{set} {brand} - Content Review Portal by ADspace` (`review_link_preview`, the public key), no image; the plain title where nothing answers |
 | The bare host | `302` to `HOME_URL` |
 | `robots.txt` | `Disallow: /` |
 

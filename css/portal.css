@@ -2023,6 +2023,10 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .setbar { display: grid; gap: 12px; }
 .setbar-actions { display: flex; gap: 8px; align-items: center; }
 .setbar-actions > .btn { flex: 0 0 auto; }
+/* On a phone the set's two acts share the row in equal halves. */
+@media (max-width: 640px) {
+  .setbar-actions:has(> .btn:not([hidden]) + .btn:not([hidden])) > .btn { flex: 1 1 0; min-width: 0; }
+}
 .setbar .msg { margin: 0; }
 .setbar .msg:empty { display: none; }
 .rec-id.rec-id-set { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }

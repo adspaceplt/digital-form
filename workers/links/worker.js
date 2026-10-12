@@ -33,6 +33,77 @@
    checked here so a request that cannot be a slug never costs a round trip. */
 const SLUG = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 
+/* A client's review link as a short link (2026-10-12): /r/{review key} or
+   /r/{review key}/{first eight characters of a content set's id}. Nothing is
+   stored for it, so there is nothing to clean up: the address is the key the
+   client already holds. A chat app reading it for its preview is answered a
+   page that names the set and the brand (`review_link_preview`, the public
+   key); everybody else is sent on to the review page, opened on that set. */
+const REVIEW = /^r\/([A-Za-z0-9_-]{6,64})(?:\/([0-9a-f]{8}))?$/;
+const PREVIEWER = /whatsapp|facebookexternalhit|facebot|twitterbot|slackbot|telegrambot|linkedinbot|discordbot|skypeuripreview|applebot|googlebot|bingbot|pinterest|redditbot|embedly|iframely|line\/|kakaotalk|viber|snapchat|microsoftpreview|teams/i;
+const REVIEW_LINE = "This month's posts, shown the way they will appear on each platform. Approve, or tell us what to change.";
+const REVIEW_NAME = 'Content Review Portal by ADspace';
+
+async function reviewPreview(env, key, set) {
+  const r = await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/review_link_preview', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      apikey: env.SUPABASE_ANON_KEY,
+      authorization: 'Bearer ' + env.SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({ p_key: key, p_set: set || null }),
+    signal: AbortSignal.timeout(4000)
+  });
+  if (!r.ok) throw new Error('rpc ' + r.status);
+  const d = await r.json();
+  return d && typeof d === 'object' ? d : {};
+}
+
+/* "{Content set} {Brand} - Content Review Portal by ADspace", each part only
+   where it is known. */
+function reviewTitle(d) {
+  const lead = [d.set, d.brand].filter(Boolean).join(' ');
+  return lead ? lead + ' - ' + REVIEW_NAME : REVIEW_NAME;
+}
+
+function previewPage(title, line, to) {
+  const body = `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(line)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ADspace">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(line)}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(line)}">
+<meta http-equiv="refresh" content="0; url=${esc(to)}">
+</head><body><a href="${esc(to)}">${esc(title)}</a></body></html>`;
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'referrer-policy': 'no-referrer',
+      'x-content-type-options': 'nosniff'
+    }
+  });
+}
+
+async function review(request, env, key, set) {
+  const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
+  const to = base + '/review/?k=' + encodeURIComponent(key) + (set ? '#s-' + set : '');
+  if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
+  let d = {};
+  try { d = await reviewPreview(env, key, set); }
+  catch (e) { console.error('review_link_preview failed: ' + e.message); }
+  return previewPage(reviewTitle(d), REVIEW_LINE, to);
+}
+
 /* One page, four outcomes. The title says what happened and the line says
    what to do about it, which is the rule every cover in the portal follows;
    neither repeats the other. A short link is opened by people who are not
@@ -160,6 +231,9 @@ export default {
       });
     }
     if (path === 'favicon.ico') return new Response(null, { status: 204 });
+
+    const rv = REVIEW.exec(path);
+    if (rv) return review(request, env, rv[1], rv[2]);
 
     /* A slug is one segment. Anything deeper is not a link we issued, and
        asking the database about it would only be a slower way to say so. */

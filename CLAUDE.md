@@ -1892,7 +1892,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
     Review), the review link under it as every record's client link
-    (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10); the
+    (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
+    address and Copy link the short link `hi.adspace.me/r/{key}`, Preview
+    the review page itself; a published set's head adds Copy link
+    (`#copySetLink`, beside Publish, equal halves on a phone) for
+    `/r/{key}/{first eight of the set's id}` (2026-10-12); the
     sets are a card a content month (`batches.period`, YYYY-MM, empty for
     Ad hoc; `2026-10-10-sets-by-month.sql`), newest first and open, Ad hoc
     last, a row a set (name, the state at the right, the post count read for
@@ -3946,6 +3950,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-07).
 - A short link never takes a colleague's card slug (`links_card_clash`,
   named `/{slug} is a colleague's namecard.`).
+- A client's review link as a short link (2026-10-12; the user: "dynamic
+  title: {Content Set} {client brand name} - Content Review Portal by
+  ADspace"): `/r/{review key}` and `/r/{review key}/{first eight of a set's
+  id}`, nothing stored, so nothing to clean up. A link preview's reader (a
+  chat app's user agent) is answered a page titled `{set} {brand} - Content
+  Review Portal by ADspace` from `review_link_preview(p_key, p_set)` (anon;
+  a live key with no passcode, shown in Content Review; a published set),
+  with no image; everyone else a 302 to `/review/?k={key}#s-{set}`, which
+  opens on that set alone, unfolded, and takes the mark out of the address
+  (`tests/links.js`, `tests/reviewlink.js`).
 
 ### Video Scripts (`js/scripts.js`, `js/scriptpdf.js`, `?s=scripts`; `script/`, `js/script.js`)
 - One script is one full video (the user, 2026-10-09), its own section on

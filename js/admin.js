@@ -59,6 +59,15 @@
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
   function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
+  /* The review link as it is sent (2026-10-12): a short link on the links
+     host, the client's key, and with a set the first eight characters of its
+     id, so a chat app's preview names the set and the brand
+     (workers/links, review_link_preview). Nothing is stored for it. */
+  function shareUrl(c, b) {
+    var host = cfg && cfg.linkHost;
+    if (!host || !c || !/^[A-Za-z0-9_-]{6,64}$/.test(c.access_token || '')) return reviewUrl(c);
+    return 'https://' + host + '/r/' + c.access_token + (b ? '/' + String(b.id).slice(0, 8) : '');
+  }
 
   /* Records the handful of actions that destroy data or change what a client
      can see. Deliberately fire and forget: a failure to log must never stop
@@ -2518,9 +2527,8 @@
     paintHead(c);
     msg('wsMsg', '');
 
-    var url = reviewUrl(c);
-    $('clientLink').value = url;
-    $('openLink').href = url;
+    $('clientLink').value = shareUrl(c);
+    $('openLink').href = reviewUrl(c);
     openDrawer(false);
     fillProfile(c);
     /* The handles and the logo are the client record's too (Brand profile
@@ -2758,9 +2766,8 @@
           if (!(r.data || []).length) { msg('wsMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('link.reset', state.client.name, 'Previous link invalidated');
           state.client.access_token = next;
-          var fresh = reviewUrl(state.client);
-          $('clientLink').value = fresh;
-          $('openLink').href = fresh;
+          $('clientLink').value = shareUrl(state.client);
+          $('openLink').href = reviewUrl(state.client);
           msg('wsMsg', 'New link issued. The previous link is no longer valid.', 'ok');
         });
     });
@@ -2831,6 +2838,9 @@
 
   $('copyLink').addEventListener('click', function () {
     window.ADspaceCopy.to(this, $('clientLink').value);
+  });
+  $('copySetLink').addEventListener('click', function () {
+    if (state.client && state.batch) window.ADspaceCopy.to(this, shareUrl(state.client, state.batch));
   });
 
   /* ---- Write caption (2026-10-08) ------------------------------------------
@@ -3133,6 +3143,8 @@
         '<path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'
       : '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.8 18-3.7-7.5L3 9.8z"/>';
     $('publishSet').className = 'btn btn-icon ' + (live ? 'btn-warn' : 'btn-go');
+    // The set's own link, drawn while the client can see the set.
+    $('copySetLink').hidden = !live;
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
