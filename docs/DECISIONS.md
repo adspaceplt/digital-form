@@ -2627,3 +2627,26 @@ because the page's today is Malaysia's and a suite reading the machine's
 (UTC) would disagree from 16:00 UTC every day. Other sections follow, one
 release each.
 
+### 2026-10-12 · The whole portal on Malaysia's clock
+The user asked for the rest ("continue the full site to be focusing on
+MYT"). Every console section and client page now reads its days, months,
+times and "today" from `js/clock.js`, which every client page loads too:
+the histories (Today, Yesterday, times), the charts' months, the
+Dashboard's periods and "As at" time, Clients, Documents (a letter's date
+and validity read the issue moment's Malaysian day, where they had read
+its UTC day), Performance, Reports, the report PDF, Video Scripts, Creator
+Campaigns, Health, the Handbook, passkeys, the client portal, the selection
+page, the creator's page, the review page and the verify page. Several
+"today"s had been the UTC day (`toISOString().slice(0, 10)`: Clients'
+follow-ups, Documents, the creator's due date), wrong in Malaysia itself
+before 8am. The report PDF's weeks are counted on the calendar, so a
+device's summer time no longer moves a week's edge. The spreadsheet and
+CSV importers' date reading is untouched, as the user asked. The suite
+adds a history's Today and Yesterday, a chart's months, the Dashboard's
+period and clock, and every client page's clock, and fails on the code
+before.
+On Malaysia's clock the client portal's suite met a meeting at 10:30pm, and
+on a phone its date and time ("Sun 4 Oct 2026, 10:30pm – 11:15pm") was cut:
+the row now ends the agenda's line with the state and the ⋯, and the date
+and time take the second line whole.
+

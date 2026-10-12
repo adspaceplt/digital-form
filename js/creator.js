@@ -182,18 +182,14 @@
 
   function fmtDate(d) {
     if (!d) return '';
-    var x = new Date(d + 'T00:00:00');
-    if (isNaN(x)) return d;
-    if (lang === 'zh') return x.getFullYear() + '年' + (x.getMonth() + 1) + '月' + x.getDate() + '日';
-    return x.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()] +
-      ' ' + x.getFullYear();
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
+    return ADspaceClock.date(d, { zh: lang === 'zh' }) || d;
   }
 
   function dueWord(day) {
     if (!day) return '';
-    var due = new Date(day + 'T00:00:00');
-    var now = new Date(); now.setHours(0, 0, 0, 0);
-    var n = Math.round((due.getTime() - now.getTime()) / 86400000);
+    var n = ADspaceClock.between(ADspaceClock.today(), String(day).slice(0, 10));
+    if (n === null) return '';
     if (n === 0) return t().dueToday;
     var span = Math.abs(n) + (lang === 'zh' ? ' 天' : (Math.abs(n) === 1 ? ' day' : ' days'));
     return fill(n < 0 ? t().overdue : t().dueIn, { n: span });
@@ -321,10 +317,7 @@
   var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   function monthYear(ts) {
-    var x = new Date(ts);
-    if (!ts || isNaN(x)) return '';
-    if (lang === 'zh') return x.getFullYear() + '年' + (x.getMonth() + 1) + '月';
-    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()] + ' ' + x.getFullYear();
+    return ts ? ADspaceClock.month(ts, { zh: lang === 'zh' }) : '';
   }
   function profiles() {
     var list = ((feed && feed.creator) || {}).profiles || [];
@@ -580,7 +573,7 @@
     /* What is owed leads the card: the hand-in, its countdown and the
        request it answers, above the facts and the brief. */
     var owed = !dead && needsCreator(b) && b.can_deliver;
-    var late = b.submission_due && b.submission_due < new Date().toISOString().slice(0, 10);
+    var late = b.submission_due && b.submission_due < ADspaceClock.today();
     var countdown = b.submission_due && ['pending_draft', 'changes'].indexOf(b.state) > -1
       ? '<p class="due-countdown' + (late ? ' is-late' : '') + '">' + icon('clock') + esc(dueWord(b.submission_due)) + '</p>' : '';
     var changeNote = b.state === 'changes' && b.change_note

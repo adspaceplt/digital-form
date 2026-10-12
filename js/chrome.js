@@ -116,7 +116,7 @@
   /* Two things, one at each end. The year comes from the clock so nobody has
      to remember to change it in January. */
   function footerHtml() {
-    var year = new Date().getFullYear();
+    var year = window.ADspaceClock ? ADspaceClock.today().slice(0, 4) : new Date().getFullYear();
     return '<footer class="portalfoot"><div class="portalfoot-in">' +
       '<span class="portalfoot-copy">\u00a9 ' + year +
         ' ADSPACE PLT. All Rights Reserved.</span>' +

@@ -152,15 +152,13 @@
     window.ADspaceAdmin.log(action, c.name || '',
       periodWord(r.period_start, r.period_end) + ' · v' + r.version_no + (what ? ' · ' + what : ''));
   }
+  /* Days and times are Malaysia's (js/clock.js), whatever the device's
+     clock: a day stays itself, a moment reads as its day here. */
   function dayWord(s) {
     if (!s) return '';
-    var d = new Date(String(s).slice(0, 10) + 'T00:00:00');
-    return isNaN(d) ? String(s) : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+    return ADspaceClock.date(String(s).slice(0, 10)) || String(s);
   }
-  function stampWord(s) {
-    var d = new Date(s);
-    return isNaN(d) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
-  }
+  function stampWord(s) { return s ? ADspaceClock.date(s) : ''; }
   function fmt(v) { return v == null || v === '' ? '—' : Number(v).toLocaleString('en-GB'); }
   function chip(status) {
     var w = STATUS[status] || STATUS.draft;
@@ -402,10 +400,10 @@
     /* Where the months cannot be read (an older database), the last twelve
        calendar months, and the database decides. */
     var calendar = function () {
-      var out = [], now = new Date();
+      var out = [], now = ADspaceClock.today();
       for (var i = 0; i < 12; i++) {
-        var d = new Date(now.getFullYear(), now.getMonth() - i, 1), e = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-        out.push({ period: ymd(d).slice(0, 7), starts: ymd(d), ends: ymd(e), asks: true, planned: 1 });
+        var k = ADspaceClock.addMonths(now, -i);
+        out.push({ period: k, starts: k + '-01', ends: ADspaceClock.addDays(ADspaceClock.addMonths(k, 1) + '-01', -1), asks: true, planned: 1 });
       }
       return out;
     };
@@ -1417,10 +1415,8 @@
       function () { stepCall('sm_report_return', { p_id: r.id, p_note: note.slice(0, 1800) }, 'Sent back to draft.', btn, m); });
   }
   function whenWord(iso) {
-    var d = new Date(iso);
-    if (isNaN(d)) return '';
-    var h = d.getHours(), mm = String(d.getMinutes()).padStart(2, '0');
-    return d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear() + ', ' + ((h % 12) || 12) + ':' + mm + (h < 12 ? ' am' : ' pm');
+    var w = iso ? ADspaceClock.date(iso) : '';
+    return w ? w + ', ' + ADspaceClock.clock(iso, { space: true }) : '';
   }
 
   // ---- The card ---------------------------------------------------------------
@@ -1710,8 +1706,7 @@
     return my.getUTCDate() + ' ' + MON[my.getUTCMonth()] + ' ' + my.getUTCFullYear();
   }
   function spanOf(m) {
-    var a = new Date(m.starts + 'T00:00:00'), b = new Date(m.ends + 'T00:00:00');
-    return a.getDate() + ' ' + MON[a.getMonth()] + ' to ' + b.getDate() + ' ' + MON[b.getMonth()];
+    return ADspaceClock.date(m.starts, { year: false }) + ' to ' + ADspaceClock.date(m.ends, { year: false });
   }
   function gateWords(g) {
     var out = [];
@@ -2075,7 +2070,7 @@
       }).catch(function (e) { say(m, said(e), 'err'); });
     };
     var askDay = function () {
-      var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+      var today = ADspaceClock.today();
       window.ADspaceConfirm.ask({ title: r.sent_on ? 'Change sent date' : 'Mark as sent', go: 'Save',
         fields: [{ name: 'day', label: 'Sent on', type: 'date', value: r.sent_on || today, min: r.period_start, max: today, required: true }] },
         function (v) { sentCall(v && v.day); });
@@ -2095,7 +2090,7 @@
       window.ADspaceWhatsApp.compose({ purpose: 'report', clientId: r.client_id, reportId: r.id, opener: b,
         onSent: function (d, line) {
           if (d.reportId !== r.id || r.sent_on) { say(m, line, 'ok'); return; }
-          var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+          var today = ADspaceClock.today();
           /* A report sent and not marked as sent says so, never Sent alone. */
           db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
             var no = res.error || (res.data && res.data.error ? res.data : null);
@@ -2150,7 +2145,7 @@
     line.querySelector('[data-a="sentno"]').addEventListener('click', function () { st.askSent = null; line.remove(); });
     line.querySelector('[data-a="sentnow"]').addEventListener('click', function (e) {
       var b = e.currentTarget;
-      var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+      var today = ADspaceClock.today();
       b.disabled = true;
       db.rpc('sm_report_sent', { p_id: r.id, p_on: today }).then(function (res) {
         var d = res.data || {};
@@ -2460,8 +2455,8 @@
   // ---- Posts ------------------------------------------------------------------------------
   function postName(p) {
     if (p.title && String(p.title).trim()) return String(p.title).trim();
-    var d = p.posted_on ? new Date(p.posted_on + 'T00:00:00') : null;
-    return (FORMAT_WORD[p.content_type] || 'Post') + (d ? ', ' + d.getDate() + ' ' + MON[d.getMonth()] : '');
+    var d = p.posted_on ? ADspaceClock.date(p.posted_on, { year: false }) : '';
+    return (FORMAT_WORD[p.content_type] || 'Post') + (d ? ', ' + d : '');
   }
   /* Select (the user, 2026-10-02, as on the Ads step): a tick on every row
      and a bar over the list, which moves the ticked posts to another account
@@ -3448,17 +3443,13 @@
      refusal says which and when the next is free. */
   function aiLimit(d) {
     d = d || {};
-    var at = d.next ? new Date(d.next) : null;
-    var when = at && !isNaN(at.getTime())
-      ? at.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][at.getMonth()] + ', ' +
-        ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
-      : '';
+    var when = d.next && ADspaceClock.parts(d.next) ? aiClock(d.next) : '';
     if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
     var n = d.limit == null ? 1 : d.limit;
     var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
-    return who + (at && !isNaN(at.getTime()) ? ' Resets at ' + aiClock(d.next) + '.' : '');
+    return who + (when ? ' Resets at ' + when + '.' : '');
   }
   var AI_SAID = {
     'needs-update': 'This needs a database update.',
@@ -5050,15 +5041,14 @@
   function monthKey(r) { return String(r.period_start || '').slice(0, 7); }
   function monthName(k) {
     if (!k) return 'No period';
-    var d = new Date(k + '-01T00:00:00');
-    return isNaN(d) ? k : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    return ADspaceClock.month(k, { long: true }) || k;
   }
   function inPeriod(r, p) {
     var n = PERIOD_MONTHS[p];
     if (n === -1 || n == null) return true;
-    var now = new Date(Date.now() + 8 * 3600000), y = now.getUTCFullYear(), m = now.getUTCMonth();
-    var from = n === 0 ? new Date(Date.UTC(y, 0, 1)) : new Date(Date.UTC(y, m - n, 1));
-    return monthKey(r) >= from.toISOString().slice(0, 7);
+    var now = ADspaceClock.today();
+    var from = n === 0 ? now.slice(0, 4) + '-01' : ADspaceClock.addMonths(now, -n);
+    return monthKey(r) >= from;
   }
   function paintHub() {
     var list = $('rhList'), strip = $('rhTabs');
@@ -5219,7 +5209,7 @@
   function bulkSent() {
     var rows = picked().filter(function (r) { return r.status === 'published'; });
     if (!rows.length) return;
-    var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+    var today = ADspaceClock.today();
     var from = rows.reduce(function (a, r) { return r.period_start > a ? r.period_start : a; }, '');
     window.ADspaceConfirm.ask({ title: 'Mark ' + plural(rows.length, 'report') + ' as sent?', go: 'Save',
       fields: [{ name: 'day', label: 'Sent on', type: 'date', value: today, min: from, max: today, required: true }] },

@@ -289,10 +289,7 @@
       '<span class="cr-record-when">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
   }
   function monthOf(d) {
-    var t = new Date(d + 'T00:00:00');
-    if (isNaN(t)) return d;
-    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct',
-            'Nov', 'Dec'][t.getMonth()] + ' ' + t.getFullYear();
+    return ADspaceClock.month(String(d).slice(0, 7)) || d;
   }
 
   /* The creators list is a few hundred people, so it needs the two things a
@@ -510,11 +507,8 @@
       });
   }
   function niceStamp(ts) {
-    var x = new Date(ts);
-    if (isNaN(x)) return '';
-    var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()];
-    var h = x.getHours(), m = x.getMinutes();
-    return x.getDate() + ' ' + mon + ' ' + x.getFullYear() + ', ' + ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? 'am' : 'pm');
+    var day = ts ? ADspaceClock.date(ts) : '';
+    return day ? day + ', ' + ADspaceClock.clock(ts) : '';
   }
   function openLinkHistory(c, opener) {
     histFor = c;
@@ -1050,7 +1044,7 @@
     box.setAttribute('aria-labelledby', 'campStage-' + campTab);
     var mine = byTab[campTab];
     if (!mine.length) { UI.emptyLine(box, 'No campaigns.'); return; }
-    var monthOf = function (c) { return c.created_at ? new Date(new Date(c.created_at).getTime() + 8 * 3600e3).toISOString().slice(0, 7) : 'none'; };
+    var monthOf = function (c) { return c.created_at ? ADspaceClock.day(c.created_at).slice(0, 7) : 'none'; };
     var MW = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
     var months = [];
     mine.forEach(function (c) { var k = monthOf(c); if (months.indexOf(k) < 0) months.push(k); });
@@ -1136,8 +1130,7 @@
 
   function updWord(ts) {
     if (!ts) return '\u2014';
-    var d = new Date(new Date(ts).getTime() + 8 * 3600e3).toISOString().slice(0, 10);
-    return niceDate(d);
+    return niceDate(ADspaceClock.day(ts));
   }
 
   var CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -2617,12 +2610,12 @@
          The next one is the earliest date from today onward; where every date
          is behind us there is no next one, so the row says what it is instead
          of what it hoped to be. */
-      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var today = ADspaceClock.today();
       function aheadOf(list) {
         var all = list.filter(Boolean).sort();
         if (!all.length) return null;
         for (var i = 0; i < all.length; i++) {
-          if (new Date(all[i] + 'T00:00:00') >= today) return { on: all[i], ahead: true };
+          if (String(all[i]).slice(0, 10) >= today) return { on: all[i], ahead: true };
         }
         return { on: all[all.length - 1], ahead: false };
       }
@@ -3329,9 +3322,7 @@
   // Reads the same way it does on the client's page.
   function niceDate(d) {
     if (!d) return '';
-    var dt = new Date(d + 'T00:00:00');
-    if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    return ADspaceClock.date(d) || String(d);
   }
 
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
@@ -4077,11 +4068,7 @@
     return '';
   }
 
-  function today() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0');
-  }
+  function today() { return ADspaceClock.today(); }
 
   // A link typed without its scheme is still a link.
   function absUrl(u) {
@@ -4411,9 +4398,7 @@
   }
 
   function shortWhen(iso) {
-    var d = iso ? new Date(iso) : null;
-    if (!d || isNaN(d.getTime())) return 'an earlier date';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).replace(/\bSep\b/, 'Sept');
+    return (iso && ADspaceClock.date(iso, { year: false })) || 'an earlier date';
   }
 
   function qcCount() {
@@ -4603,7 +4588,7 @@
           }
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           var figures = ['impressions', 'engagements', 'views'].some(moved);
-          if (figures) patch.measured_at = new Date().toISOString().slice(0, 10);
+          if (figures) patch.measured_at = ADspaceClock.today();
           /* Who entered the post and its numbers; setting the period alone
              leaves the creator's entry theirs. */
           if (figures || moved('post_url') || moved('published_at')) {

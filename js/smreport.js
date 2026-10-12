@@ -306,10 +306,17 @@
   }
   function signed(n) { n = num(n); if (n === null) return 'Not available'; return (n > 0 ? '+' : '') + n.toLocaleString('en-GB'); }
   function pct(v) { return v === null || v === undefined ? 'Not available' : (Math.round(v * 10000) / 100).toFixed(2) + '%'; }
-  function dateOf(s) { var d = new Date(String(s || '').slice(0, 10) + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
+  /* A day is Malaysia's (js/clock.js): a moment reads as its day here, then
+     stands as that day's local midnight so the calendar getters read it. */
+  function dateOf(s) {
+    var k = String(s || '');
+    k = k.length > 10 && window.ADspaceClock ? ADspaceClock.day(k) : k.slice(0, 10);
+    var d = new Date(k + 'T00:00:00');
+    return isNaN(d.getTime()) ? null : d;
+  }
   function dayWord(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
   function longDate(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
-  function stampWord(iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : ''; }
+  function stampWord(iso) { var d = iso ? dateOf(iso) : null; return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : ''; }
   /* "August 2026" for a calendar month, "1 to 15 August 2026" for part of one,
      "28 July to 3 August 2026" across two. */
   function periodWord(a, b) {
@@ -1372,14 +1379,20 @@
       if (!start || !end) { start = dateOf(posts[0].posted_on); end = dateOf(posts[posts.length - 1].posted_on); }
       var days = Math.round((end - start) / 864e5) + 1;
       var weeks = [];
+      /* Days counted on the calendar, so a device's summer time never moves
+         a week's edge to the day before. */
+      var dayAt = function (n) {
+        var k = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate() + n));
+        return new Date(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate());
+      };
       for (var d0 = 0; d0 < days; d0 += 7) {
-        var a = new Date(start.getTime() + d0 * 864e5), b = new Date(start.getTime() + Math.min(days - 1, d0 + 6) * 864e5);
+        var a = dayAt(d0), b = dayAt(Math.min(days - 1, d0 + 6));
         weeks.push({ a: a, b: b, by: {}, total: 0,
           label: ZH ? zhDay(a) + '至' + (a.getMonth() !== b.getMonth() ? zhDay(b) : b.getDate() + '日') :
             a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
       }
       posts.forEach(function (p) {
-        var k = Math.floor((dateOf(p.posted_on) - start) / 864e5 / 7);
+        var k = Math.floor(Math.round((dateOf(p.posted_on) - start) / 864e5) / 7);
         var wk = weeks[Math.max(0, Math.min(weeks.length - 1, k))];
         wk.by[p._group.key] = (wk.by[p._group.key] || 0) + volOf(p);
         wk.total += volOf(p);

@@ -138,11 +138,11 @@
   function keyOf(c) { return (c && (c.slug || c.id)) || ''; }
   function niceDate(d) {
     if (!d) return '';
-    var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
-    if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock: a day
+       stays itself, a moment reads as its day here. */
+    return ADspaceClock.date(String(d).length > 10 ? d : String(d).slice(0, 10)) || String(d);
   }
-  function today() { return new Date().toISOString().slice(0, 10); }
+  function today() { return ADspaceClock.today(); }
 
   /* Stage is the one word that tells the team how to treat someone. The list
      is grouped by it: leads being worked at the top, the clients we are
@@ -723,9 +723,7 @@
     var d = new Date(seen.t);
     if (isNaN(d.getTime())) return '';
     var days = Math.floor((Date.now() - d.getTime()) / 86400000);
-    return d.toLocaleDateString('en-GB', days < 300
-      ? { day: 'numeric', month: 'short' }
-      : { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    return days < 300 ? ADspaceClock.date(d, { year: false }) : ADspaceClock.month(d);
   }
 
   /* A filter repaints the register when the filter has actually changed, and
@@ -1732,7 +1730,7 @@
       return o;
     });
   }
-  function dayOf(at) { return at ? String(new Date(at).toISOString()).slice(0, 10) : ''; }
+  function dayOf(at) { return at ? ADspaceClock.day(at) : ''; }
 
   /* One save for the dates the timeline holds: the stage log, the current
      stage's start (the last entry) and Client since, which is the first
@@ -2333,11 +2331,8 @@
     'client-scope': 'This client is outside your access.',
     'not-found': 'This analysis is no longer available.'
   };
-  function baDay(iso) { return iso ? niceDate(new Date(Date.parse(iso) + 8 * 36e5).toISOString().slice(0, 10)) : ''; }
-  function baClock(iso) {
-    var at = new Date(iso);
-    return isNaN(at.getTime()) ? '' : ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
-  }
+  function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
+  function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
   function baLimit(d) {
     d = d || {};
     if (d.scope === 'stopped' || d.limit === 0) return 'Brand analyses are turned off for you. An admin can turn them on.';
@@ -4805,7 +4800,7 @@
         rows.forEach(function (t) {
           var c = byId[t.client_id];
           var due = t.next_at && t.next_at < today();
-          var soon = !due && t.next_at && t.next_at <= new Date(Date.now() + 6 * 864e5).toISOString().slice(0, 10);
+          var soon = !due && t.next_at && t.next_at <= ADspaceClock.addDays(today(), 6);
           var row = document.createElement('div');
           row.className = 'due-row' + (due ? ' is-due' : soon ? ' is-soon' : '');
           row.innerHTML =

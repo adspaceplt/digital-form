@@ -87,15 +87,12 @@
 
   function dateWord(s) {
     if (!s) return '';
-    var d = new Date(String(s).length === 10 ? s + 'T00:00:00' : s);
-    if (isNaN(d)) return String(s);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    return window.ADspaceClock.date(s) || String(s);
   }
   /* A half month: 1 to 15 Oct 2026, 16 to 31 Oct 2026. */
   function halfWord(half, end) {
-    var a = new Date(half + 'T00:00:00'), b = new Date(end + 'T00:00:00');
-    if (isNaN(a) || isNaN(b)) return '';
-    return a.getDate() + ' to ' + b.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    var CK = window.ADspaceClock, a = CK.parts(half), b = CK.date(end);
+    return a && b ? a.d + ' to ' + b : '';
   }
   function word(k, v) {
     var s = SCALES.filter(function (x) { return x[0] === k; })[0];

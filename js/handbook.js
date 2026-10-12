@@ -33,7 +33,6 @@
               ['template', 'Templates and forms'], ['other', 'Other']];
   var CAT_WORD = {};
   CATS.forEach(function (c) { CAT_WORD[c[0]] = c[1]; });
-  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var DOTS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>';
   var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
 
@@ -46,8 +45,7 @@
   }
   function day(iso) {
     if (!iso) return '';
-    var d = new Date(iso);
-    return isNaN(d) ? '' : d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+    return window.ADspaceClock.date(iso);
   }
   function size(n) {
     n = Number(n) || 0;

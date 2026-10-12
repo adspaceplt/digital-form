@@ -17,6 +17,12 @@
  *   ADspaceClock.time(v)        'HH:MM', the Malaysian time of a moment
  *   ADspaceClock.addDays(day, n), addMonths(month or day, n) -> 'YYYY-MM'
  *   ADspaceClock.between(a, b)  whole days from day a to day b
+ *   ADspaceClock.date(v, o)     12 Sept 2026; o.long (12 September 2026),
+ *                               o.year false (12 Sept), o.weekday (Sat, 12
+ *                               Sept 2026), o.zh (2026年9月12日)
+ *   ADspaceClock.clock(v, o)    11:30am; o.space (11:30 am), o.h24 (11:30)
+ *   ADspaceClock.month(v, o)    Sept 2026 (a month key or a moment);
+ *                               o.long (September 2026), o.zh (2026年9月)
  *
  * A moment is a Date, a number of milliseconds, or a string. A string of a
  * day alone (2026-10-12) is that Malaysian day, and a date and time written
@@ -82,10 +88,37 @@
     if (!x || !y) return null;
     return Math.round((Date.UTC(y.y, y.mo, y.d) - Date.UTC(x.y, x.mo, x.d)) / DAY);
   }
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  var LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  /* A month key (2026-09) is that month's first day. */
+  function partsOf(v) { return parts(/^\d{4}-\d{2}$/.test(String(v || '')) ? v + '-01' : v); }
+  function date(v, o) {
+    o = o || {};
+    var p = partsOf(v);
+    if (!p) return '';
+    if (o.zh) return (o.year === false ? '' : p.y + '年') + (p.mo + 1) + '月' + p.d + '日';
+    return (o.weekday ? WD[p.wd] + ', ' : '') + p.d + ' ' + (o.long ? LONG : MON)[p.mo] + (o.year === false ? '' : ' ' + p.y);
+  }
+  function clock(v, o) {
+    o = o || {};
+    var p = parts(v);
+    if (!p) return '';
+    if (o.h24) return pad(p.h) + ':' + pad(p.mi);
+    return ((p.h % 12) || 12) + ':' + pad(p.mi) + (o.space ? ' ' : '') + (p.h < 12 ? 'am' : 'pm');
+  }
+  function month(v, o) {
+    o = o || {};
+    var p = partsOf(v);
+    if (!p) return '';
+    if (o.zh) return p.y + '年' + (p.mo + 1) + '月';
+    return (o.long ? LONG : MON)[p.mo] + ' ' + p.y;
+  }
   function weekday(d) { var k = split(d); return k ? new Date(Date.UTC(k.y, k.mo, k.d)).getUTCDay() : null; }
 
   window.ADspaceClock = {
     OFFSET: OFF, moment: moment, parts: parts, day: day, today: today, start: start,
-    at: at, time: time, addDays: addDays, addMonths: addMonths, between: between, weekday: weekday
+    at: at, time: time, addDays: addDays, addMonths: addMonths, between: between, weekday: weekday,
+    date: date, clock: clock, month: month, MON: MON, LONG: LONG
   };
 })();

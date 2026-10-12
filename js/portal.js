@@ -165,9 +165,9 @@
   }
   function niceDate(d) {
     if (!d) return '';
-    var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
-    if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
+    var k = String(d).length > 10 ? ADspaceClock.day(d) : String(d).slice(0, 10);
+    return ADspaceClock.date(k, { zh: lang === 'zh' }) || String(d);
   }
   /* The billed rate, term adjustment included, from the same one definition
      the console and the letter read. A client must never be shown a different
@@ -458,10 +458,9 @@
      which is read as "none". */
   var SMR = window.ADspaceSmReport;
   function monthOf(a, b) {
-    var x = new Date(String(a) + 'T00:00:00'), y = new Date(String(b) + 'T00:00:00');
-    var whole = x.getDate() === 1 && new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate() === y.getDate() &&
-      x.getMonth() === y.getMonth() && x.getFullYear() === y.getFullYear();
-    if (lang === 'zh' && whole) return x.getFullYear() + '年' + (x.getMonth() + 1) + '月';
+    var x = String(a).slice(0, 10), y = String(b).slice(0, 10);
+    var whole = /-01$/.test(x) && ADspaceClock.addDays(ADspaceClock.addMonths(x, 1) + '-01', -1) === y;
+    if (lang === 'zh' && whole) return ADspaceClock.month(x, { zh: true });
     return SMR ? SMR.periodWord(a, b) : String(a) + ' – ' + String(b);
   }
   function paintReports(w, c) {
@@ -554,7 +553,7 @@
     var m = /^(\d{4})-(\d{2})$/.exec(per || '');
     if (!m) return w.discussion;
     if (lang === 'zh') return m[1] + '年' + Number(m[2]) + '月' + w.discussion;
-    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept') + ' ' + w.discussion;
+    return ADspaceClock.month(m[1] + '-' + m[2]) + ' ' + w.discussion;
   }
   function paintMeetings(w, c) {
     var wrap = $('meetWrap'), box = $('meetBox');

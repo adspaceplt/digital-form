@@ -204,8 +204,8 @@
 
   function fmtDate(iso) {
     if (!iso) return '';
-    return new Date(iso).toLocaleDateString('en-GB',
-      { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
+    return ADspaceClock.date(iso);
   }
 
   /* A hidden element reports zero height, so a card inside a folded set or one
@@ -751,8 +751,7 @@
     if (!review) { badgeWord.textContent = 'Pending'; state.textContent = ''; return; }
 
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
-    var when = new Date(review.created_at).toLocaleString('en-GB',
-      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept');
+    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.time(review.created_at);
 
     if (review.decision === 'approved') {
       badgeWord.textContent = 'Approved';

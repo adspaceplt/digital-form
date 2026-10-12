@@ -598,7 +598,7 @@
       var w = chipFor(o), hit = counts.filter(function (c) { return c.w === w; })[0];
       if (hit) hit.n++; else counts.push({ w: w, n: 1, dot: dotOf(o.state) });
     });
-    var today = new Date().toISOString().slice(0, 10);
+    var today = ADspaceClock.today();
     var shoots = booked.filter(function (o) { return o.visit_date && o.visit_date >= today &&
       ['confirmed', 'pending_visit'].indexOf(o.state) > -1; })
       .map(function (o) { return o.visit_date; }).sort();
@@ -796,9 +796,7 @@
   function measuredOf(p) {
     if (p.measured_at) return fmtDate(String(p.measured_at).slice(0, 10));
     if (p.published_at && p.window_days) {
-      var d = new Date(p.published_at + 'T00:00:00');
-      d.setDate(d.getDate() + Number(p.window_days));
-      return fmtDate(d.toISOString().slice(0, 10));
+      return fmtDate(ADspaceClock.addDays(String(p.published_at).slice(0, 10), Number(p.window_days)));
     }
     return '';
   }
@@ -874,9 +872,9 @@
   function decidedLine(o) {
     var r = o.review;
     if (!r || !r.decision) return '';
-    var when = r.at ? new Date(r.at) : null;
-    var stamp = when ? when.toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-GB',
-      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept') : '';
+    var stamp = r.at && ADspaceClock.parts(r.at)
+      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' : ADspaceClock.date(r.at, { year: false }) + ', ') + ADspaceClock.time(r.at)
+      : '';
     /* An approval the team gave on the client's behalf names the colleague
        who proceeded, never as if the client had approved it. */
     var word = r.decision !== 'approved' ? t().changesBy : r.by_team ? t().proceededBy : t().approvedBy;
@@ -1006,9 +1004,8 @@
   }
 
   function fmtDate(d) {
-    var dt = new Date(d + 'T00:00:00');
-    return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB',
-      { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
+    return ADspaceClock.date(d, { zh: lang === 'zh' });
   }
 
   var BACKUPS_WANTED = 2;

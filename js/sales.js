@@ -25,7 +25,8 @@
     for (var i = 0; i < REASONS.length; i++) if (REASONS[i][0] === k) return REASONS[i][1];
     return k ? 'Other' : 'Not given';
   }
-  function monthWord(d) { return MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+  /* Months are Malaysia's (js/clock.js), whatever the device's clock. */
+  function monthWord(d) { return window.ADspaceClock.month(d); }
   function within(at, r) { var t = new Date(at).getTime(); return t >= r.from.getTime() && t < r.to.getTime(); }
 
   /* A client's history as moves: the first entry is where it began. */
@@ -99,18 +100,19 @@
     });
     /* Active clients at each month's end inside the period (the last at
        now), and the net change over the period. */
-    var cur = new Date(r.from.getFullYear(), r.from.getMonth(), 1);
+    var CK = window.ADspaceClock, curKey = CK.day(r.from).slice(0, 7);
+    var cur = CK.start(curKey + '-01');
     while (cur < r.to) {
-      var end = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      var end = CK.start(CK.addMonths(curKey, 1) + '-01');
       var at = Math.min(end.getTime(), r.to.getTime()) - 1;
       f.months.push({
-        label: MONTHS[cur.getMonth()], long: monthWord(cur),
+        label: MONTHS[Number(curKey.slice(5, 7)) - 1], long: monthWord(curKey),
         active: clients.filter(function (c) { return stageAt(c, at) === 'active'; }).length,
         newLeads: f.newLeads.filter(function (c) { var t = new Date(movesOf(c)[0].at); return t >= cur && t < end; }).length,
         won: wonIn(clients, cur, end),
         churned: churnIn(clients, cur, end)
       });
-      cur = end;
+      cur = end; curKey = CK.addMonths(curKey, 1);
     }
     var startT = r.from.getTime() - 1;
     f.activeStart = clients.filter(function (c) { return stageAt(c, startT) === 'active'; }).length;

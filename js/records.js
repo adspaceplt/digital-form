@@ -37,18 +37,17 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function time(iso) {
-    var d = new Date(iso);
-    return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  }
+  /* Times and days are Malaysia's (js/clock.js), whatever the device's
+     clock: a history read abroad dates its entries as the office does. */
+  var CK = window.ADspaceClock;
+  function time(iso) { return iso ? CK.time(iso) : ''; }
   function day(iso) {
-    var d = new Date(iso);
-    if (!iso || isNaN(d.getTime())) return 'Undated';
-    var now = new Date();
-    var same = function (a, b) { return a.toDateString() === b.toDateString(); };
-    if (same(d, now)) return 'Today';
-    if (same(d, new Date(now.getTime() - 864e5))) return 'Yesterday';
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    var d = iso ? CK.day(iso) : '';
+    if (!d) return 'Undated';
+    var today = CK.today();
+    if (d === today) return 'Today';
+    if (d === CK.addDays(today, -1)) return 'Yesterday';
+    return CK.date(d, { weekday: true });
   }
 
   /* Newest first in, newest first out. An entry joins the one above it when

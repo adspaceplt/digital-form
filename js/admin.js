@@ -118,7 +118,7 @@
   }
 
   function thisMonth() {
-    return new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + ' Content';
+    return ADspaceClock.month(ADspaceClock.today(), { long: true }) + ' Content';
   }
 
   // ---- Auth ---------------------------------------------------------------
@@ -436,7 +436,7 @@
       upgradeSay(err);
     });
   }
-  function myDay(d) { return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+  function myDay(d) { return ADspaceClock.day(d); }
   function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00+08:00' : null; }
   /* The window as typed: a time with no date is today's (it was dropped, so
      "10:00 pm" alone put the cover up at once), an empty start is now, and
@@ -2381,8 +2381,7 @@
   function sectionOf(action) { return (ACTION_LABEL[action] || [])[2] || 'other'; }
   function sectionOfRow(a) { return a._section || sectionOf(a.action); }
   function monthLong(p) {
-    var d = new Date(String(p).slice(0, 7) + '-01T00:00:00');
-    return isNaN(d) ? String(p) : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    return ADspaceClock.month(String(p).slice(0, 7), { long: true }) || String(p);
   }
 
   function paintActivity() {
@@ -2877,9 +2876,7 @@
       : '';
   }
   function capClock(iso) {
-    var at = new Date(iso);
-    if (isNaN(at.getTime())) return '';
-    return ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm');
+    return ADspaceClock.clock(iso);
   }
   function capLimit(d) {
     d = d || {};
@@ -2996,7 +2993,7 @@
   /* A set's content month (`batches.period`, YYYY-MM; empty is Ad hoc;
      2026-10-10). This month is Malaysia's. */
   var MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-  function ymNow() { return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 7); }
+  function ymNow() { return ADspaceClock.today().slice(0, 7); }
   function ymAdd(ym, n) { var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return y + '-' + String(m + 1).padStart(2, '0'); }
   function ymWord(ym) { return /^\d{4}-\d{2}$/.test(ym || '') ? MON3[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4) : 'Ad hoc'; }
 
@@ -4991,7 +4988,7 @@
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
-    var day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    var day = ADspaceClock.today();
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k, i) {
       return { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
         half: spec.keys.length > 1 && !(spec.keys.length % 2 && i === spec.keys.length - 1) };
@@ -5021,7 +5018,7 @@
           return;
         }
         return MON.load(true).then(function () {
-          var word = new Date(v.from + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+          var word = ADspaceClock.date(v.from);
           if (spec.msg) msg(spec.msg, 'Saved. From ' + word + '.', 'ok');
           if (spec.done) spec.done();
         });
@@ -6269,9 +6266,8 @@
      back yet simply has none. Saying nothing beats saying "Invalid Date". */
   function made(value, prefix) {
     if (!value) return '';
-    var d = new Date(value);
-    if (isNaN(d.getTime())) return '';
-    return prefix + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
+    var w = ADspaceClock.date(value);
+    return w ? prefix + w : '';
   }
 
   function paintQrs() {
