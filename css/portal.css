@@ -10161,6 +10161,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-facts > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line-soft); }
 .ovw-facts > div:nth-child(-n+2) { border-top: 0; padding-top: 0; }
 .is-narrow .ovw-facts > div:nth-child(2) { border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.ovw-facts > .is-wide { grid-column: 1 / -1; }
 .ovw-facts dt { display: grid; gap: 2px; font-size: 13px; color: var(--ink); min-width: 0; }
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
@@ -10246,6 +10247,20 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 /* The chart keeps its usual step above Figures' hairline, wherever the
    hairline stands (the user, 2026-10-12: it sat against the last bar). */
 .ovw-grid > .chartcard > :has(+ .chart-data) { margin-bottom: 12px; }
+/* Side by side, the cards of a row share four rows (subgrid): the head, the
+   chart, its key and Figures, so every Figures starts on one line whether
+   open or shut and whatever its table holds (the user, 2026-10-12: "the
+   figures part so uneven"). Stacked on a narrow pane they keep the column. */
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard {
+  display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; align-content: start;
+}
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > * { grid-column: 1; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .ovw-cardhead { grid-row: 1; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > :is(.chart-plot, .chart-empty) { grid-row: 2; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .ovw-body { grid-row: 2 / -1; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-key { grid-row: 3; align-self: start; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-data { grid-row: 4; margin-top: 12px; align-self: start; }
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > :has(+ .chart-data) { margin-bottom: 0; }
 .ovw-grid.is-three .chart-pie { gap: 16px; }
 .ovw-grid.is-three .cp-ring { width: 104px; height: 104px; }
 .ovw-grid.is-three .cp-label { overflow-wrap: normal; }
