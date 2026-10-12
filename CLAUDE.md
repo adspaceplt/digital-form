@@ -2905,6 +2905,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_engagement_set_meet` accepts only a `meet.google.com` link. A null
     pair removes the event and its link, and leaves a typed Zoom or Teams link
     alone.
+  - A month's Google Meet is deleted from its Link row's ⋯ (Delete, My Work
+    at Work, asked first: `meet-create` `delete`): the event leaves the
+    shared calendar and the link goes, the date and time stay, and Create
+    Google Meet books a new one (the user, 2026-10-12).
   - Not connected is not a failure of the save.
   - `clientMessage()` is the one bilingual template.
 - The client portal shows meetings read-only (`portal_meetings`), never a task.
