@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261012t">
+<link rel="stylesheet" href="/css/portal.css?v=20261013a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4519,6 +4519,76 @@
               <textarea class="input textarea" id="svcDetail" rows="4" placeholder="Instagram, Facebook and TikTok&#10;8 contents each month&#10;Monthly performance report"></textarea></div>
           </div>
         </section>
+        <!-- What a quote reads of the line (2026-10-13). -->
+        <section class="fsec" id="svcSpecSec">
+          <h4 class="fsec-h">In quotes</h4>
+          <div class="row fgrid">
+            <div><label class="field-label" for="svcRole">Role</label>
+              <select class="select" id="svcRole">
+                <option value="">None</option>
+                <option value="plan">Plan</option>
+                <option value="platform">Platform management</option>
+                <option value="ads">Advertising</option>
+                <option value="booster">Ads booster</option>
+                <option value="language">Added language</option>
+                <option value="content">Content format</option>
+                <option value="verify">Verification</option>
+                <option value="koc">KOC package</option>
+                <option value="kol">KOL management fee</option>
+                <option value="addon">Add-on</option>
+              </select></div>
+            <div data-role="platform"><label class="field-label" for="svcPlatform">Platform</label>
+              <select class="select" id="svcPlatform">
+                <option value="meta">Meta</option><option value="tiktok">TikTok</option>
+                <option value="rednote">rednote</option><option value="linkedin">LinkedIn</option>
+              </select></div>
+            <div data-role="content"><label class="field-label" for="svcKind">Format</label>
+              <select class="select" id="svcKind">
+                <option value="graphic">Static graphic</option><option value="gif">GIF</option>
+                <option value="carousel">Carousel</option><option value="reel30">Reels, up to 30 seconds</option>
+                <option value="reel">Reels, up to 60 seconds</option><option value="video120">Short video, up to 120 seconds</option>
+              </select></div>
+            <div data-role="verify"><label class="field-label" for="svcFee">Additional fees</label>
+              <input class="input" id="svcFee" placeholder="Optional"></div>
+            <div data-role="koc"><label class="field-label" for="svcCreators">Creators</label>
+              <input inputmode="numeric" class="input" id="svcCreators" type="number" min="1" step="1" placeholder="10"></div>
+            <div data-role="addon language"><label class="field-label" for="svcGroup">Group on the card</label>
+              <select class="select" id="svcGroup">
+                <option value="Revisions &amp; Turnaround">Revisions &amp; Turnaround</option>
+                <option value="Localisation &amp; Formats">Localisation &amp; Formats</option>
+                <option value="Production">Production</option>
+                <option value="File Release">File Release</option>
+              </select></div>
+            <div data-role="ads booster"><label class="field-label" for="svcBudget">Ad budget covered (RM)</label>
+              <input inputmode="numeric" class="input" id="svcBudget" type="number" min="1" step="100" placeholder="2000"></div>
+          </div>
+          <div class="row fgrid-3" data-role="plan">
+            <div><label class="field-label" for="svcPlan">Plan</label>
+              <input class="input" id="svcPlan" maxlength="1" placeholder="A" aria-required="true"></div>
+            <div><label class="field-label" for="svcPlatforms">Platforms</label>
+              <input inputmode="numeric" class="input" id="svcPlatforms" type="number" min="1" max="99" step="1" placeholder="1" aria-required="true"></div>
+            <div><label class="field-label" for="svcContents">Contents a month</label>
+              <input inputmode="numeric" class="input" id="svcContents" type="number" min="1" max="99" step="1" placeholder="2" aria-required="true"></div>
+          </div>
+          <div class="row fgrid" data-role="plan">
+            <div><label class="field-label" for="svcAds">Advertising</label>
+              <select class="select" id="svcAds"><option value="no">Without ads</option><option value="yes">With ads</option></select></div>
+            <div id="svcPlanBudgetWrap"><label class="field-label" for="svcPlanBudget">Ad budget covered (RM)</label>
+              <input inputmode="numeric" class="input" id="svcPlanBudget" type="number" min="1" step="100" placeholder="2000"></div>
+          </div>
+          <div class="row" data-role="plan">
+            <div><label class="field-label" for="svcMix">Content options, one a line</label>
+              <textarea class="input textarea" id="svcMix" rows="2" placeholder="1 graphic + 3 reels&#10;4 reels" aria-required="true"></textarea></div>
+          </div>
+          <div class="row" data-role="plan">
+            <div><label class="field-label" for="svcBest">Best for</label>
+              <textarea class="input" id="svcBest" rows="1" data-oneline placeholder="Optional"></textarea></div>
+          </div>
+          <div class="row" data-role="kol">
+            <div><label class="field-label" for="svcTiers">Fee tiers: talent fee up to (RM) | fee (%) | minimum (RM), one a line</label>
+              <textarea class="input textarea" id="svcTiers" rows="4" placeholder="3000 | 18 | 500&#10;Above | 12 | 4000"></textarea></div>
+          </div>
+        </section>
         
         <div class="msg" id="svcMsg"></div>
           </div>
@@ -4528,8 +4598,15 @@
           </div>
         </div>
       </div>
+      <!-- Rate card versions (2026-10-13): the card is edited as a draft and
+           goes live as a numbered version; the line says which is live and
+           what is not yet published. -->
+      <div class="svc-live" id="svcLive" hidden></div>
+      <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate card views" hidden></nav>
       <div class="msg" id="svcListMsg"></div>
-      <div id="svcList"></div>
+      <div id="svcList" role="tabpanel"></div>
+      <div id="svcWords" role="tabpanel" hidden></div>
+      <div id="svcVersions" role="tabpanel" hidden></div>
     </div>
 
     <!-- ---- Reports: every client's reports, by where each stands, where a
@@ -5131,14 +5208,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261012a"></script>
-<script src="/js/admin.js?v=20261013c"></script>
+<script src="/js/admin.js?v=20261013d"></script>
 <script src="/js/documents.js?v=20261012a"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261012a"></script>
 <script src="/js/reports.js?v=20261013e"></script>
 <script src="/js/register.js?v=20261012a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261013c"></script>
+<script src="/js/crm.js?v=20261013d"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261012q"></script>
 <script src="/js/namecard.js?v=20261009s"></script>

@@ -1875,6 +1875,9 @@
     } else if (section === 'settings' && window.ADspaceSettings && window.ADspaceSettings.urlState) {
       var st = window.ADspaceSettings.urlState();
       Object.keys(st).forEach(function (k) { if (st[k]) q.push(k + '=' + encodeURIComponent(st[k])); });
+    } else if (section === 'services' && window.ADspaceCRM && window.ADspaceCRM.svcState) {
+      var sv = window.ADspaceCRM.svcState();
+      Object.keys(sv).forEach(function (k) { if (sv[k]) q.push(k + '=' + encodeURIComponent(sv[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
@@ -2189,6 +2192,7 @@
     'service.off':           ['Rate line inactive', 'is-warn', 'services'],
     'service.on':            ['Rate line active', 'is-ok', 'services'],
     'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
+    'service.published':     ['Rate card published', 'is-ok', 'services'],
     'client.touch':          ['Call/visit logged', '', 'clients'],
     /* WhatsApp (2026-10-10): a message sent by hand, and a purpose's
        template chosen or switched. */
