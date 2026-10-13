@@ -817,7 +817,8 @@
     } else if (k === 'ads') {
       box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pickads">Select</button>' +
           '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
-          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' : '') +
+          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' +
+            '<button class="btn btn-sm" type="button" data-a="metapics">Pictures from Meta</button>' : '') +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
@@ -835,6 +836,7 @@
     if ((b = box.querySelector('[data-a="addad"]'))) { var ad = b; ad.addEventListener('click', function () { adSheet(null, ad); }); }
     if ((b = box.querySelector('[data-a="pasteads"]'))) { var pa = b; pa.addEventListener('click', function () { pasteAdsSheet(pa); }); }
     if ((b = box.querySelector('[data-a="metaads"]'))) { var ma = b; ma.addEventListener('click', function () { metaImport('ads', ma); }); }
+    if ((b = box.querySelector('[data-a="metapics"]'))) { var mc = b; mc.addEventListener('click', function () { metaCreatives(mc); }); }
     if ((b = box.querySelector('[data-a="metaposts"]'))) { var mp = b; mp.addEventListener('click', function () { metaImport('posts', mp); }); }
     if ((b = box.querySelector('[data-a="pickads"]'))) b.addEventListener('click', function () { st.adPick = {}; paintAds(); });
     if ((b = box.querySelector('[data-a="pickposts"]'))) b.addEventListener('click', function () { st.postPick = {}; paintPosts(); });
@@ -3787,6 +3789,8 @@
     var box = st.host.querySelector('.rp-ads');
     if (!box) return;
     var ed = editable();
+    var picsBtn = st.host.querySelector('[data-a="metapics"]');
+    if (picsBtn) picsBtn.hidden = !st.ads.some(function (a) { return (a.ad_ids || []).length; });
     var pickBtn = st.host.querySelector('[data-a="pickads"]');
     if (!ed || st.ads.length < 2) st.adPick = null;
     if (pickBtn) pickBtn.hidden = !ed || st.ads.length < 2 || !!st.adPick;
@@ -4555,6 +4559,88 @@
     if (choices.length === 1) { fetchIt(choices[0][0]); return; }
     window.ADspaceConfirm.ask({ title: 'Import from Meta', go: 'Import',
       field: { label: kind === 'ads' ? 'Ad account' : 'Account', choices: choices } }, fetchIt);
+  }
+
+  /* Pictures from Meta (2026-10-13, the user: "can the import from meta take
+     the creative image only"): each ad's creative picture alone, read by
+     the Ad IDs the row holds through `meta-import` `creatives`, three rows a
+     call, drawn down to the 320px JPEG as every thumbnail is. No figure is
+     read or written. It asks first; where pictures are already held, a tick
+     replaces them too (a screenshot of Meta's preview cut at its edges).
+     Undo puts each row's earlier picture back. */
+  function metaCreatives(btn) {
+    var sec = btn.closest('.rp-sec'), head = sec && sec.querySelector('.rp-sec-head');
+    var line = sec && sec.querySelector('[data-m="meta"]');
+    if (!line && head) { line = document.createElement('p'); line.setAttribute('data-m', 'meta'); head.insertAdjacentElement('afterend', line); }
+    say(line, '');
+    var r = st.open;
+    var rows = st.ads.filter(function (a) { return (a.ad_ids || []).length; });
+    if (!rows.length) { say(line, 'No ad in this report holds an Ad ID from Meta.', 'warn'); return; }
+    var held = rows.filter(function (a) { return a.thumb_data; }).length;
+    var q = { title: 'Pictures from Meta', go: 'Add pictures', body: 'Each ad takes its creative\'s own picture from Meta. No figure changes.' };
+    if (held) q.field = { label: 'Replace the ' + plural(held, 'picture') + ' already added', tick: true, value: false };
+    window.ADspaceConfirm.ask(q, function (v) {
+      var replace = !!held && v === 'on';
+      var want = rows.filter(function (a) { return replace || !a.thumb_data; });
+      if (!want.length) { say(line, 'Every ad already has a picture.', 'warn'); return; }
+      var was = btn.innerHTML;
+      btn.disabled = true; btn.textContent = 'Reading Meta…';
+      var got = {}, refused = '';
+      var batch = function (i) {
+        if (i >= want.length || refused) return Promise.resolve();
+        var part = want.slice(i, i + 3).map(function (a) { return a.id; });
+        return db.functions.invoke('meta-import', { body: { action: 'creatives', report_id: r.id, rows: part } }).then(function (res) {
+          var d = (res && res.data) || {};
+          if ((res && res.error) || d.error) { refused = d.error || 'meta-failed'; return; }
+          return Promise.all((d.pictures || []).map(function (x) {
+            if (!x) return null;
+            if (x.error === 'token-refused' || x.error === 'rate-limited') { refused = x.error; return null; }
+            if (!x.b64 || !/^image\//.test(x.type || '') || part.indexOf(x.id) < 0) return null;
+            var bin = atob(x.b64), buf = new Uint8Array(bin.length);
+            for (var j = 0; j < bin.length; j++) buf[j] = bin.charCodeAt(j);
+            return shrink(new Blob([buf], { type: x.type })).then(function (data) { got[x.id] = data; }).catch(function () { /* left without */ });
+          }));
+        }).catch(function () { refused = 'meta-failed'; }).then(function () { return batch(i + 3); });
+      };
+      batch(0).then(function () {
+        var before = {};
+        return Promise.all(want.filter(function (a) { return got[a.id]; }).map(function (a) {
+          var q0 = db.from('sm_report_ads').update({ thumb_data: got[a.id] }).eq('id', a.id);
+          if (!replace) q0 = q0.is('thumb_data', null);
+          return q0.select('*').then(function (res) {
+            var row = (res && res.data || [])[0];
+            if (!row) return;
+            before[row.id] = a.thumb_data || null;
+            st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
+          });
+        })).then(function () { return before; });
+      }).then(function (before) {
+        btn.disabled = false; btn.innerHTML = was;
+        if (!st.open || st.open.id !== r.id) return;
+        var ids = Object.keys(before), n = ids.length, missed = want.length - n;
+        paintAds();
+        if (!n) {
+          say(line, refused ? (META_SAID[refused] || 'Meta did not answer. Try again.') : 'Meta holds no picture for these ads.', refused ? 'err' : 'warn');
+          return;
+        }
+        var swapped = ids.filter(function (id) { return before[id]; }).length;
+        fileReport('report.saved', 'From Meta: ' + [n - swapped ? plural(n - swapped, 'picture') + ' added' : '',
+          swapped ? plural(swapped, 'picture') + ' replaced' : ''].filter(Boolean).join(', '));
+        if (missed) say(line, plural(missed, 'ad') + ' took no picture. ' +
+          (refused ? (META_SAID[refused] || 'Meta did not answer.') : 'Meta holds none for ' + (missed === 1 ? 'it.' : 'them.')), 'warn');
+        undoBar(plural(n, 'picture') + ' taken from Meta.', st.host.querySelector('.rp-ads'), function () {
+          Promise.all(ids.map(function (id) {
+            return db.from('sm_report_ads').update({ thumb_data: before[id] }).eq('id', id).select('*').then(function (res) {
+              var row = (res && res.data || [])[0];
+              if (row) st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
+            });
+          })).then(function () {
+            fileReport('report.saved', 'From Meta: ' + plural(n, 'picture') + ' put back');
+            paintAds();
+          });
+        });
+      }).catch(function () { btn.disabled = false; btn.innerHTML = was; say(line, 'Meta did not answer. Try again.', 'err'); });
+    });
   }
 
   /* The importer's plan, one copy for a paste, Import from Meta and the

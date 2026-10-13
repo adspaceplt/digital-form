@@ -2759,3 +2759,19 @@ The user: "missing one critical one, which is nudge or notification for differen
 ### 2026-10-13 · The billing contact follows the main contact; a removed service line can be deleted
 The user found a client's next letter still addressed to its old main contact: a Letter of Offer's Attn is the Billing contact, and the Billing sheet saved the main contact by id the first time, so it stayed when the main contact changed. "By default billing contact fills main contact": the Billing contact select now opens on Main contact · {name}, saved empty, which the page and `issue_letter` already read as the main contact; a contact that stops being the main contact, or is removed, lets go of the billing contact it held (trigger `client_contacts_bill_follows`), and one chosen apart from the main contact is never moved. Issued letters are not touched: a letter keeps the contact it was issued to. The user also asked for Delete on removed service lines. The 2026-10-08 rule kept every removed line because a letter may have quoted it; that reason stands for a quoted line (its letter's foreign key restricts it, and no Delete is drawn), and a line no letter quoted goes for good at Clients: Services Full Access, asked once, filed `client.service_deleted` under Clients.
 
+### 2026-10-13 · Pictures from Meta: the creative image alone
+The Laman Waringin ads report of 16 September to 12 October 2026 printed
+creative cards whose pictures were cut at the top or bottom. The portal
+had not cropped them: they were screenshots of Meta's ad preview, uploaded
+by hand, already cut by the preview window (stored whole at 198 × 320).
+Import from Meta brings a creative's picture, but only with its figures
+and only to an ad with none, and the team imports figures from the Ads
+Manager export. The user asked whether the import could take the creative
+image only. Built as its own press: `meta-import` `creatives` reads the
+report's own rows' Ad IDs (never IDs the page sends), checks each ad's
+account is one the client links, and walks the creative from the image
+itself down to Meta's thumbnail asked at 1080, so a video takes its cover
+rather than the 64px default. It writes the picture alone, asks before
+replacing what is held, and Undo restores it. The spreadsheet and CSV
+importers and Import from Meta's figures are untouched.
+

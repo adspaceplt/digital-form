@@ -29,6 +29,17 @@
  *                        draws them down to its 320px thumbnail and keeps
  *                        them: Meta's addresses expire within days. Reports
  *                        at Work, a draft.
+ *   creatives { report_id, rows }
+ *                        each ad's creative picture alone (2026-10-13, the
+ *                        user: "can the import from meta take the creative
+ *                        image only"): for up to six of the report's own ad
+ *                        rows, read under their policies, the creative of
+ *                        the first Ad ID a row holds in an ad account the
+ *                        client links, read whole (the image, a link's or
+ *                        carousel's picture, a video's cover, then the
+ *                        thumbnail asked at 1080), answered as base64 for
+ *                        the page to draw down and keep. No figure is read.
+ *                        Reports at Work, an Advertising Report in draft.
  *   `audit: true` on either (the Report audit, 2026-10-09) reads the same for
  *                        the page to compare, never to import: an Advertising
  *                        Report in review or confirmed too, since Meta is
@@ -173,13 +184,78 @@ async function metrics(ids: string[], names: Record<string, string>, token?: str
   return got;
 }
 
+/* A picture read from one of Meta's own hosts alone (a redirect followed
+   only onto them), as base64; 4 MB at most. */
+const META_HOST = /(^|\.)(fbcdn\.net|cdninstagram\.com)$/;
+async function readPicture(u: string): Promise<{ type: string; b64: string } | null> {
+  try {
+    const h = new URL(u);
+    if (h.protocol !== 'https:' || !(META_HOST.test(h.hostname) || /(^|\.)facebook\.com$/.test(h.hostname))) return null;
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
+    const res = await fetch(u, { signal: ctl.signal }); clearTimeout(t);
+    const type = (res.headers.get('content-type') || '').split(';')[0];
+    if (!res.ok || !/^image\//.test(type) || !META_HOST.test(new URL(res.url || u).hostname)) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (!buf.length || buf.length > 4 * 1024 * 1024) return null;
+    let bin = '';
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    return { type, b64: btoa(bin) };
+  } catch { return null; }
+}
+/* An ad's creative as the team made it, never a preview of the ad: the
+   image itself, a link's or a carousel's first picture, a video's cover as
+   uploaded, the video's preferred frame, then Meta's thumbnail asked at
+   1080 and last its small default. The first that reads is kept. Only an ad
+   in an ad account the client links is read. */
+async function creativePicture(ad: string, linked: Set<string>): Promise<{ type: string; b64: string } | { error: string }> {
+  try {
+    const got = await graph(ad, { fields: 'account_id,creative{id,image_url,thumbnail_url,video_id,object_story_spec,asset_feed_spec}' });
+    if (!linked.has(String(got.account_id || '').replace(/^act_/, ''))) return { error: 'no-mapping' };
+    const c = (got.creative || {}) as Record<string, unknown>;
+    const spec = (c.object_story_spec || {}) as Record<string, Record<string, unknown>>;
+    const link = spec.link_data || {}, video = spec.video_data || {};
+    const feed = (c.asset_feed_spec || {}) as Record<string, Record<string, unknown>[]>;
+    const kids = (link.child_attachments || []) as Record<string, unknown>[];
+    const first = (list: unknown, key: string) => { const x = Array.isArray(list) ? list.find((y) => y && (y as Record<string, unknown>)[key]) as Record<string, unknown> | undefined : undefined; return x ? String(x[key]) : ''; };
+    const tries: (string | (() => Promise<string>))[] = [
+      String(c.image_url || ''), String(link.picture || ''), first(kids, 'picture'), String(video.image_url || ''),
+      first(feed.images, 'url'), first(feed.videos, 'thumbnail_url'),
+      async () => {
+        const v = String(c.video_id || video.video_id || first(feed.videos, 'video_id') || '');
+        if (!v) return '';
+        const vb = await graph(v, { fields: 'thumbnails{uri,is_preferred,width}' });
+        const th = (((vb.thumbnails || {}) as Record<string, unknown>).data || []) as Record<string, unknown>[];
+        const pick = th.find((x) => x.is_preferred) || th.slice().sort((a, b) => Number(b.width || 0) - Number(a.width || 0))[0];
+        return pick ? String(pick.uri || '') : '';
+      },
+      async () => c.id ? String((await graph(String(c.id), { fields: 'thumbnail_url', thumbnail_width: '1080', thumbnail_height: '1080' })).thumbnail_url || '') : '',
+      String(c.thumbnail_url || '')
+    ];
+    for (const t of tries) {
+      let u = '';
+      try { u = typeof t === 'string' ? t : await t(); } catch (e) {
+        const kind = refusalOf((e as MetaError).body);
+        if (kind === 'token-refused' || kind === 'rate-limited') return { error: kind };
+        continue;
+      }
+      if (!u) continue;
+      const pic = await readPicture(u);
+      if (pic) return pic;
+    }
+    return { error: 'no-picture' };
+  } catch (e) {
+    console.error('meta-import: creative left out', JSON.stringify((e as MetaError).body || {}).slice(0, 300));
+    return { error: refusalOf((e as MetaError).body) || 'meta-failed' };
+  }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
   const action = String(body.action || '');
-  if (['assets', 'ads', 'posts', 'pictures'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
+  if (['assets', 'ads', 'posts', 'pictures', 'creatives'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
@@ -241,11 +317,31 @@ Deno.serve(async (req) => {
       }));
       return json({ pictures }, 200, origin);
     }
-    if ((action === 'ads') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
+    if ((action === 'ads' || action === 'creatives') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
     const lk = await db.rpc('meta_links_list', { p_client: r.client_id });
     const ld = (lk.data || {}) as Record<string, unknown>;
     if (lk.error || ld.error) return json({ error: lk.error ? 'needs-update' : 'denied' }, 200, origin);
     const mine = ((ld.links || []) as Record<string, unknown>[]).find((x) => (x.brand_id || null) === (r.brand_id || null)) || {};
+
+    if (action === 'creatives') {
+      const want = (Array.isArray(body.rows) ? body.rows : []).map(String).filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 6);
+      if (!want.length) return json({ pictures: [] }, 200, origin);
+      const got = await db.from('sm_report_ads').select('id, ad_ids').eq('report_id', id).in('id', want);
+      if (got.error) return json({ error: 'not-found' }, 200, origin);
+      const linked = new Set(((mine.ad_accounts || []) as { id: string }[]).map((a) => String(a.id).replace(/^act_/, '')));
+      const seen: Record<string, Promise<{ type: string; b64: string } | { error: string }>> = {};
+      const pictures = [];
+      for (const row of (got.data || []) as { id: string; ad_ids: string[] | null }[]) {
+        let out: { type: string; b64: string } | { error: string } = { error: 'no-picture' };
+        for (const ad of (row.ad_ids || []).map(String).filter((x) => /^\d+$/.test(x))) {
+          if (!seen[ad]) seen[ad] = creativePicture(ad, linked);
+          out = await seen[ad];
+          if ('b64' in out || out.error === 'token-refused' || out.error === 'rate-limited') break;
+        }
+        pictures.push({ id: row.id, ...out });
+      }
+      return json({ pictures }, 200, origin);
+    }
 
     if (action === 'ads') {
       const accounts = (mine.ad_accounts || []) as { id: string; name: string }[];
