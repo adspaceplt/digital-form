@@ -75,6 +75,10 @@
       biz && { id: 'priority', name: 'Priority deadlines', kind: 'edit',
         meta: num('priority_high_hours') == null ? '' : parts(['Urgent ' + plural(num('priority_urgent_hours'), 'hour', 'hours'),
           'High ' + plural(num('priority_high_hours'), 'hour', 'hours'), 'Medium ' + plural(num('priority_medium_hours'), 'hour', 'hours')]) },
+      biz && { id: 'nudge', name: 'Task reminders', kind: 'edit',
+        meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
+          : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
+            num('task_start_days') === 0 ? 'Not started off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit' }]);
     var meta = num('meta_checks') === 1;
     add('reports', 'Reports', [
@@ -263,6 +267,11 @@
     if (a === 'priority') {
       ed({ title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours'],
         ['priority_high_hours', 'High: hours from creation', 'hours'], ['priority_medium_hours', 'Medium: hours from creation', 'hours']] });
+      return;
+    }
+    if (a === 'nudge') {
+      ed({ title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every'],
+        ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead']] });
       return;
     }
     if (a === 'prices') { ed({ title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],
