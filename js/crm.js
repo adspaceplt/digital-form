@@ -310,10 +310,17 @@
     ['crmBillAddr',     'billing_address', 'Company billing address', true]
   ];
   var BILLING_REQUIRED = BILLING.filter(function (f) { return f[3]; });
+  /* The billing contact follows the main contact unless somebody else is
+     chosen (2026-10-13): an empty bill_contact_id is the main contact, the
+     database answers a letter's Attn the same way (`issue_letter`), and a
+     contact that stops being the main contact, or is removed, lets go of
+     the billing contact by trigger (`client_contacts_bill_follows`). */
+  function mainContact() {
+    return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] || null;
+  }
   function billContact(c) {
     var list = state.contacts || [];
-    return list.filter(function (x) { return x.id === c.bill_contact_id; })[0] ||
-           list.filter(function (x) { return x.is_primary; })[0] || null;
+    return list.filter(function (x) { return x.id === c.bill_contact_id && !x.archived_at; })[0] || mainContact();
   }
   /* Where Billing withholds the values, the database still names the
      required fields left blank (`billing_missing`), so the gate says what is
@@ -2113,11 +2120,12 @@
     $('crmGateText').textContent = 'Required before Active: ' + missing.join(', ') + '.';
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
     paintBillRead(c);
-    var pick = billContact(c);
-    $('crmBillContact').innerHTML = '<option value="">None</option>' + (state.contacts || []).map(function (ct) {
-      return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id ? ' selected' : '') + '>' + esc(ct.name) +
-        (ct.is_primary ? ' · Main contact' : '') + '</option>';
-    }).join('');
+    var main = mainContact(), pick = billContact(c);
+    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc(main.name) : 'None') + '</option>' +
+      (state.contacts || []).filter(function (ct) { return !ct.archived_at && !(main && ct.id === main.id); }).map(function (ct) {
+        return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id && !(main && pick.id === main.id) ? ' selected' : '') + '>' +
+          esc(ct.name) + '</option>';
+      }).join('');
   }
 
   /* Read first. The pane states what is held in the three groups the sheet
@@ -2694,6 +2702,8 @@
 
   $('crmBillSave').addEventListener('click', function () {
     var was = Object.assign({}, state.client);
+    /* The main contact held by id reads as following the main contact. */
+    if (mainContact() && was.bill_contact_id === mainContact().id) was.bill_contact_id = null;
     /* No setting is SST applying, as `money.js` reads it. */
     was.sst_applies = state.client.sst_applies !== false;
     var patch = { sst_applies: $('crmSstApplies').checked };
@@ -3595,9 +3605,46 @@
           var all = r.data || [];
           state.services = all.filter(function (l) { return !l.archived_at; });
           state.servicesGone = all.filter(function (l) { return l.archived_at; });
+          state.servicesQuoted = {};
           paintServices();
           paintSummary();
+          quotedLines();
         });
+    });
+  }
+
+  /* A removed line a Letter of Offer quoted stays for the record (the
+     letter's foreign key restricts it), so Delete is drawn only on the
+     others; read once, for the removed lines alone, where Documents can be
+     read; elsewhere the database names the refusal at the press. */
+  function quotedLines() {
+    var gone = (state.servicesGone || []).map(function (l) { return l.id; });
+    if (!gone.length || !(bridge.may && bridge.may('clients.documents', 'view'))) return;
+    db.from('client_document_services').select('service_id').in('service_id', gone).then(function (r) {
+      if (r.error) return;
+      (r.data || []).forEach(function (x) { state.servicesQuoted[x.service_id] = true; });
+      if (showRemovedServices) paintServices();
+    }).catch(function () {});
+  }
+
+  function deleteService(l) {
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: l.label + ' goes from this client for good. There is no restore.',
+      go: 'Delete',
+      tone: 'danger'
+    }, function () {
+      db.from('client_services').delete().eq('id', l.id).select('id').then(function (r) {
+        if (r.error) {
+          msg('crmServiceMsg', r.error.code === '23503'
+            ? 'A Letter of Offer quotes this service, so it stays for the record.' : svSaid(r.error), 'err');
+          return;
+        }
+        if (!(r.data || []).length) { msg('crmServiceMsg', 'Not deleted. The database refused the request.', 'err'); return; }
+        log('client.service_deleted', state.client.name, l.label);
+        msg('crmServiceMsg', 'Deleted.', 'ok');
+        loadServices();
+      }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not deleted.', 'err'); });
     });
   }
 
@@ -3656,11 +3703,15 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="restore" data-need="clients.services:work" type="button"><b>Restore</b></button>' +
+            (state.servicesQuoted && state.servicesQuoted[l.id] ? ''
+              : '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.services:manage" type="button"><b>Delete</b></button>') +
           '</div>' +
         '</span>';
       wireMenu(row);
       var back = row.querySelector('[data-a="restore"]');
       if (back) back.addEventListener('click', function () { saveService(l, { archived_at: null }, 'restored'); });
+      var purge = row.querySelector('[data-a="purge"]');
+      if (purge) purge.addEventListener('click', function () { deleteService(l); });
       return row;
     }
     row.innerHTML =
