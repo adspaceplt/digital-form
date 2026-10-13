@@ -7562,6 +7562,21 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    rounds its track by one row's half height. */
 .seg, .seg-opt, .seg.has-thumb::before { border-radius: 999px; }
 .seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); }
+/* A wrapped segment is separate pills (the user, 2026-10-13, after Apple's
+   own choice pills: four on a phone read as one block stuck together): the
+   track gives its ground to each option, 8px apart, and the thumb still
+   slides to the one chosen. */
+.seg.is-wrap { gap: 8px; background: transparent; border-radius: 0; }
+.seg.is-wrap > .seg-opt { background-color: var(--tonal); }
+/* Apart from its track the chosen pill is the ink fill, as a chosen
+   `.acttab` outside a strip is. One still cut at two across stacks. */
+.seg.is-wrap.has-thumb::before { background: var(--fill); box-shadow: none; }
+.seg.is-wrap > .seg-opt.is-on { color: var(--on-fill); }
+.seg.is-wrap:not(.has-thumb) > .seg-opt.is-on { background-color: var(--fill); }
+.seg.is-wrap.is-stack { grid-template-columns: minmax(0, 1fr); }
+@media (hover: hover) {
+  .seg.is-wrap > .seg-opt:not(.is-on):not(:disabled):hover { background-color: var(--tonal-hover); }
+}
 /* A round end takes room from the words, so a pill's option keeps 14px
    either side of them (8 sat the word against the curve). */
 .seg-opt { padding-inline: 14px; }

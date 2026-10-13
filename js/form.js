@@ -65,14 +65,17 @@
 
   /* A segment whose words do not fit its track on one line (four options on
      a phone: "Google …", "Quotati…") falls to two columns rather than
-     cutting a word, because a choice read by a sliced label is a guess. It is
+     cutting a word, because a choice read by a sliced label is a guess, and
+     to one column where two still cut (separate pills either way). It is
      measured with the track unwrapped every time, so a wider sheet puts it
      back on one line. */
   function fit(seg) {
     if (!seg || !seg.clientWidth) return;
-    seg.classList.remove('is-wrap');
-    var cut = Array.prototype.some.call(seg.children, function (b) { return b.scrollWidth > b.clientWidth + 1; });
-    seg.classList.toggle('is-wrap', cut);
+    seg.classList.remove('is-wrap', 'is-stack');
+    var cutAt = function () { return Array.prototype.some.call(seg.children, function (b) { return b.scrollWidth > b.clientWidth + 1; }); };
+    if (!cutAt()) return;
+    seg.classList.add('is-wrap');
+    if (cutAt()) seg.classList.add('is-stack');
   }
 
   function choose(sel, v) {
