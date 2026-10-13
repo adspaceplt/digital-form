@@ -4008,6 +4008,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   v.{n} · valid until, `n changes not published`, Publish), then Rate card,
   Wording, Versions (`tab=`); a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
+- A block of wording is edited as the card prints it (`#rcwBox`; the user,
+  2026-10-13: one box of lines read "ugly and untidy unstructured"): a list
+  as numbered points (a field each, Add point, Move up, Remove), a table a
+  row at a time under the columns its label names (Add row; one row fixed
+  where the card prints one), a sentence as one field; saved as the lines
+  the PDF reads. On a phone a point's number and acts share its first line.
 - Download on the version line (`js/ratecardpdf.js`,
   `ADspaceRateCardPdf.draw`; the user, 2026-10-13: the card in "their exact
   format", FOR INTERNAL USE kept) draws the live version as the team's six
