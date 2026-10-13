@@ -2808,3 +2808,20 @@ never show a half-edited price; the card's own words are blocks seeded
 from that PDF; each line says what a quote reads of it (`services.spec`);
 a client's new line takes the live version's price.
 
+
+### 2026-10-13 · Client-facing words, extra content and languages
+Reviewing the quotation mockups, the user found the words "broken and not
+fit in our Malaysia culture" ("a month", "billed apart", "See my price") and
+asked that client-facing screens and PDFs read as formal Malaysian business
+English, with no duplicated or non-essential lines, and a term's whole
+total in the PDF alone (a large figure on screen "shuns potential
+customers away"); DESIGN.md §6 holds the rule. Extra content in a plan is
+priced on the whole plan's saving (fee against everything in it at Ala
+Carté, the fuller option where a plan offers two): rule 2 (the contents'
+share alone) priced an extra reel on Plans E and F at RM 322, below a
+30-second reel, and gave Plan C two prices for one reel. Languages: the
+contents are shared across the languages chosen at no charge; translation
+(RM 200 a content, a language) applies only where one content must also
+appear in another language. A quotation from the website files a Lead with
+its lines Enquired; Proceed with billing details moves them to To quote and
+tells the team it is ready for a Letter of Offer.
