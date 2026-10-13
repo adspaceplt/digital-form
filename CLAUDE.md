@@ -2845,6 +2845,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     Friday): every active colleague but an admin with no open task
     assigned to them, or who has never added a task, is told once that day
     (kind `tasks.empty`, opening My Work).
+  - Task reminders (`2026-10-13-task-reminders.sql`, `ops_tasks_nudge()`,
+    pg_cron `tasks-nudge` hourly from 10:00 to 17:00 MYT, Monday to Friday;
+    the user, 2026-10-13: "not every single task needs to have a noti but
+    it should have something"): each task's owner (never a system account)
+    is sent one notice of what of theirs needs them, each task counted once
+    as the first of Overdue (the late rule), Urgent (its deadline running),
+    Due today (the due date or a priority's deadline), Not started (a
+    starting stage, its draft due, else due date, within `task_start_days`
+    (2), or with no date assigned that long ago); one task names it and
+    opens it, several are counted ("5 tasks need attention: 2 overdue, 1
+    Urgent, 2 not started.") with the first three named, opening My Work
+    (kind `tasks.nudge`, push tag `tasks-nudge`), never more often than
+    `task_remind_hours` (3); both Business settings (Settings, My Work:
+    Task reminders, 0 sends none). Not sent on WhatsApp.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New

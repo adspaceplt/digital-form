@@ -7994,9 +7994,9 @@
       return;
     }
     /* A client paused or ended opens the list, where its open work heads
-       the queue as urgent delivery; the noon reminder to add tasks opens it
-       too. */
-    if (!x.task_id && (x.kind === 'client_left' || x.kind === 'tasks.empty')) {
+       the queue as urgent delivery; the noon reminder to add tasks and the
+       count of tasks that need the reader open it too. */
+    if (!x.task_id && (x.kind === 'client_left' || x.kind === 'tasks.empty' || x.kind === 'tasks.nudge')) {
       history.replaceState(null, '', '/admin/?s=work');
       if (bridge.show) bridge.show('work');
       return;
