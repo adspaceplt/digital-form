@@ -2775,3 +2775,18 @@ rather than the 64px default. It writes the picture alone, asks before
 replacing what is held, and Undo restores it. The spreadsheet and CSV
 importers and Import from Meta's figures are untouched.
 
+### 2026-10-13 · Pictures from Meta stands apart from Meta checks
+Pictures from Meta was first drawn only while Meta checks was on, beside
+Import from Meta. To use it the user turned Meta checks back on, which made
+the audit against Meta a Submit requirement again, and the Laman Waringin
+report (16 September to 12 October) read 60 differences: Meta finished
+counting 12 October after the morning's export (+118 impressions, +RM 0.12
+across the account), awareness results and reach are Meta's estimates it
+keeps revising, CTR and play time round differently, and one reach
+(2609W3_Balance Engagement, 800 against 6,484) is the unknown-age gap. The
+user called the audit inaccurate and chose option A of three: the pictures
+read whatever the switch (`meta-import` `creatives` skips `meta_checks_on`;
+the page reads the client's links once, `st.metaLinks`, and draws Pictures
+from Meta from them), so Meta checks stays off and nothing waits on the
+audit. Making the audit advisory (B) or retiring it (C) are left for later.
+

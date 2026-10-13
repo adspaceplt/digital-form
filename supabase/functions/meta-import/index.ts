@@ -38,8 +38,9 @@
  *                        client links, read whole (the image, a link's or
  *                        carousel's picture, a video's cover, then the
  *                        thumbnail asked at 1080), answered as base64 for
- *                        the page to draw down and keep. No figure is read.
- *                        Reports at Work, an Advertising Report in draft.
+ *                        the page to draw down and keep. No figure is read,
+ *                        so it is not held to Meta checks. Reports at Work,
+ *                        an Advertising Report in draft.
  *   `audit: true` on either (the Report audit, 2026-10-09) reads the same for
  *                        the page to compare, never to import: an Advertising
  *                        Report in review or confirmed too, since Meta is
@@ -288,9 +289,13 @@ Deno.serve(async (req) => {
     const may = await db.rpc('allowed', { p_section: 'reports', p_level: 'work' });
     if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
     /* Meta checks (2026-10-10): the Business setting on and the caller
-       holding Reports: Meta import and audit, as the database answers it. */
-    const on = await db.rpc('meta_checks_on');
-    if (on.error || on.data !== true) return json({ error: 'meta-off' }, 200, origin);
+       holding Reports: Meta import and audit, as the database answers it.
+       A creative's picture is not a figure, so it is read whatever the
+       switch (2026-10-13). */
+    if (action !== 'creatives') {
+      const on = await db.rpc('meta_checks_on');
+      if (on.error || on.data !== true) return json({ error: 'meta-off' }, 200, origin);
+    }
     const rep = await db.from('sm_reports').select('id, kind, status, period_start, period_end, client_id, brand_id').eq('id', id).maybeSingle();
     if (rep.error || !rep.data) return json({ error: 'not-found' }, 200, origin);
     const r = rep.data as Record<string, string | null>;

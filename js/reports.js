@@ -580,7 +580,8 @@
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
       return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
-        st.meta = x[x.length - 2] || null;
+        st.metaLinks = x[x.length - 2] || null;
+        st.meta = metaOn() ? st.metaLinks : null;
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
@@ -618,11 +619,13 @@
     return on && !!(bridge.may && bridge.may('reports.meta', 'work'));
   }
   /* The Meta assets the report's client (or its brand) is linked to
-     (2026-10-08), read once a report opens: Import from Meta is drawn only
-     where there is one, and only while Meta checks are on. A refused read
-     draws no button. */
+     (2026-10-08), read once a report opens: Import from Meta and the audit
+     are drawn only where there is one, and only while Meta checks are on
+     (`st.meta`); Pictures from Meta wherever there is one, whatever the
+     switch (`st.metaLinks`; 2026-10-13, the user: the audit "inaccurate",
+     the pictures needed without it). A refused read draws no button. */
   function metaOf(cid, brand) {
-    if (!cid || !metaOn()) return Promise.resolve(null);
+    if (!cid) return Promise.resolve(null);
     return db.rpc('meta_links_list', { p_client: cid }).then(function (q) {
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) return null;
@@ -817,8 +820,8 @@
     } else if (k === 'ads') {
       box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pickads">Select</button>' +
           '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
-          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' +
-            '<button class="btn btn-sm" type="button" data-a="metapics">Pictures from Meta</button>' : '') +
+          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' : '') +
+          (st.metaLinks && (st.metaLinks.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metapics">Pictures from Meta</button>' : '') +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();

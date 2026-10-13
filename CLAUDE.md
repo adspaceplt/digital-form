@@ -3915,8 +3915,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   not connected, token, not shared with the system user, busy, link gone),
   never Meta's words. Every figure is Meta's; none is AI's.
 - Pictures from Meta (2026-10-13; the user: "can the import from meta take
-  the creative image only"): beside Import from Meta on a draft's Ads step,
-  drawn while an ad holds Ad IDs; `meta-import` `creatives` reads, for the
+  the creative image only"): on a draft's Ads step wherever the client
+  links an ad account, whatever Meta checks says (a picture is not a figure;
+  the user, 2026-10-13: the audit "inaccurate", the pictures needed without
+  it), drawn while an ad holds Ad IDs; `meta-import` `creatives` (never
+  `meta-off`) reads, for the
   report's own rows (three a call), the creative of the first Ad ID in an ad
   account the client links (the image, a link's or carousel's picture, a
   video's cover, its preferred frame, then the thumbnail at 1080), never a
