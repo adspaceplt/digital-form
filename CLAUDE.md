@@ -3731,7 +3731,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     answer with the check's rules before handing it over and puts right what
     the check would flag, inside the same press (never one of the day's
     checks; skipped past 70 seconds), and takes out a word that colours a
-    figure (only, just, 仅, 只有) wherever it still stands; a place among
+    figure (only, just, 仅, 只有) before a figure or a number word (only
+    one, only a single; never "the only") wherever it still stands
+    (`plainFigures`, `tests/plainfig.js`); a place among
     ads or posts (the cheapest, the second most viewed) is said only from
     the ranks the function works out (`cost_rank`, `rank_views`,
     `rank_engagements`), never read off the figures; tokens are kept once a

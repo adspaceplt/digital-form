@@ -272,12 +272,13 @@ async function askCheck(client: Anthropic, data: Record<string, unknown>, parts:
 }
 
 /* A word that colours a figure, taken out where it stands before a figure
-   (仅以278次观看, 只获得1次, only 278 views): the plain figure is the house
-   style, and the check flags the word. Never 不仅 or "not only". */
+   (仅以278次观看, 只获得1次, only 278 views, only one conversation, only a
+   single lead): the plain figure is the house style, and the check flags
+   the word. Never 不仅, "not only" or "the only". */
 function plainFigures(t: string): string {
   return t
     .replace(/(?<!不)(仅仅|仅有|仅|只有|只)(?=(?:以|有|获得|取得|录得|收获|带来|吸引|达到|达|为)?\s*[0-9０-９一二两三四五六七八九十])/g, '')
-    .replace(/(?<!\bnot\s)\b(only|just|merely|a mere|a whopping|as few as|barely)\s+(?=(?:RM|S\$)?\s?[0-9])/gi, '');
+    .replace(/(?<!\b(?:not|the)\s)\b(only|just|merely|a mere|a whopping|as few as|barely)\s+(?=(?:RM|S\$)?\s?[0-9]|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a single|a handful)\b)/gi, '');
 }
 
 // deno-lint-ignore no-explicit-any
