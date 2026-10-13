@@ -3914,6 +3914,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   picture Meta refuses leaves the row without, never the import. A refusal is one line under the step's head (`META_SAID`:
   not connected, token, not shared with the system user, busy, link gone),
   never Meta's words. Every figure is Meta's; none is AI's.
+- Pictures from Meta (2026-10-13; the user: "can the import from meta take
+  the creative image only"): beside Import from Meta on a draft's Ads step,
+  drawn while an ad holds Ad IDs; `meta-import` `creatives` reads, for the
+  report's own rows (three a call), the creative of the first Ad ID in an ad
+  account the client links (the image, a link's or carousel's picture, a
+  video's cover, its preferred frame, then the thumbnail at 1080), never a
+  preview of the ad and never a figure. It asks first, a tick replacing the
+  pictures already held; only `thumb_data` is written, an ad left without
+  is counted in one line, filed `From Meta: n pictures added` / `replaced`,
+  and Undo puts each earlier picture back.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
     margin; no Methodology page. Page titles and the commentary's block
