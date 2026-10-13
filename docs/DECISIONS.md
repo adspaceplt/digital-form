@@ -2883,3 +2883,9 @@ tells the team it is ready for a Letter of Offer.
   the version alone. Built as a mark on the file and its foot only; the
   version itself is stored and published without it.
 
+### 2026-10-13 · Wording edited point by point
+- Reported with a screenshot of the Terms of Service in one box of lines: "so
+  ugly and untidy unstructured". A block now opens as the card prints it:
+  numbered points, a table's rows under its columns, or one sentence. The
+  stored value is unchanged (one point a line, `|` between columns).
+

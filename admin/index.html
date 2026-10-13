@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261013a">
+<link rel="stylesheet" href="/css/portal.css?v=20261013b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4598,6 +4598,27 @@
           </div>
         </div>
       </div>
+      <!-- A block of the rate card's words (2026-10-13): a list edited point
+           by point, a table a row at a time under its columns, never one box
+           of lines (the user: "so ugly and untidy unstructured"). -->
+      <div class="sheet" id="rcwBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwTitle">
+          <div class="sheet-head">
+            <h3 id="rcwTitle">Wording</h3>
+            <button class="iconbtn" id="rcwClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
+            <div class="rcw-head" id="rcwHead" hidden></div>
+            <div class="rcw-rows" id="rcwRows"></div>
+            <div class="rcw-add"><button class="btn btn-sm" id="rcwAdd" type="button">Add point</button></div>
+            <div class="msg" id="rcwMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="rcwSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="rcwCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
       <!-- Rate card versions (2026-10-13): the card is edited as a draft and
            goes live as a numbered version; the line says which is live and
            what is not yet published. -->
@@ -5216,7 +5237,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/reports.js?v=20261013e"></script>
 <script src="/js/register.js?v=20261012a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261013f"></script>
+<script src="/js/crm.js?v=20261013g"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261012q"></script>
 <script src="/js/namecard.js?v=20261009s"></script>

@@ -4760,24 +4760,127 @@
       }));
     });
   }
+  /* A block of the card's words, edited as the card prints it: a list point
+     by point (numbered, each its own field, moved up or removed), a table a
+     row at a time under its columns (the label names them: "Tiers (Tier |
+     Followers | Indicative Talent Fee)"), a sentence as one field. Nothing is
+     typed as a box of lines (the user, 2026-10-13: "so ugly and untidy
+     unstructured"). Saved as the lines the PDF reads. */
+  var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>';
+  var CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var rcw = null;
+  function wordsShape(b) {
+    var m = /\(([^)]*\|[^)]*)\)\s*$/.exec(b.label || '');
+    var lines = String(b.value || '').split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (m) return { kind: 'cols', cols: m[1].split('|').map(function (x) { return x.trim(); }), fixed: lines.length < 2 && !/Tiers|Formats|Timeline/.test(b.label) };
+    if (lines.length > 1 || /Included|Note|Terms|Opening/.test(b.label)) return { kind: 'list' };
+    return { kind: 'one' };
+  }
   function editWords(b) {
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-    var many = /\n/.test(b.value || '') || /Included|Note|Terms|Formats|Timeline|Tiers \(|Opening/.test(b.label);
-    window.ADspaceConfirm.ask({
-      title: b.label, go: 'Save', wait: true,
-      field: { label: many ? 'One point a line' : 'Words', value: b.value || '', rows: many ? 8 : undefined, need: 'Words are required.' }
-    }, function (v) {
-      return db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
-        if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
-        if (r.data && r.data.error) return r.data.error === 'denied' ? 'Changing the wording needs Services at Full Access.'
-          : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.';
-        b.value = String(v).trim();
-        paintServicesPage();
-        msg('svcListMsg', 'Saved.', 'ok');
-        return '';
+    var shape = wordsShape(b);
+    rcw = { b: b, shape: shape };
+    $('rcwTitle').textContent = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
+    var head = $('rcwHead');
+    head.hidden = shape.kind !== 'cols';
+    head.classList.toggle('is-fixed', !!shape.fixed);
+    head.style.setProperty('--n', shape.cols ? shape.cols.length : 1);
+    head.innerHTML = shape.kind === 'cols' ? shape.cols.map(function (c) { return '<span class="field-label">' + esc(c) + '</span>'; }).join('') : '';
+    $('rcwRows').innerHTML = '';
+    var lines = String(b.value || '').split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (shape.kind === 'one') lines = [String(b.value || '').trim()];
+    if (!lines.length) lines = [''];
+    lines.forEach(function (l) { rcwRow(l); });
+    var add = $('rcwAdd');
+    add.parentNode.hidden = shape.kind === 'one' || (shape.kind === 'cols' && shape.fixed);
+    add.textContent = shape.kind === 'cols' ? 'Add row' : 'Add point';
+    if (window.ADspaceActs && window.ADspaceActs.mark) window.ADspaceActs.mark(add);
+    msg('rcwMsg', '', '');
+    rcwNumber();
+    openSheet('rcwBox');
+  }
+  function rcwRow(line) {
+    var sh = rcw.shape, box = $('rcwRows');
+    var row = document.createElement('div');
+    row.className = 'rcw-pt' + (sh.kind === 'cols' ? ' is-cols' : '') + (sh.kind === 'one' ? ' is-one' : '');
+    var cells = sh.kind === 'cols' ? String(line).split('|').map(function (x) { return x.trim(); }) : [line];
+    var fields = sh.kind === 'cols'
+      ? '<span class="rcw-cols" style="--n:' + sh.cols.length + '">' + sh.cols.map(function (c, i) {
+          return '<span class="rcw-cell"><span class="field-label rcw-cl">' + esc(c) + '</span>' +
+            '<textarea class="input" rows="1" data-oneline aria-label="' + esc(c) + '">' + esc(cells[i] || '') + '</textarea></span>';
+        }).join('') + '</span>'
+      : '<textarea class="input" rows="1" data-oneline aria-label="' + (sh.kind === 'one' ? 'Words' : 'Point') + '">' + esc(cells[0] || '') + '</textarea>';
+    var fixed = sh.kind === 'one' || (sh.kind === 'cols' && sh.fixed);
+    row.innerHTML = (sh.kind === 'list' ? '<span class="rcw-no"></span>' : sh.kind === 'cols' && !fixed ? '<span class="rcw-no rcw-rowno"></span>' : '') + fields +
+      (fixed ? '' : '<span class="rcw-acts"><button class="iconbtn" data-a="up" type="button">' + UP + '</button>' +
+        '<button class="iconbtn" data-a="x" type="button">' + CROSS + '</button></span>');
+    box.appendChild(row);
+    if (!fixed) {
+      row.querySelector('[data-a="up"]').addEventListener('click', function () {
+        var prev = row.previousElementSibling;
+        if (prev) { box.insertBefore(row, prev); rcwNumber(); row.querySelector('[data-a="up"]').focus(); }
       });
+      row.querySelector('[data-a="x"]').addEventListener('click', function () {
+        var next = row.nextElementSibling || row.previousElementSibling;
+        box.removeChild(row);
+        if (!box.children.length) rcwRow('');
+        rcwNumber();
+        var f = (next && next.parentNode ? next : box.lastElementChild).querySelector('textarea');
+        if (f) f.focus();
+      });
+    }
+    Array.prototype.forEach.call(row.querySelectorAll('textarea'), function (t) {
+      if (window.ADspaceGrow) window.ADspaceGrow.fit(t);
+    });
+    return row;
+  }
+  function rcwNumber() {
+    var rows = $('rcwRows').children, word = rcw.shape.kind === 'cols' ? 'row' : 'point';
+    Array.prototype.forEach.call(rows, function (r, i) {
+      var no = r.querySelector('.rcw-no');
+      if (no) no.textContent = rcw.shape.kind === 'cols' ? 'Row ' + (i + 1) : (i + 1) + '.';
+      var up = r.querySelector('[data-a="up"]'), x = r.querySelector('[data-a="x"]');
+      if (up) { up.classList.toggle('is-first', i === 0); up.disabled = i === 0; up.setAttribute('aria-label', 'Move ' + word + ' ' + (i + 1) + ' up'); }
+      if (x) x.setAttribute('aria-label', 'Remove ' + word + ' ' + (i + 1));
     });
   }
+  function rcwValue() {
+    var sh = rcw.shape, out = [];
+    Array.prototype.forEach.call($('rcwRows').children, function (r) {
+      var vals = Array.prototype.map.call(r.querySelectorAll('textarea'), function (t) { return t.value.replace(/\s+/g, ' ').trim(); });
+      if (sh.kind === 'cols') { if (vals.some(Boolean)) out.push(vals.join(' | ')); }
+      else if (vals[0]) out.push(vals[0]);
+    });
+    return out.join('\n');
+  }
+  function rcwSave() {
+    var b = rcw.b, v = rcwValue(), btn = $('rcwSave');
+    if (!v) { msg('rcwMsg', 'Words are required.', 'err'); var f = $('rcwRows').querySelector('textarea'); if (f) f.focus(); return; }
+    if (v === String(b.value || '').trim()) { shutSheet('rcwBox'); return; }
+    btn.disabled = true;
+    db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
+      btn.disabled = false;
+      var no = r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+        : r.data && r.data.error ? (r.data.error === 'denied' ? 'Changing the wording needs Services at Full Access.'
+          : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.') : '';
+      if (no) { msg('rcwMsg', no, 'err'); return; }
+      b.value = v;
+      if (window.ADspaceSheet) window.ADspaceSheet.clean();
+      shutSheet('rcwBox');
+      paintServicesPage();
+      msg('svcListMsg', 'Saved.', 'ok');
+    }).catch(function () { btn.disabled = false; msg('rcwMsg', 'Not saved. Please try again.', 'err'); });
+  }
+  (function () {
+    if (!$('rcwBox')) return;
+    $('rcwAdd').addEventListener('click', function () {
+      var row = rcwRow(''); rcwNumber();
+      var f = row.querySelector('textarea'); if (f) f.focus();
+    });
+    $('rcwSave').addEventListener('click', rcwSave);
+    $('rcwCancel').addEventListener('click', function () { shutSheet('rcwBox'); });
+    sheetClose('rcwClose', 'rcwCancel');
+  })();
 
   /* Every version published, newest first; the live one marked. */
   function paintVersions() {
