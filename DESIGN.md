@@ -489,7 +489,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     moved to) keeps its corners. Round chooses, rectangular acts. A small
     select (`select-sm`) makes a small segment (`.seg.is-sm`): the small
     control's height and 12.5px type, options as wide as their words, the
-    height of the small button it sits with;
+    height of the small button it sits with. One whose words do not fit
+    one line (four on a phone) is separate pills, two across and 8px
+    apart, each tonal, the chosen the ink fill (`.seg.is-wrap`), and one
+    still cut stacks (`is-stack`), never one block of four;
   - an `.acttab` outside a strip: the ink fill.
 - A ticked row's fill must not cost a control its edge (an untinted select on
   a ticked row takes the mute ink edge).

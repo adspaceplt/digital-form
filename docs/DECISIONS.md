@@ -2889,3 +2889,13 @@ tells the team it is ready for a Letter of Offer.
   numbered points, a table's rows under its columns, or one sentence. The
   stored value is unchanged (one point a line, `|` between columns).
 
+
+### 2026-10-13 · A wrapped segment is separate pills
+- Reported with a photograph of Apple's in-store pricing choices: "your
+  rounded pill when four in a row on mobile looks 2x2 stick together". A
+  segment `js/form.js` wraps (its words cut on one line) had kept one track,
+  so four options read as one grey block. It is now four pills 8px apart,
+  each on the tonal ground, the chosen the ink fill as Apple draws it (and as
+  a chosen `.acttab` outside a strip already was); the thumb still slides.
+  One still cut at two across (two long options at 320) stacks. A segment
+  that fits one line is unchanged.
