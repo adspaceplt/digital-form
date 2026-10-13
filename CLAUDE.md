@@ -167,7 +167,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage, ratecard |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
@@ -3994,6 +3994,26 @@ Each line is a rule that broke once. Its reason is in the archive.
   says how many.
 - The schema seeds the whole card once, into an empty table, and `detail` only
   where it is null. A new service is added on the page.
+- Versions (`2026-10-13-rate-card-versions.sql`; the user, 2026-10-13: the
+  card "should run based on versioning"): the lines and the card's words
+  (`rate_card_text`, a block a key, changed only by `rate_card_text_save`)
+  are a draft; Publish (`rate_card_publish(p_version, p_valid_until,
+  p_note)`, Services Full Access; `bad-version`, `version-taken`,
+  `bad-date`, `no-change`; filed `service.published`) keeps the lines, the
+  words, SST and the term percentages whole in `rate_card_versions`, and
+  `rate_card_current()` answers the latest. A client's line, a quote and the
+  export are priced from the live version, never the draft; with none
+  published, the card as it stands. The page: the version line (Live
+  v.{n} · valid until, `n changes not published`, Publish), then Rate card,
+  Wording, Versions (`tab=`); a line or block the draft changed reads
+  Changed (or New). A line the live version still offers is not deleted.
+- What a quote reads of a line is `services.spec` (`service_spec_ok`), set in
+  the line's sheet under In quotes: a plan (letter, with or without ads,
+  platforms, contents a month, its content options, the ad budget it
+  covers, Best for), a platform's management fee, Meta advertising and an
+  ads booster (the budget each covers), translation (an added language), a
+  content format, a verification's own fee, a KOC package's creators, the
+  KOL management fee's tiers, an add-on's group on the card.
 
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at

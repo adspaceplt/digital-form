@@ -2790,3 +2790,21 @@ the page reads the client's links once, `st.metaLinks`, and draws Pictures
 from Meta from them), so Meta checks stays off and nothing waits on the
 audit. Making the audit advisory (B) or retiring it (C) are left for later.
 
+### 2026-10-13 · Services: the rate card goes live by version
+The user asked for a logic-based Services section: a client-facing
+quotation portal, a rate card export in the rate card's own format, and a
+quote builder on a client's Services (proposal accepted in five releases).
+Their answers: rednote and LinkedIn in a plan add the difference over the
+plan's platform; an extra content in a plan is priced at the plan's own
+average (to be confirmed with figures); a plan without ads starts ads with
+Meta advertising, then the booster by budget; the booster is +RM 400 to RM
+8,000, +RM 800 to RM 14,000, +RM 1,200 to RM 20,000 on top of what a plan
+covers, one budget shared across Meta and TikTok; KOC II and KOL are on
+request; quotes in RM, S$ converted then marked up by hand; the export
+keeps FOR INTERNAL USE. Release 1: the card is a draft that goes live as a
+numbered version (`rate_card_versions`, seeded v.2.0.6 valid until 31 Dec
+2026, the card the user uploaded), so the export and the quotation site
+never show a half-edited price; the card's own words are blocks seeded
+from that PDF; each line says what a quote reads of it (`services.spec`);
+a client's new line takes the live version's price.
+

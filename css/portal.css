@@ -4784,6 +4784,16 @@ body > .shell { width: 100%; }
 .cat-row.crm-head > .svc-unit { color: inherit; }
 /* On quote is not an amount, so it does not pretend to be one. */
 .cat-row > .svc-rate .muted { font-variant-numeric: normal; }
+/* Rate card versions (2026-10-13): which version is live, and what the
+   draft holds that it does not, with Publish at the line's right edge. */
+.svc-live {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 8px 16px; margin: 0 0 12px; font-size: 13px; color: var(--ink-mute); min-height: var(--ctl-h-sm);
+}
+.svc-live b { color: var(--ink); font-weight: 600; }
+.svc-live-now { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.svc-live-acts { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; }
+.svctabs { margin-bottom: 12px; }
 /* A creator is a person with a fee, on the same row shape as everything else. */
 /* Creator · Profiles · Campaigns · Fee · ⋯ — a table with columns, because a
    list whose every value is stacked against the left margin has to be read

@@ -3570,7 +3570,6 @@
       then(catalog);
     }, function () { catalog = []; then(catalog); });
   }
-  function svcById(slug) { return (catalog || []).filter(function (s) { return s.slug === slug; })[0]; }
   /* qty × the billed rate × months. A one-off line has one month. The billed
      rate is the catalogue rate carrying its term adjustment, worked out once
      in money.js so this, the letter and the client's page cannot disagree. */
@@ -3799,9 +3798,20 @@
   };
 
   var editingService = null;
+  /* What a client's line is priced from: the live version of the rate card
+     (2026-10-13), never the draft somebody is still editing. A line the
+     draft no longer holds is not offered (a client's line names it). With
+     no version published, the card as it stands. */
+  function pickList() {
+    if (!live) return catalog || [];
+    var have = {};
+    (catalog || []).forEach(function (s) { have[s.slug] = true; });
+    return (live.snapshot.services || []).filter(function (s) { return have[s.slug]; });
+  }
+  function pickById(slug) { return pickList().filter(function (s) { return s.slug === slug; })[0]; }
   function fillServicePick() {
     var groups = {};
-    (catalog || []).filter(function (s) { return s.active !== false; }).forEach(function (s) {
+    pickList().filter(function (s) { return s.active !== false; }).forEach(function (s) {
       (groups[s.category] = groups[s.category] || []).push(s);
     });
     var cats = CATS.concat(Object.keys(groups).filter(function (k) { return CATS.indexOf(k) < 0; }));
@@ -3814,7 +3824,7 @@
   }
   function syncPick(fill) {
     var slug = $('svPick').value;
-    var s = svcById(slug);
+    var s = pickById(slug);
     $('svLabelRow').hidden = slug !== 'custom';
     /* Prefilled, not fixed: the catalogue seeds the price, the term and what
        the package includes, and the line keeps its own copy from there. */
@@ -3861,11 +3871,12 @@
   $('svPct').addEventListener('input', function () { syncAdjust(true); });
   function openService(l) {
     editingService = l || null;
-    loadCatalog(function () {
+    liveRead = false;
+    loadCatalog(function () { loadLive(function () {
       fillServicePick();
       $('crmServiceTitle').textContent = l ? 'Edit service' : 'New service';
       var first = $('svPick').options[0] ? $('svPick').options[0].value : 'custom';
-      $('svPick').value = l ? (l.service_slug && svcById(l.service_slug) ? l.service_slug : 'custom') : first;
+      $('svPick').value = l ? (l.service_slug && pickById(l.service_slug) ? l.service_slug : 'custom') : first;
       $('svLabel').value = l ? (l.label || '') : '';
       $('svQty').value = l ? Number(l.qty || 1) : 1;
       $('svRate').value = l ? Number(l.rate || 0) : '';
@@ -3898,7 +3909,7 @@
       syncPick(!l);
       msg('svMsg', '');
       openSheet('crmServiceBox');
-    });
+    }); });
   }
   function shutService() { shutSheet('crmServiceBox'); editingService = null; }
   $('svPick').addEventListener('change', function () {
@@ -3909,7 +3920,7 @@
   $('svCancel').addEventListener('click', shutService);
   $('svSave').addEventListener('click', function () {
     var slug = $('svPick').value;
-    var s = svcById(slug);
+    var s = pickById(slug);
     var label = slug === 'custom' ? val('svLabel') : (s ? s.name : '');
     if (!label) { msg('svMsg', 'A name is required.', 'err'); $('svLabel').focus(); return; }
     var row = {
@@ -4521,13 +4532,394 @@
   var svcFind = '';
 
   function enterServices() {
-    catalog = null;
+    catalog = null; live = null; liveRead = false; svcText = null; svcVers = null;
+    var t = new URLSearchParams(location.search).get('tab');
+    svcTab = SVC_TABS.some(function (x) { return x[0] === t; }) ? t : 'card';
     $('svcAdd').hidden = !maySvc();
     $('svcTax').hidden = !window.ADspaceAdmin.may('team.settings', 'work');
     shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
-    loadCatalog(paintCatalog);
+    $('svcLive').hidden = true;
+    loadCatalog(function () {
+      loadLive(function () {
+        db.from('rate_card_text').select('key, label, page, position, value').order('position').then(function (r) {
+          /* A database from before the versions has no words table: the card
+             is drawn as it always was, with no strip and no version line. */
+          svcText = r.error ? null : (r.data || []);
+          paintServicesPage();
+        }).catch(function () { svcText = null; paintServicesPage(); });
+      });
+    });
+  }
+
+  // ---- Rate card versions (2026-10-13) --------------------------------------
+  /* The card is edited as a draft and goes live as a numbered version
+     (rate_card_publish); a quote, a client's line and the export read the
+     version, never the draft (the user, 2026-10-13: "every version changed
+     would proceed proper updates to the site and export"). */
+  var SVC_TABS = [['card', 'Rate card'], ['words', 'Wording'], ['versions', 'Versions']];
+  var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, words: {}, n: 0 };
+  function loadLive(then) {
+    if (liveRead) { then(live); return; }
+    db.rpc('rate_card_current').then(function (r) {
+      liveRead = true;
+      live = !r.error && r.data && r.data.snapshot ? r.data : null;
+      then(live);
+    }).catch(function () { liveRead = true; live = null; then(null); });
+  }
+  function svcState() { return { tab: svcTab === 'card' ? '' : svcTab }; }
+  /* One reading of a value for comparing the draft with the live version:
+     keys in order, numbers as numbers, an empty value as nothing. */
+  function canon(v) {
+    if (v == null || v === '') return 'null';
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (typeof v === 'object') return '{' + Object.keys(v).sort().map(function (k) { return k + ':' + canon(v[k]); }).join(',') + '}';
+    if (typeof v === 'number' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v))) return String(Number(v));
+    return JSON.stringify(v);
+  }
+  var SVC_CMP = ['category', 'name', 'rate', 'unit', 'position', 'active', 'note', 'detail', 'min_months', 'spec'];
+  /* What the draft holds that the live version does not: each line New or
+     Changed, a line gone, each block of words changed. */
+  function svcDiff() {
+    var out = { lines: {}, gone: 0, words: {}, n: 0 };
+    if (!live) return out;
+    var was = {};
+    (live.snapshot.services || []).forEach(function (x) { was[x.slug] = x; });
+    (catalog || []).forEach(function (s) {
+      var w = was[s.slug];
+      if (!w) { out.lines[s.slug] = 'New'; out.n++; return; }
+      if (SVC_CMP.some(function (k) { return canon(s[k]) !== canon(w[k]); })) { out.lines[s.slug] = 'Changed'; out.n++; }
+      delete was[s.slug];
+    });
+    out.gone = Object.keys(was).length; out.n += out.gone;
+    var said = live.snapshot.text || {};
+    (svcText || []).forEach(function (b) {
+      if (canon(b.value) !== canon(said[b.key])) { out.words[b.key] = 'Changed'; out.n++; }
+    });
+    return out;
+  }
+  function paintServicesPage() {
+    var versioned = svcText !== null;
+    var strip = $('svcTabs');
+    strip.hidden = !versioned;
+    if (!versioned) svcTab = 'card';
+    if (versioned) {
+      strip.innerHTML = SVC_TABS.map(function (t) {
+        var on = t[0] === svcTab;
+        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-tab="' + t[0] + '" id="svcTab-' + t[0] + '"' +
+          ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '"><span>' + esc(t[1]) + '</span></button>';
+      }).join('');
+      if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
+    }
+    $('svcList').hidden = svcTab !== 'card';
+    $('svcWords').hidden = svcTab !== 'words';
+    $('svcVersions').hidden = svcTab !== 'versions';
+    var find = $('svcFind') && $('svcFind').closest('.cmdbar-find');
+    if (find) find.hidden = svcTab !== 'card';
+    $('svcCount').hidden = svcTab !== 'card';
+    diffNow = svcDiff();
+    paintLiveLine();
+    if (svcTab === 'card') paintCatalog();
+    if (svcTab === 'words') paintWords();
+    if (svcTab === 'versions') paintVersions();
+  }
+  if ($('svcTabs')) {
+    $('svcTabs').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.tab');
+      if (!b || b.getAttribute('data-tab') === svcTab) return;
+      svcTab = b.getAttribute('data-tab');
+      msg('svcListMsg', '');
+      paintServicesPage();
+      setUrl();
+    });
+    $('svcTabs').addEventListener('keydown', function (e) {
+      var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+      if (to === null || !tabs[to]) return;
+      e.preventDefault();
+      tabs[to].click(); tabs[to].focus();
+    });
+  }
+  function paintLiveLine() {
+    var box = $('svcLive');
+    if (svcText === null) { box.hidden = true; return; }
+    var d = diffNow;
+    box.hidden = false;
+    box.innerHTML = '<span class="svc-live-now">' + (live
+        ? '<span class="chip-state is-live">Live</span> <b>v.' + esc(live.version) + '</b>' +
+          (live.valid_until ? ' · valid until ' + esc(niceDate(live.valid_until)) : '')
+        : '<span class="chip-state is-off">Not published</span>') + '</span>' +
+      '<span class="svc-live-acts">' +
+        (live && d.n ? '<span class="svc-live-n">' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published</span>' : '') +
+        (maySvc() && (d.n || !live)
+          ? '<button class="btn btn-sm btn-primary" id="svcPublish" type="button" data-need="services:manage">' + PLANE + 'Publish</button>' : '') +
+      '</span>';
+    var pb = $('svcPublish');
+    if (pb) pb.addEventListener('click', function () { publishCard(pb, d); });
+  }
+  var PLANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>';
+  function nextVersion(v) {
+    var p = String(v || '').split('.').map(Number);
+    if (!p.length || p.some(isNaN)) return '';
+    p[p.length - 1] += 1;
+    return p.join('.');
+  }
+  var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
+    'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
+    'no-change': 'Nothing has changed since the live version.', 'too-long': 'The note is too long.',
+    denied: 'Publishing needs Services at Full Access.' };
+  function publishCard(btn, d) {
+    var parts = [];
+    var lines = Object.keys(d.lines).length, words = Object.keys(d.words).length;
+    if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's'));
+    if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
+    if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording');
+    window.ADspaceConfirm.ask({
+      title: 'Publish the rate card',
+      body: (parts.length ? parts.join(', ') + ' change. ' : '') +
+        'Quotes, client service lines and the export use this version from now on.',
+      go: 'Publish', wait: true,
+      fields: [
+        { name: 'v', label: 'Version', value: live ? nextVersion(live.version) : '2.0.6', placeholder: '2.0.7', type: 'text',
+          need: 'A version is required.' },
+        { name: 'until', label: 'Valid until', type: 'date', value: live && live.valid_until ? String(live.valid_until).slice(0, 10) : '', required: false },
+        { name: 'note', label: 'Note', placeholder: 'Optional', required: false }
+      ]
+    }, function (v) {
+      return db.rpc('rate_card_publish', { p_version: v.v, p_valid_until: v.until || null, p_note: v.note || null }).then(function (r) {
+        if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+        if (r.data && r.data.error) return PUB_SAID[r.data.error] || 'Not published.';
+        liveRead = false; svcVers = null;
+        loadLive(function () { paintServicesPage(); msg('svcListMsg', 'Published v.' + v.v + '.', 'ok'); });
+        return '';
+      });
+    });
+  }
+
+  /* The card's own words, a block a key, grouped by the page they print on. */
+  function paintWords() {
+    var box = $('svcWords');
+    box.innerHTML = '';
+    var GRP = window.ADspaceGroup;
+    var d = diffNow;
+    var pages = [];
+    (svcText || []).forEach(function (b) { if (pages.indexOf(b.page) < 0) pages.push(b.page); });
+    if (!pages.length) { box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No entries.</b></div></div>'; return; }
+    pages.forEach(function (pg) {
+      var blocks = svcText.filter(function (b) { return b.page === pg; });
+      var key = 'words-' + String(pg).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      box.appendChild(GRP.section({
+        route: 'services', key: key, name: pg, count: blocks.length,
+        shut: GRP.shut('services', key, false),
+        table: function () {
+          var table = GRP.table('svc-row cat-row rcw-row', ['Wording', { text: '', cls: 'svc-rate' }, { text: '', cls: 'svc-unit' }, '']);
+          blocks.forEach(function (b) {
+            var row = document.createElement('div');
+            row.className = 'svc-row cat-row rcw-row';
+            var first = String(b.value || '').split('\n')[0];
+            row.innerHTML = '<span class="svc-name"><b>' + esc(b.label) + '</b><small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
+              '<span class="svc-rate">' + (d.words[b.key] ? '<span class="chip">' + d.words[b.key] + '</span>' : '') + '</span>' +
+              '<span class="svc-unit"></span>' +
+              '<span class="team-act">' + (maySvc()
+                ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+                  '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button></div>'
+                : '') + '</span>';
+            if (maySvc()) {
+              wireMenu(row);
+              row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
+            }
+            table.appendChild(row);
+          });
+          return table;
+        }
+      }));
+    });
+  }
+  function editWords(b) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    var many = /\n/.test(b.value || '') || /Included|Note|Terms|Formats|Timeline|Tiers \(|Opening/.test(b.label);
+    window.ADspaceConfirm.ask({
+      title: b.label, go: 'Save', wait: true,
+      field: { label: many ? 'One point a line' : 'Words', value: b.value || '', rows: many ? 8 : undefined, need: 'Words are required.' }
+    }, function (v) {
+      return db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
+        if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+        if (r.data && r.data.error) return r.data.error === 'denied' ? 'Changing the wording needs Services at Full Access.'
+          : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.';
+        b.value = String(v).trim();
+        paintServicesPage();
+        msg('svcListMsg', 'Saved.', 'ok');
+        return '';
+      });
+    });
+  }
+
+  /* Every version published, newest first; the live one marked. */
+  function paintVersions() {
+    var box = $('svcVersions');
+    if (!svcVers) {
+      skeleton(box, 3);
+      db.from('rate_card_versions').select('id, version, valid_until, note, published_at, published_by')
+        .order('published_at', { ascending: false }).then(function (r) {
+          if (r.error) {
+            window.ADspaceState.failLine(box, 'Versions', r.error.message, function () { svcVers = null; paintVersions(); });
+            return;
+          }
+          svcVers = r.data || [];
+          paintVersions();
+        });
+      return;
+    }
+    box.innerHTML = '';
+    var GRP = window.ADspaceGroup;
+    box.appendChild(GRP.section({
+      route: 'services', key: 'versions', name: 'Versions', count: svcVers.length, shut: false,
+      table: function () {
+        var table = GRP.table('svc-row cat-row rcv-row', ['Version', { text: 'State', cls: 'svc-rate' }, { text: 'Valid until', cls: 'svc-unit' }, '']);
+        if (!svcVers.length) {
+          var e = document.createElement('div');
+          e.className = 'emptyline';
+          e.innerHTML = '<b>No entries.</b>';
+          table.appendChild(e);
+        }
+        svcVers.forEach(function (v, i) {
+          var row = document.createElement('div');
+          row.className = 'svc-row cat-row rcv-row';
+          row.innerHTML = '<span class="svc-name"><b>v.' + esc(v.version) + '</b><small>' +
+              esc(niceDate(String(v.published_at).slice(0, 10)) + (v.published_by ? ' · ' + v.published_by : '') + (v.note ? ' · ' + v.note : '')) + '</small></span>' +
+            '<span class="svc-rate">' + (i === 0 ? '<span class="chip-state is-live">Live</span>' : '<span class="chip-state is-off">Replaced</span>') + '</span>' +
+            '<span class="svc-unit">' + (v.valid_until ? esc(niceDate(v.valid_until)) : '<span class="muted">—</span>') + '</span>' +
+            '<span class="team-act"></span>';
+          table.appendChild(row);
+        });
+        return table;
+      }
+    }));
+  }
+
+  /* A line's quote details read as words: in the change log and the row. */
+  function specWord(sp) {
+    if (!sp || !sp.role) return '';
+    var r = sp.role;
+    if (r === 'plan') return 'Plan ' + sp.plan + ' · ' + sp.platforms + ' platform' + (sp.platforms == 1 ? '' : 's') + ' · ' +
+      sp.contents + ' contents · ' + (sp.ads ? 'with ads to RM ' + Number(sp.ad_budget || 0).toLocaleString('en-MY') : 'without ads') +
+      ' · ' + mixWord(sp.mix);
+    if (r === 'platform') return 'Platform: ' + ({ meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' })[sp.platform];
+    if (r === 'ads') return 'Advertising to RM ' + Number(sp.budget).toLocaleString('en-MY');
+    if (r === 'booster') return 'Ads booster to RM ' + Number(sp.budget).toLocaleString('en-MY');
+    if (r === 'language') return 'Added language';
+    if (r === 'content') return 'Content: ' + sp.kind;
+    if (r === 'verify') return 'Verification' + (sp.fee ? ' · ' + sp.fee : '');
+    if (r === 'koc') return 'KOC package' + (sp.creators ? ' · ' + sp.creators + ' creators' : '');
+    if (r === 'kol') return 'KOL management fee · ' + (sp.tiers || []).length + ' tiers';
+    if (r === 'addon') return 'Add-on' + (sp.group ? ' · ' + sp.group : '');
+    return r;
+  }
+  function mixWord(mix) {
+    return (mix || []).map(function (m) {
+      var p = [];
+      if (m.graphic) p.push(m.graphic + ' graphic' + (m.graphic == 1 ? '' : 's'));
+      if (m.reel) p.push(m.reel + ' reel' + (m.reel == 1 ? '' : 's'));
+      return p.join(' + ');
+    }).join('\n');
+  }
+  function mixOf(text) {
+    var out = [], bad = false;
+    String(text || '').split('\n').forEach(function (line) {
+      line = line.trim();
+      if (!line) return;
+      var m = {}, any = false;
+      line.split(/\+|,|\band\b/i).forEach(function (part) {
+        part = part.trim();
+        if (!part) return;
+        var x = /^(\d+)\s*x?\s*(graphics?|reels?)\b/i.exec(part);
+        if (!x || Number(x[1]) < 1) { bad = true; return; }
+        m[/^g/i.test(x[2]) ? 'graphic' : 'reel'] = Number(x[1]);
+        any = true;
+      });
+      if (any) out.push(m);
+    });
+    return bad ? null : out;
+  }
+  function tiersWord(t) {
+    return (t || []).map(function (x) { return (x.upto == null ? 'Above' : x.upto) + ' | ' + x.pct + ' | ' + x.min; }).join('\n');
+  }
+  function tiersOf(text) {
+    var out = [], bad = false;
+    String(text || '').split('\n').forEach(function (line) {
+      if (!line.trim()) return;
+      var p = line.split('|').map(function (x) { return x.trim().replace(/[RM,%\s]/gi, ''); });
+      var up = /^above$/i.test(p[0]) ? null : Number(p[0]);
+      if (p.length !== 3 || (up !== null && !(up > 0)) || !(Number(p[1]) >= 0) || !(Number(p[2]) >= 0)) { bad = true; return; }
+      out.push({ upto: up, pct: Number(p[1]), min: Number(p[2]) });
+    });
+    return bad ? null : out;
+  }
+  function syncRole() {
+    var role = $('svcRole').value;
+    Array.prototype.forEach.call($('svcSpecSec').querySelectorAll('[data-role]'), function (el) {
+      el.hidden = !role || (' ' + el.getAttribute('data-role') + ' ').indexOf(' ' + role + ' ') < 0;
+    });
+    $('svcPlanBudgetWrap').hidden = $('svcAds').value !== 'yes';
+  }
+  $('svcRole').addEventListener('change', syncRole);
+  $('svcAds').addEventListener('change', syncRole);
+  function fillSpec(sp) {
+    sp = sp || {};
+    $('svcRole').value = sp.role || '';
+    $('svcPlatform').value = sp.platform || 'meta';
+    $('svcKind').value = sp.kind || 'graphic';
+    $('svcFee').value = sp.fee || '';
+    $('svcCreators').value = sp.creators || '';
+    $('svcGroup').value = sp.group || 'Revisions & Turnaround';
+    $('svcBudget').value = sp.budget || '';
+    $('svcPlan').value = sp.plan || '';
+    $('svcPlatforms').value = sp.platforms || '';
+    $('svcContents').value = sp.contents || '';
+    $('svcAds').value = sp.ads ? 'yes' : 'no';
+    $('svcPlanBudget').value = sp.ad_budget || '';
+    $('svcMix').value = mixWord(sp.mix);
+    $('svcBest').value = sp.best_for || '';
+    $('svcTiers').value = tiersWord(sp.tiers);
+    syncRole();
+  }
+  /* The spec the sheet states, or a refusal naming the field. */
+  function readSpec() {
+    var role = $('svcRole').value;
+    if (!role) return { spec: null };
+    var n = function (id) { var v = String(val(id) || '').trim(); return v === '' ? null : Number(v); };
+    var sp = { role: role };
+    if (role === 'plan') {
+      sp.plan = String(val('svcPlan') || '').trim().toUpperCase();
+      if (!/^[A-Z]$/.test(sp.plan)) return { err: 'The plan is one letter.', at: 'svcPlan' };
+      sp.ads = $('svcAds').value === 'yes';
+      sp.platforms = n('svcPlatforms');
+      if (!(sp.platforms >= 1 && sp.platforms <= 99 && sp.platforms % 1 === 0)) return { err: 'Platforms is required.', at: 'svcPlatforms' };
+      sp.contents = n('svcContents');
+      if (!(sp.contents >= 1 && sp.contents <= 99 && sp.contents % 1 === 0)) return { err: 'Contents a month is required.', at: 'svcContents' };
+      sp.mix = mixOf(val('svcMix'));
+      if (!sp.mix || !sp.mix.length || sp.mix.length > 3) return { err: 'Write each content option as 1 graphic + 3 reels, one a line, three at most.', at: 'svcMix' };
+      if (sp.ads) {
+        sp.ad_budget = n('svcPlanBudget');
+        if (!(sp.ad_budget > 0)) return { err: 'The ad budget covered is required.', at: 'svcPlanBudget' };
+      }
+      var best = String(val('svcBest') || '').trim();
+      if (best) sp.best_for = best;
+    } else if (role === 'platform') sp.platform = $('svcPlatform').value;
+    else if (role === 'ads' || role === 'booster') {
+      sp.budget = n('svcBudget');
+      if (!(sp.budget >= 1 && sp.budget % 1 === 0)) return { err: 'The ad budget covered is required.', at: 'svcBudget' };
+    } else if (role === 'content') sp.kind = $('svcKind').value;
+    else if (role === 'verify') { var fee = String(val('svcFee') || '').trim(); if (fee) sp.fee = fee; }
+    else if (role === 'koc') { var c = n('svcCreators'); if (c) sp.creators = c; }
+    else if (role === 'kol') {
+      sp.tiers = tiersOf(val('svcTiers'));
+      if (!sp.tiers || !sp.tiers.length) return { err: 'Write each tier as 3000 | 18 | 500, one a line.', at: 'svcTiers' };
+    } else if (role === 'addon' || role === 'language') sp.group = $('svcGroup').value;
+    return { spec: sp };
   }
 
   /* Loading is the shape of what is coming, not the word for it: a line of
@@ -4640,7 +5032,8 @@
        control taller than it. The row is the name and what it costs; Inactive
        is the exception, so that is what gets named. */
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
+      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
+        (diffNow.lines[s.slug] ? ' <span class="chip">' + diffNow.lines[s.slug] + '</span>' : '') + '</b>' +
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
@@ -4678,6 +5071,13 @@
      force. */
   function purgeSvc(s) {
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    /* A line the live version still offers is quoted from until the next
+       version goes live without it, and a client's line names it. */
+    var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
+    if (liveRow && liveRow.active !== false) {
+      msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
+      return;
+    }
     db.from('client_services').select('id').eq('service_slug', s.slug).is('archived_at', null).then(function (q) {
       if (q.error) { msg('svcListMsg', q.error.message, 'err'); return; }
       var n = (q.data || []).length;
@@ -4722,6 +5122,7 @@
     $('svcUnit').value = s ? (s.unit || '') : '';
     $('svcMin').value = s ? Math.max(1, Number(s.min_months || 1)) : 1;
     $('svcDetail').value = s ? (s.detail || '') : '';
+    fillSpec(s ? s.spec : null);
     msg('svcMsg', '');
     /* Nothing is focused when the sheet opens: on a phone a field taking
        focus raises the keyboard and zooms the page past the rest of the
@@ -4741,15 +5142,18 @@
   $('svcSave').addEventListener('click', function () {
     var name = val('svcName');
     if (!name) { msg('svcMsg', 'A name is required.', 'err'); $('svcName').focus(); return; }
+    var sp = readSpec();
+    if (sp.err) { msg('svcMsg', sp.err, 'err'); if ($(sp.at)) $(sp.at).focus(); return; }
     var row = { category: $('svcCat').value, name: name,
                 rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null,
-                min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null };
+                min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null, spec: sp.spec };
     var after = function (r) {
       if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('svcMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingSvc ? 'service.changed' : 'service.added', name, editingSvc
-        ? changed(editingSvc, row, [['category', 'Category'], ['name', 'Name'], ['rate', 'Rate'], ['unit', 'Unit'],
-            ['min_months', 'Minimum months'], ['detail', 'Inclusions']])
+        ? changed(Object.assign({}, editingSvc, { spec: specWord(editingSvc.spec) }), Object.assign({}, row, { spec: specWord(row.spec) }),
+            [['category', 'Category'], ['name', 'Name'], ['rate', 'Rate'], ['unit', 'Unit'],
+            ['min_months', 'Minimum months'], ['detail', 'Inclusions'], ['spec', 'In quotes']])
         : row.category);
       shutSheet('svcBox'); editingSvc = null;
       enterServices();
@@ -4824,7 +5228,8 @@
     staleH: staleH,
     // The rate card lives in this module because it is what a client's lines
     // are made of.
-    enterServices: enterServices
+    enterServices: enterServices,
+    svcState: svcState
   };
 
   function showList() {
