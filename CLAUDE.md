@@ -198,6 +198,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
+| `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -4007,6 +4008,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   v.{n} · valid until, `n changes not published`, Publish), then Rate card,
   Wording, Versions (`tab=`); a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
+- Download on the version line (`js/ratecardpdf.js`,
+  `ADspaceRateCardPdf.draw`; the user, 2026-10-13: the card in "their exact
+  format", FOR INTERNAL USE kept) draws the live version as the team's six
+  A4 pages, never stored: the cover, Ala Carté, Social Media Services,
+  KOC Programmes, KOL Programmes, Add-ons with the term commitment and the
+  Terms of Service, each table from the version's lines by `spec.role`, its
+  words and settings (`{valid until}` filled), the foot PRIVATE &
+  CONFIDENTIAL, the page count and `v.{version} exp. {YYYYMMDD}`; a line
+  set inactive, or one no page holds (additional content, on request), is
+  never printed. The Add-ons table opens on `addons_included`
+  (`2026-10-13-rate-card-included-revisions.sql`, Wording).
 - What a quote reads of a line is `services.spec` (`service_spec_ok`), set in
   the line's sheet under In quotes: a plan (letter, with or without ads,
   platforms, contents a month, its content options, the ad budget it

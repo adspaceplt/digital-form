@@ -2825,3 +2825,22 @@ contents are shared across the languages chosen at no charge; translation
 appear in another language. A quotation from the website files a Lead with
 its lines Enquired; Proceed with billing details moves them to To quote and
 tells the team it is ready for a Letter of Offer.
+
+### 2026-10-13 · The rate card downloads as the team's own card
+- Asked: the rate card exported in the team's exact format (the uploaded
+  "ADspace Rate Card & Packages" v.2.0.6, six pages), FOR INTERNAL USE kept;
+  additional content rates stay in the price list, on request, and are never
+  printed on the card (the user: "the PDF should look clean").
+- Built: `js/ratecardpdf.js` draws the live version in the browser from its
+  snapshot, so the file always matches what quotes and client lines are
+  priced from; the draft is never printed. Tables are worked out from each
+  line's `spec` (plans by letter, boosters by budget, KOC averages to the
+  RM 10 as the card prints them, KOL bands from the tiers, add-ons by their
+  group) and the card's words from `rate_card_text`.
+- The Add-ons table's first row (Included revisions · Included · 2 rounds
+  per asset) is no price line, so it became a block of wording; v.2.0.6, the
+  card as issued, took it once in its snapshot.
+- Line names print as the price list holds them (Static graphic, Minor
+  revision); the team renames a line in Services and publishes to change the
+  card.
+

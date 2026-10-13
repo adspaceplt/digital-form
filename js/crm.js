@@ -4653,12 +4653,34 @@
           (live.valid_until ? ' · valid until ' + esc(niceDate(live.valid_until)) : '')
         : '<span class="chip-state is-off">Not published</span>') + '</span>' +
       '<span class="svc-live-acts">' +
+        (live ? '<button class="btn btn-sm" id="svcCardPdf" type="button">Download</button>' : '') +
         (live && d.n ? '<span class="svc-live-n">' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published</span>' : '') +
         (maySvc() && (d.n || !live)
           ? '<button class="btn btn-sm btn-primary" id="svcPublish" type="button" data-need="services:manage">' + PLANE + 'Publish</button>' : '') +
       '</span>';
     var pb = $('svcPublish');
     if (pb) pb.addEventListener('click', function () { publishCard(pb, d); });
+    var dl = $('svcCardPdf');
+    if (dl) dl.addEventListener('click', function () { cardPdf(dl); });
+  }
+  /* The rate card as the team issues it, drawn from the live version and
+     saved under its own name (js/ratecardpdf.js). */
+  function cardPdf(btn) {
+    var docs = window.ADspaceDocs, tab = docs && docs.tabFor ? docs.tabFor() : null;
+    var m = $('svcLiveMsg');
+    btn.disabled = true;
+    if (m) { m.hidden = true; m.textContent = ''; }
+    Promise.resolve().then(function () {
+      if (!window.ADspaceRateCardPdf) throw new Error('The PDF tools are not loaded.');
+      return window.ADspaceRateCardPdf.draw(live);
+    }).then(function (blob) {
+      btn.disabled = false;
+      docs.save(blob, 'ADspace Rate Card v.' + live.version + '.pdf', tab);
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (docs && docs.shut) docs.shut(tab);
+      if (m) { m.hidden = false; m.className = 'msg err'; m.textContent = 'Not drawn. ' + ((e && e.message) || 'Please try again.'); }
+    });
   }
   var PLANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>';
   function nextVersion(v) {
