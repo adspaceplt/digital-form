@@ -5071,19 +5071,20 @@
      force. */
   function purgeSvc(s) {
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-    /* A line the live version still offers is quoted from until the next
-       version goes live without it, and a client's line names it. */
-    var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
-    if (liveRow && liveRow.active !== false) {
-      msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
-      return;
-    }
+
     db.from('client_services').select('id').eq('service_slug', s.slug).is('archived_at', null).then(function (q) {
       if (q.error) { msg('svcListMsg', q.error.message, 'err'); return; }
       var n = (q.data || []).length;
       if (n) {
         msg('svcListMsg', s.name + ' is on ' + n + ' client service line' + (n === 1 ? '' : 's') +
             '. Remove those lines first.', 'warn');
+        return;
+      }
+      /* A line the live version still offers is quoted from until the next
+         version goes live without it. */
+      var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
+      if (liveRow && liveRow.active !== false) {
+        msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
         return;
       }
       window.ADspaceConfirm.ask({
