@@ -2844,3 +2844,30 @@ tells the team it is ready for a Letter of Offer.
   revision); the team renames a line in Services and publishes to change the
   card.
 
+
+### 2026-10-13 · The quotation website, as approved in the mockups (not built yet)
+- Approved by the user on the canvas: a quotation is Pending approval until
+  the team approves it, and is valid for thirty days from that approval
+  (the user: "once they generated the quotation, it is not valid until
+  internal approves it"); its PDF carries PENDING APPROVAL until then.
+- Reference `ADP/QT{YYMM}-{Z}{NN}`: Z the brand's first letter (X where the
+  name does not start with one), NN counted per letter per month, so the
+  count of quotations a month is never shown.
+- Additional content is priced per plan by the whole-plan saving, rounded to
+  the RM 10 (A 280 / 630, B 240 / 540, C 240 / 540, D 260 / 580, E 230 /
+  500, F 220 / 490, graphic / reel), kept in the price list, on request,
+  never printed on the card.
+- Languages: the contents are shared across the languages ticked at no
+  charge; Translate every content charges RM 200 a content a language.
+- The details step: a WhatsApp number is required, Malaysia (60 then 1 and
+  eight or nine digits, or 60 then 7 and eight digits) or Singapore (65 and
+  eight digits), else "A valid Malaysia or Singapore registered WhatsApp
+  number is required."; a free email address is warned ("A work email
+  address is recommended."), never refused (the user: "we dont shun away
+  people whose company do not use customized business email address").
+- Request Letter of Offer files the billing, moves the lines to To quote and
+  tells the team; the Letter of Offer goes out on WhatsApp once approved,
+  through a new template with a document header that Meta must approve.
+- Totals read Monthly subtotal, Monthly excl. SST, SST 8%, Monthly incl.
+  SST; a whole term's total is in the PDF alone; amounts right aligned to
+  two decimals, a discount in brackets.
