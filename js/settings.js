@@ -89,7 +89,7 @@
     var pin = num('ai_price_in'), pout = num('ai_price_out');
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
-        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))]) },
+        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])) },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
         meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
           (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') }]);
@@ -255,7 +255,7 @@
     }
     if (a === 'tax') {
       ed({ title: 'Tax and terms', keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
-        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj']] });
+        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote']] });
       return;
     }
     if (a === 'due') {

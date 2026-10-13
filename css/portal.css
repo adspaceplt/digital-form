@@ -11876,3 +11876,95 @@ button.vs-row { cursor: pointer; }
 /* The Google Meet's ⋯ on its link row keeps the row a control's small
    height: its target overflows the row evenly. */
 .eng-meetlink .kmenu-btn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
+
+/* QUOTATIONS (2026-10-14, js/quotes.js): a client's quotations above its
+   service lines, and the Build quote sheet. */
+.qt-box > .viewhead { margin-top: 0; }
+.qt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.qt-row { grid-template-columns: minmax(0, 1fr) 140px 190px var(--ctl-h); }
+.qt-amt, .qt-state { display: flex; flex-direction: column; }
+.qt-amt small, .qt-state small { font-size: 12px; color: var(--ink-mute); font-weight: 400; }
+.qt-ref { font-variant-numeric: tabular-nums; }
+.is-narrow .qt-row { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act"; row-gap: 2px; align-items: start; }
+.is-narrow .qt-row.crm-head { display: none; }
+.is-narrow .qt-row > .qt-name { grid-area: name; }
+.is-narrow .qt-row > .qt-amt { grid-area: amt; text-align: right; }
+.is-narrow .qt-row > .qt-state { grid-area: state; align-items: flex-end; }
+.is-narrow .qt-row > .team-act { grid-area: act; }
+.qt-ovrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); align-items: start; }
+.qt-ovrow:first-child { border-top: 0; }
+.qt-ovrow .qt-name { display: flex; flex-direction: column; min-width: 0; }
+.qt-ovrow .qt-name small { font-size: 12.5px; color: var(--ink-mute); }
+.qt-ovend { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.qt-ovend b { font-weight: 600; }
+
+.sheet-card.formsheet.qb-card { width: min(780px, 100%); }
+.qb-for { margin: 0 0 16px; font-size: 13px; color: var(--ink-mute); }
+.tickrow { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.qb-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.qb-hint:empty { display: none; }
+.qb-table { margin-bottom: 0; }
+.qb-row { grid-template-columns: minmax(0, 1fr) 56px 110px 120px; }
+.qb-row > .svc-rate { text-align: right; font-variant-numeric: tabular-nums; }
+.qb-name { font-size: 13.5px; }
+.qb-name small { display: block; }
+.qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.qb-tot > div { display: flex; justify-content: space-between; gap: 16px; }
+.qb-tot dt { color: var(--ink-soft); }
+.qb-tot dd { margin: 0; }
+.qb-tot > .is-total { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 600; color: var(--ink); }
+.qb-tot > .is-total dt { color: var(--ink); }
+.qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.qb-calc { display: none; }
+@media (max-width: 560px) {
+  .qb-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "calc amt"; row-gap: 2px; padding-inline: 12px; }
+  .qb-row.crm-head { display: none; }
+  .qb-row > .qb-name { grid-area: name; }
+  .qb-row > .qb-qty, .qb-row > .qb-rate { display: none; }
+  .qb-row > .qb-calc { display: block; grid-area: calc; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+  .qb-row > .qb-amt { grid-area: amt; }
+  .qb-tot { max-width: none; }
+}
+.qb-headtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qb-headtext .qb-for { margin: 0; }
+.qb-planhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.qb-planhead .fsec-h { margin: 0; }
+.qb-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.qb-plan {
+  display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 12px 14px;
+  border-radius: var(--radius-sm); background: var(--sunk); color: var(--ink); font: inherit; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+.qb-plan.is-on { background: var(--line-soft); }
+@media (hover: hover) { .qb-plan:not(.is-on):hover { background: var(--tonal); } }
+.qb-plan:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 1px; }
+.qb-radio { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 1.5px solid var(--line-ctl); box-sizing: border-box; }
+.qb-plan.is-on .qb-radio { border: 5px solid var(--action); }
+.qb-plantext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.qb-plantext b { font-size: 14px; font-weight: 600; }
+.qb-plantext small { font-size: 12.5px; color: var(--ink-mute); }
+.qb-pick { align-items: start; }
+.qb-rate { font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.qb-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.qb-three > [hidden] { display: none; }
+.qb-step { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.qb-stepbtn { width: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; border-radius: var(--radius-ctl-sm); background: var(--tonal); }
+.qb-stepval {
+  width: 32px; text-align: center; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600;
+  color: var(--ink); -moz-appearance: textfield; appearance: textfield;
+}
+.qb-stepval::-webkit-outer-spin-button, .qb-stepval::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qb-stepname { font-size: 13.5px; color: var(--ink-soft); }
+.qb-translate { margin-top: 4px; }
+.qb-termlabel { margin-top: 12px; }
+@media (max-width: 640px) {
+  .qb-plans { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .qb-three { grid-template-columns: minmax(0, 1fr); }
+}
+.qb-plan { border: 0; }
+.qb-headtext { flex: 1 1 auto; }
+.qb-three .select { width: 100%; min-width: 0; }
+.qb-row > .svc-rate { font-size: 13.5px; color: var(--ink); }
+.qb-card .sheet-body > .fsec:first-child { padding-top: 4px; }
+.qb-one { display: flex; align-items: center; }
+.qb-one[hidden] { display: none; }

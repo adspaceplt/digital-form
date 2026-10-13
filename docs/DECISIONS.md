@@ -2899,3 +2899,23 @@ tells the team it is ready for a Letter of Offer.
   a chosen `.acttab` outside a strip already was); the thumb still slides.
   One still cut at two across (two long options at 320) stacks. A segment
   that fits one line is unchanged.
+
+### 2026-10-14 · Quotations kept as sent, priced by the database
+- The user, 2026-10-13: "once sent once received by client, we should
+  honor that"; the watermark and PENDING APPROVAL looked unprofessional;
+  "they can have multiple quotations, depends on which one they will
+  finally proceed"; a service line used by one quotation must still be
+  usable in another. So a quotation is its own record with its own lines,
+  never edited, valid thirty days from issue (a Business setting), and
+  only the chosen one becomes the client's To quote lines, at Issue Letter
+  of Offer.
+- One calculation in the database (`quote_price`) prices the console, the
+  website and the PDF alike, from the live version only, so a bug or a
+  draft change can never reach a client's figure. Checked against the
+  approved Plan E quotation (RM 7,161.48 a month, RM 85,937.76 over twelve
+  months) and every plan's additional content rate.
+- The user, 2026-10-14: "The build looks different than proposed". The
+  first Build quote used selects and number fields; it was rebuilt to the
+  approved board (plan cards, steppers with the plan's rate, what a
+  platform adds beside it, three columns). The board's Add 5 lines became
+  Create quotation, under the model above.

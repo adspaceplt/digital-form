@@ -199,6 +199,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
+| `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -4036,6 +4037,40 @@ Each line is a rule that broke once. Its reason is in the archive.
   ads booster (the budget each covers), translation (an added language), a
   content format, a verification's own fee, a KOC package's creators, the
   KOL management fee's tiers, an add-on's group on the card.
+- Quotations (`js/quotes.js`, `js/quotepdf.js`,
+  `2026-10-14-quotations.sql`; the user, 2026-10-13: a quotation sent is
+  honoured, and a client may hold several): one calculation,
+  `quote_price(snapshot, selection)`, prices every quotation from the live
+  version (`quote_card`), never the draft and never the page: a plan (six
+  months or more, `plan-term`), its platforms (a dearer one inside the
+  plan adds the difference, one past its count is an Additional platform
+  at its fee), extra contents at the plan's whole saving to the nearest
+  RM 10 (`extra_rates`), Translate every content (a content a language
+  after the first), the advertising budget past the plan's cover (Meta
+  advertising, then coverage; past the largest, on request), one-off items
+  apart; the term's percentage on the monthly subtotal, SST on the rest.
+  `quotations` (RLS: read at Clients: Services View under client scope;
+  writes through functions alone) keeps each as sent: reference
+  `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines
+  and totals, valid `quote_valid_days` (30, Tax and terms) from issue;
+  never edited. The Services pane lists them above the lines
+  (`#crmQuotes`; the Overview opens on them while any stand): the state
+  worked out on read (Valid until, Expired, Letter of Offer requested, Not
+  proceeding, Letter of Offer issued once a live letter holds its lines),
+  ⋯ Download, Issue Letter of Offer, Make a copy, Not proceeding / Restore,
+  Remove with Undo (Restore after). Build quote (`#qbBox`, as the approved
+  board: plan cards under Without ads / With ads, content, platforms with
+  what each adds, extra contents as steppers with the plan's rate,
+  languages, budget and term, one-off items, the lines and totals from
+  `quote_preview` as ticked) makes one (`quotation_create`, a key a press).
+  Issue Letter of Offer (`quotation_offer`, once) makes the quotation's
+  lines the client's To quote lines (`quotation_id`, its term and
+  percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
+  ADSPACE PLT at the head's right, the facts, Description · Qty · Rate (RM)
+  · Subtotal (RM), totals ending at Monthly incl. SST, Remarks / Terms at
+  8pt (validity, SST, budget billed separately, confirmation then the
+  Letter of Offer, the whole term's commitment), the rate card line over
+  PRIVATE & CONFIDENTIAL; named `ADspace Quotation {ref}.pdf`.
 
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at
