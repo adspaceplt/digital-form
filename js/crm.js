@@ -4675,7 +4675,7 @@
       return window.ADspaceRateCardPdf.draw(live);
     }).then(function (blob) {
       btn.disabled = false;
-      docs.save(blob, 'ADspace Rate Card v.' + live.version + '.pdf', tab);
+      docs.save(blob, 'ADspace Rate Card ' + window.ADspaceRateCardPdf.tag(live) + '.pdf', tab);
     }).catch(function (e) {
       btn.disabled = false;
       if (docs && docs.shut) docs.shut(tab);

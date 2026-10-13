@@ -4015,7 +4015,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   KOC Programmes, KOL Programmes, Add-ons with the term commitment and the
   Terms of Service, each table from the version's lines by `spec.role`, its
   words and settings (`{valid until}` filled), the foot PRIVATE &
-  CONFIDENTIAL, the page count and `v.{version} exp. {YYYYMMDD}`; a line
+  CONFIDENTIAL, the page count and `v.{version}.dp exp. {YYYYMMDD}` (`.dp`
+  marks a card the portal drew, saved as `ADspace Rate Card v.{version}.dp.pdf`;
+  one made by hand carries the version alone); the document's own type
+  (11pt cells 5.76pt in, rows from 18.72pt, 18pt titles) on its 54pt
+  margins; a line
   set inactive, or one no page holds (additional content, on request), is
   never printed. The Add-ons table opens on `addons_included`
   (`2026-10-13-rate-card-included-revisions.sql`, Wording).

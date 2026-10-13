@@ -2871,3 +2871,15 @@ tells the team it is ready for a Letter of Offer.
 - Totals read Monthly subtotal, Monthly excl. SST, SST 8%, Monthly incl.
   SST; a whole term's total is in the PDF alone; amounts right aligned to
   two decimals, a discount in brackets.
+
+### 2026-10-13 · The rate card export at the document's own size, marked .dp
+- Reported: the export left "a huge white gap around the paper". The margins
+  were the document's (54pt sides, measured against the uploaded PDF); the
+  type was drawn at 80% of it (8.8pt for 11pt, 15.5pt titles for 18pt), so
+  every page read as shrunk. Now the document's sizes, list lines 12.3pt
+  apart so the terms keep to six pages, the label columns shaded as drawn.
+- The user proposed marking a card the portal drew: `v.2.0.6.dp` (next minor
+  `v.2.0.7.dp`, major `v.2.1.dp` or `v.3.0.dp`), a hand-made copy keeping
+  the version alone. Built as a mark on the file and its foot only; the
+  version itself is stored and published without it.
+
