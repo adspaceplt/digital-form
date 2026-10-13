@@ -2744,3 +2744,12 @@ words (`2026-10-13-period-words.sql`); the Activity record's report lines
 name the period the same way from now on. `tests/smsql.js` §9zm3 runs the
 page's own `periodWord` against it.
 
+### 2026-10-13 · A colouring word before a number word
+The user saw the commentary check flag "generated only 1 conversation" and
+asked why Write with AI did not put it right. The draft's own clean-up
+(`plainFigures`) already took "only" out before a digit, and the record
+shows that sentence came from an edit typed after the draft; but it let
+"only one" and "only a single" through. It now takes the word out before
+a number word too, never from "the only" or "not only" (`tests/plainfig.js`).
+Words typed by hand are still found by the check, not changed silently.
+
