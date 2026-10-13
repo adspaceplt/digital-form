@@ -2143,6 +2143,7 @@
     'client.service_changed': ['Service changed', '', 'clients'],
     'client.service_removed': ['Service removed', 'is-danger', 'clients'],
     'client.service_restored': ['Service restored', 'is-ok', 'clients'],
+    'client.service_deleted': ['Service deleted', 'is-danger', 'clients'],
     'report.created':        ['Report started', 'is-ok', 'reports'],
     'report.submitted':      ['Report submitted', '', 'reports'],
     'report.returned':       ['Report returned', 'is-warn', 'reports'],

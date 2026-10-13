@@ -1401,7 +1401,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Billing required before Active:
   - registered company name (capitals);
   - BRN;
-  - billing contact (a select over Contacts, main contact by default);
+  - billing contact (a select over Contacts: Main contact · {name} first,
+    held empty so it follows the main contact, which `issue_letter` answers
+    the same way; another contact chosen stays, and trigger
+    `client_contacts_bill_follows` lets go of one that stops being the main
+    contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
@@ -1519,8 +1523,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     line into it (`confirm-needs-letter`; `2026-10-10-service-confirm-guard.sql`,
     audit S1).
   - Remove is soft with Undo; a removed line is listed on asking with
-    Restore (`client.service_restored`), never deleted: a letter may have
-    quoted it (`client_document_services` restricts it).
+    Restore (`client.service_restored`) and, where no letter quoted it,
+    Delete at Clients: Services Full Access (asked, `client.service_deleted`;
+    2026-10-13); a line a letter quoted stays (`client_document_services`
+    restricts it) and offers no Delete.
   - `detail` and `min_months` are seeded from the rate card and stay editable.
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
