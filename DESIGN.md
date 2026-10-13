@@ -535,6 +535,13 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   language"): complete, plain statements of fact, never shorthand, slang or
   a phrase coined for the screen ("The portal is covered for the team" read
   as nonsense; "Everyone but admins sees the upgrade screen" does not).
+- What a client reads (client pages, the quotation website, every PDF) is
+  formal Malaysian business English, as a corporate letter here writes it
+  (the user, 2026-10-13: "natural corporate, professional, formal"): Per
+  month, billed separately, incl. SST, Registered company name; never a
+  clipped or coined phrase (a month, billed apart, see my price). Nothing is
+  said twice and nothing non-essential is said; a whole term's total is
+  stated in the PDF alone, never on a screen.
 - No explanatory copy: no hints, blurbs, notices or role descriptions.
   - The heading and the controls are the explanation.
   - Where a line is unavoidable, one neutral corporate sentence; no "we", no

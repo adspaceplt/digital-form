@@ -2808,3 +2808,66 @@ never show a half-edited price; the card's own words are blocks seeded
 from that PDF; each line says what a quote reads of it (`services.spec`);
 a client's new line takes the live version's price.
 
+
+### 2026-10-13 · Client-facing words, extra content and languages
+Reviewing the quotation mockups, the user found the words "broken and not
+fit in our Malaysia culture" ("a month", "billed apart", "See my price") and
+asked that client-facing screens and PDFs read as formal Malaysian business
+English, with no duplicated or non-essential lines, and a term's whole
+total in the PDF alone (a large figure on screen "shuns potential
+customers away"); DESIGN.md §6 holds the rule. Extra content in a plan is
+priced on the whole plan's saving (fee against everything in it at Ala
+Carté, the fuller option where a plan offers two): rule 2 (the contents'
+share alone) priced an extra reel on Plans E and F at RM 322, below a
+30-second reel, and gave Plan C two prices for one reel. Languages: the
+contents are shared across the languages chosen at no charge; translation
+(RM 200 a content, a language) applies only where one content must also
+appear in another language. A quotation from the website files a Lead with
+its lines Enquired; Proceed with billing details moves them to To quote and
+tells the team it is ready for a Letter of Offer.
+
+### 2026-10-13 · The rate card downloads as the team's own card
+- Asked: the rate card exported in the team's exact format (the uploaded
+  "ADspace Rate Card & Packages" v.2.0.6, six pages), FOR INTERNAL USE kept;
+  additional content rates stay in the price list, on request, and are never
+  printed on the card (the user: "the PDF should look clean").
+- Built: `js/ratecardpdf.js` draws the live version in the browser from its
+  snapshot, so the file always matches what quotes and client lines are
+  priced from; the draft is never printed. Tables are worked out from each
+  line's `spec` (plans by letter, boosters by budget, KOC averages to the
+  RM 10 as the card prints them, KOL bands from the tiers, add-ons by their
+  group) and the card's words from `rate_card_text`.
+- The Add-ons table's first row (Included revisions · Included · 2 rounds
+  per asset) is no price line, so it became a block of wording; v.2.0.6, the
+  card as issued, took it once in its snapshot.
+- Line names print as the price list holds them (Static graphic, Minor
+  revision); the team renames a line in Services and publishes to change the
+  card.
+
+
+### 2026-10-13 · The quotation website, as approved in the mockups (not built yet)
+- Approved by the user on the canvas: a quotation is Pending approval until
+  the team approves it, and is valid for thirty days from that approval
+  (the user: "once they generated the quotation, it is not valid until
+  internal approves it"); its PDF carries PENDING APPROVAL until then.
+- Reference `ADP/QT{YYMM}-{Z}{NN}`: Z the brand's first letter (X where the
+  name does not start with one), NN counted per letter per month, so the
+  count of quotations a month is never shown.
+- Additional content is priced per plan by the whole-plan saving, rounded to
+  the RM 10 (A 280 / 630, B 240 / 540, C 240 / 540, D 260 / 580, E 230 /
+  500, F 220 / 490, graphic / reel), kept in the price list, on request,
+  never printed on the card.
+- Languages: the contents are shared across the languages ticked at no
+  charge; Translate every content charges RM 200 a content a language.
+- The details step: a WhatsApp number is required, Malaysia (60 then 1 and
+  eight or nine digits, or 60 then 7 and eight digits) or Singapore (65 and
+  eight digits), else "A valid Malaysia or Singapore registered WhatsApp
+  number is required."; a free email address is warned ("A work email
+  address is recommended."), never refused (the user: "we dont shun away
+  people whose company do not use customized business email address").
+- Request Letter of Offer files the billing, moves the lines to To quote and
+  tells the team; the Letter of Offer goes out on WhatsApp once approved,
+  through a new template with a document header that Meta must approve.
+- Totals read Monthly subtotal, Monthly excl. SST, SST 8%, Monthly incl.
+  SST; a whole term's total is in the PDF alone; amounts right aligned to
+  two decimals, a discount in brackets.
