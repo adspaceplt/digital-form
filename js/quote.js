@@ -67,7 +67,7 @@
       once: 'Content production', onceNote: 'One-off, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
-      detailsT: 'Your details', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
+      detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
       waHint: 'With country code, e.g. 60123456789 or 6581234567', brand: 'Brand', industry: 'Industry', optional: 'Optional',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
@@ -133,7 +133,7 @@
       once: '内容制作', onceNote: '一次性，按件收费',
       koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
-      detailsT: '您的资料', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
+      detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '请包含国家代码，例如 60123456789 或 6581234567', brand: '品牌', industry: '行业', optional: '选填',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
@@ -180,6 +180,10 @@
     var x = KIND_ORDER.indexOf(a.kind), y = KIND_ORDER.indexOf(b.kind);
     return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
   }
+  /* The contact sheet's salutations, which quote_website_create accepts. */
+  var SALUTATIONS = ['Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', "Dato'", 'Datin', 'Datuk', "Dato' Sri", 'Datin Sri',
+    'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'];
+  var SAL_ZH = { Mr: '先生', Ms: '女士', Mrs: '太太', Mdm: '夫人', Dr: '博士', Prof: '教授' };
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
   var TERMS = [6, 12, 24];
@@ -228,7 +232,7 @@
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
       plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
-      contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
+      contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
   }
   var S = blank();
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
@@ -417,6 +421,8 @@
   function paintDetails() {
     var c = S.contact;
     return frame('<h1 class="qs-title">' + esc(t().detailsT) + '</h1><form class="qs-form" id="qsDetails" novalidate>' +
+      field('qsSal', t().salutation, false, '<select class="select" id="qsSal"><option value="">' + esc(t().optional) + '</option>' +
+        SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
       field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">') +
       field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">') +
       field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="60123456789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
@@ -547,6 +553,7 @@
   }
   function readDetails() {
     var c = S.contact;
+    c.salutation = $('qsSal') ? $('qsSal').value : '';
     c.name = $('qsName').value.replace(/\s+/g, ' ').trim(); c.email = $('qsEmail').value.trim();
     c.whatsapp = $('qsWa').value.trim(); c.brand = $('qsBrand').value.replace(/\s+/g, ' ').trim();
     c.industry = $('qsInd').value; c.consent = $('qsConsent').checked;
@@ -571,7 +578,7 @@
     btn.disabled = true; btn.textContent = t().making;
     if (!S.idem) { S.idem = key8(); keep(); }
     var body = { sel: selection(), idem: S.idem,
-      contact: { name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
+      contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
         industry: S.contact.industry || null, consent: true, lang: lang } };
     var C = window.ADspaceCaptcha;
     var token = C && C.on ? C.token(root().querySelector('[data-cf]')) : Promise.resolve(null);
