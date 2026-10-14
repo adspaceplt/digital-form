@@ -1071,7 +1071,9 @@
     b.type = 'button';
     b.className = 'btn ovw-turn';
     b.id = 'ovwTurn';
-    b.innerHTML = page === 'summary' ? '<span>Continue to Detail</span>' + CHEV : '<span>Back to Summary</span>';
+    /* The pair is one act drawn one way: each carries the chevron toward
+       the page it turns to (ux-audit, act glyphs, 2026-10-15). */
+    b.innerHTML = page === 'summary' ? '<span>Continue to Detail</span>' + CHEV : CHEV.replace('class="ovgo-chev"', 'class="ovgo-chev is-back"') + '<span>Back to Summary</span>';
     b.addEventListener('click', function () { turn(page === 'summary' ? 'detail' : 'summary'); });
     row.appendChild(b);
     box.appendChild(row);

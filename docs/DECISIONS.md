@@ -3349,3 +3349,11 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   lines, Withdraw width, AQC heading on retired workflows, board edge and
   phone calendar key, empty chart cards, type sizes, the empty ring on a
   phone) wait for the user.
+
+- **2026-10-15** — Act glyphs in My Work and the Dashboard, read against
+  `js/acts.js` (asked for from the parent session): every Add, New, Edit,
+  Copy and Open there carries its mark. The one gap was the Dashboard's page
+  turn: Continue to Detail carried its chevron and Back to Summary none, one
+  act drawn two ways. Back to Summary now leads with the chevron toward
+  Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
+  keeps its words.
