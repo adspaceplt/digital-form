@@ -1281,7 +1281,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
 - Groups run in the rail's order (Creators List after Creator Campaigns);
-  Video Scripts by code or title, opening its record (`script=`). What was
+  Video Scripts by code or title, opening its record (`script=`); Reports
+  by title or white-label brand, opening the report (`report=`). Content
+  Review, Video Scripts, Creator Campaigns and Reports also find a record
+  by its client's name or code (the user, 2026-10-14: "AC182 … only shows
+  me client directory"): the clients matching the query are read once a
+  query (`clientRows`, which the Clients group draws from too) and join
+  each section's filter as `client_id.eq` terms. What was
   said is found too (2026-10-11): a task by its brief (`Brief: …`) or a
   remark as it reads now (`Remark: …`; an edited one by its latest words, a
   removed one never), and Calls and visits (`clients.calls`) by its notes,
