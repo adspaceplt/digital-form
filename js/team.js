@@ -530,6 +530,9 @@
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
               (self || !manage || m.removed_at ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))) +
+              /* Work still held by somebody who no longer signs in is handed
+                 over from here (TEAM-3, 2026-10-14). */
+              (self || !manage || m.active ? '' : menuItem('handover', 'Hand over work')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
                  their data kept or their personal details deleted. */
               (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger')));
@@ -588,6 +591,28 @@
         });
       });
     });
+    var hov = el.querySelector('[data-a="handover"]');
+    if (hov) hov.addEventListener('click', function () {
+      shutMenus();
+      heldBy(m, function (own, held) {
+        var fields = handFields(m, own, held);
+        if (!fields.length) { msg('teamMsg', 'Nothing is assigned to ' + m.name + '.', 'ok'); return; }
+        window.ADspaceConfirm.ask({
+          title: 'Hand over work', go: 'Hand over',
+          body: 'Choose who takes each kind of ' + m.name + '\'s work.',
+          fields: fields
+        }, function (v) {
+          v = v && typeof v === 'object' ? v : {};
+          var kept = keptWord(own, held, v);
+          msg('teamMsg', '');
+          Promise.resolve(handTo(m, own, v)).then(function () {
+            if (!kept) return;
+            var said = ($('teamMsg').textContent || '').trim();
+            msg('teamMsg', (said ? said + ' ' : '') + kept.charAt(0).toUpperCase() + kept.slice(1) + ' stay with ' + m.name + '.', 'warn');
+          });
+        });
+      });
+    });
     var rmv = el.querySelector('[data-a="remove"]');
     if (rmv) rmv.addEventListener('click', function () { shutMenus(); removeMember(m); });
     var ed = el.querySelector('[data-a="edit"]');
@@ -634,19 +659,54 @@
     return state.rows.filter(function (x) { return x.active && x.id !== m.id && x.name && !x.system; })
       .slice().sort(window.ADspaceForm.byStaff);
   }
+  /* A leaver usually hands everything to one person (TEAM-2, 2026-10-14):
+     with two kinds or more, All their work to comes first and each kind
+     reads Same as above until a colleague, or Keep, is chosen for it, which
+     keeps the user's "a person for each kind". */
+  var HAND_KEEP = '__keep';
+  function handKinds() { return ['clients', 'campaigns'].concat(HELD_KINDS.map(function (k) { return k[0]; })); }
   function handFields(m, own, held) {
-    var choices = [['', 'Keep with ' + m.name]].concat(takers(m).map(function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; }));
-    if (choices.length < 2) return [];
-    var out = [];
-    var add = function (name, label, n) { if (n > 0) out.push({ name: name, label: label + ' (' + n + ')', required: false, choices: choices }); };
+    var people = takers(m).map(function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; });
+    if (!people.length) return [];
+    var kinds = [];
+    var add = function (name, label, n) { if (n > 0) kinds.push({ name: name, label: label + ' (' + n + ')' }); };
     add('clients', 'Clients they are person in charge of', own.clients.length);
     add('campaigns', 'Open campaigns', own.campaigns.length);
     HELD_KINDS.forEach(function (k) { add(k[0], k[1], Number(held[k[0]]) || 0); });
+    var keep = ['', 'Keep with ' + m.name];
+    if (kinds.length < 2) return kinds.map(function (k) { return { name: k.name, label: k.label, required: false, choices: [keep].concat(people) }; });
+    return [{ name: 'all', label: 'All their work to', required: false, choices: [keep].concat(people) }].concat(kinds.map(function (k) {
+      return { name: k.name, label: k.label, required: false, choices: [['', 'Same as above'], [HAND_KEEP, 'Keep with ' + m.name]].concat(people) };
+    }));
+  }
+  /* Each kind's colleague as chosen: its own pick, else All their work to;
+     Keep is empty. */
+  function handChosen(v) {
+    var out = {};
+    handKinds().forEach(function (k) {
+      var x = v[k];
+      out[k] = x === HAND_KEEP ? '' : (x || v.all || '');
+    });
     return out;
+  }
+  /* What stays with them, in words: "1 client and 2 open tasks". */
+  var HELD_WORD = { clients: ['client', 'clients'], campaigns: ['open campaign', 'open campaigns'], tasks: ['open task', 'open tasks'],
+    months: ['month they manage', 'months they manage'], meetings: ['meeting they lead', 'meetings they lead'],
+    repeats: ['repeating task', 'repeating tasks'], reviews: ['report waiting for their review', 'reports waiting for their review'],
+    extensions: ['extension request', 'extension requests'], templates: ['template', 'templates'] };
+  function keptWord(own, held, v) {
+    var to = handChosen(v || {});
+    var parts = handKinds().map(function (k) {
+      var n = k === 'clients' ? own.clients.length : k === 'campaigns' ? own.campaigns.length : Number(held[k]) || 0;
+      return n > 0 && !to[k] ? plural(n, HELD_WORD[k][0], HELD_WORD[k][1]) : '';
+    }).filter(Boolean);
+    if (!parts.length) return '';
+    return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
   }
   /* Moves what was chosen: the person in charge by name, the rest through
      `team_hand_over`; one line says what moved and what could not. */
   function handTo(m, own, v) {
+    v = handChosen(v || {});
     var nameOf = function (id) { var x = state.rows.filter(function (r) { return r.id === id; })[0]; return x ? x.name : ''; };
     var jobs = [];
     var owned = function (table, list, to) {
@@ -705,7 +765,11 @@
           var d = (r && r.data) || {};
           if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : String(r.error.message || r.error);
           if (d.error) return REMOVE_SAID[d.error] || d.error;
-          msg('teamMsg', v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.', 'ok');
+          /* Work left with them is said, with the way to hand it over
+             (TEAM-3, 2026-10-14): a removed colleague signs in no more. */
+          var kept = keptWord(own, held, v);
+          msg('teamMsg', (v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.') +
+            (kept ? ' ' + kept.charAt(0).toUpperCase() + kept.slice(1) + ' stay with ' + m.name + '. Hand over work is in their ⋯.' : ''), kept ? 'warn' : 'ok');
           load();
           return '';
         });
