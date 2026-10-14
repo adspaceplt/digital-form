@@ -4853,6 +4853,8 @@
      pairs; a colleague's own limit is set from their row (empty is the
      standard, 0 stops it; the user, 2026-10-05: no long list). Read
      again on every open. */
+  /* A colleague's AI uses a day: their own limit, else the standard. */
+  function aiCapOf(p, d) { return p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person); }
   var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40,
     script: 10, script_admin: 20, analysis: 3, analysis_admin: 10 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
@@ -4914,7 +4916,7 @@
         }
         edit.disabled = false;
         people = (d.people || []).map(function (p) {
-          var cap = p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person);
+          var cap = aiCapOf(p, d);
           return { id: p.id, name: p.name, code: p.code, used: p.day || 0, cap: cap, limit: p.limit, own: p.limit != null, group: p.group || 'No group',
             captions: p.captions || 0, capCap: p.caption_cap != null ? p.caption_cap : AI_STD.caption,
             scripts: p.scripts || 0, scrCap: p.script_cap != null ? p.script_cap : AI_STD.script,
@@ -5496,6 +5498,15 @@
     },
     enterHub: enterHub,
     /* AI usage and limits, opened from the Settings page (2026-10-10). */
+    /* Today's AI uses over the team's limit, the Settings row's line
+       (2026-10-14, ux-audit SET-7): the usage page's own figures. */
+    aiToday: function () {
+      return db.rpc('ai_draft_usage').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) throw (r.error || new Error(d.error));
+        return (d.people || []).reduce(function (t, p) { t.used += p.day || 0; t.cap += aiCapOf(p, d); return t; }, { used: 0, cap: 0 });
+      });
+    },
     aiUsage: function (opener) { if (bridge.may && bridge.may('reports.ai', 'work')) aiUseSheet(opener); }
   };
   if (bridge.reportsReady) bridge.reportsReady();

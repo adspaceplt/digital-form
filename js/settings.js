@@ -53,10 +53,11 @@
      these words (audit SET-1). */
   function per(u) { return function (v) { return plural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
-  var TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], details_form_days: ['Details form open', per('day')],
+  var TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')],
     term_1_3: ['1 to 3 months', pct], term_4_5: ['4 and 5 months', pct], term_6_11: ['6 to 11 months', pct],
     term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct] };
   var SPECS = {
+    details: { title: 'Details form', keys: [['details_form_days', 'Open for (days)', 'quote', '', 'Open', per('day')]] },
     followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', '', 'Lead', per('hour')],
       ['proposal_followup_days', 'A proposal waits (days)', 'days', '', 'Proposal', per('day')]] },
     /* The list is js/admin.js's (the Services bar asks the same sheet). */
@@ -89,6 +90,66 @@
     return 'From ' + (window.ADspaceClock ? window.ADspaceClock.date(first) : first) + ': ' + parts(bits);
   }
 
+  /* What an Open row holds, read once a visit and filled in place
+     (2026-10-14, ux-audit SET-7): each from its section's own read, its
+     line's room kept while the read is out, Could not load. on a refusal. */
+  var lines = {};
+  function line(id) { var x = lines[id]; return x == null ? '\u00a0' : x; }
+  function fillLine(id, text) {
+    lines[id] = text;
+    var row = document.querySelector('.stg-row[data-row="' + id + '"]');
+    if (!row) return;
+    var m = row.querySelector('.stg-meta');
+    if (!text) { if (m) m.remove(); return; }
+    if (!m) {
+      var name = row.querySelector('.stg-name');
+      if (!name) return;
+      m = document.createElement('p'); m.className = 'stg-meta';
+      name.parentNode.insertBefore(m, name.nextSibling);
+    }
+    m.textContent = text;
+  }
+  var READ = {
+    announce: function () {
+      return window.ADspaceAnnounce && window.ADspaceAnnounce.live && window.ADspaceAnnounce.live().then(function (n) {
+        return n.team || n.clients ? parts(['Team ' + n.team + ' live', 'Clients ' + n.clients + ' live']) : 'None live';
+      });
+    },
+    notice: function () {
+      return window.ADspaceNotice && window.ADspaceNotice.last && window.ADspaceNotice.last().then(function (n) {
+        return n ? 'Last sent ' + when(n.created_at).split(', ')[0] : 'None sent';
+      });
+    },
+    numbering: function () {
+      return db.rpc('ops_next_task_no').then(function (r) {
+        if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+        return r.data && r.data.serial ? 'Next ' + r.data.serial : '';
+      });
+    },
+    aiuse: function () {
+      return window.ADspaceReports && window.ADspaceReports.aiToday && window.ADspaceReports.aiToday().then(function (t) {
+        return 'Used today ' + t.used + ' of ' + t.cap;
+      });
+    },
+    whatsapp: function () {
+      return window.ADspaceWhatsApp && window.ADspaceWhatsApp.templates && window.ADspaceWhatsApp.templates().then(function (t) {
+        return t.on + ' of ' + t.all + ' on';
+      });
+    },
+    types: function () {
+      return db.from('doc_types').select('id, active').then(function (r) {
+        if (r.error) throw r.error;
+        return plural((r.data || []).filter(function (t) { return t.active !== false; }).length, 'type', 'types') + ' offered';
+      });
+    }
+  };
+  function readLine(id) {
+    if (!document.querySelector('.stg-row[data-row="' + id + '"]')) return;
+    var asked = READ[id] && READ[id]();
+    if (!asked || !asked.then) { fillLine(id, ''); return; }
+    asked.then(function (t) { fillLine(id, t || ''); }).catch(function () { fillLine(id, 'Could not load.'); });
+  }
+
   /* The rows, group by group (regrouped 2026-10-11, the queue's task 46:
      "Vertical list at a desk, drill-down on a phone (iPhone/Mac Settings
      style)"). A group is named for what its rows change; `kind` is the
@@ -103,13 +164,17 @@
     add('portal', 'Portal', [
       may('team.upgrade') && { id: 'upgrade', name: 'Upgrade mode', kind: 'switch', on: Boolean(up.set),
         meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' },
-      may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open' },
-      may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open' },
+      may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce') },
+      may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice') },
       biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
-        meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days')]) }]);
+        meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days')]) },
+      /* The client's details form (2026-10-14, ux-audit SET-9: it sat in
+         Tax and terms). */
+      biz && { id: 'details', name: 'Details form', kind: 'edit',
+        meta: num('details_form_days') == null ? '' : 'Open ' + plural(num('details_form_days'), 'day', 'days') }]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
@@ -122,34 +187,36 @@
         meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
           : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
             num('task_start_days') === 0 ? 'Not started off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
-      may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit' }]);
+      may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering') }]);
     var meta = num('meta_checks') === 1;
     add('reports', 'Reports', [
       biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
-        meta: meta ? 'Import from Meta and the Report audit are on' : 'Import from Meta and the Report audit are off' },
+        meta: meta ? 'On · Import from Meta, Report audit' : 'Off' },
       biz && { id: 'reach', name: 'Reach allowance', kind: 'edit',
-        meta: num('reach_allowance_pct') == null ? '' : 'The Report audit accepts Reach within ' + num('reach_allowance_pct') + '% of Meta' }]);
+        meta: num('reach_allowance_pct') == null ? '' : 'Within ' + num('reach_allowance_pct') + '% of Meta' }]);
     var pin = num('ai_price_in'), pout = num('ai_price_out');
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
-        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])) },
+        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])) }]);
+    /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
+    add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
         meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
           (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') }]);
-    add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }]);
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
        at Full Access; this row opens them there. */
     var rep2 = num('wa_repeat_hours');
     add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
-      { id: 'whatsapp', name: 'Templates', kind: 'open' },
+      { id: 'whatsapp', name: 'Templates', kind: 'open', meta: line('whatsapp') },
       /* Sent again (2026-10-14): the same message sent within the window
          asks again before it goes. */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Asks before the same message goes again within ' + plural(rep2, 'hour', 'hours') }]);
-    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open' }]);
+        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Within ' + plural(rep2, 'hour', 'hours') }]);
+    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') }]);
     return out;
   }
 
+  var reread = '';
   /* What a press said, kept on its row through a repaint (audit SET-2). */
   var said = null;
   function rowSay(id) {
@@ -196,8 +263,10 @@
     if (!box) return;
     var list = groups();
     if (!list.length) { drawn = ''; box.className = ''; box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No settings.'); return; }
-    var desk = !phone();
-    var cls = 'stg ' + (desk ? 'is-desk' : 'is-phone');
+    /* The list of groups beside them only where there are three or more
+       to move between (2026-10-14, ux-audit SET-5). */
+    var desk = !phone() && list.length >= 3;
+    var cls = 'stg ' + (desk ? 'is-desk' : phone() ? 'is-phone' : 'is-single');
     var html = (desk ? '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
       return '<button class="stg-go" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '">' + esc(x.name) + '</button>';
     }).join('') + '</nav>' : '') + '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
@@ -307,6 +376,9 @@
       said = null;
       Array.prototype.forEach.call(document.querySelectorAll('#setList .stg-said'), function (m) { m.remove(); });
     }
+    /* A row whose sheet changes what its line says reads it again when the
+       sheet hands focus back to it. */
+    if (READ[a]) reread = a;
     if (SPECS[a]) {
       var sp = SPECS[a];
       bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3]]; }), msg: rowSay(a), done: paint }, btn);
@@ -352,18 +424,7 @@
     var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
     return next ? 'Next: ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
   }
-  function holLine() {
-    var row = document.querySelector('.stg-row[data-row="holidays"]'), meta = holMeta();
-    if (!row || !meta) return;
-    var m = row.querySelector('.stg-meta');
-    if (!m) {
-      var name = row.querySelector('.stg-name');
-      if (!name) return;
-      m = document.createElement('p'); m.className = 'stg-meta';
-      name.parentNode.insertBefore(m, name.nextSibling);
-    }
-    m.textContent = meta;
-  }
+  function holLine() { var meta = holMeta(); if (meta) fillLine('holidays', meta); }
   function readHol(done) {
     var y = Number(holToday().slice(0, 4));
     db.rpc('public_holidays_between', { p_from: y + '-01-01', p_to: (y + 1) + '-12-31' }).then(function (r) {
@@ -475,6 +536,7 @@
   function enter() {
     say('');
     said = null;
+    lines = {};
     fromUrl();
     pinned = chosen;
     var M = window.ADspaceMoney;
@@ -486,6 +548,7 @@
        after it arrived lost the place a refresh or an address had scrolled
        to, and the guide's ring. */
     if (biz()) readHol(holLine);
+    Object.keys(READ).forEach(readLine);
     /* A group named in the address is brought to the top, else the page's
        own scroll. */
     if (chosen && $('stg-' + chosen)) reveal(chosen, false);
@@ -496,6 +559,12 @@
   function wire() {
     if (wired || !$('setList')) return;
     wired = true;
+    $('setList').addEventListener('focusin', function (e) {
+      var b = e.target.closest && e.target.closest('[data-a]');
+      if (!reread || !b || b.getAttribute('data-a') !== reread || document.querySelector('.sheet:not([hidden])')) return;
+      var id = reread; reread = '';
+      readLine(id);
+    });
     $('setList').addEventListener('click', function (e) {
       var gb = e.target.closest('[data-g]');
       if (gb && $('setList').contains(gb)) { go(gb.getAttribute('data-g')); return; }

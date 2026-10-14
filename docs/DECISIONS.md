@@ -3269,3 +3269,20 @@ question is two sentences, Delete's under forty words. A success line under
 the Team bar clears after 8 seconds, as the Undo bar does; a refusal or a
 warning stays. The work left with a colleague is said as "1 open task
 stays", "2 open tasks stay".
+
+### 2026-10-14 · Settings: the audit's last five (SET-5 to SET-9)
+At the user's word, the P3s in one batch. SET-5: a colleague holding one
+part saw a list of one group beside its card; the list is drawn only with
+three groups or more. SET-6: value lines read as values (Meta checks On ·
+Import from Meta, Report audit, else Off; Reach Within 0.5% of Meta; Sent
+again Within 24 hours), no longer sentences restating the switch. SET-7:
+six Open rows said nothing; each now states what it holds from its
+section's own read (`ADspaceAnnounce.live`, `ADspaceNotice.last`,
+`ops_next_task_no`, `ADspaceReports.aiToday`, `ADspaceWhatsApp.templates`,
+doc_types), six requests a visit, read again when the row's sheet hands
+focus back so a post or a send is reflected. SET-8: Turn on upgrade mode
+asks in one sentence. SET-9 (revisits 2026-10-11's placements): AI prices
+joined AI usage in the AI group, and the details form's days left Tax and
+terms for their own row, Details form, in the Clients group (Tax and terms
+is eight figures).
+
