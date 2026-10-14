@@ -330,7 +330,7 @@
       return '<button class="qb-plan' + (on ? ' is-on' : '') + '" type="button" role="radio" aria-checked="' + on + '" data-plan="' + esc(p.slug) + '">' +
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · RM ' + esc(rm(p.rate).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
-        '<small>' + p.spec.contents + ' contents: ' + esc(mixWords(p.spec.mix || [])) + '</small>' +
+        '<small>' + p.spec.contents + ' contents: ' + mixWords(p.spec.mix || [], true) + '</small>' +
         (p.spec.ad_budget ? '<small>Ad budget up to RM ' + Number(p.spec.ad_budget).toLocaleString('en-MY') + '</small>' : '') +
         '</span></button>';
     }).join('');
@@ -356,11 +356,14 @@
   }
   /* What a plan's contents are, as the card prints them: "2 graphics, 4 reels"; two
      options read "or". */
-  function mixWords(mixes) {
+  /* `html`: each part held whole (`6 reels` never breaks after its figure;
+     2026-10-15, audit CLI-2), escaped. */
+  function mixWords(mixes, html) {
+    var part = function (t) { return html ? '<span class="qb-nb">' + esc(t) + '</span>' : t; };
     return mixes.map(function (m) {
       var w = [];
-      if (m.graphic) w.push(m.graphic + (m.graphic === 1 ? ' graphic' : ' graphics'));
-      if (m.reel) w.push(m.reel + (m.reel === 1 ? ' reel' : ' reels'));
+      if (m.graphic) w.push(part(m.graphic + (m.graphic === 1 ? ' graphic' : ' graphics')));
+      if (m.reel) w.push(part(m.reel + (m.reel === 1 ? ' reel' : ' reels')));
       return w.join(', ');
     }).join(' or ');
   }

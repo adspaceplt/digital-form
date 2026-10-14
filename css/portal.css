@@ -11976,6 +11976,7 @@ button.vs-row { cursor: pointer; }
 /* Download on the row: sending the quotation is the next act every time
    (2026-10-15, audit CLI-5). */
 .qt-dl { justify-self: end; }
+.qb-nb { white-space: nowrap; }
 .qt-amt, .qt-state { display: flex; flex-direction: column; }
 .qt-amt small, .qt-state small { font-size: 12px; color: var(--ink-mute); font-weight: 400; }
 .qt-ref { font-variant-numeric: tabular-nums; }
