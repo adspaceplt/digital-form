@@ -5907,7 +5907,7 @@
   var editingSlug = null;
 
   // What a slug may be: the part after the slash, and safe in a URL as typed.
-  function slugOk(s) { return /^[a-z0-9][a-z0-9._-]{0,79}$/.test(s); }
+  function slugOk(s) { return /^[a-z0-9][a-z0-9._-]{2,79}$/.test(s); }
 
   // People paste the whole short link as often as they type the slug alone.
   function cleanSlug(s) {
@@ -6240,7 +6240,7 @@
     var target = cleanTarget($('newTarget').value);
     if (!slug)       { msg('linkMsg', 'A short link needs a slug.', 'err'); return; }
     if (!slugOk(slug)) {
-      msg('linkMsg', 'Use lowercase letters, digits, dots, dashes or underscores.', 'err');
+      msg('linkMsg', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.', 'err');
       return;
     }
     if (!target) {

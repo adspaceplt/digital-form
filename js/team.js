@@ -1440,8 +1440,8 @@
     var mobDigits = mobile.replace(/\D/g, '').length;
     if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
     var cardSlug = ($('tmCardSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(cardSlug)) {
-      msg('tmMsg', 'Use lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
+    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(cardSlug)) {
+      msg('tmMsg', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
     }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,

@@ -207,7 +207,7 @@
   var SAID = {
     'bad-mobile': 'Enter a mobile number of 8 to 15 digits.',
     'slug-taken': 'That short link is already in use.',
-    'slug-shape': 'Use lowercase letters, digits, dots, dashes or underscores.',
+    'slug-shape': 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.',
     'not-team': 'Not allowed.'
   };
   function $(id) { return document.getElementById(id); }
@@ -229,7 +229,7 @@
       /* The preview is the card as others see it: hidden, it has no mobile. */
       var typedSlug = function () {
         var v = ($('mycSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-        return /^[a-z0-9][a-z0-9._-]{0,79}$/.test(v) ? v : null;
+        return /^[a-z0-9][a-z0-9._-]{2,79}$/.test(v) ? v : null;
       };
       var cardOf = function () {
         return { name: d.name, designation: d.designation,
@@ -258,7 +258,7 @@
         var btn = this;
         btn.disabled = true;
         var slug = ($('mycSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-        if (slug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(slug)) {
+        if (slug && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(slug)) {
           btn.disabled = false; say(SAID['slug-shape'], 'err'); $('mycSlug').focus(); return;
         }
         db.rpc('namecard_save', { p_mobile: ($('mycMobile').value || '').trim() || null, p_slug: slug,

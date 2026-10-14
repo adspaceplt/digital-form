@@ -3032,3 +3032,12 @@ tells the team it is ready for a Letter of Offer.
   not recounted around holidays; that would change every deadline's rule
   and was not asked.
 
+### 2026-10-14 · A slug is three characters at least
+- The user asked whether hi.adspace.me/q was kept for quotations, then:
+  "when creating short links, the slug requires to have minimum 3 letters;
+  1 and 2 letters eg. hi.adspace.me/q, hi.adspace.me/qr are all blocked".
+  The rule holds a short link's slug and a namecard's slug alike, since
+  both answer on the one host. No `/q` route was built (the user declined
+  it). Live, no slug was under three characters; the links constraint is
+  added NOT VALID so an older one would keep working, and a card's short
+  slug is made again from the name before its constraint is added.
