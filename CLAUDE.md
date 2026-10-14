@@ -4131,6 +4131,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   languages, budget and term, one-off items as steppers two across, the
   lines and totals from `quote_preview` as ticked; with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press).
+  A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
+  reels`) and the ad budget it covers; choosing a plan ticks Meta where no
+  platform is ticked; the budget opens on the plan's own (`Included: up to
+  RM 4,000`, value 0, as the website sends it) and offers only larger steps
+  from the card's Meta advertising and boosters, None where no plan covers
+  one (the user, 2026-10-14). The pane reads Quotations (Build quote) over
+  Service lines (Add service), each heading over its own list.
   Issue Letter of Offer (`quotation_offer`, once) makes the quotation's
   lines the client's To quote lines (`quotation_id`, its term and
   percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):

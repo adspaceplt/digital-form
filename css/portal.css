@@ -11977,6 +11977,10 @@ button.vs-row { cursor: pointer; }
 }
 .qb-stepval::-webkit-outer-spin-button, .qb-stepval::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .qb-stepname { font-size: 13.5px; color: var(--ink-soft); }
+/* A stepper reads as the website's: the item at the left, its count at the
+   right edge (2026-10-14). */
+.qb-step .qb-stepname { order: -1; flex: 1 1 auto; min-width: 0; color: var(--ink); }
+.qb-step .qb-stepname .qb-rate { display: block; }
 .qb-translate { margin-top: 4px; }
 .qb-money { display: grid; gap: 12px; }
 /* No plan: the platforms run four across and the budget sits beside the
