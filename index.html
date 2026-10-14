@@ -42,7 +42,7 @@
 <meta name="twitter:image" content="https://digital.adspace.me/img/front-door-1200.jpg?v=20260928">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261014e">
+<link rel="stylesheet" href="/css/portal.css?v=20261014f">
 <script src="/js/config.js?v=20261014a"></script>
 <!-- What a search engine reads about ADspace: the business, its office and
      the site. The WhatsApp line is the wa.me address, never the number. -->
@@ -218,28 +218,52 @@
   if (hero) hero.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 })();
 /* The week from today, in Malaysia time whatever the visitor's own clock
-   says: Monday to Friday, 10:00 to 18:00. Drawn on arrival and again every
-   minute and on return to the tab, so a page left open rolls to the next
-   day on time. */
+   says: Monday to Friday, 10:00 to 18:00, and Closed on a public holiday
+   the team lists in Settings (2026-10-14), named under its date. Drawn on
+   arrival and again every minute and on return to the tab, so a page left
+   open rolls to the next day on time. The holidays are read once a visit,
+   a fortnight ahead; a read that fails leaves the hours as they are. */
 (function () {
   var DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var work = function (x) { return x >= 1 && x <= 5; };
+  var HOL = {}, upTo = '';
+  var esc = function (v) { return String(v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // Malaysia keeps UTC+8 all year.
+  var myt = function (plusDays) { return new Date(Date.now() + 8 * 3600e3 + (plusDays || 0) * 864e5); };
+  var iso = function (t) { return t.toISOString().slice(0, 10); };
+  function readHolidays() {
+    var cfg = window.ADSPACE_CONFIG || {};
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.fetch) return;
+    var from = iso(myt(0)), to = iso(myt(14));
+    upTo = to;
+    fetch(cfg.supabaseUrl + '/rest/v1/rpc/public_holidays_between', {
+      method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + cfg.supabaseAnonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_from: from, p_to: to })
+    }).then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
+      HOL = {};
+      (Array.isArray(list) ? list : []).forEach(function (h) { if (h && h.day) HOL[h.day] = h.name; });
+      draw();
+    }).catch(function () {});
+  }
   function draw() {
-    // Malaysia keeps UTC+8 all year.
-    var now = new Date(Date.now() + 8 * 3600e3);
+    var now = myt(0);
     var body = document.querySelector('#lpHours tbody');
     if (!body) return;
+    if (upTo && iso(myt(6)) > upTo) readHolidays();
     var rows = '';
     for (var i = 0; i < 7; i++) {
-      var t = new Date(now.getTime() + i * 864e5), wd = t.getUTCDay();
-      rows += '<tr' + (work(wd) ? '' : ' class="is-shut"') + '><th scope="row">' +
+      var t = new Date(now.getTime() + i * 864e5), wd = t.getUTCDay(), hol = HOL[iso(t)], open = work(wd) && !hol;
+      rows += '<tr' + (open ? '' : ' class="is-shut"') + '><th scope="row">' +
         (i === 0 ? 'Today' : DAY[wd].slice(0, 3)) + '</th><td>' + t.getUTCDate() + ' ' + MON[t.getUTCMonth()] +
-        '</td><td>' + (work(wd) ? '10:00 to 18:00' : 'Closed') + '</td></tr>';
+        (hol ? '<span class="lp-hol">' + esc(hol) + '</span>' : '') +
+        '</td><td>' + (open ? '10:00 to 18:00' : 'Closed') + '</td></tr>';
     }
     if (body.innerHTML !== rows) body.innerHTML = rows;
   }
   draw();
+  readHolidays();
   setInterval(draw, 60e3);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) draw(); });
 })();
