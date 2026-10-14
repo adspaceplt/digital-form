@@ -5934,7 +5934,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    second, Download ending at the card's edge. */
 .doc-row.is-file { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 116px; }
 .doc-dl { display: flex; justify-content: flex-end; min-width: 0; }
-.is-narrow .doc-row.is-file { grid-template-areas: "name state" "amt act"; align-items: center; }
+.is-narrow .doc-row.is-file { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name state" "amt act"; align-items: center; }
 .is-narrow .doc-row.is-file > .doc-dl { grid-area: act; }
 
 /* The brief, and the changes asked for, read as quoted matter rather than as

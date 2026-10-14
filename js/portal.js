@@ -119,7 +119,7 @@
       request: '申请', fee: '费用', noRequests: '暂无申请。', withdraw: '撤回', undo: '撤销',
       withdrawn: '已撤回', withdrawnSay: '申请已撤回。',
       reply: '回复', more: '更多操作',
-      document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
+      document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '服务确认函',
       reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
       meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论', to: '至',
@@ -557,7 +557,8 @@
      PORTAL-7). The client never reads the database's own words. */
   function refused(r) {
     var e = r && r.error;
-    return !!e && e.code !== 'PGRST202' && !/could not find the function/i.test(e.message || '');
+    if (!e) return !!(r && r.data && r.data.error);   /* the function's own refusal (no-access) */
+    return e.code !== 'PGRST202' && !/could not find the function/i.test(e.message || '');
   }
   function failCard(card, box, go) {
     var w = t();

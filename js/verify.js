@@ -33,7 +33,7 @@
       issued: '签发于', state: { valid: '有效', voided: '已作废', replaced: '已替换' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
-      kind: { 'letter of offer': '报价函', 'hr letter': '人事函件', 'client letter': '客户函件',
+      kind: { 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
         'letter to client': '客户函件', 'thank you letter': '感谢函', 'quotation cover': '报价单封面函' }
     }
   };
