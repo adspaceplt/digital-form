@@ -2718,6 +2718,16 @@ button.appver {
 .askfields.has-half > .askentry.is-half { grid-column: auto; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
+/* A question of more than five figures reads as sections (2026-10-14,
+   audit SET-4): each heading 12 above its fields, a hairline and a 24px
+   step before it; a mute line under a field says a change already set
+   from a later day. */
+.askfields > .askhead { margin: 0 0 12px; }
+.askfields > .askhead:not(:first-child) { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line-soft); }
+.askhead + .askentry { margin-top: 0; }
+.askfields.has-half > .askhead { grid-column: 1 / -1; margin-bottom: -4px; }
+.askfields.has-half > .askhead:not(:first-child) { margin-top: 8px; }
+.asknote { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
 /* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
    words and mark give way to a turning ring in its own ink. */
 .btn.is-busy { position: relative; cursor: progress; }
@@ -10958,6 +10968,7 @@ button.aiu-row:first-child::before { content: none; }
 }
 .input.aiu-num::-webkit-outer-spin-button, .input.aiu-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .aiu-unit { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.aiu-adm { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
 .aiu-limits.is-editing .aiu-row { padding: 6px 0; }
 .aiu-limits.is-editing .aiu-row:first-child { padding-top: 0; }
 
@@ -11848,6 +11859,8 @@ button.vs-row { cursor: pointer; }
 .stg-what { display: grid; gap: 2px; min-width: 0; }
 .stg-name { margin: 0; font-weight: 500; color: var(--ink); }
 .stg-meta { margin: 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+/* What was pressed answers on its row (2026-10-14, audit SET-2). */
+.stg-what > .msg.stg-said { margin: 4px 0 0; }
 .stg-ctl { display: flex; align-items: center; justify-content: flex-end; }
 .stg-ctl .btn { flex: 0 0 auto; }
 @media (hover: hover) {

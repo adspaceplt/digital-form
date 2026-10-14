@@ -479,7 +479,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   first left out; replaced, never pushed), so a refresh lands on it; it
   never stands between the person and a row. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
-  opening the one sheet that already edits it. The
+  opening the one sheet that already edits it; a figure changed from a
+  later day reads `From 14 Nov 2026: SST 6%` under the value
+  (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
+  never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
   This device
@@ -689,7 +692,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
-  - A field marked `half` sits beside the next one (a date and its time).
+  - A field marked `half` sits beside the next one (a date and its time);
+    `head` opens a section with its heading (`.askhead`), and `note` is one
+    mute line under the field (`.asknote`, its `aria-describedby`).
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
     nothing, never required); a `choices` field marked `seg` is a segment.
     Focus lands on the first typed field, never a segment or a tick.
@@ -1080,9 +1085,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   functions, `app_settings_read()` for pages, `app_settings_set(p_from,
   p_values)` an admin's, from today (MYT) or later (`past`), filed
   `team.changed` under Settings. One sheet edits a group of them
-  (`ADspaceAdmin.editSettings`: From, then each figure; only what changed
-  is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
-  bar), Due dates (My Work's ⋯: report and revision days), `team.settings`.
+  (`ADspaceAdmin.editSettings`: From, then each figure, under its
+  section's heading where a key names one, a change already set from a
+  later day said under its field; only what changed is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
+  bar; `ADspaceAdmin.TAX_KEYS`, ten figures in three sections), Due dates
+  (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`
@@ -3853,9 +3860,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     used first, the totals added up on the page; then Limits, each person:
     one limit a use for everyone (the user, 2026-10-11: "just unified
     across everyone"; AI uses, Drafts and Checks each report, Captions,
-    Scripts, Brand analyses), saved to the colleague's and the admin's
-    setting alike, a row reading `· admins n` only while the stored two
-    differ. Edit limits turns those rows into small tonal fields in place
+    Scripts, Brand analyses), a use changed saved to the colleague's and
+    the admin's setting alike and nothing else saved (2026-10-14,
+    ux-audit SET-3: one change had lowered all five admin limits), a row
+    reading `· admins n`, and its field `Admins n a day` under the name,
+    while the stored two differ. Edit limits turns those rows into small tonal fields in place
     (`.aiu-limits.is-editing`, Save and Cancel in the foot; never a sheet
     of boxes); a colleague's own limit is set by pressing their row
     (`button.aiu-row`, one field, empty meaning the standard); the totals

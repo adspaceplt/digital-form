@@ -52,7 +52,10 @@
     e.returnValue = '';
   });
 
+  /* `id` may be a function: the Settings page says an outcome on the row
+     that was pressed (2026-10-14), not on a line out of view. */
   function msg(id, text, kind) {
+    if (typeof id === 'function') { id(text || '', kind || ''); return; }
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
   }
   function esc(s) {
@@ -5088,13 +5091,35 @@
      days) and week (0 to 168 hours), where 0 sends or asks none. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true] };
+  /* Tax and terms, one list for the Services bar and the Settings page:
+     ten figures read as three sections (2026-10-14, audit SET-4). */
+  var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
+    ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
+    ['details_form_days', 'Details form open for (days)', 'quote', 'Tax and validity'],
+    ['term_1_3', '1 to 3 months (%)', 'adj', 'Terms under a year'], ['term_4_5', '4 and 5 months (%)', 'adj', 'Terms under a year'],
+    ['term_6_11', '6 to 11 months (%)', 'adj', 'Terms under a year'],
+    ['term_12_23', '12 to 17 months (%)', 'adj', 'Terms of a year or more'], ['term_18_23', '18 to 23 months (%)', 'adj', 'Terms of a year or more'],
+    ['term_24', '24 months and more (%)', 'adj', 'Terms of a year or more']];
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
     var day = ADspaceClock.today();
-    var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k, i) {
-      return { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
-        half: spec.keys.length > 1 && !(spec.keys.length % 2 && i === spec.keys.length - 1) };
+    /* A key may name its section (`k[3]`): more than five figures read as
+       sections of two to five under their headings (DESIGN.md §4), each
+       section's own pairs side by side. A figure already changed from a
+       later day says so under its field (2026-10-14, audit SET-1). */
+    var runs = {};
+    spec.keys.forEach(function (k) { var s = k[3] || ''; runs[s] = (runs[s] || 0) + 1; });
+    var seen = {}, prev = null;
+    var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
+      var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
+      var next = MON.next ? MON.next(k[0]) : null;
+      var f = { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
+        half: n > 1 && !(n % 2 && at === n),
+        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + next.value : '' };
+      if (s && s !== prev) f.head = s;
+      prev = s;
+      return f;
     }));
     window.ADspaceConfirm.ask({
       title: spec.title, go: 'Save', fields: fields,
@@ -5137,6 +5162,7 @@
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
+    TAX_KEYS: TAX_KEYS,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
     brandGate: brandGate,
