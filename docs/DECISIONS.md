@@ -3357,3 +3357,13 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   act drawn two ways. Back to Summary now leads with the chevron toward
   Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
   keeps its words.
+
+### 2026-10-15 · Clients audit P3s
+At the user's word ("fix all no matter what"): a plan card in Build quote
+keeps each part of its contents whole (`6 reels` no longer breaks after its
+figure; the line wraps between parts, as DESIGN.md's line of parts asks), and
+a stage move on the day the stage began reads "Contacted the same day" where
+it read "Contacted after the same day". Left as they are, each by a recorded
+rule: New lead's thirteen fields (the user: intake asks for what is known on
+day one; the salutation added 14 Oct) and the record's tab strip scrolling at
+1280 with a faded edge (the strip law allows it).
