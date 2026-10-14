@@ -916,7 +916,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     actions keeps its first and puts the rest there once it has three (the
     Performance Months bar); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
-    can be pressed.
+    can be pressed. Its glyph is the row ⋯'s three dots across.
   - The Filters sheet focuses its card, never a select (a focused select wears
     the ring, and iOS does not open a select that already has focus).
   - A select the page shows or hides while the card or sheet is open is
@@ -3163,6 +3163,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
   `notified`); unticked, the member is not told and the sheet says so.
+  A draft month's Notify, Save and Share sit at the review sheet's foot
+  (`#pvFoot`, `.qfoot`), where the scores end; never a `.sheet-foot`, whose
+  primary Enter presses: Enter in a score never shares the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
   themselves on the six scorecard categories in My records, Reviews (Rate
@@ -4449,7 +4452,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Set inactive and Delete (the ⋯'s last item, red, Team Full Access, never
     one's own or a system account, not drawn once their details are
     deleted) first ask who takes each kind of live work the colleague holds,
-    a picker a kind, Keep with them first, only kinds they hold
+    a picker a kind, Keep with them first, only kinds they hold; with two
+    kinds or more All their work to comes first and each kind reads Same as
+    above until a colleague or Keep is chosen for it
     (`team_work_held`): clients they are person in charge of and open
     campaigns (by name, as before), open tasks, months they manage,
     meetings ahead they lead, repeating tasks, reports in review waiting on
@@ -4457,7 +4462,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     review, and said), extension requests waiting on them, and templates
     naming them as default owner (`team_hand_over`, each filed on its
     record and one line under the colleague: Work handed over: 2 open
-    tasks → Aisyah; …).
+    tasks → Aisyah; …). Work left with a removed colleague is named in
+    Delete's line (1 client and 1 open task stay with …), and an inactive
+    or removed colleague's ⋯ offers Hand over work, the same pickers.
   - Delete then asks Their data, Keep / Delete, and the name typed back
     (the question opens on it); `team_member_remove` (`own`,
     `system-account`, `bad-name`, `last-admin`) sets them inactive and
