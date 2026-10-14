@@ -1192,8 +1192,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and every check unchanged):
   - `#grSum` reads the panel back as one sentence.
   - Start from Admin / Manager / Staff / View only; a panel matching none
-    reads `Custom: n changes from {nearest}` (`#grPresetNote`) with the
-    changes listed under it (`#grChanges`), worked out and never stored.
+    reads `Custom: n changes from {nearest}` (`#grPresetNote`, a quiet
+    fold) over the changes (`#grChanges`, shut until it is pressed),
+    worked out and never stored.
     Admin in Start from is the only way to make a group admin.
   - The Dashboard's row first (`#grDash`, On / No Access, no heading; a
     preset leaves it On), filed `Dashboard: On → No Access`, read in the
@@ -3163,9 +3164,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
   `notified`); unticked, the member is not told and the sheet says so.
-  A draft month's Notify, Save and Share sit at the review sheet's foot
-  (`#pvFoot`, `.qfoot`), where the scores end; never a `.sheet-foot`, whose
-  primary Enter presses: Enter in a score never shares the month.
+  A draft month's Notify, Save (tonal) and Share (the one blue) sit at the
+  review sheet's foot (`#pvFoot`, `.qfoot`), where the scores end; never a
+  `.sheet-foot`, whose primary Enter presses: Enter in a score never shares
+  the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
   themselves on the six scorecard categories in My records, Reviews (Rate
@@ -3317,7 +3319,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the asker's name, never the note); the asker withdraws it and asks again,
   the colleague asked marks it done and reopens it (`health_talk_set`).
 - Team: Health (`tab=health`, `team.health`): the half month's averages as
-  bars (warn under 3) with `n of m checked in`, Colleagues (every active
+  bars (warn under 3) with `n of m checked in` (with nobody agreed, the one
+  line No colleague has agreed to check-ins.), Colleagues (every active
   colleague: this half's five answers, Checked in, or Not agreed /
   Withdrawn as a chip), each opening their history, and the last 90 days'
   talks. `health_team()` sends a colleague's answers only while their
@@ -4423,7 +4426,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member row reads the name with the Employee ID beside it (`.team-eid`,
   mute; still searched), then department and position (and Until), then the
   email; the state column names only the exception: Inactive, Access
-  expired, Removed, or Card off for somebody still working.
+  expired, Removed, or Card off for somebody still working. Inactive,
+  expired and removed colleagues leave their group's card for one Inactive
+  card after the groups, shut until opened (opened for the row a stand-down
+  or Delete moves there). A success line under the bar goes after 8
+  seconds; a refusal or a warning stays until the next act.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
