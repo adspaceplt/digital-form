@@ -446,7 +446,10 @@
     row.setAttribute('data-p', t.purpose);
     row.innerHTML =
       '<span class="wat-name"><b>' + esc(w[0]) + '</b>' +
-        '<small>' + esc(t.name ? [t.name, t.lang, CATEGORY[t.category], plural(t.params, 'variable')].filter(Boolean).join(' · ') : 'No template') + '</small>' +
+        /* A line of parts wraps between its parts, never inside one
+           (ux-audit WA-2, 2026-10-14). */
+        '<small>' + (t.name ? [t.name, t.lang, CATEGORY[t.category], plural(t.params, 'variable')].filter(Boolean)
+          .map(function (x) { return '<span class="wat-part">' + esc(x) + '</span>'; }).join(' · ') : 'No template') + '</small>' +
         (held ? '' : '<small class="wam-why">Not among Meta\'s approved templates.</small>') + '</span>' +
       '<span class="wat-on"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(w[0]) + '" data-a="on"></button></span>' +
@@ -653,7 +656,7 @@
     $('waReportLabel').classList.toggle('is-req', !given);
     var fields = [];
     if (t.header_var) fields.push(['h:' + t.header_var, 'Header']);
-    t.body_vars.forEach(function (v) { fields.push(['b:' + v, /^\d+$/.test(v) ? 'Variable ' + v : human(v)]); });
+    t.body_vars.forEach(function (v) { fields.push(['b:' + v, /^\d+$/.test(v) ? numbered(v, t, r) : human(v)]); });
     if (t.button_var) fields.push(['u:' + t.button_var.name, 'Link button']);
     $('waFillSec').hidden = !fields.length;
     box.innerHTML = fields.map(function (f, i) {
@@ -671,6 +674,19 @@
   }
   /* The approval reminder's own client: what waits and its link fill in. */
   function approving(r) { return Boolean(cx && cx.o.purpose === 'approval' && r && r.kind === 'contact' && r.client_id === cx.o.clientId); }
+  /* A numbered variable is named for what `prefill` puts in it, so the
+     field says what it is without reading the preview (ux-audit WA-1,
+     2026-10-14); one the page does not fill keeps its number. */
+  function numbered(v, t, r) {
+    if (!r) return 'Variable ' + v;
+    var doc = t.header === 'DOCUMENT' && r.kind === 'contact';
+    if (v === '1') return 'Greeting';
+    if (v === '2') return r.kind === 'creator' ? 'Campaign' : 'Client';
+    if (v === '3' && doc) return cx.o.doc ? 'Reference' : 'Report';
+    if (v === '3' && approving(r)) return 'What waits';
+    if (v === '4' && approving(r)) return 'Link';
+    return 'Variable ' + v;
+  }
   function human(v) { var s = String(v).replace(/_/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
   /* What a variable is filled with, from what the record holds: the
      greeting first, then the client (a creator's campaign), then a report's
