@@ -24,7 +24,7 @@
      letter redrawn later is priced by the figures of its own day. `load()`
      reads them once per page; `FIRST` is what each held before the setting
      existed (the migration's seed), used only where the read fails. */
-  var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_24: -10,
+  var FIRST = { sst_pct: 8, term_1_3: 25, term_4_5: 15, term_6_11: 0, term_12_23: -5, term_18_23: -5, term_24: -10,
     lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
     ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10,
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72, task_remind_hours: 3, task_start_days: 2, quote_valid_days: 30, details_form_days: 14, wa_repeat_hours: 24 };
@@ -132,7 +132,7 @@
      before — and none of them is a default. */
   /* The ranges are the card's; the percentage for each is a setting. */
   var TERM_PCT = [
-    [1, 3, 'term_1_3'], [4, 5, 'term_4_5'], [6, 11, 'term_6_11'], [12, 23, 'term_12_23'], [24, 999, 'term_24']
+    [1, 3, 'term_1_3'], [4, 5, 'term_4_5'], [6, 11, 'term_6_11'], [12, 17, 'term_12_23'], [18, 23, 'term_18_23'], [24, 999, 'term_24']
   ];
   function termPct(months, at) {
     var n = Math.max(1, Math.floor(Number(months || 1)));
