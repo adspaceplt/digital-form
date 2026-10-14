@@ -4103,7 +4103,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   its additional contents per month do not; the user, 2026-10-14),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
-  shows (the user, 2026-10-14: "dont cache my record"), Your details (name, work email, a Malaysia or
+  shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
   Singapore WhatsApp number, brand, industry, consent; a free email is
   advised against, never refused), then the quotation priced by
   `quote_price` through `quote-request` (Turnstile, checked where the

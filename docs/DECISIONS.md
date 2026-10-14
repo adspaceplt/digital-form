@@ -3083,3 +3083,12 @@ tells the team it is ready for a Letter of Offer.
   1.2 seconds in the harness (it signs that account out on the device and
   puts hers back first); the suite waits for the answer, the same
   assertions standing.
+
+### 2026-10-14 · The salutation is asked wherever a lead is made
+- The user: "the salutation is missing from the new leads or new clients,
+  it should streamlined all". New lead in the console asks it beside
+  Contact person from the Contacts sheet's own list (copied in, one copy),
+  and the quotation website asks it, optional, at Your details;
+  `quote_website_create` keeps it on the new lead's main contact (one of
+  the list, else `bad-salutation`). A lead the website finds already held
+  keeps its contacts as they are.
