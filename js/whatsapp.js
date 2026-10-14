@@ -377,7 +377,9 @@
       return;
     }
     box.appendChild(G.section({
-      route: 'whatsapp', key: 'messages', name: 'Messages', count: list.length,
+      /* The card names the month it holds, never the tab again (ux-audit
+         WA-6, 2026-10-14). */
+      route: 'whatsapp', key: 'messages', name: monthWord(), count: list.length,
       shut: false,
       table: function () {
         var table = G.table('wam-row', ['To', 'Template', 'Sent by', 'Status']);
@@ -387,6 +389,10 @@
     }));
   }
 
+  function monthWord() {
+    var sel = $('waMonth'), o = sel && sel.options[sel.selectedIndex];
+    return (o && o.textContent) || 'Messages';
+  }
   function rowOf(x) {
     var s = statusOf(x);
     var row = document.createElement('div');
@@ -576,6 +582,13 @@
       list.push({ kind: 'creator', id: k.id, name: k.name, client: '', greeting: k.greeting, number: k.number, code: k.code,
         label: k.name + ' · Creator' });
     });
+    /* Two recipients read alike are told apart by their number's last four
+       (ux-audit WA-3, 2026-10-14). */
+    var seen = {};
+    list.forEach(function (r) { seen[r.label] = (seen[r.label] || 0) + 1; });
+    list.forEach(function (r) {
+      if (seen[r.label] > 1) r.label += r.number ? ' · ' + String(r.number).slice(-4) : r.username ? ' · ' + r.username : ' · No number';
+    });
     cx.recips = list;
     list.forEach(function (r) { cx.byVal[r.kind + ':' + r.id] = r; });
     var first = o.purpose === 'creator' ? list[0]
@@ -628,6 +641,8 @@
     var why = !r ? '' : r.number ? '' : r.kind === 'creator' ? SAID['no-creator-number'] : r.username ? SAID.username : SAID['no-number'];
     say($('waToNote'), why, 'warn');
     $('waToNote').hidden = !why;
+    /* Send rests while the line above says why (ux-audit WA-8, 2026-10-14). */
+    $('waSend').disabled = Boolean(why);
     pickTemplate(true);
   }
 

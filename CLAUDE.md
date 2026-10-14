@@ -1568,7 +1568,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Prof, Dato', Datin, Datuk, Dato' Sri, Datin Sri, Tan Sri, Puan Sri, Tun,
     Tuan, Puan, Encik, Cik, or None), shown before the name on the row and
     filed from and to. `contact_greeting(salutation, name)` greets with the
-    salutation and the whole name, else the first word of the name.
+    salutation and the whole name, else the whole name where its first word
+    is a salutation (never Tan, a surname too), else the name's first word
+    (`2026-10-15-whatsapp-greeting-and-counts.sql`).
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
     `@name` or the number.
@@ -4676,7 +4678,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   it (Automatic for the queue) and the status over when: Queued, Sending,
   Sent, Delivered, Read, or Failed with the reason in the team's words
   (`REASON`, by Meta's code). Above it the month's templates sent by
-  category (Utility, Marketing; Authentication where any). The bar: search
+  category (Utility, Marketing; Authentication where any; a message Meta failed left out). The bar: search
   (name, client, template, a number as typed), Month (a view, the last
   twelve), Type and Status behind Filters, the count, New message (Work).
 - Templates (`tab=templates`, Full Access): the queue (waiting, sending, not

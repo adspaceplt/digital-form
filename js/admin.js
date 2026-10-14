@@ -6491,6 +6491,8 @@
              somebody who wants that card open. */
           window.ADspaceGroup.keep('links', live ? 'live' : 'paused', false);
           loadLinks();
+          /* The way back where it happened (ux-audit LNK-7, 2026-10-14). */
+          if (!live) undoHere('/' + l.slug + ' paused.', function () { setLinkLive(l, true); }, $('linkListMsg'));
         });
     };
     if (live) { run(); return; }
@@ -6561,6 +6563,8 @@
       }
       logAction(was ? 'shortlink.updated' : 'shortlink.created', '/' + slug, target);
       shutLinkForm();
+      /* The result where the list is (ux-audit LNK-6, 2026-10-14). */
+      msg('linkListMsg', '/' + slug + (was ? ' saved.' : ' added.'), 'ok');
     }).catch(function () {
       go.disabled = false;
       msg('linkMsg', 'Not saved. The connection was lost; try again.', 'err');
@@ -6682,8 +6686,8 @@
               .filter(Boolean).join(' · ') +
           '</span>' +
           '<div class="qrrow-acts">' +
-            '<button class="btn btn-sm" data-q="dl" type="button">Download PNG</button>' +
-            '<button class="btn btn-sm btn-quiet" data-q="copy" type="button">Copy URL</button>' +
+            '<button class="btn btn-sm" data-q="dl" type="button">Download</button>' +
+            '<button class="btn btn-sm" data-q="copy" type="button">Copy link</button>' +
             '<button class="btn btn-sm btn-quiet' + (q.active ? ' is-danger' : '') +
               '" data-q="toggle" data-need="links:work" type="button">' + (q.active ? 'Revoke' : 'Restore') + '</button>' +
           '</div>' +
