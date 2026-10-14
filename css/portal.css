@@ -6565,6 +6565,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   }
   .link-row > .link-slug   { grid-area: slug; }
   .link-row > .link-act    { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+  /* Three fixed tracks, so a namecard's copy and open marks stand under a
+     link's copy and QR marks (ux-audit LNK-1, 2026-10-14). */
+  .link-row > .link-act { display: grid; grid-template-columns: repeat(3, var(--ctl-h)); justify-content: end; justify-items: center; }
   .link-row > .link-target { grid-area: target; }
   .link-row > .link-label  { grid-area: label; }
   .link-row > .link-label:empty { display: none; }
@@ -10762,13 +10765,19 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .hb-act { position: relative; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
 .is-narrow .crm-head.hb-row { display: none; }
 .is-narrow .hb-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name act";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "name name act" "ver when act";
   gap: 2px 10px; padding: 12px 15px;
 }
 .is-narrow .hb-row > .hb-name { grid-area: name; }
 .is-narrow .hb-row > .hb-act { grid-area: act; }
-.is-narrow .hb-row > .hb-ver, .is-narrow .hb-row > .hb-when { display: none; }
+/* The version and its day stay, as the row's last line (ux-audit HB-1,
+   2026-10-14). */
+.is-narrow .hb-row > .hb-ver { grid-area: ver; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .hb-row > .hb-when { grid-area: when; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .hb-row > .hb-when { margin-left: -6px; }
+.is-narrow .hb-row > .hb-when::before { content: "· "; }
+.is-narrow .crm-head.hb-row { display: none; }
 /* A version in the Versions sheet: what it is over who and when, then Open. */
 .hb-verrow {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
@@ -11977,11 +11986,12 @@ button.vs-row { cursor: pointer; }
 .is-narrow .crm-head.wat-row { display: none; }
 .is-narrow .wat-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas: "name act on";
+  grid-template-areas: "name on act";
   align-items: start; gap: 0 8px; padding: 12px 15px;
 }
-/* The pen alone, a square of the control's height, its name kept for a
-   screen reader by the button's own label. */
+/* The switch then the pen, as at a desk (ux-audit WA-7, 2026-10-14); the
+   pen alone, a square of the control's height, its name kept for a screen
+   reader by the button's own label. */
 .is-narrow .wat-row > .wat-act .btn { min-width: 0; width: var(--ctl-h); height: var(--ctl-h); min-height: var(--ctl-h); padding: 0; justify-content: center; }
 .is-narrow .wat-row > .wat-act .wat-word { display: none; }
 .is-narrow .wat-row > .wat-name { grid-area: name; }

@@ -3475,3 +3475,23 @@ finding fixed at the user's word ("fix all no matter what").
   voice-over in the scene tracks, no lone "1 of 1", the question a segment.
 - Glyphs: Publish, Unpublish and Edit drew their own marks; they take the
   act table's (`js/acts.js` unchanged).
+
+- **2026-10-15** — The audit of Short Links, Handbook, My records and
+  WhatsApp, its P3s and act glyphs (the user, through the parent session:
+  "fix all no matter what"): LNK-1, a phone row's marks stand in three fixed
+  tracks, so a namecard's copy mark stands under a link's; LNK-6, Create
+  says "/slug added." over the list; LNK-7, Pause draws Undo where it
+  happened; the QR row's Download PNG and Copy URL read Download and Copy
+  link, each with its mark (one word an act); HB-1, a Handbook row on a
+  phone keeps its version and day under the name; MINE-2, Log initiative
+  is offered by the bar alone; MINE-3, the open-until sentence is said once,
+  on the month to rate first; MINE-4, Write reflection stands in the bar
+  beside its month; MINE-5, No reviews. gives way while a month waits to
+  be rated; MINE-6 (the glyph check), Letters' Download drew a tray arrow,
+  now the file mark; WA-3, two recipients read alike are told apart by the
+  number's last four; WA-4, `contact_greeting` greets a name led by its
+  salutation whole (Tan left out: a surname too); WA-5, `wa_messages` no
+  longer counts a message Meta failed as sent; WA-6, the messages card names
+  its month, not the tab; WA-7, a template row reads switch then pen on a
+  phone as at a desk; WA-8, Send rests while the composer says the recipient
+  cannot be messaged (`2026-10-15-whatsapp-greeting-and-counts.sql`).
