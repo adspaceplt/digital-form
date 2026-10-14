@@ -2049,7 +2049,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     one's strip, covers line, progress and posts (`clearPostView`), and a
     read answered for a set already left is thrown away
     (`tests/crswitch.js`).
-  - Publish (blue) / Unpublish (tonal).
+  - Publish (blue) / Unpublish (tonal); an empty set draws no Publish and
+    Add assets is its blue (2026-10-15). A client row and a set row count
+    the posts whose latest decision is Changes requested (red dot), read in
+    the list's own requests. Add to set is Add assets' sheet foot.
   - Enable client (`#crEnable`, the bar's one action, Content Review
     settings at Work; the user, 2026-10-12, in place of Manage clients):
     drawn only while an Active client is out of Content Review (one read of
@@ -2194,7 +2197,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every slot is taken. The Creators tab folds options and backups under Not
   selected (`#campUnpicked`) while closed.
 - The one stage step in blue on a card is Release to client; every other
-  step is tonal.
+  step, and every Save on the card, is tonal. A shoot date moved moves Draft
+  due only while it is empty or still the old date plus 7, said on its row
+  (2026-10-15).
 - Each booking's card names its step under its head (`.kcard-steps`), the
   client's six steps as the selection page draws them (`ADspaceIcons.journey`,
   `stepOf`), a delivery campaign's own; none before the creator is booked
@@ -2225,10 +2230,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The campaign's form is one sheet for New campaign and Edit (`#addCampBox`);
   the record's ⋯ holds Edit and Delete, last.
 - The campaign record:
-  - Its panes (`pane=`) are Overview, Creators, Schedule, Deliverables, Client
-    selection, Finance, Activity.
-  - Deliverables and Client selection are views over the bookings. They
-    never write.
+  - Its panes (`pane=`) are Overview, Creators, Schedule, Selection,
+    Finance, Activity.
+  - Selection is a view over the bookings. It never writes.
   - `.camp-next` is derived on every repaint.
 - Next shoot means the earliest date from today; if none, the row reads Last
   shoot.
@@ -4318,7 +4322,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   month (unique), `engagement_id` the client's My Work month where one
   exists (never required). New script asks the client, the month (last
   month, this month and the next six, as My Work offers) and the type
-  (`video_script_new`); Add script (at the end of the month's tabs) makes
+  (`video_script_new`); Add script (at the end of the month's tabs) opens
+  a New script editor, stores nothing until Save (2026-10-15), then takes
   the month's next number with the header copied (platform, language,
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
@@ -4385,7 +4390,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   confirmed; an answer landing after the editor shut is put in at its next
   open. The house
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
-- Publish (`video_script_share`, Undo where it happened) shows a script on the
+- Publish (`video_script_share`, Undo where it happened; not drawn on a
+  script with no scenes) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
   `script_link`; Reset access link asks and retires the old key). The link is
   for the client to read the scripts (the user, 2026-10-09: "no need show the
@@ -4417,8 +4423,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and its own Notes / Remarks with room to write (2026-10-10: the crew reads
   one sheet a shoot day). Scripts of a month sharing their header share one
   header table, whatever their kind; Preview PDF (a tab
-  opened at the press) and Download ask one script or the whole month once
-  there are two.
+  opened at the press) and Download from the month draw the whole month;
+  on a script's own page they ask This script or Whole month once there
+  are two.
 - Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
