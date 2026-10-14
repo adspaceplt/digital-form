@@ -3125,3 +3125,11 @@ tells the team it is ready for a Letter of Offer.
   version line, then Download alone on a third row. The version line moved
   into the command bar between the search and the acts, Download joined the
   acts (behind the ⋯ on a phone), and Add service shows on Rate card alone.
+
+- 2026-10-14 · Build quote layout. The user ("layout issues?") on the sheet
+  with no plan chosen: LinkedIn alone on a second line of platforms, the
+  budget and term stacked in a third of the width, and the one-off items as
+  tall number boxes. The platforms are a grid (two across beside the
+  content, four across with no plan), the budget and term sit side by side
+  with no plan, and one-off items are steppers two across, as the extra
+  contents are.

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261014p">
+<link rel="stylesheet" href="/css/portal.css?v=20261014q">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1187,7 +1187,7 @@
                     </div></div>
                 </div>
               </section>
-              <section class="fsec qb-three">
+              <section class="fsec qb-three" id="qbThree">
                 <div id="qbExtras"><span class="field-label">Extra contents</span>
                   <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic (Static)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Graphic (Static) <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
                   <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel 60s"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel 60s <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
@@ -1201,20 +1201,20 @@
                   <p class="qb-hint">Shared across the contents, no charge</p>
                   <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Translate every content <small class="qb-rate" id="qbTrRate"></small></span></label>
                 </div>
-                <div>
+                <div class="qb-money"><div>
                   <label class="field-label" for="qbBudget">Advertising budget per month</label>
                   <select class="select" id="qbBudget" data-nofind>
                     <option value="0">None</option><option value="2000">Up to RM 2,000</option><option value="4000">Up to RM 4,000</option>
                     <option value="8000">Up to RM 8,000</option><option value="14000">Up to RM 14,000</option>
                     <option value="20000">Up to RM 20,000</option><option value="-1">Above RM 20,000 (on request)</option>
-                  </select>
-                  <label class="field-label qb-termlabel" for="qbTerm">Term</label>
-                  <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select>
+                  </select></div>
+                  <div><label class="field-label" for="qbTerm">Term</label>
+                  <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select></div>
                 </div>
               </section>
               <details class="fmore" id="qbOnceMore">
                 <summary>One-off items <span class="fmore-sum"></span></summary>
-                <div class="row fgrid" id="qbOnce"></div>
+                <div class="qb-once" id="qbOnce"></div>
               </details>
               <section class="fsec qb-lines">
                 <h4 class="fsec-h">Quotation</h4>
@@ -5337,7 +5337,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/reports.js?v=20261013e"></script>
 <script src="/js/register.js?v=20261012a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/quotes.js?v=20261014a"></script>
+<script src="/js/quotes.js?v=20261014b"></script>
 <script src="/js/quotepdf.js?v=20261014"></script>
 <script src="/js/crm.js?v=20261014o"></script>
 <script src="/js/sales.js?v=20261012l"></script>

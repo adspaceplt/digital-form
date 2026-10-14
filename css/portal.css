@@ -11978,7 +11978,16 @@ button.vs-row { cursor: pointer; }
 .qb-stepval::-webkit-outer-spin-button, .qb-stepval::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .qb-stepname { font-size: 13.5px; color: var(--ink-soft); }
 .qb-translate { margin-top: 4px; }
-.qb-termlabel { margin-top: 12px; }
+.qb-money { display: grid; gap: 12px; }
+/* No plan: the platforms run four across and the budget sits beside the
+   term, so nothing stands alone in a third of the sheet. */
+#qbPlats { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px 24px; }
+.qb-pick.is-bare > :not([hidden]) { grid-column: 1 / -1; }
+.qb-pick.is-bare #qbPlats { grid-template-columns: repeat(4, max-content); }
+.qb-three.is-bare { grid-template-columns: minmax(0, 1fr); }
+.qb-three.is-bare .qb-money { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.qb-once { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; padding-top: 4px; }
+.qb-once .qb-stepname { min-width: 0; }
 @media (max-width: 640px) {
   .qb-plans { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .qb-three { grid-template-columns: minmax(0, 1fr); }
@@ -11990,6 +11999,10 @@ button.vs-row { cursor: pointer; }
 .qb-card .sheet-body > .fsec:first-child { padding-top: 4px; }
 .qb-one { display: flex; align-items: center; }
 .qb-one[hidden] { display: none; }
+@media (max-width: 640px) {
+  .qb-pick.is-bare #qbPlats { grid-template-columns: repeat(2, max-content); }
+  .qb-three.is-bare .qb-money, .qb-once { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ---------- The quotation website (/quote/, js/quote.js, 2026-10-14) ----------
    As the approved canvas draws it: one 560px column of steps, each a step

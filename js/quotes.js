@@ -271,9 +271,14 @@
       (sel.once || []).forEach(function (o) { once[o.slug] = o.qty; });
       $('qbOnce').innerHTML = ['content', 'verify', 'koc'].map(function (role) {
         return svcs(c, role).filter(function (s) { return s.rate != null; }).map(function (s) {
-          return '<div><label class="field-label" for="qbO-' + esc(s.slug) + '">' + esc(s.name) + ' <small class="qb-rate">' + esc(rm(s.rate)) + '</small></label>' +
-            '<input class="input" type="number" min="0" max="999" step="1" inputmode="numeric" id="qbO-' + esc(s.slug) + '" data-slug="' +
-            esc(s.slug) + '" value="' + esc(once[s.slug] || 0) + '"></div>';
+          /* A stepper a line, as the extra contents are: a count of one-off
+             work is pressed up, never typed into a tall box. */
+          var id = 'qbO-' + esc(s.slug), nm = esc(s.name);
+          return '<div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="' + id + '" aria-label="One fewer ' + nm + '">' + MINUS + '</button>' +
+            '<input class="qb-stepval" type="number" min="0" max="999" step="1" inputmode="numeric" id="' + id + '" data-slug="' + esc(s.slug) +
+            '" value="' + esc(once[s.slug] || 0) + '" aria-label="' + nm + '">' +
+            '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button>' +
+            '<span class="qb-stepname">' + nm + ' <small class="qb-rate">' + esc(rm(s.rate)) + '</small></span></div>';
         }).join('');
       }).join('');
       $('qbOnceMore').open = Boolean((sel.once || []).length);
@@ -286,6 +291,8 @@
   /* The plans of the chosen kind as cards: the letter and its fee over its
      platforms and contents; the one chosen pressed again leaves no plan
      (advertising or one-off items alone). */
+  var MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>';
+  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   function paintPlans() {
     var withAds = $('qbAds').value === 'ads';
     var list = svcs(B.card, 'plan').filter(function (p) { return Boolean(p.spec.ads) === withAds; });
@@ -317,6 +324,10 @@
     $('qbMixRow').hidden = !p;
     $('qbExtras').hidden = !p;
     $('qbLangCol').hidden = !p;
+    /* With no plan the platforms and the budget and term take the width
+       the plan's content, extras and languages leave. */
+    $('qbThree').classList.toggle('is-bare', !p);
+    $('qbMixRow').parentNode.classList.toggle('is-bare', !p);
     $('qbPlatsLabel').textContent = p ? 'Platforms (' + p.spec.platforms + ' in the plan)' : 'Platforms';
     var meta = feeOf('meta');
     var ticked = Array.prototype.filter.call(document.querySelectorAll('#qbPlats input'), function (i) { return i.checked; }).map(function (i) { return i.value; });
@@ -434,7 +445,7 @@
       var b = e.target.closest('[data-step]');
       if (!b) return;
       var i = $(b.getAttribute('data-for'));
-      i.value = String(Math.min(99, Math.max(0, (Number(i.value) || 0) + Number(b.getAttribute('data-step')))));
+      i.value = String(Math.min(Number(i.max) || 99, Math.max(0, (Number(i.value) || 0) + Number(b.getAttribute('data-step')))));
       on();
     });
     ['qbMix', 'qbBudget', 'qbTerm', 'qbTranslate', 'qbGraphic', 'qbReel'].forEach(function (id) {
