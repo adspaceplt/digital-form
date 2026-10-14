@@ -7783,6 +7783,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cal-dow { background: var(--sunk); padding: 8px 8px 6px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .cal-day { background: var(--card); min-height: 96px; padding: 6px 5px 8px; display: grid; align-content: start; gap: 3px; min-width: 0; }
 .cal-day.is-weekend { background: var(--sunk); }
+.cal-day.is-holiday { background: var(--sunk); }
+.cal-hol { font-size: 11px; line-height: 1.3; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hol-note { margin: 6px 0 0; }
 /* A day outside the month is quieter than one inside it, and both clear
    4.5:1: `--line-ctl` is a border tone (3:1) and failed as text. */
 .cal-day.is-out .cal-num { color: var(--ink-mute); }
@@ -10065,6 +10068,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .lp-hours td:last-child { text-align: right; white-space: nowrap; }
 .lp-hours .is-shut td:last-child { color: var(--ink-mute); }
+.lp-hol { display: block; font-size: 13px; color: var(--ink-mute); }
 .lp-note { margin: 12px 0 0; font-size: 13px; color: var(--ink-mute); }
 .lp-address { margin: 0 0 4px; font-style: normal; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
@@ -10423,6 +10427,12 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .dtrow-name { display: grid; gap: 2px; min-width: 0; }
 .dtrow-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .dtrow-title b { font-weight: 600; overflow-wrap: anywhere; }
+/* Public holidays (2026-10-14): a holiday a row, Edit and its ⋯ at the right; a year at a time. */
+.hol-year { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.hol-year .field-label { margin: 0; }
+.hol-acts { display: flex; align-items: center; gap: 4px; }
+.hol-row.is-past .dtrow-name { color: var(--ink-mute); }
+#holMsg:empty { display: none; }
 .dtrow-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .dtrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
 .dtrow.is-off > .dtrow-name { opacity: .55; }

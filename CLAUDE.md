@@ -194,6 +194,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
+| Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
@@ -346,6 +347,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`.lp-band, .lp-duo { order: 1 }`), the markup keeping the desk's order;
   - Service hours: a dated week from today in Malaysia time, Monday to
     Friday 10:00 to 18:00, redrawn every minute and on return to the tab;
+    a public holiday on the list reads Closed with its name under the date
+    (`public_holidays_between`, read once a visit, a fortnight ahead; a
+    failed read leaves the hours);
   - Visit: the address and Get directions (the Google Maps listing);
   - How can we help?: one sentence, then Chat on WhatsApp opening
     `wa.me/adspace`; the number is never on the page or in its business
@@ -461,7 +465,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices), Clients (Follow-up limits), My
+  (Upgrade mode, Announcements, Notices, Public holidays), Clients (Follow-up limits), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance),
   Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
@@ -590,6 +594,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
   (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
   grant. Each is filed `team.changed` under subject Notices.
+
+- Public holidays (`2026-10-14-public-holidays.sql`; the user, 2026-10-14:
+  "prefill and let manually change and apply to my work"): the days the
+  office is closed, `public_holidays` (day, name; RLS on, no policy, no
+  grant), seeded once into an empty table with Johor's 2026 and 2027.
+  Settings' Portal group, Public holidays (`team.settings`): the next one
+  under the name; Open lists a year at a time (`#holSheet`, Year as a
+  segment), Add holiday and each row's Edit asking Date and Name
+  (`public_holiday_save(p_day, p_name, p_was)`: `taken` naming the holiday,
+  `bad-name`, `bad-day`), Delete in its ⋯ (`public_holiday_delete`, asked,
+  no restore); each filed `team.changed` under Public holidays, from and
+  to. `public_holidays_between(p_from, p_to)` (anon, 800 days at most) is
+  the one read: the front door, Settings (this year and the next) and My
+  Work (once a visit) ask it. My Work's calendar names a holiday on its
+  day (`.cal-hol`, the day shaded; on a phone a holiday shows in a month
+  with no tasks), and a My Work date set on one is told so under its field
+  (`.hol-note`, "8 Nov 2026 is a public holiday: Deepavali."); the noon
+  reminder and the task reminders skip a holiday (their cron commands ask
+  `public_holiday_on`). Due dates are not moved.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. Demo content is only for a copy

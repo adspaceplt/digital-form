@@ -1936,7 +1936,43 @@
   /* The month on show is a Malaysian month key (2026-10) and each cell a
      Malaysian day, so a device on another clock lays out the same month. */
   var WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  /* Public holidays (2026-10-14): the days the office is closed, as the team
+     lists them in Settings, read once a visit for this year and the next
+     (one request, never one a month); the calendar names them and a date
+     set on one is told so under its field. A read that fails marks nothing. */
+  var HOL = null, holAsked = null;
+  function holidays() {
+    if (holAsked) return holAsked;
+    var y = Number(CK.today().slice(0, 4));
+    holAsked = db.rpc('public_holidays_between', { p_from: y + '-01-01', p_to: (y + 1) + '-12-31' }).then(function (r) {
+      HOL = {};
+      if (!r.error) (r.data || []).forEach(function (h) { HOL[h.day] = h.name; });
+      return HOL;
+    }).catch(function () { HOL = {}; return HOL; });
+    return holAsked;
+  }
+  function holDayWords(d) { return Number(d.slice(8, 10)) + ' ' + MON_SHORT[Number(d.slice(5, 7)) - 1] + ' ' + d.slice(0, 4); }
+  function holNote(input) {
+    if (!input || !HOL) return;
+    var v = String(input.value || ''), name = /^\d{4}-\d{2}-\d{2}$/.test(v) ? HOL[v] : null;
+    var host = input.closest('.field') || input.closest('label') || input.parentElement;
+    if (!host) return;
+    var note = host.querySelector(':scope > .hol-note');
+    if (!name) { if (note) note.remove(); return; }
+    if (!note) { note = document.createElement('p'); note.className = 'msg warn hol-note'; host.appendChild(note); }
+    note.textContent = holDayWords(v) + ' is a public holiday: ' + name + '.';
+  }
+  function holWatch(e) {
+    var t = e.target;
+    if (!t || !t.matches || !t.matches('input[type="date"], input.dmy')) return;
+    if (!t.closest('#workSheets, #taskDrawer, #sectionWork')) return;
+    if (HOL) holNote(t); else holidays().then(function () { holNote(t); });
+  }
+  document.addEventListener('change', holWatch, true);
+  document.addEventListener('focusin', function (e) { if (!HOL && e.target && e.target.closest && e.target.closest('#workSheets, #taskDrawer')) holidays(); }, true);
+
   function paintCalendar(rows) {
+    if (!HOL) holidays().then(function () { if ($('workCal') && !$('workCal').closest('[hidden]')) paintCalendar(rows); });
     var box = $('workCal');
     if (!/^\d{4}-\d{2}$/.test(state.month || '')) state.month = CK.today().slice(0, 7);
     var m = state.month, today = CK.today();
@@ -1980,13 +2016,15 @@
     var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
       return '<div class="cal-dow">' + d + '</div>';
     }).join('');
-    var held = 0, CAL_SHOW = 5;
+    var held = 0, holHeld = 0, CAL_SHOW = 5;
     for (var d = start; d <= end; d = CK.addDays(d, 1)) {
       var list = byDay[d] || [], wd = CK.weekday(d);
       var out = d.slice(0, 7) !== m;
       if (!out && list.length) held++;
+      if (!out && HOL && HOL[d]) holHeld++;
+      var hol = HOL && HOL[d];
       var cls = 'cal-day' + (out ? ' is-out' : '') + (d === today ? ' is-today' : '') +
-        ((wd === 0 || wd === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
+        ((wd === 0 || wd === 6) ? ' is-weekend' : '') + (hol ? ' is-holiday' : '') + (!list.length && !hol ? ' is-empty' : '');
       /* A chip names whose work it is and which piece, never the whole
          description (the user, 2026-10-09: "you dont need show the full card
          name, but few details needed like client name"): the client over the
@@ -2006,13 +2044,14 @@
       cells += '<div class="' + cls + '" data-day="' + esc(d) + '">' +
         '<span class="cal-num"><small>' + WEEKDAY[wd] + '</small>' +
           '<b>' + Number(d.slice(8, 10)) + '</b><small>' + MON_SHORT[Number(d.slice(5, 7)) - 1] + '</small></span>' +
+        (hol ? '<span class="cal-hol" title="' + esc(hol) + '">' + esc(hol) + '</span>' : '') +
         chips + '</div>';
     }
     /* On a phone the month is a list of the days that hold work, so a month
        with none said nothing at all under its bar (the user, 2026-10-04:
        "the entire calendar is missing"). It says so, with the way to the
        month that has some. */
-    box.innerHTML = html + '<div class="cal' + (held ? '' : ' is-blank') + '">' + cells + '</div>' +
+    box.innerHTML = html + '<div class="cal' + (held || holHeld ? '' : ' is-blank') + '">' + cells + '</div>' +
       (held ? '' : '<div class="cal-none"></div>');
     if (!held) UI.emptyLine(box.querySelector('.cal-none'), 'No tasks this month.');
     box.querySelector('[data-cal="prev"]').addEventListener('click', function () {

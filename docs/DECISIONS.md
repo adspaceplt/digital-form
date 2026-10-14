@@ -3015,3 +3015,20 @@ tells the team it is ready for a Letter of Offer.
   read only the five attention rows on show (the list folds the rest since
   2026-10-12); it reads every row. quotes and quotesite join the gate.
 
+### 2026-10-14 · Public holidays kept by the team, prefilled for Johor
+- The user asked whether the front door's Service hours could know
+  Malaysia's public holidays, then: "prefill and let manually change and
+  apply to my work". A feed was not used: the office keeps Johor's own
+  holidays besides the national ones, Islamic dates are confirmed weeks
+  ahead and replacement days are declared at short notice, so the list is
+  the team's in Settings (Business settings), prefilled from the published
+  Johor calendars for 2026 (publicholidays.com.my) and 2027 (published as
+  estimates; where the sources differ, Hari Hol and Awal Muharram take
+  qppstudio's dates with their replacement days). The user corrects them as
+  they are gazetted.
+- Applied to My Work as marks, never moves: the calendar names the day, a
+  date set on one says so under its field, and the two weekday reminders do
+  not go out on one. Due dates, report due days and priority deadlines are
+  not recounted around holidays; that would change every deadline's rule
+  and was not asked.
+

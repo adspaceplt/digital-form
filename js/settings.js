@@ -62,7 +62,8 @@
       may('team.upgrade') && { id: 'upgrade', name: 'Upgrade mode', kind: 'switch', on: Boolean(up.set),
         meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' },
       may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open' },
-      may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open' }]);
+      may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open' },
+      biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
@@ -281,8 +282,144 @@
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
+    if (a === 'holidays') { openHol(btn); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('settingsMsg'); return; }
   }
+
+  /* ---- Public holidays (2026-10-14) ------------------------------------
+     The days the office is closed: the front door draws them Closed and My
+     Work marks them. Read for this year and the next in one request; the
+     row says the next one, the sheet lists a year at a time. */
+  var DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var hol = { rows: null, err: null, year: null };
+  var HOL_SAID = {
+    taken: 'That date already holds a holiday.', 'bad-name': 'Enter a name of 2 to 80 characters.',
+    'bad-day': 'Choose a date from 2023 to 2099.', 'not-found': 'This holiday was removed in the meantime.',
+    denied: 'Business settings access is required.'
+  };
+  function holSaid(r) {
+    var e = r && (r.error || (r.data && r.data.error));
+    if (!e) return '';
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
+    return e === 'taken' && r.data.name ? 'That date already holds ' + r.data.name + '.' : HOL_SAID[e] || 'Not saved.';
+  }
+  function holToday() { return window.ADspaceClock ? window.ADspaceClock.today() : new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); }
+  function holDay(d, withDow) {
+    var x = new Date(d + 'T00:00:00Z');
+    return (withDow ? DOW[x.getUTCDay()] + ', ' : '') + x.getUTCDate() + ' ' + MON[x.getUTCMonth()] + ' ' + x.getUTCFullYear();
+  }
+  function holMeta() {
+    if (!hol.rows) return '';
+    var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
+    return next ? 'Next: ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
+  }
+  function readHol(done) {
+    var y = Number(holToday().slice(0, 4));
+    db.rpc('public_holidays_between', { p_from: y + '-01-01', p_to: (y + 1) + '-12-31' }).then(function (r) {
+      if (r.error) throw r.error;
+      hol.rows = r.data || []; hol.err = null;
+    }).catch(function (e) { hol.rows = null; hol.err = e; }).then(function () { if (done) done(); });
+  }
+  function holYears() {
+    var y = Number(holToday().slice(0, 4)), out = [y, y + 1];
+    (hol.rows || []).forEach(function (h) { var hy = Number(h.day.slice(0, 4)); if (out.indexOf(hy) < 0) out.push(hy); });
+    return out.sort();
+  }
+  function paintHol() {
+    var box = $('holList');
+    if (!box) return;
+    if (hol.err) {
+      window.ADspaceState.failLine(box, 'Public holidays', (hol.err && hol.err.message) || '', function () { readHol(paintHol); });
+      $('holYearRow').hidden = true;
+      return;
+    }
+    if (!hol.rows) { window.ADspaceState.skeleton(box, 4); return; }
+    var years = holYears();
+    if (!hol.year || years.indexOf(hol.year) < 0) hol.year = years[0];
+    var sel = $('holYear'), opts = years.map(function (y) { return '<option value="' + y + '"' + (y === hol.year ? ' selected' : '') + '>' + y + '</option>'; }).join('');
+    if (sel.innerHTML !== opts) { sel.innerHTML = opts; if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan($('holYearRow')); }
+    sel.value = String(hol.year);
+    $('holYearRow').hidden = false;
+    var t = holToday();
+    var rows = hol.rows.filter(function (h) { return Number(h.day.slice(0, 4)) === hol.year; });
+    if (!rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No holidays.'); return; }
+    box.innerHTML = rows.map(function (h) {
+      return '<div class="dtrow hol-row' + (h.day < t ? ' is-past' : '') + '" data-day="' + esc(h.day) + '">' +
+        '<span class="dtrow-name"><b>' + esc(h.name) + '</b><small>' + esc(holDay(h.day, true)) + '</small></span>' +
+        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-h="edit">' + PEN + 'Edit</button>' +
+        '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for ' + esc(h.name) + '" aria-expanded="false">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+        '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-h="delete">Delete</button></div></span></span></div>';
+    }).join('');
+  }
+  function holShut() {
+    Array.prototype.forEach.call(document.querySelectorAll('#holList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#holList [data-h="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function holAsk(h, opener) {
+    var t = holToday();
+    window.ADspaceConfirm.ask({
+      title: h ? 'Edit public holiday' : 'Add public holiday', go: 'Save', wait: true,
+      fields: [{ name: 'day', label: 'Date', type: 'date', value: h ? h.day : (hol.year && String(hol.year) !== t.slice(0, 4) ? hol.year + '-01-01' : t), required: true },
+        { name: 'name', label: 'Name', value: h ? h.name : '', placeholder: 'Deepavali', required: true }]
+    }, function (v) {
+      return db.rpc('public_holiday_save', { p_day: v.day, p_name: v.name, p_was: h ? h.day : null }).then(function (r) {
+        var said = holSaid(r);
+        if (said) return said;
+        hol.year = Number(String(v.day).slice(0, 4));
+        return new Promise(function (ok) { readHol(function () { paintHol(); paint(); say(''); holMsg('Saved.', 'ok'); ok(''); }); });
+      }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+    });
+  }
+  function holMsg(text, tone) { var m = $('holMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function holDelete(h) {
+    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
+      function () {
+        return db.rpc('public_holiday_delete', { p_day: h.day }).then(function (r) {
+          var said = holSaid(r);
+          if (said) return said;
+          return new Promise(function (ok) { readHol(function () { paintHol(); paint(); holMsg('Deleted.', 'ok'); ok(''); }); });
+        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+      });
+  }
+  function openHol(opener) {
+    if (!biz()) return;
+    holMsg('');
+    paintHol();
+    window.ADspaceSheet.show($('holSheet'), { opener: opener });
+    readHol(paintHol);
+  }
+  function biz() { return may('team.settings'); }
+  var holWired = false;
+  function wireHol() {
+    if (holWired || !$('holSheet')) return;
+    holWired = true;
+    $('holCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('holClose').addEventListener('click', function () { $('holCancel').click(); });
+    $('holAdd').addEventListener('click', function () { holMsg(''); holAsk(null, this); });
+    $('holYear').addEventListener('change', function () { hol.year = Number(this.value); holMsg(''); paintHol(); });
+    $('holList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-h]');
+      if (!b) return;
+      var row = b.closest('.hol-row'), day = row && row.getAttribute('data-day');
+      var h = (hol.rows || []).filter(function (x) { return x.day === day; })[0];
+      if (!h) return;
+      var k = b.getAttribute('data-h');
+      if (k === 'menu') {
+        e.stopPropagation();
+        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
+        holShut();
+        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(b, mn);
+        return;
+      }
+      holShut(); holMsg('');
+      if (k === 'edit') holAsk(h, b);
+      if (k === 'delete') holDelete(h);
+    });
+    document.addEventListener('click', function (e) { if (!e.target.closest('#holList .team-act')) holShut(); });
+  }
+  wireHol();
 
   function enter() {
     say('');
@@ -293,6 +430,7 @@
     /* The figures are read once a page; a colleague who changed one in
        another tab sees it here on the way in. */
     if (M && M.load) M.load(true).then(paint).catch(function () {});
+    if (biz()) readHol(paint);
     /* A group named in the address is brought to the top, else the page's
        own scroll. */
     if (chosen && $('stg-' + chosen)) reveal(chosen, false);

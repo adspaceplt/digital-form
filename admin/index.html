@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261014e">
+<link rel="stylesheet" href="/css/portal.css?v=20261014f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5094,6 +5094,30 @@ raya-2026        https://example.com/raya"></textarea>
 <!-- DOCUMENT TYPES (2026-10-07): the kinds of letter Issue offers, each with
      its wording and the fields that wording names. Documents: Document
      types, a granted part (an admin's by itself). -->
+<!-- Public holidays (2026-10-14): the days the office is closed, read by the
+     front door and My Work. -->
+<div class="sheet" id="holSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="holHead">
+    <div class="sheet-head">
+      <h3 id="holHead">Public holidays</h3>
+      <button class="iconbtn" id="holClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="hol-year" id="holYearRow" hidden>
+        <label class="field-label" id="holYearL" for="holYear">Year</label>
+        <select class="select select-sm" id="holYear" data-seg aria-labelledby="holYearL"></select>
+      </div>
+      <p class="msg" id="holMsg" role="status"></p>
+      <div id="holList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="holAdd" type="button">Add holiday</button>
+      <button class="btn btn-quiet" id="holCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="dtSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dtHead">
     <div class="sheet-head">
@@ -5317,11 +5341,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261013f"></script>
 <script src="/js/campaigns.js?v=20261013"></script>
-<script src="/js/ops.js?v=20261014a"></script>
+<script src="/js/ops.js?v=20261014f"></script>
 <script src="/js/perf.js?v=20261012a"></script>
 <script src="/js/health.js?v=20261012a"></script>
 <script src="/js/search.js?v=20261011a"></script>
 <script src="/js/overview.js?v=20261012q"></script>
-<script src="/js/settings.js?v=20261014"></script>
+<script src="/js/settings.js?v=20261014f"></script>
 </body>
 </html>
