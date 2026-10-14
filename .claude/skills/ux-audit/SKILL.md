@@ -29,6 +29,7 @@ Each section gets two grades:
 | team | Team | `?s=team` | team.js, perf.js, health.js | Add and invite a colleague; change a group's access; set access expiry; release a month's review (admin) | Invite 2 presses |
 | handbook | Handbook | `?s=handbook` | handbook.js | Find and open a file; add a version (colleague, admin) | Open 1 press |
 | mine | My records | `?s=mine` | perf.js, health.js | Rate yourself; reflect; check in; read a letter (colleague) | Check-in 1 sheet |
+| settings | Settings | `?s=settings` | settings.js, admin.js (editSettings) | Find a setting and change it; upgrade mode on and off; post an announcement, send a notice; add a public holiday; edit AI limits (admin, a colleague holding one part) | 3 layers to a setting |
 | portal | Client portal | `/client/` | portal.js | Download the latest report; request a change; join the next meeting (client) | 2 presses each |
 | reviewpage | Content review page | `/review/?k=` | review.js, decide.js, mockups.js | Approve a post; request changes with a caption edit (client) | Approve 2 presses |
 | scriptpage | Video scripts page | `/script/?k=` | script.js, decide.js | Approve a script; request changes with a note (client) | Approve 2 presses |
