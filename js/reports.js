@@ -872,7 +872,10 @@
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
-    var mayReturn = named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine);
+    /* Sending back is a write at Reports Work, as sm_report_return checks:
+       a submitter whose group is now at View is not offered Take back
+       (ux-audit RPT-2). */
+    var mayReturn = may('work') && (named ? (reviewing || mine || (isAdmin() && may('manage'))) : (may('manage') || mine));
     if ((r.status === 'review' && mayReturn) || (r.status === 'confirmed' && may('manage'))) {
       acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
@@ -5354,9 +5357,11 @@
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
     all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every report in this tab');
-    $('rhBulkSent').hidden = hub.tab !== 'published' || !may('work');
-    $('rhBulkPublish').hidden = hub.tab !== 'confirmed' || !may('manage');
-    ['rhBulkPdf', 'rhBulkSent', 'rhBulkPublish'].forEach(function (k) { $(k).disabled = !n; });
+    /* The acts a ticked report can take are drawn only once one is ticked,
+       never greyed (DESIGN.md §4, several records at once; ux-audit RPT-1). */
+    $('rhBulkPdf').hidden = !n;
+    $('rhBulkSent').hidden = !n || hub.tab !== 'published' || !may('work');
+    $('rhBulkPublish').hidden = !n || hub.tab !== 'confirmed' || !may('manage');
   }
   /* Read the list again after an act, keeping the ticks that still stand. */
   function rereadHub() {

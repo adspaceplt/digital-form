@@ -3408,6 +3408,33 @@ day one; the salutation added 14 Oct) and the record's tab strip scrolling at
   one column at 390: x 218 and 266) confirmed and left as P3 with the other
   P3s for the user. WA-4 ("Dear Ms," where a contact's name starts with a
   salutation) checked live: 0 of 27 contacts.
+
+- **2026-10-15** — UX audit of Reports, Documents and Services (the
+  `/ux-audit` skill, full walks at 1280 and 390, both themes, as an admin and
+  at View and Manage; report at
+  https://claude.ai/artifact/PaBtd4uKvcoCHjD8YfD8YY). Each section graded UX A,
+  UI B. The P2 findings shipped together. RPT-1: Select reports drew Download
+  and Mark as sent greyed with nothing ticked; the acts now appear with the
+  first tick (DESIGN.md §4), and `tests/reports.js` ticks before it looks for
+  them. RPT-2: a submitter whose group had dropped to View was offered Take
+  back, which `sm_report_return` refuses below Reports Work; Send back and
+  Take back now ask Work. RPT-3: a narrow pane cut the chosen step's name
+  ("Check and sub…"); a step takes its words' width and the strip scrolls.
+  DOC-1: a row whose every ⋯ item was withheld (an entry added by hand with no
+  file, read at View) opened an empty card; the ⋯ is drawn only when one item
+  passes `may()`. DOC-2: the register's search missed a reference typed as its
+  file name writes it (AQT-INT-2609001); dashes and slashes now read alike, as
+  `/verify` reads them. DOC-3: a phone row ran four lines; it is three, the
+  brand left out (the recipient names the client again). SVC-1: a rate took
+  five presses and two sheets; the price on a line is now its own control at
+  Services Full Access (`ADspaceAsk.rename`, a number field, empty for On
+  quote), saved to the draft and filed `service.changed` from and to, the row
+  repainted from what was written. `ADspaceAsk.rename` now checks the date
+  range only for a date, month or date-time field (a number was refused by
+  it). SVC-2: on a phone, with a change waiting, the bar's ⋯ fell to a row of
+  its own on Wording and Versions; the version line shares its row. SVC-3: a
+  wording row on a phone kept the price track and wrapped its words in half
+  the row; its middle tracks collapse. The P3 findings wait for the user.
 ### 2026-10-15 · Content Review, Video Scripts and Creator Campaigns audit fixes
 The ux-audit of the three sections (report:
 https://claude.ai/artifact/YaMFZabWfGSCu1GRB615xf; grades before: Content

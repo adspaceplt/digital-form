@@ -206,8 +206,11 @@
 
   function matches(d) {
     if (!state.find) return true;
+    /* A saved file names its reference with dashes for slashes, as /verify
+       reads it (ux-audit DOC-2): the two are one reference here too. */
+    var fold = function (v) { return v.replace(/-/g, '/'); };
     var hay = [d.serial, d.kind, brandOf(d), recipientOf(d), (d.recipient || {}).name, d.issued_by].join(' ').toLowerCase();
-    return hay.indexOf(state.find) > -1;
+    return hay.indexOf(state.find) > -1 || fold(hay).indexOf(fold(state.find)) > -1;
   }
 
   function paint() {
@@ -327,6 +330,16 @@
             menuItem('del', 'Delete', 'is-danger', need + ':manage')) +
         '</div>' +
       '</span>';
+    /* A ⋯ whose every item is withheld is not drawn (ux-audit DOC-1): an
+       entry added by hand with no file, or a voided one, read at View. */
+    var acts = el.querySelectorAll('.team-act .kmenu-item');
+    var any = Array.prototype.some.call(acts, function (b) {
+      var need = b.getAttribute('data-need');
+      if (!need) return true;
+      var at = need.lastIndexOf(':');
+      return may(need.slice(0, at), need.slice(at + 1));
+    });
+    if (!any) el.querySelector('.team-act').innerHTML = '';
     wireMenu(el);
     var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(); }); };
     var cp = el.querySelector('[data-a="copy"]');
