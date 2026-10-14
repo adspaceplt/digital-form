@@ -7568,11 +7568,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    track gives its ground to each option, 8px apart. */
 .seg.is-wrap { gap: 8px; background: transparent; border-radius: 0; }
 .seg.is-wrap > .seg-opt { background-color: var(--tonal); }
-/* Apart from its track the chosen pill is the ink fill, painted on the pill
-   itself, as a chosen `.acttab` outside a strip is: separate pills have no
-   track for a thumb to slide along (2026-10-14). One still cut at two
-   across stacks. */
-.seg.is-wrap.has-thumb::before { display: none; }
+/* Apart from its track the chosen pill is the ink fill, as a chosen
+   `.acttab` outside a strip is: the thumb slides to it in ink, and the pill
+   paints the same ink itself once chosen (2026-10-14), so its words stand
+   on their own ground however they are read. One still cut at two across
+   stacks. */
+.seg.is-wrap.has-thumb::before { background: var(--fill); box-shadow: none; }
 .seg.is-wrap > .seg-opt.is-on { color: var(--on-fill); background-color: var(--fill); }
 .seg.is-wrap.is-stack { grid-template-columns: minmax(0, 1fr); }
 @media (hover: hover) {
@@ -7591,6 +7592,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rectabs.has-thumb > .tab, .tabrow.has-thumb > .tab { position: relative; z-index: 1; }
 .cmdbar-views.has-thumb > .acttab.is-on, .seg.has-thumb > .seg-opt.is-on,
 .rectabs.has-thumb > .tab.is-on, .tabrow.has-thumb > .tab.is-on { background-color: transparent; box-shadow: none; }
+.seg.is-wrap.has-thumb > .seg-opt.is-on { background-color: var(--fill); }
 /* The word follows the thumb on the short curve, so the chosen word darkens
    as the surface arrives under it. */
 .cmdbar-views .acttab { transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
