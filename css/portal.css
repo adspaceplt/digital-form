@@ -1311,9 +1311,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
      stands on its title's line, the date under them. */
   #filterbar .safetoggle { flex: 1 1 auto; }
   #filterbar .safetoggle:not([hidden]) ~ .count { flex: 0 0 auto; margin-left: auto; }
-  .batch-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px; }
-  .batch-head .batch-date { grid-column: 2 / -1; grid-row: 2; }
-  .batch-head .batch-progress { grid-column: 3; grid-row: 1; align-self: center; white-space: nowrap; }
+  .batch > .batch-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px; }
+  .batch > .batch-head .batch-date { grid-column: 2 / -1; grid-row: 2; }
+  .batch > .batch-head .batch-progress { grid-column: 3; grid-row: 1; align-self: center; white-space: nowrap; margin-left: 0; }
 
 }
 
@@ -2764,7 +2764,7 @@ button.appver {
   border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
   color: var(--ink-soft); animation: btnspin .7s linear infinite;
 }
-.btn-go .btn-spin, .btn-primary .btn-spin { color: var(--on-action); }
+.btn-go .btn-spin, .btn-primary .btn-spin, .btn-approve .btn-spin { color: var(--on-action); }
 .btn-danger .btn-spin { color: var(--err); }
 @keyframes btnspin { to { transform: rotate(360deg); } }
 
@@ -4413,9 +4413,10 @@ body > .shell { width: 100%; }
 .csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* A meeting's date and time is a sentence, not an amount: its own track,
-   measured on "Wed 30 Sept 2026, 10:30 pm" at the client pages' 16px, and
-   never wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 264px var(--state-w) var(--ctl-h); }
+   measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
+   16px (the span says "to", never a dash: PORTAL-10, 2026-10-14), and never
+   wrapped into the state beside it. */
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) var(--ctl-h); }
 .meet-row .svc-amt { white-space: nowrap; }
 /* A Register row: the reference and what it is, who it went to, when. Valid
    is the ordinary case, so there is no state column; Void is named beside
