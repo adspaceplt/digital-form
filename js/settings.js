@@ -97,8 +97,13 @@
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open' }]);
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
        at Full Access; this row opens them there. */
+    var rep2 = num('wa_repeat_hours');
     add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
-      { id: 'whatsapp', name: 'Templates', kind: 'open' }]);
+      { id: 'whatsapp', name: 'Templates', kind: 'open' },
+      /* Sent again (2026-10-14): the same message sent within the window
+         asks again before it goes. */
+      biz && { id: 'resend', name: 'Sent again', kind: 'edit',
+        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Asks before the same message goes again within ' + plural(rep2, 'hour', 'hours') }]);
     add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open' }]);
     return out;
   }
@@ -281,6 +286,7 @@
     if (a === 'meta') { flipMeta(btn); return; }
     if (a === 'reach') { ed({ title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow']] }); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
+    if (a === 'resend') { ed({ title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week']] }); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }

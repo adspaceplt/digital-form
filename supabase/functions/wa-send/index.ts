@@ -22,8 +22,11 @@
  *                              and the record asked of the database as the
  *                              caller (`wa_compose_prepare`), the template
  *                              read again from Meta (approved, as it stands
- *                              now), a report's kept PDF uploaded as its
- *                              Document header, sent, and filed (`wa_sent`).
+ *                              now), a record's PDF (a report, a quotation,
+ *                              a Letter of Offer) uploaded as its Document
+ *                              header, sent, and filed (`wa_sent`); the same
+ *                              message sent recently (`wa_sent_recently`) answers
+ *                              `recent` unless `again` is true.
  *   { action: 'report' | 'feedback', … }
  *                              the sends by hand from before the composer,
  *                              kept for a page loaded before it
@@ -281,6 +284,14 @@ Deno.serve(async (req) => {
     const want = (body.template || {}) as Record<string, any>;
     const tname = String(want.name || ''), tlang = String(want.language || '');
     if (!/^[a-z0-9_]{1,512}$/.test(tname)) return json({ error: 'wa-template' }, 200, origin);
+    /* Sent recently (2026-10-14): the same message to the same person about
+       the same record within the window goes again only once the colleague
+       answered Send again (`again`). A database without the function sends. */
+    if (body.again !== true) {
+      const rc = await db.rpc('wa_sent_recently', { p_to_kind: toKind, p_to: toId, p_purpose: purpose, p_ref: ref, p_template: tname });
+      const rd = (rc.data || {}) as Record<string, any>;
+      if (!rc.error && rd.recent === true) return json({ error: 'recent', recent: rd }, 200, origin);
+    }
     const found = await readTemplates(tname);
     if (found.error) return json({ error: found.error }, 200, origin);
     const t = (found.list || []).filter((x) => x.name === tname && x.language === tlang && x.status === 'APPROVED')[0];

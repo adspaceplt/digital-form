@@ -470,7 +470,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance),
   Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
-  (Templates and recent messages), Documents (Document types); a group with
+  (Templates, Sent again), Documents (Document types); a group with
   no row drawn is left out. One page at every width, each group a card under
   its heading, so a setting is the account menu, Settings, then its sheet
   (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
@@ -4633,6 +4633,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   client contact of that client alone; filed as Quotation / Letter of Offer
   sent on WhatsApp. Sent by hand only: the one automatic send to a client
   or creator is a creator's booking confirmed.
+- Sent recently (`2026-10-14-whatsapp-sent-recently.sql`; the user,
+  2026-10-14: "so no duplicate would be repeated sent"): before a send the
+  composer asks `wa_sent_recently(p_to_kind, p_to, p_purpose, p_ref,
+  p_template)` for the newest message not failed to that recipient for that
+  purpose and record (a feedback request its client, a plain message its
+  template) within `wa_repeat_hours` (24; Settings, WhatsApp: Sent again; 0
+  to 168, 0 asks nothing); found, Send asks in warn instead (Sent recently:
+  to whom, by whom or automatically, when and how long ago; Send again),
+  and `wa-send` refuses `recent` unless that question was answered
+  (`again`), so a send made meanwhile asks too. A queued booking counts.
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.
