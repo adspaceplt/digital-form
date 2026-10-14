@@ -311,6 +311,7 @@
 
   /* Who this device decides as, with Change and Forget, under the name
      card (2026-10-08); its words follow the 中文 switch. */
+  var keepPicks = false;
   var whoAs = null;
   function whoWords() { var x = t(); return { as: x.decideAs, change: x.decideChange, forget: x.decideForget, save: x.decideSave, cancel: x.decideCancel, name: x.decideName }; }
   function mountWho() {
@@ -326,7 +327,7 @@
     $('kicker').textContent = t().kicker;
     paintPreparedFor();
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
-    if (feed) build();
+    if (feed) { keepPicks = true; build(); keepPicks = false; }
     if (following && window.ADspacePush) window.ADspacePush.relabel();
   }
 
@@ -479,11 +480,16 @@
 
     // Seed from whatever the server already holds, so returning to the link
     // shows what was left rather than an empty sheet.
-    chosen = {};
-    options.forEach(function (o) {
-      if (o.state === 'shortlisted') chosen[o.id] = 'selected';
-      else if (o.state === 'backup') chosen[o.id] = 'backup';
-    });
+    /* A language switch repaints what is on screen: the picks made since
+       the campaign was read stay (they were reseeded from the read and an
+       unsaved pick was lost, 2026-10-15). */
+    if (!keepPicks) {
+      chosen = {};
+      options.forEach(function (o) {
+        if (o.state === 'shortlisted') chosen[o.id] = 'selected';
+        else if (o.state === 'backup') chosen[o.id] = 'backup';
+      });
+    }
 
     paintBookings();
     paintCards();

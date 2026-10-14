@@ -3435,3 +3435,43 @@ day one; the salutation added 14 Oct) and the record's tab strip scrolling at
   its own on Wording and Versions; the version line shares its row. SVC-3: a
   wording row on a phone kept the price track and wrapped its words in half
   the row; its middle tracks collapse. The P3 findings wait for the user.
+
+- **2026-10-15 — The public pages, audited with the client's eyes and fixed.**
+  The UX audit of the eleven public pages (report:
+  https://claude.ai/artifact/F68uBw9pnzLYiBaYLAWcWz; grades before: portal
+  B/B, review page B/A, scripts page A/A, selection C/B, creator page B/B,
+  front door A/A, quotation website C/A, details form A/A, verify A/A,
+  namecard A/B, 404 A/A), every finding fixed at the user's word (relayed
+  2026-10-15: "fix all no matter what"). SELECTION-1, the one P1: a client
+  who confirmed and opened the link again met Confirm selection live with
+  no word it had been confirmed, and a second press filed a second
+  confirmation. `get_campaign` now sends `campaign.confirmed` (the client's
+  last confirmation: person, time, the creators chosen;
+  `2026-10-14-selection-says-confirmed.sql`), and the confirm bar reads
+  "Confirmed by {name} on {day}. Shoot dates will follow." with no Confirm
+  until the picks differ, then "Changed since the confirmation on {day}.";
+  a confirm no longer drops the page for a cover titled with the page's
+  name. The selection page's count rides the Campaign details fold's head
+  ("2 of 10 chosen") and the bar, the fold staying shut as decided on
+  2026-09-21; its confirm sheet is `js/sheet.js`'s (named, focus held,
+  Cancel quiet at the left); Approve steps away while a request is open; a
+  waiting draft stands beside its caption and decision at a desk. The
+  portal: a correct code holds Sign in under the loading ring; Download is
+  a row's own button with the pending ring; the request sheet has its close
+  mark and foot; meta lines break between parts; the Account chips carry
+  their glyphs. Verify speaks Chinese for its kinds and answers in a live
+  region. The review page: an empty name box closes when left; a refused
+  send reads `W.notSent`; Show full caption is a quiet button. The creator
+  page: what is owed (post, results, payment) stands above the facts at
+  Scheduled and Posted, one Save for every placement, Saved. said after the
+  repaint, dates through `js/form.js`. The quotation website clears the tab
+  once a quotation is made, keeps billing typed through the language
+  switch, and says once that the plan's fee manages a budget of up to RM n
+  and the budget is billed separately. The Letter of Offer is 服务确认函 on
+  every client page (it was 报价函 on two: beside 报价, a quotation, it read
+  as asking for a second quotation). The details form checks what the
+  database refuses and names the field's own fault. The namecard's long
+  address wraps; Save contact carries the file mark. The 404 carries the
+  portal's foot as static markup. Left as decided: the front door's order
+  (FRONT-1, 2026-09-28) and the 404's Visit website (NOTFOUND-2,
+  2026-09-21).

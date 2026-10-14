@@ -2268,6 +2268,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `stale` with the count): the confirmation, the bookings and the campaign
   move together, filed `campaign.locked`. The same key again answers `again`
   and files nothing. `confirm_selection` (an older page) refuses `empty`.
+  `get_campaign` sends the client's last confirmation (`campaign.confirmed`:
+  person, time, the creators chosen); while the picks match it the bar reads
+  Confirmed by {name} on {day} with no Confirm (2026-10-15).
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
