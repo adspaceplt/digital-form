@@ -856,6 +856,9 @@
         R.report().then(function (d) {
           var f = d.on_time || {}, n = Number(f.reached || 0), met = Number(f.met || 0);
           mbox.innerHTML = '';
+          /* An empty ring follows the signals in a narrow pane, so the first
+             screen of a phone opens on what needs acting on (ux-audit OVW-7). */
+          card.classList.toggle('is-ringless', !n);
           /* The ring stands whatever the period holds (the user, 2026-10-12):
              with nothing reached client review it is empty and reads a dash. */
           CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
@@ -970,6 +973,9 @@
       UI.skeleton(body, 3);
       Promise.resolve().then(function () { return c.load(); }).then(function (out) {
         if (!el.isConnected) return;
+        /* An empty card's line stands in the middle of the room its row gives
+           it (ux-audit OVW-2, 2026-10-15). */
+        el.classList.toggle('is-empty', Boolean(out.empty));
         if (out.empty) { UI.emptyLine(body, out.empty); return; }
         /* A card of figures or a table rather than a chart (Sales moves, By
            person in charge) keeps its card and takes the markup. */
