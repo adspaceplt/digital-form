@@ -3062,3 +3062,9 @@ tells the team it is ready for a Letter of Offer.
   from the record itself. They are listed after Paused, shut until opened,
   and copied or opened, never edited here: a key changes by Reset access
   link on its record.
+- Live, Video Scripts read "Could not load" (the user's screenshot): a
+  client's `script_key` is withheld from `clients` by its column grants and
+  given out one client at a time by `script_link`. `script_links()` answers
+  the list (Video Scripts View, the clients the colleague may see); the
+  stand-in now refuses `script_key` from the table as the database does,
+  which is why the suite had passed.
