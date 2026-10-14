@@ -1291,6 +1291,7 @@
   var start = fromLink || kept;
   // The link's code is stored, so the address bar stops carrying it around.
   if (fromLink) history.replaceState(null, '', location.pathname);
-  if (start.length === 8) { cover(t().loading, ''); load(start); }
+  /* The page's own turning mark stands while it loads (`.pageload`, 2026-10-15). */
+  if (start.length === 8) load(start);
   else askCode();
 })();

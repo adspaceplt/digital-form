@@ -3257,3 +3257,16 @@ The Active gate's Billing sheet offers the details form (Create link, Copy
 link, Use details), built that day for exactly this. The Dashboard's
 Committed monthly value reads Committed value in a narrow pane, where the
 whole label was cut with an ellipsis.
+
+### 2026-10-15 · A client page waits on a turning mark, not "Loading…"
+The user, with a screenshot of the creator page: "can the loading be some
+interactive rotation of glyph instead of boring text?". The creator page
+showed Loading… as a cover title; the selection page, the client portal, the
+review and scripts pages and a namecard showed nothing at all between the bar
+and the foot. Each now carries one `.pageload` in its `main`: an eight-spoke
+mark stepping round as Apple's activity indicator does, in the mute ink,
+named Loading for a screen reader. It needs no script: CSS shows it only
+while none of the page's own blocks (`data-shown`: the record head, the app,
+the cover) is on show, so every way a page ends (drawn, Link not recognised,
+the access code) takes it away. A browser without `:has()` shows nothing, as
+before. `tests/pageload.js`; the stand-in gained `__slowRpc`.

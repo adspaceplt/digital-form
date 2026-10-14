@@ -21,7 +21,7 @@
      tagline at another width under the wordmark. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015b">
+<link rel="stylesheet" href="/css/portal.css?v=20261015c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
@@ -35,8 +35,9 @@
 <!-- A card handed over, not a page of the portal: no bar, no menu, the card
      alone on white, the way the signboard stands on its wall. -->
 <main class="ncmain">
+  <div class="pageload" role="status" aria-label="Loading"><svg class="pageload-spin" viewBox="0 0 24 24" aria-hidden="true"><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(0 12 12)" opacity="1.00"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-45 12 12)" opacity="0.89"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-90 12 12)" opacity="0.78"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-135 12 12)" opacity="0.67"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-180 12 12)" opacity="0.56"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-225 12 12)" opacity="0.45"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-270 12 12)" opacity="0.34"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-315 12 12)" opacity="0.23"/></svg></div>
   <div id="ncHost" aria-live="polite"></div>
-  <section class="cover" id="ncCover" hidden>
+  <section class="cover" id="ncCover" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="ncCoverTitle"></h2>

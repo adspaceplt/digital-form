@@ -20,7 +20,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015b">
+<link rel="stylesheet" href="/css/portal.css?v=20261015c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
 <script src="/js/words.js?v=20261009s"></script>
@@ -44,10 +44,11 @@
 <script src="/js/chrome.js?v=20261012b" data-kicker="Creator Selection" data-for data-actions="push lang"></script>
 
 <main class="shell">
+  <div class="pageload" role="status" aria-label="Loading"><svg class="pageload-spin" viewBox="0 0 24 24" aria-hidden="true"><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(0 12 12)" opacity="1.00"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-45 12 12)" opacity="0.89"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-90 12 12)" opacity="0.78"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-135 12 12)" opacity="0.67"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-180 12 12)" opacity="0.56"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-225 12 12)" opacity="0.45"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-270 12 12)" opacity="0.34"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-315 12 12)" opacity="0.23"/></svg></div>
 
   <!-- The same cover as the review page: centred, the page white to the
        edges, the footer on the floor. -->
-  <section class="cover" id="stateBox" hidden>
+  <section class="cover" id="stateBox" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="stateTitle"></h2>
@@ -61,7 +62,7 @@
     </div>
   </section>
 
-  <div id="app" hidden>
+  <div id="app" data-shown hidden>
 
     <!-- The name of the job, and nothing else. What the campaign is *about*
          belongs with the rest of its detail, inside the card below. -->

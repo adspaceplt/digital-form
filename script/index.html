@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015b">
+<link rel="stylesheet" href="/css/portal.css?v=20261015c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
 <script src="/js/words.js?v=20261009s"></script>
@@ -40,9 +40,10 @@
 <script src="/js/chrome.js?v=20261012b" data-kicker="Video Scripts" data-for></script>
 
 <main class="shell shell-script">
+  <div class="pageload" role="status" aria-label="Loading"><svg class="pageload-spin" viewBox="0 0 24 24" aria-hidden="true"><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(0 12 12)" opacity="1.00"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-45 12 12)" opacity="0.89"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-90 12 12)" opacity="0.78"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-135 12 12)" opacity="0.67"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-180 12 12)" opacity="0.56"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-225 12 12)" opacity="0.45"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-270 12 12)" opacity="0.34"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-315 12 12)" opacity="0.23"/></svg></div>
   <!-- Who the page is for, as the review page says it: the mark, the name
        and how many scripts; then a tab a content month. -->
-  <section class="panel rec-head" id="vsHead" hidden>
+  <section class="panel rec-head" id="vsHead" data-shown hidden>
     <div class="rec-id">
       <span class="rec-mark" id="vsMark" aria-hidden="true"></span>
       <div class="rec-who">
@@ -54,7 +55,7 @@
   <nav class="tabrow stagestrip" id="vsStages" role="tablist" aria-label="Content month" hidden></nav>
   <div id="vsContent" data-swipe="vsStages" data-narrow="640"></div>
 
-  <section class="cover" id="cover" hidden>
+  <section class="cover" id="cover" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="coverTitle">Video Scripts</h2>

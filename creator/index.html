@@ -17,7 +17,7 @@
      it: the page is installed at its own address, the link that proves it. -->
 <link rel="manifest" href="/creator/manifest.webmanifest">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015b">
+<link rel="stylesheet" href="/css/portal.css?v=20261015c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
 <script src="/js/words.js?v=20261009s"></script>
@@ -38,10 +38,11 @@
 <script src="/js/chrome.js?v=20261012b" data-kicker="Creator Portal" data-for data-actions="push lang"></script>
 
 <main class="shell">
+  <div class="pageload" role="status" aria-label="Loading"><svg class="pageload-spin" viewBox="0 0 24 24" aria-hidden="true"><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(0 12 12)" opacity="1.00"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-45 12 12)" opacity="0.89"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-90 12 12)" opacity="0.78"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-135 12 12)" opacity="0.67"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-180 12 12)" opacity="0.56"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-225 12 12)" opacity="0.45"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-270 12 12)" opacity="0.34"/><rect x="11" y="2" width="2" height="6" rx="1" transform="rotate(-315 12 12)" opacity="0.23"/></svg></div>
 
   <!-- Every full page state this portal has: the code asked for, a code that
        is not ours, a creator stood down, and a page that could not load. -->
-  <section class="cover" id="stateBox" hidden>
+  <section class="cover" id="stateBox" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="stateTitle"></h2>
@@ -57,7 +58,7 @@
     </div>
   </section>
 
-  <div id="app" hidden>
+  <div id="app" data-shown hidden>
     <!-- Who they are to us, in the console record's own head: the name, since
          when, how many bookings, and the profile links a client opens on the
          selection page, which the creator keeps up to date here. No mark: a
@@ -120,6 +121,6 @@
 
 <script src="/js/media.js?v=20261012a"></script>
 <script src="/js/icons.js?v=20261008c"></script>
-<script src="/js/creator.js?v=20261014p"></script>
+<script src="/js/creator.js?v=20261015"></script>
 </body>
 </html>
