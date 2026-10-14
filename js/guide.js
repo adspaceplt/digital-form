@@ -263,6 +263,9 @@
     // A step of it is on the screen now.
     can: function (guide) { return !!guide && liveSteps(guide).length > 0; },
     leave: function () { offerSeq++; close(true, 'leave'); },
+    /* A page that redraws what a step rings asks the guide to find its
+       control again (Settings redraws once the business figures arrive). */
+    relay: function () { if (cur && cur.t && !cur.t.isConnected) paint(false); },
     isOpen: function () { return !!cur; },
     seen: seen,
     useServer: function (read, mark) {

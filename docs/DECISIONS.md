@@ -3068,3 +3068,18 @@ tells the team it is ready for a Letter of Offer.
   the list (Video Scripts View, the clients the colleague may see); the
   stand-in now refuses `script_key` from the table as the database does,
   which is why the suite had passed.
+
+### 2026-10-14 · The day's full gate (a75ae80): three findings, each fixed
+- settings: the Public holidays row's line arrived after the page was laid,
+  moving every card under Portal down a line after a refresh or an address
+  had scrolled to its group. The line's room is now kept from the first
+  draw and filled in place (`holLine`), never a second whole repaint. The
+  suite's own list of Portal's rows gained Public holidays.
+- guides: Settings redraws once the business figures arrive, and the redraw
+  dropped the first step's ring from the element it replaced.
+  `ADspaceGuide.relay()` finds the step's control again; Settings calls it
+  after a redraw.
+- perfguard: the refusal of another account's passkey now answers after
+  1.2 seconds in the harness (it signs that account out on the device and
+  puts hers back first); the suite waits for the answer, the same
+  assertions standing.
