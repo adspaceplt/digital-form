@@ -3141,3 +3141,17 @@ tells the team it is ready for a Letter of Offer.
   once (shared with the Clients group, so the table is still read once a
   query, which `tests/search.js` holds) and their ids join each section's
   filter; Reports is a group of its own, by title, brand or client.
+
+### 2026-10-14 · A quotation and a Letter of Offer sent on WhatsApp, by hand
+The user asked for WhatsApp templates to send a quotation and a Letter of
+Offer once a client proceeds, "could be both but internal decides which to
+send via whatsapp". Both are purposes of their own (`quotation`, `offer`)
+under one part, Quotations and letters, sent from the record's ⋯ through the
+composer every record shares. The PDF is drawn in the browser as Download
+draws it and handed to `wa-send`, which uploads the bytes to Meta: neither
+file is stored, as before. The purposes were missing from the WhatsApp
+build of 2026-10-10 and from the pending list; added now. Asked at the same
+time to confirm nothing else sends by itself: on the live database the only
+automatic sends are a creator's booking confirmed (`campaign_options_wa`)
+and the team reminders to colleagues (`ops_notifications_wa`), whose
+template is off, so nothing is queued for them.
