@@ -46809,15 +46809,16 @@ end $$;
 
 -- END OF QUOTATION WEBSITE --------------------------------------------------
 
--- QUOTE GRAPHIC WORD — a plan's graphic is a static post or a carousel
--- (the user, 2026-10-14), so an additional one is named for both on the
--- quotation: "Additional graphic (static or carousel)", never "Additional
--- static graphic". The one-off item Static graphic keeps its own name.
--- quote_price restated with that label alone changed. Safe to run twice.
+-- QUOTE GRAPHIC WORD — a plan's graphic is a static post, a carousel or a
+-- GIF (the user, 2026-10-14), each priced at its own rate when added, so a
+-- quotation names the three apart, cheapest first: Graphic (Static), Graphic
+-- (GIF), Graphic (Carousel), and "Additional graphic (Static)" and the like
+-- for a plan's extras, listed in that order; the rate card's names stay.
+-- quote_price restated with those labels alone changed. Safe to run twice.
 -- Rollback: run 2026-10-14-quotation-website.sql's quote_price again
 -- (quotations already made keep the label they were made with).
 
-/* The one calculation, an additional graphic named as the plan counts it. */
+/* The one calculation, each graphic named by its kind. */
 create or replace function public.quote_price(p_snap jsonb, p_sel jsonb)
 returns jsonb
 language plpgsql immutable set search_path = public as $$
@@ -46929,7 +46930,8 @@ begin
 
     -- Extra contents, at the plan's whole saving, to the nearest RM 10.
     if jsonb_typeof(p_sel->'extra') = 'object' then
-      for v_k in select k from jsonb_object_keys(p_sel->'extra') k order by k loop
+      for v_k in select k from jsonb_object_keys(p_sel->'extra') k
+                 order by array_position(array['static-graphic', 'gif', 'carousel', 'reels-30', 'reels-60', 'short-video-120'], k) nulls last, k loop
         if coalesce(p_sel->'extra'->>v_k, '') !~ '^[0-9]{1,2}$' then return jsonb_build_object('error', 'bad-extra'); end if;
         v_q := (p_sel->'extra'->>v_k)::int;
         continue when v_q = 0;
@@ -46938,8 +46940,9 @@ begin
           return jsonb_build_object('error', 'bad-extra');
         end if;
         v_lines := v_lines || jsonb_build_object('slug', v_k, 'kind', 'extra', 'basis', 'month',
-          'label', case when v_s->'spec'->>'kind' = 'graphic' then 'Additional graphic (static or carousel)'
-                        else 'Additional ' || lower(left(v_s->>'name', 1)) || substr(v_s->>'name', 2) end,
+          'label', 'Additional ' || lower(left(case v_s->'spec'->>'kind' when 'graphic' then 'Graphic (Static)' when 'carousel' then 'Graphic (Carousel)'
+                        when 'gif' then 'Graphic (GIF)' else v_s->>'name' end, 1)) || substr(case v_s->'spec'->>'kind' when 'graphic' then 'Graphic (Static)' when 'carousel' then 'Graphic (Carousel)'
+                        when 'gif' then 'Graphic (GIF)' else v_s->>'name' end, 2),
           'detail', '[]'::jsonb, 'qty', v_q,
           'rate', round((v_s->>'rate')::numeric * v_factor / 10) * 10);
         v_tot := v_tot + v_q;
@@ -47017,7 +47020,8 @@ begin
       end if;
       if v_s->>'rate' is null then v_req := v_req || (v_s->>'name')::text; continue; end if;
       v_lines := v_lines || jsonb_build_object('slug', v_s->>'slug', 'kind', v_s->'spec'->>'role', 'basis', 'once',
-        'label', v_s->>'name', 'detail', '[]'::jsonb, 'qty', (v_x->>'qty')::int, 'rate', (v_s->>'rate')::numeric);
+        'label', case v_s->'spec'->>'kind' when 'graphic' then 'Graphic (Static)' when 'carousel' then 'Graphic (Carousel)'
+                        when 'gif' then 'Graphic (GIF)' else v_s->>'name' end, 'detail', '[]'::jsonb, 'qty', (v_x->>'qty')::int, 'rate', (v_s->>'rate')::numeric);
     end loop;
   end if;
 
