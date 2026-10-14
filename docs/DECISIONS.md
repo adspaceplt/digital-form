@@ -3301,3 +3301,11 @@ joined AI usage in the AI group, and the details form's days left Tax and
 terms for their own row, Details form, in the Clients group (Tax and terms
 is eight figures).
 
+
+### 2026-10-15 · The calendar's post date is pastel blue
+The user, with the dark calendar: "can the purple be replaced to blue
+instead, pantone pastel would look good?". `--pub` / `--pub-bg` are a pastel
+blue of the Pantone 2717 C family: light `#2a5793` on `#e6effb` (6.3:1),
+dark `#a7c6ed` on `#1d2735` (8.6:1). It is greyer and softer than the action
+blue (`#0071e3`), so a post date never reads as a button, and it keeps its
+one place.
