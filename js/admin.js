@@ -1431,7 +1431,7 @@
       { at: '#rhMoreBtn', text: 'Select reports to download several, or mark them as sent.' }] },
     links: { name: 'Short Links', steps: [
       { at: '#showAddLink', text: 'Add link makes a short address and its QR code.' },
-      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused. Every namecard address is listed, so none is taken twice.' }] },
+      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, then the addresses the portal makes for clients and creators. Every address in use is listed, so none is taken twice.' }] },
     services: { name: 'Services', steps: [
       { at: '#svcAdd', text: 'Add a service or an add-on to the rate card.' },
       { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line seeds a client\'s services, where it stays editable.' }] },
@@ -5904,6 +5904,19 @@
      list shows them beside the links, taken (the user, 2026-10-07: which
      slugs are in use). Null where the read failed. */
   var cards = [];
+  /* The addresses the links host answers by itself (2026-10-14; the user:
+     "there should have a place to see all hi.adspace.me/{slugs}"): a
+     client's review link (/r/), Video Scripts (/s/), a campaign's creator
+     selection (/c/) and a creator's own page (/p/), each the key its long
+     link carries. Each is read only where the colleague may open its
+     section; `false` where not read, null where the read failed. */
+  var SYS = [
+    { key: 'r', name: 'Content Review', need: ['review', 'view'], label: 'Client' },
+    { key: 's', name: 'Video Scripts', need: ['scripts', 'view'], label: 'Client' },
+    { key: 'c', name: 'Creator selection', need: ['campaigns.campaigns', 'view'], label: 'Campaign' },
+    { key: 'p', name: 'Creator pages', need: ['campaigns.creators', 'view'], label: 'Creator' }
+  ];
+  var sys = {};
   var editingSlug = null;
 
   // What a slug may be: the part after the slash, and safe in a URL as typed.
@@ -5954,6 +5967,49 @@
         cards = r.error ? null : (r.data || []).filter(function (t) { return t.card_slug; });
         settle();
       }).catch(function () { cards = null; settle(); });
+    SYS.forEach(function (g) {
+      sys[g.key] = false;
+      if (!may(g.need[0], g.need[1])) return;
+      left++;
+      sysRead(g.key).then(function (rows) { sys[g.key] = rows; settle(); })
+        .catch(function () { sys[g.key] = null; settle(); });
+    });
+  }
+  function sysRead(k) {
+    var origin = location.origin;
+    var who = function (c) { return c ? (c.client_code ? c.client_code + ' · ' : '') + (c.name || '') : ''; };
+    var take = function (q, map) {
+      return q.then(function (r) { if (r.error) throw r.error; return (r.data || []).map(map).filter(Boolean); });
+    };
+    if (k === 'r') {
+      return take(db.from('clients').select('id, name, client_code, access_token, review_hidden, stage').eq('stage', 'active'), function (c) {
+        if (!c.access_token || c.review_hidden) return null;
+        return { slug: 'r/' + c.access_token, url: origin + '/review/?k=' + c.access_token, label: who(c) };
+      });
+    }
+    if (k === 's') {
+      return take(db.from('clients').select('id, name, client_code, script_key').not('script_key', 'is', null), function (c) {
+        return c.script_key ? { slug: 's/' + c.script_key, url: origin + '/script/?k=' + c.script_key, label: who(c) } : null;
+      });
+    }
+    if (k === 'c') {
+      return take(db.from('campaigns').select('id, title, access_token, state, clients(name, client_code)'), function (c) {
+        if (!c.access_token || c.state === 'draft') return null;
+        return { slug: 'c/' + c.access_token, url: origin + '/creators/?k=' + c.access_token,
+                 label: (c.title || 'Untitled campaign') + (c.clients ? ' · ' + c.clients.name : ''), off: c.state === 'completed' ? 'Completed' : '' };
+      });
+    }
+    return take(db.from('creators').select('id, name, access_code, active').not('access_code', 'is', null), function (c) {
+      if (!c.access_code) return null;
+      var code = String(c.access_code).toLowerCase();
+      return { slug: 'p/' + code, url: origin + '/creator/?k=' + code, label: c.name || '', off: c.active === false ? 'Inactive' : '' };
+    });
+  }
+  function sysShown(k) {
+    var q = $('linkSearch').value.trim().toLowerCase();
+    return (sys[k] || []).filter(function (x) {
+      return !q || (x.slug + ' ' + x.label).toLowerCase().indexOf(q) > -1;
+    }).sort(function (a, b) { return a.label.localeCompare(b.label); });
   }
 
   /* A slug is looked at far more often than it is changed, so the list is a
@@ -5983,6 +6039,7 @@
     /* A namecard's slug is a short link on the same host, so it counts. */
     var total = links.length + (cards || []).length;
     var count = shown.length + cshown.length;
+    SYS.forEach(function (g) { total += (sys[g.key] || []).length; count += sysShown(g.key).length; });
     var filtered = count !== total;
 
     $('linkCount').textContent = !total ? '' :
@@ -5992,6 +6049,15 @@
     box.innerHTML = '';
     /* A failed read of the cards is said, never drawn as none. */
     var cardsFailed = function () {
+      SYS.forEach(function (g) {
+        if (sys[g.key] !== null) return;
+        var f = document.createElement('div');
+        f.className = 'softpanel';
+        f.innerHTML = '<div class="errline"><b>Could not load the ' + esc(g.name) + ' links.</b>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div>';
+        f.querySelector('[data-a="retry"]').addEventListener('click', loadLinks);
+        box.appendChild(f);
+      });
       if (cards !== null) return;
       var fail = document.createElement('div');
       fail.className = 'softpanel';
@@ -6035,7 +6101,11 @@
        down (the trigger still refuses them to a new link). */
     [['live', 'Live', liveRows, false, 'Label', 'links', linkRow],
      ['cards', 'Namecards', cshown, false, 'Colleague', 'namecards', cardRow],
-     ['paused', 'Paused', pausedRows, true, 'Label', 'links', linkRow]].forEach(function (g) {
+     ['paused', 'Paused', pausedRows, true, 'Label', 'links', linkRow]].concat(SYS.map(function (g) {
+      /* The portal's own addresses come after, shut until opened: each is
+         the key a client's or a creator's link carries, never typed here. */
+      return ['sys-' + g.key, g.name, sysShown(g.key), true, g.label, g.key === 'p' ? 'creators' : 'links', sysRow];
+    })).forEach(function (g) {
       if (!g[2].length) return;
       box.appendChild(GRP.section({
         route: 'links', key: g[0], name: g[1], count: g[2].length,
@@ -6071,6 +6141,26 @@
       '</span>';
     row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
       window.ADspaceCopy.to(e.currentTarget, shortUrl(t.card_slug));
+    });
+    return row;
+  }
+
+  /* An address the links host answers by itself: copied and opened here,
+     changed where its record is (Reset access link), so no ⋯. */
+  function sysRow(x) {
+    var row = document.createElement('div');
+    row.className = 'link-row is-card is-sys' + (x.off ? ' is-off' : '');
+    row.innerHTML =
+      '<span class="link-slug">/' + esc(x.slug) + (x.off ? ' <span class="tone is-off">' + esc(x.off) + '</span>' : '') + '</span>' +
+      '<span class="link-target">' + esc(x.url) + '</span>' +
+      '<span class="link-label">' + esc(x.label) + '</span>' +
+      '<span class="link-act">' +
+        iconBtn('copy', 'copy', 'Copy short link') +
+        '<a class="iconbtn" data-a="open" href="' + esc(x.url) + '" target="_blank" rel="noopener" title="Open" aria-label="Open">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>' +
+      '</span>';
+    row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
+      window.ADspaceCopy.to(e.currentTarget, shortUrl(x.slug));
     });
     return row;
   }

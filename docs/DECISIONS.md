@@ -3050,3 +3050,15 @@ tells the team it is ready for a Letter of Offer.
   production now lists only the formats the plan's additional contents do
   not offer (30-second reels and the 120-second video on today's card), and
   the quotation sends only those; without a plan it lists every format.
+
+### 2026-10-14 · Short Links lists every address the links host answers
+- The user: "there should have a place to see all hi.adspace.me/{slugs}
+  created right? now the short links only sees the namecard and created
+  ones". The /r/, /s/, /c/ and /p/ addresses are each the key a long link
+  already carries (nothing stored), so the list reads them from their
+  records: the clients' review and script keys, the campaigns' selection
+  keys and the creators' codes, each only where the colleague may open that
+  section, so Short Links never shows an address its reader could not reach
+  from the record itself. They are listed after Paused, shut until opened,
+  and copied or opened, never edited here: a key changes by Reset access
+  link on its record.

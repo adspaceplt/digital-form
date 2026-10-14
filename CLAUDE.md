@@ -209,7 +209,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `supabase/functions/brand-analysis/`, the Brand pane's analysis, the BRAND ANALYSIS section | analysis, smsql, caption, crm, then `ui` |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass |
-| the Short Links route | qr, run |
+| the Short Links route | qr, shortlinks, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 
 **Global > parent > child** (the user, 2026-10-11, the light version): a
@@ -4182,6 +4182,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   takes them in and the search finds them by slug or name; a refused read
   is said (Could not load the namecards.), never drawn as none (the user,
   2026-10-07).
+- After Live, Namecards and Paused, the list shows the addresses the host
+  answers by itself (2026-10-14; the user: "there should have a place to see
+  all hi.adspace.me/{slugs}"), each a card shut until opened: Content
+  Review (`/r/{key}`, an Active client in Content Review), Video Scripts
+  (`/s/{key}`), Creator selection (`/c/{key}`, not a draft; Completed as a
+  chip) and Creator pages (`/p/{code}`, Inactive as a chip); each read only
+  where its section (or `campaigns.creators`) is at View, a failed read
+  `Could not load the {group} links.` with Try again; Copy and Open, no ⋯
+  (changed where the record is). The count and the search take them in.
 - A short link never takes a colleague's card slug (`links_card_clash`,
   named `/{slug} is a colleague's namecard.`).
 - A slug, a short link's or a card's, is three characters at least
