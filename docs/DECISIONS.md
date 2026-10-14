@@ -3317,3 +3317,10 @@ figures now runs three across (`third`, six tracks), the unit moves into the
 section's heading (Terms under a year (%)), and 24 months and more reads
 From 24 months so each label holds one line in a third of a phone.
 
+### 2026-10-15 · Performance settings: figures side by side on one line
+The user's screenshot of Performance settings: under Reminders the left
+label ran to two lines ("Days before a month or half month ends (0 for
+none)"), so its field sat lower than its neighbour. The two labels lose
+"(0 for none)", which the heading now says once (Reminders (0 for none)),
+and the sheet's rows of figures align their fields on one line whatever a
+label wraps to (`#rwSFields .row.fgrid { align-items: end }`).

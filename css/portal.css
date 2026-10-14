@@ -1364,6 +1364,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
 .row.fgrid-3 > .span-2 { grid-column: span 2; }
+/* Performance settings: fields side by side keep one line whatever their
+   labels wrap to (2026-10-15, the user's screenshot of Reminders). */
+#rwSFields .row.fgrid, #rwSFields .row.fgrid-3 { align-items: end; }
 /* Cells that come and go together without a box of their own (the Team
    sheet's access date and time); with them gone the first cell takes the row. */
 .row > .fcells { display: contents; }
