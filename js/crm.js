@@ -2054,6 +2054,7 @@
         setUrl();
         if (mayPart('clients.billing', 'work')) {
           openBilling(this);
+          paintBillAsk();
           msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
           var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
           if (first && $(first[0])) $(first[0]).focus();
@@ -2185,6 +2186,7 @@
     fillBilling(state.client);
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
+    if ($('crmBillAsk')) $('crmBillAsk').hidden = true;
     openSheet('crmBillSheet', opener || $('crmBillEdit'));
   }
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
@@ -2260,7 +2262,53 @@
     }
     box.hidden = false;
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
+    if ($('crmBillAsk') && !$('crmBillAsk').hidden) paintBillAsk();
   }
+  /* The client's answers into the Billing sheet, for its own Save. */
+  function useDetails(b) {
+    var f = state.detForm;
+    if (!f || !f.answers) return;
+    if ($('crmBillSheet').hidden) openBilling(b);
+    Object.keys(DF_FIELDS).forEach(function (k) {
+      var el = $(DF_FIELDS[k]);
+      if (el && f.answers[k]) { el.value = f.answers[k]; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+    state.detUse = f.id;
+    msg('crmBillMsg', 'Filled from the details form. Review, then Save.', 'ok');
+  }
+  /* The Active gate's Billing sheet offers the details form (2026-10-15,
+     audit CLI-6): what the team would type, the client can send. */
+  function paintBillAsk() {
+    var box = $('crmBillAsk'), f = state.detForm;
+    if (!box) return;
+    if (!mayPart('clients.billing', 'work')) { box.hidden = true; return; }
+    var day = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) : String(iso).slice(0, 10); };
+    var words, act;
+    if (f && f.answers && f.state !== 'used') { words = 'The client sent these on ' + day(f.submitted_at) + '.'; act = ['use', 'Use details']; }
+    else if (f && f.state === 'open' && f.key) { words = 'The details form is open until ' + day(f.expires_at) + '.'; act = ['copy', 'Copy link']; }
+    else { words = 'The client can fill these in on the details form.'; act = ['make', 'Create link']; }
+    box.innerHTML = '<span>' + esc(words) + '</span><button class="btn btn-sm" type="button" data-ba="' + act[0] + '">' + esc(act[1]) + '</button>';
+    box.hidden = false;
+    if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#crmBillAsk [data-ba]');
+    if (!b) return;
+    var a = b.getAttribute('data-ba'), f = state.detForm;
+    if (a === 'use') { useDetails(b); $('crmBillAsk').hidden = true; return; }
+    if (a === 'copy' && f && f.key) { window.ADspaceCopy.to(b, dfUrl(f.key)); return; }
+    if (a === 'make') {
+      b.disabled = true;
+      db.rpc('client_details_link', { p_client: state.client.id, p_reset: false }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) { b.disabled = false; msg('crmBillMsg', r.error ? r.error.message : (DF_SAID[d.error] || d.error), 'err'); return; }
+        state.detForm = { id: d.id, key: d.key, state: 'open', expires_at: d.expires_at };
+        paintDetForm(); paintBillAsk();
+        var c = $('crmBillAsk').querySelector('[data-ba="copy"]');
+        if (c) window.ADspaceCopy.to(c, dfUrl(d.key));
+      }).catch(function (x) { b.disabled = false; msg('crmBillMsg', (x && x.message) || String(x), 'err'); });
+    }
+  });
   function dfLink(reset, btn) {
     if (btn) btn.disabled = true;
     db.rpc('client_details_link', { p_client: state.client.id, p_reset: Boolean(reset) }).then(function (r) {
@@ -2292,16 +2340,7 @@
       return;
     }
     if (a === 'copy') { window.ADspaceCopy.to(b, $('crmDfLink').value); return; }
-    if (a === 'use' && f && f.answers) {
-      openBilling(b);
-      Object.keys(DF_FIELDS).forEach(function (k) {
-        var el = $(DF_FIELDS[k]);
-        if (el && f.answers[k]) { el.value = f.answers[k]; el.dispatchEvent(new Event('input', { bubbles: true })); }
-      });
-      state.detUse = f.id;
-      msg('crmBillMsg', 'Filled from the details form. Review, then Save.', 'ok');
-      return;
-    }
+    if (a === 'use' && f && f.answers) { useDetails(b); return; }
     if (a === 'contact' && f && f.answers) {
       showPane('contacts'); pushUrl();
       openContact(null);
@@ -4619,9 +4658,10 @@
        without one is told here rather than at the end. It is a caution and no
        longer a refusal to open the sheet: a typed reference needs no code,
        and the database is what decides either way. */
-    if (!String(c.client_code || '').trim()) {
-      msg('pickMsg', 'This client has no Client ID, so a reference cannot be made automatically. Type one below, or set the ID on the record.', 'warn');
-    }
+    /* Said at the field it concerns, never under the button (2026-10-15,
+       audit CLI-4: the field read Numbered automatically while it could not
+       be). */
+    var noCode = !String(c.client_code || '').trim();
     var e = eligible();
     picking = { replaces: null };
     $('pickBody').innerHTML =
@@ -4639,10 +4679,12 @@
       '<div class="lpickref">' +
         '<label class="field-label" for="pickRef">Reference</label>' +
         '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false"' +
-          ' placeholder="Numbered automatically">' +
+          (noCode ? ' aria-required="true" aria-describedby="pickRefNote" placeholder="Type a reference"' : ' placeholder="Numbered automatically"') + '>' +
+        (noCode ? '<p class="msg warn" id="pickRefNote">This client has no Client ID, so the reference cannot be numbered automatically. Type one, or set the ID on the record.</p>' : '') +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
+    if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan($('pickBody'));
     Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
       i.disabled = true;
     });
@@ -4709,6 +4751,11 @@
     var ids = pickedIds();
     if (!ids.length) return;
     var c = state.client;
+    if (!String(c.client_code || '').trim() && !($('pickRef').value || '').trim()) {
+      msg('pickMsg', 'Type a reference.', 'err');
+      $('pickRef').focus();
+      return;
+    }
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
     /* One key per press of this button, held while the request is in flight,
