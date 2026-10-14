@@ -46,7 +46,7 @@
         verify: ['Account verification', 'Meta Verified and rednote Professional']
       },
       needNone: 'Select at least one service.',
-      planT: 'Platforms and plan', noAds: 'Without ads', withAds: 'With ads',
+      planT: 'Platforms and plan', graphicPlan: 'Graphic', graphicSub: 'Static or carousel', platsH: 'Platforms', planH: 'Plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
       contents: '{n} contents per month', budgetUpTo: 'advertising budget up to RM {b}',
       ratesLater: 'The rates will be shown on the final page.',
@@ -58,7 +58,7 @@
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (included in the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
-      koc: 'KOC campaign', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
+      koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
       detailsT: 'Your details', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
       waHint: 'With country code, e.g. 60123456789 or 6581234567', brand: 'Brand', industry: 'Industry', optional: 'Optional',
@@ -106,7 +106,7 @@
         verify: ['账号认证', 'Meta 认证与小红书专业号']
       },
       needNone: '请至少选择一项服务。',
-      planT: '平台与方案', noAds: '不含广告', withAds: '含广告',
+      planT: '平台与方案', graphicPlan: '图文', graphicSub: '静态或轮播', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
       contents: '每月 {n} 条内容', budgetUpTo: '广告预算最高 RM {b}',
       ratesLater: '价格将在最后一页显示。',
@@ -118,7 +118,7 @@
       budget: '每月广告预算', budgetIn: '最高 RM {b}（方案已包含）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', term: '合约期', months: '{n} 个月',
       once: '内容制作', onceNote: '一次性，按件收费',
-      koc: 'KOC 合作', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
+      koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '请包含国家代码，例如 60123456789 或 6581234567', brand: '品牌', industry: '行业', optional: '选填',
@@ -218,7 +218,7 @@
     return a;
   }
   function monthly() { return Boolean((S.need.social && planOf()) || S.need.ads); }
-  function adsAsked() { var p = planOf(); return Boolean(S.need.ads || (p && p.ads)); }
+  function adsAsked() { var p = S.need.social ? planOf() : null; return Boolean(S.need.ads || (p && p.ads)); }
 
   function selection() {
     var p = S.need.social ? planOf() : null, once = [];
@@ -263,8 +263,8 @@
     return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
       (on ? ' checked' : '') + '><span class="qs-text">' + esc(label) + '</span>' + MARK + '</label>';
   }
-  function stepper(group, slug, label, n) {
-    return '<div class="qs-stepper"><span>' + esc(label) + '</span><span class="qs-count">' +
+  function stepper(group, slug, label, n, sub) {
+    return '<div class="qs-stepper"><span>' + esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="qs-count">' +
       '<button class="btn qs-pm" type="button" data-step="-1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().fewer + ': ' + label) + '"' + (n ? '' : ' disabled') + '>−</button>' +
       '<b aria-live="polite">' + n + '</b>' +
       '<button class="btn qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().more + ': ' + label) + '">+</button></span></div>';
@@ -274,6 +274,11 @@
       '<select class="select" id="' + id + '" data-seg ' + (quiet ? 'aria-label="' + esc(label) + '"' : 'aria-labelledby="' + id + 'L"') + '>' +
       options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(value) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
       '</select></div>';
+  }
+  // A category of choices: its heading over its items, set apart from the next by a hairline.
+  function sec(head, body, forId) {
+    return '<section class="qs-sec">' + (forId ? '<label class="qs-sec-h" for="' + forId + '">' : '<h2 class="qs-sec-h">') + esc(head) +
+      (forId ? '</label>' : '</h2>') + body + '</section>';
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : c.name; }
   function planLine(p) {
@@ -294,13 +299,13 @@
 
   function paintPlan() {
     var plans = CAT.plans.filter(function (p) { return Boolean(p.ads) === Boolean(S.withAds); });
-    return frame('<h1 class="qs-title">' + esc(t().planT) + '</h1>' +
-      '<div class="qs-chips qs-two">' + CAT.platforms.map(function (p) { return chip('plat', p, S.platforms.indexOf(p) >= 0, t().plat[p] || p); }).join('') + '</div>' +
-      seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
-      '<div class="qs-list">' + plans.map(function (p) {
-        return pick('radio', 'plan', p.slug, S.plan === p.slug,
-          f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
-      }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>', navFoot());
+    return frame('<h1 class="qs-title">' + esc(t().planT) + '</h1><div class="qs-secs">' +
+      sec(t().platsH, '<div class="qs-chips qs-two">' + CAT.platforms.map(function (p) { return chip('plat', p, S.platforms.indexOf(p) >= 0, t().plat[p] || p); }).join('') + '</div>') +
+      sec(t().planH, seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
+        '<div class="qs-list">' + plans.map(function (p) {
+          return pick('radio', 'plan', p.slug, S.plan === p.slug,
+            f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
+        }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>') + '</div>', navFoot());
   }
 
   function budgetOptions() {
@@ -317,39 +322,40 @@
     if (p) {
       var kinds = (p.mix || []).reduce(function (a, m) { return a.concat(Object.keys(m)); }, []);
       var extras = CAT.contents.filter(function (c) { return kinds.indexOf(c.kind) >= 0; });
-      h += '<div class="qs-group"><span class="field-label">' + esc(t().extra) + '</span>' +
-        extras.map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join('') + '</div>';
-      h += '<div class="qs-group"><span class="field-label">' + esc(t().langs) + '</span><div class="qs-chips qs-three">' +
+      h += sec(t().extra, extras.map(function (c) { return c.kind === 'graphic' ? stepper('extra', c.slug, t().graphicPlan, S.extra[c.slug] || 0, t().graphicSub) : stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
+      h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
         '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
-        (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : '') + '</div>';
+        (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : ''));
     }
     if (adsAsked()) {
       var opts = budgetOptions(), cur = S.budget == null ? opts[0][0] : S.budget;
       if (!opts.some(function (o) { return String(o[0]) === String(cur); })) cur = opts[0][0];
       S.budget = Number(cur);
-      h += '<div class="field"><label class="field-label" for="qsBudget">' + esc(t().budget) + '</label><select class="select" id="qsBudget">' +
-        opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>';
+      h += sec(t().budget, '<select class="select" id="qsBudget">' +
+        opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>', 'qsBudget');
     }
-    if (monthly()) h += seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term);
+    if (monthly()) h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true));
     if (S.need.content) {
-      h += '<div class="qs-group"><span class="field-label">' + esc(t().once) + '</span><p class="qs-note">' + esc(t().onceNote) + '</p>' +
-        CAT.contents.map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join('') + '</div>';
+      h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
+        CAT.contents.map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (S.need.koc) {
+      var cr = '';
       if (CAT.koc.length) {
-        h += '<div class="field"><label class="field-label" for="qsKoc">' + esc(t().koc) + '</label><select class="select" id="qsKoc">' +
+        cr += '<div class="field"><label class="field-label" for="qsKoc">' + esc(t().koc) + '</label><select class="select" id="qsKoc">' +
           [['', t().kocNone]].concat(CAT.koc.map(function (k) { return [k.slug, k.creators ? f(t().kocN, { n: k.creators }) : t().kocCustom]; }))
             .map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === S.koc ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
           '</select></div>';
       }
-      if (CAT.kol) h += pick('checkbox', 'kol', '1', S.kol, t().kol, '');
+      if (CAT.kol) cr += pick('checkbox', 'kol', '1', S.kol, t().kol, '');
+      if (cr) h += sec(t().need.koc[0], cr);
     }
     if (S.need.verify) {
-      h += '<div class="qs-group"><span class="field-label">' + esc(t().verify) + '</span><div class="qs-list">' +
-        CAT.verify.map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div></div>';
+      h += sec(t().verify, '<div class="qs-list">' +
+        CAT.verify.map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div>');
     }
-    return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1>' + h, navFoot());
+    return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1><div class="qs-secs">' + h + '</div>', navFoot());
   }
 
   function field(id, label, req, html, hint) {
@@ -365,7 +371,7 @@
       field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
       field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
         INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '"' + (c.industry === i ? ' selected' : '') + '>' + esc(t().ind[i]) + '</option>'; }).join('') + '</select>') +
-      '<label class="tickline qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '><span>' + esc(t().consent) + '</span></label>' +
+      '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
   }
 
@@ -387,7 +393,7 @@
       : '<span class="chip-state is-ok">' + esc(f(t().valid, { d: day(q.valid_until) })) + '</span>';
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];
-      return '<div class="qs-row"><span class="qs-what">' + esc(l.label) + (Number(l.qty) > 1 ? '<span class="qs-calc"> · ' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
+      return '<div class="qs-row"><span class="qs-what">' + esc(l.label) + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
         (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>One-off</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {
@@ -406,13 +412,12 @@
         '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
     return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '"><section class="qs-main">' +
       '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>' +
-      '<div class="qs-head"><div><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + ' · ' + status + '</span></div>' +
-      '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>' +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span></div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(t().rate) + '</span><span class="qs-num">' + esc(t().sub) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       (gone ? '' : '<button class="btn btn-primary qs-proceed" type="button" data-a="proceed">' + esc(t().proceed) + '</button>') +
-      '<div class="qs-acts"><button class="btn qs-dl2" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
+      '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
       '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a></div>' +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
@@ -592,7 +597,12 @@
     var el = e.target;
     if (!el.closest || !el.closest('#qsRoot')) return;
     var nm = el.name, id = el.id;
-    if (nm === 'need') { S.need[el.value] = el.checked; }
+    if (nm === 'need') {
+      S.need[el.value] = el.checked;
+      var a = steps(), sp = root().querySelector('.qs-progress span'), bar = root().querySelector('.qs-track i');
+      if (sp) sp.textContent = f(t().step, { n: 1, m: a.length + 1 });
+      if (bar) bar.style.width = Math.round(1 / (a.length + 1) * 100) + '%';
+    }
     else if (nm === 'plat') {
       S.platforms = S.platforms.filter(function (p) { return p !== el.value; });
       if (el.checked) S.platforms.push(el.value);
@@ -619,6 +629,7 @@
       }
       keep(); paint(); return;
     }
+    else if (id === 'qsConsent') { el.removeAttribute('aria-invalid'); say('qsConsentMsg', ''); }
     else if (id === 'qsBudget') { S.budget = Number(el.value); }
     else if (id === 'qsTerm') { S.term = Number(el.value); }
     else if (id === 'qsKoc') { S.koc = el.value; }
@@ -635,7 +646,10 @@
     else if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
   });
   document.addEventListener('input', function (e) {
-    if (e.target.id === 'qsEmail') {
+    // A refusal leaves its field once the field is changed; the next press checks it again.
+    var id = e.target.id;
+    if (id && e.target.getAttribute('aria-invalid') === 'true') { e.target.removeAttribute('aria-invalid'); if (id !== 'qsEmail') say(id + 'Msg', ''); }
+    if (id === 'qsEmail') {
       var v = e.target.value.trim();
       say('qsEmailMsg', /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) && FREE.test(v) ? t().freeMail : '', 'warn');
     }
