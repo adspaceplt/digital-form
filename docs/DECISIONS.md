@@ -3272,3 +3272,32 @@ while none of the page's own blocks (`data-shown`: the record head, the app,
 the cover) is on show, so every way a page ends (drawn, Link not recognised,
 the access code) takes it away. A browser without `:has()` shows nothing, as
 before. `tests/pageload.js`; the stand-in gained `__slowRpc`.
+
+### 2026-10-14 · Team: the audit's seven P3 findings
+The user: "fix the remainings too". The group panel's changes now fold under
+Custom: n changes (the sentence above already reads the access back).
+Inactive, expired and removed colleagues leave their group's card and count
+for one shut Inactive card after the groups. Health's half month reads No
+colleague has agreed to check-ins. where it read "0 of 0 checked in". The
+review's Save is tonal, so Share is its one blue. Set access expiry's
+question is two sentences, Delete's under forty words. A success line under
+the Team bar clears after 8 seconds, as the Undo bar does; a refusal or a
+warning stays. The work left with a colleague is said as "1 open task
+stays", "2 open tasks stay".
+
+### 2026-10-14 · Settings: the audit's last five (SET-5 to SET-9)
+At the user's word, the P3s in one batch. SET-5: a colleague holding one
+part saw a list of one group beside its card; the list is drawn only with
+three groups or more. SET-6: value lines read as values (Meta checks On ·
+Import from Meta, Report audit, else Off; Reach Within 0.5% of Meta; Sent
+again Within 24 hours), no longer sentences restating the switch. SET-7:
+six Open rows said nothing; each now states what it holds from its
+section's own read (`ADspaceAnnounce.live`, `ADspaceNotice.last`,
+`ops_next_task_no`, `ADspaceReports.aiToday`, `ADspaceWhatsApp.templates`,
+doc_types), six requests a visit, read again when the row's sheet hands
+focus back so a post or a send is reflected. SET-8: Turn on upgrade mode
+asks in one sentence. SET-9 (revisits 2026-10-11's placements): AI prices
+joined AI usage in the AI group, and the details form's days left Tax and
+terms for their own row, Details form, in the Clients group (Tax and terms
+is eight figures).
+

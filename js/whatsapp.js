@@ -934,6 +934,14 @@
     compose: function (o) { wireComposer(); compose(o); },
     may: maySend,
     on: on,
+    /* How many purposes have a template on, of how many (the Settings
+       row, 2026-10-14, ux-audit SET-7). */
+    templates: function () {
+      return read().then(function (k) {
+        if (k.error) throw k.error;
+        return { on: k.list.filter(function (t) { return t.active && t.name; }).length, all: k.list.length };
+      });
+    },
     said: said
   };
 })();

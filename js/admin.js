@@ -468,7 +468,7 @@
     var today = myDay(new Date());
     window.ADspaceConfirm.ask({
       title: 'Turn on upgrade mode',
-      body: 'Every portal page shows Upgrading in progress to everyone but admins. The front door and short links stay up. An empty start begins now; an empty end waits to be turned off.',
+      body: 'Everyone but admins sees Upgrading in progress.',
       go: 'Turn on',
       tone: 'warn',
       fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },
@@ -5092,10 +5092,10 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true] };
   /* Tax and terms, one list for the Services bar and the Settings page:
-     ten figures read as three sections (2026-10-14, audit SET-4). */
+     eight figures read as three sections (2026-10-14, audit SET-4). The
+     details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
-    ['details_form_days', 'Details form open for (days)', 'quote', 'Tax and validity'],
     ['term_1_3', '1 to 3 months (%)', 'adj', 'Terms under a year'], ['term_4_5', '4 and 5 months (%)', 'adj', 'Terms under a year'],
     ['term_6_11', '6 to 11 months (%)', 'adj', 'Terms under a year'],
     ['term_12_23', '12 to 17 months (%)', 'adj', 'Terms of a year or more'], ['term_18_23', '18 to 23 months (%)', 'adj', 'Terms of a year or more'],

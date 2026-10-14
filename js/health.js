@@ -377,8 +377,10 @@
     var head = document.createElement('div');
     head.className = 'ovcard health-card health-sum';
     head.innerHTML = '<div class="ovsec"><div class="ovsec-head refl-head"><h3 class="health-h">' + HEART +
-      esc(halfWord(d.half, d.half_end)) + '</h3><span class="refl-ctl health-count">' +
-      esc(done.length + ' of ' + standing.length + ' checked in') + '</span></div><div id="healthAvg"></div></div>';
+      esc(halfWord(d.half, d.half_end)) + '</h3>' +
+      /* With nobody agreed, "0 of 0" says nothing: the line under it says so (TEAM-6). */
+      (standing.length ? '<span class="refl-ctl health-count">' + esc(done.length + ' of ' + standing.length + ' checked in') + '</span>' : '') +
+      '</div><div id="healthAvg"></div></div>';
     box.appendChild(head);
     if (done.length && window.ADspaceChart) {
       window.ADspaceChart.draw($('healthAvg'), {
@@ -391,7 +393,7 @@
         })
       });
     } else {
-      $('healthAvg').innerHTML = '<p class="perf-quiet">No check-ins this half month.</p>';
+      $('healthAvg').innerHTML = '<p class="perf-quiet">' + (standing.length ? 'No check-ins this half month.' : 'No colleague has agreed to check-ins.') + '</p>';
     }
     var G = window.ADspaceGroup;
     box.appendChild(G.section({

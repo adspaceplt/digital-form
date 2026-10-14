@@ -5628,7 +5628,17 @@ body > .shell { width: 100%; }
   margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk);
   font-size: 13.5px; line-height: 1.5; color: var(--ink);
 }
-.permpreset-note { margin-left: 6px; color: var(--ink-soft); font-weight: 600; }
+/* Start from, then Custom: n changes as a quiet fold over the changes
+   (TEAM-4, 2026-10-14). */
+.permpreset-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+.permpreset-head .field-label { margin-bottom: 0; }
+.permpreset-note { padding: 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.permpreset-note::after {
+  content: ""; width: 6px; height: 6px; margin-left: 2px; flex: 0 0 auto;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg); transition: transform var(--t) var(--ease);
+}
+.permpreset-note[aria-expanded="true"]::after { transform: translateY(1px) rotate(-135deg); }
 /* What separates the panel from the role it is nearest. */
 .permchanges { margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
 /* Every part select under a fold is one width and ends on one right edge, so
