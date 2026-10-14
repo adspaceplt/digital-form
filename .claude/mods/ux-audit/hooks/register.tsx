@@ -30,6 +30,7 @@ export const SECTIONS: readonly { key: string; name: string; files: readonly str
   { key: 'team', name: 'Team', files: ['js/team.js', 'js/perf.js', 'js/health.js'] },
   { key: 'handbook', name: 'Handbook', files: ['js/handbook.js'] },
   { key: 'mine', name: 'My HR', files: ['js/perf.js', 'js/health.js'] },
+  { key: 'settings', name: 'Settings', files: ['js/settings.js', 'js/admin.js'] },
   { key: 'portal', name: 'Client portal', files: ['js/portal.js', 'client/index.html'] },
   { key: 'reviewpage', name: 'Content review page', files: ['js/review.js', 'js/decide.js', 'review/index.html'] },
   { key: 'scriptpage', name: 'Video scripts page', files: ['js/script.js', 'script/index.html'] },
