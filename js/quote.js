@@ -1,0 +1,681 @@
+/*
+ * The quotation website (/quote/, 2026-10-14): a prospect makes their own
+ * quotation, as the canvas the user approved draws it (Website 1 to 6 and
+ * the desk view).
+ *
+ *   1 What do you need?     social media, advertising, content production,
+ *                           a KOC or KOL campaign, account verification
+ *   2 Platforms and plan    the platforms, Without ads / With ads, the plan
+ *                           (only where social media is asked for)
+ *   3 Customise             extra contents, languages, the advertising
+ *                           budget, the commitment, the one-off items
+ *   4 Your details          name, work email, WhatsApp, brand, industry,
+ *                           consent; Proceed quote makes the quotation
+ *   5 Your quotation        priced by the database (`quote-request`, then
+ *                           `quote_website_read` by its key, `?q=` in the
+ *                           address); Download, Chat on WhatsApp, Proceed
+ *                           asks the billing details and requests the
+ *                           Letter of Offer (`quote_website_request`)
+ *   6 Request received
+ *
+ * No rate is shown before the quotation: the catalogue (`quote_catalogue`)
+ * holds none. What the person picked is kept in this tab
+ * (`adspace-quote`), so Back and a refresh keep it.
+ */
+(function () {
+  'use strict';
+  var API = window.ADspaceAPI, db = API && API.client;
+  var cfg = window.ADSPACE_CONFIG || {};
+  var KEEP = 'adspace-quote', LANG_KEY = 'adspace.quote.lang';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var WORDS = {
+    en: {
+      lang: '中文', step: 'Step {n} of {m}', cont: 'Continue', back: 'Back',
+      needT: 'What do you need?',
+      need: {
+        social: ['Social media management', 'Monthly content and account management'],
+        ads: ['Advertising', 'Meta and TikTok campaigns, managed monthly'],
+        content: ['Content production', 'Graphics and videos, charged per item'],
+        koc: ['KOC or KOL campaign', 'Creators engaged for your brand'],
+        verify: ['Account verification', 'Meta Verified and rednote Professional']
+      },
+      needNone: 'Select at least one service.',
+      planT: 'Platforms and plan', noAds: 'Without ads', withAds: 'With ads',
+      plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
+      contents: '{n} contents per month', budgetUpTo: 'advertising budget up to RM {b}',
+      ratesLater: 'The rates will be shown on the final page.',
+      planNone: 'Select a platform and a plan.',
+      customT: 'Customise', customPlan: 'Customise Plan {p}',
+      extra: 'Additional contents per month', fewer: 'One fewer', more: 'One more',
+      langs: 'Languages', langsNote: 'Your contents are shared across the languages selected, at no extra charge.',
+      translate: 'Translate every content into each language selected', translateNote: 'Charged per content, per language',
+      budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (included in the plan)', budgetUp: 'Up to RM {b}',
+      budgetAbove: 'Above RM {b}', term: 'Commitment', months: '{n} months',
+      once: 'Content production', onceNote: 'One-off, charged per item',
+      koc: 'KOC campaign', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
+      kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
+      detailsT: 'Your details', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
+      waHint: 'With country code, e.g. 60123456789 or 6581234567', brand: 'Brand', industry: 'Industry', optional: 'Optional',
+      consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
+      freeMail: 'A work email address is recommended.',
+      waBad: 'A valid Malaysia or Singapore registered WhatsApp number is required.',
+      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand.', consent: 'Tick the consent to continue.' },
+      make: 'Proceed quote', making: 'Preparing…',
+      quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
+      line: 'Service', qty: 'Qty', rate: 'Rate (RM)', sub: 'Subtotal (RM)', onReq: 'Quoted on request',
+      proceed: 'Proceed', download: 'Download', chat: 'Chat on WhatsApp',
+      billSep: 'Advertising budget is not included and is billed separately.',
+      validLong: 'This quotation is valid until {d}.', basis: 'Rates are based on the ADspace Rate Card v.{v}.',
+      billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', addr: 'Billing address',
+      ask: 'Request Letter of Offer', asking: 'Sending…',
+      askNote: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
+      billBad: { reg: 'Enter the registered company name.', brn: 'Enter the 12-digit registration number.', addr: 'Enter the billing address.' },
+      doneT: 'Request received', doneTo: 'Once ADspace approves your quotation, the Letter of Offer will be sent to {wa} on WhatsApp.',
+      doneAny: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
+      ref: 'Reference', monthly: 'Monthly incl. SST', oneOff: 'One-off incl. SST', status: 'Status', requested: 'Letter of Offer requested',
+      newQuote: 'New quotation',
+      err: {
+        captcha: 'The security check did not complete. Please try again.', limit: 'This contact has made five quotations today. Please contact ADspace on WhatsApp.',
+        'bad-whatsapp': 'A valid Malaysia or Singapore registered WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
+        expired: 'This quotation has expired. Please make a new one.', 'not-proceeding': 'This quotation is closed. Please make a new one.',
+        'bad-billing': 'Check the billing details.', 'not-found': 'This quotation could not be found.',
+        empty: 'Select at least one service.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
+        any: 'Not sent. Please try again.'
+      },
+      lostT: 'Quotation not found', lostP: 'Please check the link, or make a new quotation.',
+      offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
+      plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
+      lang3: { en: 'English', zh: '中文', ms: 'Malay' },
+      ind: { Property: 'Property', 'F&B': 'Food and beverage', Retail: 'Retail', Wellness: 'Wellness', Lifestyle: 'Lifestyle',
+        Automotive: 'Automotive', Tech: 'Technology', Education: 'Education', Other: 'Other' }
+    },
+    zh: {
+      lang: 'EN', step: '第 {n} 步，共 {m} 步', cont: '继续', back: '返回',
+      needT: '您需要什么服务？',
+      need: {
+        social: ['社交媒体管理', '每月内容制作与账号管理'],
+        ads: ['广告投放', 'Meta 与 TikTok 广告，按月管理'],
+        content: ['内容制作', '图文与视频，按件收费'],
+        koc: ['KOC 或 KOL 合作', '为您的品牌邀约达人'],
+        verify: ['账号认证', 'Meta 认证与小红书专业号']
+      },
+      needNone: '请至少选择一项服务。',
+      planT: '平台与方案', noAds: '不含广告', withAds: '含广告',
+      plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
+      contents: '每月 {n} 条内容', budgetUpTo: '广告预算最高 RM {b}',
+      ratesLater: '价格将在最后一页显示。',
+      planNone: '请选择平台与方案。',
+      customT: '自定义', customPlan: '自定义方案 {p}',
+      extra: '每月额外内容', fewer: '减少一条', more: '增加一条',
+      langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
+      translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
+      budget: '每月广告预算', budgetIn: '最高 RM {b}（方案已包含）', budgetUp: '最高 RM {b}',
+      budgetAbove: 'RM {b} 以上', term: '合约期', months: '{n} 个月',
+      once: '内容制作', onceNote: '一次性，按件收费',
+      koc: 'KOC 合作', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
+      kol: 'KOL 合作（另行报价）', verify: '账号认证',
+      detailsT: '您的资料', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
+      waHint: '请包含国家代码，例如 60123456789 或 6581234567', brand: '品牌', industry: '行业', optional: '选填',
+      consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
+      freeMail: '建议使用工作邮箱。',
+      waBad: '请填写有效的马来西亚或新加坡 WhatsApp 号码。',
+      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', consent: '请勾选同意后继续。' },
+      make: '查看报价', making: '准备中…',
+      quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
+      line: '服务', qty: '数量', rate: '单价 (RM)', sub: '小计 (RM)', onReq: '另行报价',
+      proceed: '继续办理', download: '下载', chat: 'WhatsApp 咨询',
+      billSep: '广告预算不包括在内，另行收费。',
+      validLong: '本报价有效期至 {d}。', basis: '价格依据 ADspace 价目表 v.{v}。',
+      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', addr: '账单地址',
+      ask: '申请聘用书', asking: '提交中…',
+      askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送聘用书。',
+      billBad: { reg: '请填写公司注册名称。', brn: '请填写 12 位注册编号。', addr: '请填写账单地址。' },
+      doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送聘用书。',
+      doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送聘用书。',
+      ref: '编号', monthly: '每月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请聘用书',
+      newQuote: '重新报价',
+      err: {
+        captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
+        'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
+        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。',
+        'bad-billing': '请检查账单资料。', 'not-found': '找不到此报价。',
+        empty: '请至少选择一项服务。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
+        any: '未能提交，请重试。'
+      },
+      lostT: '找不到报价', lostP: '请检查链接，或重新报价。',
+      offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
+      plat: { meta: 'Meta', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
+      lang3: { en: 'English', zh: '中文', ms: '马来文' },
+      ind: { Property: '房地产', 'F&B': '餐饮', Retail: '零售', Wellness: '健康养生', Lifestyle: '生活方式',
+        Automotive: '汽车', Tech: '科技', Education: '教育', Other: '其他' }
+    }
+  };
+  var ZH_KIND = { graphic: '静态图文', gif: 'GIF 动图', carousel: '多图轮播', reel30: '短视频（30 秒内）',
+    reel: '短视频（60 秒内）', video120: '短视频（120 秒内）' };
+  var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
+  var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
+  var TERMS = [6, 12, 24];
+
+  var lang = 'en';
+  try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
+  function t() { return WORDS[lang]; }
+  function f(s, o) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return o && o[k] != null ? o[k] : m; }); }
+  function n0(v) { return Number(v || 0).toLocaleString('en-MY'); }
+  function n2(v) {
+    var x = Number(v || 0), s = Math.abs(x).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return x < 0 ? '(' + s + ')' : s;
+  }
+  function day(iso, long) {
+    var C = window.ADspaceClock;
+    if (!iso) return '';
+    if (long && lang !== 'zh') {
+      var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+      var M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return m ? Number(m[3]) + ' ' + M[Number(m[2]) - 1] + ' ' + m[1] : iso;
+    }
+    return C ? C.date(String(iso).slice(0, 10), { zh: lang === 'zh' }) : iso;
+  }
+  function waDigits(s) {
+    var d = String(s || '').replace(/[^0-9]/g, '');
+    if (/^0[1-9]/.test(d)) d = '6' + d;
+    return d;
+  }
+  function waOk(d) { return /^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$/.test(d); }
+  /* +60 12-345 6789, +60 11-1234 5678, +60 7-123 4567, +65 8123 4567. */
+  function waShow(d) {
+    if (/^65/.test(d)) return '+65 ' + d.slice(2, 6) + ' ' + d.slice(6);
+    var r = d.slice(2), a = /^1/.test(r) ? 2 : 1, mid = r.length - a > 7 ? 4 : 3;
+    return '+60 ' + r.slice(0, a) + '-' + r.slice(a, a + mid) + ' ' + r.slice(a + mid);
+  }
+  function key8() {
+    var a = '23456789abcdefghjkmnpqrstuvwxyz', out = '', buf = new Uint8Array(24);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < buf.length && out.length < 20; i++) if (buf[i] < 248) out += a.charAt(buf[i] % 31);
+    return out;
+  }
+
+  /* What the person picked, kept in this tab. */
+  var S = { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
+    plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
+    contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'need', idem: null };
+  try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
+  function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
+
+  var CAT = null, Q = null, proceeding = false;
+  var root = function () { return $('qsRoot'); };
+
+  function planOf() { return CAT && S.plan ? CAT.plans.filter(function (p) { return p.slug === S.plan; })[0] || null : null; }
+  function steps() {
+    var a = ['need'];
+    if (S.need.social) a.push('plan');
+    a.push('custom', 'details');
+    return a;
+  }
+  function monthly() { return Boolean((S.need.social && planOf()) || S.need.ads); }
+  function adsAsked() { var p = planOf(); return Boolean(S.need.ads || (p && p.ads)); }
+
+  function selection() {
+    var p = S.need.social ? planOf() : null, once = [];
+    var sel = { term: monthly() ? S.term : 1 };
+    if (p) {
+      sel.plan = p.slug;
+      sel.platforms = S.platforms.slice();
+      var ex = {};
+      Object.keys(S.extra).forEach(function (k) { if (S.extra[k] > 0) ex[k] = S.extra[k]; });
+      sel.extra = ex;
+      sel.langs = S.langs.slice();
+      sel.translate = S.translate && S.langs.length > 1;
+    }
+    if (adsAsked()) sel.budget = S.budget == null ? (p && p.ad_budget ? 0 : (CAT.budgets[0] || 0)) : S.budget;
+    if (S.need.content) Object.keys(S.once).forEach(function (k) { if (S.once[k] > 0) once.push({ slug: k, qty: S.once[k] }); });
+    if (S.need.koc && S.koc) once.push({ slug: S.koc, qty: 1 });
+    if (S.need.koc && S.kol && CAT.kol) once.push({ slug: CAT.kol, qty: 1 });
+    if (S.need.verify) S.verify.forEach(function (k) { once.push({ slug: k, qty: 1 }); });
+    if (once.length) sel.once = once;
+    return sel;
+  }
+
+  // ---- Drawing ----------------------------------------------------------------
+  function frame(body, foot) {
+    var a = steps(), i = a.indexOf(S.step) + 1;
+    return '<div class="qs-step"><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
+      '<div class="qs-track"><i style="width:' + Math.round(i / (a.length + 1) * 100) + '%"></i></div></div>' + body +
+      '<p class="msg" id="qsMsg" role="status"></p></div>' +
+      '<div class="qs-foot">' + foot + '</div>';
+  }
+  function navFoot(first) {
+    return (first ? '' : '<button class="btn qs-back" type="button" data-a="back">' + esc(t().back) + '</button>') +
+      '<button class="btn btn-primary" type="button" data-a="next">' + esc(S.step === 'details' ? t().make : t().cont) + '</button>';
+  }
+  function pick(type, name, value, on, title, sub) {
+    return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
+      (on ? ' checked' : '') + '><span><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span></label>';
+  }
+  function chip(name, value, on, label) {
+    return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
+      (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
+  }
+  function stepper(group, slug, label, n) {
+    return '<div class="qs-stepper"><span>' + esc(label) + '</span><span class="qs-count">' +
+      '<button class="btn qs-pm" type="button" data-step="-1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().fewer + ': ' + label) + '"' + (n ? '' : ' disabled') + '>−</button>' +
+      '<b aria-live="polite">' + n + '</b>' +
+      '<button class="btn qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().more + ': ' + label) + '">+</button></span></div>';
+  }
+  function seg(id, label, options, value, quiet) {
+    return '<div class="field">' + (quiet ? '' : '<span class="field-label" id="' + id + 'L">' + esc(label) + '</span>') +
+      '<select class="select" id="' + id + '" data-seg ' + (quiet ? 'aria-label="' + esc(label) + '"' : 'aria-labelledby="' + id + 'L"') + '>' +
+      options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(value) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
+      '</select></div>';
+  }
+  function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : c.name; }
+  function planLine(p) {
+    var parts = [f(t().contents, { n: p.contents })];
+    if (p.ad_budget) parts.push(f(t().budgetUpTo, { b: n0(p.ad_budget) }));
+    return parts.join(' · ');
+  }
+
+  function paintNeed() {
+    var N = t().need;
+    return frame('<h1 class="qs-title">' + esc(t().needT) + '</h1><div class="qs-list">' +
+      ['social', 'ads', 'content', 'koc', 'verify'].filter(function (k) {
+        return k !== 'koc' || (CAT.koc.length || CAT.kol);
+      }).filter(function (k) { return k !== 'verify' || CAT.verify.length; }).map(function (k) {
+        return pick('checkbox', 'need', k, S.need[k], N[k][0], N[k][1]);
+      }).join('') + '</div>', navFoot(true));
+  }
+
+  function paintPlan() {
+    var plans = CAT.plans.filter(function (p) { return Boolean(p.ads) === Boolean(S.withAds); });
+    return frame('<h1 class="qs-title">' + esc(t().planT) + '</h1>' +
+      '<div class="qs-chips qs-two">' + CAT.platforms.map(function (p) { return chip('plat', p, S.platforms.indexOf(p) >= 0, t().plat[p] || p); }).join('') + '</div>' +
+      seg('qsAds', t().need.ads[0], [['no', t().noAds], ['ads', t().withAds]], S.withAds ? 'ads' : 'no', true) +
+      '<div class="qs-list">' + plans.map(function (p) {
+        return pick('radio', 'plan', p.slug, S.plan === p.slug,
+          f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
+      }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>', navFoot());
+  }
+
+  function budgetOptions() {
+    var p = S.need.social ? planOf() : null, cover = p && p.ad_budget ? Number(p.ad_budget) : 0, out = [];
+    if (cover) out.push([0, f(t().budgetIn, { b: n0(cover) })]);
+    CAT.budgets.forEach(function (b) { if (b > cover) out.push([b, f(t().budgetUp, { b: n0(b) })]); });
+    var top = CAT.budgets[CAT.budgets.length - 1];
+    if (top) out.push([-1, f(t().budgetAbove, { b: n0(top) })]);
+    return out;
+  }
+
+  function paintCustom() {
+    var p = S.need.social ? planOf() : null, h = '';
+    if (p) {
+      var kinds = (p.mix || []).reduce(function (a, m) { return a.concat(Object.keys(m)); }, []);
+      var extras = CAT.contents.filter(function (c) { return kinds.indexOf(c.kind) >= 0; });
+      h += '<div class="qs-group"><span class="field-label">' + esc(t().extra) + '</span>' +
+        extras.map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join('') + '</div>';
+      h += '<div class="qs-group"><span class="field-label">' + esc(t().langs) + '</span><div class="qs-chips qs-three">' +
+        ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
+        '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
+        (CAT.translation && S.langs.length > 1 ? pick('checkbox', 'translate', '1', S.translate, t().translate, t().translateNote) : '') + '</div>';
+    }
+    if (adsAsked()) {
+      var opts = budgetOptions(), cur = S.budget == null ? opts[0][0] : S.budget;
+      if (!opts.some(function (o) { return String(o[0]) === String(cur); })) cur = opts[0][0];
+      S.budget = Number(cur);
+      h += '<div class="field"><label class="field-label" for="qsBudget">' + esc(t().budget) + '</label><select class="select" id="qsBudget">' +
+        opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></div>';
+    }
+    if (monthly()) h += seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term);
+    if (S.need.content) {
+      h += '<div class="qs-group"><span class="field-label">' + esc(t().once) + '</span><p class="qs-note">' + esc(t().onceNote) + '</p>' +
+        CAT.contents.map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join('') + '</div>';
+    }
+    if (S.need.koc) {
+      if (CAT.koc.length) {
+        h += '<div class="field"><label class="field-label" for="qsKoc">' + esc(t().koc) + '</label><select class="select" id="qsKoc">' +
+          [['', t().kocNone]].concat(CAT.koc.map(function (k) { return [k.slug, k.creators ? f(t().kocN, { n: k.creators }) : t().kocCustom]; }))
+            .map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === S.koc ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
+          '</select></div>';
+      }
+      if (CAT.kol) h += pick('checkbox', 'kol', '1', S.kol, t().kol, '');
+    }
+    if (S.need.verify) {
+      h += '<div class="qs-group"><span class="field-label">' + esc(t().verify) + '</span><div class="qs-list">' +
+        CAT.verify.map(function (v) { return pick('checkbox', 'verify', v.slug, S.verify.indexOf(v.slug) >= 0, v.name, ''); }).join('') + '</div></div>';
+    }
+    return frame('<h1 class="qs-title">' + esc(p ? f(t().customPlan, { p: p.plan }) : t().customT) + '</h1>' + h, navFoot());
+  }
+
+  function field(id, label, req, html, hint) {
+    return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
+      (hint ? '<span class="qs-hint">' + esc(hint) + '</span>' : '') + '<span class="msg" id="' + id + 'Msg"></span></div>';
+  }
+  function paintDetails() {
+    var c = S.contact;
+    return frame('<h1 class="qs-title">' + esc(t().detailsT) + '</h1><form class="qs-form" id="qsDetails" novalidate>' +
+      field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">') +
+      field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">') +
+      field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="60123456789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
+      field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
+      field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
+        INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '"' + (c.industry === i ? ' selected' : '') + '>' + esc(t().ind[i]) + '</option>'; }).join('') + '</select>') +
+      '<label class="tickline qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '><span>' + esc(t().consent) + '</span></label>' +
+      '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
+  }
+
+  function totalsRows(tt) {
+    var r = [];
+    if (tt.month) {
+      r.push(['Monthly subtotal', n2(tt.month.subtotal)]);
+      if (Number(tt.term_pct)) r.push([tt.term + '-month ' + (tt.term_pct < 0 ? 'commitment (' + Math.abs(tt.term_pct) + '%)' : 'term (' + tt.term_pct + '%)'), n2(tt.month.term)]);
+      r.push(['Monthly excl. SST', n2(tt.month.excl)], ['SST ' + tt.sst_pct + '%', n2(tt.month.sst)], ['Monthly incl. SST', 'RM ' + n2(tt.month.incl), 1]);
+    }
+    if (tt.once) r.push(['One-off subtotal', n2(tt.once.subtotal)], ['SST ' + tt.sst_pct + '%', n2(tt.once.sst)], ['One-off incl. SST', 'RM ' + n2(tt.once.incl), 1]);
+    return r;
+  }
+  function paintQuote() {
+    var q = Q, tt = q.totals || {}, gone = q.valid_until < q.today;
+    if (q.requested) return paintDone();
+    var status = gone
+      ? '<span class="chip-state is-off">' + esc(f(t().expired, { d: day(q.valid_until) })) + '</span>'
+      : '<span class="chip-state is-ok">' + esc(f(t().valid, { d: day(q.valid_until) })) + '</span>';
+    var lines = (q.lines || []).map(function (l) {
+      var d = (l.detail || [])[0];
+      return '<div class="qs-row"><span class="qs-what">' + esc(l.label) + (Number(l.qty) > 1 ? '<span class="qs-calc"> · ' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
+        (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>One-off</small>' : '') + '</span>' +
+        '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
+    }).join('') + (tt.on_request || []).map(function (x) {
+      return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? 'Advertising budget above RM 20,000' : x) + '</span>' +
+        '<span class="qs-num qs-q"></span><span class="qs-num qs-r"></span><span class="qs-num qs-mute">' + esc(t().onReq) + '</span></div>';
+    }).join('');
+    var notes = [];
+    if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
+    notes.push(f(t().validLong, { d: day(q.valid_until, true) }), f(t().basis, { v: q.version }));
+    var aside = gone ? '' :
+      '<aside class="qs-bill" id="qsBill"><h2>' + esc(t().billT) + '</h2><form class="qs-form" id="qsBillForm" novalidate>' +
+        field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true">') +
+        field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true">', t().brnHint) +
+        field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true"></textarea>') +
+        '<button class="btn btn-primary" id="qsAsk" type="submit">' + esc(t().ask) + '</button>' +
+        '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
+    return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '"><section class="qs-main">' +
+      '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>' +
+      '<div class="qs-head"><div><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + ' · ' + status + '</span></div>' +
+      '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>' +
+      '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
+      '<span class="qs-num qs-r">' + esc(t().rate) + '</span><span class="qs-num">' + esc(t().sub) + '</span></div>' + lines + '</div>' +
+      '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      (gone ? '' : '<button class="btn btn-primary qs-proceed" type="button" data-a="proceed">' + esc(t().proceed) + '</button>') +
+      '<div class="qs-acts"><button class="btn qs-dl2" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
+      '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a></div>' +
+      '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
+      (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
+      '</section>' + aside + '</div>';
+  }
+  function waLink(q) {
+    var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
+    return who + '?text=' + encodeURIComponent('Hi ADspace, I would like to ask about my quotation ' + (q ? q.ref : '') + '.');
+  }
+  function paintDone() {
+    var q = Q, tt = q.totals || {}, wa = S.contact && waOk(waDigits(S.contact.whatsapp)) ? waShow(waDigits(S.contact.whatsapp)) : '';
+    return '<div class="qs-step qs-done"><span class="qs-tick" aria-hidden="true">' +
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
+      '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
+      '<dl class="qs-facts"><dt>' + esc(t().ref) + '</dt><dd>' + esc(q.ref) + '</dd>' +
+      (tt.month ? '<dt>' + esc(t().monthly) + '</dt><dd>RM ' + esc(n2(tt.month.incl)) + '</dd>' : '') +
+      (tt.once ? '<dt>' + esc(t().oneOff) + '</dt><dd>RM ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
+      '<dt>' + esc(t().status) + '</dt><dd><span class="chip-state is-warn">' + esc(t().requested) + '</span></dd></dl>' +
+      '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>';
+  }
+  function cover(title, text) {
+    root().innerHTML = '<section class="cover"><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
+      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a></div></div></div></section>';
+  }
+
+  function paint() {
+    document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
+    if ($('langToggle')) $('langToggle').textContent = t().lang;
+    if (paint.lost) { cover(t().lostT, t().lostP); return; }
+    if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
+    if (Q) { root().innerHTML = paintQuote(); decorate(); return; }
+    if (steps().indexOf(S.step) < 0) S.step = 'need';
+    root().innerHTML = { need: paintNeed, plan: paintPlan, custom: paintCustom, details: paintDetails }[S.step]();
+    decorate();
+  }
+  function decorate() {
+    if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
+    Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"]'), function (b) { addGlyph(b, 'file'); });
+    if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
+  }
+  function addGlyph(b, k) {
+    if (b.querySelector('svg')) return;
+    var p = { file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>' }[k];
+    b.insertAdjacentHTML('afterbegin', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>');
+  }
+  function say(id, text, tone) {
+    var m = $(id); if (!m) return;
+    m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : '');
+  }
+  function go(step) { S.step = step; keep(); paint(); window.scrollTo(0, 0); }
+
+  // ---- Moving through the steps -------------------------------------------------
+  function next() {
+    var a = steps(), i = a.indexOf(S.step);
+    if (S.step === 'need') {
+      if (!Object.keys(S.need).some(function (k) { return S.need[k]; })) { say('qsMsg', t().needNone); return; }
+      if (S.need.ads && S.need.social && !S.plan) S.withAds = true;
+    }
+    if (S.step === 'plan' && (!planOf() || !S.platforms.length)) { say('qsMsg', t().planNone); return; }
+    /* Only one-off items asked for (verification alone, say): one of them
+       is picked before the details are asked. */
+    if (S.step === 'custom') {
+      var sel = selection();
+      if (!sel.plan && !adsAsked() && !(sel.once || []).length) { say('qsMsg', t().needNone); return; }
+    }
+    if (S.step === 'details') { make(); return; }
+    go(a[i + 1]);
+  }
+  function readDetails() {
+    var c = S.contact;
+    c.name = $('qsName').value.replace(/\s+/g, ' ').trim(); c.email = $('qsEmail').value.trim();
+    c.whatsapp = $('qsWa').value.trim(); c.brand = $('qsBrand').value.replace(/\s+/g, ' ').trim();
+    c.industry = $('qsInd').value; c.consent = $('qsConsent').checked;
+    keep();
+  }
+  function checkDetails() {
+    readDetails();
+    var c = S.contact, first = null, bad = function (id, w) { say(id + 'Msg', w); var el = $(id); if (el) el.setAttribute('aria-invalid', 'true'); first = first || el; };
+    ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsConsent'].forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
+    if (c.name.length < 2) bad('qsName', t().req.name);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email)) bad('qsEmail', t().req.email);
+    else if (FREE.test(c.email)) say('qsEmailMsg', t().freeMail, 'warn');
+    if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
+    if (c.brand.length < 2) bad('qsBrand', t().req.brand);
+    if (!c.consent) bad('qsConsent', t().req.consent);
+    if (first) first.focus();
+    return !first;
+  }
+  function make() {
+    if (!checkDetails()) return;
+    var btn = root().querySelector('[data-a="next"]');
+    btn.disabled = true; btn.textContent = t().making;
+    if (!S.idem) { S.idem = key8(); keep(); }
+    var body = { sel: selection(), idem: S.idem,
+      contact: { name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
+        industry: S.contact.industry || null, consent: true, lang: lang } };
+    var C = window.ADspaceCaptcha;
+    var token = C && C.on ? C.token(root().querySelector('[data-cf]')) : Promise.resolve(null);
+    token.then(function (tk) {
+      body.token = tk || '';
+      return db.functions.invoke('quote-request', { body: body });
+    }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error || !d.key) {
+        btn.disabled = false; btn.textContent = t().make;
+        say('qsMsg', t().err[d.error] || t().err.any);
+        return;
+      }
+      S.idem = null; keep();
+      history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
+      read(d.key);
+    }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
+  }
+  function read(k) {
+    db.rpc('quote_website_read', { p_key: k }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d) { paint.off = true; Q = null; CAT = null; paint(); return; }
+      if (d.error) { paint.lost = true; paint(); return; }
+      Q = d; paint(); window.scrollTo(0, 0);
+    }).catch(function () { paint.off = true; paint(); });
+  }
+  function request(e) {
+    e.preventDefault();
+    var reg = $('qsReg').value.replace(/\s+/g, ' ').trim().toUpperCase(), brn = $('qsBrn').value.replace(/[^0-9]/g, ''), addr = $('qsAddr').value.trim();
+    var first = null, bad = function (id, w) { say(id + 'Msg', w); $(id).setAttribute('aria-invalid', 'true'); first = first || $(id); };
+    ['qsReg', 'qsBrn', 'qsAddr'].forEach(function (id) { say(id + 'Msg', ''); $(id).removeAttribute('aria-invalid'); });
+    if (reg.length < 3) bad('qsReg', t().billBad.reg);
+    if (!/^[0-9]{12}$/.test(brn)) bad('qsBrn', t().billBad.brn);
+    if (addr.length < 10) bad('qsAddr', t().billBad.addr);
+    if (first) { first.focus(); return; }
+    var btn = $('qsAsk'); btn.disabled = true; btn.textContent = t().asking;
+    var k = new URLSearchParams(location.search).get('q');
+    db.rpc('quote_website_request', { p_key: k, p_billing: { registered_name: reg, brn: brn, address: addr } }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { btn.disabled = false; btn.textContent = t().ask; say('qsBillMsg', t().err[d.error] || t().err.any); return; }
+      Q.requested = true; Q.status = 'requested'; paint(); window.scrollTo(0, 0);
+    }).catch(function () { btn.disabled = false; btn.textContent = t().ask; say('qsBillMsg', t().err.any); });
+  }
+  function pdf(btn) {
+    var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
+    btn.disabled = true;
+    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '' }).then(function (blob) {
+      btn.disabled = false;
+      window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
+    }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
+  }
+
+  // ---- Presses ------------------------------------------------------------------
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('#qsRoot [data-a], #qsRoot [data-step]');
+    if (!b) return;
+    var a = b.getAttribute('data-a');
+    if (b.hasAttribute('data-step')) {
+      var g = b.getAttribute('data-group'), slug = b.getAttribute('data-slug'), n = (S[g][slug] || 0) + Number(b.getAttribute('data-step'));
+      S[g][slug] = Math.max(0, Math.min(30, n)); keep();
+      var row = b.closest('.qs-stepper');
+      row.querySelector('b').textContent = S[g][slug];
+      row.querySelector('[data-step="-1"]').disabled = !S[g][slug];
+      return;
+    }
+    if (a === 'next') next();
+    else if (a === 'back') { var s = steps(); go(s[Math.max(0, s.indexOf(S.step) - 1)]); }
+    else if (a === 'proceed') {
+      proceeding = true;
+      var q = root().querySelector('.qs-quote'); if (q) q.classList.add('is-proceed');
+      var bill = $('qsBill'); if (bill) { bill.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(function () { if ($('qsReg')) $('qsReg').focus({ preventScroll: true }); }, 350); }
+    }
+    else if (a === 'pdf') pdf(b);
+    else if (a === 'change' || a === 'new') {
+      if (Q && Q.selection) adopt(Q.selection);
+      Q = null; proceeding = false;
+      history.replaceState(null, '', '/quote/');
+      load(function () { go(a === 'new' ? 'need' : 'custom'); });
+    }
+  });
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (!el.closest || !el.closest('#qsRoot')) return;
+    var nm = el.name, id = el.id;
+    if (nm === 'need') { S.need[el.value] = el.checked; }
+    else if (nm === 'plat') {
+      S.platforms = S.platforms.filter(function (p) { return p !== el.value; });
+      if (el.checked) S.platforms.push(el.value);
+    }
+    else if (nm === 'plan') { S.plan = el.value; }
+    else if (nm === 'lang') {
+      S.langs = S.langs.filter(function (l) { return l !== el.value; });
+      if (el.checked) S.langs.push(el.value);
+      if (!S.langs.length) { S.langs = [el.value]; el.checked = true; }
+      keep(); paint(); return;
+    }
+    else if (nm === 'translate') { S.translate = el.checked; }
+    else if (nm === 'kol') { S.kol = el.checked; }
+    else if (nm === 'verify') {
+      S.verify = S.verify.filter(function (v) { return v !== el.value; });
+      if (el.checked) S.verify.push(el.value);
+    }
+    else if (id === 'qsAds') {
+      S.withAds = el.value === 'ads';
+      var cur = planOf();
+      if (cur && Boolean(cur.ads) !== S.withAds) {
+        var same = CAT.plans.filter(function (p) { return Boolean(p.ads) === S.withAds && p.platforms === cur.platforms; })[0];
+        S.plan = same ? same.slug : null;
+      }
+      keep(); paint(); return;
+    }
+    else if (id === 'qsBudget') { S.budget = Number(el.value); }
+    else if (id === 'qsTerm') { S.term = Number(el.value); }
+    else if (id === 'qsKoc') { S.koc = el.value; }
+    else return;
+    var lab = el.closest('.qs-pick, .qs-chip');
+    if (lab) {
+      if (el.type === 'radio') Array.prototype.forEach.call(root().querySelectorAll('input[name="' + nm + '"]'), function (r) { r.closest('label').classList.toggle('is-on', r.checked); });
+      else lab.classList.toggle('is-on', el.checked);
+    }
+    keep();
+  });
+  document.addEventListener('submit', function (e) {
+    if (e.target.id === 'qsBillForm') request(e);
+    else if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'qsEmail') {
+      var v = e.target.value.trim();
+      say('qsEmailMsg', /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) && FREE.test(v) ? t().freeMail : '', 'warn');
+    }
+    if (e.target.closest && e.target.closest('#qsDetails')) readDetails();
+  });
+
+  /* A quotation's own selection, to change and make again. */
+  function adopt(sel) {
+    S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
+    S.plan = sel.plan || null; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
+    S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate); S.budget = sel.budget == null ? null : Number(sel.budget);
+    S.term = Number(sel.term) >= 6 ? Number(sel.term) : 12; S.once = {}; S.koc = ''; S.kol = false; S.verify = [];
+    (sel.once || []).forEach(function (o) {
+      var c = CAT && CAT.contents.some(function (x) { return x.slug === o.slug; });
+      if (c) { S.need.content = true; S.once[o.slug] = o.qty; }
+      else if (CAT && CAT.koc.some(function (x) { return x.slug === o.slug; })) { S.need.koc = true; S.koc = o.slug; }
+      else if (CAT && o.slug === CAT.kol) { S.need.koc = true; S.kol = true; }
+      else { S.need.verify = true; S.verify.push(o.slug); }
+    });
+    var p = planOf(); if (p) S.withAds = Boolean(p.ads);
+    keep();
+  }
+
+  function load(done) {
+    if (!db) { paint.off = true; paint(); return; }
+    db.rpc('quote_catalogue').then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || d.error) { paint.off = true; CAT = null; paint(); return; }
+      CAT = d;
+      if (S.plan && !planOf()) S.plan = null;
+      if (done) done(); else paint();
+    }).catch(function () { paint.off = true; paint(); });
+  }
+
+  if ($('langToggle')) $('langToggle').addEventListener('click', function () {
+    lang = lang === 'en' ? 'zh' : 'en';
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    if (S.step === 'details' && !Q && $('qsName')) readDetails();
+    paint();
+  });
+
+  var given = new URLSearchParams(location.search).get('q');
+  if (given) { load(function () { read(given); }); }
+  else load();
+})();

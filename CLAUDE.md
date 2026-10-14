@@ -7,7 +7,8 @@ Static site, vanilla ES5 IIFE scripts, no build step, no framework, served by
 GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
-`script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `/` and
+`script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
+(a prospect's own quotation), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -200,6 +201,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
+| `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -357,7 +359,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -4071,6 +4073,28 @@ Each line is a rule that broke once. Its reason is in the archive.
   8pt (validity, SST, budget billed separately, confirmation then the
   Letter of Offer, the whole term's commitment), the rate card line over
   PRIVATE & CONFIDENTIAL; named `ADspace Quotation {ref}.pdf`.
+- The quotation website (`/quote/`, `js/quote.js`,
+  `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
+  1 to 6): What do you need?, Platforms and plan (where social media is
+  asked), Customise, Your details (name, work email, a Malaysia or
+  Singapore WhatsApp number, brand, industry, consent; a free email is
+  advised against, never refused), then the quotation priced by
+  `quote_price` through `quote-request` (Turnstile, checked where the
+  secret `TURNSTILE_SECRET` is set; Verify JWT off), which calls
+  `quote_website_create` (the server's alone): a lead whose contact holds
+  the email or number is used again while Lead, Contacted or Proposal sent,
+  else a lead made (Source Website, nobody's), the quotation kept with
+  `source` website and its key (`?q=`), five a contact a day. No rate is
+  shown before the quotation (`quote_catalogue`, anon, holds none). Proceed
+  (beside it at a desk) asks the registered name, a 12-digit registration
+  number and the address (`quote_website_request`, anon, by the key;
+  `expired`, `not-proceeding`, `bad-billing`), Request received after.
+  The team who work leads are told at each step (kinds `quote.website`,
+  `quote.requested`; `ops_notifications.client_id` opens the lead's
+  Services); a KOL campaign and a custom KOC list are quoted on request.
+  The billing given is withheld from the table, read through
+  `quotation_billing` (Clients: Billing at View); the row's ⋯ Use billing
+  details fills the client's Billing sheet where it is empty.
 
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at
@@ -4747,7 +4771,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).

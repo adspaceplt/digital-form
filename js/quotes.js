@@ -61,6 +61,11 @@
     var o = q.totals && q.totals.once;
     return o ? ['RM ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
   }
+  /* Every column but `billing`, which the table answers to nobody: the
+     billing a prospect gave on the website is read through
+     `quotation_billing`, at Clients: Billing (2026-10-14). */
+  var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
+    'valid_until, made_by, contact, access_key, requested_at, idem, removed_at, removed_by';
   function metaOf(q) {
     var t = q.totals || {};
     var bits = [];
@@ -74,7 +79,7 @@
 
   /* The client's quotations and, for each, the service lines made from it. */
   function load(ctx, done) {
-    ctx.db.from('quotations').select('*').eq('client_id', ctx.client.id).order('issued_at', { ascending: false })
+    ctx.db.from('quotations').select(COLS).eq('client_id', ctx.client.id).order('issued_at', { ascending: false })
       .then(function (r) {
         if (r.error) { done(null, r.error); return; }
         var rows = r.data || [];
@@ -107,6 +112,7 @@
           items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
           if (maySet && !q.removed_at) {
             if (st[0] !== 'Not proceeding' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
+            if (q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) items.push('<button class="kmenu-item" data-a="billing" type="button"><b>Use billing details</b></button>');
             items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
             items.push(q.status === 'not_proceeding'
               ? '<button class="kmenu-item" data-a="proceeding" type="button"><b>Restore</b></button>'
@@ -165,6 +171,14 @@
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }
+    if (a === 'billing') {
+      ctx.db.rpc('quotation_billing', { p_id: q.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+        ctx.billing(d, btn);
+      }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+      return;
+    }
     if (a === 'offer') {
       ctx.db.rpc('quotation_offer', { p_id: q.id }).then(function (r) {
         var d = r.data || {};
