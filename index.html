@@ -42,7 +42,7 @@
 <meta name="twitter:image" content="https://digital.adspace.me/img/front-door-1200.jpg?v=20260928">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015q">
+<link rel="stylesheet" href="/css/portal.css?v=20261015r">
 <script src="/js/config.js?v=20261014a"></script>
 <!-- What a search engine reads about ADspace: the business, its office and
      the site. The WhatsApp line is the wa.me address, never the number. -->
@@ -256,7 +256,7 @@
     for (var i = 0; i < 7; i++) {
       var t = new Date(now.getTime() + i * 864e5), wd = t.getUTCDay(), hol = HOL[iso(t)], open = work(wd) && !hol;
       rows += '<tr' + (open ? '' : ' class="is-shut"') + '><th scope="row">' +
-        (i === 0 ? 'Today' : DAY[wd].slice(0, 3)) + '</th><td>' + t.getUTCDate() + ' ' + MON[t.getUTCMonth()] +
+        (i === 0 ? 'Today · ' : '') + DAY[wd].slice(0, 3) + '</th><td>' + t.getUTCDate() + ' ' + MON[t.getUTCMonth()] +
         (hol ? '<span class="lp-hol">' + esc(hol) + '</span>' : '') +
         '</td><td>' + (open ? '10:00 to 18:00' : 'Closed') + '</td></tr>';
     }

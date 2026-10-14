@@ -21,6 +21,9 @@
 
   /* "Prepared for <client>" under the section name, in whichever language the
      page is showing. */
+  /* The bar names the client only once the link has said whose campaign it
+     is; while it loads it said "Prepared for …" (SELECTION-11). */
+  (function () { var f = document.getElementById('clientFor'); if (f) f.hidden = true; })();
   function paintPreparedFor(name) {
     var who = name || ($('clientName') ? $('clientName').textContent : '');
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, who);
@@ -102,8 +105,8 @@
       send: 'Confirm',
       cancel: 'Cancel',
       nameNeeded: 'Please enter your name.',
-      confirmed: 'Selection confirmed. Shoot dates will follow.',
-      summary: function (n, v) { return n + ' chosen · ' + v; },
+      confirmedBy: function (who, d) { return 'Confirmed by ' + who + ' on ' + d + '. Shoot dates will follow.'; },
+      changedSince: function (d) { return 'Changed since the confirmation on ' + d + '.'; },
       subtotal: 'Subtotal',
       total: 'Total',
       totalShort: function (v, tax) { return 'Total ' + v + (tax ? ' incl. ' + tax : ''); },
@@ -137,7 +140,7 @@
       detailsLabel: 'Campaign details',
       creatorsLabel: 'Creators',
       dueLabel: 'Campaign due',
-      pdf: 'PDF ↗',
+      pdf: 'PDF',
       pdfFail: 'Unable to open the invoice. Please refresh and try again.',
       pic: 'Contact',
       goLive: 'Going live',
@@ -209,8 +212,8 @@
       send: '确认',
       cancel: '取消',
       nameNeeded: '请填写姓名。',
-      confirmed: '已确认。拍摄日期将随后通知。',
-      summary: function (n, v) { return '已选 ' + n + ' 位 · ' + v; },
+      confirmedBy: function (who, d) { return who + ' 已于 ' + d + ' 确认。拍摄日期将随后通知。'; },
+      changedSince: function (d) { return '自 ' + d + ' 确认后已有更改。'; },
       subtotal: '小计',
       total: '总计',
       totalShort: function (v, tax) { return '总计 ' + v + (tax ? '（含 ' + tax + '）' : ''); },
@@ -237,7 +240,7 @@
       detailsLabel: '合作详情',
       creatorsLabel: '博主人数',
       dueLabel: '合作截止',
-      pdf: 'PDF ↗',
+      pdf: 'PDF',
       pdfFail: '暂时无法打开发票，请刷新页面后再试。',
       pic: '联系人',
       goLive: '发布日期',
@@ -258,7 +261,7 @@
       saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
-      selectionChanged: '部分达人已无法选择，请重新查看后再次确认。',
+      selectionChanged: '部分博主已无法选择，请重新查看后再次确认。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -308,6 +311,7 @@
 
   /* Who this device decides as, with Change and Forget, under the name
      card (2026-10-08); its words follow the 中文 switch. */
+  var keepPicks = false;
   var whoAs = null;
   function whoWords() { var x = t(); return { as: x.decideAs, change: x.decideChange, forget: x.decideForget, save: x.decideSave, cancel: x.decideCancel, name: x.decideName }; }
   function mountWho() {
@@ -323,7 +327,7 @@
     $('kicker').textContent = t().kicker;
     paintPreparedFor();
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
-    if (feed) build();
+    if (feed) { keepPicks = true; build(); keepPicks = false; }
     if (following && window.ADspacePush) window.ADspacePush.relabel();
   }
 
@@ -372,7 +376,7 @@
       }
       if (d.error === 'passcode') {
         // The gate knows whose campaign it is guarding, so say so.
-        if (d.client) $('clientName').textContent = d.client;
+        if (d.client) paintPreparedFor(d.client);
         showState(t().passTitle, t().passText, true);
         if (passcode) $('stateMsg').textContent = t().passWrong;
         return;
@@ -466,6 +470,8 @@
     $('engageLabel').textContent = t().detailsLabel;
     $('engageSum').textContent = c.deadline ? fmtDate(c.deadline)
       : (c.slots ? t().creatorsLabel + ' ' + c.slots : '');
+    $('engageSum').setAttribute('data-base', c.deadline ? fmtDate(c.deadline) : '');
+    $('engageSum').setAttribute('data-fallback', $('engageSum').textContent);
 
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
 
@@ -474,11 +480,16 @@
 
     // Seed from whatever the server already holds, so returning to the link
     // shows what was left rather than an empty sheet.
-    chosen = {};
-    options.forEach(function (o) {
-      if (o.state === 'shortlisted') chosen[o.id] = 'selected';
-      else if (o.state === 'backup') chosen[o.id] = 'backup';
-    });
+    /* A language switch repaints what is on screen: the picks made since
+       the campaign was read stay (they were reseeded from the read and an
+       unsaved pick was lost, 2026-10-15). */
+    if (!keepPicks) {
+      chosen = {};
+      options.forEach(function (o) {
+        if (o.state === 'shortlisted') chosen[o.id] = 'selected';
+        else if (o.state === 'backup') chosen[o.id] = 'backup';
+      });
+    }
 
     paintBookings();
     paintCards();
@@ -556,7 +567,7 @@
        sign-download for a five-minute link with this page's own key. */
     $('amountPdf').href = c.invoice_url && !/^private\//.test(c.invoice_url) ? c.invoice_url : '#';
     $('amountPdf').setAttribute('data-private', /^private\//.test(c.invoice_url || '') ? '1' : '');
-    $('amountPdf').textContent = t().pdf;
+    $('amountPdf').innerHTML = esc(t().pdf) + EXT_ICON;
     paintRollup(booked);
   }
 
@@ -774,7 +785,10 @@
          the card leads with the post (the user, 2026-09-27: "Is it necessary
          to keep the approved there"). */
       (live ? '' : decidedLine(o)) +
-      (mine ? draftPreview(o) + decisionBlock(o) : '');
+      /* At a desk the draft stands beside its caption and the decision, so
+         Approve is in the first screen with the video (SELECTION-7). */
+      (mine ? '<div class="draft-decide' + ((o.files || []).some(function (f) { return f.kind === 'video' || f.kind === 'image'; }) ? ' has-media' : '') + '">' +
+        draftPreview(o) + decisionBlock(o) + '</div>' : '');
 
     if (mine) wireDecision(row, o);
     return row;
@@ -873,7 +887,8 @@
     var r = o.review;
     if (!r || !r.decision) return '';
     var stamp = r.at && ADspaceClock.parts(r.at)
-      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' : ADspaceClock.date(r.at, { year: false }) + ', ') + ADspaceClock.time(r.at)
+      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' + ADspaceClock.time(r.at)
+                       : ADspaceClock.date(r.at, { year: false }) + ', ' + ampm(ADspaceClock.time(r.at)))
       : '';
     /* An approval the team gave on the client's behalf names the colleague
        who proceeded, never as if the client had approved it. */
@@ -953,10 +968,14 @@
       asker.close();
       if (who) who.hidden = Boolean(window.ADspaceDecide.known());
       box.classList.add('is-open');
+      /* While a request is open, Approve steps away: one decision at a
+         time, as Content Review asks it (SELECTION-3). */
+      wrap.classList.add('is-requesting');
       note.focus();
     });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
       box.classList.remove('is-open');
+      wrap.classList.remove('is-requesting');
       say('');
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
@@ -1003,6 +1022,16 @@
     }
   }
 
+  /* A time of day on the twelve-hour clock the client pages read (10:47 am,
+     as the scripts page writes it), never 24-hour beside a shoot's 2pm
+     (SELECTION-10). */
+  function ampm(hm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hm || '');
+    if (!m) return hm || '';
+    var h = Number(m[1]), x = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return h + ':' + m[2] + ' ' + x;
+  }
   function fmtDate(d) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
     return ADspaceClock.date(d, { zh: lang === 'zh' });
@@ -1222,6 +1251,21 @@
     $('progCount').textContent = t().count(n, slots);
     $('progFill').style.width = pct + '%';
     $('progSay').textContent = n >= slots ? t().complete : t().chooseMore(slots - n);
+    /* A selection the client has confirmed says so when the link is opened
+       again, and Confirm returns only once the picks differ from what was
+       confirmed (UX audit SELECTION-1, 2026-10-14). */
+    var conf = lastConfirm || (feed.campaign || {}).confirmed;
+    var mine = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; }).map(function (o) { return o.id; }).sort();
+    var asConfirmed = !!(conf && conf.selected && conf.selected.length && mine.length &&
+      conf.selected.slice().sort().join(',') === mine.join(','));
+    var confDay = conf && conf.at ? fmtDate(conf.at) : '';
+    if (asConfirmed) $('progSay').textContent = t().confirmedBy(conf.person, confDay);
+    /* The count rides the fold's own head while there is a choice to make,
+       so it reads while the detail is shut (SELECTION-2). */
+    var sum = $('engageSum'), base = sum.getAttribute('data-base') || '';
+    var parts = [base, choosable().length && slots ? t().count(n, slots) : ''].filter(Boolean);
+    sum.innerHTML = parts.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join(' · ');
+    if (!parts.length) sum.textContent = sum.getAttribute('data-fallback') || '';
     $('progressCard').classList.toggle('is-done', n >= slots);
 
     var want = backupsWanted();
@@ -1245,14 +1289,21 @@
       '<b>' + esc(t().totalShort(money2(value + sstOf(value)),
                  sstOf(value) ? MON.taxLabel(mkt()) : '')) + '</b>' +
       // A client who is not charged tax should not read a tax line of zero.
-      '<span class="muted">' + esc(t().summary(pending.length, money2(value))) +
+      /* The count reads against the slots, as the selection card does
+         (SELECTION-2): "2 of 3 chosen", never a count with no total. */
+      '<span class="muted">' + esc(t().count(n, slots) + ' · ' + money2(value)) +
         (sstOf(value) ? ' + ' + esc(MON.taxLabel(mkt())) + ' ' + money2(sstOf(value)) : '') +
       '</span>' +
-      (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '');
+      (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '') +
+      (conf && !asConfirmed && confDay ? '<span class="muted">' + esc(t().changedSince(confDay)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
     // Backups are advice. Blocking the button on them left people who had
     // made their choice staring at a grey Confirm with no idea why.
     $('confirmBtn').disabled = !pending.length;
+    /* Confirmed as it stands: the bar says who confirmed it and when, and
+       offers no second Confirm until the picks change. */
+    if (asConfirmed) $('confirmSummary').innerHTML = '<b>' + esc(t().confirmedBy(conf.person, confDay)) + '</b>';
+    $('confirmBtn').hidden = asConfirmed;
     $('confirmBar').hidden = !pending.length;
   }
 
@@ -1281,8 +1332,10 @@
     $('confirmCancel').textContent = t().cancel;
     paintConfirmList();
     msg('confirmMsg', '');
-    $('confirmSheet').hidden = false;
-    $('confirmName').focus();
+    /* The one sheet mechanism (js/sheet.js): focus held inside and handed
+       back, Escape, the card focused rather than a field (SELECTION-4). */
+    if (window.ADspaceSheet) window.ADspaceSheet.show($('confirmSheet'), { opener: $('confirmBtn') });
+    else $('confirmSheet').hidden = false;
   });
 
   /* The creators chosen and their rates, as the sheet confirms them; drawn
@@ -1301,13 +1354,16 @@
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
   }
 
-  function shutConfirm() { $('confirmSheet').hidden = true; }
+  function shutConfirm() {
+    if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('confirmSheet'))) window.ADspaceSheet.close();
+    else $('confirmSheet').hidden = true;
+  }
   $('confirmClose').addEventListener('click', shutConfirm);
   $('confirmCancel').addEventListener('click', shutConfirm);
-  $('confirmSheet').addEventListener('click', function (e) {
-    if (e.target === $('confirmSheet')) shutConfirm();
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutConfirm(); });
+  if (!window.ADspaceSheet) {
+    $('confirmSheet').addEventListener('click', function (e) { if (e.target === $('confirmSheet')) shutConfirm(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutConfirm(); });
+  }
 
   /* One press is one confirmation (audit F1, 2026-10-10): the creators on
      the client's screen, the rate shown for each and a key made when the
@@ -1317,6 +1373,9 @@
      again without filing twice. A database without it is asked the older
      way, which now refuses a selection that never saved. */
   var confirmKey = null;
+  /* What this page confirmed, for a database that does not yet send the
+     confirmation back. */
+  var lastConfirm = null;
   function newKey() {
     var a = new Uint8Array(16);
     (window.crypto || window.msCrypto).getRandomValues(a);
@@ -1366,8 +1425,12 @@
          moved under the page it is read again. */
       if ((r && r.error) || d.error) { said(r && r.error ? {} : d); return; }
       confirmKey = null;
+      lastConfirm = { person: name, at: new Date().toISOString(), selected: sel.slice() };
       shutConfirm();
-      showState(t().kicker, t().confirmed, false);
+      /* The page stays, read again: the selection card then says who
+         confirmed it and when (SELECTION-5), rather than a cover titled with
+         the page's own name. */
+      load();
     }).catch(function () { btn.disabled = false; msg('confirmMsg', t().saveFailed, 'err'); });
   });
 

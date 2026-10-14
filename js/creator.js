@@ -55,7 +55,7 @@
       platformsLabel: 'Posting on', tbc: 'To be confirmed',
       briefHead: 'The brief',
       deliverHead: 'Submission',
-      changesHead: 'Changes requested',
+      changesHead: 'Revision notes',
       changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
       nextUpWord: 'Next up', handIn: 'Hand in your draft', handInAgain: 'Hand in the revision',
@@ -123,7 +123,7 @@
       platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
       deliverHead: '作品提交',
-      changesHead: '需要修改',
+      changesHead: '修改说明',
       changesBare: '请修改后重新提交。',
       addFiles: '文件', captionLabel: '文案',
       nextUpWord: '下一步', handIn: '提交草稿', handInAgain: '提交修改稿',
@@ -186,6 +186,20 @@
     return ADspaceClock.date(d, { zh: lang === 'zh' }) || d;
   }
 
+  /* A shoot's time in the page's language (ux-audit CREATOR-7): 10:00 am,
+     上午10:00; a time that reads as neither is shown as typed. */
+  function timeWord(v) {
+    var x = String(v || '').trim(), h, mi;
+    var m = /^(\d{1,2}):(\d{2})/.exec(x) || /^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)$/i.exec(x);
+    if (!m) return x;
+    h = Number(m[1]); mi = m[2] || '00';
+    if (m[3]) h = (h % 12) + (/pm/i.test(m[3]) ? 12 : 0);
+    if (h > 23) return x;
+    var h12 = (h % 12) || 12;
+    return lang === 'zh' ? (h < 12 ? '上午' : '下午') + h12 + ':' + mi : h12 + ':' + mi + ' ' + (h < 12 ? 'am' : 'pm');
+  }
+  function dayTime(d, tm) { return fmtDate(d) + (tm ? (lang === 'zh' ? ' ' : ', ') + timeWord(tm) : ''); }
+
   function dueWord(day) {
     if (!day) return '';
     var n = ADspaceClock.between(ADspaceClock.today(), String(day).slice(0, 10));
@@ -221,14 +235,25 @@
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
   }
   function askCode() { cover(t().codeTitle, t().codeText, { ask: true }); }
+  /* A link carrying a code that opens nothing reads as the same code typed
+     would: the code in the field and the invalid line under it (ux-audit
+     CREATOR-5, 2026-10-14). */
+  function linkWrong(c) {
+    $('codeInput').value = c;
+    $('stateMsg').textContent = t().codeWrong;
+    $('stateMsg').className = 'msg err';
+  }
 
   function tidy(s) { return String(s || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(); }
 
   // ---- Load -----------------------------------------------------------------
 
+  /* Answers a promise that settles once the page is drawn again, so what a
+     press says is said after the repaint, never on a guessed delay
+     (2026-10-14, ux-audit CREATOR-2). */
   function load(c, typed) {
-    if (!db) { cover(t().failTitle, t().failText); return; }
-    db.rpc('get_creator', { p_code: c }).then(function (r) {
+    if (!db) { cover(t().failTitle, t().failText); return Promise.resolve(); }
+    return db.rpc('get_creator', { p_code: c }).then(function (r) {
       var d = r.data;
       if (r.error || !d) { cover(t().failTitle, t().failText); return; }
       if (d.error === 'inactive') { forget(); cover(t().standDown, t().standDownText); return; }
@@ -238,7 +263,7 @@
         if (typed) {
           $('stateMsg').textContent = t().codeWrong;
           $('stateMsg').className = 'msg err';
-        } else { forget(); askCode(); }
+        } else { forget(); askCode(); if (c === fromLink) linkWrong(c); }
         return;
       }
       if (code !== c) { code = c; draftsLoad(); }
@@ -246,7 +271,7 @@
       feed = d;
       // The code has proved itself: the media pass first, then the files.
       var M = window.ADspaceMedia;
-      (M && M.pass ? M.pass({ creator: c }) : Promise.resolve()).then(function () {
+      return (M && M.pass ? M.pass({ creator: c }) : Promise.resolve()).then(function () {
         paint();
         follow();
       });
@@ -561,7 +586,7 @@
     var facts = [];
     if (!dead) {
       facts.push([seeding ? t().deliveryOn : t().shootOn,
-        b.visit_date ? fmtDate(b.visit_date) + (b.visit_time ? ', ' + b.visit_time : '') : t().tbc, seeding ? 'box' : 'camera']);
+        b.visit_date ? dayTime(b.visit_date, b.visit_time) : t().tbc, seeding ? 'box' : 'camera']);
       if (b.visit_location) facts.push([t().whereAt, b.visit_location, 'pin', seeding ? '' : placeHtml(b.visit_location)]);
       if (b.visit_pic) facts.push([t().contact, b.visit_pic + (b.visit_pic_phone ? ' · ' + b.visit_pic_phone : ''), 'phone',
         b.visit_pic_phone ? reachHtml(b.visit_pic_phone) : '']);
@@ -590,6 +615,12 @@
        rest under Booking details, shut; the rating stays out until given. */
     var done = b.state === 'completed';
     var unrated = done && !Number(b.rating || 0);
+    /* Once approved, the post, its results and the payment form are what is
+       owed: they stand where the hand-in stood, above the facts (the rule of
+       2026-10-08 for every step; ux-audit CREATOR-1, 2026-10-14). A finished
+       booking keeps them, read only, in its fold. */
+    var owedPost = !dead && (b.state === 'scheduled' || b.state === 'posted');
+    var postBlocks = (postsDue(b.state) ? postsHtml(b) : '') + (payDue(b.state) ? payHtml() : '');
     var rest = dead ? '' :
         (done ? '' : journeyHtml(b)) +
         (owed ? '<div class="cx-nextup"><p class="cx-eyebrow cx-quietlabel">' + esc(t().nextUpWord) + '</p>' +
@@ -599,6 +630,7 @@
              facts: after Submit the creator reads it without scrolling (the
              client pages audit, CR-1, 2026-10-08). */
           : (nextLine(b) ? '<p class="booking-next cx-status">' + esc(nextLine(b)) + '</p>' : '') + countdown) +
+        (owedPost ? postBlocks : '') +
         (facts.length ? '<dl class="booking-facts cx-facts">' + facts.map(function (f) {
           return '<div><dt>' + icon(f[2]) + esc(f[0]) + '</dt><dd>' + esc(f[1]) + (f[3] || '') + '</dd></div>';
         }).join('') + '</dl>' : '') +
@@ -608,8 +640,7 @@
         (b.caption && !b.can_deliver ? '<div class="booking-caption"><div class="kstep-title">' +
           esc(t().captionLabel) + '</div><p>' + esc(b.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
         (b.can_deliver && !owed ? deliverHtml(b) : '') +
-        (postsDue(b.state) ? postsHtml(b) : '') +
-        (payDue(b.state) ? payHtml() : '') +
+        (owedPost ? '' : postBlocks) +
         (done && !unrated ? rateHtml(b) : '');
     card.className += done ? ' is-done' : '';
     card.innerHTML =
@@ -666,7 +697,11 @@
       var nums = [['views', p.views], ['engagements', p.engagements], ['impressions', p.impressions]];
       if (!open) {
         return '<div class="post-entry"><div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
-          (p.post_url ? '<p class="post-entry-link"><a href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></p>' : '') +
+          /* The post as a way out, never the raw address (CREATOR-9), worded
+             as the selection page words it. */
+          (p.post_url ? '<p class="post-entry-link"><a class="plink" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' +
+            esc(lang === 'zh' ? (platKeyOf(plat) === 'xhs' ? '查看小红书笔记' : '查看' + word + '帖子') : 'View post on ' + word) +
+            EXT_MARK + '</a></p>' : '') +
           (period ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' : '') +
           '<dl class="post-nums">' + nums.map(function (n) {
             return '<div><dt>' + esc(t()[n[0]]) + '</dt><dd>' + esc(n[1] == null ? '—' : Number(n[1]).toLocaleString('en-US')) + '</dd></div>';
@@ -678,6 +713,9 @@
         '<textarea class="input" id="pl-' + id + '" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" data-k="url" placeholder="https://">' + esc(p.post_url || '') + '</textarea>' +
         '<label class="field-label" for="pd-' + id + '">' + esc(t().postedOn) + '</label>' +
         '<input class="input" id="pd-' + id + '" type="date" data-k="published" value="' + esc(p.published_at || '') + '">' +
+        /* A phone keeps its own date box, in the device's order; the day
+           is written under it as the portal writes a date (CREATOR-4). */
+        '<p class="post-entry-day" data-day hidden></p>' +
         (period
           ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' +
             '<div class="post-nums-in">' + nums.map(function (n) {
@@ -685,57 +723,122 @@
                 '<input class="input" id="pn-' + n[0] + '-' + id + '" type="text" inputmode="numeric" pattern="[0-9]*" data-k="' + n[0] + '" value="' + esc(numVal(n[1])) + '"></div>';
             }).join('') + '</div>'
           : '') +
-        '<div class="kactions"><button class="btn btn-primary" type="button" data-a="postsave">' + esc(t().save) + '</button></div>' +
         '<div class="msg" data-postmsg></div></div>';
     }).join('');
-    return '<div class="booking-deliver booking-posts"><div class="kstep-title">' + esc(t().postsHead) + '</div>' + rows + '</div>';
+    /* One Save for every placement (ux-audit CREATOR-3, 2026-10-14): blue
+       while the post is what is owed, tonal once the payment form is the
+       view's one blue action. */
+    var foot = open
+      ? '<div class="kactions"><button class="btn' + (payDue(b.state) ? '' : ' btn-primary') + '" type="button" data-a="postsave">' +
+          esc(t().save) + '</button></div><div class="msg" data-postsmsg></div>'
+      : '';
+    return '<div class="booking-deliver booking-posts"><div class="kstep-title">' + esc(t().postsHead) + '</div>' + rows + foot + '</div>';
   }
   function wirePosts(card, b) {
-    Array.prototype.forEach.call(card.querySelectorAll('.post-entry[data-plat]'), function (box) {
-      var plat = box.getAttribute('data-plat');
-      var btn = box.querySelector('[data-a="postsave"]');
+    var block = card.querySelector('.booking-posts');
+    var btn = block && block.querySelector('[data-a="postsave"]');
+    if (!btn) return;
+    var boxes = Array.prototype.slice.call(block.querySelectorAll('.post-entry[data-plat]'));
+    var KEYS = ['url', 'published', 'views', 'engagements', 'impressions'];
+    var read = function (box) {
+      var v = {};
+      KEYS.forEach(function (k) { var el = box.querySelector('[data-k="' + k + '"]'); if (el) v[k] = el.value.trim(); });
+      return v;
+    };
+    var sayIn = function (box, text, cls) {
       var note = box.querySelector('[data-postmsg]');
-      var say = function (text, cls) { note.textContent = text || ''; note.className = 'msg' + (cls ? ' ' + cls : ''); };
-      var get = function (k) { var el = box.querySelector('[data-k="' + k + '"]'); return el ? el.value.trim() : null; };
-      btn.addEventListener('click', function () {
-        var url = get('url') || '';
-        if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
-        url = url.replace(/^http:\/\//i, 'https://');
-        if (url && !postLinkOk(plat, url)) { say(fill(t().linkWrong, { p: platsOf(plat)[0] || plat }), 'err'); return; }
-        var nums = {}, bad = false, any = false;
-        ['views', 'engagements', 'impressions'].forEach(function (k) {
-          var v = get(k);
-          if (v == null) return;
-          v = v.replace(/[,\s]/g, '');
-          if (v === '') { nums[k] = null; return; }
-          if (!/^\d+$/.test(v)) { bad = true; return; }
-          nums[k] = Number(v); any = true;
+      note.textContent = text || ''; note.className = 'msg' + (cls ? ' ' + cls : '');
+    };
+    var blockMsg = block.querySelector('[data-postsmsg]');
+    var sayBlock = function (text, cls) { blockMsg.textContent = text || ''; blockMsg.className = 'msg' + (cls ? ' ' + cls : ''); };
+    var was = boxes.map(read);
+    boxes.forEach(function (box) {
+      var day = box.querySelector('[data-k="published"]');
+      var line = box.querySelector('[data-day]');
+      var show = function () {
+        var v = day.value;
+        line.hidden = !!day.__dmy || !v;
+        line.textContent = v && !day.__dmy ? fmtDate(v) : '';
+      };
+      day.addEventListener('change', show);
+      day.addEventListener('input', show);
+      setTimeout(show, 0);
+    });
+    /* What one placement sends, or why it cannot: checked for every
+       placement before anything is sent. */
+    function plan(box, i) {
+      var plat = box.getAttribute('data-plat');
+      var v = read(box), before = was[i];
+      if (!KEYS.some(function (k) { return (v[k] || '') !== (before[k] || ''); })) return null;
+      var url = v.url || '';
+      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+      url = url.replace(/^http:\/\//i, 'https://');
+      if (url && !postLinkOk(plat, url)) return { box: box, bad: fill(t().linkWrong, { p: platsOf(plat)[0] || plat }) };
+      var nums = {}, bad = false, any = false;
+      ['views', 'engagements', 'impressions'].forEach(function (k) {
+        if (v[k] == null) return;
+        var n = v[k].replace(/[,\s]/g, '');
+        if (n === '') { nums[k] = null; return; }
+        if (!/^\d+$/.test(n)) { bad = true; return; }
+        nums[k] = Number(n); any = true;
+      });
+      if (bad) return { box: box, bad: t().numWrong };
+      return { box: box, plat: plat, args: {
+        p_code: code, p_option: b.id, p_platform: plat, p_url: url || null,
+        p_published: v.published || null,
+        p_impressions: any ? nums.impressions : null,
+        p_engagements: any ? nums.engagements : null,
+        p_views: any ? nums.views : null
+      } };
+    }
+    btn.addEventListener('click', function () {
+      sayBlock('');
+      boxes.forEach(function (box) { sayIn(box, ''); });
+      var plans = boxes.map(plan).filter(Boolean);
+      var refused = plans.filter(function (x) { return x.bad; });
+      if (refused.length) { refused.forEach(function (x) { sayIn(x.box, x.bad, 'err'); }); return; }
+      if (!plans.length) { sayBlock(t().noChange); return; }
+      btn.disabled = true;
+      var outcome = [];
+      /* One placement after another, so the first link moves the booking
+         to Posted once and each answer is its own. */
+      var chain = plans.reduce(function (p, x) {
+        return p.then(function () {
+          return db.rpc('creator_post_save', x.args).then(function (r) {
+            var d = (r && r.data) || {};
+            if ((r && r.error) || d.error) {
+              outcome.push({ plat: x.plat, values: read(x.box), err: d.error === 'link' ? fill(t().linkWrong, { p: platsOf(x.plat)[0] || x.plat })
+                : d.error === 'number' ? t().numWrong
+                : d.error === 'period' ? t().periodWait : t().failText });
+            } else outcome.push({ plat: x.plat });
+          }).catch(function () { outcome.push({ plat: x.plat, values: read(x.box), err: t().failText }); });
         });
-        if (bad) { say(t().numWrong, 'err'); return; }
-        btn.disabled = true;
-        db.rpc('creator_post_save', {
-          p_code: code, p_option: b.id, p_platform: plat, p_url: url || null,
-          p_published: get('published') || null,
-          p_impressions: any ? nums.impressions : null,
-          p_engagements: any ? nums.engagements : null,
-          p_views: any ? nums.views : null
-        }).then(function (r) {
-          btn.disabled = false;
-          var d = (r && r.data) || {};
-          if ((r && r.error) || d.error) {
-            say(d.error === 'link' ? fill(t().linkWrong, { p: platsOf(plat)[0] || plat })
-              : d.error === 'number' ? t().numWrong
-              : d.error === 'period' ? t().periodWait : t().failText, 'err');
-            return;
-          }
-          /* Read again, so the step, the chip and the period are the
-             database's; the outcome is said after the repaint. */
-          load(code);
-          setTimeout(function () {
-            var again = document.querySelector('.booking[data-id="' + b.id + '"] .post-entry[data-plat="' + plat + '"] [data-postmsg]');
-            if (again) { again.textContent = t().saved; again.className = 'msg ok'; }
-          }, 400);
-        }).catch(function () { btn.disabled = false; say(t().failText, 'err'); });
+      }, Promise.resolve());
+      chain.then(function () {
+        btn.disabled = false;
+        if (!outcome.some(function (o) { return !o.err; })) {
+          outcome.forEach(function (o) {
+            var box = block.querySelector('.post-entry[data-plat="' + o.plat + '"]');
+            if (box) sayIn(box, o.err, 'err');
+          });
+          return;
+        }
+        /* Read again, so the step, the chip and the period are the
+           database's; each placement's outcome is said once it is drawn,
+           and what was refused keeps what was typed. */
+        load(code).then(function () {
+          var again = document.querySelector('.booking[data-id="' + b.id + '"] .booking-posts');
+          if (!again) return;
+          outcome.forEach(function (o) {
+            var box = again.querySelector('.post-entry[data-plat="' + o.plat + '"]');
+            if (!box) return;
+            if (o.values) KEYS.forEach(function (k) {
+              var el = box.querySelector('[data-k="' + k + '"]');
+              if (el && o.values[k] != null) el.value = o.values[k];
+            });
+            sayIn(box, o.err || t().saved, o.err ? 'err' : 'ok');
+          });
+        });
       });
     });
   }
@@ -1233,6 +1336,8 @@
   function setLang(next) {
     lang = next;
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
+    /* The bar's kicker follows the page's language (CREATOR-7). */
+    if (window.ADspaceChrome && window.ADspaceChrome.kicker) window.ADspaceChrome.kicker(lang === 'zh' ? '创作者平台' : 'Creator Portal');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     $('codeInput').setAttribute('aria-label', t().codeTitle);
     if (following && window.ADspacePush) window.ADspacePush.relabel();
@@ -1293,5 +1398,5 @@
   if (fromLink) history.replaceState(null, '', location.pathname);
   /* The page's own turning mark stands while it loads (`.pageload`, 2026-10-15). */
   if (start.length === 8) load(start);
-  else askCode();
+  else { askCode(); if (fromLink) linkWrong(fromLink); }
 })();

@@ -10,19 +10,29 @@
   var db = API && API.client;
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
 
-  function cover(title, text) {
+  function cover(title, text, ways) {
     document.getElementById('ncHost').hidden = true;
     document.getElementById('ncCover').hidden = false;
     document.getElementById('ncCoverTitle').textContent = title;
     document.getElementById('ncCoverText').textContent = text;
+    document.getElementById('ncCoverActs').hidden = !ways;
   }
+  /* A namecard that opens nothing is a visitor's, never a client's: no
+     account manager to name, the office's WhatsApp and website instead
+     (ux-audit CARD-2, 2026-10-14). */
+  var C = window.ADSPACE_CONFIG || {};
+  var ORG = window.ADSPACE_ORG || {};
+  if (C.quoteWhatsApp) document.getElementById('ncCoverWa').href = C.quoteWhatsApp;
+  if (ORG.website) document.getElementById('ncCoverSite').href = 'https://' + String(ORG.website).replace(/^https?:\/\//, '');
+  var GONE = 'This namecard is no longer available.';
+  function gone() { cover(W.notFound, GONE, true); }
 
-  if (!/^[23456789a-z]{8}$/.test(key)) { cover(W.notFound, W.notFoundText); return; }
+  if (!/^[23456789a-z]{8}$/.test(key)) { gone(); return; }
   if (!db) { cover(W.failTitle, W.failText); return; }
   db.rpc('namecard_get', { p_key: key }).then(function (r) {
     var d = r.data;
     if (r.error || !d) { cover(W.failTitle, W.failText); return; }
-    if (d.error) { cover(W.notFound, W.notFoundText); return; }
+    if (d.error) { gone(); return; }
     /* {name} • eNamecard by ADspace (the user, 2026-10-03), in the tab and
        for any reader that takes the title after the page has run. */
     document.title = d.name + ' • eNamecard by ADspace';

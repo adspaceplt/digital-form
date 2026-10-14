@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015q">
+<link rel="stylesheet" href="/css/portal.css?v=20261015r">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
@@ -199,30 +199,38 @@
 </main>
 
 <div class="sheet" id="reqSheet" hidden>
-  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="reqHeading">
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="reqHeading">
     <div class="sheet-head">
       <h3 id="reqHeading"></h3>
+      <button class="iconbtn" id="reqClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
     </div>
-    <div class="row fgrid req-pick" id="reqPick" hidden>
-      <div><label class="field-label" for="reqKind" id="reqKindLabel">Request</label>
-        <select class="select" id="reqKind"></select></div>
-      <div id="reqLineWrap" hidden><label class="field-label" for="reqLine" id="reqLineLabel">Service</label>
-        <select class="select" id="reqLine"></select></div>
+    <!-- The page keeps an unsent note itself (js/portal.js, reqDraft), in the
+         page's own language, so the sheet's phone draft is not asked to. -->
+    <div class="sheet-body">
+      <div class="row fgrid req-pick" id="reqPick" hidden>
+        <div><label class="field-label" for="reqKind" id="reqKindLabel">Request</label>
+          <select class="select" id="reqKind" data-nodraft></select></div>
+        <div id="reqLineWrap" hidden><label class="field-label" for="reqLine" id="reqLineLabel">Service</label>
+          <select class="select" id="reqLine" data-nodraft></select></div>
+      </div>
+      <dl class="facts" id="reqFacts"></dl>
+      <label class="field-label" for="reqNote" id="reqNoteLabel">Note</label>
+      <textarea class="input textarea" id="reqNote" rows="4" data-nodraft></textarea>
+      <div class="msg" id="reqMsg"></div>
     </div>
-    <dl class="facts" id="reqFacts"></dl>
-    <label class="field-label" for="reqNote" id="reqNoteLabel">Note</label>
-    <textarea class="input textarea" id="reqNote" rows="4"></textarea>
-    <div class="row acts" style="margin-top:14px;margin-bottom:14px">
+    <div class="sheet-foot">
       <button class="btn btn-primary" id="reqGo" type="button">Send request</button>
-      <button class="btn btn-quiet" id="reqCancel" type="button" style="flex:0 0 auto">Cancel</button>
+      <button class="btn btn-quiet" id="reqCancel" type="button">Cancel</button>
     </div>
-    <div class="msg" id="reqMsg"></div>
   </div>
 </div>
 
 <script src="/js/sheet.js?v=20261011a"></script>
 <script src="/js/confirm.js?v=20261015g"></script>
 <script src="/js/icons.js?v=20261008c"></script>
-<script src="/js/portal.js?v=20261012a"></script>
+<script src="/js/namecard.js?v=20261015a"></script>
+<script src="/js/portal.js?v=20261015a"></script>
 </body>
 </html>

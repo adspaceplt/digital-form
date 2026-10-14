@@ -756,6 +756,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
 
 .approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
+/* On the selection page the pair are equal halves, as the review page's are
+   (SELECTION-9). */
+.booking .approve-row .btn-approve, .booking .approve-row .btn-changes { flex: 1 1 0; }
 @media (hover: hover) { .approve-row .btn-changes:hover { color: var(--ink); } }
 .approve-row .btn-changes[aria-pressed="true"] {
   background: var(--tonal-press); color: var(--ink); font-weight: 600;
@@ -873,6 +876,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   margin-top: 8px; background: var(--sunk); border-radius: 8px;
   padding: 9px 12px; font-size: 13px; color: var(--ink); white-space: pre-wrap;
 }
+.approve-note-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.approve-note > .approve-note-label:not(:first-child) { margin-top: 8px; }
+.approve-note-cap { display: block; margin-top: 2px; }
 
 /* ---------- States ---------- */
 
@@ -950,10 +956,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .mk-safe-tiktok .mk-safe-box { top: 5.63%;  bottom: 16.67%; left: 5.56%; right: 11.11%; }
 
 /* The switch that turns them on */
-.safetoggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-.safetoggle input { width: 16px; height: 16px; accent-color: var(--ink); cursor: pointer; }
-.safetoggle span { font-size: 13px; color: var(--ink-mute); }
-.safetoggle:hover span { color: var(--ink); }
+/* Show safe zones is an on or off at the press: the portal's switch, its
+   name beside it (ux-audit REVIEWPAGE-6). */
+.safetoggle { display: flex; align-items: center; gap: 8px; user-select: none; }
+.safetoggle[hidden] { display: none; }
+.safetoggle .safetoggle-name { font-size: 13px; color: var(--ink-soft); cursor: pointer; }
 
 .mk-media-empty {
   display: flex; align-items: center; justify-content: center;
@@ -1299,6 +1306,14 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
      list, Add lead outweighed every client on it. */
   .filterbar .btn { flex: 0 0 auto; margin-left: auto; }
   .filterbar .safetoggle { flex: 1 1 100%; }
+  /* The review page (ux-audit REVIEWPAGE-6): Show safe zones and the count
+     share one line, the count at its right edge; the set's approved count
+     stands on its title's line, the date under them. */
+  #filterbar .safetoggle { flex: 1 1 auto; }
+  #filterbar .safetoggle:not([hidden]) ~ .count { flex: 0 0 auto; margin-left: auto; }
+  .batch > .batch-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 2px 10px; }
+  .batch > .batch-head .batch-date { grid-column: 2 / -1; grid-row: 2; }
+  .batch > .batch-head .batch-progress { grid-column: 3; grid-row: 1; align-self: center; white-space: nowrap; margin-left: 0; }
 
 }
 
@@ -1803,11 +1818,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden;
 }
 .copyblock.is-open .copytext { -webkit-line-clamp: 999; }
-.copy-more {
-  border: 0; background: none; padding: 6px 0 0; min-height: var(--ctl-h); color: var(--ink-mute);
-  font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
-}
-.copy-more:hover { color: var(--ink); }
+/* Show full caption is a quiet act with its chevron (`.linkbtn`), never an
+   underlined word (DESIGN.md §5); the chevron turns while the caption is
+   open. Pulled back to the caption's edge, its fill still hugging the line. */
+.copy-more.linkbtn { align-self: flex-start; margin-top: 2px; margin-left: -8px; }
+.copy-more[hidden] { display: none; }
+.copy-more-chev { transition: transform var(--t) var(--ease); }
+.copy-more[aria-expanded="true"] .copy-more-chev { transform: rotate(180deg); }
 
 /* An approved post is settled: one wide outlined button, no second option.
    Green, because this is a status and no longer an action. */
@@ -1991,10 +2008,14 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 /* The way back under a cover's form: quiet, at its own width, centred with
    the cover's text. */
 .cover-panel .cover-alt { margin-top: 8px; min-width: 0; }
+/* The quotation's cover offers two ways on: equal halves, 8 apart, each label whole
+   (a row each where the halves cannot hold them). */
+.qs .cover-alt:has(.btn + .btn) { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.qs .cover-alt:has(.btn + .btn) > .btn { flex: 1 1 172px; max-width: 220px; white-space: nowrap; }
 /* The verify page's one answer: the reference, what it is and when, and
    whether it stands, in the chip every other state on this portal wears. */
 .verify-out { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.verify-out b { font-size: 16px; letter-spacing: -.01em; }
+.verify-out b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .verify-out span { color: var(--ink-soft); font-size: 14px; }
 :root[data-face="client"] .verify-out span { font-size: 16px; }
 .verify-out .tone { font-size: 11.5px; color: inherit; }
@@ -2207,6 +2228,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .act-tag.is-danger { background: var(--err-bg); color: var(--err-hi); }
 .act-tagcell { min-width: 0; }
 .act-subject { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The confirm sheet's list: the creator's whole name, the rate at the right
+   edge on the totals' own line (SELECTION-8). */
+#confirmList .act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline; }
+#confirmList .act-subject { white-space: normal; overflow-wrap: anywhere; }
+#confirmList .act-when { text-align: right; color: var(--ink); }
 .act-when { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
 .act-detail, .act-who {
   color: var(--ink-mute); font-size: 12.5px; min-width: 0;
@@ -2772,7 +2798,7 @@ button.appver {
   border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
   color: var(--ink-soft); animation: btnspin .7s linear infinite;
 }
-.btn-go .btn-spin, .btn-primary .btn-spin { color: var(--on-action); }
+.btn-go .btn-spin, .btn-primary .btn-spin, .btn-approve .btn-spin { color: var(--on-action); }
 .btn-danger .btn-spin { color: var(--err); }
 @keyframes btnspin { to { transform: rotate(360deg); } }
 
@@ -3221,8 +3247,13 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .engage-sum {
-  margin-left: auto; flex: 0 0 auto; font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+  margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: right;
+  font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
 }
+/* The label keeps its line; the summary wraps between its parts, never
+   inside one (the count joined it, 2026-10-14). */
+.engage-toggle { flex: 0 0 auto; white-space: nowrap; }
+.engage-sum > span { white-space: nowrap; }
 /* The body opens and shuts in place, on the grid row this portal animates
    every fold with (`.crm-group-body`): 0fr to 1fr is the one height CSS can
    move without being told what it is. Driven by a class rather than `hidden`,
@@ -3698,7 +3729,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
+.booking-head b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
 /* The state hangs off the right of the card, not off the end of the name.
    Trailing the name it started at a different x on every card — 恩比 put it at
    205px and Vini168小队长 at 325px — so a column of cards could not be read
@@ -3759,7 +3790,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
-.booking-facts dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink); }
+.booking-facts dd { margin: 2px 0 0; font-size: 14px; color: var(--ink); }
 /* The columns follow the count, so no fact sits alone under a full row
    ("Next" and "Draft due" did, on `auto-fit`). At a desk, up to three facts
    are one row and four are two pairs (four abreast wrapped a date in the
@@ -4456,9 +4487,10 @@ body > .shell { width: 100%; }
 .csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* A meeting's date and time is a sentence, not an amount: its own track,
-   measured on "Wed 30 Sept 2026, 10:30 pm" at the client pages' 16px, and
-   never wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 264px var(--state-w) var(--ctl-h); }
+   measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
+   16px (the span says "to", never a dash: PORTAL-10, 2026-10-14), and never
+   wrapped into the state beside it. */
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) var(--ctl-h); }
 .meet-row .svc-amt { white-space: nowrap; }
 /* A Register row: the reference and what it is, who it went to, when. Valid
    is the ordinary case, so there is no state column; Void is named beside
@@ -5999,6 +6031,18 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The head's Request change: which change, and the confirmed line it is
    about (PO-1). */
 #reqSheet .req-pick { margin: 0 0 12px; }
+#reqSheet .sheet-body > .facts { margin: 8px 0 16px; }
+/* A client page's line of parts holds each short part whole (js/portal.js
+   `parts`), so a phone wraps between them: never "5 Oct | 2026". */
+.cp-panes .nb { white-space: nowrap; }
+/* A letter's or a report's one act, Download, in the row (the client pages
+   audit, PORTAL-3, 2026-10-14): its own 116px track at a desk; on a phone
+   the name and its state on the first line, the figure and Download on the
+   second, Download ending at the card's edge. */
+.doc-row.is-file { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 116px; }
+.doc-dl { display: flex; justify-content: flex-end; min-width: 0; }
+.is-narrow .doc-row.is-file { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name state" "amt act"; align-items: center; }
+.is-narrow .doc-row.is-file > .doc-dl { grid-area: act; }
 
 /* The brief, and the changes asked for, read as quoted matter rather than as
    more of the card: an inset ground and a rule down the side. */
@@ -6091,6 +6135,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .post-nums dt { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .post-nums dd { margin: 2px 0 0; font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .booking-posts .msg:empty { display: none; }
+.post-entry-day { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; }
+.post-entry-day[hidden] { display: none; }
+.booking-posts > .kactions { margin-top: 16px; }
 /* What the team released, in the sheet the client decides in: the creator's
    own files and the caption that goes out with them. The caption is read, not
    typed, so it is text on the sunk ground and not a field. */
@@ -6346,6 +6393,19 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   width: min(100%, 360px); aspect-ratio: 9 / 16; object-fit: contain;
   background: #000; border-radius: var(--radius-sm);
 }
+/* A draft waiting on the client, at a desk: the file at the left, its
+   caption and the decision beside it, so Approve is in the first screen with
+   the video rather than under it (UX audit SELECTION-7, 2026-10-14). */
+@media (min-width: 761px) {
+  .draft-decide.has-media {
+    display: grid; grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+    column-gap: 16px; row-gap: 12px; align-items: start; margin-top: 12px;
+  }
+  .draft-decide.has-media > .client-draft-preview { display: contents; }
+  .draft-decide.has-media .client-draft-media { grid-column: 1; grid-row: 1 / span 4; grid-template-columns: minmax(0, 1fr); }
+  .draft-decide.has-media .client-draft-media video, .draft-decide.has-media .client-draft-media img { width: 100%; }
+  .draft-decide.has-media > .client-draft-preview > :not(.client-draft-media), .booking > .draft-decide.has-media > .approve { grid-column: 2; margin-top: 0; }
+}
 /* `.filecard-video` was styled here for a console player that was never
    written, so these two rules matched nothing for as long as they existed and
    the console kept drawing a square with MP4 on it. The player exists now and
@@ -6360,7 +6420,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    what separates the work above from the answer below. Everything else about
    it — the blue Approve, the quiet Request changes, the note that opens under
    them — is the component Content Review already uses. */
-.booking > .approve { padding: 14px 0 0; margin-top: 12px; }
+.booking > .approve, .booking > .draft-decide > .approve { padding: 14px 0 0; margin-top: 12px; }
 .approve-state.is-err { color: var(--err); }
 /* What the client decided, kept on the card once the step has moved on. The
    same line Content Review leaves under a post, so a decision is recorded the
@@ -7394,7 +7454,11 @@ body.is-canvas { overflow: hidden; }
 .canvas-rail > .copyblock { border-top: 0; padding: 0 0 14px; }
 .canvas-rail > .reask { margin: 0 0 14px; }
 /* The decision is the last thing in the rail and the only green on it. */
-.canvas-rail > .approve { border-top: 1px solid var(--line-soft); padding-top: 14px; }
+.canvas-rail > .approve { border-top: 1px solid var(--line-soft); padding: 14px 0 0; }
+/* The decision on the rail's one edge, and said once: a decided post's
+   state line leaves the rail, the decision line saying it (ux-audit
+   REVIEWPAGE-7). */
+.canvas-rail > .badge.is-ok, .canvas-rail > .badge.is-changes { display: none; }
 
 @media (max-width: 860px) {
   /* One column: the mockup, then what the decision rests on, then the
@@ -10233,9 +10297,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    same column. */
 .lp-duo {
   max-width: calc(var(--lp-col) + 2 * var(--lp-gut)); margin: 0 auto; padding: 56px var(--lp-gut);
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px 64px; align-items: start;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 56px; align-items: start;
 }
-.lp-side { display: grid; gap: 40px; }
+.lp-side { display: grid; gap: 32px; }
 .lp-h2 { margin: 0 0 12px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; color: var(--ink); }
 .lp-hours { width: 100%; border-collapse: collapse; font-size: 14px; }
 .lp-hours th, .lp-hours td { padding: 10px 0; border-top: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
@@ -10244,8 +10308,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .lp-hours td:last-child { text-align: right; white-space: nowrap; }
 .lp-hours .is-shut td:last-child { color: var(--ink-mute); }
-.lp-hol { display: block; font-size: 13px; color: var(--ink-mute); }
-.lp-note { margin: 12px 0 0; font-size: 13px; color: var(--ink-mute); }
+.lp-hol { display: block; font-size: 13.5px; color: var(--ink-mute); }
+.lp-note { margin: 12px 0 0; font-size: 13.5px; color: var(--ink-mute); }
 .lp-address { margin: 0 0 4px; font-style: normal; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
@@ -10887,9 +10951,14 @@ body.ncpage { background: var(--nc-ground); }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
 .nc-row-mail .nc-value { overflow-wrap: normal; word-break: normal; white-space: nowrap; overflow: hidden; }
-.nc-row-mail .nc-value.is-wrap { white-space: normal; }
+.nc-row-mail .nc-value.is-wrap { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
+.nc-cover-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+.nc-cover-acts[hidden] { display: none; }
+/* A 320 phone's half holds Save contact's mark and words with room either
+   side only a little closer together. */
+@media (max-width: 359px) { .nc-acts .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
@@ -11412,7 +11481,7 @@ button.aiu-row:first-child::before { content: none; }
 .cx-journey li.is-now { color: var(--ink); font-weight: 600; }
 .cx-journey span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
-.cx-nextup .cx-eyebrow { margin-bottom: 4px; }
+.cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
 .cx-nextup-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
 .cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
@@ -11424,7 +11493,7 @@ button.aiu-row:first-child::before { content: none; }
 .cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
 @media (hover: hover) { .cx-drop:hover { background: var(--tonal-hover); } }
 .cx-drop .ic { width: 22px; height: 22px; color: var(--action-ink); margin-bottom: 4px; }
-.cx-drop b { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cx-drop b { font-size: 14px; font-weight: 600; color: var(--ink); }
 .cx-drop span { font-size: 13px; color: var(--ink-mute); }
 .cx-drop-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -11932,7 +12001,7 @@ button.vs-row { cursor: pointer; }
   .vs-pick { padding: 12px 14px; }
   .vs-steps { flex: 1 1 100%; }
   .vs-steps > .btn { flex: 1 1 0; min-width: 0; }
-  .vs-card { padding: 14px; gap: 20px; }
+  .vs-card { padding: 14px 16px; gap: 16px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -12302,9 +12371,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
   padding: 0 4px 0 14px; border-radius: var(--radius-sm); background: var(--sunk);
 }
 .qs-count { display: flex; align-items: center; gap: 10px; }
-.qs-count b { min-width: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.qs-count b { min-width: 18px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .qs-pm { min-width: 44px; width: 44px; padding: 0; font-size: 18px; }
 .qs-form { display: grid; gap: 16px; }
+/* Fields in a form's section stand the form's 16 apart, so a label sits with its own field
+   (the 8 of .qs-sec is for choice cards). */
+.qs-form .qs-sec { gap: 16px; }
 .qs-form .field { display: grid; gap: 4px; }
 .qs-form .field .msg { margin: 0; }
 .qs-form .field .msg:empty { display: none; }
@@ -12333,6 +12405,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-calc { display: none; font-size: 13px; color: var(--ink-mute); }
 .qs-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qs-mute { color: var(--ink-mute); }
+/* A line quoted on request has no quantity or rate: its words take the figure tracks, ending on the column's right edge. */
+.qs-onreq { grid-column: 2 / -1; }
 .qs-tot { margin: 0; display: grid; justify-self: end; width: min(420px, 100%); border-radius: var(--radius-sm); overflow: hidden; background: var(--sunk); }
 .qs-tot > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 8px 16px; }
 .qs-tot dt { color: var(--ink-soft); }
@@ -12352,6 +12426,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 @media (max-width: 899px) {
   .qs-quote:not(.is-proceed) .qs-bill { display: none; }
+  /* Once pressed, Proceed has done its work: the billing card's Request is the one blue act. */
+  .qs-quote.is-proceed .qs-proceed { display: none; }
 }
 @media (max-width: 640px) {
   .shell.qs { padding-top: 16px; }
@@ -12366,11 +12442,12 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); }
 .qs-facts { margin: 0; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); }
 .qs-facts dt { color: var(--ink-mute); }
-.qs-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.qs-facts dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; }
 .qs-nowrap { white-space: nowrap; }
 body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
-.qs-facts .chip-state { font-size: inherit; }
+/* A status wraps inside its cell, its dot on the first line, never past the shaded box. */
+.qs-facts .chip-state { font-size: inherit; white-space: normal; }
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
 /* The client's details form on Billing (2026-10-14): its lone act keeps its

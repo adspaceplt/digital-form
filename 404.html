@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015q">
+<link rel="stylesheet" href="/css/portal.css?v=20261015r">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -95,6 +95,15 @@
     </div>
   </div>
 </main>
+
+<!-- The portal's foot, as js/chrome.js draws it on every other page; written
+     here because this page runs no script of its own (UX audit NOTFOUND-1,
+     2026-10-14). The year is the one value filled in. -->
+<footer class="portalfoot"><div class="portalfoot-in">
+  <span class="portalfoot-copy">&copy; <span id="footYear">2026</span> ADSPACE PLT. All Rights Reserved.</span>
+  <a class="portalfoot-link" href="https://adspacestudios.com/legal/policies" target="_blank" rel="noopener">Terms of Service</a>
+</div></footer>
+<script>document.getElementById('footYear').textContent = new Date().getFullYear();</script>
 
 </body>
 </html>
