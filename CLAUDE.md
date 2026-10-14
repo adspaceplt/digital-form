@@ -1658,8 +1658,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     record's ⋯ (Leads at Manage).
   - The stage select greys a stage whose band the colleague cannot work, and
     New lead needs `clients.leads:work`.
-  - Standing a colleague down asks who takes their clients and open campaigns.
-    Keep is first, and only active colleagues are offered.
+  - Standing a colleague down, or Delete, asks who takes each kind of their
+    live work (Team, below); the clients and open campaigns they are person
+    in charge of are two of the kinds. Keep is first, and only active
+    colleagues are offered.
   - The move takes `.select('id')` and files `client.edited` /
     `campaign.edited`.
   - A completed campaign keeps who ran it.
@@ -4398,7 +4400,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member row reads the name with the Employee ID beside it (`.team-eid`,
   mute; still searched), then department and position (and Until), then the
   email; the state column names only the exception: Inactive, Access
-  expired, or Card off for somebody still working.
+  expired, Removed, or Card off for somebody still working.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
@@ -4421,7 +4423,31 @@ Each line is a rule that broke once. Its reason is in the archive.
   email, group, Access until), Employment (department, position, role
   standard, Employee ID, weekly capacity), Namecard (mobile, mobile on card,
   short link, card).
-- A colleague is never deleted, only stood down.
+- A colleague's row is never deleted, only stood down or removed (the user,
+  2026-10-14; `2026-10-14-colleague-hand-over.sql`,
+  `2026-10-14-colleague-remove.sql`, the second run in the SQL Editor):
+  - Set inactive and Delete (the ⋯'s last item, red, Team Full Access, never
+    one's own or a system account, not drawn once their details are
+    deleted) first ask who takes each kind of live work the colleague holds,
+    a picker a kind, Keep with them first, only kinds they hold
+    (`team_work_held`): clients they are person in charge of and open
+    campaigns (by name, as before), open tasks, months they manage,
+    meetings ahead they lead, repeating tasks, reports in review waiting on
+    them (left with them where the colleague chosen submitted it or may not
+    review, and said), extension requests waiting on them, and templates
+    naming them as default owner (`team_hand_over`, each filed on its
+    record and one line under the colleague: Work handed over: 2 open
+    tasks → Aisyah; …).
+  - Delete then asks Their data, Keep / Delete, and the name typed back
+    (the question opens on it); `team_member_remove` (`own`,
+    `system-account`, `bad-name`, `last-admin`) sets them inactive and
+    stamps `removed_at` (the row reads Removed, with no Set active);
+    Delete their data also removes the mobile, the namecard (off, its short
+    link freed), the sign-in email and its login, their health check-ins,
+    consents, log and talks, devices, guides met and section order
+    (`erased_at`). Their name, Employee ID and group, their name on past
+    work and the documents they signed, and their own HR letters and
+    performance records are kept either way.
 - Access expiry (`2026-10-01-team-access-expiry.sql`,
   `2026-10-03-team-access-time.sql`):
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`

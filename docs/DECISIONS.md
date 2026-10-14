@@ -3168,3 +3168,19 @@ refuses the send unless that question was answered, so two colleagues
 pressing at nearly the same moment are both asked. The function is
 `wa_sent_recently`: `wa_recent()` already names the console's list of
 recent messages.
+
+### 2026-10-14 · A colleague who leaves hands over their work kind by kind, and Delete asks about their data
+The user asked whether a colleague's records move to their replacement when
+they resign or are removed. Three groups were read from the database: their
+own records (HR letters, performance and health) stay theirs; history (what
+they signed, issued, confirmed or finished) keeps their name; and live work
+needs a new person. Set inactive had moved only the clients and open
+campaigns they were person in charge of. Now Set inactive and a new Delete
+both ask who takes each kind of live work (the user chose a person for each
+kind over one person for all). Delete, asked again by the user as "the
+option, delete button to either delete or keep their data", asks Keep or
+Delete for their data with the name typed back: kept, they are inactive and
+marked Removed; deleted, their personal details and sign-in go as well. The
+row itself is never deleted, since tasks, documents and the record name
+them. The question sheet now opens on a name typed back even when other
+fields come before it, as CLAUDE.md already stated.

@@ -520,7 +520,7 @@
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       /* The exception only: Inactive, Access expired, or a card turned off
          for somebody still working; an ordinary row says nothing. */
-      '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
+      '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.removed_at ? 'Removed' : m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
         : m.card_on === false ? '<span class="tone is-off">Card off</span>' : '') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
@@ -529,7 +529,10 @@
       rowMenu((manage ? menuItem('edit', 'Edit') : '') +
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
-              (self || !manage ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
+              (self || !manage || m.removed_at ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))) +
+              /* Delete (2026-10-14): their work handed over kind by kind,
+                 their data kept or their personal details deleted. */
+              (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger')));
 
     wireMenu(el);
     var nc = el.querySelector('[data-a="card"]');
@@ -566,29 +569,27 @@
          asks who takes them over, in the same breath, with Keep as the first
          answer because a stand-down can be for a week (the user,
          2026-09-26). A completed campaign keeps who ran it: that is history. */
-      ownedBy(m.name, false, function (own) {
-        var n = ownWord(own);
-        var others = state.rows.filter(function (x) { return x.active && x.id !== m.id && x.name; });
+      /* Their live work is handed over kind by kind (2026-10-14; the user:
+         "A person for each kind"), each kept with them unless a colleague
+         is chosen, since a stand-down can be for a week. */
+      heldBy(m, function (own, held) {
+        var fields = handFields(m, own, held);
         window.ADspaceConfirm.ask({
           title: 'Set inactive',
           body: m.name + ' loses access to every section until they are set active '
               + 'again here. Their record, their name on past work and everything '
               + 'they signed stay as they are.'
-              + (n ? ' They are person in charge of ' + n + '.' : ''),
+              + (fields.length ? ' Choose who takes each kind of their work.' : ''),
           go: 'Set inactive',
           tone: 'warn',
-          field: n && others.length ? {
-            label: 'Person in charge from now on',
-            required: false,
-            choices: [['', 'Keep with ' + m.name]].concat(others.slice().sort(window.ADspaceForm.byStaff).map(function (x) { return [x.name, window.ADspaceForm.named(x.staff_code, x.name)]; }))
-          } : null
-        }, function (to) {
-          saveMember(m, { active: false }, function () {
-            if (typeof to === 'string' && to) handOver(m.name, to, own);
-          });
+          fields: fields.length ? fields : null
+        }, function (v) {
+          saveMember(m, { active: false }, function () { handTo(m, own, v && typeof v === 'object' ? v : {}); });
         });
       });
     });
+    var rmv = el.querySelector('[data-a="remove"]');
+    if (rmv) rmv.addEventListener('click', function () { shutMenus(); removeMember(m); });
     var ed = el.querySelector('[data-a="edit"]');
     if (ed) ed.addEventListener('click', function () { openMemberBox(m, this); });
     var inv = el.querySelector('[data-a="invite"]');
@@ -610,6 +611,105 @@
       msg('teamMsg', 'Saved.', 'ok');
       load();
       if (then) then();
+    });
+  }
+
+  /* ---- Hand-over and Delete (2026-10-14) -------------------------------------
+     What a colleague holds, read before they are set inactive or removed:
+     the clients and open campaigns they are person in charge of (by name),
+     and the rest of their live work from `team_work_held`. A database
+     without it offers the person in charge alone. */
+  var HELD_KINDS = [['tasks', 'Open tasks'], ['months', 'Months they manage'], ['meetings', 'Meetings they lead'],
+    ['repeats', 'Repeating tasks'], ['reviews', 'Reports waiting for their review'], ['extensions', 'Extension requests waiting on them'],
+    ['templates', 'Templates naming them as default owner']];
+  function heldBy(m, then) {
+    ownedBy(m.name, false, function (own) {
+      db.rpc('team_work_held', { p_member: m.id }).then(function (r) {
+        var d = (r && r.data) || {};
+        then(own, r.error || d.error ? {} : d);
+      }).catch(function () { then(own, {}); });
+    });
+  }
+  function takers(m) {
+    return state.rows.filter(function (x) { return x.active && x.id !== m.id && x.name && !x.system; })
+      .slice().sort(window.ADspaceForm.byStaff);
+  }
+  function handFields(m, own, held) {
+    var choices = [['', 'Keep with ' + m.name]].concat(takers(m).map(function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; }));
+    if (choices.length < 2) return [];
+    var out = [];
+    var add = function (name, label, n) { if (n > 0) out.push({ name: name, label: label + ' (' + n + ')', required: false, choices: choices }); };
+    add('clients', 'Clients they are person in charge of', own.clients.length);
+    add('campaigns', 'Open campaigns', own.campaigns.length);
+    HELD_KINDS.forEach(function (k) { add(k[0], k[1], Number(held[k[0]]) || 0); });
+    return out;
+  }
+  /* Moves what was chosen: the person in charge by name, the rest through
+     `team_hand_over`; one line says what moved and what could not. */
+  function handTo(m, own, v) {
+    var nameOf = function (id) { var x = state.rows.filter(function (r) { return r.id === id; })[0]; return x ? x.name : ''; };
+    var jobs = [];
+    var owned = function (table, list, to) {
+      if (!to || !list.length) return;
+      jobs.push(db.from(table).update({ owner: to }).in('id', list.map(function (c) { return c.id; })).select('id').then(function (r) {
+        if (r.error || (r.data || []).length < list.length) return { bad: true };
+        list.forEach(function (c) { log(table === 'clients' ? 'client.edited' : 'campaign.edited', c.name || c.title, 'Person in charge: ' + m.name + ' to ' + to); });
+        return { ok: true };
+      }));
+    };
+    owned('clients', own.clients, nameOf(v.clients));
+    owned('campaigns', own.campaigns, nameOf(v.campaigns));
+    var to = {};
+    HELD_KINDS.forEach(function (k) { if (v[k[0]]) to[k[0]] = v[k[0]]; });
+    if (Object.keys(to).length) {
+      jobs.push(db.rpc('team_hand_over', { p_member: m.id, p_to: to }).then(function (r) {
+        var d = (r && r.data) || {};
+        if (r.error || d.error) return { bad: true };
+        return { ok: true, skipped: d.skipped && d.skipped.reviews };
+      }));
+    }
+    if (!jobs.length) return Promise.resolve(true);
+    return Promise.all(jobs).then(function (res) {
+      var bad = res.some(function (x) { return x.bad; });
+      var skip = res.reduce(function (n, x) { return n + (Number(x.skipped) || 0); }, 0);
+      msg('teamMsg', bad ? 'Saved. Some work could not be handed over; open the colleague\'s ⋯ again to hand it over.'
+        : 'Saved. Work handed over.' + (skip ? ' ' + skip + (skip === 1 ? ' report stays' : ' reports stay') +
+          ' with them: the colleague chosen submitted it or does not review reports.' : ''), bad ? 'err' : 'ok');
+      return !bad;
+    }).catch(function () { msg('teamMsg', 'Saved. The work could not be handed over.', 'err'); return false; });
+  }
+  var REMOVE_SAID = {
+    own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.',
+    'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
+    denied: 'Team Full Access is required.', 'not-found': 'This colleague is no longer on the team.'
+  };
+  /* Delete: who takes each kind of their work, then whether their data is
+     kept, then their name typed back. Their name on past work, what they
+     signed, and their own HR letters and performance records stay either
+     way; Delete their data removes their personal details and sign-in. */
+  function removeMember(m) {
+    heldBy(m, function (own, held) {
+      var fields = handFields(m, own, held);
+      window.ADspaceConfirm.ask({
+        title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
+        body: m.name + ' loses access for good.' + (fields.length ? ' Choose who takes each kind of their work.' : '') +
+          ' Their name stays on past work and on the documents they signed, and their HR letters and performance records are kept.' +
+          ' Delete their data removes their mobile, namecard, sign-in, health check-ins and devices. There is no restore.',
+        fields: fields.concat([
+          { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Delete']], seg: true, value: 'keep' },
+          { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
+      }, function (v) {
+        return Promise.resolve(handTo(m, own, v)).then(function () {
+          return db.rpc('team_member_remove', { p_member: m.id, p_erase: v.data === 'erase', p_name: v.name });
+        }).then(function (r) {
+          var d = (r && r.data) || {};
+          if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : String(r.error.message || r.error);
+          if (d.error) return REMOVE_SAID[d.error] || d.error;
+          msg('teamMsg', v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.', 'ok');
+          load();
+          return '';
+        });
+      });
     });
   }
 

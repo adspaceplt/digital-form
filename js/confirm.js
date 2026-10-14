@@ -340,7 +340,10 @@
        that costs nothing is the one a stray Enter should land on. Where a
        value is wanted the field takes focus, because that is the next thing
        to do either way. */
-    var typed = rows.filter(function (x) { return !x.spec.tick && !x.spec.seg; })[0];
+    /* A name typed back is the one thing asked before the act, so it takes
+       focus even after other fields (Delete on a colleague, 2026-10-14). */
+    var typed = rows.filter(function (x) { return x.spec.match != null && !x.spec.choices; })[0] ||
+                rows.filter(function (x) { return !x.spec.tick && !x.spec.seg; })[0];
     var land = (typed && typed.input) || (o.tone === 'danger' ? elCancel : elGo);
     setTimeout(function () { try { land.focus(); } catch (e) {} }, 0);
   }
