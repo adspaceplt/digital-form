@@ -1509,7 +1509,9 @@
   function paintMine() {
     var box = $('mineList');
     if (!box || !st.mine) return;
-    if (!st.mine.length) { UI.emptyLine(box, 'No reviews.'); return; }
+    /* While a month waits to be rated, the empty line would read as
+       contradicting it (ux-audit MINE-5, 2026-10-14). */
+    if (!st.mine.length) { if ((st.self || []).length) box.innerHTML = ''; else UI.emptyLine(box, 'No reviews.'); return; }
     box.innerHTML = '';
     var G = window.ADspaceGroup;
     box.appendChild(G.section({
@@ -1585,13 +1587,18 @@
         (g ? '<dl class="ovfacts self-facts">' + CATS.map(function (c) {
                return '<div><dt>' + esc(c[1]) + '</dt><dd>' + esc(num(sc[c[0]])) + '<small> / ' + c[2] + '</small></dd></div>';
              }).join('') + '<div><dt>Total</dt><dd><b>' + esc(num(g.total)) + '</b><small> / 100</small></dd></div></dl>'
-           : '<p class="perf-quiet">Open until your ' + esc(m.month) + ' review is shared.</p>' +
-             '<div class="row acts refl-acts"><button class="btn' + (lead(g) ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button></div>') +
+           : (function () {
+               /* Said once, on the month to rate first (ux-audit MINE-3). */
+               var l = lead(g);
+               return (l ? '<p class="perf-quiet">Each month stays open until its review is shared.</p>' : '') +
+                 '<div class="row acts refl-acts"><button class="btn' + (l ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button></div>';
+             })()) +
         '</div></div>';
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="self"]'), function (b) {
       b.addEventListener('click', function () { openSelf(b.closest('[data-period]').getAttribute('data-period'), b); });
     });
+    if (st.mine && !st.mine.length) paintMine();
   }
   function openSelf(period, opener) {
     var m = (st.self || []).filter(function (x) { return x.period === period; })[0];
@@ -3132,8 +3139,6 @@
       paintLetters();
     });
   }
-  var DL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>';
   var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M18 14v5H5V6h5"/></svg>';
   function paintLetters() {
@@ -3143,7 +3148,7 @@
       '<div class="crm-head ml-row"><span>Letter</span><span>State</span><span></span></div>' +
       list.map(function (l, i) {
         var canDraw = l.source !== 'manual';
-        var act = canDraw ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="dl">' + DL + 'Download</button>'
+        var act = canDraw ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="dl">' + FILE_GLYPH + 'Download</button>'
           : l.file_url ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="open">Open' + OUT + '</button>' : '';
         return '<div class="crm-row ml-row' + (l.void ? ' is-off' : '') + '">' +
           '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + '</b>' +
@@ -3183,7 +3188,9 @@
     var list = st.inits || [], box = $('mineInitList');
     var live = list.filter(function (i) { return i.status !== 'withdrawn'; }).length;
     $('mineInitCount').textContent = live ? live + (live === 1 ? ' initiative' : ' initiatives') : '';
-    if (!list.length) { UI.emptyLine(box, 'No initiatives.', 'Log initiative', function () { openInit(null, $('mineInitAdd')); }); return; }
+    /* Log initiative stands in the bar; the empty line does not offer it
+       again (ux-audit MINE-2, 2026-10-14). */
+    if (!list.length) { UI.emptyLine(box, 'No initiatives.'); return; }
     initGroups(box, list, 'mine-inits', function (i) {
       var items = i.status === 'proposed' ? [['edit', 'Edit'], ['withdraw', 'Withdraw', true]]
                 : i.status === 'withdrawn' ? [['restore', 'Restore']] : [];
@@ -3267,7 +3274,8 @@
     sel.innerHTML = reflMonths().map(function (p) { return '<option value="' + p + '">' + esc(monthWord(p)) + '</option>'; }).join('');
     if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
   }
-  $('mineReflMonth').addEventListener('change', function () { st.refl = null; loadRefl(); });
+  $('mineReflMonth').addEventListener('change', function () { st.refl = null; $('mineReflWrite').hidden = true; loadRefl(); });
+  $('mineReflWrite').addEventListener('click', function () { openRefl(this); });
   function loadRefl() {
     fillReflMonths();
     if (!st.refl) UI.skeleton($('mineReflBox'), 1);
@@ -3284,11 +3292,10 @@
     var f = st.refl, box = $('mineReflBox');
     if (!f) return;
     var any = f.proud || f.hard || f.learn;
-    if (!any) {
-      if (f.open) UI.emptyLine(box, 'No reflection.', 'Write reflection', function () { openRefl(); });
-      else UI.emptyLine(box, 'No reflection.');
-      return;
-    }
+    /* Write reflection stands in the bar beside the month it is for
+       (ux-audit MINE-4, 2026-10-14). */
+    $('mineReflWrite').hidden = !(f.open && !any);
+    if (!any) { UI.emptyLine(box, 'No reflection.'); return; }
     var shared = Boolean(f.shared_at);
     box.innerHTML =
       '<div class="ovcard refl-card">' +

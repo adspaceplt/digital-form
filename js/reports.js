@@ -538,7 +538,15 @@
     social: [['accounts', 'Accounts'], ['posts', 'Posts'], ['text', 'Commentary'], ['check', 'Check and submit']],
     ads:    [['figures', 'Figures'], ['ads', 'Ads'], ['text', 'Commentary'], ['check', 'Check and submit']]
   };
-  function stepsOf(r) { return STEPS[r && r.kind === 'ads' ? 'ads' : 'social']; }
+  /* Past draft nothing is submitted from the last step, so it is Check
+     (ux-audit RPT-5). */
+  /* An account is its handle and platform, or its platform alone where it
+     holds no handle (ux-audit RPT-6): never "· Instagram". */
+  function accLabel(a) { return a.account_name ? a.account_name + ' · ' + platWord(a) : platWord(a); }
+  function stepsOf(r) {
+    var s = STEPS[r && r.kind === 'ads' ? 'ads' : 'social'];
+    return r && r.status && r.status !== 'draft' ? s.map(function (x) { return x[0] === 'check' ? ['check', 'Check'] : x; }) : s;
+  }
   function firstStep() {
     var r = st.open;
     if (!r || r.status !== 'draft') return 'check';
@@ -784,8 +792,10 @@
     var box = st.host.querySelector('.rp-stepbox');
     if (!box) return;
     var r = st.open, ed = editable(), k = st.step;
+    /* The strip names the step; a head is drawn only where it holds the
+       step's own acts (ux-audit RPT-9). */
     var head = function (title, acts) {
-      return '<div class="rp-sec-head"><h3 class="ovsec-title">' + esc(title) + '</h3>' + (acts ? '<span class="rp-sec-acts">' + acts + '</span>' : '') + '</div>';
+      return acts ? '<div class="rp-sec-head"><h3 class="ovsec-title">' + esc(title) + '</h3><span class="rp-sec-acts">' + acts + '</span></div>' : '';
     };
     var next = nextOf(k);
     var foot = next && (!ed || (k !== 'text' && k !== 'figures'))
@@ -856,7 +866,7 @@
       return '<div class="rp-check' + (done ? ' is-done' : need ? ' is-missing' : '') + '">' +
         '<span class="rp-check-mark" aria-hidden="true">' + (done ? ICON.tick : '') + '</span>' +
         '<span class="rp-check-t"><b>' + esc(s[1]) + '</b><small>' + esc(stepNote(s[0]) + (!done ? (need ? ' · Required' : ' · Optional') : '')) + '</small></span>' +
-        '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? PEN_MARK + 'Edit' : 'View') + '</button></div>';
+        '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? PEN_MARK + 'Edit' : 'View' + ICON.go) + '</button></div>';
     }).join('');
     var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
     var mine = r.submitted_by && r.submitted_by === myId();
@@ -886,7 +896,7 @@
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
     else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
     var gated = r.status === 'draft' && String(r.period_start || '') >= '2026-10-01';
-    box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
+    box.innerHTML = '<div class="rp-sec">' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       '<div class="ovcard rp-aicheck" data-m="aicheck" hidden></div>' +
       (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait"' + (metaHold && !missing.length && may('work') ? ' data-meta="1"' : '') + '>' + esc(wait) + '</span>' : '') + '</div>' : '') +
@@ -1462,6 +1472,9 @@
        line of its own, with the way to link the client's accounts. */
     var srcs = metaSources(r), hasMeta = metaOn() && (!!al || (srcs.length > 0 && metaOpen(r)));
     if (!last && !can && !hasMeta && !metaCan(r)) { host.hidden = true; return; }
+    /* A published report never audited has nothing left to audit
+       (ux-audit RPT-5). */
+    if (r.status === 'published' && !last && !(al && al.last)) { host.hidden = true; return; }
     host.hidden = false;
     var canMeta = metaCan(r), busy = a.busy || checkRun[r.id], draft = r.status === 'draft' && may('work');
     var head = '<div class="rp-audit-head"><h4 class="rp-audit-title">Report audit</h4>' +
@@ -1635,6 +1648,12 @@
     });
     var b = host.querySelector('[data-a="audit"]');
     if (!b) return;
+    /* With no commentary and no Meta to read, the audit has nothing to run:
+       it rests and says why (ux-audit RPT-4). */
+    if (!canMeta && !checkRun[r.id] && !Object.keys(commentaryNow(r)).length) {
+      b.disabled = true;
+      if (!said0) say(m, CHECK_SAID['no-text']);
+    }
     /* One commentary check a colleague a report a day (an admin's five),
        within the colleague's AI uses for the day (2026-10-05). */
     var line = host.querySelector('[data-m="cleft"]');
@@ -2337,8 +2356,8 @@
       '<div class="crm-head rp-acc-row"><span>Account</span><span>Followers</span><span>Growth</span><span>Figures</span><span></span></div>' +
       st.platforms.map(function (a) {
         return '<div class="crm-row rp-acc-row" data-id="' + esc(a.id) + '">' +
-          '<span class="rp-name"><b>' + esc(a.account_name || platWord(a)) + '</b><small>' + esc(platWord(a)) +
-            (a.group_label ? ' · ' + esc(a.group_label) : '') + '</small></span>' +
+          '<span class="rp-name"><b>' + esc(a.account_name || platWord(a)) + '</b><small>' +
+            esc([a.account_name ? platWord(a) : '', a.group_label || ''].filter(Boolean).join(' · ')) + '</small></span>' +
           '<span class="rp-num">' + (a.followers_start != null || a.followers_end != null ? fmt(a.followers_start) + ' to ' + fmt(a.followers_end) : '<span class="mute">—</span>') + '</span>' +
           '<span class="rp-num">' + esc(signed(growthOf(a))) + '</span>' +
           '<span class="rp-figs">' + esc((a.metrics || []).map(function (k) { return METRIC_WORD[k] || k; }).join(', ')) + '</span>' +
@@ -2566,7 +2585,7 @@
       return '<span class="rp-pick"><input class="trow-pick" type="checkbox"' + (id ? ' data-pick="' + esc(id) + '"' : ' data-pickall') +
         (on ? ' checked' : '') + ' aria-label="' + esc(label) + '"></span>';
     };
-    var accWord = function (a) { return (a.account_name || platWord(a)) + ' · ' + platWord(a); };
+    var accWord = accLabel;
     var bar = pick ? '<div class="bulkbar rp-adbar">' +
       '<label class="tickline bulkbar-all"><input type="checkbox" id="rpPostAll"> <span id="rpPostCount"></span></label>' +
       '<span class="bulkbar-acts">' + (st.platforms.length > 1 ? '<select class="select select-sm" id="rpPostMove" aria-label="Move to account"><option value="">Move to account</option>' +
@@ -2764,7 +2783,7 @@
     box.querySelector('h3').textContent = p ? 'Edit post' : 'Add post';
     var acc = $('rpPostAcc');
     acc.innerHTML = st.platforms.map(function (a) {
-      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
+      return '<option value="' + esc(a.id) + '">' + esc(accLabel(a)) + '</option>';
     }).join('');
     acc.value = p ? p.platform_id : (st.lastAcc && st.platforms.some(function (a) { return a.id === st.lastAcc; }) ? st.lastAcc : st.platforms[0].id);
     var thumb = p ? p.thumb_data : null;
@@ -3086,7 +3105,7 @@
       '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Import'));
     var acc = $('rpPasteAcc');
     acc.innerHTML = st.platforms.map(function (a) {
-      return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + platWord(a)) + '</option>';
+      return '<option value="' + esc(a.id) + '">' + esc(accLabel(a)) + '</option>';
     }).join('');
     $('rpPasteSheetTitle').textContent = pre ? 'Import from Meta' : 'Import from spreadsheet';
     ['rpPasteText', 'rpPasteFile'].forEach(function (k) { $(k).closest('.row').hidden = !!pre; });
@@ -3245,8 +3264,12 @@
           '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
           '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details></div>' +
       '<div class="msg" data-m="ai"></div>' +
-      '<p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
+      /* The line belongs to the fields of points: an ads report's four, an
+         accounts report's platform blocks, never its Summary of sentences
+         (ux-audit RPT-7). */
+      (ads ? '<p class="rp-hint">One point a line. Start a line with a dash for a sub-point.</p>' : '') +
       fields.map(function (x) { return area('rpT_' + x[0], x[1], x[2], x[3]); }).join('') +
+      (!ads && platHtml ? '<p class="rp-hint">One point a line.</p>' : '') +
       platHtml +
       /* What older reports wrote across all platforms stays editable there;
          a report with none of it shows no fold. */
