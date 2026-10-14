@@ -2309,6 +2309,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
     `location.hash`. A lone booking has no queue and runs the page's width.
+  - A completed booking ranks with the ended ones, faded last, and the page
+    opens on a running one; its card is its name and state, the rating while
+    not given, and Booking details folded shut with no steps
+    (`.booking-fold`; the user, 2026-10-14: "subsequent new bookings could
+    be the main focus").
   - The open booking (2026-10-08): its six steps by name
     (`ADspaceIcons.journey`; Submitted and Reviewing are Review); what is
     owed (Next up: Hand in your draft, or the revision, its countdown, the
