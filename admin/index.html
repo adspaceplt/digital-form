@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015n">
+<link rel="stylesheet" href="/css/portal.css?v=20261015o">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1505,7 +1505,7 @@
           </div>
           <div class="rec-ctl">
             <span class="chip" id="setState"></span>
-              <div class="kmenu-wrap">
+              <div class="kmenu-wrap" id="setMenuWrap">
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
                   <button class="kmenu-item" id="selectPosts" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
@@ -1614,14 +1614,14 @@
         </div>
 
         <div class="drop" id="drop">
-          <b>Drag files here</b>
-          <span>Or click to browse. Placement is read from each file.</span>
+          <b><span class="drop-fine">Drag files here</span><span class="drop-coarse">Choose files</span></b>
+          <span><span class="drop-fine">Or click to browse. </span>Placement is read from each file.</span>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
         <div class="linkrow">
-          <textarea class="input" id="mediaUrl" aria-label="Asset link" placeholder="Google Drive folder, Drive file, or direct asset link" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-          <button class="btn btn-primary" id="addMediaUrl" type="button">Add asset</button>
+          <textarea class="input" id="mediaUrl" aria-label="Asset link" placeholder="Drive or file link" rows="1" data-oneline data-noenter inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+          <button class="btn" id="addMediaUrl" type="button">Add asset</button>
         </div>
         <div class="msg" id="driveMsg"></div>
 
@@ -1672,12 +1672,14 @@
           <div class="progress-track"><div class="progress-fill" id="saveFill"></div></div>
         </div>
 
-        <div class="zone-actions" id="draftActions" hidden>
-          <button class="btn btn-primary" id="saveDrafts" type="button">Add to set</button>
-          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard all</button>
-        </div>
       </section>
 
+      </div>
+      <!-- The pending files' acts stand in the foot while there are any
+           (2026-10-14): Add to set is the sheet's one primary. -->
+      <div class="sheet-foot" id="draftActions" hidden>
+        <button class="btn btn-primary" id="saveDrafts" type="button">Add to set</button>
+        <button class="btn btn-quiet" id="clearDrafts" type="button">Discard all</button>
       </div>
     </div>
   </div>
@@ -1908,7 +1910,7 @@
                pane whose own primary is Save. It is on that pane now, under
                the list it confirms. -->
           <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Publish</button>
+            <button class="btn btn-go" id="campPublish" data-need="campaigns.campaigns:work" type="button">Publish</button>
           </div>
         </section>
           <p class="camp-next" id="campNext" hidden></p>
@@ -1948,8 +1950,8 @@
              the sections inside it are the moments. -->
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn" id="bulkToggle" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
-          <button class="btn" id="showAddOption" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
+          <button class="btn" id="bulkToggle" data-need="campaigns.campaigns:work" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+          <button class="btn" id="showAddOption" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
         </div>
 
         <div class="panel" id="bulkBox" hidden>
@@ -2028,14 +2030,14 @@
              the team is working the bookings (asked for 2026-09-25). One act,
              two places to reach it: this presses the Selection pane's own. -->
         <div class="row" id="campLockRow2" style="margin-top:12px" hidden>
-          <button class="btn btn-primary" id="campLock2" type="button">Confirm creators</button>
+          <button class="btn btn-primary" id="campLock2" data-need="campaigns.campaigns:work" type="button">Confirm creators</button>
         </div>
           </div>
 
           <div class="rec-pane" data-pane="schedule" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Schedule</h2></span>
-          <button class="btn" id="schedBulk" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+          <button class="btn" id="schedBulk" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
         </div>
         <!-- Every booked creator's shoot and publish date in one table, which
              is the question a producer asks before any other. The dates are
@@ -2057,7 +2059,7 @@
              with the thing it changes, and what this changes is the list
              directly above it. -->
         <div class="row" id="campLockRow" style="margin-top:12px">
-          <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
+          <button class="btn btn-primary" id="campLock" data-need="campaigns.campaigns:work" type="button" hidden>Confirm creators</button>
         </div>
           </div>
 
@@ -2077,7 +2079,7 @@
             <span class="muted" id="invoiceSummary">Not issued</span>
           </button>
           <div class="disclosure-body" id="invoiceBody" hidden>
-            <div class="row">
+            <div class="row" id="invEdit" data-need="campaigns.finance:work">
               <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
                 <div class="slugfield">
                   <span class="slugfield-pre">AINV</span>
@@ -2089,7 +2091,7 @@
             <!-- What is attached now belongs with the field that changes it,
                  above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row acts" style="margin-top:12px">
+            <div class="row acts" id="invActs" data-need="campaigns.finance:work" style="margin-top:12px">
               <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
               <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
             </div>
@@ -4890,11 +4892,13 @@ raya-2026        https://example.com/raya"></textarea>
         <option value="email">Email</option>
         <option value="call">Call or meeting</option>
       </select>
-      <div class="row acts" style="margin-top:16px;margin-bottom:14px">
-        <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
-        <button class="btn btn-quiet" id="lockCancel" type="button">Cancel</button>
-      </div>
       <div class="msg" id="lockMsg"></div>
+    </div>
+    <!-- The sheet's foot, so Enter presses Confirm and a phone draws the
+         pair as equal halves (2026-10-14, audit CAMP-11). -->
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
+      <button class="btn btn-quiet" id="lockCancel" type="button">Cancel</button>
     </div>
   </div>
 </div>
@@ -4984,6 +4988,9 @@ raya-2026        https://example.com/raya"></textarea>
          be ticked and there was then nothing to press. -->
     <div class="sheet-body">
       <p class="qc-who" id="qcWho"></p>
+      <!-- The round's files themselves, so the check is made on what goes
+           to the client (2026-10-14, audit CAMP-10). -->
+      <div class="qc-files" id="qcFiles"></div>
       <!-- Who has already checked this file, and what the booking is waiting
            for. Drawn only once somebody has: a first check reads as the
            ordinary case and says nothing. -->
@@ -5351,7 +5358,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261012a"></script>
-<script src="/js/admin.js?v=20261015h"></script>
+<script src="/js/admin.js?v=20261015i"></script>
 <script src="/js/documents.js?v=20261014a"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261012a"></script>
@@ -5365,10 +5372,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/team.js?v=20261015"></script>
 <script src="/js/namecard.js?v=20261014g"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
-<script src="/js/scripts.js?v=20261013a"></script>
+<script src="/js/scripts.js?v=20261015"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261014a"></script>
-<script src="/js/campaigns.js?v=20261013"></script>
+<script src="/js/campaigns.js?v=20261015"></script>
 <script src="/js/ops.js?v=20261015c"></script>
 <script src="/js/perf.js?v=20261015b"></script>
 <script src="/js/health.js?v=20261015"></script>

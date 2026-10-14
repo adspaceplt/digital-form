@@ -773,6 +773,18 @@
   function may(section, want) {
     return level(section) >= (RANK[want || 'work'] || 2);
   }
+  /* A `data-need` ("review.sets:manage") read as `may()` reads it, and a ⋯
+     whose every item is withheld or hidden, which is then not drawn. */
+  function needOk(need) {
+    if (!need) return true;
+    var p = String(need).split(':');
+    return may(p[0], p[1] || 'work');
+  }
+  function menuLive(menu) {
+    return Boolean(menu) && Array.prototype.some.call(menu.querySelectorAll('.kmenu-item'), function (it) {
+      return !it.hidden && needOk(it.getAttribute('data-need'));
+    });
+  }
   /* Two routes whose name on the screen is not the key in the ladder. The
      Register is one page over two parts of the ladder, the documents and the
      HR letters, which are gated apart: either opens it, and the database's own
@@ -2036,12 +2048,79 @@
         });
         state.reviewSets = m;
         paintSets();
+        /* The change requests waiting, counted for every set in one read of
+           the posts and one of their decisions (2026-10-14). A read that
+           fails says nothing rather than claiming none. */
+        var batchClient = {};
+        got.forEach(function (x) { batchClient[x.id] = x.client_id; });
+        readChangesFor(got.map(function (x) { return x.id; })).then(function (by) {
+          if (state.reviewClients !== list || state.reviewSets !== m) return;
+          Object.keys(by).forEach(function (bid) {
+            var k = m[batchClient[bid]];
+            if (k) k.changes = (k.changes || 0) + by[bid];
+          });
+          paintSets();
+        }).catch(function () {});
       }).catch(function () {
         if (state.reviewClients !== list) return;
         state.reviewSets = 'error'; paintSets();
       });
     }
     if (ids.length) page(0); else state.reviewSets = {};
+  }
+
+  /* Rows of a table whose `field` is one of `ids`: a hundred ids a request
+     (an address has a length) and a thousand rows a page, never a request a
+     row. */
+  function readIn(table, cols, field, ids) {
+    var out = [], chunks = [];
+    for (var i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+    function chunk(c) {
+      if (c >= chunks.length) return Promise.resolve(out);
+      function page(from) {
+        return db.from(table).select(cols).in(field, chunks[c]).order('id').range(from, from + 999).then(function (r) {
+          if (r.error) throw r.error;
+          out = out.concat(r.data || []);
+          if ((r.data || []).length === 1000) return page(from + 1000);
+          return chunk(c + 1);
+        });
+      }
+      return page(0);
+    }
+    return chunk(0);
+  }
+  /* Posts whose standing decision is Changes requested, counted by set: the
+     latest decision not taken back, on the round on show, since any
+     re-approval asked (the rule loadPosts reads a post's decision by). */
+  function changesBySet(posts, reviews) {
+    var byId = {}, latest = {}, out = {};
+    posts.forEach(function (p) { byId[p.id] = p; });
+    reviews.slice().sort(function (a, z) {
+      return a.created_at < z.created_at ? 1 : a.created_at > z.created_at ? -1 : 0;
+    }).forEach(function (x) {
+      var p = byId[x.post_id];
+      if (!p || x.undone_at || latest[x.post_id]) return;
+      if ((x.round || 1) !== (p.round || 1)) return;
+      if (p.review_reset_at && !(x.created_at > p.review_reset_at)) return;
+      latest[x.post_id] = x;
+    });
+    posts.forEach(function (p) {
+      if (latest[p.id] && latest[p.id].decision === 'changes') out[p.batch_id] = (out[p.batch_id] || 0) + 1;
+    });
+    return out;
+  }
+  var POST_COLS = 'id, batch_id, round, review_reset_at';
+  function readChanges(posts) {
+    if (!posts.length) return Promise.resolve({});
+    return readIn('reviews', 'id, post_id, decision, round, created_at, undone_at', 'post_id',
+      posts.map(function (p) { return p.id; })).then(function (rows) { return changesBySet(posts, rows); });
+  }
+  function readChangesFor(batchIds) {
+    if (!batchIds.length) return Promise.resolve({});
+    return readIn('posts', POST_COLS, 'batch_id', batchIds).then(readChanges);
+  }
+  function changesChip(n) {
+    return n ? '<span class="chip-state is-danger cr-changes">' + n + (n === 1 ? ' change requested' : ' changes requested') + '</span>' : '';
   }
 
   /* A one line answer to "where does this client stand?" A read that failed
@@ -2053,7 +2132,7 @@
     if (s === 'error') return '<span class="is-warn">Sets unavailable</span>';
     var k = s[id];
     if (!k) return '<span class="muted">No sets</span>';
-    return esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published');
+    return '<span>' + esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published') + '</span>' + changesChip(k.changes);
   }
   function paintSets() {
     var box = $('clientCards');
@@ -2104,7 +2183,7 @@
         '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
-        '<span class="crm-c crm-c-code">' + (c.passcode
+        '<span class="crm-c crm-c-code' + (c.passcode ? '' : ' is-none') + '">' + (c.passcode
           ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
       row.addEventListener('click', function () { openClient(c); });
@@ -3123,7 +3202,11 @@
           byMonth[k].push(b);
         });
         months.sort(function (a, z) { return a === 'adhoc' ? 1 : z === 'adhoc' ? -1 : z.localeCompare(a); });
-        var subs = {};
+        var subs = {}, chg = {};
+        /* A shut month draws its rows when opened, from what was read. */
+        var subHtml = function (id) {
+          return esc(subs[id] || 'Loading…') + (chg[id] ? '<span class="sep">·</span>' + changesChip(chg[id]) : '');
+        };
         var GRP = window.ADspaceGroup;
         months.forEach(function (k, i) {
           box.appendChild(GRP.section({
@@ -3139,7 +3222,7 @@
                 card.innerHTML =
                   '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
                     '<span class="tone ' + (b.published ? 'is-ok' : 'is-off') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
-                  '<span class="set-row-sub" data-role="sub">' + esc(subs[b.id] || 'Loading…') + '</span>';
+                  '<span class="set-row-sub" data-role="sub">' + subHtml(b.id) + '</span>';
                 card.setAttribute('data-set', b.id);
                 card.addEventListener('click', function () { openBatch(b); });
                 t.appendChild(card);
@@ -3150,7 +3233,9 @@
         });
         /* A count that could not be read is not a count of nothing: it
            said "0 posts" over a failed request and the set looked empty. */
-        db.from('posts').select('batch_id').in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
+        /* The same read of the posts counts them and, with one read of their
+           decisions, the change requests each set holds (2026-10-14). */
+        db.from('posts').select(POST_COLS).in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
           var n = {};
           (p.data || []).forEach(function (x) { n[x.batch_id] = (n[x.batch_id] || 0) + 1; });
           sets.forEach(function (b) {
@@ -3161,6 +3246,14 @@
             sub.textContent = subs[row.getAttribute('data-set')];
             sub.className = 'set-row-sub' + (p.error ? ' is-warn' : '');
           });
+          if (p.error || !(p.data || []).length) return;
+          readChanges(p.data).then(function (by) {
+            chg = by;
+            Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
+              var sub = row.querySelector('[data-role="sub"]');
+              if (sub) sub.innerHTML = subHtml(row.getAttribute('data-set'));
+            });
+          }).catch(function () {});
         });
       });
   }
@@ -3189,6 +3282,7 @@
 
   function openBatch(b, quiet) {
     state.batch = b;
+    state.setPostN = null;
     setUrl();
     state.drafts = state.pendingBy[b.id] || readStoredDrafts();
     $('setPanel').hidden = false;
@@ -3246,6 +3340,7 @@
     $('publishSet').className = 'btn btn-icon ' + (live ? 'btn-warn' : 'btn-go');
     // The set's own link, drawn while the client can see the set.
     $('copySetLink').hidden = !live;
+    paintSetActs();
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
@@ -3255,6 +3350,20 @@
     msg('setMsg', '');
   }
 
+  /* An empty set has nothing to publish (2026-10-14): Publish leaves it,
+     and Add assets is then the set's one primary, tonal again once a post
+     is in. Unknown until the posts are read, so a full set never moves. The
+     set's ⋯ is drawn only while one of its items can be pressed. */
+  function paintSetActs() {
+    if (!state.batch) return;
+    var empty = state.setPostN === 0;
+    $('publishSet').hidden = empty && !state.batch.published;
+    $('addAssets').className = 'btn btn-sm' + (empty ? ' btn-primary' : '');
+    $('setMenuWrap').hidden = !menuLive($('setMenu'));
+    /* A row holding nothing to press keeps no gap under the head. */
+    var acts = document.querySelector('#setPanel .setbar-actions');
+    if (acts) acts.hidden = ($('publishSet').hidden || !needOk('review.sets:work')) && $('copySetLink').hidden;
+  }
   $('publishSet').addEventListener('click', function () {
     var next = !state.batch.published;
     if (!next) { setPublished(false); return; }
@@ -3286,8 +3395,11 @@
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
+      /* Confirm internally and the client's progress hang off a published
+         set, so the posts are read again with it (2026-10-14). */
+      loadPosts();
       msg('setMsg', next
-        ? 'Published. The client can now see this set on their review link.'
+        ? 'Published.'
         : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
       loadBatches();
     });
@@ -4187,6 +4299,13 @@
     });
   }
 
+  /* The link's own Enter adds the link; Add to set is the foot's, never
+     pressed from here (data-noenter keeps js/sheet.js's away). */
+  $('mediaUrl').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    $('addMediaUrl').click();
+  });
   $('addMediaUrl').addEventListener('click', function () {
     var url = $('mediaUrl').value.trim();
     if (!url) return;
@@ -4851,6 +4970,8 @@
           return;
         }
         var n = (r.data || []).length;
+        state.setPostN = n;
+        paintSetActs();
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's')
           : 'No posts.';
@@ -4910,6 +5031,13 @@
     return s[0] === 'changes'
       ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
       : s[1];
+  }
+  /* A post is named by its place in the set (2026-10-14): thirty posts with
+     no caption all read Instagram Feed, so a question named none of them. */
+  function postName(p) {
+    var list = (state.postView && state.postView.posts) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === p.id) return 'Post ' + (i + 1) + ' \u00b7 ' + MK.label(p);
+    return MK.label(p);
   }
   function postStageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
@@ -5034,7 +5162,7 @@
     $('setProgress').innerHTML =
       '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
       '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
-      (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + ' changes requested</span></p>' : '');
+      (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + (ch === 1 ? ' change requested' : ' changes requested') + '</span></p>' : '');
     block.hidden = false;
   }
 
@@ -5402,7 +5530,7 @@
   function postsWord(n) { return n + (n === 1 ? ' post' : ' posts'); }
   function badPosts(out) {
     return out.bad.length ? out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
-      return MK.label(x.p) + ' (' + x.err + ')';
+      return postName(x.p) + ' (' + x.err + ')';
     }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
   }
   function bulkPostConfirm() {
@@ -5451,7 +5579,7 @@
           .eq('id', p.id).select('id').then(function (r) {
             if (r.error) return r.error.message;
             if (!(r.data || []).length) return 'refused';
-            logAction('reapproval.requested', state.client.name + ' \u2014 ' + MK.label(p), why);
+            logAction('reapproval.requested', state.client.name + ' \u2014 ' + postName(p), why);
             return null;
           });
       }).then(function (out) {
@@ -5476,7 +5604,7 @@
         return db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
           if (r.error) return r.error.message;
           if (!(r.data || []).length) return 'Not deleted. The database refused the request.';
-          logAction('post.deleted', state.client.name + ' \u2014 ' + state.batch.title, MK.label(p));
+          logAction('post.deleted', state.client.name + ' \u2014 ' + state.batch.title, postName(p));
           return null;
         });
       }).then(function (out) {
@@ -5550,7 +5678,7 @@
            then the file, then the copy: one row, and its acts in one ⋯
            (2026-09-28; the pencil and the bin had a line of their own). */
         '<div class="saved-body">' +
-          '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
+          '<span class="saved-top"><b>' + postName(p) + '</b>' + statusMark(review) + '</span>' +
           '<span class="saved-meta">' +
             (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
             /* A video's number in the set, the one the cover's choice names. */
@@ -5566,7 +5694,8 @@
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
             : '') +
           (review && review.decision === 'changes' && review.note
-            ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+            ? '<span class="saved-note"><span class="saved-note-who">' + esc([review.reviewer, ADspaceClock.date(review.created_at)].filter(Boolean).join(' \u00b7 ')) +
+                ':</span> ' + esc(review.note) + '</span>' : '') +
           (review && review.decision === 'approved' && review.source === 'team'
             ? '<span class="saved-asked">Confirmed internally by ' + esc(review.reviewer || 'the team') + '</span>' : '') +
           /* The request this approval replaced, kept in sight. */
@@ -5585,9 +5714,9 @@
         '</div>' +
         (state.postPick
           ? '<label class="saved-actions saved-pick"><input class="trow-pick" type="checkbox"' + (state.postPick[p.id] ? ' checked' : '') +
-              ' aria-label="Select ' + esc(MK.label(p)) + '"></label>'
+              ' aria-label="Select ' + esc(postName(p)) + '"></label>'
           : '<div class="saved-actions">' +
-          '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(postName(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
             (p.platform === 'cover' && (extra.videos || []).length
@@ -5622,7 +5751,17 @@
       }
 
       var mbtn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
-      mbtn.addEventListener('click', function (e) {
+      /* A change asked for is answered by an edit, so Edit stands on the row
+         while it waits, and leaves the ⋯ (an act is offered once). */
+      if (review && review.decision === 'changes' && needOk('review.sets:work')) {
+        var inMenu = menu.querySelector('[data-a="edit"]');
+        if (inMenu) inMenu.remove();
+        row.querySelector('.saved-body').insertAdjacentHTML('beforeend', '<button class="btn btn-sm saved-edit" data-a="edit" data-need="review.sets:work" type="button" ' +
+          'aria-label="Edit ' + esc(postName(p)) + '">Edit</button>');
+      }
+      /* A ⋯ whose every item is withheld is not drawn (2026-10-14). */
+      if (!menuLive(menu)) { mbtn.remove(); menu.remove(); mbtn = null; }
+      if (mbtn) mbtn.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = menu.hidden;
         shutPostMenus();
@@ -5631,7 +5770,8 @@
         mbtn.setAttribute('aria-expanded', 'true');
         window.ADspaceMenu.place(mbtn, menu);
       });
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
+      var editBtn = row.querySelector('[data-a="edit"]');
+      if (editBtn) editBtn.addEventListener('click', function () { shutPostMenus(); paintEdit(); });
       /* A cover's video, chosen again or cleared: the client's page shows the
          two as one card with a tab each. Not a revision: the file is the same. */
       var pairBtn = row.querySelector('[data-a="pair"]');
@@ -5674,9 +5814,19 @@
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
           if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            MK.label(p) + ': caption accepted from ' + (review.reviewer || 'the client'));
-          msg('setMsg', 'Caption accepted.', 'ok');
+            postName(p) + ': caption accepted from ' + (review.reviewer || 'the client'));
           loadPosts();
+          /* The way back, over the posts, where it happened (2026-10-14). */
+          var before = { caption: p.caption == null ? null : p.caption, caption_zh: p.caption_zh == null ? null : p.caption_zh };
+          var back = {};
+          Object.keys(patch).forEach(function (k) { back[k] = before[k]; });
+          undoHere(postName(p) + ': caption accepted.', function () {
+            db.from('posts').update(back).eq('id', p.id).select('id').then(function (res2) {
+              if (res2.error || !(res2.data || []).length) { msg('setMsg', 'Not undone. The database refused the request.', 'err'); return; }
+              logAction('post.edited', state.client.name + ' \u2014 ' + (state.batch.title || ''), postName(p) + ': accepted caption undone');
+              loadPosts();
+            }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not undone.', 'err'); });
+          }, $('postStages'));
         }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
       });
 
@@ -5687,7 +5837,7 @@
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Confirm internally',
-          body: MK.label(p) + ' is approved on the client\u2019s behalf. Their review page reads Confirmed by ' +
+          body: postName(p) + ' is approved on the client\u2019s behalf. Their review page reads Confirmed by ' +
             ((state.client && state.client.name) || 'the client') + '.',
           go: 'Confirm'
         }, function () {
@@ -5729,7 +5879,7 @@
               if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
               if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
               logAction('reapproval.requested',
-                state.client.name + ' — ' + MK.label(p), why);
+                state.client.name + ' — ' + postName(p), why);
               msg('setMsg', 'Re-approval requested.', 'ok');
               loadPosts();
             });
@@ -5737,11 +5887,12 @@
         });
         reask._ask.open();
       });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () {
+      var delBtn = row.querySelector('[data-a="del"]');
+      if (delBtn) delBtn.addEventListener('click', function () {
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',
-          body: MK.label(p) + ' leaves the client view, with its approval record. '
+          body: postName(p) + ' leaves the client view, with its approval record. '
               + 'There is no restore.',
           go: 'Delete',
           tone: 'danger'
@@ -5755,7 +5906,7 @@
               return;
             }
             logAction('post.deleted',
-              state.client.name + ' — ' + state.batch.title, MK.label(p));
+              state.client.name + ' — ' + state.batch.title, postName(p));
             loadPosts(); loadBatches();
           });
         });
@@ -5879,7 +6030,7 @@
           if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           /* Which fields changed, so the row says what was edited. */
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            MK.label(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
+            postName(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
             (decided && moved.some(function (k) { return ['media', 'caption', 'caption_zh', 'title'].indexOf(k) > -1; })
               ? ' · revision ' + (round + 1) : '') +
             (declared ? ' · caption written with AI, read and confirmed' : ''));
