@@ -3358,6 +3358,25 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
   keeps its words.
 
+- **2026-10-15** — The audit's P3 findings for My Work and the Dashboard (the
+  user: "fix the P3s too"). WORK-5 and WORK-6: the capacity strip is drawn
+  only while somebody shown has a weekly capacity (it read "0h planned · no
+  capacity set" against empty bars), and its columns stand 24 apart (20 was
+  off the scale). WORK-7: the month card's Manager, Planned and Files are
+  rows on the card's grid, their values in the Meeting row's column; a tight
+  card keeps each on one line. WORK-8: Months' bar reads Add task, as the
+  list's does. WORK-9: the step card no longer says "Complete this step to
+  move the task to the next stage.", the date sheet no longer says "The
+  promise first made is kept either way.", and a resting Accounts report
+  tick says Needs posts planned. WORK-10: a lone Withdraw keeps its own
+  width. WORK-11: the step heading names the review stage of the task's own
+  workflow (Send to Internal review on General and Video). WORK-12: the
+  board fades the edge with more columns beyond it; the phone calendar's
+  missing key needed nothing, since a post chip names itself (Post ·) under
+  480. OVW-2: an empty chart card's line stands in the middle of its room.
+  OVW-3: the span, the signals and an empty card's line take 12 and 13, so
+  Summary holds eight type sizes. OVW-7: in a narrow pane an empty
+  on-time ring follows the signals; it still stands (the user, 2026-10-12).
 ### 2026-10-15 · Clients audit P3s
 At the user's word ("fix all no matter what"): a plan card in Build quote
 keeps each part of its contents whole (`6 reels` no longer breaks after its
@@ -3367,6 +3386,28 @@ it read "Contacted after the same day". Left as they are, each by a recorded
 rule: New lead's thirteen fields (the user: intake asks for what is known on
 day one; the salutation added 14 Oct) and the record's tab strip scrolling at
 1280 with a faded edge (the strip law allows it).
+- **2026-10-15** — UX audit of Short Links, Handbook, My records and WhatsApp
+  (report: https://claude.ai/artifact/7Rkrx5XrG6iZb85s6oLAge; grades Links
+  C/B, Handbook A/A, My records A/A, WhatsApp A/A). Its P1 and P2 fixed:
+  LNK-2, Bulk import and the QR sheet's Create, Revoke and Restore were drawn
+  at Links View, each refused by the database (now `links:work`; viewonly
+  counts Bulk import as a write); LNK-3, Bulk import was a panel unfolding
+  above the list with a hint paragraph, now a sheet whose label names the
+  format, which shuts when every line is taken and keeps only the skipped
+  lines in the box otherwise; LNK-4, Create, Import and a QR's Create
+  disabled nothing while writing and said nothing when the write never
+  answered (now the button's ring and "Not saved. The connection was lost");
+  LNK-5, the QR sheet's own Copied and its explanatory line (now
+  `ADspaceCopy`, the line dropped: Revoke's question says it); MINE-1, four
+  blue Rate yourself buttons when four months were open (now the newest
+  blue, the rest tonal); WA-1, the composer named numbered variables
+  Variable 1, 2 (now Greeting, Client or Campaign, Report or Reference, What
+  waits, Link, from what `prefill` puts in them); WA-2, a template's meta
+  line broke inside "3 variables" on a phone. The stand-in gained PostgREST's
+  `upsert`, which Add link and Bulk import call. Census LNK-1 (Copy marks off
+  one column at 390: x 218 and 266) confirmed and left as P3 with the other
+  P3s for the user. WA-4 ("Dear Ms," where a contact's name starts with a
+  salutation) checked live: 0 of 27 contacts.
 
 - **2026-10-15** — UX audit of Reports, Documents and Services (the
   `/ux-audit` skill, full walks at 1280 and 390, both themes, as an admin and

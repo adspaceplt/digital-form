@@ -2612,7 +2612,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     it selects no text (a stray selection cancelled the next drag).
   - The capacity strip fills each person's bar from the `estimate_minutes`
     of their open tasks due by the week's end, overdue included, against
-    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
+    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours. It is
+    drawn only while somebody shown has a capacity set.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two
@@ -4257,6 +4258,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The client's parameters are carried over, minus `q`.
   - `go.adspace.me` is never retired: printed QR codes encode it.
   - The host is `ADSPACE_CONFIG.linkHost`.
+- Bulk import is a sheet (`#importBox`, `links:work`, as the QR sheet's
+  Create, Revoke and Restore): every line taken shuts it; a skipped line stays
+  in the box.
 - Pause and Resume live in the ⋯ (`links:work`).
   - Pause asks first; Resume asks nothing.
   - Both take `.select('id')`, filed as `shortlink.updated` with the detail.
@@ -4689,7 +4693,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   button variable); each variable prefilled from the record (the greeting
   by `contact_greeting`, then the client or the report's brand, or a
   creator's campaign; the report; a named one by its name; the link button
-  a creator's code), a typed one kept; a Report select only for a Document
+  a creator's code), a typed one kept, a numbered one named for what fills it
+  (Greeting, Client, Campaign, Report, Reference, What waits, Link); a Report select only for a Document
   header, the recipient's client's published reports newest first, its file
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
