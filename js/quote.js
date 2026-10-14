@@ -253,13 +253,15 @@
     return (first ? '' : '<button class="btn qs-back" type="button" data-a="back">' + esc(t().back) + '</button>') +
       '<button class="btn btn-primary" type="button" data-a="next">' + esc(S.step === 'details' ? t().make : t().cont) + '</button>';
   }
+  // The choice's mark at the card's right edge: an empty ring, the ink disc with its tick once chosen.
+  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   function pick(type, name, value, on, title, sub) {
     return '<label class="qs-pick' + (on ? ' is-on' : '') + '"><input type="' + type + '" name="' + esc(name) + '" value="' + esc(value) + '"' +
-      (on ? ' checked' : '') + '><span><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span></label>';
+      (on ? ' checked' : '') + '><span class="qs-text"><b>' + esc(title) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + MARK + '</label>';
   }
   function chip(name, value, on, label) {
     return '<label class="qs-chip' + (on ? ' is-on' : '') + '"><input type="checkbox" name="' + esc(name) + '" value="' + esc(value) + '"' +
-      (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
+      (on ? ' checked' : '') + '><span class="qs-text">' + esc(label) + '</span>' + MARK + '</label>';
   }
   function stepper(group, slug, label, n) {
     return '<div class="qs-stepper"><span>' + esc(label) + '</span><span class="qs-count">' +
