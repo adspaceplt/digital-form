@@ -3092,3 +3092,15 @@ tells the team it is ready for a Letter of Offer.
   `quote_website_create` keeps it on the new lead's main contact (one of
   the list, else `bad-salutation`). A lead the website finds already held
   keeps its contacts as they are.
+
+### 2026-10-14 · A details form the client fills in, the answers waiting for the team
+- The user asked for a public link a client fills in with the company's
+  billing details (name, BRN, old BRN, TIN, contact, address, email), then
+  "ok" to the plan. Billing must be complete before Active, and the team
+  typed it in from chat messages.
+- The answers never write the record by themselves: a link is anybody's who
+  holds it, and Billing is read and written at its own part. They wait on
+  Billing for the team's own Save, as a website quotation's billing does.
+  A link works once, closes after `details_form_days` (14, a Business
+  setting in Tax and terms), and Reset retires it. The page reads only the
+  brand the link is for and when it closes.

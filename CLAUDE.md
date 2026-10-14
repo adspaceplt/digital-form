@@ -8,7 +8,7 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
-(a prospect's own quotation), `/` and
+(a prospect's own quotation), `details/` (a client's billing details form), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -202,6 +202,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
+| `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -363,7 +364,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -1435,6 +1436,21 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
+  - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
+    the user, 2026-10-14): Billing's Details form makes a link
+    (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
+    ⋯ Reset link, asked) to `/details/?k=` with no sign-in, open
+    `details_form_days` (14, Tax and terms). The client's page reads the
+    brand and closing day alone (`client_details_read`) and sends the
+    answers once (`client_details_submit`: registered name in capitals, BRN,
+    old BRN, TIN, SST no., billing address, finance email, the billing
+    contact's salutation, name, mobile and email; refused by field), telling
+    the team at Clients: Billing Work (kind `client.details`, opening
+    Billing). The answers wait on Billing (`client_details_state`): Use
+    details fills the Billing sheet and its own Save takes them in
+    (`client_details_used`); Add as contact opens Contacts prefilled. The
+    form never writes the record. `client_detail_forms` has RLS on, no
+    policy, no grant.
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
     `#crmBrandSheet`. The Active gate opens the sheet on the first missing
     field.

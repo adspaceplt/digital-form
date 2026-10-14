@@ -12122,3 +12122,9 @@ body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
 .qs-facts .chip-state { font-size: inherit; }
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
+
+/* The client's details form on Billing (2026-10-14): its lone act keeps its
+   own width at the right edge. */
+.dform-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
+.dform-foot > .btn { flex: 0 0 auto; }
+.dform-acts { position: relative; display: inline-flex; }

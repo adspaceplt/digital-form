@@ -8036,7 +8036,8 @@
     /* A quotation made or a Letter of Offer requested on the website opens
        the lead's Services (2026-10-14). */
     if (!x.task_id && x.client_id) {
-      history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(x.client_id) + '&tab=services');
+      /* Billing details sent on the details form open its Billing (2026-10-14). */
+      history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(x.client_id) + '&tab=' + (x.kind === 'client.details' ? 'billing' : 'services'));
       if (bridge.show) bridge.show('clients');
       return;
     }
