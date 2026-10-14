@@ -6269,6 +6269,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .cmdbar-end {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
   justify-content: flex-end; flex: 0 1 auto; margin-left: auto; min-width: 0;
+  min-height: var(--ctl-h-sm); /* the bar's own row, whether or not an action stands in it */
 }
 /* Two groups inside it, each unsplittable: what the list holds, and what to
    do about it. Left as four loose children the group could not wrap at all,
@@ -7564,15 +7565,15 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .seg.is-wrap { border-radius: calc(var(--ctl-h) / 2); }
 /* A wrapped segment is separate pills (the user, 2026-10-13, after Apple's
    own choice pills: four on a phone read as one block stuck together): the
-   track gives its ground to each option, 8px apart, and the thumb still
-   slides to the one chosen. */
+   track gives its ground to each option, 8px apart. */
 .seg.is-wrap { gap: 8px; background: transparent; border-radius: 0; }
 .seg.is-wrap > .seg-opt { background-color: var(--tonal); }
-/* Apart from its track the chosen pill is the ink fill, as a chosen
-   `.acttab` outside a strip is. One still cut at two across stacks. */
-.seg.is-wrap.has-thumb::before { background: var(--fill); box-shadow: none; }
-.seg.is-wrap > .seg-opt.is-on { color: var(--on-fill); }
-.seg.is-wrap:not(.has-thumb) > .seg-opt.is-on { background-color: var(--fill); }
+/* Apart from its track the chosen pill is the ink fill, painted on the pill
+   itself, as a chosen `.acttab` outside a strip is: separate pills have no
+   track for a thumb to slide along (2026-10-14). One still cut at two
+   across stacks. */
+.seg.is-wrap.has-thumb::before { display: none; }
+.seg.is-wrap > .seg-opt.is-on { color: var(--on-fill); background-color: var(--fill); }
 .seg.is-wrap.is-stack { grid-template-columns: minmax(0, 1fr); }
 @media (hover: hover) {
   .seg.is-wrap > .seg-opt:not(.is-on):not(:disabled):hover { background-color: var(--tonal-hover); }
