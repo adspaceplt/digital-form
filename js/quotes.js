@@ -100,7 +100,7 @@
     var gone = rows.filter(function (q) { return q.removed_at; });
     var maySet = ctx.may('clients.services', 'work');
     var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
-      (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">Build quote</button>' : '') + '</div>' +
+      (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
     var list = shown.concat(showRemoved ? gone : []);
     if (!list.length) html += '<div class="empty">No quotations.</div>';
@@ -281,7 +281,7 @@
         i.checked = (sel.langs || ['en']).indexOf(i.value) > -1;
       });
       $('qbTranslate').checked = Boolean(sel.translate);
-      $('qbBudget').value = String(sel.budget == null ? 0 : sel.budget);
+      budgets(sel.budget == null ? 0 : sel.budget);
       var set = (c.snapshot || {}).settings || {};
       /* The five terms a quotation is offered on (2026-10-14), each with its
          adjustment as the rate card version holds it (18 months takes 12's
@@ -303,7 +303,7 @@
             '<input class="qb-stepval" type="number" min="0" max="999" step="1" inputmode="numeric" id="' + id + '" data-slug="' + esc(s.slug) +
             '" value="' + esc(once[s.slug] || 0) + '" aria-label="' + nm + '">' +
             '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button>' +
-            '<span class="qb-stepname">' + nm + ' <small class="qb-rate">' + esc(rm(s.rate)) + '</small></span></div>';
+            '<span class="qb-stepname">' + nm + ' <small class="qb-rate">RM ' + esc(rm(s.rate)) + ' each</small></span></div>';
         }).join('');
       }).join('');
       $('qbOnceMore').open = Boolean((sel.once || []).length);
@@ -325,8 +325,40 @@
       var on = p.slug === B.plan;
       return '<button class="qb-plan' + (on ? ' is-on' : '') + '" type="button" role="radio" aria-checked="' + on + '" data-plan="' + esc(p.slug) + '">' +
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · RM ' + esc(rm(p.rate).replace(/\.00$/, '')) +
-        '</b><small>' + p.spec.platforms + (p.spec.platforms === 1 ? ' platform' : ' platforms') + ' · ' + p.spec.contents + ' contents</small></span></button>';
+        '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
+        '<small>' + p.spec.contents + ' contents: ' + esc(mixWords(p.spec.mix || [])) + '</small>' +
+        (p.spec.ad_budget ? '<small>Ad budget up to RM ' + Number(p.spec.ad_budget).toLocaleString('en-MY') + '</small>' : '') +
+        '</span></button>';
     }).join('');
+  }
+  /* The advertising budget follows the plan (the user, 2026-10-14): a plan
+     with ads opens on the budget it covers, "included in the plan", and
+     offers only the larger ones; with no such plan the list opens on None.
+     The steps are the card's own (Meta advertising and the boosters). */
+  function budgets(keep) {
+    var p = planOf(), cover = p && p.spec.ad_budget ? Number(p.spec.ad_budget) : 0;
+    var tiers = svcs(B.card, 'ads').concat(svcs(B.card, 'booster')).map(function (x) { return Number(x.spec.budget) || 0; })
+      .filter(function (b, i, a) { return b > 0 && a.indexOf(b) === i; }).sort(function (a, b) { return a - b; });
+    var n0 = function (v) { return Number(v).toLocaleString('en-MY'); };
+    var opts = [[0, cover ? 'Included: up to RM ' + n0(cover) : 'None']];
+    tiers.forEach(function (b) { if (b > cover) opts.push([b, 'Up to RM ' + n0(b)]); });
+    if (tiers.length) opts.push([-1, 'Above RM ' + n0(tiers[tiers.length - 1]) + ' (on request)']);
+    var val = String(keep == null ? $('qbBudget').value : keep);
+    if (!opts.some(function (o) { return String(o[0]) === val; })) val = '0';
+    $('qbBudget').innerHTML = opts.map(function (o) {
+      return '<option value="' + o[0] + '"' + (String(o[0]) === val ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+    }).join('');
+    $('qbBudget').value = val;
+  }
+  /* What a plan's contents are, as the card prints them: "2 graphics, 4 reels"; two
+     options read "or". */
+  function mixWords(mixes) {
+    return mixes.map(function (m) {
+      var w = [];
+      if (m.graphic) w.push(m.graphic + (m.graphic === 1 ? ' graphic' : ' graphics'));
+      if (m.reel) w.push(m.reel + (m.reel === 1 ? ' reel' : ' reels'));
+      return w.join(', ');
+    }).join(' or ');
   }
   function mixFor(at) {
     var p = planOf();
@@ -346,13 +378,13 @@
      need a plan. Beside each platform, what ticking it adds. */
   function sync() {
     var p = planOf();
-    $('qbMixRow').hidden = !p;
+    $('qbMixRow').hidden = !p || (p.spec.mix || []).length < 2;
     $('qbExtras').hidden = !p;
     $('qbLangCol').hidden = !p;
     /* With no plan the platforms and the budget and term take the width
        the plan's content, extras and languages leave. */
     $('qbThree').classList.toggle('is-bare', !p);
-    $('qbMixRow').parentNode.classList.toggle('is-bare', !p);
+    $('qbMixRow').parentNode.classList.toggle('is-bare', $('qbMixRow').hidden);
     $('qbPlatsLabel').textContent = p ? 'Platforms (' + p.spec.platforms + ' in the plan)' : 'Platforms';
     var meta = feeOf('meta');
     var ticked = Array.prototype.filter.call(document.querySelectorAll('#qbPlats input'), function (i) { return i.checked; }).map(function (i) { return i.value; });
@@ -365,6 +397,14 @@
       }
       i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + Number(add).toLocaleString('en-MY') : '';
     });
+  }
+  /* A plan needs a platform: Meta is ticked for it where none is, and can
+     be changed (prefilled, not fixed). */
+  function prefillPlatform() {
+    if (!B.plan) return;
+    var box = document.querySelectorAll('#qbPlats input');
+    if (Array.prototype.some.call(box, function (i) { return i.checked; })) return;
+    Array.prototype.forEach.call(box, function (i) { if (i.value === 'meta') i.checked = true; });
   }
   function selection() {
     var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6,
@@ -388,8 +428,8 @@
      answer that prices the lines. */
   function hints(d) {
     var x = (d && d.extra_rates) || {};
-    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = x['static-graphic'] != null ? rm(x['static-graphic']) : '';
-    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = x['reels-60'] != null ? rm(x['reels-60']) : '';
+    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = x['static-graphic'] != null ? 'RM ' + rm(x['static-graphic']) + ' each' : '';
+    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = x['reels-60'] != null ? 'RM ' + rm(x['reels-60']) + ' each' : '';
     var p = planOf(), tr = svcs(B.card, 'language')[0];
     var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
     var langs = document.querySelectorAll('#qbLangs input:checked').length;
@@ -457,14 +497,15 @@
         var same = svcs(B.card, 'plan').filter(function (x) { return Boolean(x.spec.ads) === ($('qbAds').value === 'ads') && x.spec.platforms === p.spec.platforms; })[0];
         B.plan = same ? same.slug : null;
       }
-      paintPlans(); mixFor(0); on();
+      paintPlans(); mixFor(0); budgets(); on();
     });
     $('qbPlans').addEventListener('click', function (e) {
       var b = e.target.closest('[data-plan]');
       if (!b || !B) return;
       var slug = b.getAttribute('data-plan');
       B.plan = B.plan === slug ? null : slug;
-      paintPlans(); mixFor(0); on();
+      prefillPlatform();
+      paintPlans(); mixFor(0); budgets(); on();
     });
     $('qbBox').addEventListener('click', function (e) {
       var b = e.target.closest('[data-step]');

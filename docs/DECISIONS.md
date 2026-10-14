@@ -3214,3 +3214,16 @@ the Billing pane and the Letter of Offer printed the bare name. `issue_letter`
 now keeps `contact_salutation` in the snapshot, the letter reads it on Attn
 and after Dear, and the Billing pane, its contact select and a client
 letter's Attn prefill show it. Letters issued before keep what they printed.
+
+### 2026-10-14 · Build quote: the budget follows the plan; the Services pane in two sections
+The user: choosing D, E or F left the advertising budget at None, though D
+covers RM 2,000, E 4,000 and F 8,000; the sheet and the pane read oddly. The
+budget list is now built from the plan and the card: a plan with ads opens on
+"Included: up to RM n" (value 0, the website's own) and offers only larger
+steps; with no such plan it opens on None. Plan cards name their contents and
+ad budget, so the separate Content row is drawn only where a plan has two
+mixes; choosing a plan ticks Meta where nothing is ticked; steppers read item
+left, count right, the rate under the item. The pane's Services heading with
+Add service sat above Quotations while the lines sat below it: the pane is now
+Quotations (Build quote) over Service lines (Add service). The website already
+opened the budget on the plan's cover.

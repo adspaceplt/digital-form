@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261014r">
+<link rel="stylesheet" href="/css/portal.css?v=20261014s">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -996,10 +996,6 @@
           <div class="rec-pane" data-pane="services" hidden>
         <!-- What they asked for, were quoted, and confirmed. Lines come from
              the rate card and keep their own price. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Services</h2></span>
-          <button class="btn btn-primary" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
-        </div>
               <div class="sheet" id="crmServiceBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmServiceTitle">
           <div class="sheet-head">
@@ -1085,6 +1081,13 @@
         </div>
       </div>
         <div id="crmQuotes" class="qt-box" hidden></div>
+        <!-- The pane is two sections alike (the user, 2026-10-14): Quotations
+             with Build quote above, then the client's service lines with Add
+             service, each heading over its own list. -->
+        <div class="viewhead qt-head svc-linehead">
+          <span class="headmark"><h3>Service lines</h3></span>
+          <button class="btn btn-sm" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+        </div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
         <!-- What the client asked for from the portal. The team moves each
@@ -1188,9 +1191,9 @@
                 </div>
               </section>
               <section class="fsec qb-three" id="qbThree">
-                <div id="qbExtras"><span class="field-label">Extra contents</span>
+                <div id="qbExtras"><span class="field-label">Additional contents per month</span>
                   <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic (Static)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more graphic (static)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Graphic (Static) <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
-                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel 60s"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel 60s <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
+                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel (up to 60s)"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more reel, up to 60 seconds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel (up to 60s) <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
                 </div>
                 <div id="qbLangCol"><span class="field-label" id="qbLangsLabel">Languages</span>
                   <div class="tickstack" id="qbLangs" role="group" aria-labelledby="qbLangsLabel">
@@ -1203,11 +1206,7 @@
                 </div>
                 <div class="qb-money"><div>
                   <label class="field-label" for="qbBudget">Advertising budget per month</label>
-                  <select class="select" id="qbBudget" data-nofind>
-                    <option value="0">None</option><option value="2000">Up to RM 2,000</option><option value="4000">Up to RM 4,000</option>
-                    <option value="8000">Up to RM 8,000</option><option value="14000">Up to RM 14,000</option>
-                    <option value="20000">Up to RM 20,000</option><option value="-1">Above RM 20,000 (on request)</option>
-                  </select></div>
+                  <select class="select" id="qbBudget" data-nofind><option value="0">None</option></select></div>
                   <div><label class="field-label" for="qbTerm">Term</label>
                   <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select></div>
                 </div>
@@ -5338,7 +5337,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/reports.js?v=20261013e"></script>
 <script src="/js/register.js?v=20261014a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/quotes.js?v=20261014d"></script>
+<script src="/js/quotes.js?v=20261014e"></script>
 <script src="/js/quotepdf.js?v=20261014"></script>
 <script src="/js/crm.js?v=20261014r"></script>
 <script src="/js/sales.js?v=20261012l"></script>
