@@ -90,7 +90,7 @@
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
-      send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
+      send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
       tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
       lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
@@ -128,7 +128,7 @@
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
-      send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
+      send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
       tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
       lines: function (n) { return n + ' 项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
@@ -178,7 +178,8 @@
   function termWord(l) {
     var n = Math.max(1, Number(l.tenure || 1));
     if (n === 1 && !l.start_on) return '';
-    return (n > 1 ? t().months(n) : '') + (l.start_on ? ' ' + t().from + ' ' + niceDate(startDay(l.start_on)) : '');
+    var nb = function (x) { return '<span class="nb">' + esc(x) + '</span>'; };
+    return (n > 1 ? nb(t().months(n)) : '') + (l.start_on ? (n > 1 ? ' ' : '') + esc(t().from) + ' ' + nb(niceDate(startDay(l.start_on))) : '');
   }
   function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
   function glyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
@@ -196,6 +197,48 @@
      where the console draws one line inside the surface the list would have
      filled. */
   function empty(box, word) { UI.emptyLine(box, word, '', null); }
+  /* A line of parts wraps between its parts, never inside one (DESIGN §5):
+     each short part is held whole; a long one a person typed (a note, a
+     unit) still breaks where it must. Answers HTML. */
+  function parts(list) {
+    var out = [];
+    list.filter(Boolean).forEach(function (x) {
+      String(x).split(' · ').forEach(function (p) {
+        if (!p) return;
+        out.push(p.length <= 32 ? '<span class="nb">' + esc(p) + '</span>' : esc(p));
+      });
+    });
+    return out.join(' · ');
+  }
+  /* A press whose file is being drawn is answered on its button (Doherty;
+     the console's js/acts.js): disabled at once, so a second press draws no
+     second file, and after 150ms its words give way to the turning ring in
+     its own ink, at its own width. Answers the release. */
+  function pending(b) {
+    if (!b) return function () {};
+    b.disabled = true;
+    var tm = setTimeout(function () {
+      if (!b.disabled || !b.isConnected || b.classList.contains('is-busy')) return;
+      b.style.width = b.getBoundingClientRect().width + 'px';
+      b.classList.add('is-busy');
+      b.setAttribute('aria-busy', 'true');
+      b.insertAdjacentHTML('beforeend', '<span class="btn-spin" aria-hidden="true"></span>');
+    }, 150);
+    return function () {
+      clearTimeout(tm);
+      b.disabled = false;
+      b.classList.remove('is-busy');
+      b.removeAttribute('aria-busy');
+      b.style.width = '';
+      var sp = b.querySelector('.btn-spin');
+      if (sp) sp.remove();
+    };
+  }
+  /* A row whose one act is Download carries it in the row, never in a ⋯ of
+     one item (DESIGN §5: the commonest act on a row belongs on the row). */
+  function dlCell(w) {
+    return '<span class="doc-dl"><button class="btn btn-sm" type="button" data-a="download">' + FILE + '<span>' + esc(w.download) + '</span></button></span>';
+  }
 
   /* A menu in a table row is placed on the viewport under its button, as in
      the console, so the table never clips it. */
@@ -315,6 +358,7 @@
     $('signForm').hidden = kind !== 'sign';
     $('codeForm').hidden = kind !== 'sent';
     $('codeBack').hidden = kind !== 'sent';
+    $('codeGo').disabled = false;
     $('portalOut').hidden = kind === 'sign' || kind === 'sent';
     document.body.classList.add('is-plain');
     var w = t();
@@ -393,11 +437,16 @@
     var b = $('codeGo');
     b.disabled = true;
     db.auth.verifyOtp({ email: sentTo, token: code, type: 'email' }).then(function (r) {
-      b.disabled = false;
       var m = String((r && r.error && r.error.message) || '');
+      if (r && r.error) b.disabled = false;
       if (r && r.error && /rate limit|too many/i.test(m)) { msg('stateMsg', t().codeWait, 'err'); return; }
       if (r && r.error) { msg('stateMsg', t().codeWrong, 'err'); $('signCode').focus(); return; }
+      /* Signed in: the cover steps away while the portal is read, so the
+         page's own ring stands in its place and nothing invites a second
+         press of a code already spent. Whatever answers next (the portal, or
+         a cover) draws over it; a cover lets the button go again. */
       msg('stateMsg', '');
+      if (!feed) { $('stateBox').hidden = true; shownState = null; }
     }).catch(function () { b.disabled = false; msg('stateMsg', t().codeFail, 'err'); });
   }
   $('codeGo').addEventListener('click', signWithCode);
@@ -471,22 +520,22 @@
       tabShown('reports', list.length > 0);
       paintLatestReport(w, list[0]);
       if (!list.length) { box.innerHTML = ''; return; }
-      var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
+      var fc = SMR ? ' is-file' : '';
+      var tb = table('<div class="crm-head svc-row doc-row' + fc + '"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       list.forEach(function (v) {
         var row = document.createElement('div');
-        row.className = 'svc-row doc-row';
-        var items = SMR ? [['download', w.download]] : [];
+        row.className = 'svc-row doc-row' + fc;
         row.innerHTML =
           /* The report's own name, as its cover and file print it: the first
              kind was stored as Social Media Report (2026-09-27). */
           '<span class="svc-name"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
-            esc((SMR && SMR.titleOf ? SMR.titleOf(v) : v.title) + ' · ' + niceDate(v.published_at)) + '</small></span>' +
+            parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, niceDate(v.published_at)]) + '</small></span>' +
           '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
           '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
-          menuCell(items);
-        wireMenu(row);
-        if (items.length) row.querySelector('[data-a="download"]').addEventListener('click', function () { downloadReport(v); });
+          (SMR ? dlCell(w) : '<span class="team-act"></span>');
+        var dlb = row.querySelector('[data-a="download"]');
+        if (dlb) dlb.addEventListener('click', function () { downloadReport(v, null, dlb); });
         tb.appendChild(row);
       });
       box.innerHTML = ''; box.appendChild(tb);
@@ -500,10 +549,10 @@
     card.hidden = !v;
     if (!v) { box.innerHTML = ''; return; }
     box.innerHTML = '<p class="cp-line"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b></p>' +
-      '<p class="cp-sub">' + esc((SMR && SMR.titleOf ? SMR.titleOf(v) : v.title) + ' · ' + w.published + ' ' + niceDate(v.published_at)) + '</p>' +
+      '<p class="cp-sub">' + parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, w.published + ' ' + niceDate(v.published_at)]) + '</p>' +
       (SMR ? '<div class="cp-card-acts"><button class="btn btn-sm" type="button" data-a="dl">' + FILE + esc(w.download) + '</button></div>' : '');
     var dl = box.querySelector('[data-a="dl"]');
-    if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg'); });
+    if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg', dl); });
   }
 
   // ---- Content meetings -----------------------------------------------------
@@ -617,8 +666,10 @@
 
   /* The failure is said under whichever control asked: the Reports tab's
      table, or the Overview's latest report. */
-  function downloadReport(v, where) {
+  function downloadReport(v, where, btn) {
     where = where || 'repMsg';
+    if (btn && btn.disabled) return;
+    var done = pending(btn);
     var tab = window.ADspaceDocs.tabFor();
     msg(where, '', '');
     db.rpc('portal_report', { p_version: v.id }).then(function (r) {
@@ -640,7 +691,8 @@
       return get.then(function (blob) {
         return window.ADspaceDocs.save(blob, SMR.fileName(snap), tab, lang === 'zh');
       });
-    }).catch(function () {
+    }).then(done).catch(function () {
+      done();
       window.ADspaceDocs.shut(tab);
       msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
     });
@@ -664,7 +716,7 @@
       return '<div class="cx-term"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
         '<div class="cx-term-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + at + '"><i style="width:' +
           Math.round(at / n * 100) + '%"></i></div>' +
-        '<p class="cp-sub">' + esc(w.monthOf(at, n) + ' · ' + w.endsOn(endWord)) + '</p></div>';
+        '<p class="cp-sub">' + parts([w.monthOf(at, n), w.endsOn(endWord)]) + '</p></div>';
     }).join('');
     return rows ? '<div class="cx-terms">' + rows + '</div>' : '';
   }
@@ -775,9 +827,10 @@
             (k.is_primary ? '<span class="tone">' + esc(w.mainContact) + '</span>' : '') + '</span>' +
             (k.role ? '<small>' + esc(k.role) + '</small>' : '') + '</span>' +
           '<span class="crm-reach">' +
-            (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + esc(k.phone) + '</a>' : '') +
-            (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
-            (k.email ? '<a class="plink" href="mailto:' + esc(k.email) + '">' + esc(k.email) + '</a>' : '') +
+            /* Each chip with its glyph, as the account manager's are. */
+            (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + glyph('phone') + esc(k.phone) + '</a>' : '') +
+            (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
+            (k.email ? '<a class="plink" href="mailto:' + esc(k.email) + '">' + glyph('mail') + esc(k.email) + '</a>' : '') +
           '</span><span class="team-act"></span>';
         ct.appendChild(row);
       });
@@ -794,10 +847,11 @@
       lines.forEach(function (l) {
         var row = document.createElement('div');
         row.className = 'svc-row csv-row';
-        var sub = [l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct), termWord(l), l.note].filter(Boolean).join(' · ');
+        var sub = [parts([l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct)]), termWord(l), l.note ? esc(l.note) : '']
+          .filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel, true]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
+          '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
           '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l)) + (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' ' + w.mo : '')) + '</span>' +
           '<span class="svc-rate svc-amt"><b>' + esc(money2(amountOf(l))) + '</b></span>' +
           '<span class="svc-state">' + chip(w.svState[l.state] || l.state, l.state === 'confirmed' ? 'is-ok' : 'is-warn') + '</span>' +
@@ -827,8 +881,8 @@
       var money = function (list) { return money2(list.reduce(function (a, l) { return a + amountOf(l); }, 0)); };
       var open = (feed.requests || []).filter(function (r) { return !r.withdrawn_at && (r.state === 'requested' || r.state === 'reviewing'); }).length;
       obox.innerHTML = '<dl class="cp-lines">' +
-        '<div class="is-total"><dt>' + esc(w.confirmedTotal + ' · ' + w.lines(cf.length)) + '</dt><dd>' + esc(money(cf)) + '</dd></div>' +
-        (q.length ? '<div><dt>' + esc(w.quotedTotal + ' · ' + w.lines(q.length)) + '</dt><dd>' + esc(money(q)) + '</dd></div>' : '') +
+        '<div class="is-total"><dt>' + parts([w.confirmedTotal, w.lines(cf.length)]) + '</dt><dd>' + esc(money(cf)) + '</dd></div>' +
+        (q.length ? '<div><dt>' + parts([w.quotedTotal, w.lines(q.length)]) + '</dt><dd>' + esc(money(q)) + '</dd></div>' : '') +
         (open ? '<div><dt>' + esc(w.openRequests) + '</dt><dd>' + open + '</dd></div>' : '') + '</dl>' + termsHtml(cf, w);
     }
 
@@ -844,11 +898,12 @@
         var gone = Boolean(r.withdrawn_at);
         row.className = 'svc-row doc-row' + (gone ? ' is-off' : '');
         var tone = gone ? '' : (r.state === 'approved' || r.state === 'applied') ? 'is-ok' : (r.state === 'declined') ? '' : 'is-warn';
-        var sub = [niceDate(r.created_at), r.note].filter(Boolean).join(' · ');
+        var sub = [r.created_at ? '<span class="nb">' + esc(niceDate(r.created_at)) + '</span>' : '', r.note ? esc(r.note) : '']
+          .filter(Boolean).join(' · ');
         var items = (!gone && r.state === 'requested') ? [['withdraw', w.withdraw, true]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + esc((w[r.kind] || r.kind) + (r.service_label ? ' · ' + r.service_label : '')) + '</b>' +
-            (sub ? '<small>' + esc(sub) + '</small>' : '') +
+            (sub ? '<small>' + sub + '</small>' : '') +
             (r.reply ? '<small>' + esc(w.reply + ': ' + r.reply) + '</small>' : '') + '</span>' +
           '<span class="svc-rate svc-amt">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">' + esc(MON.sign(mkt())) + '</span>') + '</span>' +
           '<span class="svc-state">' + chip(gone ? w.withdrawn : (w.rqState[r.state] || r.state), tone) + '</span>' +
@@ -865,20 +920,22 @@
     var docs = feed.documents || [];
     if (!docs.length) empty(dbox, w.noLetters);
     else {
-      var dtb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.document) + '</span><span class="svc-rate">' + esc(w.total) +
+      var dc = DOCS ? ' is-file' : '';
+      var dtb = table('<div class="crm-head svc-row doc-row' + dc + '"><span>' + esc(w.document) + '</span><span class="svc-rate">' + esc(w.total) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       docs.forEach(function (d) {
         var row = document.createElement('div');
-        row.className = 'svc-row doc-row';
-        var items = DOCS ? [['download', w.download]] : [];
+        row.className = 'svc-row doc-row' + dc;
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(w.offer + ' · ' + niceDate(d.issued_at)) + '</small></span>' +
+          '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + parts([w.offer, niceDate(d.issued_at)]) + '</small></span>' +
           '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
           '<span class="svc-state">' + chip(w.issued, 'is-ok') + '</span>' +
-          menuCell(items);
-        wireMenu(row);
-        if (items.length) row.querySelector('[data-a="download"]').addEventListener('click', function () {
-          DOCS.download(d, function (warn) { msg('docMsg', warn || '', warn ? 'err' : ''); });
+          (DOCS ? dlCell(w) : '<span class="team-act"></span>');
+        var dlb = row.querySelector('[data-a="download"]');
+        if (dlb) dlb.addEventListener('click', function () {
+          if (dlb.disabled) return;
+          var done = pending(dlb);
+          DOCS.download(d, function (warn) { done(); msg('docMsg', warn || '', warn ? 'err' : ''); });
         });
         dtb.appendChild(row);
       });
@@ -905,7 +962,7 @@
       eng.forEach(function (e) {
         var row = document.createElement('div');
         row.className = 'svc-row cp-eng-row';
-        row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + esc(e.sub) + '</small>' : '') + '</span>' +
+        row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + parts([e.sub]) + '</small>' : '') + '</span>' +
           '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(w.open) + ' ' + EXT + '</a>';
         etb.appendChild(row);
       });
@@ -974,6 +1031,7 @@
     $('reqNote').value = reqDraft;
     $('reqGo').textContent = w.send;
     $('reqCancel').textContent = w.close;
+    $('reqClose').setAttribute('aria-label', w.closeMark);
     msg('reqMsg', '');
     /* The shared sheet: focus held inside, Escape, focus back to the button
        that opened it, and a press outside never closes it over typed text. */
@@ -1014,6 +1072,7 @@
   }
   $('ovRequest').addEventListener('click', function () { openRequest('details', null, true); });
   $('reqCancel').addEventListener('click', shutRequest);
+  $('reqClose').addEventListener('click', shutRequest);
   $('reqGo').addEventListener('click', function () {
     if (!req) return;
     var note = ($('reqNote').value || '').trim();

@@ -36,7 +36,9 @@
   }
 
   /* An address stays on one line: set a half point smaller at a time until
-     it fits, down to 12px, else it breaks before its @. */
+     it fits, down to 12px, else it breaks before its @ at 12px, and a part
+     before the @ still too long breaks inside itself (css .is-wrap), never
+     cut off (2026-10-14, ux-audit CARD-1). */
   function fitMail(host) {
     var v = host.querySelector('.nc-row-mail .nc-value');
     if (!v) return;
@@ -44,7 +46,7 @@
     v.classList.remove('is-wrap');
     var size = parseFloat(getComputedStyle(v).fontSize) || 14.5;
     while (v.scrollWidth > v.clientWidth + 0.5 && size > 12) { size -= 0.5; v.style.fontSize = size + 'px'; }
-    if (v.scrollWidth > v.clientWidth + 0.5) { v.style.fontSize = ''; v.classList.add('is-wrap'); }
+    if (v.scrollWidth > v.clientWidth + 0.5) v.classList.add('is-wrap');
   }
 
   function address() { return String(ORG.address || '').split('\n').join(', '); }
@@ -84,6 +86,9 @@
   }
 
   var TURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg>';
+  /* Save contact hands over a file (a vCard): the act table's file mark
+     (js/acts.js `file`), as the pills under the card carry theirs. */
+  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   var QR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>';
 
   function row(label, value, href, cls) {
@@ -119,7 +124,7 @@
           (card.designation ? '<span class="nc-post">' + esc(card.designation) + '</span>' : '') + '</div>' +
         '<div class="nc-rows" data-nc="rows">' + rows(card) + '</div>' +
         '<div class="nc-acts' + (wa ? '' : ' is-one') + '">' +
-          '<button class="nc-pill nc-pill-ink" type="button" data-nc="save">Save contact</button>' +
+          '<button class="nc-pill nc-pill-ink" type="button" data-nc="save">' + FILE + 'Save contact</button>' +
           (wa ? '<a class="nc-pill" data-nc="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
         '</div>' +
       '</section>' +

@@ -316,13 +316,17 @@
           '</div>' +
         '</div>' +
         html +
-        '<button class="copy-more" type="button" hidden>Show full caption</button>';
+        '<button class="linkbtn copy-more" type="button" aria-expanded="false" hidden>' +
+          '<span class="copy-more-word">Show full caption</span>' +
+          '<svg class="ovgo-chev copy-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
+        '</button>';
 
       // Long captions are clamped so cards in a row finish at the same height.
       var more = copy.querySelector('.copy-more');
       more.addEventListener('click', function () {
         var open = copy.classList.toggle('is-open');
-        more.textContent = open ? 'Show less' : 'Show full caption';
+        more.querySelector('.copy-more-word').textContent = open ? 'Show less' : 'Show full caption';
+        more.setAttribute('aria-expanded', open ? 'true' : 'false');
         measureCopy(copy);
         syncOpenRows();
       });
@@ -700,7 +704,7 @@
             ? 'Please describe the required changes.'
             : res && res.error === 'changed'
               ? 'This post was updated after the page opened. Please refresh to review the latest version.'
-              : 'Unable to save. Please refresh and try again.';
+              : W.notSent;
         return;
       }
       post.review = {

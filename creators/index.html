@@ -28,6 +28,7 @@
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/decide.js?v=20261009a"></script>
+<script src="/js/sheet.js?v=20261011a"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261010zn"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
@@ -167,7 +168,7 @@
 </main>
 
 <div class="sheet" id="confirmSheet" hidden>
-  <div class="sheet-card" role="dialog" aria-modal="true">
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="confirmHeading">
     <div class="sheet-head">
       <h3 id="confirmHeading"></h3>
       <button class="iconbtn" id="confirmClose" type="button" aria-label="Close">
@@ -179,11 +180,11 @@
     <div class="totals" id="confirmTotals"></div>
     <label class="field-label" for="confirmName" id="confirmNameLabel"></label>
     <input class="input" id="confirmName" placeholder="">
-    <div class="row" style="margin-top:14px;margin-bottom:14px">
-      <button class="btn btn-primary" id="confirmGo" type="button"></button>
-      <button class="btn" id="confirmCancel" type="button" style="flex:0 0 auto"></button>
-    </div>
     <div class="msg" id="confirmMsg"></div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="confirmGo" type="button"></button>
+      <button class="btn btn-quiet" id="confirmCancel" type="button"></button>
+    </div>
   </div>
 </div>
 

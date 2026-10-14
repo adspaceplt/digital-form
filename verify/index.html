@@ -36,7 +36,9 @@
           <input class="input" id="vSerial" placeholder="AQL/AC001/260901" aria-label="Reference" autocomplete="off" autocapitalize="characters" spellcheck="false">
           <button class="btn btn-primary" id="vGo" type="submit">Verify</button>
         </form>
-        <div class="verify-out" id="vOut" hidden></div>
+        <!-- The answer is said as it arrives: the live region stands from the
+             first paint, so a screen reader hears what is put into it. -->
+        <div role="status" aria-live="polite"><div class="verify-out" id="vOut" hidden></div></div>
       </div>
     </div>
   </section>

@@ -57,14 +57,14 @@
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
       contents: '{n} contents per month', mixOr: ' or ', mixAnd: ' and ',
       kindN: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel of up to 60 seconds', '{n} reels of up to 60 seconds'] },
-      budgetUpTo: 'Advertising budget up to RM {b}',
-      ratesLater: 'The rates will be shown on the final page.',
+      budgetUpTo: 'Manages an advertising budget of up to RM\u00a0{b} per month',
+      ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
       extra: 'Additional contents per month', fewer: 'One fewer', more: 'One more',
       langs: 'Languages', langsNote: 'Your contents are shared across the languages selected, at no extra charge.',
       translate: 'Translate every content into each language selected', translateNote: 'Charged per content, per language',
-      budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (included in the plan)', budgetUp: 'Up to RM {b}',
+      budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
@@ -79,7 +79,8 @@
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate (RM)', sub: 'Subtotal (RM)', onReq: 'Quoted on request',
       proceed: 'Proceed', download: 'Download', chat: 'Chat on WhatsApp',
-      billSep: 'Advertising budget is not included and is billed separately.',
+      billSep: 'The advertising budget is billed separately.',
+      billManaged: 'The fees include the management of an advertising budget of up to RM\u00a0{b} per month. The advertising budget is billed separately.',
       validLong: 'This quotation is valid until {d}.', basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', addr: 'Billing address',
       ask: 'Request Letter of Offer', asking: 'Sending…',
@@ -87,6 +88,8 @@
       billBad: { reg: 'Enter the registered company name.', brn: 'Enter the 12-digit registration number.', addr: 'Enter the billing address.' },
       doneT: 'Request received', doneTo: 'Once ADspace approves your quotation, the Letter of Offer will be sent to {wa} on WhatsApp.',
       doneAny: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
+      monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
+      sst: 'SST {p}%', onceSub: 'One-off subtotal', onceTag: 'One-off',
       ref: 'Reference', monthly: 'Monthly incl. SST', oneOff: 'One-off incl. SST', status: 'Status', requested: 'Letter of Offer requested',
       newQuote: 'New quotation',
       err: {
@@ -125,14 +128,14 @@
       plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
       contents: '每月 {n} 条内容', mixOr: '，或 ', mixAnd: '、',
       kindN: { graphic: ['{n} 条图文', '{n} 条图文'], reel: ['{n} 条短视频（60 秒内）', '{n} 条短视频（60 秒内）'] },
-      budgetUpTo: '广告预算最高 RM {b}',
-      ratesLater: '价格将在最后一页显示。',
+      budgetUpTo: '代为管理每月最高 RM\u00a0{b} 的广告预算',
+      ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
       extra: '每月额外内容', fewer: '减少一条', more: '增加一条',
       langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
       translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
-      budget: '每月广告预算', budgetIn: '最高 RM {b}（方案已包含）', budgetUp: '最高 RM {b}',
+      budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', term: '合约期', months: '{n} 个月',
       once: '内容制作', onceNote: '一次性，按件收费',
       koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
@@ -147,15 +150,18 @@
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价 (RM)', sub: '小计 (RM)', onReq: '另行报价',
       proceed: '继续办理', download: '下载', chat: 'WhatsApp 咨询',
-      billSep: '广告预算不包括在内，另行收费。',
+      billSep: '广告预算另行收费。',
+      billManaged: '费用包括代为管理每月最高 RM\u00a0{b} 的广告预算。广告预算另行收费。',
       validLong: '本报价有效期至 {d}。', basis: '价格依据 ADspace 价目表 v.{v}。',
       billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', addr: '账单地址',
-      ask: '申请聘用书', asking: '提交中…',
-      askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送聘用书。',
+      ask: '申请服务确认函', asking: '提交中…',
+      askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
       billBad: { reg: '请填写公司注册名称。', brn: '请填写 12 位注册编号。', addr: '请填写账单地址。' },
-      doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送聘用书。',
-      doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送聘用书。',
-      ref: '编号', monthly: '每月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请聘用书',
+      doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送服务确认函。',
+      doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
+      monthSub: '每月小计', commit: '{n} 个月合约优惠（{p}%）', termAdj: '{n} 个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
+      sst: 'SST {p}%', onceSub: '一次性小计', onceTag: '一次性',
+      ref: '编号', monthly: '每月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请服务确认函',
       newQuote: '重新报价',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
@@ -243,6 +249,11 @@
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
   var CAT = null, Q = null, proceeding = false;
+  /* Held in this page alone, never kept in the tab: the number the request
+     is sent to and the contact for Change selection, once the quotation is
+     made (the user, 2026-10-14: "dont cache my record"); the billing details
+     typed beside the quotation, through a language switch. */
+  var sentTo = '', madeBy = null, billTyped = { reg: '', brn: '', addr: '' };
   var root = function () { return $('qsRoot'); };
 
   function planOf() { return CAT && S.plan ? CAT.plans.filter(function (p) { return p.slug === S.plan; })[0] || null : null; }
@@ -379,7 +390,7 @@
         '<div class="qs-list">' + plans.map(function (p) {
           return pick('radio', 'plan', p.slug, S.plan === p.slug,
             f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
-        }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>') +
+        }).join('') + '</div><p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
       '<div id="qsExtraBox">' + extrasHtml() + '</div></div>', navFoot());
   }
   /* Additional contents sit under the plan they add to (the user,
@@ -412,7 +423,8 @@
       if (!opts.some(function (o) { return String(o[0]) === String(cur); })) cur = opts[0][0];
       S.budget = Number(cur);
       h += sec(t().budget, '<select class="select" id="qsBudget">' +
-        opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>', 'qsBudget');
+        opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
+        '<p class="qs-note">' + esc(t().budgetSep) + '</p>', 'qsBudget');
     }
     // Five terms: a select, as the budget is (a segment holds four at most).
     if (monthly()) h += sec(t().term, '<select class="select" id="qsTerm">' + TERMS.map(function (m) {
@@ -461,11 +473,12 @@
   function totalsRows(tt) {
     var r = [];
     if (tt.month) {
-      r.push(['Monthly subtotal', n2(tt.month.subtotal)]);
-      if (Number(tt.term_pct)) r.push([tt.term + '-month ' + (tt.term_pct < 0 ? 'commitment (' + Math.abs(tt.term_pct) + '%)' : 'term (' + tt.term_pct + '%)'), n2(tt.month.term)]);
-      r.push(['Monthly excl. SST', n2(tt.month.excl)], ['SST ' + tt.sst_pct + '%', n2(tt.month.sst)], ['Monthly incl. SST', 'RM ' + n2(tt.month.incl), 1]);
+      var w = t(), sst = f(w.sst, { p: tt.sst_pct });
+      r.push([w.monthSub, n2(tt.month.subtotal)]);
+      if (Number(tt.term_pct)) r.push([f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }), n2(tt.month.term)]);
+      r.push([w.monthExcl, n2(tt.month.excl)], [sst, n2(tt.month.sst)], [w.monthly, 'RM ' + n2(tt.month.incl), 1]);
     }
-    if (tt.once) r.push(['One-off subtotal', n2(tt.once.subtotal)], ['SST ' + tt.sst_pct + '%', n2(tt.once.sst)], ['One-off incl. SST', 'RM ' + n2(tt.once.incl), 1]);
+    if (tt.once) r.push([t().onceSub, n2(tt.once.subtotal)], [f(t().sst, { p: tt.sst_pct }), n2(tt.once.sst)], [t().oneOff, 'RM ' + n2(tt.once.incl), 1]);
     return r;
   }
   function paintQuote() {
@@ -477,20 +490,21 @@
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];
       return '<div class="qs-row"><span class="qs-what">' + esc(l.label) + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
-        (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>One-off</small>' : '') + '</span>' +
+        (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {
       return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? 'Advertising budget above RM 20,000' : x) + '</span>' +
         '<span class="qs-num qs-q"></span><span class="qs-num qs-r"></span><span class="qs-num qs-mute">' + esc(t().onReq) + '</span></div>';
     }).join('');
-    var notes = [];
-    if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
+    var notes = [], managed = managedBudget(q);
+    if (managed) notes.push(f(t().billManaged, { b: n0(managed) }));
+    else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
     notes.push(f(t().validLong, { d: day(q.valid_until, true) }), f(t().basis, { v: q.version }));
     var aside = gone ? '' :
       '<aside class="qs-bill" id="qsBill"><h2>' + esc(t().billT) + '</h2><form class="qs-form" id="qsBillForm" novalidate>' +
-        field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true">') +
-        field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true">', t().brnHint) +
-        field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true"></textarea>') +
+        field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true" value="' + esc(billTyped.reg) + '">') +
+        field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHint) +
+        field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true">' + esc(billTyped.addr) + '</textarea>') +
         '<button class="btn btn-primary" id="qsAsk" type="submit">' + esc(t().ask) + '</button>' +
         '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
     return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '"><section class="qs-main">' +
@@ -506,12 +520,25 @@
       (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
       '</section>' + aside + '</div>';
   }
+  /* The advertising budget the quotation's fees manage each month: the
+     budget chosen past the plan's cover, else the plan's own cover as the
+     card read beside this quotation states it (the same version alone).
+     None where the budget is quoted on request. */
+  function managedBudget(q) {
+    var tt = q.totals || {};
+    if ((tt.on_request || []).indexOf('budget') >= 0) return 0;
+    if (Number(tt.budget) > 0) return Number(tt.budget);
+    var slug = q.selection && q.selection.plan;
+    if (!slug || !CAT || String(CAT.version) !== String(q.version)) return 0;
+    var p = CAT.plans.filter(function (x) { return x.slug === slug; })[0];
+    return p && p.ad_budget ? Number(p.ad_budget) : 0;
+  }
   function waLink(q) {
     var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
     return who + '?text=' + encodeURIComponent('Hi ADspace, I would like to ask about my quotation ' + (q ? q.ref : '') + '.');
   }
   function paintDone() {
-    var q = Q, tt = q.totals || {}, wa = S.contact && waOk(waDigits(S.contact.whatsapp)) ? waShow(waDigits(S.contact.whatsapp)) : '';
+    var q = Q, tt = q.totals || {}, wa = waOk(waDigits(sentTo)) ? waShow(waDigits(sentTo)) : '';
     return '<div class="qs-step qs-done"><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
       '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
@@ -617,7 +644,10 @@
         say('qsMsg', t().err[d.error] || t().err.any);
         return;
       }
-      S.idem = null; keep();
+      // Made: nothing chosen or typed stays in the tab (a refresh reads the quotation by its key).
+      sentTo = S.contact.whatsapp; madeBy = S.contact;
+      S = blank();
+      try { sessionStorage.removeItem(KEEP); } catch (e) {}
       history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
       read(d.key);
     }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
@@ -679,6 +709,7 @@
     }
     else if (a === 'pdf') pdf(b);
     else if (a === 'change' || a === 'new') {
+      if (madeBy) S.contact = madeBy;
       if (Q && Q.selection) adopt(Q.selection);
       Q = null; proceeding = false;
       history.replaceState(null, '', '/quote/');
@@ -787,6 +818,7 @@
     lang = lang === 'en' ? 'zh' : 'en';
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     if (S.step === 'details' && !Q && $('qsName')) readDetails();
+    if ($('qsReg')) billTyped = { reg: $('qsReg').value, brn: $('qsBrn').value, addr: $('qsAddr').value };
     paint();
   });
 

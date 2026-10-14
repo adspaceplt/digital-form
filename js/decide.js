@@ -109,6 +109,8 @@
 
     var asking = false;
     var run = null;
+    var pressing = false;
+    var said = false;
 
     function open() {
       asking = true;
@@ -117,10 +119,12 @@
       btn.setAttribute('aria-expanded', 'true');
       field.tabIndex = 0;
       field.focus();
+      document.addEventListener('pointerdown', away, true);
     }
     function close() {
       asking = false;
       run = null;
+      document.removeEventListener('pointerdown', away, true);
       box.classList.remove('is-asking');
       row.classList.remove('is-asking');
       btn.setAttribute('aria-expanded', 'false');
@@ -129,13 +133,34 @@
     }
     function confirm() {
       var name = (field.value || '').trim();
-      if (!name) { if (say) say(words.needed, true); field.focus(); return; }
+      if (!name) { if (say) { say(words.needed, true); said = true; } field.focus(); return; }
       keep(name);
+      said = false;
       var go = run;
       close();
       if (say) say('');
       if (go) go(name);
     }
+
+    /* The way back on a phone, which has no Escape (2026-10-14, ux-audit
+       REVIEWPAGE-1): a press anywhere outside the box, or leaving the field,
+       while it is still empty puts the row back, Request changes with it. A
+       name already typed is never thrown away; Approve itself is inside the
+       box, so pressing it still confirms. */
+    function away(e) {
+      if (!asking || box.contains(e.target)) return;
+      if (!(field.value || '').trim()) drop();
+    }
+    function drop() { close(); if (said && say) say(''); said = false; }
+    field.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!asking || (field.value || '').trim()) return;
+        var at = document.activeElement;
+        if (at === field || at === btn || pressing) return;
+        if (!document.hasFocus || document.hasFocus()) drop();
+      }, 0);
+    });
+    btn.addEventListener('pointerdown', function () { pressing = true; setTimeout(function () { pressing = false; }, 600); });
 
     /* Enter sends it, because a field with one value and a button beside it is
        a form in every way but the tag. Escape puts the row back. */
