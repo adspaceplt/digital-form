@@ -3198,3 +3198,12 @@ change applies after the card is next published; a version published before
 the setting takes 12's for 18. The website's Commitment became a select:
 five choices broke the segment into a lone pill (DESIGN: five or more is a
 select).
+
+### 2026-10-14 · The quotation website: contents under the plan
+The user: Additional contents on the next page read as choosing the plan's
+own contents, and "4 contents" did not say which. Each plan now names its
+mix (2 graphics and 2 reels of up to 60 seconds; two mixes read "or"), the
+budget on its own line, and Additional contents per month sit under the
+plans once one is chosen (a plan changed drops extras it does not offer).
+The opening page's validity and commitment sentence was removed at the
+user's word; the quotation PDF keeps its own remarks.

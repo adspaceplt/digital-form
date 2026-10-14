@@ -12063,7 +12063,7 @@ input[type=radio] ~ .qs-mark::after { content: ""; width: 10px; height: 10px; bo
 input[type=radio]:checked ~ .qs-mark { box-shadow: inset 0 0 0 1.5px var(--ink); }
 input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-pick b { display: block; font-weight: 600; }
-.qs-pick small { display: block; font-size: 14px; color: var(--ink-soft); }
+.qs-pick small { display: block; font-size: 14px; color: var(--ink-soft); white-space: pre-line; }
 .qs-chips { display: grid; gap: 8px; }
 .qs-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .qs-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
