@@ -3435,3 +3435,23 @@ day one; the salutation added 14 Oct) and the record's tab strip scrolling at
   its own on Wording and Versions; the version line shares its row. SVC-3: a
   wording row on a phone kept the price track and wrapped its words in half
   the row; its middle tracks collapse. The P3 findings wait for the user.
+
+- **2026-10-15** — The same audit's P3 findings, at the user's word through
+  the parent session ("fix all no matter what"). Reports: Run audit rests,
+  saying why, while a draft holds no commentary and no Meta reading can run
+  (RPT-4); past draft the last step is named Check, and a published report
+  never audited carries no Report audit card (RPT-5); an account with no
+  handle reads as its platform alone, never "· Instagram" (RPT-6); One point
+  a line stands over the fields of points, never over an accounts report's
+  Summary (RPT-7); a check row's View carries its chevron (RPT-8); a step's
+  head is drawn only where it holds the step's acts, the strip naming the
+  step (RPT-9). Documents: the brand left out of a phone row also settles
+  DOC-4; a Reference field's placeholder is a hint (From the accounting
+  portal, As issued), never a serial one could hold (DOC-5). Services: a
+  version's row names Valid until on a phone (SVC-4) and downloads its own
+  card, read whole at the press (SVC-9); the version line's gaps close so
+  the line, its Publish and the bar's acts keep one row at 1280 with a change
+  waiting, Publish in one place on every tab (SVC-5); a wording block reads
+  without the column list its label stores and with its row as words
+  (SVC-6); Inclusions' placeholder is Optional (SVC-7). SVC-8 was settled by
+  the Settings audit's SET-10 (three figures run three across).

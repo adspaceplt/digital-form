@@ -1474,7 +1474,7 @@
     if (!last && !can && !hasMeta && !metaCan(r)) { host.hidden = true; return; }
     /* A published report never audited has nothing left to audit
        (ux-audit RPT-5). */
-    if (r.status === 'published' && !last && !al) { host.hidden = true; return; }
+    if (r.status === 'published' && !last && !(al && al.last)) { host.hidden = true; return; }
     host.hidden = false;
     var canMeta = metaCan(r), busy = a.busy || checkRun[r.id], draft = r.status === 'draft' && may('work');
     var head = '<div class="rp-audit-head"><h4 class="rp-audit-title">Report audit</h4>' +

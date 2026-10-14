@@ -5058,6 +5058,9 @@ body > .shell { width: 100%; }
 /* A block of the card's words holds no price: its rate track is the Changed
    chip's width or nothing, so the words take the row (ux-audit SVC-3). */
 .is-narrow .cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+/* A version: its name and state, then its date and Download (ux-audit SVC-9). */
+.is-narrow .cat-row.rcv-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name rate" "meta act"; }
+.is-narrow .cat-row.rcv-row > .team-act { align-self: center; margin-block: 0; }
 .is-narrow .cat-row > .team-act:empty,
 .is-narrow .cr-row > .team-act:empty { display: none; }
 /* A header the phone hides is not a header, so it leaves and takes its own

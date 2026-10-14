@@ -4111,7 +4111,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   row at a time under the columns its label names (Add row; one row fixed
   where the card prints one), a sentence as one field; saved as the lines
   the PDF reads. On a phone a point's number and acts share its first line.
-- Download on the version line (`js/ratecardpdf.js`,
+- Download on the version line, and on each version's row on Versions (the
+  version read whole at the press) (`js/ratecardpdf.js`,
   `ADspaceRateCardPdf.draw`; the user, 2026-10-13: the card in "their exact
   format", FOR INTERNAL USE kept) draws the live version as the team's six
   A4 pages, never stored: the cover, Ala Carté, Social Media Services,
