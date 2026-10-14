@@ -166,6 +166,13 @@
 
   // ---- Tabs ---------------------------------------------------------------
   function mayPart(part, level) { return Boolean(bridge.may && bridge.may(part, level || 'work')); }
+  /* Every booking and every move of the campaign itself writes
+     `campaigns` / `campaign_options` / `option_posts` under Creator
+     Campaigns: Campaigns at Work (the tables' policies and
+     `campaign_qc_pass`), so a control that writes them is drawn only then
+     (2026-10-14, audit CAMP-1: at View the card drew Save, Release and
+     editable fields the database refused). */
+  function mayWork() { return mayPart('campaigns.campaigns', 'work'); }
   function showTab(name) {
     // The Creators List is a part of the section and may be shut to a group.
     if (name === 'roster' && !mayPart('campaigns.creators', 'view')) name = 'campaigns';
@@ -1256,17 +1263,28 @@
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
     var clientId = $('campClient').value;
-    if (!clientId) { msg('campMsg', 'A client is required.', 'err'); return; }
-    if (badTitle(title)) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
+    /* A refusal hands focus to the field it names, as js/sheet.js does
+       after a failed save (2026-10-14, audit CAMP-8: focus stayed on Create). */
+    function refuse(id, text) {
+      msg('campMsg', text, 'err');
+      var el = $(id);
+      if (!el) return;
+      if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(el);
+      el.setAttribute('aria-invalid', 'true');
+      el.addEventListener('input', function clear() { el.removeAttribute('aria-invalid'); el.removeEventListener('input', clear); });
+      el.focus();
+    }
+    if (!clientId) { refuse('campClient', 'A client is required.'); return; }
+    if (badTitle(title)) { refuse('campTitle', 'A campaign name is required.'); return; }
     var slots = Number($('campSlots').value || 0);
-    if (!slots || slots < 1) { msg('campMsg', 'At least one creator is required.', 'err'); return; }
+    if (!slots || slots < 1) { refuse('campSlots', 'At least one creator is required.'); return; }
 
     // A slot with a creator booked into it cannot be taken away by editing a
     // number. Free the booking first, then lower the count.
     if (editingCamp) {
       var booked = state.options.filter(isLive).length;
       if (slots < booked) {
-        msg('campMsg', booked + ' creators are already booked; the count cannot go below ' + booked + '.', 'err');
+        refuse('campSlots', booked + ' creators are already booked; the count cannot go below ' + booked + '.');
         return;
       }
     }
@@ -1549,8 +1567,10 @@
   function paintCampState(c) {
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').className = 'chip ' + W.tone(c.state);
-    var move = publishMove(c.state);
+    var move = mayWork() ? publishMove(c.state) : null;
     $('campPublish').hidden = !move;
+    /* Its row leaves with it, so a View group's head ends on the link. */
+    if ($('campPublish').parentNode) $('campPublish').parentNode.hidden = !move;
     if (!move) return;
     $('campPublish').innerHTML = move.icon + esc(move.label);
     $('campPublish').className = 'btn ' + move.cls;
@@ -1872,6 +1892,7 @@
   function approvedOf(o) { return APPROVED.indexOf(o.state) >= 0; }
   function hideIcon() { return (window.ADspaceActs && window.ADspaceActs.glyph) ? window.ADspaceActs.glyph('hide') : '–'; }
   function fileX(o, cls) {
+    if (!mayWork()) return '';
     return approvedOf(o)
       ? '<button class="' + cls + ' is-hide" type="button" data-a="hidefile" aria-label="Hide from the client" title="Hide from the client">' + hideIcon() + '</button>'
       : '<button class="' + cls + '" type="button" data-a="removefile" aria-label="Remove submitted file">×</button>';
@@ -1884,7 +1905,7 @@
         return '<span class="filepin filepin-row is-hidden" data-file="' + esc(f.id) + '">' +
           '<a class="filepin-open" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
             '<span class="filepin-name">' + esc(f.name) + '</span></a>' +
-          '<button class="btn btn-sm" type="button" data-a="showfile">Restore</button>' +
+          (mayWork() ? '<button class="btn btn-sm" type="button" data-a="showfile">Restore</button>' : '') +
           (del ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="hidmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delfile">Delete</button></div></span>' : '') +
           '</span>';
@@ -1958,9 +1979,9 @@
       /* The caption is part of what the client approves, so its absence is
          said rather than drawn as nothing (2026-09-27: a draft went to the
          client with no caption, past a check that asks about the caption). */
-      '<label class="kfield kfield-wide"><span>Their caption</span>' +
+      (mayWork() ? '<label class="kfield kfield-wide"><span>Their caption</span>' +
         '<textarea class="input textarea" rows="3" data-f="draft_caption">' +
-        esc(o.draft_caption || '') + '</textarea></label>' +
+        esc(o.draft_caption || '') + '</textarea></label>' : readKfield('Their caption', o.draft_caption)) +
       (o.draft_caption ? '' : '<p class="msg warn kcap-none">No caption.</p>') +
       '</div>';
   }
@@ -2011,6 +2032,18 @@
      the row that owns them. A booking stays open across the repaint a save
      causes, and a lone booking opens by itself. */
   var schedOpen = {};
+  /* What a save said, kept by the row it was about until the repaint that
+     follows has drawn it again (2026-10-14, audit CAMP-5: "Saved." went with
+     the repaint, and a Schedule change said nothing at all). Keyed
+     `sched:{booking}` and `post:{placement}`; a line is drawn for ten
+     seconds after the save. */
+  var saidOn = {};
+  function say(key, text, cls) { saidOn[key] = { text: text, cls: cls || 'ok', at: Date.now() }; }
+  function saidHtml(key, cls) {
+    var x = saidOn[key];
+    if (!x || Date.now() - x.at > 10000) return '<div class="msg ' + (cls || '') + '" data-said></div>';
+    return '<div class="msg ' + x.cls + ' ' + (cls || '') + '" data-said role="status">' + esc(x.text) + '</div>';
+  }
   function paintSchedule(live) {
     var box = $('schedList');
     if (!box) return;
@@ -2053,6 +2086,7 @@
     function dayOr(d, tm) {
       return d ? esc(niceDate(d) + (tm ? ', ' + clockWord(tm) : '')) : '<span class="sched-unset">Not set</span>';
     }
+    var w = mayWork();
     function row(o) {
       var name = (o.creators || {}).name || '';
       var open = schedOpen[o.id] != null ? schedOpen[o.id] : rows.length === 1;
@@ -2068,7 +2102,9 @@
           '<span class="kcard-tags sched-pubday">' + dayOr(o.planned_publish) + '</span>' +
           '<span class="kcard-act"></span>' +
         '</header>' +
-        '<div class="kcard-body sched-body"' + (open ? '' : ' hidden') + '><div class="sched-grid">' +
+        '<div class="kcard-body sched-body"' + (open ? '' : ' hidden') + '>' +
+        /* At View the plan is read, as the booking's card reads it. */
+        (!w ? planFacts(o) + '</div>' : '<div class="sched-grid">' +
           '<span class="sched-when sched-edit sched-shoot" data-label="' + when + '">' +
             '<input class="input" data-schedule="visit_date" type="date" value="' + esc(o.visit_date || '') +
             '" aria-label="' + when + ' date">' +
@@ -2089,7 +2125,7 @@
                 logField('Contact', 'visit_pic', o.visit_pic, 'text') +
                 logField('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel')) +
           '</span>' +
-        '</div></div>';
+        '</div>' + saidHtml('sched:' + o.id, 'sched-said') + '</div>');
       var body = el.querySelector('.sched-body');
       var foldBtn = el.querySelector('.kfold');
       el.querySelector('.kcard-head').addEventListener('click', function () {
@@ -2111,26 +2147,45 @@
           var key = this.getAttribute('data-schedule');
           var val = this.type === 'date' || this.type === 'time' ? this.value : this.value.trim();
           if ((o[key] || '') === val) return;
+          var input = this;
           var patch = {}; patch[key] = val || null;
           /* A visit creates a real production deadline. No-visit campaigns
-             leave the visit blank and use the Draft due field beside it. */
-          if (key === 'visit_date') {
-            patch.submission_due = this.value ? addDays(this.value, 7) : o.submission_due || null;
+             leave the visit blank and use the Draft due field beside it.
+             Draft due follows the shoot only while nobody has typed one of
+             its own: empty, or still the old shoot plus a week (2026-10-14,
+             audit CAMP-6: a typed date was overwritten). */
+          var dueMoved = '';
+          if (key === 'visit_date' && val) {
+            var due = o.submission_due || '';
+            if (!due || (o.visit_date && due === addDays(o.visit_date, 7))) {
+              var next = addDays(val, 7);
+              if (next && next !== due) { patch.submission_due = next; dueMoved = next; }
+            }
           }
+          var rowSaid = function (text, cls) {
+            var line = el.querySelector('[data-said]');
+            if (line) { line.textContent = text; line.className = 'msg ' + cls + ' sched-said'; }
+          };
+          var putBack = function (text) {
+            input.value = key === 'visit_time' ? clockValue(o[key]) : (o[key] || '');
+            markEmpty(input);
+            rowSaid(text, 'err');
+          };
           var was = {};
           Object.keys(patch).forEach(function (k) { was[k] = o[k] == null ? null : o[k]; });
           db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
-            if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-            if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            if (r.error) { putBack('Not saved. ' + r.error.message); return; }
+            if (!(r.data || []).length) { putBack('Not saved. The database refused the request.'); return; }
             Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
             schedOpen[o.id] = true;
+            say('sched:' + o.id, dueMoved ? 'Saved. Draft due moved to ' + niceDate(dueMoved) + '.' : 'Saved.');
             var R = window.ADspaceRecords;
             var said = R && R.changes ? R.changes(was, patch, Object.keys(patch).map(function (k) {
               return [k, SCHED_WORD[k] || k, /_date$|_due$|_publish$/.test(k) ? niceDate : null];
             })) : '';
             log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + (said ? ' · ' + said : ''));
             paintOptions();
-          });
+          }).catch(function () { putBack('Not saved. Check the connection and try again.'); });
         });
       });
       t.appendChild(el);
@@ -2296,7 +2351,8 @@
     var one = isDelivery() ? 'delivery' : 'shoot', many = isDelivery() ? 'deliveries' : 'shoots';
     if (submitted) return submitted + (submitted === 1 ? ' draft' : ' drafts') + ' to release to the client.';
     if (shortlisted) return shortlisted + (shortlisted === 1 ? ' creator' : ' creators') + ' to confirm.';
-    if (c.state === 'draft') return 'Not published. Hidden from the client.';
+    /* A draft says so in its chip and its link's dot; the line is kept for
+       a step the team owes (2026-10-14, audit CAMP-9: said three times). */
     if (changes) return changes + (changes === 1 ? ' draft' : ' drafts') + ' in revision.';
     if (undated) return undated + ' ' + (undated === 1 ? one : many) + ' without a date.';
     if (ahead.length) {
@@ -2330,7 +2386,35 @@
        under the list on the Selection pane. The line that says so carries the
        way there, or the one step that locks a selection is a tab nobody
        thought to open (reported 2026-09-25). */
-    if (live.some(function (o) { return o.state === 'shortlisted'; }) && campPane !== 'client') {
+    /* A draft waiting to be released leads the line, and the line carries
+       the way to it: the Creators pane, the first Submitted booking open,
+       its Release to client in view and focused (2026-10-14, audit CAMP-4). */
+    var firstSub = mayWork() ? live.filter(function (o) { return o.state === 'submitted'; })
+      .sort(function (a, b) { return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0)); })[0] : null;
+    if (firstSub) {
+      var goDraft = document.createElement('button');
+      goDraft.type = 'button'; goDraft.className = 'btn btn-sm camp-next-go'; goDraft.id = 'campNextGo';
+      goDraft.innerHTML = 'Review draft' + CHEV;
+      goDraft.addEventListener('click', function () {
+        openCards[firstSub.id] = true;
+        if (campPane !== 'creators') { showCampPane('creators'); pushUrl(); }
+        setTimeout(function () {
+          var card = document.querySelector('#creatorList .kcard[data-option="' + firstSub.id + '"]');
+          if (!card) return;
+          var body = card.querySelector('[data-body]');
+          if (body && body.hidden) {
+            body.hidden = false;
+            card.classList.remove('is-folded');
+            var f = card.querySelector('[data-a="fold"]');
+            if (f) f.setAttribute('aria-expanded', 'true');
+          }
+          var rel = card.querySelector('[data-a="advance"]') || card;
+          rel.scrollIntoView({ block: 'center' });
+          if (rel.focus) rel.focus({ preventScroll: true });
+        }, 0);
+      });
+      $('campNext').appendChild(goDraft);
+    } else if (mayWork() && live.some(function (o) { return o.state === 'shortlisted'; }) && campPane !== 'client') {
       var go = document.createElement('button');
       go.type = 'button'; go.className = 'btn btn-sm camp-next-go'; go.id = 'campNextGo';
       go.textContent = 'Review and confirm';
@@ -2366,7 +2450,8 @@
     box.innerHTML = '';
     box.className = '';
     if (!state.options.length) {
-      UI.emptyLine(box, 'No creators.', 'Add creators', function () { $('showAddOption').click(); });
+      if (mayWork()) UI.emptyLine(box, 'No creators.', 'Add creators', function () { $('showAddOption').click(); });
+      else UI.emptyLine(box, 'No creators.');
     } else {
       /* One surface with a header over it, not a stack of bordered cards: ten
          bookings were ten floating panels with 12px of page ground between
@@ -2418,7 +2503,7 @@
     }
 
     // Accepting is offered exactly when the client has chosen something.
-    var waiting = state.options.filter(function (o) { return o.state === 'shortlisted'; });
+    var waiting = mayWork() ? state.options.filter(function (o) { return o.state === 'shortlisted'; }) : [];
     $('campLock').hidden = !waiting.length;
     /* The row leaves with the button, or an empty row keeps the block step
        under the list and the pane ends on a gap nobody put there. */
@@ -2431,11 +2516,11 @@
     }
 
     var working = state.options.filter(isLive);
-    $('bulkToggle').hidden = !working.length;
+    $('bulkToggle').hidden = !working.length || !mayWork();
     // Schedule's copy of the action answers to the same fact, or it offers a
     // form that refuses every press with "Nothing is in production yet."
-    if ($('schedBulk')) $('schedBulk').hidden = !working.length;
-    if (!working.length) $('bulkBox').hidden = true;
+    if ($('schedBulk')) $('schedBulk').hidden = !working.length || !mayWork();
+    if (!working.length || !mayWork()) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
     paintRollup(working);
     paintInvoice(c);
@@ -2980,6 +3065,7 @@
     var row = document.createElement('div');
     var p = addPick[c.id];
     row.className = 'ac-row' + (p ? ' is-on' : '');
+    row.setAttribute('data-creator', c.id);
     var meta = metaOf(c);
     if (o) meta.push((o.state === 'replaced' ? 'Replaced' : 'Withdrawn') + ' from this campaign');
     row.innerHTML = '<label class="ac-pick">' +
@@ -3057,14 +3143,38 @@
                links: Object.keys(p.links).map(function (k) { return (p.links[k] || '').trim(); })
                  .filter(function (u) { return u; }) };
     });
-    if (!list.length) { msg('optionMsg', 'Tick at least one creator.', 'err'); return; }
+    if (!list.length) { msg('optionMsg', 'Tick at least one creator.', 'err'); $('optionMsg').scrollIntoView({ block: 'nearest' }); return; }
+    /* A refusal is said on the creator's own row, brought into view with
+       focus on what it names; the line under the sheet's list was out of
+       sight and the press read as dead (2026-10-14, audit CAMP-2). */
+    function rowRefuse(id, text, sel) {
+      msg('optionMsg', '');
+      Array.prototype.forEach.call($('optionPick').querySelectorAll('.camp-rowmsg'), function (m) { m.remove(); });
+      var row = $('optionPick').querySelector('.ac-row[data-creator="' + id + '"]');
+      if (!row || row.offsetParent === null) {
+        msg('optionMsg', text, 'err');
+        $('optionMsg').scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      var line = document.createElement('p');
+      line.className = 'msg err camp-rowmsg';
+      line.setAttribute('role', 'alert');
+      line.textContent = text;
+      (row.querySelector('.ac-more') || row).appendChild(line);
+      var clear = function () { line.remove(); row.removeEventListener('change', clear); row.removeEventListener('input', clear); };
+      row.addEventListener('change', clear);
+      row.addEventListener('input', clear);
+      row.scrollIntoView({ block: 'nearest' });
+      var f = sel && row.querySelector(sel);
+      if (f) f.focus({ preventScroll: true });
+    }
     for (var i = 0; i < list.length; i++) {
       var x = list[i];
-      if (!x.plats.length) { msg('optionMsg', 'Tick a platform for ' + x.c.name + ' to post on.', 'err'); return; }
-      if (!x.rate || x.rate <= 0) { msg('optionMsg', 'Set the client rate for ' + x.c.name + '.', 'err'); return; }
+      if (!x.plats.length) { rowRefuse(x.c.id, 'Tick a platform for ' + x.c.name + ' to post on.', '.pbox-tick input'); return; }
+      if (!x.rate || x.rate <= 0) { rowRefuse(x.c.id, 'Set the client rate for ' + x.c.name + '.', '.pickrate'); return; }
       var bad = x.links.filter(function (u) { return !readProfile(u); });
-      if (bad.length) { msg('optionMsg', 'Not a profile link for ' + x.c.name + ': ' + bad[0], 'err'); return; }
-      if (x.o && !reofferable(x.o)) { msg('optionMsg', x.c.name + ' is already in this campaign.', 'err'); return; }
+      if (bad.length) { rowRefuse(x.c.id, 'Not a profile link for ' + x.c.name + ': ' + bad[0], '.pbox-link:not([disabled])'); return; }
+      if (x.o && !reofferable(x.o)) { rowRefuse(x.c.id, x.c.name + ' is already in this campaign.', '.ac-tick'); return; }
     }
     btn.disabled = true;
     offerCreators(list, 'optionMsg', function () { btn.disabled = false; });
@@ -3340,6 +3450,14 @@
       esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></label>';
   }
 
+  /* A value the reader may not change, drawn as words under its label,
+     never a disabled field (2026-10-14, audit CAMP-1). Nothing when empty. */
+  function readKfield(label, value, wide) {
+    if (value == null || String(value).trim() === '') return '';
+    return '<div class="kfield' + (wide === false ? '' : ' kfield-wide') + '"><span>' + esc(label) + '</span>' +
+      '<p class="kread">' + esc(value) + '</p></div>';
+  }
+
   /* The exceptional actions. They used to be buttons in the row, at the same
      weight as Save, which is the wrong weight for something that happens a few
      times a year. A menu says "there is more here" without shouting it. */
@@ -3351,11 +3469,12 @@
 
   function cardMenu(o) {
     var items = '';
-    if (o.state === 'option' || o.state === 'backup') {
+    var w = mayWork();
+    if (w && (o.state === 'option' || o.state === 'backup')) {
       items += menuItem('pick', 'Confirm for client');
       items += menuItem('del', 'Remove', 'is-danger');
     }
-    if (o.state === 'shortlisted') {
+    if (w && o.state === 'shortlisted') {
       items += menuItem('unpick', 'Undo selection');
     }
     if (isLive(o)) {
@@ -3367,9 +3486,11 @@
          2026-10-11: it read as a message button for every stage). */
       if ((o.state === 'confirmed' || o.state === 'pending_visit') &&
           window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('creator')) items += menuItem('wasend', 'Resend booking');
-      items += menuItem('unbook', 'Revert to options');
-      items += menuItem('withdraw', 'Withdraw');
-      items += menuItem('replace', 'Replace');
+      if (w) {
+        items += menuItem('unbook', 'Revert to options');
+        items += menuItem('withdraw', 'Withdraw');
+        items += menuItem('replace', 'Replace');
+      }
     }
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
@@ -3421,7 +3542,8 @@
     var live = isLive(o);
     var dead = o.state === 'withdrawn' || o.state === 'replaced';
     var agreed = live || o.state === 'shortlisted';
-    var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
+    var w = mayWork();
+    var canEdit = w && ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
     var plats = platformsOf(o).map(platWord).join(' · ');
     var advance = live ? nextState(o.state) : null;
     var back = live ? prevState(o.state, o) : null;
@@ -3439,6 +3561,10 @@
        remembered, because openCards stores the false. */
     var waiting = o.state === 'submitted';
     var open = !live || (waiting ? openCards[o.id] !== false : !!openCards[o.id]);
+
+    /* A ⋯ whose every item is withheld is not drawn. */
+    var menuHtml = cardMenu(o);
+    var menuHas = !!menuHtml;
 
     var card = document.createElement('article');
     card.className = 'kcard' + (live ? ' is-live' : '') + (dead ? ' is-off' : '') +
@@ -3490,12 +3616,12 @@
             ? '<button class="iconbtn kcard-link" data-a="copylink" type="button" ' +
               'aria-label="Copy portal link for ' + esc(cr.name || '') + '" ' +
               'title="Copy portal link">' + LINK_ICON + '</button>' : '') +
-          (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
+          (dead || !menuHas ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
             'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
         '</span>' +
       '</header>' +
       stepsLine(o, dead) +
-      cardMenu(o) +
+      menuHtml +
       '<div class="kcard-body" data-body' + (open ? '' : ' hidden') + '>' +
 
       // Money and platforms: one line, ticked off once the client has agreed.
@@ -3505,7 +3631,7 @@
         '<span class="kstep-sum"><b>' + esc(money(o.rate)) + '</b>' +
           (plats ? '<span>' + esc(plats) + '</span>' : '') + '</span>' +
         (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Edit</button>'
-                 : '<span class="kstep-note">Agreed</span>') +
+                 : agreed ? '<span class="kstep-note">Agreed</span>' : '') +
       '</div>' +
 
       (live ?
@@ -3515,12 +3641,12 @@
          time was a text box). The card keeps the notes and the work. */
       '<div class="kstep kstep-work kstep-plan">' +
         '<div class="kstep-titlerow"><span class="kstep-title">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
-          '<button class="btn btn-sm btn-quiet" data-a="schedule" type="button">Edit in Schedule</button></div>' +
+          (w ? '<button class="btn btn-sm btn-quiet" data-a="schedule" type="button">Edit in Schedule</button>' : '') + '</div>' +
         planFacts(o) +
-        '<div class="kfields">' +
+        (w ? '<div class="kfields">' +
           '<label class="kfield kfield-wide"><span>Notes</span>' +
             '<textarea class="input" data-f="notes" rows="2">' + esc(o.notes || '') + '</textarea></label>' +
-        '</div>' +
+        '</div>' : (o.notes ? '<div class="kfields">' + readKfield('Notes', o.notes) + '</div>' : '')) +
       '</div>' +
       (drafting ?
       '<div class="kstep kstep-work">' +
@@ -3538,7 +3664,7 @@
              takes the console's own signed PUT to S3 and lands in the same
              hand-in the creator's files do, so the card, the release and the
              client's page cannot tell whose hand put it there. */
-          (teamMayDeliver(o) && putToS3
+          (w && teamMayDeliver(o) && putToS3
             ? '<label class="kfield kfield-wide"><span>Upload for ' +
                 esc((o.creators || {}).name || 'the creator') + '</span>' +
                 '<input class="input" type="file" multiple data-a="teamfiles" ' +
@@ -3550,12 +3676,15 @@
                 '<div class="progress-track"><div class="progress-fill" data-teamfill></div></div>' +
               '</div>'
             : '') +
-          '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
+          (w ? '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
-            '" placeholder="https://"></label>' +
+            '" placeholder="https://"></label>'
+            : o.draft_url ? '<div class="kfield kfield-wide"><span>Draft link</span>' +
+              '<a class="plink kread-link" href="' + esc(o.draft_url) + '" target="_blank" rel="noopener">' +
+              esc(o.draft_url) + '</a></div>' : '') +
         '</div>' +
       '</div>' : '') +
-      '<div class="kstep kstep-work">' +
+      (w || qcHeld(o) ? '<div class="kstep kstep-work">' +
         /* A booking held for a second pair of eyes says so where the button
            that will not move it is, and names who has already checked, so
            the person who walks past the desk knows what to ask for. */
@@ -3564,8 +3693,10 @@
               esc('Checked by ' + qcNames(o) + '. Waiting on a second reviewer.') +
             '</p>'
           : '') +
-        '<div class="kactions">' +
-          '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
+        (w ? '<div class="kactions">' +
+          /* Tonal: Release to client is the one blue on a card (2026-10-14,
+             audit CAMP-3: a blue Save sat beside it). */
+          '<button class="btn btn-sm" data-a="save" type="button">Save</button>' +
           /* Blue moves work to somebody else, and exactly one step on this
              card does: Release to client. The other five — pending visit,
              pending draft, scheduled, posted, completed — are the team
@@ -3590,16 +3721,16 @@
             ? '<button class="btn btn-sm btn-warn" data-a="sendback" type="button">' +
               'Request changes</button>' : '') +
           (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
-        '</div>' +
-        '<div class="msg" data-msg></div>' +
-      '</div>' : '') +
+        '</div>' : '') +
+        saidHtml('card:' + o.id).replace('data-said', 'data-said data-msg') +
+      '</div>' : '') : '') +
 
       '<div data-posts></div>' +
 
       (dead ?
       '<div class="kstep kstep-ended">' +
         '<p class="hint">' + esc(o.drop_reason || 'No reason recorded.') + '</p>' +
-        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Reinstate</button>' +
+        (w ? '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Reinstate</button>' : '') +
       '</div>' : '') +
       '</div>';
 
@@ -4042,6 +4173,7 @@
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
         if (!(r.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
         m.textContent = 'Saved.'; m.className = 'msg ok';
+        say('card:' + o.id, 'Saved.');
         loadOptions();
       });
     });
@@ -4292,8 +4424,32 @@
     qc = { o: o, patch: patch, done: qcKept[o.id] };
     var files = (state.files && state.files[o.id]) || [];
     var name = (o.creators || {}).name || 'this creator';
+    /* What goes to the client is the newest round handed in, hidden files
+       left out: drawn here so the check is made on it. */
+    var shown = files.filter(function (f) { return !f.hidden_at; });
+    var top = shown.reduce(function (m, f) { return Math.max(m, Number(f.round || 1)); }, 0);
+    files = shown.filter(function (f) { return Number(f.round || 1) === top; });
     $('qcWho').textContent = name + ' · ' +
       (files.length ? files.length + (files.length === 1 ? ' file' : ' files') : 'pasted link');
+    var fbox = $('qcFiles');
+    if (fbox) {
+      var link = (patch && patch.draft_url) || o.draft_url;
+      fbox.innerHTML = files.map(function (f) {
+        var k = mediaKind(f);
+        if (k === 'video') {
+          return '<div class="qc-file is-video">' + ADspaceMedia.tag(f.url, 'controls playsinline preload="metadata"') +
+            '<span class="qc-file-name">' + esc(f.name || '') + '</span></div>';
+        }
+        if (k === 'image') {
+          return '<a class="qc-file is-image" href="' + esc(f.url) + '" target="_blank" rel="noopener" aria-label="Open ' + esc(f.name || 'file') + '">' +
+            '<img src="' + esc(f.url) + '" alt="" loading="lazy" onerror="this.remove()">' +
+            '<span class="qc-file-name">' + esc(f.name || '') + '</span></a>';
+        }
+        return '<a class="filepin filepin-row qc-file-row" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+          '<span class="filepin-name">' + esc(f.name || f.url) + '</span></a>';
+      }).join('') +
+        (!files.length && link ? '<a class="plink" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(link) + '</a>' : '');
+    }
     /* What the check reads the file against: the request it answers, and the
        caption, said even when there is none (2026-09-27). */
     var ask = lastRequest(o), cap = $('qcCap');
@@ -4426,7 +4582,11 @@
     $('qcSecond').disabled = short;
   }
 
-  function shutQc() { $('qcSheet').hidden = true; qc = null; }
+  function shutQc() {
+    $('qcSheet').hidden = true; qc = null;
+    /* A video left playing in a shut sheet would go on being heard. */
+    Array.prototype.forEach.call(document.querySelectorAll('#qcFiles video'), function (v) { try { v.pause(); } catch (e) {} });
+  }
 
   $('qcClose').addEventListener('click', shutQc);
   $('qcCancel').addEventListener('click', shutQc);
@@ -4564,6 +4724,26 @@
         var to = p.measure_to || (p.published_at ? addDays(p.published_at, Math.max(Number(p.window_days || 7), 1) - 1) : '');
         var byWho = p.entered_by === 'creator' ? 'Entered by the creator' : p.entered_by === 'team' ? 'Entered by the team' : '';
         var stamp = p.entered_at ? niceStamp(p.entered_at) : (p.measured_at ? niceDate(p.measured_at) : '');
+        /* At View the placement is read: its link, its days and its figures,
+           never a field (2026-10-14, audit CAMP-1). */
+        if (!mayWork()) {
+          var facts = [];
+          if (p.published_at) facts.push(['Published', niceDate(p.published_at)]);
+          if (p.measure_from || p.measure_to) facts.push(['Counted', [p.measure_from, p.measure_to].filter(Boolean).map(niceDate).join(' to ')]);
+          ['impressions', 'engagements', 'views'].forEach(function (k) {
+            if (p[k] != null) facts.push([k.charAt(0).toUpperCase() + k.slice(1), Number(p[k]).toLocaleString()]);
+          });
+          w.innerHTML =
+            '<div class="postrow-head"><b>' + esc(p.platform) + '</b>' +
+              ((byWho || stamp) ? '<span>' + esc([byWho, stamp].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' +
+            (p.post_url ? '<div class="kfields"><div class="kfield kfield-wide"><span>Post link</span>' +
+              '<a class="plink kread-link" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></div></div>' : '') +
+            (facts.length ? '<dl class="ovfacts kplan">' + facts.map(function (f) {
+              return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+            }).join('') + '</dl>' : (p.post_url ? '' : '<p class="kplan-none">Not recorded.</p>'));
+          box.appendChild(w);
+          return;
+        }
         w.innerHTML =
           '<div class="postrow-head"><b>' + esc(p.platform) + '</b>' +
             ((byWho || stamp) ? '<span>' + esc([byWho, stamp].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' +
@@ -4578,8 +4758,10 @@
               '<input class="input" data-p="measure_to" type="date" value="' + esc(to) + '"></label>' +
             num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
-          '<div class="kactions"><button class="btn btn-sm btn-primary" data-p-save type="button">Save</button></div>' +
-          '<div class="msg" data-p-msg></div>';
+          /* Tonal: Release to client is the one blue on a card (2026-10-14,
+             audit CAMP-3: a Posted card drew a blue Save a placement). */
+          '<div class="kactions"><button class="btn btn-sm" data-p-save type="button">Save</button></div>' +
+          saidHtml('post:' + p.id).replace('data-said', 'data-said data-p-msg');
         w.querySelector('[data-p-save]').addEventListener('click', function () {
           var patch = {};
           Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
@@ -4605,6 +4787,8 @@
             if (res.error) { m.textContent = res.error.message; m.className = 'msg err'; return; }
             if (!(res.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
             m.textContent = 'Saved.'; m.className = 'msg ok';
+            /* The repaint draws the placement again; the line goes with it. */
+            say('post:' + p.id, 'Saved.');
             loadOptions();
           });
         });
@@ -4723,6 +4907,9 @@
       : (c.invoice_no ? c.invoice_no + ' · no PDF' : 'Not issued');
     $('invNo').value = String(c.invoice_no || '').replace(/^AINV/i, '');
     $('invFile').value = '';
+    /* The invoice is Finance's at Work (`campaigns_finance_guard`); at View
+       the number and the file are read, never offered as fields. */
+    var mayFinance = mayPart('campaigns.finance', 'work');
     var cur = $('invCurrent');
     if (c.invoice_url) {
       /* A private invoice (a key under `private/`) has no address of its own:
@@ -4737,8 +4924,8 @@
           : '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">' + leave + '</a>') +
         (c.invoice_uploaded_at
           ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
-        '<button class="btn btn-danger" id="invRemove" type="button">Remove PDF</button>';
-      cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
+        (mayFinance ? '<button class="btn btn-danger" id="invRemove" type="button">Remove PDF</button>' : '');
+      if (cur.querySelector('#invRemove')) cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
       if (cur.querySelector('#invView')) cur.querySelector('#invView').addEventListener('click', function () { openPrivateInvoice(c); });
     } else {
       cur.innerHTML = '<span class="muted">No PDF</span>';

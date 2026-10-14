@@ -1531,7 +1531,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: flex; flex-direction: column; gap: 4px;
 }
 .drop b { font-size: 14.5px; font-weight: 600; color: var(--ink); }
-.drop span { color: var(--ink-mute); font-size: 13px; }
+.drop > span { color: var(--ink-mute); font-size: 13px; }
+/* Under a finger nothing is dragged: the zone reads as the press it is. */
+.drop .drop-coarse { display: none; }
+@media (pointer: coarse) {
+  .drop .drop-fine { display: none; }
+  .drop .drop-coarse { display: inline; }
+}
 .drop:hover, .drop.is-over { border-color: var(--ink); background: var(--sunk); }
 
 .linkrow { display: flex; gap: 8px; margin-top: 12px; }
@@ -1590,9 +1596,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .combinebar .btn { flex: 0 0 auto; background: var(--card); }
 
 /* Draft post being written */
+/* A box inside a card is shaded, never outlined (2026-10-14): the draft is
+   the card's ground on the zone's inset one, with no edge of its own. */
 .draft {
   display: flex; gap: 16px; margin-top: 16px; padding: 16px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  border: 0; border-radius: var(--radius); background: var(--card);
 }
 .draft-media {
   position: relative; flex: 0 0 92px; height: 118px; border-radius: 9px;
@@ -2911,6 +2919,25 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 /* What the check reads the file against: the request it answers, and the
    caption, said even when there is none (2026-09-27). */
 .qc-cap { display: grid; gap: 4px; margin: 0 0 12px; }
+/* The round's files over the checks: a video 9:16 small, a picture its
+   thumbnail, anything else an attachment line (2026-10-14). */
+.qc-files { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.qc-files:empty { display: none; }
+.qc-file {
+  position: relative; flex: 0 0 auto; width: 120px; aspect-ratio: 9 / 16;
+  border-radius: var(--radius-sm); overflow: hidden; background: #000;
+  display: block; color: inherit; text-decoration: none;
+}
+.qc-file video, .qc-file img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.qc-file.is-image { background: var(--sunk); }
+.qc-file.is-image img { object-fit: cover; }
+.qc-file-name {
+  position: absolute; left: 0; right: 0; top: 0; padding: 4px 6px;
+  font-size: 11px; color: var(--ink); background: var(--veil); pointer-events: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.qc-files .qc-file-row { flex: 1 1 100%; }
+.qc-files .plink { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qc-cap:empty { display: none; }
 .qc-cap-lab { margin: 4px 0 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qc-cap-lab:first-child { margin-top: 0; }
@@ -3420,12 +3447,18 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* Measured against the pane beside a rail at 1280, which is 591px: 44 for
      the number, 124 for the widest step chip ("Changes requested"), 82 for the
      two actions and 48 of gaps leaves 293 for the name and the summary. The
-     summary takes the larger share, because a creator's name is short and
-     "2 files · 22 Sept 2026, 10am" is not. */
-  grid-template-columns: 44px minmax(0, .9fr) minmax(0, 1.4fr) var(--state-w) 82px;
+     name takes the larger share and never less than 140px (2026-10-14, audit
+     CAMP-7: at .9fr it was 102px and cut "Ah Beng Reviews" while the summary
+     had room); the summary gives way first, ending in an ellipsis. */
+  grid-template-columns: 44px minmax(140px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
+}
+/* In a narrow pane the number's track gives back 12px to the name. */
+.is-narrow .bookreg-head, .is-narrow .bookreg .kcard-head {
+  grid-template-columns: 32px minmax(120px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
 }
 .bookreg-head {
-  padding: 12px 14px 8px;
+  /* The rows' own left pad, so each heading starts on its column. */
+  padding: 12px 14px 8px 16px;
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
@@ -3578,6 +3611,13 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   color: var(--ink-mute);
 }
 .kfield-wide { grid-column: span 2; }
+/* A booking's value read where the reader may not change it (2026-10-14):
+   words under the label, never a disabled field. */
+.kcard .kread {
+  margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink);
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.kcard .kread-link { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kactions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kstep-work .msg:empty { display: none; }
 .kstep-ended { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -7036,6 +7076,11 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
   font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .sched-body { padding: 0 16px 16px 72px; }
+.is-narrow .sched-body { padding-left: 60px; }
+.sched-said:empty { display: none; }
+/* Add creators: a refusal on the creator's own row (2026-10-14). */
+.camp-rowmsg { margin: 8px 0 0; }
+.kcard .postrow .msg:empty { display: none; }
 .sched-grid {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: "when when" "due pub" "log log"; gap: 12px; max-width: 560px;
@@ -10231,6 +10276,11 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .set-row-top > b { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .set-row-top > .tone { flex: 0 0 auto; }
 .set-row-sub { font-size: 12.5px; color: var(--ink-mute); }
+/* A set's change requests after its count, and a client's under its sets
+   line: the red dot and its words (2026-10-14). */
+.set-row-sub .sep { margin: 0 6px; opacity: .5; }
+.set-row-sub .cr-changes { padding: 0; font-size: 12.5px; }
+.crm-c-sets .cr-changes { display: block; width: fit-content; margin-top: 2px; padding: 0; }
 .set-row-sub.is-warn { color: var(--ink); }
 .set-row.is-on { background: var(--line-soft); }
 @media (hover: hover) { .set-row:not(.is-on):hover { background: var(--sunk); } }
@@ -11645,7 +11695,7 @@ button.vs-row { cursor: pointer; }
 .vs-vo .input { width: 104px; }
 .is-narrow .crm-head.vs-scene { display: none; }
 .is-narrow .vs-scene, .is-narrow .vs-scenes.is-two .vs-scene {
-  grid-template-columns: 24px minmax(0, 1fr) 104px auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
   grid-template-areas: "n text text text" "n line line line" "n . vc shot";
   gap: 6px 10px; padding: 12px 15px;
 }
@@ -11654,6 +11704,19 @@ button.vs-row { cursor: pointer; }
 .is-narrow .vs-scene > .vs-line { grid-area: line; color: var(--ink-soft); }
 .is-narrow .vs-scene > .vs-vc { grid-area: vc; }
 .is-narrow .vs-scene > .vs-shot { grid-area: shot; }
+/* With the header row hidden on a narrow pane, the clip number and the tick
+   name themselves (VS-5), as the voice-over's row does. */
+.vs-lbl { display: none; }
+.is-narrow .vs-lbl { display: inline; font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; }
+.is-narrow .vs-scene > .vs-vc { display: flex; align-items: center; gap: 8px; }
+.is-narrow .vs-scene > .vs-vc .input { width: 104px; flex: 0 0 auto; }
+.is-narrow .vs-shot label { width: auto; gap: 6px; padding: 0 4px; }
+/* Read at View: Shot is a word, never a control that cannot be pressed. */
+.vs-shotword { font-size: 13px; color: var(--ink); }
+.vs-vc > .mute, .vs-shot > .vs-shotword, .vs-shot > .mute { line-height: var(--ctl-h-sm); }
+/* The client's link belongs to the month: a script's page on a narrow pane
+   leaves it out, so its scenes come first (VS-3). */
+.is-narrow .vs-onscript .vs-head .rec-linktools { display: none; }
 /* The client reads the script alone: the scene and, on a detailed script,
    its words, and no clip number or tick (the user, 2026-10-09). */
 .vs-scenes.is-read .vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
@@ -11700,16 +11763,15 @@ button.vs-row { cursor: pointer; }
 .vs-cardwho { min-width: 0; flex: 1 1 240px; }
 .vs-cardwho h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .vs-cardwho p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.vs-cardstate { display: flex; align-items: center; flex: 0 0 auto; min-height: calc(15px * 1.55); }
 .vs-cardctl { position: relative; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.vs-cardctl > .chip-state { margin-right: 4px; }
-/* Narrow, the acts take the line under the name, Edit and Publish as equal
-   halves between the state and the ⋯. */
-.is-narrow .vs-cardctl { flex: 1 1 100%; }
+.vs-cardctl:empty { display: none; }
+/* Narrow (VS-6): the name at the left and the state at the right edge of the
+   title row; the acts take the line under it, Edit and Publish as equal
+   parts before the ⋯. */
+.is-narrow .vs-cardhead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+.is-narrow .vs-cardctl { grid-column: 1 / -1; }
 .is-narrow .vs-cardctl > .btn { flex: 1 1 0; min-width: 0; }
-/* Tight (a phone at 320 to 460), the state takes its own line above the
-   acts, so Edit, Publish and the ⋯ keep their words whole. */
-.is-tight .vs-cardctl { flex-wrap: wrap; row-gap: 8px; }
-.is-tight .vs-cardctl > .chip-state { flex: 1 0 100%; margin-right: 0; }
 .vs-sheetview .vs-shot-msg { margin: 0; }
 .vs-sheetview .vs-shot-msg:empty { display: none; }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }

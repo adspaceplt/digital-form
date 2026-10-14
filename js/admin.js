@@ -773,6 +773,18 @@
   function may(section, want) {
     return level(section) >= (RANK[want || 'work'] || 2);
   }
+  /* A `data-need` ("review.sets:manage") read as `may()` reads it, and a ⋯
+     whose every item is withheld or hidden, which is then not drawn. */
+  function needOk(need) {
+    if (!need) return true;
+    var p = String(need).split(':');
+    return may(p[0], p[1] || 'work');
+  }
+  function menuLive(menu) {
+    return Boolean(menu) && Array.prototype.some.call(menu.querySelectorAll('.kmenu-item'), function (it) {
+      return !it.hidden && needOk(it.getAttribute('data-need'));
+    });
+  }
   /* Two routes whose name on the screen is not the key in the ladder. The
      Register is one page over two parts of the ladder, the documents and the
      HR letters, which are gated apart: either opens it, and the database's own
@@ -2036,12 +2048,79 @@
         });
         state.reviewSets = m;
         paintSets();
+        /* The change requests waiting, counted for every set in one read of
+           the posts and one of their decisions (2026-10-14). A read that
+           fails says nothing rather than claiming none. */
+        var batchClient = {};
+        got.forEach(function (x) { batchClient[x.id] = x.client_id; });
+        readChangesFor(got.map(function (x) { return x.id; })).then(function (by) {
+          if (state.reviewClients !== list || state.reviewSets !== m) return;
+          Object.keys(by).forEach(function (bid) {
+            var k = m[batchClient[bid]];
+            if (k) k.changes = (k.changes || 0) + by[bid];
+          });
+          paintSets();
+        }).catch(function () {});
       }).catch(function () {
         if (state.reviewClients !== list) return;
         state.reviewSets = 'error'; paintSets();
       });
     }
     if (ids.length) page(0); else state.reviewSets = {};
+  }
+
+  /* Rows of a table whose `field` is one of `ids`: a hundred ids a request
+     (an address has a length) and a thousand rows a page, never a request a
+     row. */
+  function readIn(table, cols, field, ids) {
+    var out = [], chunks = [];
+    for (var i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+    function chunk(c) {
+      if (c >= chunks.length) return Promise.resolve(out);
+      function page(from) {
+        return db.from(table).select(cols).in(field, chunks[c]).order('id').range(from, from + 999).then(function (r) {
+          if (r.error) throw r.error;
+          out = out.concat(r.data || []);
+          if ((r.data || []).length === 1000) return page(from + 1000);
+          return chunk(c + 1);
+        });
+      }
+      return page(0);
+    }
+    return chunk(0);
+  }
+  /* Posts whose standing decision is Changes requested, counted by set: the
+     latest decision not taken back, on the round on show, since any
+     re-approval asked (the rule loadPosts reads a post's decision by). */
+  function changesBySet(posts, reviews) {
+    var byId = {}, latest = {}, out = {};
+    posts.forEach(function (p) { byId[p.id] = p; });
+    reviews.slice().sort(function (a, z) {
+      return a.created_at < z.created_at ? 1 : a.created_at > z.created_at ? -1 : 0;
+    }).forEach(function (x) {
+      var p = byId[x.post_id];
+      if (!p || x.undone_at || latest[x.post_id]) return;
+      if ((x.round || 1) !== (p.round || 1)) return;
+      if (p.review_reset_at && !(x.created_at > p.review_reset_at)) return;
+      latest[x.post_id] = x;
+    });
+    posts.forEach(function (p) {
+      if (latest[p.id] && latest[p.id].decision === 'changes') out[p.batch_id] = (out[p.batch_id] || 0) + 1;
+    });
+    return out;
+  }
+  var POST_COLS = 'id, batch_id, round, review_reset_at';
+  function readChanges(posts) {
+    if (!posts.length) return Promise.resolve({});
+    return readIn('reviews', 'id, post_id, decision, round, created_at, undone_at', 'post_id',
+      posts.map(function (p) { return p.id; })).then(function (rows) { return changesBySet(posts, rows); });
+  }
+  function readChangesFor(batchIds) {
+    if (!batchIds.length) return Promise.resolve({});
+    return readIn('posts', POST_COLS, 'batch_id', batchIds).then(readChanges);
+  }
+  function changesChip(n) {
+    return n ? '<span class="chip-state is-danger cr-changes">' + n + (n === 1 ? ' change requested' : ' changes requested') + '</span>' : '';
   }
 
   /* A one line answer to "where does this client stand?" A read that failed
@@ -2053,7 +2132,7 @@
     if (s === 'error') return '<span class="is-warn">Sets unavailable</span>';
     var k = s[id];
     if (!k) return '<span class="muted">No sets</span>';
-    return esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published');
+    return '<span>' + esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published') + '</span>' + changesChip(k.changes);
   }
   function paintSets() {
     var box = $('clientCards');
@@ -3150,7 +3229,9 @@
         });
         /* A count that could not be read is not a count of nothing: it
            said "0 posts" over a failed request and the set looked empty. */
-        db.from('posts').select('batch_id').in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
+        /* The same read of the posts counts them and, with one read of their
+           decisions, the change requests each set holds (2026-10-14). */
+        db.from('posts').select(POST_COLS).in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
           var n = {};
           (p.data || []).forEach(function (x) { n[x.batch_id] = (n[x.batch_id] || 0) + 1; });
           sets.forEach(function (b) {
@@ -3161,6 +3242,14 @@
             sub.textContent = subs[row.getAttribute('data-set')];
             sub.className = 'set-row-sub' + (p.error ? ' is-warn' : '');
           });
+          if (p.error || !(p.data || []).length) return;
+          readChanges(p.data).then(function (by) {
+            Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
+              var c = by[row.getAttribute('data-set')];
+              var sub = row.querySelector('[data-role="sub"]');
+              if (c && sub) sub.innerHTML = esc(subs[row.getAttribute('data-set')]) + '<span class="sep">·</span>' + changesChip(c);
+            });
+          }).catch(function () {});
         });
       });
   }
@@ -3189,6 +3278,7 @@
 
   function openBatch(b, quiet) {
     state.batch = b;
+    state.setPostN = null;
     setUrl();
     state.drafts = state.pendingBy[b.id] || readStoredDrafts();
     $('setPanel').hidden = false;
@@ -3246,6 +3336,7 @@
     $('publishSet').className = 'btn btn-icon ' + (live ? 'btn-warn' : 'btn-go');
     // The set's own link, drawn while the client can see the set.
     $('copySetLink').hidden = !live;
+    paintSetActs();
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
@@ -3255,6 +3346,20 @@
     msg('setMsg', '');
   }
 
+  /* An empty set has nothing to publish (2026-10-14): Publish leaves it,
+     and Add assets is then the set's one primary, tonal again once a post
+     is in. Unknown until the posts are read, so a full set never moves. The
+     set's ⋯ is drawn only while one of its items can be pressed. */
+  function paintSetActs() {
+    if (!state.batch) return;
+    var empty = state.setPostN === 0;
+    $('publishSet').hidden = empty && !state.batch.published;
+    $('addAssets').className = 'btn btn-sm' + (empty ? ' btn-primary' : '');
+    $('setMenuWrap').hidden = !menuLive($('setMenu'));
+    /* A row holding nothing to press keeps no gap under the head. */
+    var acts = document.querySelector('#setPanel .setbar-actions');
+    if (acts) acts.hidden = ($('publishSet').hidden || !needOk('review.sets:work')) && $('copySetLink').hidden;
+  }
   $('publishSet').addEventListener('click', function () {
     var next = !state.batch.published;
     if (!next) { setPublished(false); return; }
@@ -3286,6 +3391,9 @@
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
+      /* Confirm internally and the client's progress hang off a published
+         set, so the posts are read again with it (2026-10-14). */
+      loadPosts();
       msg('setMsg', next
         ? 'Published. The client can now see this set on their review link.'
         : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
@@ -4187,6 +4295,13 @@
     });
   }
 
+  /* The link's own Enter adds the link; Add to set is the foot's, never
+     pressed from here (data-noenter keeps js/sheet.js's away). */
+  $('mediaUrl').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey || e.altKey || e.isComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    $('addMediaUrl').click();
+  });
   $('addMediaUrl').addEventListener('click', function () {
     var url = $('mediaUrl').value.trim();
     if (!url) return;
@@ -4851,6 +4966,8 @@
           return;
         }
         var n = (r.data || []).length;
+        state.setPostN = n;
+        paintSetActs();
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's')
           : 'No posts.';
@@ -5622,7 +5739,17 @@
       }
 
       var mbtn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
-      mbtn.addEventListener('click', function (e) {
+      /* A change asked for is answered by an edit, so Edit stands on the row
+         while it waits, and leaves the ⋯ (an act is offered once). */
+      if (review && review.decision === 'changes' && needOk('review.sets:work')) {
+        var inMenu = menu.querySelector('[data-a="edit"]');
+        if (inMenu) inMenu.remove();
+        mbtn.insertAdjacentHTML('beforebegin', '<button class="btn btn-sm saved-edit" data-a="edit" data-need="review.sets:work" type="button" ' +
+          'aria-label="Edit ' + esc(MK.label(p)) + '">Edit</button>');
+      }
+      /* A ⋯ whose every item is withheld is not drawn (2026-10-14). */
+      if (!menuLive(menu)) { mbtn.remove(); menu.remove(); mbtn = null; }
+      if (mbtn) mbtn.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = menu.hidden;
         shutPostMenus();
@@ -5631,7 +5758,8 @@
         mbtn.setAttribute('aria-expanded', 'true');
         window.ADspaceMenu.place(mbtn, menu);
       });
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
+      var editBtn = row.querySelector('[data-a="edit"]');
+      if (editBtn) editBtn.addEventListener('click', function () { shutPostMenus(); paintEdit(); });
       /* A cover's video, chosen again or cleared: the client's page shows the
          two as one card with a tab each. Not a revision: the file is the same. */
       var pairBtn = row.querySelector('[data-a="pair"]');
@@ -5737,7 +5865,8 @@
         });
         reask._ask.open();
       });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () {
+      var delBtn = row.querySelector('[data-a="del"]');
+      if (delBtn) delBtn.addEventListener('click', function () {
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',

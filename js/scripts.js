@@ -314,6 +314,7 @@
     return readScript(id).then(function () {
       paintRecord();
       if (edit && may('work')) openEdit($('vsRecBody').querySelector('[data-a="edit"]'), push);
+      else if (!month) bringShot();
     }).catch(function (e) {
       if (e && e.message === 'not-found') {
         backToList();
@@ -337,6 +338,27 @@
       rs.forEach(function (x) { if (x.error) throw x.error; });
       st.scenes = rs[0].data || [];
       st.series = rs[1].data || [];
+    });
+  }
+  /* On its shooting day (Malaysia) a script opens on the first scene not yet
+     shot, for whoever records them (VS-3): brought to the middle of the
+     screen, never focused (a focused field zooms an iPhone). */
+  function bringShot() {
+    var s = st.open;
+    if (!s || !may('work') || !s.shoot_on || String(s.shoot_on).slice(0, 10) !== window.ADspaceClock.today()) return;
+    var row = null;
+    Array.prototype.some.call($('vsRecBody').querySelectorAll('[data-scene]'), function (r) {
+      var box = r.querySelector('[data-shot]');
+      if (box && !box.checked) { row = r; return true; }
+      return false;
+    });
+    if (!row && $('vsVoShot') && !$('vsVoShot').checked) row = $('vsRecBody').querySelector('[data-vo]');
+    if (!row) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(function () {
+      var r = row.getBoundingClientRect();
+      if (r.top >= 0 && r.bottom <= window.innerHeight * 0.8) return;
+      row.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
     });
   }
   function backToList() {
@@ -412,9 +434,14 @@
         '<span class="vs-n">' + (i + 1) + '</span>' +
         '<span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
         (kind === 'scenes' ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
-        '<span class="vs-vc">' + (work ? clipField(sc.vc, 'Clip number for scene ' + (i + 1)) : esc(sc.vc || '—')) + '</span>' +
-        '<span class="vs-shot"><label><input type="checkbox" ' + (sc.shot_at ? 'checked ' : '') + (work ? '' : 'disabled ') +
-          'aria-label="Scene ' + (i + 1) + ' shot" data-shot></label></span>' +
+        '<span class="vs-vc"><span class="vs-lbl" aria-hidden="true">VC#</span>' +
+          (work ? clipField(sc.vc, 'Clip number for scene ' + (i + 1)) : (sc.vc ? esc(sc.vc) : '<span class="mute">—</span>')) + '</span>' +
+        /* At View the tick is a word, never a control that cannot be pressed
+           (VS-4); on a narrow pane its word stands beside it (VS-5). */
+        '<span class="vs-shot">' + (work
+          ? '<label><input type="checkbox" ' + (sc.shot_at ? 'checked ' : '') + 'aria-label="Scene ' + (i + 1) + ' shot" data-shot>' +
+            '<span class="vs-lbl" aria-hidden="true">Shot</span></label>'
+          : (sc.shot_at ? '<span class="vs-shotword">Shot</span>' : '<span class="mute" aria-label="Not shot">—</span>')) + '</span>' +
       '</div>';
     }).join('') + '</div>';
   }
@@ -431,9 +458,10 @@
       out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4>' +
         '<p class="vs-prose">' + (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p>' +
         '<div class="vs-vo" data-vo>' +
-          '<label class="field-label" for="vsVoVc">VC#</label>' +
-          (work ? clipField(s.vo_vc, 'Clip number for the voice-over', 'vsVoVc') : '<span>' + esc(s.vo_vc || '—') + '</span>') +
-          '<label class="tickline"><input type="checkbox" id="vsVoShot" ' + (s.vo_shot_at ? 'checked ' : '') + (work ? '' : 'disabled ') + '> <span>Shot</span></label>' +
+          (work ? '<label class="field-label" for="vsVoVc">VC#</label>' + clipField(s.vo_vc, 'Clip number for the voice-over', 'vsVoVc') +
+            '<label class="tickline"><input type="checkbox" id="vsVoShot" ' + (s.vo_shot_at ? 'checked ' : '') + '> <span>Shot</span></label>'
+          : '<span class="field-label">VC#</span><span>' + (s.vo_vc ? esc(s.vo_vc) : '<span class="mute">—</span>') + '</span>' +
+            (s.vo_shot_at ? '<span class="vs-shotword">Shot</span>' : '<span class="mute">Not shot</span>')) +
         '</div></section>';
     }
     out += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' +
@@ -485,8 +513,11 @@
     wireHead();
     paintLink();
     var inMonth = st.mode === 'month';
+    /* The client's link belongs to the month; on a narrow pane a script's
+       page leaves it out, so the scenes come first (VS-3). */
+    $('vsRecord').classList.toggle('vs-onscript', !inMonth);
     $('vsMonthList').hidden = !inMonth;
-    $('vsNav').hidden = inMonth;
+    $('vsNav').hidden = inMonth || st.series.length < 2;
     $('vsRecBody').hidden = inMonth;
     if (inMonth) paintMonth(); else { paintNav(); paintScript(); }
   }
@@ -532,16 +563,22 @@
     var s = st.open;
     var key = stateOf(s);
     var acts = '';
+    /* A script with no scenes and no words is not offered to the client
+       (VS-1): Publish waits until there is something to read. */
+    var empty = !st.scenes.length && !String(s.context || '').trim() && !String(s.vo || '').trim();
     if (may('work')) {
       acts += '<button class="btn btn-sm btn-icon" type="button" data-a="edit">' + ICON.pen + 'Edit</button>';
       acts += s.status === 'shared'
         ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">' + EYE_OFF + 'Unpublish</button>'
-        : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
+        : empty ? '' : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
     }
+    /* The state sits on the title row at its right edge; the acts follow,
+       taking the line under it on a narrow pane (VS-6). */
     $('vsRecBody').innerHTML = '<section class="panel vs-factcard">' +
         '<div class="vs-cardhead"><div class="vs-cardwho"><h3 id="vsScriptName">' + esc(label(s)) + '</h3>' +
           '<p>' + esc(KIND_WORD[s.kind] || '') + '</p></div>' +
-          '<div class="vs-cardctl">' + chip(key) + acts +
+          '<span class="vs-cardstate">' + chip(key) + '</span>' +
+          '<div class="vs-cardctl">' + acts +
             menuOf('vsCardMore', may('manage') ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
           '</div></div>' +
         '<div class="msg" id="vsCardMsg" role="status"></div>' +
@@ -639,6 +676,7 @@
       var stamp = new Date().toISOString();
       if (sc) { if (on != null) sc.shot_at = on ? stamp : null; if (vc != null) sc.vc = vc.trim() || null; }
       if (!sceneId) { if (on != null) st.open.vo_shot_at = on ? stamp : null; if (vc != null) st.open.vo_vc = vc.trim() || null; }
+      say($('vsCardMsg'), '');
       say(m, 'Saved.', 'ok');
     }).catch(function (e) {
       var sc2 = sceneId && st.scenes.filter(function (x) { return x.id === sceneId; })[0];
@@ -747,11 +785,37 @@
       }).catch(function (e) { say($('vsCardMsg'), said(e) === SAID.denied ? SAID['denied-delete'] : said(e)); });
     });
   }
-  function nextVideo(btn) {
-    btn.disabled = true;
-    rpc('video_script_new', { p_client: st.open.client_id, p_period: st.open.period, p_kind: st.open.kind, p_from: st.open.id, p_idem: uuid() })
-      .then(function (d) { btn.disabled = false; openScript(d.id, true, true); })
-      .catch(function (e) { btn.disabled = false; say($('vsRecMsg'), said(e)); });
+  /* Add script (VS-1, 2026-10-14): the editor opens on the month's next
+     script with the header copied, but nothing is stored until Save, which
+     makes it (`video_script_new`, the arguments this press would have sent)
+     and then saves its fields. Cancel on it stores nothing, so no empty
+     numbered script is left for the month or the client's link. */
+  function nextVideo(btn, push) {
+    var b = st.open;
+    if (!b || !may('work')) return;
+    say($('vsRecMsg'), '');
+    st.pending = {
+      args: { p_client: b.client_id, p_period: b.period, p_kind: b.kind, p_from: b.id, p_idem: uuid() },
+      s: { id: null, client_id: b.client_id, period: b.period, kind: b.kind, title: '', reference_url: null,
+           platform: b.platform, language: b.language, shoot_on: b.shoot_on, shoot_time: b.shoot_time, venue: b.venue,
+           duration_minutes: b.duration_minutes, cast_names: b.cast_names, context: '', vo: '', remarks: '',
+           clients: b.clients, version: null }
+    };
+    openEdit(btn, push);
+  }
+  /* The script on the editor: the one open, else the one Add script will make. */
+  function edited() { return st.pending ? st.pending.s : st.open; }
+  /* A new script is made once, the same press's key making a retry the same
+     act; a script already made answers its id. */
+  function made() {
+    var P = st.pending;
+    if (!P) return Promise.resolve(st.open.id);
+    if (P.s.id) return Promise.resolve(P.s.id);
+    return rpc('video_script_new', P.args).then(function (d) {
+      P.s.id = d.id;
+      if (st.pending === P) st.editing = d.id;
+      return d.id;
+    });
   }
 
   /* ---- Edit: the whole script in one sheet ---------------------------------- */
@@ -787,6 +851,7 @@
   }
   function closeEditor() {
     st.editing = null;
+    st.pending = null;
     st.base = '';
     $('vsEditView').hidden = true;
     $('vsRecord').hidden = false;
@@ -796,7 +861,8 @@
      (the section's own address and Back bring the editor back). */
   function leaveEditor() {
     if (!dirty()) { closeEditor(); return; }
-    window.ADspaceConfirm.ask({ title: 'Discard changes?', body: 'The changes to ' + label(st.open) + ' are not saved.',
+    var s = edited();
+    window.ADspaceConfirm.ask({ title: 'Discard changes?', body: s.id || !st.pending ? 'The changes to ' + label(s) + ' are not saved.' : 'The new script is not saved.',
       go: 'Discard', tone: 'warn' }, function () { closeEditor(); paintRecord(); });
   }
   window.addEventListener('beforeunload', function (e) {
@@ -806,9 +872,9 @@
   });
 
   function openEdit(opener, push) {
-    var s = st.open;
+    var s = edited();
     say($('vsMsg'), '');
-    $('vsSheetTitle').textContent = 'Edit ' + label(s);
+    $('vsSheetTitle').textContent = s.id ? 'Edit ' + label(s) : 'New script';
     $('vsEditMeta').textContent = [(s.clients || {}).name, monthWord(s.period)].filter(Boolean).join(' · ');
     fillMonth($('vsMonth'), s.period);
     $('vsKind').value = s.kind;
@@ -831,10 +897,11 @@
     sayWrite('');
     var ub = $('vsWriteMsg').parentNode.querySelector(':scope > .undobar-here');
     if (ub) ub.parentNode.removeChild(ub);
-    $('vsWrite').disabled = st.writing === s.id;
-    writeWord(st.writing === s.id);
+    var busy = Boolean(s.id) && st.writing === s.id;
+    $('vsWrite').disabled = busy;
+    writeWord(busy);
     st.ai = null;
-    st.editing = s.id;
+    st.editing = s.id || 'new';
     showEditor();
     window.scrollTo(0, 0);
     if (push !== false && bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl();
@@ -842,7 +909,7 @@
     if (window.ADspaceGrow && window.ADspaceGrow.fit) {
       Array.prototype.forEach.call($('vsEditView').querySelectorAll('textarea'), function (t) { window.ADspaceGrow.fit(t); });
     }
-    if (st.kept && st.kept.id === s.id) {
+    if (s.id && st.kept && st.kept.id === s.id) {
       var held = st.kept.words;
       st.kept = null;
       showWritten(held, sheetWords());
@@ -897,14 +964,15 @@
   $('vsSave').addEventListener('click', function () {
     /* A script written with AI is declared read before it is kept
        (2026-10-10). */
-    if (st.ai && st.open && st.ai === st.open.id && window.ADspaceConfirm.ai) {
+    var cur = edited();
+    if (st.ai && cur && cur.id && st.ai === cur.id && window.ADspaceConfirm.ai) {
       window.ADspaceConfirm.ai.declare('script', 'Confirm and save', function () { saveScript(true); });
       return;
     }
     saveScript(false);
   });
   function saveScript(declared) {
-    var m = $('vsMsg'), btn = $('vsSave'), s = st.open;
+    var m = $('vsMsg'), btn = $('vsSave'), s = edited(), fresh = Boolean(st.pending);
     var ref = $('vsRef').value.trim().replace(/^https:\/\//i, 'https://');
     if (ref && !/^https:\/\//.test(ref)) { say(m, SAID['bad-link']); $('vsRef').focus(); return; }
     var head = {
@@ -920,22 +988,29 @@
       .map(function (x) { return { id: x.id, visual: x.visual.trim(), line: $('vsKind').value === 'scenes' ? x.line.trim() : '' }; });
     btn.disabled = true;
     say(m, '');
-    rpc('video_script_save', { p_id: s.id, p_head: head, p_scenes: scenes, p_version: s.version }).then(function (d) {
+    var sid = null;
+    made().then(function (id) {
+      sid = id;
+      return rpc('video_script_save', { p_id: id, p_head: head, p_scenes: scenes, p_version: fresh ? null : s.version });
+    }).then(function (d) {
       btn.disabled = false;
-      if (declared) {
-        st.ai = null;
-        if (bridge.log) bridge.log('script.saved', ((s.clients || {}).name || '') + ' · ' + codeOf(s),
-          'Script written with AI, read and confirmed');
-      }
+      if (declared) st.ai = null;
       closeEditor();
-      return readScript(s.id).then(function () {
+      if (fresh) {
+        /* The new script opens on its own page, its number assigned. */
+        st.mode = 'script';
+        st.open = { id: sid };
+      }
+      return readScript(sid).then(function () {
+        if (declared && bridge.log) bridge.log('script.saved', ((st.open.clients || {}).name || '') + ' · ' + codeOf(st.open),
+          'Script written with AI, read and confirmed');
         paintRecord();
         if (bridge.setUrl) bridge.setUrl();
-        say($('vsCardMsg'), !d.changed ? 'No changes.' : 'Saved.', 'ok');
+        say($('vsCardMsg'), !fresh && !d.changed ? 'No changes.' : 'Saved.', 'ok');
       });
     }).catch(function (e) {
       btn.disabled = false;
-      if (e && e.message === 'stale') {
+      if (e && e.message === 'stale' && !fresh) {
         readScript(s.id).then(function () { paintRecord(); });
       }
       say(m, said(e));
@@ -1033,8 +1108,9 @@
     undoBar('Written by AI. Read before saving.', function () { putWords(before); st.ai = null; }, $('vsWriteMsg'));
   }
   $('vsWrite').addEventListener('click', function () {
-    var btn = $('vsWrite'), s = st.open;
+    var btn = $('vsWrite'), s = edited();
     if (!s || !may('work')) return;
+    var noteKey = s.id || 'new';
     sayWrite('');
     btn.disabled = true;
     var AD = window.ADspaceAdmin;
@@ -1045,46 +1121,53 @@
       if (!left.left) { sayWrite(writeLimit(left)); return; }
       var kind = $('vsKind').value, plat = $('vsPlatform').value;
       var fields = [{ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
-        value: keep('adspace-script-length:' + s.id) || '30' }];
+        value: keep('adspace-script-length:' + noteKey) || '30' }];
       if (plat === 'rednote') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
       fields.push({ name: 'notes', label: 'Notes for the script', rows: 4, required: false,
         placeholder: 'What the video is for, the product or offer, the call to action',
-        value: keep('adspace-script-notes:' + s.id) });
+        value: keep('adspace-script-notes:' + noteKey) });
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
         body: (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
         var notes = String(v.notes || '').trim();
-        keep('adspace-script-notes:' + s.id, notes);
-        keep('adspace-script-length:' + s.id, String(v.length || '30'));
         var before = sheetWords();
         var cur = sheetWords();
+        var sid = null;
+        var here = function () { var e = edited(); return Boolean(e && sid && e.id === sid); };
         var settle = function () {
           st.writing = null;
-          if (st.open && st.open.id === s.id) { btn.disabled = false; writeWord(false); }
+          if (here()) { btn.disabled = false; writeWord(false); }
         };
-        st.writing = s.id;
         btn.disabled = true;
         writeWord(true);
-        db.functions.invoke('script-draft', { body: {
-          script_id: s.id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
+        /* A script Add script has not made yet is made first: the writer
+           reads the script, its client and its month as the caller. */
+        made().then(function (id) {
+          sid = id;
+          keep('adspace-script-notes:' + id, notes);
+          keep('adspace-script-length:' + id, String(v.length || '30'));
+          st.writing = id;
+          return db.functions.invoke('script-draft', { body: {
+          script_id: id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
           length: Number(v.length) || 30, venue: $('vsVenue').value.trim(),
           cast: $('vsCast').value.split(/[,，;\n]+/).filter(function (x) { return x.trim(); }).length,
           notes: notes, safe: plat === 'rednote' && v.safe === 'on',
           current: { context: CONTEXT_WORD[kind] ? cur.context : '', vo: kind === 'story' ? cur.vo : '',
                      scenes: cur.scenes.map(function (x) { return { visual: x.visual, line: kind === 'scenes' ? x.line : '' }; }) }
-        } }).then(function (res) {
+        } });
+        }).then(function (res) {
           var d = res && res.data;
           if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
           settle();
           var w = written(s, kind, d);
-          var open = !$('vsEditView').hidden && st.editing === s.id;
+          var open = !$('vsEditView').hidden && st.editing === sid;
           if (open) showWritten(w, before);
-          else st.kept = { id: s.id, words: w };
+          else st.kept = { id: sid, words: w };
         }).catch(function (e) {
           settle();
-          if (!(st.open && st.open.id === s.id)) return;
+          if (sid ? !here() : edited() !== s) return;
           var code = e && e.message;
           if (code === 'no-brief' || code === 'no-analysis') AD.brandSay($('vsWriteMsg'), AD.brandWords(code, e.d && e.d.missing), s.client_id);
           else sayWrite(writeSaid(e));
@@ -1104,7 +1187,10 @@
     return tab;
   }
   function drawPdf(btn, save) {
-    var many = st.series.length > 1;
+    /* From the month the whole month is drawn; on a script's own page, with
+       others in its month, the question is that script or the month (VS-2). */
+    var month = st.mode === 'month';
+    var many = !month && st.series.length > 1;
     var go = function (whole) {
       var m = $('vsRecMsg');
       var tab = save ? (window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null) : openTab();
@@ -1116,7 +1202,7 @@
       }).then(function (blob) {
         btn.disabled = false;
         var c = (st.open.clients || {}).name || 'Client';
-        var name = c + ' Video Script ' + (whole ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(st.open)) + '.pdf';
+        var name = c + ' Video Script ' + (whole && st.series.length > 1 ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(whole ? st.series[0] : st.open)) + '.pdf';
         say(m, save || (tab && !tab.closed) ? '' : 'Downloaded.', 'ok');
         window.ADspaceDocs.save(blob, name.replace(/[\\/:*?"<>|]+/g, ' '), tab);
       }).catch(function (e) {
@@ -1125,9 +1211,9 @@
         say(m, 'Not drawn. ' + said(e));
       });
     };
-    if (!many) { go(false); return; }
+    if (!many) { go(month); return; }
     window.ADspaceConfirm.ask({ title: save ? 'Download' : 'Preview PDF', go: save ? 'Download' : 'Preview',
-      field: { label: 'Scripts', choices: [['one', label(st.open)], ['all', 'The whole month (' + st.series.length + ' scripts)']], seg: false, value: 'all' }
+      field: { label: 'Scripts', choices: [['one', 'This script'], ['all', 'Whole month']], seg: true, value: 'all' }
     }, function (v) { go(v === 'all'); });
   }
   function gather(ids) {
@@ -1153,6 +1239,9 @@
   /* ---- The address -------------------------------------------------------- */
   function urlState() {
     if (!st.open || !st.open.id) return {};
+    /* Add script's editor names the month it adds to; a refresh opens it
+       again, nothing having been stored. */
+    if (st.pending) return { month: st.open.id, add: '1' };
     if (st.mode === 'month' && st.editing !== st.open.id) return { month: st.open.id };
     return st.editing === st.open.id ? { script: st.open.id, edit: '1' } : { script: st.open.id };
   }
@@ -1171,7 +1260,13 @@
     var id = q.get('script');
     if (st.editing) closeEditor();
     if (id) { openScript(id, false, q.get('edit') === '1' && may('work')); return; }
-    if (q.get('month')) { openMonth(q.get('month'), false); return; }
+    if (q.get('month')) {
+      var add = q.get('add') === '1' && may('work');
+      openMonth(q.get('month'), false).then(function () {
+        if (add && st.open && st.open.client_id && st.mode === 'month') nextVideo($('vsNextVideo'), false);
+      });
+      return;
+    }
     st.open = null;
     $('vsEditView').hidden = true;
     $('vsRecord').hidden = true;
