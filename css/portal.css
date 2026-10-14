@@ -10330,6 +10330,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
 .ovw-kpi { display: grid; align-content: start; gap: 2px; min-width: 0; }
 .ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovw-kpi-label .ovw-short { display: none; }
+.is-narrow .ovw-kpi-label.has-short .ovw-long { display: none; }
+.is-narrow .ovw-kpi-label.has-short .ovw-short { display: inline; }
 .ovw-kpi-fig { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 30px; overflow-wrap: anywhere; }
 .ovw-kpi-fig.is-money { font-size: 21px; }
 .ovw-kpi-fig.is-err { color: var(--err); }
@@ -11899,15 +11902,26 @@ button.vs-row { cursor: pointer; }
    height: its target overflows the row evenly. */
 .eng-meetlink .kmenu-btn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
 
+/* The Active gate's Billing sheet offers the client details form
+   (2026-10-15, audit CLI-6): one shaded line, its act at the right edge. */
+.billask { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 14px;
+  margin-bottom: 16px; border-radius: var(--radius-sm); background: var(--sunk); font-size: 13px; color: var(--ink-soft); }
+.billask > span { min-width: 0; }
+.billask[hidden] { display: none; }
+
 /* QUOTATIONS (2026-10-14, js/quotes.js): a client's quotations above its
    service lines, and the Build quote sheet. */
 .qt-box > .viewhead { margin-top: 0; }
 .qt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.qt-row { grid-template-columns: minmax(0, 1fr) 140px 190px var(--ctl-h); }
+.qt-row { grid-template-columns: minmax(0, 1fr) 140px 190px 116px var(--ctl-h); }
+/* Download on the row: sending the quotation is the next act every time
+   (2026-10-15, audit CLI-5). */
+.qt-dl { justify-self: end; }
 .qt-amt, .qt-state { display: flex; flex-direction: column; }
 .qt-amt small, .qt-state small { font-size: 12px; color: var(--ink-mute); font-weight: 400; }
 .qt-ref { font-variant-numeric: tabular-nums; }
-.is-narrow .qt-row { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act"; row-gap: 2px; align-items: start; }
+.is-narrow .qt-row { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl dl"; row-gap: 2px; align-items: start; }
+.is-narrow .qt-row > .qt-dl { grid-area: dl; justify-self: start; margin-top: 8px; }
 .is-narrow .qt-row.crm-head { display: none; }
 .is-narrow .qt-row > .qt-name { grid-area: name; }
 .is-narrow .qt-row > .qt-amt { grid-area: amt; text-align: right; }

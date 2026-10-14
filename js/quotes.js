@@ -106,11 +106,11 @@
     if (!list.length) html += '<div class="empty">No quotations.</div>';
     else {
       html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
-        '<span class="svc-rate">Amount</span><span>State</span><span></span></div>' +
+        '<span class="svc-rate">Amount</span><span>State</span><span></span><span></span></div>' +
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
           var items = [];
-          items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
+          if (q.removed_at) items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
           if (WA() && WA().may('quotation') && !q.removed_at && q.status !== 'not_proceeding') {
@@ -131,8 +131,9 @@
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
               (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
-            '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
-              DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div></span></div>';
+            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>') + '</span>' +
+            '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
+              DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';
         }).join('') + '</div>';
     }
     if (gone.length) {
@@ -154,6 +155,9 @@
     Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
+      var dl = row.querySelector('.qt-dl [data-a="pdf"]');
+      if (dl) dl.addEventListener('click', function () { act('pdf', q, ctx, host, dl); });
+      if (!btn) return;
       btn.addEventListener('click', function () {
         var open = menu.hidden;
         Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
@@ -262,7 +266,7 @@
     B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null };
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
-    $('qbLines').innerHTML = '';
+    $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
     card(ctx, function (c, err) {
       if (!c) { ctx.msg('qtMsg', said(err) || 'No rate card version is live.', 'err'); B = null; return; }
       B.card = c;
@@ -444,6 +448,7 @@
       B.sel = selection();
       B.priced = null;
       $('qbSave').disabled = true;
+      $('qbSum').textContent = '';
       B.ctx.db.rpc('quote_preview', { p_sel: B.sel }).then(function (r) {
         if (!B || seq !== B.seq) return;
         var d = r.data || {};
@@ -454,9 +459,18 @@
         }
         B.priced = d;
         $('qbLines').innerHTML = table(d);
+        $('qbSum').textContent = sumOf(d);
         $('qbSave').disabled = false;
       }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
     }, 200);
+  }
+  /* The figure the person is choosing towards, kept in sight in the foot
+     while the lines and totals sit at the sheet's end (2026-10-15). */
+  function sumOf(d) {
+    var t = (d && d.totals) || {}, out = [];
+    if (t.month) out.push('RM ' + acct(t.month.incl) + ' monthly');
+    if (t.once) out.push('RM ' + acct(t.once.incl) + ' one-off');
+    return out.length ? out.join(' · ') + ' incl. SST' : '';
   }
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {

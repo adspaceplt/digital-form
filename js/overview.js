@@ -523,6 +523,13 @@
     } }
   ];
   function titleOf(x) { return typeof x.title === 'function' ? x.title() : x.title; }
+  /* A tile's label, with its narrow word where it has one. */
+  function label(el, t) {
+    var l = el.querySelector('.ovw-kpi-label'), sh = t.short ? t.short() : '';
+    l.classList.toggle('has-short', Boolean(sh));
+    if (!sh) { l.textContent = titleOf(t); return; }
+    l.innerHTML = '<span class="ovw-long">' + esc(titleOf(t)) + '</span><span class="ovw-short">' + esc(sh) + '</span>';
+  }
 
   /* ---- The tiles -------------------------------------------------------------------
      A tile: its label, its figure, one line under it and, where the figure
@@ -549,7 +556,9 @@
     } },
     /* Committed monthly value for whoever may open a client's Services, from
        the lines that part opens; Active clients for everyone else. */
-    { key: 'value', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; }, can: canClients, load: function () {
+    { key: 'value', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
+      /* Its narrow word: the whole label is cut at a phone's tile (2026-10-15, audit OVW-1). */
+      short: function () { return canValue() ? 'Committed value' : ''; }, can: canClients, load: function () {
       if (canValue()) {
         return R.lines().then(function (lines) { return figuresFor(rangeOf(period), lines); }).then(function (f) {
           var won = f.money && f.money.won, any = won && Object.keys(won).some(function (k) { return won[k]; });
@@ -880,14 +889,14 @@
     el.setAttribute('data-tile', t.key);
     el.innerHTML = '<span class="ovw-kpi-label"></span><b class="ovw-kpi-fig"><span class="skel skel-w"></span></b>' +
       '<span class="ovw-kpi-sub"></span><span class="ovw-kpi-trend"></span>';
-    el.querySelector('.ovw-kpi-label').textContent = titleOf(t);
+    label(el, t);
     grid.appendChild(el);
     var run = function () {
       t.load().then(function (o) {
         var fig = el.querySelector('.ovw-kpi-fig');
         fig.textContent = o.fig;
         fig.className = 'ovw-kpi-fig' + (o.tone ? ' is-' + o.tone : '') + (o.money ? ' is-money' : '');
-        el.querySelector('.ovw-kpi-label').textContent = titleOf(t);
+        label(el, t);
         el.querySelector('.ovw-kpi-sub').textContent = o.sub || '';
         el.querySelector('.ovw-kpi-trend').innerHTML = o.bar != null
           ? '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(o.bar * 100) + '%"></i></span>'
