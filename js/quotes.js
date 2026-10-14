@@ -1,0 +1,452 @@
+/* ADspace Digital Portal — a client's quotations (2026-10-14).
+ *
+ * A quotation is made from a selection and priced by the database alone
+ * (`quote_preview` while it is ticked, `quotation_create` to keep it), from
+ * the version of the rate card that is live, so the console, the website and
+ * the PDF never disagree. It is kept as sent and never edited: Make a copy
+ * prices the same selection again, and a client may hold several. Issue
+ * Letter of Offer turns the chosen one's lines into the client's To quote
+ * lines (`quotation_offer`) and opens the letter sheet on them.
+ *
+ * crm.js hands each call its context: { client, db, may(part, level),
+ * esc, msg(id, text, kind), services, live (service id to letter number),
+ * reload(done), offer(ids), undo(text, fn, host) }.
+ */
+(function () {
+  'use strict';
+  var MON = window.ADspaceMoney;
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var PLAT = [['meta', 'Meta'], ['tiktok', 'TikTok'], ['rednote', 'rednote'], ['linkedin', 'LinkedIn']];
+  var LANG = [['en', 'English'], ['zh', 'Chinese'], ['ms', 'Malay']];
+  var BUDGETS = [[0, 'None'], [2000, 'Up to RM 2,000'], [4000, 'Up to RM 4,000'], [8000, 'Up to RM 8,000'],
+    [14000, 'Up to RM 14,000'], [20000, 'Up to RM 20,000'], [-1, 'Above RM 20,000 (on request)']];
+  var SAID = {
+    denied: 'This needs Clients: Services at Work.', 'client-scope': 'This client is outside your access.',
+    'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
+    'plan-term': 'A plan needs a commitment of six months or more.', 'no-platform': 'Choose at least one platform.',
+    empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
+    'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
+    'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.'
+  };
+  function said(e) {
+    if (!e) return '';
+    var m = String(e.message || e);
+    if (/could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    return SAID[m] || m;
+  }
+  function rm(n) { return MON.money2(n, 'MY').replace(/^RM /, ''); }
+  function acct(n) { n = Number(n || 0); return n < 0 ? '(' + rm(-n) + ')' : rm(n); }
+
+  /* What a quotation is now, worked out on every read: removed, a Letter of
+     Offer issued from it, Not proceeding, requested by the client, valid, or
+     past its day. */
+  function stateOf(q, live) {
+    if (q.removed_at) return ['Removed', 'is-off'];
+    var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
+    if (held) return ['Letter of Offer issued', 'is-ok', held];
+    if (q.status === 'not_proceeding') return ['Not proceeding', 'is-off'];
+    var today = window.ADspaceClock.today();
+    if (q.valid_until < today) return ['Expired', 'is-off'];
+    if (q.status === 'requested') return ['Letter of Offer requested', 'is-warn'];
+    return ['Valid until ' + window.ADspaceClock.date(q.valid_until).replace(/ \d{4}$/, ''), 'is-live'];
+  }
+  function monthly(q) { var m = q.totals && q.totals.month; return m ? m.incl : null; }
+  function headline(q) {
+    var m = monthly(q);
+    if (m != null) return ['RM ' + rm(m), 'Monthly incl. SST'];
+    var o = q.totals && q.totals.once;
+    return o ? ['RM ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
+  }
+  function metaOf(q) {
+    var t = q.totals || {};
+    var bits = [];
+    var plan = (q.lines || []).filter(function (l) { return l.kind === 'plan'; })[0];
+    if (plan) bits.push(plan.label.replace(/^Social Media Services · /, ''));
+    if (t.month) bits.push(t.term + ' months');
+    bits.push((q.source === 'website' ? 'From the website' : 'Made by ' + (q.made_by || 'the team')) + ', ' +
+      window.ADspaceClock.date(q.issued_at));
+    return bits.join(' · ');
+  }
+
+  /* The client's quotations and, for each, the service lines made from it. */
+  function load(ctx, done) {
+    ctx.db.from('quotations').select('*').eq('client_id', ctx.client.id).order('issued_at', { ascending: false })
+      .then(function (r) {
+        if (r.error) { done(null, r.error); return; }
+        var rows = r.data || [];
+        rows.forEach(function (q) {
+          q._lines = (ctx.services || []).filter(function (l) { return l.quotation_id === q.id; }).map(function (l) { return l.id; });
+        });
+        done(rows);
+      }).catch(function (e) { done(null, e); });
+  }
+
+  var showRemoved = false;
+  /* The Services pane's list: a row a quotation (the reference over what it
+     is, the monthly figure, its state, a ⋯), the removed ones on asking. */
+  function paint(host, ctx, rows) {
+    var live = ctx.live || {};
+    var shown = rows.filter(function (q) { return !q.removed_at; });
+    var gone = rows.filter(function (q) { return q.removed_at; });
+    var maySet = ctx.may('clients.services', 'work');
+    var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
+      (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">Build quote</button>' : '') + '</div>' +
+      '<div class="msg" id="qtMsg"></div>';
+    var list = shown.concat(showRemoved ? gone : []);
+    if (!list.length) html += '<div class="empty">No quotations.</div>';
+    else {
+      html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
+        '<span class="svc-rate">Amount</span><span>State</span><span></span></div>' +
+        list.map(function (q) {
+          var st = stateOf(q, live), h = headline(q);
+          var items = [];
+          items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
+          if (maySet && !q.removed_at) {
+            if (st[0] !== 'Not proceeding' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
+            items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
+            items.push(q.status === 'not_proceeding'
+              ? '<button class="kmenu-item" data-a="proceeding" type="button"><b>Restore</b></button>'
+              : '<button class="kmenu-item" data-a="not_proceeding" type="button"><b>Not proceeding</b></button>');
+            items.push('<button class="kmenu-item is-danger" data-a="remove" data-soft type="button"><b>Remove</b></button>');
+          }
+          if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>');
+          return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + '" data-id="' + esc(q.id) + '">' +
+            '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + esc(metaOf(q)) + '</small></span>' +
+            '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
+            '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
+              (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
+            '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
+              DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div></span></div>';
+        }).join('') + '</div>';
+    }
+    if (gone.length) {
+      html += '<button type="button" class="linkish crm-removed-toggle" id="qtGone">' +
+        (showRemoved ? 'Hide ' : 'Show ') + gone.length + ' removed quotation' + (gone.length === 1 ? '' : 's') + '</button>';
+    }
+    host.innerHTML = html;
+    host.hidden = false;
+    var b = $('qtBuild');
+    if (b) b.addEventListener('click', function () { build(ctx, null, b); });
+    var g = $('qtGone');
+    if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });
+    Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
+      var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
+      var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
+      btn.addEventListener('click', function () {
+        var open = menu.hidden;
+        Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(btn, menu);
+      });
+      Array.prototype.forEach.call(menu.querySelectorAll('[data-a]'), function (it) {
+        it.addEventListener('click', function () {
+          menu.hidden = true;
+          act(it.getAttribute('data-a'), q, ctx, host, btn);
+        });
+      });
+    });
+  }
+
+  function act(a, q, ctx, host, btn) {
+    if (a === 'pdf') {
+      if (!window.ADspaceQuotePdf) return;
+      var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
+      window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '' }).then(function (blob) {
+        window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
+      }).catch(function (e) {
+        if (tab) try { tab.close(); } catch (x) {}
+        ctx.msg('qtMsg', said(e) || 'Not drawn.', 'err');
+      });
+      return;
+    }
+    if (a === 'copy') { build(ctx, q.selection, btn); return; }
+    if (a === 'offer') {
+      ctx.db.rpc('quotation_offer', { p_id: q.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+        ctx.offer(d.ids || []);
+      }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+      return;
+    }
+    var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
+    set(q, a, ctx, function () {
+      if (!back) { ctx.msg('qtMsg', a === 'restore' || a === 'proceeding' ? 'Restored.' : 'Saved.', 'ok'); return; }
+      ctx.undo(q.ref + (a === 'remove' ? ' removed.' : ' marked Not proceeding.'), function () {
+        set(q, back, ctx, function () {});
+      }, $('qtMsg'));
+    });
+  }
+  function set(q, what, ctx, ok) {
+    ctx.db.rpc('quotation_set', { p_id: q.id, p_what: what }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+      ctx.reload();
+      ok();
+    }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+  }
+
+  /* The Overview's section: three rows, read only. */
+  function overview(rows, live) {
+    var list = (rows || []).filter(function (q) { return !q.removed_at; }).slice(0, 3);
+    if (!list.length) return '';
+    return '<div class="qt-ov">' + list.map(function (q) {
+      var st = stateOf(q, live), h = headline(q);
+      return '<div class="qt-ovrow"><span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + esc(metaOf(q)) + '</small></span>' +
+        '<span class="qt-ovend"><b>' + esc(h[0]) + '</b><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span></span></div>';
+    }).join('') + '</div>';
+  }
+
+  // ---- Build quote --------------------------------------------------------
+  var B = null;   // the sheet's state while open
+  function card(ctx, done) {
+    ctx.db.rpc('rate_card_current').then(function (r) {
+      if (r.error || !r.data) { done(null, r.error || 'no-card'); return; }
+      done(r.data);
+    }).catch(function (e) { done(null, e); });
+  }
+  function svcs(c, role) {
+    return ((c.snapshot || {}).services || []).filter(function (s) {
+      return s.active !== false && s.spec && s.spec.role === role;
+    });
+  }
+  function feeOf(p) {
+    var f = svcs(B.card, 'platform').filter(function (x) { return x.spec.platform === p; })[0];
+    return f ? Number(f.rate) : 0;
+  }
+  function planOf() {
+    return svcs(B.card, 'plan').filter(function (x) { return x.slug === B.plan; })[0] || null;
+  }
+
+  function build(ctx, sel, opener) {
+    sel = sel || {};
+    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null };
+    $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
+    $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
+    $('qbLines').innerHTML = '';
+    card(ctx, function (c, err) {
+      if (!c) { ctx.msg('qtMsg', said(err) || 'No rate card version is live.', 'err'); B = null; return; }
+      B.card = c;
+      $('qbFor').textContent += ' · priced from v.' + c.version;
+      var chosen = planOf();
+      $('qbAds').value = chosen && chosen.spec.ads ? 'ads' : 'none';
+      $('qbAds').dispatchEvent(new Event('input'));
+      paintPlans();
+      mixFor(sel.mix || 0);
+      Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
+        i.checked = (sel.platforms || []).indexOf(i.value) > -1;
+      });
+      $('qbGraphic').value = String((sel.extra || {})['static-graphic'] || 0);
+      $('qbReel').value = String((sel.extra || {})['reels-60'] || 0);
+      Array.prototype.forEach.call(document.querySelectorAll('#qbLangs input'), function (i) {
+        i.checked = (sel.langs || ['en']).indexOf(i.value) > -1;
+      });
+      $('qbTranslate').checked = Boolean(sel.translate);
+      $('qbBudget').value = String(sel.budget == null ? 0 : sel.budget);
+      var set = (c.snapshot || {}).settings || {};
+      $('qbTerm').innerHTML = [6, 12, 24].map(function (m) {
+        var pct = Number(set[m < 12 ? 'term_6_11' : m < 24 ? 'term_12_23' : 'term_24'] || 0);
+        return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
+      }).join('');
+      $('qbTerm').value = String(sel.term || 6);
+      var once = {};
+      (sel.once || []).forEach(function (o) { once[o.slug] = o.qty; });
+      $('qbOnce').innerHTML = ['content', 'verify', 'koc'].map(function (role) {
+        return svcs(c, role).filter(function (s) { return s.rate != null; }).map(function (s) {
+          return '<div><label class="field-label" for="qbO-' + esc(s.slug) + '">' + esc(s.name) + ' <small class="qb-rate">' + esc(rm(s.rate)) + '</small></label>' +
+            '<input class="input" type="number" min="0" max="999" step="1" inputmode="numeric" id="qbO-' + esc(s.slug) + '" data-slug="' +
+            esc(s.slug) + '" value="' + esc(once[s.slug] || 0) + '"></div>';
+        }).join('');
+      }).join('');
+      $('qbOnceMore').open = Boolean((sel.once || []).length);
+      sync();
+      window.ADspaceSheet.show($('qbBox'), { opener: opener || null });
+      preview();
+    });
+  }
+
+  /* The plans of the chosen kind as cards: the letter and its fee over its
+     platforms and contents; the one chosen pressed again leaves no plan
+     (advertising or one-off items alone). */
+  function paintPlans() {
+    var withAds = $('qbAds').value === 'ads';
+    var list = svcs(B.card, 'plan').filter(function (p) { return Boolean(p.spec.ads) === withAds; });
+    $('qbPlans').innerHTML = list.map(function (p) {
+      var on = p.slug === B.plan;
+      return '<button class="qb-plan' + (on ? ' is-on' : '') + '" type="button" role="radio" aria-checked="' + on + '" data-plan="' + esc(p.slug) + '">' +
+        '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · RM ' + esc(rm(p.rate).replace(/\.00$/, '')) +
+        '</b><small>' + p.spec.platforms + (p.spec.platforms === 1 ? ' platform' : ' platforms') + ' · ' + p.spec.contents + ' contents</small></span></button>';
+    }).join('');
+  }
+  function mixFor(at) {
+    var p = planOf();
+    var mixes = p ? p.spec.mix : [];
+    $('qbMix').innerHTML = mixes.map(function (m, i) {
+      var w = [];
+      if (m.graphic) w.push(m.graphic + (m.graphic === 1 ? ' graphic' : ' graphics'));
+      if (m.reel) w.push(m.reel + (m.reel === 1 ? ' reel' : ' reels'));
+      return '<option value="' + i + '"' + (i === at ? ' selected' : '') + '>' + esc(w.join(' + ')) + '</option>';
+    }).join('');
+    /* One option is a fact read, never a disabled select. */
+    $('qbMix').hidden = mixes.length < 2;
+    $('qbMixOne').hidden = mixes.length !== 1;
+    $('qbMixOne').textContent = mixes.length === 1 ? $('qbMix').options[0].textContent : '';
+  }
+  /* What cannot apply is hidden: the content, the extras and the languages
+     need a plan. Beside each platform, what ticking it adds. */
+  function sync() {
+    var p = planOf();
+    $('qbMixRow').hidden = !p;
+    $('qbExtras').hidden = !p;
+    $('qbLangCol').hidden = !p;
+    $('qbPlatsLabel').textContent = p ? 'Platforms (' + p.spec.platforms + ' in the plan)' : 'Platforms';
+    var meta = feeOf('meta');
+    var ticked = Array.prototype.filter.call(document.querySelectorAll('#qbPlats input'), function (i) { return i.checked; }).map(function (i) { return i.value; });
+    Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
+      var f = feeOf(i.value), add = '';
+      if (!i.checked) {
+        if (!p) add = f;
+        else if (ticked.length < p.spec.platforms) add = f > meta ? f - meta : '';
+        else add = f;
+      }
+      i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + Number(add).toLocaleString('en-MY') : '';
+    });
+  }
+  function selection() {
+    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6,
+      platforms: [], langs: [], translate: $('qbTranslate').checked, budget: Number($('qbBudget').value) || 0, once: [] };
+    if (sel.plan) sel.mix = Number($('qbMix').value) || 0;
+    Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) { if (i.checked) sel.platforms.push(i.value); });
+    Array.prototype.forEach.call(document.querySelectorAll('#qbLangs input'), function (i) { if (i.checked) sel.langs.push(i.value); });
+    if (sel.plan) {
+      sel.extra = {};
+      var g = Math.max(0, Math.floor(Number($('qbGraphic').value) || 0)), r = Math.max(0, Math.floor(Number($('qbReel').value) || 0));
+      if (g) sel.extra['static-graphic'] = g;
+      if (r) sel.extra['reels-60'] = r;
+    } else { sel.translate = false; }
+    Array.prototype.forEach.call(document.querySelectorAll('#qbOnce input'), function (i) {
+      var n = Math.max(0, Math.floor(Number(i.value) || 0));
+      if (n) sel.once.push({ slug: i.getAttribute('data-slug'), qty: n });
+    });
+    return sel;
+  }
+  /* The rates beside the extras and the translation come from the same
+     answer that prices the lines. */
+  function hints(d) {
+    var x = (d && d.extra_rates) || {};
+    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = x['static-graphic'] != null ? rm(x['static-graphic']) : '';
+    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = x['reels-60'] != null ? rm(x['reels-60']) : '';
+    var p = planOf(), tr = svcs(B.card, 'language')[0];
+    var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
+    var langs = document.querySelectorAll('#qbLangs input:checked').length;
+    $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + Number(tr.rate).toLocaleString('en-MY') : '';
+  }
+  var timer = null;
+  function preview() {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      if (!B) return;
+      var seq = ++B.seq;
+      B.sel = selection();
+      B.priced = null;
+      $('qbSave').disabled = true;
+      B.ctx.db.rpc('quote_preview', { p_sel: B.sel }).then(function (r) {
+        if (!B || seq !== B.seq) return;
+        var d = r.data || {};
+        hints(d);
+        if (r.error || d.error) {
+          $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(r.error || d.error)) + '</p>';
+          return;
+        }
+        B.priced = d;
+        $('qbLines').innerHTML = table(d);
+        $('qbSave').disabled = false;
+      }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
+    }, 200);
+  }
+  /* The lines and the totals as the quotation will keep them. */
+  function table(d) {
+    var t = d.totals || {}, rows = d.lines || [];
+    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span>Line</span><span class="svc-rate">Qty</span>' +
+      '<span class="svc-rate">Rate (RM)</span><span class="svc-rate">Subtotal (RM)</span></div>' +
+      rows.map(function (l) {
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (l.basis === 'once' ? '<small>One-off</small>' : '') + '</span>' +
+          '<span class="svc-rate qb-qty">' + esc(l.qty) + '</span><span class="svc-rate qb-rate">' + esc(rm(l.rate)) + '</span>' +
+          '<span class="qb-calc">' + esc(l.qty + ' × ' + rm(l.rate)) + '</span>' +
+          '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
+      }).join('') + '</div>';
+    var tot = [];
+    if (t.month) {
+      tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
+      if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
+      tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', 'RM ' + acct(t.month.incl), 1]);
+    }
+    if (t.once) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', 'RM ' + acct(t.once.incl), 1]);
+    out += '<dl class="qb-tot">' + tot.map(function (x) {
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+    }).join('') + '</dl>';
+    var notes = [];
+    if (t.budget > 0) notes.push('Advertising budget of up to RM ' + Number(t.budget).toLocaleString('en-MY') + ' per month is billed separately.');
+    if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above RM 20,000' : x; }).join(', ') + '.');
+    if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
+    return out;
+  }
+
+  function wire() {
+    if (!$('qbBox') || wire.done) return;
+    wire.done = true;
+    var on = function () { if (!B) return; sync(); preview(); };
+    $('qbAds').addEventListener('change', function () {
+      if (!B || !B.card) return;
+      var p = planOf();
+      if (p && Boolean(p.spec.ads) !== (this.value === 'ads')) {
+        var same = svcs(B.card, 'plan').filter(function (x) { return Boolean(x.spec.ads) === ($('qbAds').value === 'ads') && x.spec.platforms === p.spec.platforms; })[0];
+        B.plan = same ? same.slug : null;
+      }
+      paintPlans(); mixFor(0); on();
+    });
+    $('qbPlans').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-plan]');
+      if (!b || !B) return;
+      var slug = b.getAttribute('data-plan');
+      B.plan = B.plan === slug ? null : slug;
+      paintPlans(); mixFor(0); on();
+    });
+    $('qbBox').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-step]');
+      if (!b) return;
+      var i = $(b.getAttribute('data-for'));
+      i.value = String(Math.min(99, Math.max(0, (Number(i.value) || 0) + Number(b.getAttribute('data-step')))));
+      on();
+    });
+    ['qbMix', 'qbBudget', 'qbTerm', 'qbTranslate', 'qbGraphic', 'qbReel'].forEach(function (id) {
+      $(id).addEventListener('change', on);
+      $(id).addEventListener('input', on);
+    });
+    ['qbPlats', 'qbLangs', 'qbOnce'].forEach(function (id) { $(id).addEventListener('change', on); $(id).addEventListener('input', on); });
+    $('qbCancel').addEventListener('click', function () { window.ADspaceSheet.close(); B = null; });
+    $('qbClose').addEventListener('click', function () { $('qbCancel').click(); });
+    $('qbSave').addEventListener('click', function () {
+      if (!B || !B.priced) return;
+      var go = this;
+      B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : String(Date.now()));
+      go.disabled = true;
+      B.ctx.db.rpc('quotation_create', { p_client: B.ctx.client.id, p_sel: B.sel, p_idem: B.idem }).then(function (r) {
+        var d = r.data || {};
+        go.disabled = false;
+        if (r.error || d.error) { $('qbMsg').textContent = said(r.error || d.error); $('qbMsg').className = 'msg err'; return; }
+        var ctx = B.ctx;
+        window.ADspaceSheet.close();
+        B = null;
+        ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' made.', 'ok'); });
+      }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+
+  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf };
+})();

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261013c">
+<link rel="stylesheet" href="/css/portal.css?v=20261014">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -84,7 +84,7 @@
 <script src="/js/notice.js?v=20261010zk"></script>
 <script src="/js/whatsapp.js?v=20261010zg"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261013b"></script>
+<script src="/js/money.js?v=20261014"></script>
 <script src="/js/media.js?v=20261012a"></script>
 <script src="/js/mockups.js?v=20261004a"></script>
 </head>
@@ -1078,6 +1078,7 @@
           </div>
         </div>
       </div>
+        <div id="crmQuotes" class="qt-box" hidden></div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
         <!-- What the client asked for from the portal. The team moves each
@@ -1153,6 +1154,74 @@
           </div>
         </div>
 
+        <!-- Build quote (js/quotes.js): a selection priced by the database
+             from the live rate card, kept as a quotation. -->
+        <!-- Build quote (js/quotes.js), as the approved board draws it: a
+             selection priced by the database from the live rate card and
+             kept as a quotation. -->
+        <div class="sheet" id="qbBox" hidden>
+          <div class="sheet-card formsheet qb-card" role="dialog" aria-modal="true" aria-labelledby="qbTitle">
+            <div class="sheet-head">
+              <div class="qb-headtext"><h3 id="qbTitle">Build quote</h3><p class="qb-for" id="qbFor"></p></div>
+              <button class="iconbtn" id="qbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body">
+              <section class="fsec">
+                <div class="qb-planhead"><h4 class="fsec-h">Plan</h4>
+                  <select class="select select-sm" id="qbAds" data-seg aria-label="Advertising"><option value="none">Without ads</option><option value="ads">With ads</option></select></div>
+                <div class="qb-plans" id="qbPlans" role="radiogroup" aria-label="Plan"></div>
+                <div class="row fgrid qb-pick">
+                  <div id="qbMixRow"><label class="field-label" for="qbMix" id="qbMixLabel">Content</label><select class="select" id="qbMix" data-nofind></select><div class="input readfield qb-one" id="qbMixOne" aria-labelledby="qbMixLabel" hidden></div></div>
+                  <div><span class="field-label" id="qbPlatsLabel">Platforms</span>
+                    <div class="tickrow" id="qbPlats" role="group" aria-labelledby="qbPlatsLabel">
+                      <label class="tickline"><input type="checkbox" value="meta"> <span>Meta <small class="qb-rate"></small></span></label>
+                      <label class="tickline"><input type="checkbox" value="tiktok"> <span>TikTok <small class="qb-rate"></small></span></label>
+                      <label class="tickline"><input type="checkbox" value="rednote"> <span>rednote <small class="qb-rate"></small></span></label>
+                      <label class="tickline"><input type="checkbox" value="linkedin"> <span>LinkedIn <small class="qb-rate"></small></span></label>
+                    </div></div>
+                </div>
+              </section>
+              <section class="fsec qb-three">
+                <div id="qbExtras"><span class="field-label">Extra contents</span>
+                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbGraphic" aria-label="One fewer Graphic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbGraphic" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Graphic"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbGraphic" aria-label="One more Graphic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Graphic <small class="qb-rate" data-rate-for="qbGraphic"></small></span></div>
+                  <div class="qb-step"><button class="iconbtn qb-stepbtn" type="button" data-step="-1" data-for="qbReel" aria-label="One fewer Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button><input class="qb-stepval" id="qbReel" type="number" min="0" max="99" step="1" inputmode="numeric" value="0" aria-label="Reel 60s"><button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="qbReel" aria-label="One more Reel 60s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><span class="qb-stepname">Reel 60s <small class="qb-rate" data-rate-for="qbReel"></small></span></div>
+                </div>
+                <div id="qbLangCol"><span class="field-label" id="qbLangsLabel">Languages</span>
+                  <div class="tickstack" id="qbLangs" role="group" aria-labelledby="qbLangsLabel">
+                    <label class="tickline"><input type="checkbox" value="en" checked> <span>English</span></label>
+                    <label class="tickline"><input type="checkbox" value="zh"> <span>Chinese</span></label>
+                    <label class="tickline"><input type="checkbox" value="ms"> <span>Malay</span></label>
+                  </div>
+                  <p class="qb-hint">Shared across the contents, no charge</p>
+                  <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Translate every content <small class="qb-rate" id="qbTrRate"></small></span></label>
+                </div>
+                <div>
+                  <label class="field-label" for="qbBudget">Advertising budget per month</label>
+                  <select class="select" id="qbBudget" data-nofind>
+                    <option value="0">None</option><option value="2000">Up to RM 2,000</option><option value="4000">Up to RM 4,000</option>
+                    <option value="8000">Up to RM 8,000</option><option value="14000">Up to RM 14,000</option>
+                    <option value="20000">Up to RM 20,000</option><option value="-1">Above RM 20,000 (on request)</option>
+                  </select>
+                  <label class="field-label qb-termlabel" for="qbTerm">Term</label>
+                  <select class="select" id="qbTerm" data-nofind><option value="6">6 months</option><option value="12">12 months</option><option value="24">24 months</option></select>
+                </div>
+              </section>
+              <details class="fmore" id="qbOnceMore">
+                <summary>One-off items <span class="fmore-sum"></span></summary>
+                <div class="row fgrid" id="qbOnce"></div>
+              </details>
+              <section class="fsec qb-lines">
+                <h4 class="fsec-h">Quotation</h4>
+                <div id="qbLines" aria-live="polite"></div>
+              </section>
+              <div class="msg" id="qbMsg"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="qbSave" type="button">Create quotation</button>
+              <button class="btn btn-quiet" id="qbCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">
@@ -5230,14 +5299,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261012a"></script>
-<script src="/js/admin.js?v=20261013d"></script>
+<script src="/js/admin.js?v=20261014"></script>
 <script src="/js/documents.js?v=20261012a"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261012a"></script>
 <script src="/js/reports.js?v=20261013e"></script>
 <script src="/js/register.js?v=20261012a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/crm.js?v=20261013g"></script>
+<script src="/js/quotes.js?v=20261014"></script>
+<script src="/js/quotepdf.js?v=20261014"></script>
+<script src="/js/crm.js?v=20261014"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261012q"></script>
 <script src="/js/namecard.js?v=20261009s"></script>
@@ -5251,6 +5322,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/health.js?v=20261012a"></script>
 <script src="/js/search.js?v=20261011a"></script>
 <script src="/js/overview.js?v=20261012q"></script>
-<script src="/js/settings.js?v=20261013b"></script>
+<script src="/js/settings.js?v=20261014"></script>
 </body>
 </html>

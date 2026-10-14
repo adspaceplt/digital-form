@@ -965,7 +965,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.log = []; state.ovFail = {}; ba.id = null; }
+    if (!same) { state.contacts = []; state.log = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -1315,7 +1315,7 @@
     /* In the tabs' order (2026-10-11): Calls and visits, then the contacts,
        the services and the letters; a section the reader may not open is
        not drawn, and one whose read was refused says so, never empty. */
-    var secs = [ovTouches(), ovContact(c), ovServices(c), ovDocuments(c)].join('');
+    var secs = [ovQuotes(), ovTouches(), ovContact(c), ovServices(c), ovDocuments(c)].join('');
     box.innerHTML = secs ? '<div class="ovcard">' + secs + '</div>' : '';
 
     wireGo(box);
@@ -1459,6 +1459,14 @@
       (rows.length > 5 ? '<p class="ovmore">' + (rows.length - 5) + ' more</p>' : '') +
       '</div>';
     return ovSection('Services', 'services', 'Manage services', body);
+  }
+
+  /* The quotations come first while there are any: on a lead from the
+     website they are what the record is about. */
+  function ovQuotes() {
+    var Q = window.ADspaceQuotes;
+    if (!Q || !(state.quotes || []).some(function (q) { return !q.removed_at; })) return '';
+    return ovSection('Quotations', 'services', 'View all', Q.overview(state.quotes, liveMap()));
   }
 
   function ovDocuments() {
@@ -3593,7 +3601,7 @@
      removed contact or call is (the user's delete audit, 2026-10-07). */
   var showRemovedServices = false;
 
-  function loadServices() {
+  function loadServices(after) {
     var box = $('crmServices');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
     loadCatalog(function () {
@@ -3608,8 +3616,48 @@
           paintServices();
           paintSummary();
           quotedLines();
+          loadQuotes();
+          if (after) after();
         });
     });
+  }
+
+  /* A client's quotations (js/quotes.js): read after the lines, since a
+     quotation knows its lines by them, and painted above them. */
+  function liveMap() {
+    var live = {};
+    (state.documents || []).forEach(function (d) {
+      if (!DOCS || !DOCS.liveDoc(d)) return;
+      ((state.docMap || {})[d.id] || []).forEach(function (id) { live[id] = d.number; });
+    });
+    return live;
+  }
+  function quoteCtx() {
+    return { client: state.client, db: db, may: mayPart, msg: msg, services: state.services || [], live: liveMap(),
+      undo: undoBar,
+      attention: (function () {
+        var m = (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
+                (state.contacts || []).filter(function (x) { return !x.archived_at; })[0];
+        return m ? ((m.salutation ? m.salutation + ' ' : '') + (m.name || '')).trim() : '';
+      })(),
+      reload: function (done) { loadQuotes(done); },
+      offer: function (ids) { loadServices(function () { openPick(ids); }); } };
+  }
+  function loadQuotes(done) {
+    var Q = window.ADspaceQuotes, host = $('crmQuotes');
+    if (!Q || !host || !state.client || !mayPart('clients.services', 'view')) return;
+    var id = state.client.id;
+    Q.load(quoteCtx(), function (rows, err) {
+      if (!state.client || state.client.id !== id) return;
+      if (err) { state.quotes = null; failLine(host, 'Quotations', err.message || String(err), function () { loadQuotes(); }); host.hidden = false; return; }
+      state.quotes = rows;
+      Q.paint(host, quoteCtx(), rows);
+      paintSummary();
+      if (done) done();
+    });
+  }
+  function repaintQuotes() {
+    if (window.ADspaceQuotes && state.quotes && $('crmQuotes')) window.ADspaceQuotes.paint($('crmQuotes'), quoteCtx(), state.quotes);
   }
 
   /* A removed line a Letter of Offer quoted stays for the record (the
@@ -4132,6 +4180,7 @@
          change has none, which is what keeps it out of verification. */
       DOCS.mapOf(rows.map(function (d) { return d.id; }), function (by) {
         state.docMap = by || {};
+        repaintQuotes();
         box.innerHTML = '';
         var empty = document.createElement('div');
         empty.className = 'empty';
@@ -4402,7 +4451,7 @@
       (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
   }
 
-  function openPick() {
+  function openPick(only) {
     var c = state.client;
     msg('crmDocMsg', '');
     msg('pickMsg', '');
@@ -4437,6 +4486,12 @@
     Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
       i.disabled = true;
     });
+    /* Issued from a quotation: its own lines are the ones ticked. */
+    if (only && only.length) {
+      Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]:not([disabled])'), function (i) {
+        i.checked = only.indexOf(i.value) > -1;
+      });
+    }
     Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]'), function (i) {
       i.addEventListener('change', pickSum);
     });
@@ -5262,7 +5317,7 @@
   $('svcTax').addEventListener('click', function () {
     window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
       keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
-        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj']] }, this);
+        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote']] }, this);
   });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {

@@ -2142,6 +2142,7 @@
     'client.stage':          ['Stage changed', '', 'clients'],
     'client.billing':        ['Billing updated', '', 'clients'],
     'client.brand':          ['Brand updated', '', 'clients'],
+    'client.quotation':      ['Quotation', '', 'clients'],
     'client.service':        ['Service added', 'is-ok', 'clients'],
     'client.service_changed': ['Service changed', '', 'clients'],
     'client.service_removed': ['Service removed', 'is-danger', 'clients'],
@@ -5086,7 +5087,7 @@
      (0 to 100), adj (-100 to 100), every (0 to 24 hours) and ahead (0 to 30
      days), where 0 sends none. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
-    every: [0, 24, true], ahead: [0, 30, true] };
+    every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true] };
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
