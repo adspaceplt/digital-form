@@ -75,7 +75,7 @@
       contact: 'Contact', reach: 'Reach', contacts: 'Contacts',
       mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
-      months: function (n) { return n + ' months'; }, from: 'from', mo: 'mo',
+      months: function (n) { return n + ' months'; }, from: function (d) { return 'from ' + d; }, fromAlone: function (d) { return 'From ' + d; }, mo: 'months',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
       upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details',
       request: 'Request', fee: 'Fee', noRequests: 'No requests.', withdraw: 'Withdraw', undo: 'Undo',
@@ -84,7 +84,7 @@
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
       meetings: 'Meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
-      join: 'Join meeting', discussion: 'Content Discussion',
+      join: 'Join meeting', discussion: 'content discussion', to: 'to',
       channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
@@ -113,7 +113,7 @@
       contact: '联系人', reach: '联系方式', contacts: '联系人',
       mainContact: '主要联系人', portal: '平台', noContacts: '暂无联系人。',
       service: '服务', qtyRate: '数量 × 单价', amount: '金额', state: '状态', noServices: '暂无服务。',
-      months: function (n) { return n + ' 个月'; }, from: '起', mo: '个月',
+      months: function (n) { return n + ' 个月'; }, from: function (d) { return d + '起'; }, fromAlone: function (d) { return d + '起'; }, mo: '个月',
       quotedTotal: '待报价', confirmedTotal: '已确认',
       upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更',
       request: '申请', fee: '费用', noRequests: '暂无申请。', withdraw: '撤回', undo: '撤销',
@@ -122,7 +122,7 @@
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
       meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
-      join: '加入会议', discussion: '内容讨论',
+      join: '加入会议', discussion: '内容讨论', to: '至',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
       review: '内容审阅', open: '打开', campaign: '博主推广',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
@@ -175,13 +175,22 @@
   function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust, l.term_pct); }
   function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
   function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
+  /* The term and its start, each held whole. Where the unit already names
+     the term ("Per month, 6 month minimum") the months are not said again
+     (the client pages audit, PORTAL-9). Answers HTML. */
   function termWord(l) {
     var n = Math.max(1, Number(l.tenure || 1));
     if (n === 1 && !l.start_on) return '';
-    var nb = function (x) { return '<span class="nb">' + esc(x) + '</span>'; };
-    return (n > 1 ? nb(t().months(n)) : '') + (l.start_on ? (n > 1 ? ' ' : '') + esc(t().from) + ' ' + nb(niceDate(startDay(l.start_on))) : '');
+    var said = n > 1 && new RegExp('(^|\\D)' + n + '[ -]?(month|个月)', 'i').test(String(l.unit || ''));
+    var count = n > 1 && !said ? '<span class="nb">' + esc(t().months(n)) + '</span>' : '';
+    if (!l.start_on) return count;
+    var day = '<span class="nb">' + esc(niceDate(startDay(l.start_on))) + '</span>';
+    var from = count ? t().from : t().fromAlone;
+    return (count ? count + ' ' : '') + from(day);
   }
   function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
+  /* A number as every page writes it (js/namecard.js: +60 19-888 7777). */
+  function phoneWord(raw) { var C = window.ADspaceCard; return (C && C.phone && C.phone(raw)) || String(raw || ''); }
   function glyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   function money2(n) { return MON.money2(n, mkt()); }
   function chip(word, tone) { return '<span class="chip-state' + (tone ? ' ' + tone : '') + '">' + esc(word) + '</span>'; }
@@ -516,6 +525,7 @@
     var wrap = $('repWrap'), box = $('repBox');
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_reports', { p_client: c.id }).then(function (r) {
+      if (refused(r)) { tabShown('reports', false); failCard('ovRep', 'ovRepBox', 'ovRepGo'); return; }
       var list = (!r.error && r.data && r.data.reports) || [];
       tabShown('reports', list.length > 0);
       paintLatestReport(w, list[0]);
@@ -541,12 +551,27 @@
       box.innerHTML = ''; box.appendChild(tb);
     });
   }
+  /* A failed read is never drawn as nothing (js/state.js): a refusal keeps
+     the Overview's card with the cover's words, while a database without the
+     function (PGRST202) reads as none, as before (the client pages audit,
+     PORTAL-7). The client never reads the database's own words. */
+  function refused(r) {
+    var e = r && r.error;
+    return !!e && e.code !== 'PGRST202' && !/could not find the function/i.test(e.message || '');
+  }
+  function failCard(card, box, go) {
+    var w = t();
+    $(card).hidden = false;
+    $(go).hidden = true;   /* its tab is not drawn: nothing to view */
+    $(box).innerHTML = '<p class="cp-line"><b>' + esc(w.failTitle) + '</b></p><p class="cp-sub">' + esc(w.failText) + '</p>';
+  }
   /* The Overview's latest report: the month, the report's name and date, and
      Download. The card leaves while there is none. */
   function paintLatestReport(w, v) {
     var card = $('ovRep'), box = $('ovRepBox');
     if (!card || !box) return;
     card.hidden = !v;
+    $('ovRepGo').hidden = false;
     if (!v) { box.innerHTML = ''; return; }
     box.innerHTML = '<p class="cp-line"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b></p>' +
       '<p class="cp-sub">' + parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, w.published + ' ' + niceDate(v.published_at)]) + '</p>' +
@@ -574,7 +599,7 @@
   var DAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
   function meetSpan(v) {
     var a = myt(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
-    return clock(a) + ' – ' + clock(b);
+    return clock(a) + ' ' + t().to + ' ' + clock(b);
   }
   function meetWhen(v) {
     var a = myt(v.at);
@@ -608,6 +633,7 @@
     var wrap = $('meetWrap'), box = $('meetBox');
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_meetings', { p_client: c.id }).then(function (r) {
+      if (refused(r)) { tabShown('meetings', false); failCard('ovMeet', 'ovMeetBox', 'ovMeetGo'); return; }
       var list = (!r.error && r.data && r.data.meetings) || [];
       tabShown('meetings', list.length > 0);
       paintNextMeeting(w, list);
@@ -645,6 +671,7 @@
       .sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
     var v = ahead[0];
     card.hidden = !v;
+    $('ovMeetGo').hidden = false;
     if (!v) { box.innerHTML = ''; return; }
     /* A date as a calendar leaf, the hour in MYT beside it, Join and Add to
        calendar under them. */
@@ -828,7 +855,7 @@
             (k.role ? '<small>' + esc(k.role) + '</small>' : '') + '</span>' +
           '<span class="crm-reach">' +
             /* Each chip with its glyph, as the account manager's are. */
-            (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + glyph('phone') + esc(k.phone) + '</a>' : '') +
+            (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + glyph('phone') + esc(phoneWord(k.phone)) + '</a>' : '') +
             (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">' + glyph('chat') + esc(w.whatsapp) + '</a>' : '') +
             (k.email ? '<a class="plink" href="mailto:' + esc(k.email) + '">' + glyph('mail') + esc(k.email) + '</a>' : '') +
           '</span><span class="team-act"></span>';
@@ -905,7 +932,7 @@
           '<span class="svc-name"><b>' + esc((w[r.kind] || r.kind) + (r.service_label ? ' · ' + r.service_label : '')) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
             (r.reply ? '<small>' + esc(w.reply + ': ' + r.reply) + '</small>' : '') + '</span>' +
-          '<span class="svc-rate svc-amt">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">' + esc(MON.sign(mkt())) + '</span>') + '</span>' +
+          '<span class="svc-rate svc-amt">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +
           '<span class="svc-state">' + chip(gone ? w.withdrawn : (w.rqState[r.state] || r.state), tone) + '</span>' +
           menuCell(items);
         wireMenu(row);
@@ -1063,6 +1090,7 @@
     ].filter(Boolean).map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
     $('reqNoteLabel').textContent = w.noteFor[req.kind] || w.note;
   }
+  $('reqNote').addEventListener('input', function () { if ($('reqMsg').textContent) msg('reqMsg', ''); });
   ['reqKind', 'reqLine'].forEach(function (id) {
     $(id).addEventListener('change', function () { if (req) paintRequest(); });
   });

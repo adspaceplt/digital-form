@@ -80,10 +80,10 @@
     <select class="select" id="batchFilter" aria-label="Filter by content set">
       <option value="all">All sets</option>
     </select>
-    <label class="safetoggle" id="safeWrap" hidden>
-      <input type="checkbox" id="safeToggle">
-      <span>Show safe zones</span>
-    </label>
+    <div class="safetoggle" id="safeWrap" hidden>
+      <span class="safetoggle-name" id="safeName">Show safe zones</span>
+      <button class="switch" type="button" role="switch" id="safeToggle" aria-checked="false" aria-labelledby="safeName"></button>
+    </div>
     <span class="count" id="countLabel"></span>
   </div>
 

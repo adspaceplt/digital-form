@@ -65,12 +65,12 @@
       langs: 'Languages', langsNote: 'Your contents are shared across the languages selected, at no extra charge.',
       translate: 'Translate every content into each language selected', translateNote: 'Charged per content, per language',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
-      budgetAbove: 'Above RM {b}', term: 'Commitment', months: '{n} months',
+      budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above RM {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
       detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
-      waHint: 'With country code, e.g. 60123456789 or 6581234567', brand: 'Brand', industry: 'Industry', optional: 'Optional',
+      waHint: 'Malaysia or Singapore number', brand: 'Brand', industry: 'Industry', optional: 'Optional',
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
       waBad: 'A valid Malaysia or Singapore registered WhatsApp number is required.',
@@ -136,12 +136,12 @@
       langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
       translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
-      budgetAbove: 'RM {b} 以上', term: '合约期', months: '{n} 个月',
+      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 RM {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n} 个月',
       once: '内容制作', onceNote: '一次性，按件收费',
       koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
-      waHint: '请包含国家代码，例如 60123456789 或 6581234567', brand: '品牌', industry: '行业', optional: '选填',
+      waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写有效的马来西亚或新加坡 WhatsApp 号码。',
@@ -306,7 +306,7 @@
   // ---- Drawing ----------------------------------------------------------------
   function frame(body, foot) {
     var a = steps(), i = a.indexOf(S.step) + 1;
-    return '<div class="qs-step"><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
+    return '<div class="qs-step" data-shown><div class="qs-progress"><span>' + esc(f(t().step, { n: i, m: a.length + 1 })) + '</span>' +
       '<div class="qs-track"><i style="width:' + Math.round(i / (a.length + 1) * 100) + '%"></i></div></div>' + body +
       '<p class="msg" id="qsMsg" role="status"></p></div>' +
       '<div class="qs-foot">' + foot + '</div>';
@@ -364,7 +364,7 @@
 
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
   function paintIntro() {
-    return '<div class="qs-step qs-intro"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p>' +
+    return '<div class="qs-step qs-intro" data-shown><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
         t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
       '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
@@ -462,7 +462,7 @@
         SALUTATIONS.map(function (x) { return '<option value="' + esc(x) + '"' + (c.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
       field('qsName', t().name, true, '<input class="input" id="qsName" autocomplete="name" placeholder="John Doe" aria-required="true" value="' + esc(c.name) + '">') +
       field('qsEmail', t().email, true, '<input class="input" id="qsEmail" type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true" value="' + esc(c.email) + '">') +
-      field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="60123456789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
+      field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="012-345 6789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
       field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
       field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
         INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '"' + (c.industry === i ? ' selected' : '') + '>' + esc(t().ind[i]) + '</option>'; }).join('') + '</select>') +
@@ -493,13 +493,14 @@
         (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {
-      return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? 'Advertising budget above RM 20,000' : x) + '</span>' +
-        '<span class="qs-num qs-q"></span><span class="qs-num qs-r"></span><span class="qs-num qs-mute">' + esc(t().onReq) + '</span></div>';
+      return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? budgetOnRequest() : x) + '</span>' +
+        '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
     var notes = [], managed = managedBudget(q);
     if (managed) notes.push(f(t().billManaged, { b: n0(managed) }));
     else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
-    notes.push(f(t().validLong, { d: day(q.valid_until, true) }), f(t().basis, { v: q.version }));
+    if (!gone) notes.push(f(t().validLong, { d: day(q.valid_until, true) }));
+    notes.push(f(t().basis, { v: q.version }));
     var aside = gone ? '' :
       '<aside class="qs-bill" id="qsBill"><h2>' + esc(t().billT) + '</h2><form class="qs-form" id="qsBillForm" novalidate>' +
         field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true" value="' + esc(billTyped.reg) + '">') +
@@ -507,8 +508,8 @@
         field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true">' + esc(billTyped.addr) + '</textarea>') +
         '<button class="btn btn-primary" id="qsAsk" type="submit">' + esc(t().ask) + '</button>' +
         '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
-    return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '"><section class="qs-main">' +
-      '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>' +
+    return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '" data-shown><section class="qs-main">' +
+      (gone ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span></div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(t().rate) + '</span><span class="qs-num">' + esc(t().sub) + '</span></div>' + lines + '</div>' +
@@ -533,13 +534,19 @@
     var p = CAT.plans.filter(function (x) { return x.slug === slug; })[0];
     return p && p.ad_budget ? Number(p.ad_budget) : 0;
   }
+  /* The budget past the card's largest, named from the card's own top
+     figure, never typed. */
+  function budgetOnRequest() {
+    var top = CAT && CAT.budgets && CAT.budgets.length ? Number(CAT.budgets[CAT.budgets.length - 1]) : 0;
+    return top ? f(t().budgetOver, { b: n0(top) }) : t().budgetReq;
+  }
   function waLink(q) {
     var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
     return who + '?text=' + encodeURIComponent('Hi ADspace, I would like to ask about my quotation ' + (q ? q.ref : '') + '.');
   }
   function paintDone() {
     var q = Q, tt = q.totals || {}, wa = waOk(waDigits(sentTo)) ? waShow(waDigits(sentTo)) : '';
-    return '<div class="qs-step qs-done"><span class="qs-tick" aria-hidden="true">' +
+    return '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
       '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
       '<dl class="qs-facts"><dt>' + esc(t().ref) + '</dt><dd>' + esc(q.ref) + '</dd>' +
@@ -548,15 +555,16 @@
       '<dt>' + esc(t().status) + '</dt><dd><span class="chip-state is-warn">' + esc(t().requested) + '</span></dd></dl>' +
       '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>';
   }
-  function cover(title, text) {
-    root().innerHTML = '<section class="cover"><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
-      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a></div></div></div></section>';
+  function cover(title, text, start) {
+    root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
+      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
+      (start ? '<a class="btn btn-primary" href="/quote/">' + esc(t().newQuote) + '</a>' : '') + '</div></div></div></section>';
   }
 
   function paint() {
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
-    if (paint.lost) { cover(t().lostT, t().lostP); return; }
+    if (paint.lost) { cover(t().lostT, t().lostP, true); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
     if (Q) { root().innerHTML = paintQuote(); decorate(); return; }
     if (S.step === 'intro') {

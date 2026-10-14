@@ -21,6 +21,9 @@
 
   /* "Prepared for <client>" under the section name, in whichever language the
      page is showing. */
+  /* The bar names the client only once the link has said whose campaign it
+     is; while it loads it said "Prepared for …" (SELECTION-11). */
+  (function () { var f = document.getElementById('clientFor'); if (f) f.hidden = true; })();
   function paintPreparedFor(name) {
     var who = name || ($('clientName') ? $('clientName').textContent : '');
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, who);
@@ -258,7 +261,7 @@
       saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
-      selectionChanged: '部分达人已无法选择，请重新查看后再次确认。',
+      selectionChanged: '部分博主已无法选择，请重新查看后再次确认。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -372,7 +375,7 @@
       }
       if (d.error === 'passcode') {
         // The gate knows whose campaign it is guarding, so say so.
-        if (d.client) $('clientName').textContent = d.client;
+        if (d.client) paintPreparedFor(d.client);
         showState(t().passTitle, t().passText, true);
         if (passcode) $('stateMsg').textContent = t().passWrong;
         return;
@@ -878,7 +881,8 @@
     var r = o.review;
     if (!r || !r.decision) return '';
     var stamp = r.at && ADspaceClock.parts(r.at)
-      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' : ADspaceClock.date(r.at, { year: false }) + ', ') + ADspaceClock.time(r.at)
+      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' + ADspaceClock.time(r.at)
+                       : ADspaceClock.date(r.at, { year: false }) + ', ' + ampm(ADspaceClock.time(r.at)))
       : '';
     /* An approval the team gave on the client's behalf names the colleague
        who proceeded, never as if the client had approved it. */
@@ -1012,6 +1016,16 @@
     }
   }
 
+  /* A time of day on the twelve-hour clock the client pages read (10:47 am,
+     as the scripts page writes it), never 24-hour beside a shoot's 2pm
+     (SELECTION-10). */
+  function ampm(hm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hm || '');
+    if (!m) return hm || '';
+    var h = Number(m[1]), x = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return h + ':' + m[2] + ' ' + x;
+  }
   function fmtDate(d) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
     return ADspaceClock.date(d, { zh: lang === 'zh' });
@@ -1234,7 +1248,7 @@
     /* A selection the client has confirmed says so when the link is opened
        again, and Confirm returns only once the picks differ from what was
        confirmed (UX audit SELECTION-1, 2026-10-14). */
-    var conf = (feed.campaign || {}).confirmed;
+    var conf = lastConfirm || (feed.campaign || {}).confirmed;
     var mine = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; }).map(function (o) { return o.id; }).sort();
     var asConfirmed = !!(conf && conf.selected && conf.selected.length && mine.length &&
       conf.selected.slice().sort().join(',') === mine.join(','));
@@ -1353,6 +1367,9 @@
      again without filing twice. A database without it is asked the older
      way, which now refuses a selection that never saved. */
   var confirmKey = null;
+  /* What this page confirmed, for a database that does not yet send the
+     confirmation back. */
+  var lastConfirm = null;
   function newKey() {
     var a = new Uint8Array(16);
     (window.crypto || window.msCrypto).getRandomValues(a);
@@ -1402,6 +1419,7 @@
          moved under the page it is read again. */
       if ((r && r.error) || d.error) { said(r && r.error ? {} : d); return; }
       confirmKey = null;
+      lastConfirm = { person: name, at: new Date().toISOString(), selected: sel.slice() };
       shutConfirm();
       /* The page stays, read again: the selection card then says who
          confirmed it and when (SELECTION-5), rather than a cover titled with

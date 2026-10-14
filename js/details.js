@@ -17,9 +17,9 @@
 
   var WORDS = window.ADspaceWords.of({
     en: {
-      lang: '中文', title: 'Company details', for: 'For {b}',
+      lang: '中文', title: 'Company Details', for: 'For {b}',
       company: 'Company', legal: 'Registered company name', brn: 'Business registration no.',
-      brnHint: 'The new 12-digit number, e.g. 202301234567', old: 'Old registration no.', tin: 'TIN',
+      brnHint: 'The new 12-digit number.', old: 'Old registration no.', tin: 'TIN',
       sst: 'SST registration no.', address: 'Billing address', finance: 'Finance email',
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
       optional: 'Optional', consent: 'I confirm these details are correct, and consent to ADspace keeping them for business purposes.',
@@ -33,7 +33,7 @@
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
       company: '公司', legal: '公司注册名称', brn: '公司注册号码',
-      brnHint: '新的 12 位号码，例如 202301234567', old: '旧注册号码', tin: '税务识别号（TIN）',
+      brnHint: '新的 12 位号码。', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
       optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料用于业务用途。',
@@ -66,7 +66,7 @@
     return new Date(iso).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'long', year: 'numeric' });
   }
   function cover(title, text) {
-    root().innerHTML = '<section class="cover"><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
+    root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
   }
   function field(id, label, req, html, hint) {
     return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
@@ -78,11 +78,12 @@
   }
   function paintForm() {
     var w = t();
-    return '<div class="qs-step"><h1 class="qs-title">' + esc(w.title) + '</h1>' +
+    return '<div class="qs-step" data-shown><h1 class="qs-title">' + esc(w.title) + '</h1>' +
       '<p class="qs-lead">' + esc(f(w.for, { b: info.brand })) + '</p>' +
       '<form class="qs-form" id="dfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.company) + '</h2>' +
-        field('dfLegal', w.legal, true, input('dfLegal', 'legal_name', true, 'maxlength="160" autocomplete="organization" placeholder="COMPANY NAME SDN BHD"')) +
+        // A name that may outrun its width wraps in the one-line box, in the capitals it is kept in.
+        field('dfLegal', w.legal, true, '<textarea class="input qs-caps" id="dfLegal" data-k="legal_name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="COMPANY NAME SDN BHD">' + esc(typed.legal_name || '') + '</textarea>') +
         field('dfBrn', w.brn, true, input('dfBrn', 'company_no', true, 'maxlength="24" inputmode="text" autocapitalize="characters" placeholder="202301234567"'), w.brnHint) +
         field('dfOld', w.old, false, input('dfOld', 'company_no_old', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfTin', w.tin, false, input('dfTin', 'tin', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
@@ -105,7 +106,7 @@
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="dfSubmit">' + esc(w.submit) + '</button></div>';
   }
   function paintDone(title, text) {
-    root().innerHTML = '<div class="qs-step qs-done"><span class="qs-tick" aria-hidden="true">' +
+    root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
       '<h1 class="qs-title">' + esc(title) + '</h1><p>' + esc(text) + '</p></div>';
   }
@@ -206,7 +207,7 @@
     if (b) submit(b);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#dfForm input:not([type=checkbox])') && !e.isComposing) {
+    if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#dfForm input:not([type=checkbox]), #dfForm textarea[data-oneline]') && !e.isComposing) {
       e.preventDefault(); if ($('dfSubmit')) submit($('dfSubmit'));
     }
   });

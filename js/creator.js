@@ -55,7 +55,7 @@
       platformsLabel: 'Posting on', tbc: 'To be confirmed',
       briefHead: 'The brief',
       deliverHead: 'Submission',
-      changesHead: 'Changes requested',
+      changesHead: 'Revision notes',
       changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
       nextUpWord: 'Next up', handIn: 'Hand in your draft', handInAgain: 'Hand in the revision',
@@ -123,7 +123,7 @@
       platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
       deliverHead: '作品提交',
-      changesHead: '需要修改',
+      changesHead: '修改说明',
       changesBare: '请修改后重新提交。',
       addFiles: '文件', captionLabel: '文案',
       nextUpWord: '下一步', handIn: '提交草稿', handInAgain: '提交修改稿',
@@ -186,6 +186,20 @@
     return ADspaceClock.date(d, { zh: lang === 'zh' }) || d;
   }
 
+  /* A shoot's time in the page's language (ux-audit CREATOR-7): 10:00 am,
+     上午10:00; a time that reads as neither is shown as typed. */
+  function timeWord(v) {
+    var x = String(v || '').trim(), h, mi;
+    var m = /^(\d{1,2}):(\d{2})/.exec(x) || /^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)$/i.exec(x);
+    if (!m) return x;
+    h = Number(m[1]); mi = m[2] || '00';
+    if (m[3]) h = (h % 12) + (/pm/i.test(m[3]) ? 12 : 0);
+    if (h > 23) return x;
+    var h12 = (h % 12) || 12;
+    return lang === 'zh' ? (h < 12 ? '上午' : '下午') + h12 + ':' + mi : h12 + ':' + mi + ' ' + (h < 12 ? 'am' : 'pm');
+  }
+  function dayTime(d, tm) { return fmtDate(d) + (tm ? (lang === 'zh' ? ' ' : ', ') + timeWord(tm) : ''); }
+
   function dueWord(day) {
     if (!day) return '';
     var n = ADspaceClock.between(ADspaceClock.today(), String(day).slice(0, 10));
@@ -221,6 +235,14 @@
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
   }
   function askCode() { cover(t().codeTitle, t().codeText, { ask: true }); }
+  /* A link carrying a code that opens nothing reads as the same code typed
+     would: the code in the field and the invalid line under it (ux-audit
+     CREATOR-5, 2026-10-14). */
+  function linkWrong(c) {
+    $('codeInput').value = c;
+    $('stateMsg').textContent = t().codeWrong;
+    $('stateMsg').className = 'msg err';
+  }
 
   function tidy(s) { return String(s || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(); }
 
@@ -241,7 +263,7 @@
         if (typed) {
           $('stateMsg').textContent = t().codeWrong;
           $('stateMsg').className = 'msg err';
-        } else { forget(); askCode(); }
+        } else { forget(); askCode(); if (c === fromLink) linkWrong(c); }
         return;
       }
       if (code !== c) { code = c; draftsLoad(); }
@@ -564,7 +586,7 @@
     var facts = [];
     if (!dead) {
       facts.push([seeding ? t().deliveryOn : t().shootOn,
-        b.visit_date ? fmtDate(b.visit_date) + (b.visit_time ? ', ' + b.visit_time : '') : t().tbc, seeding ? 'box' : 'camera']);
+        b.visit_date ? dayTime(b.visit_date, b.visit_time) : t().tbc, seeding ? 'box' : 'camera']);
       if (b.visit_location) facts.push([t().whereAt, b.visit_location, 'pin', seeding ? '' : placeHtml(b.visit_location)]);
       if (b.visit_pic) facts.push([t().contact, b.visit_pic + (b.visit_pic_phone ? ' · ' + b.visit_pic_phone : ''), 'phone',
         b.visit_pic_phone ? reachHtml(b.visit_pic_phone) : '']);
@@ -675,7 +697,11 @@
       var nums = [['views', p.views], ['engagements', p.engagements], ['impressions', p.impressions]];
       if (!open) {
         return '<div class="post-entry"><div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
-          (p.post_url ? '<p class="post-entry-link"><a href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></p>' : '') +
+          /* The post as a way out, never the raw address (CREATOR-9), worded
+             as the selection page words it. */
+          (p.post_url ? '<p class="post-entry-link"><a class="plink" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' +
+            esc(lang === 'zh' ? (platKeyOf(plat) === 'xhs' ? '查看小红书笔记' : '查看' + word + '帖子') : 'View post on ' + word) +
+            EXT_MARK + '</a></p>' : '') +
           (period ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' : '') +
           '<dl class="post-nums">' + nums.map(function (n) {
             return '<div><dt>' + esc(t()[n[0]]) + '</dt><dd>' + esc(n[1] == null ? '—' : Number(n[1]).toLocaleString('en-US')) + '</dd></div>';
@@ -1310,6 +1336,8 @@
   function setLang(next) {
     lang = next;
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
+    /* The bar's kicker follows the page's language (CREATOR-7). */
+    if (window.ADspaceChrome && window.ADspaceChrome.kicker) window.ADspaceChrome.kicker(lang === 'zh' ? '创作者平台' : 'Creator Portal');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     $('codeInput').setAttribute('aria-label', t().codeTitle);
     if (following && window.ADspacePush) window.ADspacePush.relabel();
@@ -1370,5 +1398,5 @@
   if (fromLink) history.replaceState(null, '', location.pathname);
   /* The page's own turning mark stands while it loads (`.pageload`, 2026-10-15). */
   if (start.length === 8) load(start);
-  else askCode();
+  else { askCode(); if (fromLink) linkWrong(fromLink); }
 })();

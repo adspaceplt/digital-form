@@ -82,12 +82,24 @@
       '<span class="tone ' + tone + '">' + esc(t().state[a.state] || a.state) + '</span>';
   }
 
+  /* The reference checked rides in the address (?s=), so the answer can be
+     refreshed and passed on; replaced, never pushed. */
+  function keep(serial) {
+    try {
+      var url = new URL(location.href);
+      if (serial) url.searchParams.set('s', serial); else url.searchParams.delete('s');
+      if (url.href !== location.href) history.replaceState(history.state, '', url.href);
+    } catch (e) {}
+  }
+
   function check(serial) {
     serial = String(serial || '').trim();
-    if (!serial) { $('vSerial').focus(); return; }
+    /* An empty check takes the last answer away with it, so nothing on the
+       page answers a reference no longer asked (VERIFY-4). */
+    if (!serial) { last = null; $('vOut').hidden = true; $('vOut').innerHTML = ''; keep(''); $('vSerial').focus(); return; }
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
-    var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); };
+    var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed) keep(serial); };
     if (!db) { done({ failed: true }); return; }
     db.rpc('verify_serial', { p_serial: serial }).then(function (r) {
       if (r.error || !r.data) { done({ failed: true }); return; }

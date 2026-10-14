@@ -165,7 +165,7 @@
     /* Enter sends it, because a field with one value and a button beside it is
        a form in every way but the tag. Escape puts the row back. */
     field.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); confirm(); }
       else if (e.key === 'Escape') { e.preventDefault(); close(); btn.focus(); }
     });
 

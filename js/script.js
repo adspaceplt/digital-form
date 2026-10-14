@@ -175,8 +175,11 @@
       var bar = document.createElement('div');
       bar.className = 'vs-openbar';
       bar.innerHTML = '<button class="backlink vs-back" type="button" id="vsAll">' + BACK + 'All scripts</button>' +
-        '<span class="vs-steps"><span class="vs-pos">' + (i + 1) + ' of ' + list.length + '</span>' +
+        /* Previous, where it stands, Next: the order the review page's
+           canvas reads (SCRIPTPAGE-4). */
+        '<span class="vs-steps">' +
         '<button class="btn btn-sm" type="button" id="vsPrev"' + (i > 0 ? '' : ' disabled') + '>Previous</button>' +
+        '<span class="vs-pos">' + (i + 1) + ' of ' + list.length + '</span>' +
         '<button class="btn btn-sm" type="button" id="vsNext"' + (i < list.length - 1 ? '' : ' disabled') + '>Next</button></span>';
       wrap.appendChild(bar);
       bar.querySelector('#vsAll').addEventListener('click', function () {

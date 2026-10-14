@@ -81,7 +81,7 @@
         fmt: $('formatFilter').value,
         bat: $('batchFilter').value,
         stage: stage,
-        safe: $('safeToggle').checked,
+        safe: $('safeToggle').getAttribute('aria-checked') === 'true',
         // Only sets the reader opened or closed themselves. The rest follow
         // the automatic rule, which may have changed since they were here.
         open: Array.prototype.filter.call(document.querySelectorAll('.batch'), function (b) {
@@ -197,10 +197,15 @@
     $('safeWrap').hidden = !any;
   }
 
-  $('safeToggle').addEventListener('change', function (e) {
-    document.body.classList.toggle('is-safe', e.target.checked);
+  function setSafe(on) {
+    $('safeToggle').setAttribute('aria-checked', on ? 'true' : 'false');
+    document.body.classList.toggle('is-safe', on);
+  }
+  $('safeToggle').addEventListener('click', function () {
+    setSafe($('safeToggle').getAttribute('aria-checked') !== 'true');
     savePlace();
   });
+  $('safeName').addEventListener('click', function () { $('safeToggle').click(); });
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -690,12 +695,33 @@
   function send(post, decision, note, wrap, badge, reviewer, copy, done) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
+    /* The press is answered on its button (ux-audit REVIEWPAGE-5): after
+       150ms, so a quick answer never flickers, the button keeps its width
+       and shows the console's turning ring (js/acts.js) until the answer. */
+    var pressed = wrap.querySelector(decision === 'approved' ? '.btn-approve' : '[data-act="send"]');
+    var spin = setTimeout(function () {
+      if (!pressed || !pressed.disabled || !pressed.isConnected) return;
+      pressed.style.width = pressed.getBoundingClientRect().width + 'px';
+      pressed.classList.add('is-busy');
+      pressed.setAttribute('aria-busy', 'true');
+      pressed.insertAdjacentHTML('beforeend', '<span class="btn-spin" aria-hidden="true"></span>');
+    }, 150);
+    function settle() {
+      clearTimeout(spin);
+      if (!pressed || !pressed.classList.contains('is-busy')) return;
+      pressed.classList.remove('is-busy');
+      pressed.removeAttribute('aria-busy');
+      pressed.style.width = '';
+      var sp = pressed.querySelector('.btn-spin');
+      if (sp) sp.remove();
+    }
 
     API.submitReview({
       token: token, postId: post.id, decision: decision, version: post.version,
       note: note, reviewer: reviewer, passcode: passcode,
       caption: copy && copy.caption, captionZh: copy && copy.caption_zh
     }).then(function (res) {
+      settle();
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       /* Only the database's own ok is a decision recorded (audit F5). */
       if (!res || res.error || res.ok !== true) {
@@ -718,6 +744,7 @@
       if (done) done();
       paintDecision(post.review, badge, wrap);
     }).catch(function () {
+      settle();
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       wrap.querySelector('.approve-state').textContent = 'Unable to save. Please check your connection.';
     });
@@ -755,7 +782,9 @@
     if (!review) { badgeWord.textContent = 'Pending'; state.textContent = ''; return; }
 
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
-    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.time(review.created_at);
+    /* The client pages' one clock: 12-hour, as the scripts page writes it
+       (10:00 am; ux-audit REVIEWPAGE-9). */
+    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.clock(review.created_at, { space: true });
 
     if (review.decision === 'approved') {
       badgeWord.textContent = 'Approved';
@@ -782,7 +811,21 @@
       if (review.note || review.suggested) {
         var n = document.createElement('div');
         n.className = 'approve-note';
-        n.textContent = [review.note, review.suggested ? 'Caption edit suggested.' : ''].filter(Boolean).join('\n');
+        /* The client reads back the caption they asked for, under its own
+           label, never a bare "Caption edit suggested." (ux-audit
+           REVIEWPAGE-4, 2026-10-14). */
+        if (review.note) n.appendChild(document.createTextNode(review.note));
+        var sug = [review.suggested_caption, review.suggested_caption_zh].filter(function (x) { return x != null && String(x).trim(); });
+        if (review.suggested) {
+          var lab = document.createElement('span');
+          lab.className = 'approve-note-label';
+          lab.textContent = 'Suggested caption';
+          n.appendChild(lab);
+          var sc = document.createElement('span');
+          sc.className = 'approve-note-cap';
+          sc.textContent = sug.length ? sug.join('\n\n') : 'Caption edit suggested.';
+          n.appendChild(sc);
+        }
         wrap.appendChild(n);
       }
     }
@@ -999,8 +1042,7 @@
       if (hasOption(ff, restoring.fmt)) ff.value = restoring.fmt;
       if (hasOption(bf, restoring.bat)) bf.value = restoring.bat;
       if (restoring.safe) {
-        $('safeToggle').checked = true;
-        document.body.classList.add('is-safe');
+        setSafe(true);
       }
     }
     if (target) bf.value = target.id;
