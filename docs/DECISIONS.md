@@ -3310,6 +3310,13 @@ dark `#a7c6ed` on `#1d2735` (8.6:1). It is greyer and softer than the action
 blue (`#0071e3`), so a post date never reads as a button, and it keeps its
 one place.
 
+### 2026-10-15 · Tax and terms fits a phone (ux-audit SET-10)
+The re-audit after SET-1 to SET-9 found the sectioned Tax and terms sheet
+scrolling on a phone to reach its last figure. A named section of three
+figures now runs three across (`third`, six tracks), the unit moves into the
+section's heading (Terms under a year (%)), and 24 months and more reads
+From 24 months so each label holds one line in a third of a phone.
+
 ### 2026-10-15 · Performance settings: figures side by side on one line
 The user's screenshot of Performance settings: under Reminders the left
 label ran to two lines ("Days before a month or half month ends (0 for

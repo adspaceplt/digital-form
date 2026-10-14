@@ -698,7 +698,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
-  - A field marked `half` sits beside the next one (a date and its time);
+  - A field marked `half` sits beside the next one (a date and its time),
+    `third` three across (a named section of three figures, `.is-third`);
     `head` opens a section with its heading (`.askhead`), and `note` is one
     mute line under the field (`.asknote`, its `aria-describedby`).
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
