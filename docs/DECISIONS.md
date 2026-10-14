@@ -3228,23 +3228,17 @@ Add service sat above Quotations while the lines sat below it: the pane is now
 Quotations (Build quote) over Service lines (Add service). The website already
 opened the budget on the plan's cover.
 
-### 2026-10-14 · Settings answers where it is pressed (ux-audit SET-1 to SET-4)
-The Settings audit (UX C, UI A) found four faults, fixed in one batch at the
-user's word. SET-1: a figure saved from a later day left no trace: the row
-kept today's value, the sheet reopened on it and the Saved line was drawn at
-the page's top, out of view on a phone; the row now reads `From {day}:
-{figure}` beside today's value and the sheet says it under the field
-(`ADspaceMoney.next`). SET-2: every answer went to `#settingsMsg` at the
-page's top; it is said on the row pressed and kept there through the
-repaint until the next press (the editSettings and numbering `msg` may be a
-function). SET-3: Save in AI usage's Edit limits wrote every pair whose two
-stored figures differed, so changing AI uses alone lowered admins' report
-drafts from 5 to 1, captions from 40 to 20 and three more, unseen; only a
-use changed is saved now, and its field keeps `Admins n a day` under the
-name (beside the field it broke the fields' one edge). SET-4: Tax and terms
-asked ten figures in one block; it reads as Tax and validity, Terms under a
-year, Terms of a year or more (one list, `ADspaceAdmin.TAX_KEYS`, for the
-Services bar and Settings), through `head` and `note` on ADspaceConfirm's
-fields. The sheet now scrolls at a desk: the third section sits below its
-fold.
-
+### 2026-10-14 · Team: the audit's four P2 findings
+The Team audit (UX B, UI A) ranked four P2s; the user said fix them as one
+batch. A month's review drew Save and Share in its first card, above 21
+fields running 2.5 screens (3.7 on a phone): they now sit at the sheet's
+foot with Notify, in a foot of its own class, because a `.sheet-foot`'s
+primary is pressed by Enter and Enter in a score must not share a month.
+Hand-over asked one select a kind, up to nine: with two kinds or more All
+their work to comes first, each kind reading Same as above, so one choice
+hands everything over and the user's "a person for each kind" stands.
+Delete opened on the name under pickers all reading Keep, so a colleague
+could be removed for good still holding clients and tasks, unsaid: the line
+now names what stayed, and an inactive or removed colleague's ⋯ offers Hand
+over work. The command bar's own ⋯ drew three dots stacked beside every
+other ⋯'s three across; it now draws them across.

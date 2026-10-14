@@ -4368,7 +4368,7 @@ body > .shell { width: 100%; }
 /* A meeting's date and time is a sentence, not an amount: its own track,
    measured on "Wed 30 Sept 2026, 10:30 pm" at the client pages' 16px, and
    never wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 240px var(--state-w) var(--ctl-h); }
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 264px var(--state-w) var(--ctl-h); }
 .meet-row .svc-amt { white-space: nowrap; }
 /* A Register row: the reference and what it is, who it went to, when. Valid
    is the ordinary case, so there is no state column; Void is named beside
@@ -12185,3 +12185,24 @@ body.qs-page { background: var(--card); }
 .booking-fold > summary:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-ctl-sm); }
 .booking-fold-body { padding-top: 4px; }
 .booking.is-done .booking-rate { margin-top: 12px; }
+
+/* A draft month's acts at the review sheet's foot (TEAM-1, 2026-10-14): the
+   scores end at the foot, so the acts do too. Drawn as a sheet's foot reads
+   (the primary at the right edge, the tick at the left), but its own class:
+   js/sheet.js presses a .sheet-foot's primary on Enter, and Enter in a score
+   must never share the month. */
+.sheet-side .qfoot {
+  flex: 0 0 auto; display: flex; flex-direction: row-reverse; flex-wrap: wrap;
+  align-items: center; justify-content: flex-start; gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line-soft); background: var(--card);
+}
+.qfoot > .btn { flex: 0 0 auto; }
+.qfoot > .perf-notify { margin: 0 auto 0 0; }
+.qfoot > .msg { order: 2; flex: 1 1 100%; margin: 0; }
+.qfoot > .msg:empty { display: none; }
+@media (max-width: 560px) {
+  .qfoot > .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+  .qfoot > .perf-notify { order: -1; flex: 1 1 100%; margin: 0; }
+}
+:root.has-tabbar .sheet-side .qfoot { padding-bottom: 12px; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }

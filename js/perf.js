@@ -689,6 +689,7 @@
     $('pvStatus').className = 'chip';
     $('pvRef').hidden = true;
     $('pvMenuWrap').hidden = true;
+    $('pvFoot').hidden = true;
     window.ADspaceSheet.show($('perfSheet'), {
       opener: opener,
       onClose: function () {
@@ -780,6 +781,8 @@
       breachCard(r, draft) + planCard(r) + disputeCard(r, res) +
       (manage() ? historyCard(r) : '');
     $('pvBody').innerHTML = html;
+    $('pvFoot').innerHTML = st.foot || '';
+    $('pvFoot').hidden = !st.foot;
     if ($('pvHist') && window.ADspaceRecords) window.ADspaceRecords.paint($('pvHist'), historyItems(r));
     wireSheet(r);
     if (manage()) loadCtx(r);
@@ -794,6 +797,7 @@
   /* One next step, derived from the record, and the action that takes it. */
   function nextCard(r, res) {
     var title = '', line = '', acts = '', tick = '';
+    st.foot = '';
     var dUntil = r.dispute_until ? timeWord(r.dispute_until) : '';
     var open = r.dispute_open;
     if (st.editing === 'return' || st.editing === 'reopen') {
@@ -819,8 +823,12 @@
           /* Whether the release tells them: ticked unless management says
              otherwise, on every month (2026-09-27). */
           tick = '<label class="tickline perf-notify"><input type="checkbox" id="pvNotify" checked> <span>Notify ' + esc(name) + '</span></label>';
-          acts = '<button class="btn btn-sm btn-primary" id="pvSave" type="button">Save</button>' +
-                 '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>';
+          /* At the sheet's foot, where the scores end (TEAM-1); the primary
+             first, as every action row reads from the right. */
+          st.foot = '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>' +
+                    '<button class="btn btn-sm btn-primary" id="pvSave" type="button">Save</button>' + tick +
+                    '<div class="msg" id="pvMsg"></div>';
+          tick = '';
         }
       } else if (r.status === 'released') {
         title = 'Shared';
@@ -876,7 +884,7 @@
     return '<section class="qcard qnext"><h3 class="qnext-title">' + esc(title) + '</h3>' +
       '<p class="qnext-line">' + esc(line) + '</p>' + ackNote + tick +
       (acts ? '<div class="qnext-acts">' + acts + '</div>' : '') +
-      '<div class="msg" id="pvMsg"></div></section>';
+      (st.foot ? '' : '<div class="msg" id="pvMsg"></div>') + '</section>';
   }
 
   function resultCard(r, res) {
@@ -1206,7 +1214,9 @@
     if (on) btn.setAttribute('data-busy', '1'); else btn.removeAttribute('data-busy');
   }
   function freeButtons() {
-    Array.prototype.forEach.call($('pvBody').querySelectorAll('[data-busy]'), function (b) { busy(b, false); });
+    [$('pvBody'), $('pvFoot')].forEach(function (box) {
+      Array.prototype.forEach.call(box.querySelectorAll('[data-busy]'), function (b) { busy(b, false); });
+    });
   }
   function after(d, okText, keep) {
     if (d.error) {
