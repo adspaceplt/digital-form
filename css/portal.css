@@ -2852,6 +2852,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .dueask-acts { display: flex; gap: 8px; margin-top: 10px; }
 .dueask-acts:empty { display: none; }
 .dueask-acts .btn { flex: 1 1 0; min-width: 0; }
+/* One act alone keeps its own width (ux-audit WORK-10). */
+.dueask-acts .btn:only-child { flex: 0 0 auto; }
 
 /* ---------- The quality check before a client sees the work ----------
    A list of checks reads like the list it is: one row a check, a hairline
@@ -4663,11 +4665,17 @@ body > .shell { width: 100%; }
    above the tasks as a bounded block with the same edge the tables carry. */
 .engcard { border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card); padding: 16px 18px; margin: 0 0 12px; }
 .is-narrow .engcard { padding: 14px; }
-.eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
 .eng-who { min-width: 0; }
-.eng-meta { margin: 0; font-size: 13px; color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
+/* The head's facts are rows on the card's grid (label track, value), the
+   state and ⋯ beside the first of them; a tight card keeps each on one line,
+   where the rows below stack (ux-audit WORK-7, 2026-10-15). */
+.eng-meta { display: grid; gap: 8px; min-width: 0; }
+.eng-meta > .eng-row { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "lab val"; }
+.is-narrow .eng-meta > .eng-row { grid-template-columns: 104px minmax(0, 1fr); }
+.is-tight .eng-meta > .eng-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; }
 .eng-lab { color: var(--ink-mute); }
-.eng-ctl { display: flex; align-items: center; gap: 8px; }
+.eng-ctl { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); }
 .eng-ctl .iconbtn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
 /* The meeting as label-beside-value rows on the card's one grid: the label
    track, the value, and the row's own controls against the right edge.
@@ -7695,6 +7703,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    card lands, not the height of the cards already in it (the user,
    2026-09-28); its cards stay packed at the top. */
 .board { display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.board.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.board.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+.board.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 .bcol { flex: 0 0 248px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
 .bcol-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 6px; border-bottom: 1px solid var(--line); min-height: 30px; }
 .bcol-head h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -7911,7 +7922,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    a person can read their own week off, and a manager the team's. It is a
    planning figure beside the record of what was pressed, never a measure of
    anybody's attention. */
-.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 20px; margin: 0 0 16px; padding: 12px 16px; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
+.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; margin: 0 0 16px; padding: 12px 16px; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
 .caprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 12.5px; min-width: 0; }
 .caprow-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .caprow-fig { color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -10332,7 +10343,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-facts dt { display: grid; gap: 2px; font-size: 13px; color: var(--ink); min-width: 0; }
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.ovw-span { font-size: 12.5px; color: var(--ink-mute); }
+.ovw-span { font-size: 12px; color: var(--ink-mute); }
 /* More figures: the fold's own hairline, its charts under it at the
    page's 12px step. */
 .ovw > .ovw-morefigs { margin: 0; }
@@ -10343,6 +10354,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-glance { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: center; }
 .ovw-glance.is-plain { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ovw-glance { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.is-narrow .ovw-glance.is-ringless > .ovw-meter { order: 1; }
+.ovw-card.is-empty > .ovw-body { display: grid; align-content: center; justify-items: center; text-align: center; }
+/* The Dashboard's lines are 13, its rows' words; an empty card's line too (ux-audit OVW-3). */
+.ovw-card .emptyline b { font-size: 13px; }
 .ovw-meter { display: grid; justify-items: center; min-width: 0; }
 .ovw-meter > .chartcard { width: 100%; padding: 0; background: none; box-shadow: none; }
 .ovw-meter .chart-data { display: none; }
@@ -10357,7 +10372,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-sig-rows { display: grid; }
 .ovw-sig {
   display: grid; grid-template-columns: minmax(0, 1fr) auto 124px; gap: 16px; align-items: baseline;
-  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px;
+  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13px;
 }
 .ovw-sig:first-child { border-top: 0; padding-top: 0; }
 .ovw-sig-name { min-width: 0; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
@@ -11023,6 +11038,8 @@ button.aiu-row:first-child::before { content: none; }
    the day the month starts on. */
 .engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
 .engreports > legend { padding: 0; margin-bottom: 0; }
+/* Why the Accounts report tick rests, under its words (ux-audit WORK-9). */
+.engreports > .asknote { margin: -6px 0 0 27px; }
 
 /* ONE WEIGHT FOR EVERY CHOICE (the user, 2026-10-04: "not one odd weird 500
    weight"). Every tab, view and segment option reads at the body's 400,
