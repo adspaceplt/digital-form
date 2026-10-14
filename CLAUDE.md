@@ -4100,7 +4100,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
   asked), Customise (with a plan, Content production lists only the formats
-  its additional contents per month do not; the user, 2026-10-14), Your details (name, work email, a Malaysia or
+  its additional contents per month do not; the user, 2026-10-14),
+  what is chosen and typed kept in the tab only while the steps are gone
+  through (a refresh keeps the place) and cleared whenever the opening page
+  shows (the user, 2026-10-14: "dont cache my record"), Your details (name, work email, a Malaysia or
   Singapore WhatsApp number, brand, industry, consent; a free email is
   advised against, never refused), then the quotation priced by
   `quote_price` through `quote-request` (Turnstile, checked where the
