@@ -21,7 +21,7 @@
      tagline at another width under the wordmark. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015c">
+<link rel="stylesheet" href="/css/portal.css?v=20261015e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
@@ -35,8 +35,9 @@
 <!-- A card handed over, not a page of the portal: no bar, no menu, the card
      alone on white, the way the signboard stands on its wall. -->
 <main class="ncmain">
+  <div class="pageload" role="status" aria-label="Loading"><span class="pageload-spin" aria-hidden="true"></span></div>
   <div id="ncHost" aria-live="polite"></div>
-  <section class="cover" id="ncCover" hidden>
+  <section class="cover" id="ncCover" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="ncCoverTitle"></h2>

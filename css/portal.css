@@ -2742,6 +2742,23 @@ button.appver {
 .btn-go .btn-spin, .btn-primary .btn-spin { color: var(--on-action); }
 .btn-danger .btn-spin { color: var(--err); }
 @keyframes btnspin { to { transform: rotate(360deg); } }
+
+/* A client page while its link is read (2026-10-15; the user: "can the
+   loading be some interactive rotation of glyph instead of boring text"):
+   one ring whose arc fades round to its head, turning smoothly (the user,
+   the same day: not the stepping spokes, "some modern circular ones"),
+   centred where the page will stand. It
+   shows only while nothing the page draws (`[data-shown]`) is on show, so no
+   script hides it; a browser without :has() draws nothing, as before. */
+.pageload { display: none; min-height: 52vh; align-items: center; justify-content: center; }
+main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pageload { display: flex; }
+.pageload-spin { display: block; width: 32px; height: 32px; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 8%, var(--ink-soft) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+  animation: pagespin .9s linear infinite; }
+@keyframes pagespin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pageload-spin { animation-duration: 2.4s; } }
 @media (prefers-reduced-motion: reduce) { .btn-spin { animation: none; border-right-color: currentColor; opacity: .6; } }
 /* The AI declaration (2026-10-10): its own shaded block under the question,
    the mark and the line over the tick, never run on into the question. */

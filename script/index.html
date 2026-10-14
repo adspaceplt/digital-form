@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015c">
+<link rel="stylesheet" href="/css/portal.css?v=20261015e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261014a"></script>
 <script src="/js/words.js?v=20261009s"></script>
@@ -40,9 +40,10 @@
 <script src="/js/chrome.js?v=20261012b" data-kicker="Video Scripts" data-for></script>
 
 <main class="shell shell-script">
+  <div class="pageload" role="status" aria-label="Loading"><span class="pageload-spin" aria-hidden="true"></span></div>
   <!-- Who the page is for, as the review page says it: the mark, the name
        and how many scripts; then a tab a content month. -->
-  <section class="panel rec-head" id="vsHead" hidden>
+  <section class="panel rec-head" id="vsHead" data-shown hidden>
     <div class="rec-id">
       <span class="rec-mark" id="vsMark" aria-hidden="true"></span>
       <div class="rec-who">
@@ -54,7 +55,7 @@
   <nav class="tabrow stagestrip" id="vsStages" role="tablist" aria-label="Content month" hidden></nav>
   <div id="vsContent" data-swipe="vsStages" data-narrow="640"></div>
 
-  <section class="cover" id="cover" hidden>
+  <section class="cover" id="cover" data-shown hidden>
     <div class="cover-inner">
       <div class="cover-panel">
         <h2 id="coverTitle">Video Scripts</h2>
