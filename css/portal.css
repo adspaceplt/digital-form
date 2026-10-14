@@ -11968,3 +11968,111 @@ button.vs-row { cursor: pointer; }
 .qb-card .sheet-body > .fsec:first-child { padding-top: 4px; }
 .qb-one { display: flex; align-items: center; }
 .qb-one[hidden] { display: none; }
+
+/* ---------- The quotation website (/quote/, js/quote.js, 2026-10-14) ----------
+   As the approved canvas draws it: one 560px column of steps, each a step
+   count over a track, the title, its choices as shaded cards ringed in ink
+   once chosen, and Back / Continue at the foot; the quotation itself on the
+   record's proportion at a desk, the billing details beside it, and on a
+   phone under it once Proceed is pressed. */
+.shell.qs { max-width: 1180px; padding-top: 24px; }
+.qs-step, .qs-foot { max-width: 560px; margin: 0 auto; }
+.qs-step { display: grid; gap: 16px; }
+.qs-progress { display: grid; gap: 6px; font-size: 13px; color: var(--ink-mute); }
+.qs-track { height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.qs-track > i { display: block; height: 4px; border-radius: 2px; background: var(--fill); transition: width var(--t-slow) var(--ease); }
+.qs-title { margin: 0; font-family: var(--font-head); font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+.qs-list { display: grid; gap: 8px; }
+.qs-group { display: grid; gap: 8px; }
+.qs-group > .field-label, .qs-group > .qs-note { margin: 0; }
+.qs-note { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.qs-hint { font-size: 13px; color: var(--ink-mute); }
+.qs-pick, .qs-chip {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--radius);
+  background: var(--sunk); cursor: pointer; transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.qs-pick.is-on, .qs-chip.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.qs-pick input, .qs-chip input { width: 20px; height: 20px; margin: 2px 0 0; flex: 0 0 auto; accent-color: var(--action); }
+.qs-pick b { display: block; font-weight: 600; }
+.qs-pick small { display: block; font-size: 14px; color: var(--ink-soft); }
+.qs-chips { display: grid; gap: 8px; }
+.qs-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.qs-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.qs-chip { align-items: center; min-height: 48px; padding: 0 12px; border-radius: var(--radius-sm); }
+.qs-chip input { margin: 0; }
+.qs-stepper {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px;
+  padding: 0 4px 0 14px; border-radius: var(--radius-sm); background: var(--sunk);
+}
+.qs-count { display: flex; align-items: center; gap: 10px; }
+.qs-count b { min-width: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.qs-pm { min-width: 44px; width: 44px; padding: 0; font-size: 18px; }
+.qs-form { display: grid; gap: 16px; }
+.qs-form .field { display: grid; gap: 4px; }
+.qs-form .field .msg { margin: 0; }
+.qs-form .field .msg:empty { display: none; }
+.qs-form .input, .qs .field .select { width: 100%; }
+.qs-caps { text-transform: uppercase; }
+.qs-consent { font-size: 14px; color: var(--ink-soft); align-items: flex-start; }
+.qs-step > .msg { margin: 0; }
+.qs-step > .msg:empty { display: none; }
+.qs-foot { display: flex; gap: 8px; padding: 20px 0 8px; }
+.qs-foot > .btn { flex: 1 1 0; }
+
+.qs-quote { display: grid; gap: 24px; }
+.qs-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.qs-change { justify-self: start; }
+.qs-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.qs-meta { font-size: 14px; color: var(--ink-mute); }
+.qs-meta .chip-state { font-size: 14px; }
+.qs-table { display: grid; }
+.qs-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 64px 110px 130px; gap: 0 12px; padding: 10px 0;
+  border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums;
+}
+.qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.qs-what { overflow-wrap: anywhere; }
+.qs-what small { display: block; font-size: 13px; color: var(--ink-mute); }
+.qs-calc { display: none; color: var(--ink-mute); }
+.qs-num { text-align: right; white-space: nowrap; }
+.qs-mute { color: var(--ink-mute); }
+.qs-tot { margin: 0; display: grid; justify-self: end; width: min(420px, 100%); border-radius: var(--radius-sm); overflow: hidden; background: var(--sunk); font-variant-numeric: tabular-nums; }
+.qs-tot > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 8px 16px; }
+.qs-tot dt { color: var(--ink-soft); }
+.qs-tot dd { margin: 0; text-align: right; }
+.qs-tot > .is-total { border-top: 1px solid var(--line); font-weight: 600; }
+.qs-tot > .is-total dt { color: var(--ink); }
+.qs-acts { display: flex; gap: 8px; }
+.qs-acts > .btn { flex: 1 1 0; }
+.qs-notes { display: grid; gap: 2px; font-size: 13px; color: var(--ink-mute); }
+.qs-bill { background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; align-self: start; }
+.qs-bill h2 { margin: 0 0 12px; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.qs-bill .btn-primary { width: 100%; }
+.qs-bill .msg:empty { display: none; }
+@media (min-width: 900px) {
+  .qs-quote { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 32px; }
+  .qs-proceed, .qs-dl2 { display: none; }
+}
+@media (max-width: 899px) {
+  .qs-quote:not(.is-proceed) .qs-bill { display: none; }
+  .qs-head .qs-dl { display: none; }
+}
+@media (max-width: 640px) {
+  .shell.qs { padding-top: 16px; }
+  .qs-title { font-size: 21px; }
+  .qs-headrow, .qs-q, .qs-r { display: none; }
+  .qs-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .qs-calc { display: inline; }
+  .qs-tot { width: 100%; }
+}
+.qs-done { justify-items: start; padding-top: 16px; }
+.qs-done p { margin: 0; }
+.qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); }
+.qs-facts { margin: 0; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); font-variant-numeric: tabular-nums; }
+.qs-facts dt { color: var(--ink-mute); }
+.qs-facts dd { margin: 0; }
+.qs-nowrap { white-space: nowrap; }
+body.qs-page { background: var(--card); }
+.qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
+.qs-facts .chip-state { font-size: inherit; }
+@media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }

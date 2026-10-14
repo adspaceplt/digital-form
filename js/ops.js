@@ -7915,6 +7915,7 @@
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
     if (!x.task_id && x.report_id) return 'reports';
     if (!x.task_id && x.script_id) return 'scripts';
+    if (!x.task_id && x.client_id) return 'clients';
     return 'work';
   }
   function markRead(ids, quiet) {
@@ -7991,6 +7992,13 @@
     if (!x.task_id && x.script_id) {
       history.replaceState(null, '', '/admin/?s=scripts&script=' + encodeURIComponent(x.script_id));
       if (bridge.show) bridge.show('scripts');
+      return;
+    }
+    /* A quotation made or a Letter of Offer requested on the website opens
+       the lead's Services (2026-10-14). */
+    if (!x.task_id && x.client_id) {
+      history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(x.client_id) + '&tab=services');
+      if (bridge.show) bridge.show('clients');
       return;
     }
     /* A client paused or ended opens the list, where its open work heads

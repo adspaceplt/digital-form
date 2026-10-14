@@ -2919,3 +2919,21 @@ tells the team it is ready for a Letter of Offer.
   approved board (plan cards, steppers with the plan's rate, what a
   platform adds beside it, three columns). The board's Add 5 lines became
   Create quotation, under the model above.
+
+### 2026-10-14 · The quotation website makes its own lead
+- The user, 2026-10-13, on the canvas (Website 1 to 6 and the desk view),
+  and 2026-10-14: "proceed build the remaining". A prospect makes their
+  quotation at `/quote/` and is shown it at once, priced by the same
+  `quote_price` as Build quote. Nothing is priced in the browser and no rate
+  is shown before the quotation, as the canvas says.
+- The write goes through an edge function (`quote-request`) so Cloudflare's
+  check can stand in front of it; until its secret is set, the database's
+  limit (five a contact a day) is the guard. A lead is made only where the
+  person is not already one (their email or number on a live lead), so a
+  prospect who comes back twice is one lead with two quotations.
+- The billing details a prospect gives are the same facts as a client's
+  billing columns, so they are withheld from the quotations table and read
+  at Clients: Billing (`quotation_billing`), never by whoever reads
+  Services. The team copies them into the client with Use billing details,
+  where the Billing sheet's own guard and record apply.
+- "Proceed quote" is the canvas's own label and is kept as approved.

@@ -3641,7 +3641,16 @@
         return m ? ((m.salutation ? m.salutation + ' ' : '') + (m.name || '')).trim() : '';
       })(),
       reload: function (done) { loadQuotes(done); },
-      offer: function (ids) { loadServices(function () { openPick(ids); }); } };
+      offer: function (ids) { loadServices(function () { openPick(ids); }); },
+      /* A website quotation's billing (2026-10-14) fills the Billing sheet
+         where the record holds nothing yet; Save keeps it as any edit. */
+      billing: function (b, opener) {
+        openBilling(opener);
+        [['crmLegalName', b.registered_name], ['crmCompanyNo', b.brn], ['crmBillAddr', b.address]].forEach(function (x) {
+          var el = $(x[0]);
+          if (el && !el.value && x[1]) { el.value = x[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
+        });
+      } };
   }
   function loadQuotes(done) {
     var Q = window.ADspaceQuotes, host = $('crmQuotes');
