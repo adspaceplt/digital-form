@@ -826,7 +826,7 @@
           /* At the sheet's foot, where the scores end (TEAM-1); the primary
              first, as every action row reads from the right. */
           st.foot = '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>' +
-                    '<button class="btn btn-sm btn-primary" id="pvSave" type="button">Save</button>' + tick +
+                    '<button class="btn btn-sm" id="pvSave" type="button">Save</button>' + tick +
                     '<div class="msg" id="pvMsg"></div>';
           tick = '';
         }

@@ -32,9 +32,17 @@
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+  /* A success line goes after 8 seconds, as the Undo bar does, so a later
+     act never reads under an earlier one's Saved. (TEAM-11, 2026-10-14);
+     a refusal or a warning stays until the next act replaces it. */
+  var msgTimers = {};
   function msg(id, text, kind) {
     var el = $(id); if (!el) return;
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
+    clearTimeout(msgTimers[id]);
+    if (kind === 'ok' && text) msgTimers[id] = setTimeout(function () {
+      if (el.textContent === text) { el.textContent = ''; el.className = 'msg'; }
+    }, 8000);
   }
 
   /* ACCESS IS A LEVEL PER SECTION.
@@ -422,11 +430,16 @@
       return [r.slug, r.name, mine];
     });
     groups.push(['none', 'No group', rows.filter(function (m) { return !placed[m.id]; })]);
+    /* Inactive, expired and removed colleagues leave their group's card and
+       count for one card after the groups, shut until opened (TEAM-5,
+       2026-10-14), as Clients folds Past and Short Links Paused. */
+    groups.forEach(function (g) { g[2] = g[2].filter(function (m) { return m.active; }); });
+    groups.push(['off', 'Inactive', rows.filter(function (m) { return !m.active; })]);
     groups.forEach(function (g) {
       if (!g[2].length) return;
       box.appendChild(GRP.section({
         route: 'team', key: g[0], name: g[1], count: g[2].length,
-        shut: !filtered && GRP.shut('team', g[0], false),
+        shut: !filtered && GRP.shut('team', g[0], g[0] === 'off'),
         table: function () {
           var table = GRP.table('team-row', ['Person', 'Sign-in email', '', '']);
           /* The members table keeps its own row grid and header rule. */
@@ -566,6 +579,7 @@
         return;
       }
       if (!m.active) { saveMember(m, { active: true }); return; }
+      if (window.ADspaceGroup) window.ADspaceGroup.keep('team', 'off', false);   // the row moves into Inactive: keep it in sight
       /* Somebody who is stood down may still be the person in charge of
          clients and open campaigns, and a client whose person in charge
          cannot sign in is a client nobody is looking after. So the same sheet
@@ -603,12 +617,12 @@
           fields: fields
         }, function (v) {
           v = v && typeof v === 'object' ? v : {};
-          var kept = keptWord(own, held, v);
+          var kept = keptWord(own, held, v, m.name);
           msg('teamMsg', '');
           Promise.resolve(handTo(m, own, v)).then(function () {
             if (!kept) return;
             var said = ($('teamMsg').textContent || '').trim();
-            msg('teamMsg', (said ? said + ' ' : '') + kept.charAt(0).toUpperCase() + kept.slice(1) + ' stay with ' + m.name + '.', 'warn');
+            msg('teamMsg', (said ? said + ' ' : '') + kept, 'warn');
           });
         });
       });
@@ -694,14 +708,16 @@
     months: ['month they manage', 'months they manage'], meetings: ['meeting they lead', 'meetings they lead'],
     repeats: ['repeating task', 'repeating tasks'], reviews: ['report waiting for their review', 'reports waiting for their review'],
     extensions: ['extension request', 'extension requests'], templates: ['template', 'templates'] };
-  function keptWord(own, held, v) {
-    var to = handChosen(v || {});
+  function keptWord(own, held, v, name) {
+    var to = handChosen(v || {}), total = 0;
     var parts = handKinds().map(function (k) {
       var n = k === 'clients' ? own.clients.length : k === 'campaigns' ? own.campaigns.length : Number(held[k]) || 0;
-      return n > 0 && !to[k] ? plural(n, HELD_WORD[k][0], HELD_WORD[k][1]) : '';
+      if (n > 0 && !to[k]) { total += n; return plural(n, HELD_WORD[k][0], HELD_WORD[k][1]); }
+      return '';
     }).filter(Boolean);
     if (!parts.length) return '';
-    return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+    var list = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+    return list.charAt(0).toUpperCase() + list.slice(1) + (total === 1 ? ' stays' : ' stay') + ' with ' + name + '.';
   }
   /* Moves what was chosen: the person in charge by name, the rest through
      `team_hand_over`; one line says what moved and what could not. */
@@ -752,9 +768,9 @@
       var fields = handFields(m, own, held);
       window.ADspaceConfirm.ask({
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
-        body: m.name + ' loses access for good.' + (fields.length ? ' Choose who takes each kind of their work.' : '') +
-          ' Their name stays on past work and on the documents they signed, and their HR letters and performance records are kept.' +
-          ' Delete their data removes their mobile, namecard, sign-in, health check-ins and devices. There is no restore.',
+        /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
+        body: m.name + ' loses access for good. There is no restore.' + (fields.length ? ' Choose who takes their work.' : '') +
+          ' Past work, HR letters and performance records are kept. Delete their data also removes their mobile, namecard, sign-in and health check-ins.',
         fields: fields.concat([
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Delete']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
@@ -767,9 +783,10 @@
           if (d.error) return REMOVE_SAID[d.error] || d.error;
           /* Work left with them is said, with the way to hand it over
              (TEAM-3, 2026-10-14): a removed colleague signs in no more. */
-          var kept = keptWord(own, held, v);
+          var kept = keptWord(own, held, v, m.name);
+          if (window.ADspaceGroup) window.ADspaceGroup.keep('team', 'off', false);
           msg('teamMsg', (v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.') +
-            (kept ? ' ' + kept.charAt(0).toUpperCase() + kept.slice(1) + ' stay with ' + m.name + '. Hand over work is in their ⋯.' : ''), kept ? 'warn' : 'ok');
+            (kept ? ' ' + kept + ' Hand over work is in their ⋯.' : ''), kept ? 'warn' : 'ok');
           load();
           return '';
         });
@@ -1314,9 +1331,12 @@
     var n2 = shape.changes.length;
     $('grPreset').value = n2 ? 'custom' : shape.key;
     $('grPreset').disabled = locked;
+    /* The changes themselves fold under the note, which the sentence above
+       already reads back (TEAM-4, 2026-10-14). */
     $('grPresetNote').hidden = !n2;
     $('grPresetNote').textContent = n2 ? 'Custom: ' + n2 + (n2 === 1 ? ' change' : ' changes') + ' from ' + PRESET_WORD[shape.key] : '';
-    $('grChanges').hidden = !n2;
+    if (!n2) $('grPresetNote').setAttribute('aria-expanded', 'false');
+    $('grChanges').hidden = !n2 || $('grPresetNote').getAttribute('aria-expanded') !== 'true';
     $('grChanges').textContent = n2 ? shape.changes.join(' · ') : '';
     $('grSum').textContent = sumText(access, admin, tuned, readScope(), on.length);
   }
@@ -1344,6 +1364,11 @@
     foldAll();
     paintPanel();
   }
+  $('grPresetNote').addEventListener('click', function () {
+    var open = this.getAttribute('aria-expanded') !== 'true';
+    this.setAttribute('aria-expanded', open ? 'true' : 'false');
+    $('grChanges').hidden = !open;
+  });
   $('grPreset').addEventListener('change', function () {
     if (this.value && this.value !== 'custom') applyPreset(this.value);
   });
@@ -1411,6 +1436,7 @@
     $('grTitle').textContent = r ? 'Edit group' : 'New group';
     $('grSave').textContent = r ? 'Save' : 'Add';
     $('grName').value = r ? r.name : '';
+    $('grPresetNote').setAttribute('aria-expanded', 'false');
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
     var acc = r ? accessOf(r) : null;
@@ -1570,8 +1596,8 @@
       var others = state.rows.filter(function (x) { return x.active && !(me() && me().id === x.id); }).length;
       window.ADspaceConfirm.ask({
         title: 'Set access expiry',
-        body: 'Every active colleague but you keeps access up to this day, and the time if one is set (else the day\'s end), unless it is moved for them. Leave the day empty for no end. ' +
-              others + (others === 1 ? ' colleague.' : ' colleagues.'),
+        /* Two plain sentences (TEAM-9, 2026-10-14). */
+        body: 'Applies to ' + others + (others === 1 ? ' active colleague' : ' active colleagues') + ', not including you. Leave the date empty for no end.',
         go: 'Set for all',
         fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
                  { name: 'time', label: 'Time', type: 'time', required: false }]

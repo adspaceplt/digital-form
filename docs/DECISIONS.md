@@ -3257,3 +3257,15 @@ The Active gate's Billing sheet offers the details form (Create link, Copy
 link, Use details), built that day for exactly this. The Dashboard's
 Committed monthly value reads Committed value in a narrow pane, where the
 whole label was cut with an ellipsis.
+
+### 2026-10-14 · Team: the audit's seven P3 findings
+The user: "fix the remainings too". The group panel's changes now fold under
+Custom: n changes (the sentence above already reads the access back).
+Inactive, expired and removed colleagues leave their group's card and count
+for one shut Inactive card after the groups. Health's half month reads No
+colleague has agreed to check-ins. where it read "0 of 0 checked in". The
+review's Save is tonal, so Share is its one blue. Set access expiry's
+question is two sentences, Delete's under forty words. A success line under
+the Team bar clears after 8 seconds, as the Undo bar does; a refusal or a
+warning stays. The work left with a colleague is said as "1 open task
+stays", "2 open tasks stay".
