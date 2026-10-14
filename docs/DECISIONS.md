@@ -2994,3 +2994,24 @@ tells the team it is ready for a Letter of Offer.
   takes its own rate less the plan's whole saving, to the nearest RM 10, as
   every extra content has since the quotations were built.
 
+### 2026-10-14 · The day's full gate (fa3c272): six findings, each fixed
+- geom: the Services sheet split two of its paired rows evenly (Advertising
+  beside its budget, Role beside the field its line type needs) and the
+  rest one to two; both now take the sheet's one split (`fgrid-3`, the
+  second field `span-2`).
+- cmdbar: Content Review's bar with no action stood its count lower than
+  the search mark, read as a second row; `.cmdbar-end` keeps the control's
+  height whether or not an action stands in it.
+- uxaudit: a wrapped segment's chosen pill took its ink from the sliding
+  thumb behind a tonal pill, which a measure cannot see (white words on
+  white); separate pills have no track to slide along, so the chosen pill
+  paints the ink itself and the thumb is not drawn. The quotation page's
+  Chat on WhatsApp carries the front door's WhatsApp mark. The Services
+  strip is named in the walk's list.
+- ratecard and quotes required pdfjs by a path relative to the folder the
+  gate starts from; they resolve it. seensql asked the schema's last section
+  map to stand in its own band, which a later release (the quotations)
+  restated; it now asks that the last map files its three tags. overview
+  read only the five attention rows on show (the list folds the rest since
+  2026-10-12); it reads every row. quotes and quotesite join the gate.
+

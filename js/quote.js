@@ -315,7 +315,7 @@
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
         t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
       '<p class="qs-note">' + esc(f(t().introNote, { d: (CAT && CAT.valid_days) || 30 })) + '</p></div>' +
-      '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a>' +
+      '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
 
@@ -453,7 +453,7 @@
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       (gone ? '' : '<button class="btn btn-primary qs-proceed" type="button" data-a="proceed">' + esc(t().proceed) + '</button>') +
       '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
-      '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a></div>' +
+      '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a></div>' +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
       '</section>' + aside + '</div>';
@@ -475,7 +475,7 @@
   }
   function cover(title, text) {
     root().innerHTML = '<section class="cover"><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
-      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a></div></div></div></section>';
+      '<div class="cover-alt"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a></div></div></div></section>';
   }
 
   function paint() {
@@ -494,6 +494,8 @@
     Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"]'), function (b) { addGlyph(b, 'file'); });
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
   }
+  // The WhatsApp mark, as the front door draws it before the same words.
+  var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
   function addGlyph(b, k) {
     if (b.querySelector('svg')) return;
     var p = { file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>' }[k];
