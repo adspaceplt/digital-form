@@ -3357,3 +3357,26 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   act drawn two ways. Back to Summary now leads with the chevron toward
   Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
   keeps its words.
+
+- **2026-10-15** — UX audit of Short Links, Handbook, My records and WhatsApp
+  (report: https://claude.ai/artifact/7Rkrx5XrG6iZb85s6oLAge; grades Links
+  C/B, Handbook A/A, My records A/A, WhatsApp A/A). Its P1 and P2 fixed:
+  LNK-2, Bulk import and the QR sheet's Create, Revoke and Restore were drawn
+  at Links View, each refused by the database (now `links:work`; viewonly
+  counts Bulk import as a write); LNK-3, Bulk import was a panel unfolding
+  above the list with a hint paragraph, now a sheet whose label names the
+  format, which shuts when every line is taken and keeps only the skipped
+  lines in the box otherwise; LNK-4, Create, Import and a QR's Create
+  disabled nothing while writing and said nothing when the write never
+  answered (now the button's ring and "Not saved. The connection was lost");
+  LNK-5, the QR sheet's own Copied and its explanatory line (now
+  `ADspaceCopy`, the line dropped: Revoke's question says it); MINE-1, four
+  blue Rate yourself buttons when four months were open (now the newest
+  blue, the rest tonal); WA-1, the composer named numbered variables
+  Variable 1, 2 (now Greeting, Client or Campaign, Report or Reference, What
+  waits, Link, from what `prefill` puts in them); WA-2, a template's meta
+  line broke inside "3 variables" on a phone. The stand-in gained PostgREST's
+  `upsert`, which Add link and Bulk import call. Census LNK-1 (Copy marks off
+  one column at 390: x 218 and 266) confirmed and left as P3 with the other
+  P3s for the user. WA-4 ("Dear Ms," where a contact's name starts with a
+  salutation) checked live: 0 of 27 contacts.
