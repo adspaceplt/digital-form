@@ -3265,7 +3265,9 @@ showed Loading… as a cover title; the selection page, the client portal, the
 review and scripts pages and a namecard showed nothing at all between the bar
 and the foot. Each now carries one `.pageload` in its `main`: an eight-spoke
 mark stepping round as Apple's activity indicator does, in the mute ink,
-named Loading for a screen reader. It needs no script: CSS shows it only
+named Loading for a screen reader; the user then asked for "some modern
+circular ones" in place of the spokes ("old school"), so it is a thin ring
+whose arc fades round to its head, turning smoothly. It needs no script: CSS shows it only
 while none of the page's own blocks (`data-shown`: the record head, the app,
 the cover) is on show, so every way a page ends (drawn, Link not recognised,
 the access code) takes it away. A browser without `:has()` shows nothing, as
