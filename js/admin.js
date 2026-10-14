@@ -2183,7 +2183,7 @@
         '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
-        '<span class="crm-c crm-c-code">' + (c.passcode
+        '<span class="crm-c crm-c-code' + (c.passcode ? '' : ' is-none') + '">' + (c.passcode
           ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
       row.addEventListener('click', function () { openClient(c); });
@@ -3202,7 +3202,11 @@
           byMonth[k].push(b);
         });
         months.sort(function (a, z) { return a === 'adhoc' ? 1 : z === 'adhoc' ? -1 : z.localeCompare(a); });
-        var subs = {};
+        var subs = {}, chg = {};
+        /* A shut month draws its rows when opened, from what was read. */
+        var subHtml = function (id) {
+          return esc(subs[id] || 'Loading…') + (chg[id] ? '<span class="sep">·</span>' + changesChip(chg[id]) : '');
+        };
         var GRP = window.ADspaceGroup;
         months.forEach(function (k, i) {
           box.appendChild(GRP.section({
@@ -3218,7 +3222,7 @@
                 card.innerHTML =
                   '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
                     '<span class="tone ' + (b.published ? 'is-ok' : 'is-off') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
-                  '<span class="set-row-sub" data-role="sub">' + esc(subs[b.id] || 'Loading…') + '</span>';
+                  '<span class="set-row-sub" data-role="sub">' + subHtml(b.id) + '</span>';
                 card.setAttribute('data-set', b.id);
                 card.addEventListener('click', function () { openBatch(b); });
                 t.appendChild(card);
@@ -3244,10 +3248,10 @@
           });
           if (p.error || !(p.data || []).length) return;
           readChanges(p.data).then(function (by) {
+            chg = by;
             Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
-              var c = by[row.getAttribute('data-set')];
               var sub = row.querySelector('[data-role="sub"]');
-              if (c && sub) sub.innerHTML = esc(subs[row.getAttribute('data-set')]) + '<span class="sep">·</span>' + changesChip(c);
+              if (sub) sub.innerHTML = subHtml(row.getAttribute('data-set'));
             });
           }).catch(function () {});
         });
@@ -3395,7 +3399,7 @@
          set, so the posts are read again with it (2026-10-14). */
       loadPosts();
       msg('setMsg', next
-        ? 'Published. The client can now see this set on their review link.'
+        ? 'Published.'
         : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
       loadBatches();
     });
@@ -5028,6 +5032,13 @@
       ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
       : s[1];
   }
+  /* A post is named by its place in the set (2026-10-14): thirty posts with
+     no caption all read Instagram Feed, so a question named none of them. */
+  function postName(p) {
+    var list = (state.postView && state.postView.posts) || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === p.id) return 'Post ' + (i + 1) + ' \u00b7 ' + MK.label(p);
+    return MK.label(p);
+  }
   function postStageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
   }
@@ -5151,7 +5162,7 @@
     $('setProgress').innerHTML =
       '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
       '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
-      (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + ' changes requested</span></p>' : '');
+      (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + (ch === 1 ? ' change requested' : ' changes requested') + '</span></p>' : '');
     block.hidden = false;
   }
 
@@ -5519,7 +5530,7 @@
   function postsWord(n) { return n + (n === 1 ? ' post' : ' posts'); }
   function badPosts(out) {
     return out.bad.length ? out.bad.length + ' not: ' + out.bad.slice(0, 3).map(function (x) {
-      return MK.label(x.p) + ' (' + x.err + ')';
+      return postName(x.p) + ' (' + x.err + ')';
     }).join(', ') + (out.bad.length > 3 ? '…' : '') + '.' : '';
   }
   function bulkPostConfirm() {
@@ -5568,7 +5579,7 @@
           .eq('id', p.id).select('id').then(function (r) {
             if (r.error) return r.error.message;
             if (!(r.data || []).length) return 'refused';
-            logAction('reapproval.requested', state.client.name + ' \u2014 ' + MK.label(p), why);
+            logAction('reapproval.requested', state.client.name + ' \u2014 ' + postName(p), why);
             return null;
           });
       }).then(function (out) {
@@ -5593,7 +5604,7 @@
         return db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
           if (r.error) return r.error.message;
           if (!(r.data || []).length) return 'Not deleted. The database refused the request.';
-          logAction('post.deleted', state.client.name + ' \u2014 ' + state.batch.title, MK.label(p));
+          logAction('post.deleted', state.client.name + ' \u2014 ' + state.batch.title, postName(p));
           return null;
         });
       }).then(function (out) {
@@ -5667,7 +5678,7 @@
            then the file, then the copy: one row, and its acts in one ⋯
            (2026-09-28; the pencil and the bin had a line of their own). */
         '<div class="saved-body">' +
-          '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
+          '<span class="saved-top"><b>' + postName(p) + '</b>' + statusMark(review) + '</span>' +
           '<span class="saved-meta">' +
             (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
             /* A video's number in the set, the one the cover's choice names. */
@@ -5683,7 +5694,8 @@
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
             : '') +
           (review && review.decision === 'changes' && review.note
-            ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+            ? '<span class="saved-note"><span class="saved-note-who">' + esc([review.reviewer, ADspaceClock.date(review.created_at)].filter(Boolean).join(' \u00b7 ')) +
+                ':</span> ' + esc(review.note) + '</span>' : '') +
           (review && review.decision === 'approved' && review.source === 'team'
             ? '<span class="saved-asked">Confirmed internally by ' + esc(review.reviewer || 'the team') + '</span>' : '') +
           /* The request this approval replaced, kept in sight. */
@@ -5702,9 +5714,9 @@
         '</div>' +
         (state.postPick
           ? '<label class="saved-actions saved-pick"><input class="trow-pick" type="checkbox"' + (state.postPick[p.id] ? ' checked' : '') +
-              ' aria-label="Select ' + esc(MK.label(p)) + '"></label>'
+              ' aria-label="Select ' + esc(postName(p)) + '"></label>'
           : '<div class="saved-actions">' +
-          '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(postName(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
             (p.platform === 'cover' && (extra.videos || []).length
@@ -5744,8 +5756,8 @@
       if (review && review.decision === 'changes' && needOk('review.sets:work')) {
         var inMenu = menu.querySelector('[data-a="edit"]');
         if (inMenu) inMenu.remove();
-        mbtn.insertAdjacentHTML('beforebegin', '<button class="btn btn-sm saved-edit" data-a="edit" data-need="review.sets:work" type="button" ' +
-          'aria-label="Edit ' + esc(MK.label(p)) + '">Edit</button>');
+        row.querySelector('.saved-body').insertAdjacentHTML('beforeend', '<button class="btn btn-sm saved-edit" data-a="edit" data-need="review.sets:work" type="button" ' +
+          'aria-label="Edit ' + esc(postName(p)) + '">Edit</button>');
       }
       /* A ⋯ whose every item is withheld is not drawn (2026-10-14). */
       if (!menuLive(menu)) { mbtn.remove(); menu.remove(); mbtn = null; }
@@ -5802,9 +5814,19 @@
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
           if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            MK.label(p) + ': caption accepted from ' + (review.reviewer || 'the client'));
-          msg('setMsg', 'Caption accepted.', 'ok');
+            postName(p) + ': caption accepted from ' + (review.reviewer || 'the client'));
           loadPosts();
+          /* The way back, over the posts, where it happened (2026-10-14). */
+          var before = { caption: p.caption == null ? null : p.caption, caption_zh: p.caption_zh == null ? null : p.caption_zh };
+          var back = {};
+          Object.keys(patch).forEach(function (k) { back[k] = before[k]; });
+          undoHere(postName(p) + ': caption accepted.', function () {
+            db.from('posts').update(back).eq('id', p.id).select('id').then(function (res2) {
+              if (res2.error || !(res2.data || []).length) { msg('setMsg', 'Not undone. The database refused the request.', 'err'); return; }
+              logAction('post.edited', state.client.name + ' \u2014 ' + (state.batch.title || ''), postName(p) + ': accepted caption undone');
+              loadPosts();
+            }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not undone.', 'err'); });
+          }, $('postStages'));
         }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
       });
 
@@ -5815,7 +5837,7 @@
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Confirm internally',
-          body: MK.label(p) + ' is approved on the client\u2019s behalf. Their review page reads Confirmed by ' +
+          body: postName(p) + ' is approved on the client\u2019s behalf. Their review page reads Confirmed by ' +
             ((state.client && state.client.name) || 'the client') + '.',
           go: 'Confirm'
         }, function () {
@@ -5857,7 +5879,7 @@
               if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
               if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
               logAction('reapproval.requested',
-                state.client.name + ' — ' + MK.label(p), why);
+                state.client.name + ' — ' + postName(p), why);
               msg('setMsg', 'Re-approval requested.', 'ok');
               loadPosts();
             });
@@ -5870,7 +5892,7 @@
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',
-          body: MK.label(p) + ' leaves the client view, with its approval record. '
+          body: postName(p) + ' leaves the client view, with its approval record. '
               + 'There is no restore.',
           go: 'Delete',
           tone: 'danger'
@@ -5884,7 +5906,7 @@
               return;
             }
             logAction('post.deleted',
-              state.client.name + ' — ' + state.batch.title, MK.label(p));
+              state.client.name + ' — ' + state.batch.title, postName(p));
             loadPosts(); loadBatches();
           });
         });
@@ -6008,7 +6030,7 @@
           if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           /* Which fields changed, so the row says what was edited. */
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            MK.label(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
+            postName(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
             (decided && moved.some(function (k) { return ['media', 'caption', 'caption_zh', 'title'].indexOf(k) > -1; })
               ? ' · revision ' + (round + 1) : '') +
             (declared ? ' · caption written with AI, read and confirmed' : ''));

@@ -29,8 +29,8 @@
   var UI = window.ADspaceState;
 
   var KINDS = [['scenes', 'Detailed scenes'], ['products', 'Products and scenes'], ['story', 'Story and voice-over']];
-  /* Unpublish carries the mark it carries on a campaign (one glyph an act). */
-  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>';
+  /* Edit, Publish and Unpublish are drawn as words: js/acts.js gives each
+     its mark, so the console draws an act one way (2026-10-14). */
   var KIND_WORD = {};
   KINDS.forEach(function (k) { KIND_WORD[k[0]] = k[1]; });
   var CONTEXT_WORD = { products: 'Products and context', story: 'Hook and story' };
@@ -46,11 +46,10 @@
     dots: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
-    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>',
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>'
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
   };
 
   var st = { list: [], clients: [], loaded: false, open: null, scenes: [],
@@ -355,11 +354,15 @@
     if (!row && $('vsVoShot') && !$('vsVoShot').checked) row = $('vsRecBody').querySelector('[data-vo]');
     if (!row) return;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    requestAnimationFrame(function () {
+    /* Two frames: the pane's width classes (`is-narrow`, js/state.js) are
+       written by a ResizeObserver after the first layout. */
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      if (!row.isConnected) return;
       var r = row.getBoundingClientRect();
       if (r.top >= 0 && r.bottom <= window.innerHeight * 0.8) return;
-      row.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-    });
+      var to = window.scrollY + r.top - Math.max(0, (window.innerHeight - r.height) / 2);
+      window.scrollTo({ top: Math.max(0, to), behavior: reduce ? 'auto' : 'smooth' });
+    }); });
   }
   function backToList() {
     st.open = null;
@@ -421,6 +424,7 @@
 
   /* The script as the team reads it, with the crew's tick and clip number on
      each scene. */
+  var NOT_SHOT = '<span class="mute vs-dash">—</span><span class="mute vs-notshot">Not shot</span>';
   function sceneRows(s) {
     var work = may('work');
     var kind = s.kind;
@@ -441,7 +445,7 @@
         '<span class="vs-shot">' + (work
           ? '<label><input type="checkbox" ' + (sc.shot_at ? 'checked ' : '') + 'aria-label="Scene ' + (i + 1) + ' shot" data-shot>' +
             '<span class="vs-lbl" aria-hidden="true">Shot</span></label>'
-          : (sc.shot_at ? '<span class="vs-shotword">Shot</span>' : '<span class="mute" aria-label="Not shot">—</span>')) + '</span>' +
+          : (sc.shot_at ? '<span class="vs-shotword">Shot</span>' : NOT_SHOT)) + '</span>' +
       '</div>';
     }).join('') + '</div>';
   }
@@ -456,13 +460,19 @@
     if (s.kind === 'story') {
       var work = may('work');
       out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4>' +
-        '<p class="vs-prose">' + (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</p>' +
-        '<div class="vs-vo" data-vo>' +
-          (work ? '<label class="field-label" for="vsVoVc">VC#</label>' + clipField(s.vo_vc, 'Clip number for the voice-over', 'vsVoVc') +
-            '<label class="tickline"><input type="checkbox" id="vsVoShot" ' + (s.vo_shot_at ? 'checked ' : '') + '> <span>Shot</span></label>'
-          : '<span class="field-label">VC#</span><span>' + (s.vo_vc ? esc(s.vo_vc) : '<span class="mute">—</span>') + '</span>' +
-            (s.vo_shot_at ? '<span class="vs-shotword">Shot</span>' : '<span class="mute">Not shot</span>')) +
-        '</div></section>';
+        /* The words read here are one more row in the scenes' own tracks: the
+           words, then its clip number and Shot (VS-8). */
+        '<div class="crm-table vs-scenes vs-vorow"><div class="crm-head vs-scene"><span></span><span>Words</span><span>VC#</span><span>Shot</span></div>' +
+        '<div class="vs-scene" data-vo>' +
+          '<span class="vs-n" aria-hidden="true"></span>' +
+          '<span class="vs-text vs-vis">' + (s.vo ? esc(s.vo) : '<span class="mute">Not written</span>') + '</span>' +
+          '<span class="vs-vc"><span class="vs-lbl" aria-hidden="true">VC#</span>' +
+            (work ? clipField(s.vo_vc, 'Clip number for the voice-over', 'vsVoVc') : (s.vo_vc ? esc(s.vo_vc) : '<span class="mute">—</span>')) + '</span>' +
+          '<span class="vs-shot">' + (work
+            ? '<label><input type="checkbox" id="vsVoShot" ' + (s.vo_shot_at ? 'checked ' : '') + 'aria-label="Voice-over shot">' +
+              '<span class="vs-lbl" aria-hidden="true">Shot</span></label>'
+            : (s.vo_shot_at ? '<span class="vs-shotword">Shot</span>' : NOT_SHOT)) + '</span>' +
+        '</div></div></section>';
     }
     out += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' +
       (s.remarks ? esc(s.remarks) : '<span class="mute">None</span>') + '</p></section>';
@@ -567,9 +577,9 @@
        (VS-1): Publish waits until there is something to read. */
     var empty = !st.scenes.length && !String(s.context || '').trim() && !String(s.vo || '').trim();
     if (may('work')) {
-      acts += '<button class="btn btn-sm btn-icon" type="button" data-a="edit">' + ICON.pen + 'Edit</button>';
+      acts += '<button class="btn btn-sm" type="button" data-a="edit">Edit</button>';
       acts += s.status === 'shared'
-        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">' + EYE_OFF + 'Unpublish</button>'
+        ? '<button class="btn btn-sm btn-warn" type="button" data-a="unpublish">Unpublish</button>'
         : empty ? '' : '<button class="btn btn-sm btn-go" type="button" data-a="publish">Publish</button>';
     }
     /* The state sits on the title row at its right edge; the acts follow,

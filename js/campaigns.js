@@ -1638,8 +1638,11 @@
           body: 'The client can choose ' + n + (n === 1 ? ' more creator' : ' more creators') +
             '. Bookings already in production are kept.' } };
     }
-    if (s === 'draft')      return { to: 'open',  label: 'Publish', cls: 'btn-go', icon: STATE_ICON.send };
-    if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
+    /* Publish and Unpublish take the act table's own marks (js/acts.js), so
+       the plane and the struck eye are drawn one way across the console. */
+    var A = window.ADspaceActs;
+    if (s === 'draft')      return { to: 'open',  label: 'Publish', cls: 'btn-go', icon: A ? A.glyph('send') : STATE_ICON.send };
+    if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: A ? A.glyph('hide') : STATE_ICON.eyeOff,
       ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
         body: 'The client link stops working until this is published again. Selections are kept.' } };
     /* In production the client keeps choosing while a slot is free; once the
@@ -2417,7 +2420,7 @@
     } else if (mayWork() && live.some(function (o) { return o.state === 'shortlisted'; }) && campPane !== 'client') {
       var go = document.createElement('button');
       go.type = 'button'; go.className = 'btn btn-sm camp-next-go'; go.id = 'campNextGo';
-      go.textContent = 'Review and confirm';
+      go.innerHTML = 'Review and confirm' + CHEV;
       go.addEventListener('click', function () {
         var tab = document.querySelector('#campTabs .tab[data-pane="client"]');
         if (tab) tab.click();
@@ -2666,7 +2669,7 @@
         $('campPickRail').innerHTML =
           '<p class="railpct"><b>' + chosen.length + ' of ' + slots + ' chosen</b>' +
           '<span>' + pct + '%</span></p>' +
-          '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+          '<span class="railbar"><span class="railbar-fill camp-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
           (booked > slots
             ? '<p class="railwarn">' + booked + ' booked · ' + goodwill.length + ' goodwill</p>'
             : '') +
@@ -3562,6 +3565,7 @@
     var waiting = o.state === 'submitted';
     var open = !live || (waiting ? openCards[o.id] !== false : !!openCards[o.id]);
 
+    var draftRead = !!(requestHtml(o) || approvalHtml(o) || handedIn(o) || o.draft_url);
     /* A ⋯ whose every item is withheld is not drawn. */
     var menuHtml = cardMenu(o);
     var menuHas = !!menuHtml;
@@ -3648,10 +3652,12 @@
             '<textarea class="input" data-f="notes" rows="2">' + esc(o.notes || '') + '</textarea></label>' +
         '</div>' : (o.notes ? '<div class="kfields">' + readKfield('Notes', o.notes) + '</div>' : '')) +
       '</div>' +
-      (drafting ?
+      /* At View the step is drawn only where it holds something to read;
+         its guide is about handing a file in, which View cannot. */
+      (drafting && (w || draftRead) ?
       '<div class="kstep kstep-work">' +
         '<div class="kstep-title">Draft</div>' +
-        draftGuide(o) +
+        (w ? draftGuide(o) : '') +
         requestHtml(o) +
         approvalHtml(o) +
         handedIn(o) +
@@ -5071,7 +5077,8 @@
     }).join('');
     $('lockPerson').value = '';
     lockKey = null;
-    $('lockBy').textContent = (bridge.actor && bridge.actor()) || '';
+    /* The colleague's name, never their sign-in email (audit CAMP-11). */
+    $('lockBy').textContent = (bridge.actorName && bridge.actorName()) || (bridge.actor && bridge.actor()) || '';
     msg('lockMsg', '');
     $('lockSheet').hidden = false;
   });

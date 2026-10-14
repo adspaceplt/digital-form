@@ -4876,11 +4876,13 @@ raya-2026        https://example.com/raya"></textarea>
         <option value="email">Email</option>
         <option value="call">Call or meeting</option>
       </select>
-      <div class="row acts" style="margin-top:16px;margin-bottom:14px">
-        <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
-        <button class="btn btn-quiet" id="lockCancel" type="button">Cancel</button>
-      </div>
       <div class="msg" id="lockMsg"></div>
+    </div>
+    <!-- The sheet's foot, so Enter presses Confirm and a phone draws the
+         pair as equal halves (2026-10-14, audit CAMP-11). -->
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
+      <button class="btn btn-quiet" id="lockCancel" type="button">Cancel</button>
     </div>
   </div>
 </div>
