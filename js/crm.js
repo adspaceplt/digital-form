@@ -2134,10 +2134,10 @@
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
     paintBillRead(c);
     var main = mainContact(), pick = billContact(c);
-    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc(main.name) : 'None') + '</option>' +
+    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc((main.salutation ? main.salutation + ' ' : '') + main.name) : 'None') + '</option>' +
       (state.contacts || []).filter(function (ct) { return !ct.archived_at && !(main && ct.id === main.id); }).map(function (ct) {
         return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id && !(main && pick.id === main.id) ? ' selected' : '') + '>' +
-          esc(ct.name) + '</option>';
+          esc((ct.salutation ? ct.salutation + ' ' : '') + ct.name) + '</option>';
       }).join('');
   }
 
@@ -2169,7 +2169,7 @@
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ]) +
       readGroup('Billing contact and address', [
-        ['Billing contact', pick ? esc(pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
+        ['Billing contact', pick ? esc((pick.salutation ? pick.salutation + ' ' : '') + pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]);
