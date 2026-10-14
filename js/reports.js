@@ -5005,7 +5005,10 @@
         LIMITS.map(function (l) {
           var v = setting(l[0]), a = setting(l[1]);
           if (editing) {
-            return '<label class="aiu-row aiu-limit"><span class="aiu-name"><b>' + esc(l[2]) + '</b></span>' +
+            /* The admins' figure stays in sight while it differs, under the
+               name so the fields keep one edge (2026-10-14, audit SET-3). */
+            return '<label class="aiu-row aiu-limit"><span class="aiu-name"><b>' + esc(l[2]) + '</b>' +
+              (a !== v ? '<small class="aiu-adm">Admins ' + esc(String(a)) + ' a day</small>' : '') + '</span>' +
               '<span class="aiu-field"><input class="input input-sm aiu-num" type="number" inputmode="numeric" min="0" max="500" step="1"' +
               ' data-k="' + l[0] + '" value="' + esc(String(v)) + '" placeholder="' + AI_STD[l[0]] + '" aria-label="' + esc(l[2] + ', a day') + '">' +
               '<span class="aiu-unit">a day</span></span></label>';
@@ -5034,6 +5037,11 @@
         if (x !== '' && (!/^\d{1,3}$/.test(x) || Number(x) > 500)) { bad = bad || f; return; }
         var pair = LIMITS.filter(function (l) { return l[0] === f.getAttribute('data-k'); })[0];
         var v = x === '' ? AI_STD[pair[0]] : Number(x);
+        /* Only a figure changed is saved, to both settings (2026-10-14,
+           audit SET-3): a Save of one field never moves the admins' figure
+           of another, which the field beside it shows. */
+        var shown = d[pair[0]] != null ? d[pair[0]] : AI_STD[pair[0]];
+        if (v === shown) return;
         [pair[0], pair[1]].forEach(function (k) {
           var want = v === AI_STD[k] ? null : v;
           var was = d[k] != null ? d[k] : AI_STD[k];
