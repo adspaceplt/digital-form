@@ -282,5 +282,15 @@
     load();
   }
 
-  window.ADspaceNotice = { manage: manage };
+  /* The newest notice not withdrawn, for the Settings row (2026-10-14,
+     ux-audit SET-7): null where none stands. */
+  function last() {
+    return db().rpc('team_notices_list').then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) throw (r.error || new Error(d.error));
+      return (d.items || []).filter(function (n) { return !n.withdrawn_at; })
+        .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0] || null;
+    });
+  }
+  window.ADspaceNotice = { manage: manage, last: last };
 })();

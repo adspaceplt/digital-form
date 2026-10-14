@@ -466,10 +466,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays), Clients (Follow-up limits), My
+  (Upgrade mode, Announcements, Notices, Public holidays), Clients (Follow-up limits, Details form), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance),
-  Money (Tax and terms, AI prices), AI (AI usage and limits), WhatsApp
+  Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
   (Templates, Sent again), Documents (Document types); a group with
   no row drawn is left out. One page at every width, each group a card under
   its heading, so a setting is the account menu, Settings, then its sheet
@@ -482,7 +482,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   opening the one sheet that already edits it; a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
   (`ADspaceMoney.next`), and a press answers on its own row (`.stg-said`),
-  never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). The
+  never on a line out of view (2026-10-14, ux-audit SET-1, SET-2). An Open
+  row states what it holds (Team n live · Clients n live, Last sent, Next
+  #WT…, Used today n of N, n of N on, n types offered), each from its
+  section's own read once a visit, filled in place and read again when
+  its sheet hands focus back; a value line is a value, never a sentence
+  (SET-6, SET-7). The list of groups is drawn only with three groups or
+  more (SET-5). The
   account menu reads, in compact rows at a desk (a control's height; 48px
   docked on a phone): who you are; You (My records, My namecard);
   This device
@@ -1088,7 +1094,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceAdmin.editSettings`: From, then each figure, under its
   section's heading where a key names one, a change already set from a
   later day said under its field; only what changed is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
-  bar; `ADspaceAdmin.TAX_KEYS`, ten figures in three sections), Due dates
+  bar; `ADspaceAdmin.TAX_KEYS`, eight figures in three sections), Due dates
   (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
@@ -1454,7 +1460,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     the user, 2026-10-14): Billing's Details form makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
     ⋯ Reset link, asked) to `/details/?k=` with no sign-in, open
-    `details_form_days` (14, Tax and terms). The client's page reads the
+    `details_form_days` (14, Settings: Clients, Details form). The client's page reads the
     brand and closing day alone (`client_details_read`) and sends the
     answers once (`client_details_submit`: registered name in capitals, BRN,
     old BRN, TIN, SST no., billing address, finance email, the billing

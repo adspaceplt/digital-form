@@ -387,5 +387,16 @@
     load();
   }
 
-  window.ADspaceAnnounce = { refresh: refresh, manage: manage };
+  /* How many are live for each audience, for the Settings row (2026-10-14,
+     ux-audit SET-7): the list's own read and its own rule of a state. */
+  function live() {
+    return db().rpc('announcements_list').then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) throw (r.error || new Error(d.error));
+      var now = new Date(d.now || Date.now()), n = { team: 0, clients: 0 };
+      (d.items || []).forEach(function (a) { if (stateOf(a, now) === 'Live' && n[a.audience] != null) n[a.audience]++; });
+      return n;
+    });
+  }
+  window.ADspaceAnnounce = { refresh: refresh, manage: manage, live: live };
 })();
