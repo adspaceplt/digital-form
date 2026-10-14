@@ -10319,6 +10319,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-foot { display: flex; justify-content: flex-end; }
 .ovw-turn.btn { flex: 0 0 auto; }
 .ovw-turn .ovgo-chev { width: 15px; height: 15px; margin-left: 4px; }
+.ovw-turn .ovgo-chev.is-back { margin: 0 4px 0 0; transform: scaleX(-1); }
 /* Sales moves: a figure a line, its word over a mute line, the figure at the
    right edge. */
 .ovw-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; margin: 0; }
