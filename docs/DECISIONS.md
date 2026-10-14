@@ -3041,3 +3041,12 @@ tells the team it is ready for a Letter of Offer.
   it). Live, no slug was under three characters; the links constraint is
   added NOT VALID so an older one would keep working, and a card's short
   slug is made again from the name before its constraint is added.
+
+### 2026-10-14 · A format is asked once on the quotation website
+- The user, with a screenshot: with Social media management and Content
+  production both chosen, Customise listed static, GIF, carousel and reels
+  twice, once as additional contents per month and again as one-off
+  content production, "which might cause confusion". With a plan, Content
+  production now lists only the formats the plan's additional contents do
+  not offer (30-second reels and the 120-second video on today's card), and
+  the quotation sends only those; without a plan it lists every format.
