@@ -46,8 +46,11 @@
   --accent-bg:  #ecf5f0;
   --ok:         #1f7a4d;
   --ok-bg:      #ecf5f0;
-  --pub:        #6a3fb5;
-  --pub-bg:     #f2edfa;
+  /* The post date on the calendar: a pastel blue of the Pantone 2717 C
+     family (2026-10-15, the user: purple to blue, "pantone pastel"), lighter
+     and greyer than the action blue so a post date never reads as a button. */
+  --pub:        #2a5793;
+  --pub-bg:     #e6effb;
   /* Health's own mark (2026-10-07: "highlighted pantone pink with the health
      icons"): Pantone 214 C, on Health's glyph and its chosen answers alone. */
   --health:     #ce0f69;
@@ -228,8 +231,8 @@
     --accent-bg:  #17281f;
     --ok:         #4aa876;
     --ok-bg:      #17281f;
-    --pub:        #c4a8f4;
-    --pub-bg:     #251d33;
+    --pub:        #a7c6ed;
+    --pub-bg:     #1d2735;
     --health:     #f57eb6;
     --health-bg:  #2e1a24;
     --ok-solid:   #4aa876;

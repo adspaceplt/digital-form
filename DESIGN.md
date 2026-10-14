@@ -43,7 +43,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--warn` / `-bg` / `-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | A mark drawn over a guidance figure (a capacity bar, a chart bar or key); a waiting state is its amber dot, a caution a neutral box led by it (the upgrade line, an Important announcement, `.msg.warn`), never a tinted slab |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#fff` | `#cf9350` / `#1d1408` | A warn fill |
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys, refuses, or is late** (danger items, the billing gate, blocked; a date already passed: overdue, late, Urgent, Urgent delivery, a lead over its follow-up time) |
-| `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The post date on the My Work calendar, nowhere else |
+| `--pub` / `--pub-bg` | `#2a5793` / `#e6effb` | `#a7c6ed` / `#1d2735` | The post date on the My Work calendar, nowhere else: a pastel blue of Pantone 2717 C (the user, 2026-10-15, in place of purple), greyer than the action blue |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
 | `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else (2026-10-11) |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
@@ -65,7 +65,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   the action, green done or live, amber waiting or still running, red needs
   acting on now or destroys, grey not started or closed. A fact (High,
   Goodwill, White label, You) is a grey tag, never a status colour. Health's
-  pink and the calendar's purple keep their one place.
+  pink and the calendar's pastel blue keep their one place.
   - Every primary is blue: Add, Create and Save as much as Publish, Release
     and Approve.
   - Copy link, Preview, Edit, Cancel, row actions and every caution (Unpublish,
