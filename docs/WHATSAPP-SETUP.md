@@ -127,6 +127,56 @@ A template made the earlier way, with the link as a fourth body variable
 and no button, still works: the portal fills whichever shape the template
 has.
 
+### The quotation and the Letter of Offer, step by step
+
+Each carries the document's PDF as its header, drawn by the portal at the
+press. Make two templates the same way:
+
+1. WhatsApp Manager → **Message templates** → **Create template**.
+2. Category **Utility**, type **Default**, language **English**. Name
+   `quotation_send` (the second: `offer_letter_send`).
+3. Header **Media** → **Document**. Meta asks for a sample PDF: upload any
+   quotation or letter.
+4. Body:
+
+   Quotation:
+   ```
+   Dear {{1}},
+
+   Please find attached the quotation for {{2}}, reference {{3}}.
+
+   Kindly let us know should you wish to proceed, and we will issue the Letter of Offer.
+
+   Thank you.
+   ```
+
+   Letter of Offer:
+   ```
+   Dear {{1}},
+
+   Please find attached the Letter of Offer for {{2}}, reference {{3}}.
+
+   Kindly review and sign the letter, and return the signed copy to us.
+
+   Thank you.
+   ```
+
+5. Samples: `{{1}}` Ms Jane Doe · `{{2}}` ADspace Advertising · `{{3}}`
+   ADP/QT2610-A01 (the letter: AQL/AC001/261001).
+6. Footer optional (`ADspace`). No buttons. Submit.
+7. Once Meta shows each **Active**: the console's **WhatsApp** →
+   **Templates** → Quotation to client (and Letter of Offer to client) →
+   **Edit** → choose the template → turn its switch on.
+8. Team → Groups: give **WhatsApp: Quotations and letters** to the groups
+   that send. **Send on WhatsApp** then shows in a quotation's ⋯ on the
+   client's Services, and a Letter of Offer's ⋯ on the client's Documents.
+
+### Sent again
+
+The same message to the same person about the same record within 24 hours
+asks first (Sent recently, naming who sent it and when), with **Send
+again**. The window is Settings → WhatsApp → **Sent again** (0 turns it off).
+
 ## 3. Delivery reports (the webhook), once
 
 Without this step every message reads **Sent**; with it, Delivered, Read
