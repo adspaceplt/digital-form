@@ -150,6 +150,7 @@
       drawn = html;
       box.className = cls;
       box.innerHTML = html;
+      if (window.ADspaceGuide && window.ADspaceGuide.relay) window.ADspaceGuide.relay();
     }
     mark();
   }
@@ -309,9 +310,23 @@
     return (withDow ? DOW[x.getUTCDay()] + ', ' : '') + x.getUTCDate() + ' ' + MON[x.getUTCMonth()] + ' ' + x.getUTCFullYear();
   }
   function holMeta() {
-    if (!hol.rows) return '';
+    /* Its line's room is kept while the read is out, so nothing below moves
+       when it arrives. */
+    if (!hol.rows) return hol.err ? 'Could not load.' : '\u00a0';
     var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
     return next ? 'Next: ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
+  }
+  function holLine() {
+    var row = document.querySelector('.stg-row[data-row="holidays"]'), meta = holMeta();
+    if (!row || !meta) return;
+    var m = row.querySelector('.stg-meta');
+    if (!m) {
+      var name = row.querySelector('.stg-name');
+      if (!name) return;
+      m = document.createElement('p'); m.className = 'stg-meta';
+      name.parentNode.insertBefore(m, name.nextSibling);
+    }
+    m.textContent = meta;
   }
   function readHol(done) {
     var y = Number(holToday().slice(0, 4));
@@ -430,7 +445,10 @@
     /* The figures are read once a page; a colleague who changed one in
        another tab sees it here on the way in. */
     if (M && M.load) M.load(true).then(paint).catch(function () {});
-    if (biz()) readHol(paint);
+    /* The holidays' line is filled in place: a repaint of the whole page
+       after it arrived lost the place a refresh or an address had scrolled
+       to, and the guide's ring. */
+    if (biz()) readHol(holLine);
     /* A group named in the address is brought to the top, else the page's
        own scroll. */
     if (chosen && $('stg-' + chosen)) reveal(chosen, false);
