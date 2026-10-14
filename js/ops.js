@@ -2145,6 +2145,11 @@
     /* The client's months are not a filtered list, so the list's own
        controls say nothing about them. */
     var whole = state.view === 'months';
+    /* In Months the bar holds the views and the ⋯ alone, so on a phone they
+       share one row rather than leaving the ⋯ on a row of its own
+       (ux-audit WORK-4, 2026-10-15). */
+    var vbar = seg && seg.closest('.cmdbar');
+    if (vbar) vbar.classList.toggle('is-views-only', whole);
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
@@ -3860,7 +3865,7 @@
   }
   function quickAdd() {
     var title = String($('qkTitle').value || '').trim();
-    if (!title) { msg('qkMsg', 'Say what the task is.', 'err'); $('qkTitle').focus(); return; }
+    if (!title) { msg('qkMsg', 'Enter the task.', 'err'); $('qkTitle').focus(); return; }
     if (!$('qkDue').value) { msg('qkMsg', 'A due date is required.', 'err'); $('qkDue').focus(); return; }
     if (!$('qkLink').value) { msg('qkMsg', 'Choose a client, or Internal.', 'err'); $('qkLink').focus(); return; }
     if (!$('qkOwner').value) { msg('qkMsg', 'Choose who it is assigned to.', 'err'); $('qkOwner').focus(); return; }
@@ -5576,10 +5581,16 @@
     $('dueTitle').textContent = draft
       ? (was ? 'Change draft date' : 'Set draft date')
       : (needsAsking(t) ? 'Request extension' : 'Change due date');
+    /* An ask moves nothing until the person asked decides, so its act says
+       so (ux-audit WORK-1, 2026-10-15). */
+    $('dueGo').textContent = needsAsking(t) ? 'Send request' : 'Save';
     var cap = draft && t.current_final_due_at ? dayBefore(t.current_final_due_at) : '';
     if (cap) $('dueDate').setAttribute('max', cap); else $('dueDate').removeAttribute('max');
     $('dueDate').value = dateValue(was);
     $('dueNote').value = '';
+    /* No reason is filed that the person did not give: the replanning
+       figures group by it (ux-audit WORK-2). */
+    $('dueReason').value = '';
     msg('dueMsg', '');
     sheet('dueSheet', true);
   }
@@ -7598,6 +7609,7 @@
       var row = dueRow, t = row ? row.t : state.task;
       if (!t) return;
       if (!$('dueDate').value) { msg('dueMsg', 'A date is required.', 'err'); return; }
+      if (!$('dueReason').value) { msg('dueMsg', 'Choose a reason.', 'err'); $('dueReason').focus(); return; }
       /* One call, and the database decides whether this is a move or an ask:
          a person moving a date on a task they created themselves needs
          nobody, and everybody else is asking the person who set it. Deciding

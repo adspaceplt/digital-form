@@ -3324,3 +3324,28 @@ none)"), so its field sat lower than its neighbour. The two labels lose
 "(0 for none)", which the heading now says once (Reminders (0 for none)),
 and the sheet's rows of figures align their fields on one line whatever a
 label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
+
+- **2026-10-15** — UX audit of My Work and the Dashboard (`tests/ux-audit/`,
+  the report https://claude.ai/artifact/6ERkzRWEiSeSFC7vsbq3Qj): My Work UX B,
+  UI B; Dashboard UX B, UI A. Its P2 findings ship together. WORK-1: the date
+  sheet's act reads Send request where the date will only be asked for (the
+  sheet was titled Request extension over Save). WORK-2: Reason opens on
+  Choose a reason and is required, because a sheet that opened on Client
+  request filed that reason for anyone who only picked a date, and the
+  replanning figures group by it. WORK-3: Add task's Task field carries its
+  asterisk; the refusal reads Enter the task. WORK-4: in Months the views and
+  the bar's ⋯ share one row on a phone (`.cmdbar.is-views-only`), where the ⋯
+  had stood alone above the strip. OVW-4: a performance review in Needs
+  attention is tagged Performance and named Performance review, Sept, since
+  Review sat in the Section column beside Content Review. OVW-5: work nobody
+  holds reads Unassigned on Detail as on Summary (the database's
+  `open_by_person` still says No task owner; the page renames it). OVW-6: the
+  one-line bars share one grid whose label track is the longest label's, up
+  to two fifths (`fit-content(40%)`, subgrid rows), so Became clients holds
+  its line at 390. The stand-in's General and Video working stages were
+  grouped `in_progress` where the live database groups them `active`, which
+  drew their dots grey; corrected in the tests repository. The P3 findings
+  (board gap, capacity strip, month card grid, Add / New task, explanatory
+  lines, Withdraw width, AQC heading on retired workflows, board edge and
+  phone calendar key, empty chart cards, type sizes, the empty ring on a
+  phone) wait for the user.

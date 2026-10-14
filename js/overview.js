@@ -468,7 +468,7 @@
       return R.reviews().then(function (list) {
         return list.filter(function (r) { return r.status !== 'final'; }).map(function (r) {
           var w = words[r.status] || [r.status === 'none' ? 'Not started' : r.status, ''];
-          return { name: 'Review, ' + lastMonth().short, meta: w[0], tag: 'Review', who: r.name, days: 0,
+          return { name: 'Performance review, ' + lastMonth().short, meta: w[0], tag: 'Performance', who: r.name, days: 0,
                    since: w[0], tone: r.status === 'none' ? 'off' : 'warn',
                    url: '/admin/?s=team&tab=performance&m=' + lastMonth().key, section: 'team' };
         });
@@ -754,7 +754,10 @@
       { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
           if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
-          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; });
+          /* Work nobody holds reads Unassigned, as the list on Summary says it
+             (ux-audit OVW-5, 2026-10-15); the database names it otherwise. */
+          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; })
+            .map(function (r) { if (!r.team_member_id) r.name = 'Unassigned'; return r; });
           if (!list.length) return { empty: 'No open tasks.' };
           return { kind: 'bars', inline: true, rows: list.map(function (r) {
               var late = Number(r.late) || 0;

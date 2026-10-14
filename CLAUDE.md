@@ -2647,7 +2647,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   retired stage as skipped.
 - Reason categories are stored keys, named by `reasonWord()`: Client request,
   Scope change, Internal capacity, Pending assets, Pending confirmation,
-  Incorrect date listed.
+  Incorrect date listed. The date sheet asks for one each time (Choose a reason, required;
+  never prefilled), and its act reads Send request where it will only ask.
 - Task fields:
   - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Other (key
     `special`, 2026-10-09).

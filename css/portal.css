@@ -8159,6 +8159,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .cmdbar-acts .cmd-secondary { display: none; }
   .cmd-more { display: inline-block; position: relative; }
   .cmdbar-views { flex: 1 1 100%; order: 5; }
+  .cmdbar.is-views-only .cmdbar-views { flex: 1 1 0; order: 0; }
   .cmdbar .btn { flex: 0 0 auto; }
 }
 
@@ -9611,8 +9612,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 
 /* Bars on one line (2026-10-12): the label, the bar, the figure; a red
    share at the bar's end where part of it is late. */
-.chart-bars.is-inline { gap: 10px; }
-.chart-bars.is-inline .cb-row { display: grid; grid-template-columns: minmax(84px, 26%) minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 13px; }
+/* The rows share one grid: the label track is the longest label's, up to
+   two fifths, so a label holds its line on a phone and every bar starts on
+   one edge (ux-audit OVW-6, 2026-10-15). */
+.chart-bars.is-inline { grid-template-columns: fit-content(40%) minmax(0, 1fr) auto; column-gap: 12px; row-gap: 10px; }
+.chart-bars.is-inline .cb-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; font-size: 13px; }
 .chart-bars.is-inline .cb-track { display: flex; margin-top: 0; overflow: hidden; }
 .chart-bars.is-inline .cb-fill { border-radius: 0; min-width: 0; }
 .chart-bars.is-inline .cb-fill:first-child { border-radius: 4px 0 0 4px; min-width: 2px; }

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015h">
+<link rel="stylesheet" href="/css/portal.css?v=20261015i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2417,7 +2417,8 @@
                  They are what a report groups replanning by, so they are
                  nouns and not sentences. -->
             <label class="field-label" for="dueReason" style="margin-top:12px">Reason</label>
-            <select class="select" id="dueReason">
+            <select class="select" id="dueReason" aria-required="true">
+              <option value="">Choose a reason</option>
               <option value="client_request">Client request</option>
               <option value="scope_change">Scope change</option>
               <option value="capacity">Internal capacity</option>
@@ -2880,7 +2881,7 @@
               <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content task</button>
             </div>
             <label class="field-label" for="qkTitle">Task</label>
-            <textarea class="input" id="qkTitle" placeholder="Write September caption" maxlength="200" rows="1" data-oneline></textarea>
+            <textarea class="input" id="qkTitle" aria-required="true" placeholder="Write September caption" maxlength="200" rows="1" data-oneline></textarea>
             <div class="row">
               <div class="field">
                 <label class="field-label" for="qkOwner">Assigned to</label>
@@ -5354,11 +5355,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261014a"></script>
 <script src="/js/campaigns.js?v=20261013"></script>
-<script src="/js/ops.js?v=20261015a"></script>
+<script src="/js/ops.js?v=20261015b"></script>
 <script src="/js/perf.js?v=20261015a"></script>
 <script src="/js/health.js?v=20261015"></script>
 <script src="/js/search.js?v=20261014a"></script>
-<script src="/js/overview.js?v=20261015"></script>
+<script src="/js/overview.js?v=20261015a"></script>
 <script src="/js/settings.js?v=20261015c"></script>
 </body>
 </html>
