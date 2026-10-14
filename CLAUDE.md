@@ -4186,7 +4186,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   answers by itself (2026-10-14; the user: "there should have a place to see
   all hi.adspace.me/{slugs}"), each a card shut until opened: Content
   Review (`/r/{key}`, an Active client in Content Review), Video Scripts
-  (`/s/{key}`), Creator selection (`/c/{key}`, not a draft; Completed as a
+  (`/s/{key}`, read through `script_links()`: the key is withheld from the
+  table, `2026-10-14-script-links-list.sql`), Creator selection (`/c/{key}`, not a draft; Completed as a
   chip) and Creator pages (`/p/{code}`, Inactive as a chip); each read only
   where its section (or `campaigns.creators`) is at View, a failed read
   `Could not load the {group} links.` with Try again; Copy and Open, no ⋯

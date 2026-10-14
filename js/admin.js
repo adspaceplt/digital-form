@@ -5988,8 +5988,13 @@
       });
     }
     if (k === 's') {
-      return take(db.from('clients').select('id, name, client_code, script_key').not('script_key', 'is', null), function (c) {
-        return c.script_key ? { slug: 's/' + c.script_key, url: origin + '/script/?k=' + c.script_key, label: who(c) } : null;
+      /* The key is withheld from the table; script_links() answers it for
+         the clients the colleague may see at Video Scripts. */
+      return db.rpc('script_links').then(function (r) {
+        if (r.error || !r.data || r.data.error) throw r.error || new Error((r.data && r.data.error) || 'refused');
+        return (r.data.links || []).filter(function (c) { return c.key; }).map(function (c) {
+          return { slug: 's/' + c.key, url: origin + '/script/?k=' + c.key, label: who(c) };
+        });
       });
     }
     if (k === 'c') {
