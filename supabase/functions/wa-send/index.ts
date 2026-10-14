@@ -286,8 +286,10 @@ Deno.serve(async (req) => {
     const t = (found.list || []).filter((x) => x.name === tname && x.language === tlang && x.status === 'APPROVED')[0];
     if (!t) return json({ error: 'wa-template' }, 200, origin);
     if (!t.supported) return json({ error: 'wa-unsupported' }, 200, origin);
-    /* A Document header is a report's PDF, and a report goes in one. */
-    if ((t.header === 'DOCUMENT') !== (purpose === 'report')) return json({ error: 'needs-report' }, 200, origin);
+    /* A Document header is a record's PDF (a report, a quotation, a Letter
+       of Offer), and those go in one. */
+    const docPurpose = purpose === 'report' || purpose === 'quotation' || purpose === 'offer';
+    if ((t.header === 'DOCUMENT') !== docPurpose) return json({ error: 'needs-report' }, 200, origin);
 
     const given = (body.values || {}) as Record<string, any>;
     const values = t.body_vars.map((v) => String(given[v] == null ? '' : given[v]).trim());
@@ -304,7 +306,7 @@ Deno.serve(async (req) => {
     let doc: { id: string; filename: string } | undefined;
     if (t.header === 'DOCUMENT') {
       const b64 = String(body.pdf || '');
-      const filename = String(body.filename || 'Report.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
+      const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
       if (!b64 || b64.length > 20 * 1024 * 1024) return json({ error: 'bad-file' }, 200, origin);
       const up = await uploadPdf(b64, filename);
       if (!up.id) {

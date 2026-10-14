@@ -16,6 +16,7 @@
   'use strict';
   var MON = window.ADspaceMoney;
   var $ = function (id) { return document.getElementById(id); };
+  function WA() { return window.ADspaceWhatsApp; }
   var esc = function (s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
@@ -110,6 +111,11 @@
           var st = stateOf(q, live), h = headline(q);
           var items = [];
           items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
+          /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
+             drawn only once the template is on (`waOn` below). */
+          if (WA() && WA().may('quotation') && !q.removed_at && q.status !== 'not_proceeding') {
+            items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
+          }
           if (maySet && !q.removed_at) {
             if (st[0] !== 'Not proceeding' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
             if (q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) items.push('<button class="kmenu-item" data-a="billing" type="button"><b>Use billing details</b></button>');
@@ -139,6 +145,12 @@
     if (b) b.addEventListener('click', function () { build(ctx, null, b); });
     var g = $('qtGone');
     if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });
+    if (host.querySelector('[data-wa]')) {
+      WA().on('quotation').then(function (yes) {
+        if (!yes) return;
+        Array.prototype.forEach.call(host.querySelectorAll('[data-wa]'), function (it) { it.hidden = false; });
+      });
+    }
     Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
@@ -168,6 +180,15 @@
         if (tab) try { tab.close(); } catch (x) {}
         ctx.msg('qtMsg', said(e) || 'Not drawn.', 'err');
       });
+      return;
+    }
+    if (a === 'wa') {
+      WA().compose({ purpose: 'quotation', clientId: q.client_id || (ctx.client && ctx.client.id), opener: btn,
+        doc: { id: q.id, title: q.ref, file: function () {
+          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '' })
+            .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
+        } },
+        onSent: function (d, line) { ctx.msg('qtMsg', line, 'ok'); } });
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }

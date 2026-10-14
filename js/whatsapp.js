@@ -37,21 +37,27 @@
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
     reminder: ['Team reminders', 'Each reminder in a colleague\'s bell, to their mobile. Variables: their first name, the title, the message.'],
     creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
-    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.']
+    approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.'],
+    quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
+    offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.']
   };
+  /* A purpose whose message carries a record's PDF as its Document header. */
+  var DOC = { report: 1, quotation: 1, offer: 1 };
   /* What each message in the list was. */
   /* A link button's variable is filled where the purpose can fill it: a
      creator's code, the approval link, or typed in the composer. Only a
      purpose the portal sends by itself with nothing to put there refuses
      one (the user, 2026-10-10: not a list of the purposes allowed). */
   var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
-  var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder', message: 'Message' };
+  var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
+    quotation: 'Quotation', offer: 'Letter of Offer', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
                 ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['failed', 'Failed', 'is-danger']];
   /* The part each purpose sends under, and the record's own section. */
-  var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking', approval: 'whatsapp.approval' };
-  var RECORD = { report: 'reports', feedback: 'clients', creator: 'campaigns' };
+  var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking', approval: 'whatsapp.approval',
+    quotation: 'whatsapp.documents', offer: 'whatsapp.documents' };
+  var RECORD = { report: 'reports', feedback: 'clients', creator: 'campaigns', quotation: 'clients.services', offer: 'clients.documents' };
   var SECRET = { WHATSAPP_PHONE_ID: 'Phone number ID', WHATSAPP_TOKEN: 'token', WHATSAPP_WABA_ID: 'Business Account ID' };
 
   var SAID = {
@@ -69,6 +75,7 @@
     'not-published': 'Publish the report first.',
     'not-booked': 'Only a booked creator can be sent their booking.',
     'not-found': 'This record is no longer available.',
+    void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
     'wa-params-missing': 'Fill in every variable.',
     'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
@@ -486,8 +493,8 @@
         check: function (v) {
           var x = byKey[v.tpl];
           if (!x) return 'Choose a template.';
-          if (t.purpose === 'report' && x.header !== 'DOCUMENT') return 'The report template needs a Document header.';
-          if (t.purpose !== 'report' && x.header === 'DOCUMENT') return 'A template with a Document header sends a report alone.';
+          if (DOC[t.purpose] && x.header !== 'DOCUMENT') return 'This template needs a Document header for the PDF.';
+          if (!DOC[t.purpose] && x.header === 'DOCUMENT') return 'A template with a Document header sends a report, a quotation or a Letter of Offer.';
           if (x.header_var) return 'The portal cannot fill this template\'s header.';
           if (x.body_vars.length > 5) return SAID['bad-params'];
           if (x.button_var && NO_BUTTON[t.purpose]) return NO_BUTTON[t.purpose];
@@ -543,7 +550,7 @@
   }
 
   /* A purpose sent to one client's contacts, its main contact first. */
-  function forClient(o) { return o.purpose === 'report' || o.purpose === 'feedback' || o.purpose === 'approval'; }
+  function forClient(o) { return o.purpose === 'report' || o.purpose === 'feedback' || o.purpose === 'approval' || Boolean(o.doc); }
   function fillTo(d) {
     var o = cx.o, sel = $('waTo');
     if (d.error) {
@@ -636,6 +643,14 @@
     if (!t) { box.innerHTML = ''; $('waFillSec').hidden = true; $('waReportRow').hidden = true; return; }
     var isDoc = t.header === 'DOCUMENT';
     $('waReportRow').hidden = !isDoc || !r || r.kind !== 'contact';
+    /* A quotation or a letter the composer was opened on is the one
+       document: a fact read, never a select of one. */
+    var given = cx.o.doc;
+    $('waReportLabel').textContent = given ? KIND[cx.o.purpose] : 'Report';
+    $('waReport').hidden = Boolean(given);
+    $('waDocOne').hidden = !given;
+    $('waDocOne').value = given ? given.title : '';
+    $('waReportLabel').classList.toggle('is-req', !given);
     var fields = [];
     if (t.header_var) fields.push(['h:' + t.header_var, 'Header']);
     t.body_vars.forEach(function (v) { fields.push(['b:' + v, /^\d+$/.test(v) ? 'Variable ' + v : human(v)]); });
@@ -651,7 +666,7 @@
       else f.value = prefill(key, t, r);
       f.addEventListener('input', function () { f.setAttribute('data-typed', '1'); preview(); });
     });
-    if (isDoc && r && r.kind === 'contact') loadReports(r.client_id);
+    if (isDoc && r && r.kind === 'contact' && !given) loadReports(r.client_id);
     else preview();
   }
   /* The approval reminder's own client: what waits and its link fill in. */
@@ -687,7 +702,7 @@
     if (approving(r) && /link|url|approve/.test(low)) return o.link || '';
     if (approving(r) && /what|item|waiting|set|draft|content/.test(low)) return o.what || '';
     if (/campaign|job|booking/.test(low)) return r.kind === 'creator' ? (o.campaign || '') : '';
-    if (/report|period|month/.test(low)) return rep ? rep.title : '';
+    if (/report|period|month|ref|quot|letter|offer|document/.test(low)) return rep ? rep.title : '';
     if (/client|brand|company|business/.test(low)) return r.kind === 'contact' ? ((rep ? rep.client : r.client) || '') : '';
     if (/name|greet|salut|contact|recipient|creator/.test(low)) return r.greeting || r.name || '';
     return '';
@@ -735,6 +750,7 @@
   function reportWord() {
     var r = recipient(), t = template();
     if (!cx || !r || r.kind !== 'contact' || !t || t.header !== 'DOCUMENT') return null;
+    if (cx.o.doc) return { id: cx.o.doc.id, title: cx.o.doc.title, client: r.client, doc: cx.o.doc };
     var got = cx.reports[r.client_id] || {};
     var rep = (got.list || []).filter(function (x) { return x.id === $('waReport').value; })[0];
     if (!rep) return null;
@@ -766,7 +782,7 @@
     };
     var rep = reportWord();
     var head = t.header === 'DOCUMENT'
-      ? '<p class="wa-doc">' + FILE + '<span>' + esc(rep ? reportTitle(rep.row) : 'No report chosen') + '</span></p>'
+      ? '<p class="wa-doc">' + FILE + '<span>' + esc(rep ? (rep.doc ? rep.doc.title : reportTitle(rep.row)) : 'No report chosen') + '</span></p>'
       : t.header === 'TEXT' ? '<p class="wa-head">' + fill(t.header_text, 'h') + '</p>' : '';
     var buttons = (t.buttons || []).map(function (b, i) {
       var url = t.button_var && t.button_var.index === i ? fill(b.url || '', 'u') : esc(b.url || '');
@@ -796,8 +812,11 @@
     if (!t) { say(m, 'Choose a template.', 'err'); return; }
     var isDoc = t.header === 'DOCUMENT';
     var rep = reportWord();
-    if (isDoc && r.kind !== 'contact') { say(m, 'A template with a Document header sends a report to a client contact.', 'err'); return; }
+    if (isDoc && r.kind !== 'contact') { say(m, 'A template with a Document header goes to a client contact.', 'err'); return; }
     if (isDoc && !rep) { say(m, 'Choose a report.', 'err'); return; }
+    /* A document the composer was not opened on is a report; one it was
+       opened on is that quotation or letter, sent under its own purpose. */
+    var docOf = isDoc && rep.doc ? o.purpose : isDoc ? 'report' : null;
     var empty = Array.prototype.filter.call($('waFields').querySelectorAll('[data-var]'), function (f) { return !String(f.value || '').trim(); })[0];
     if (empty) {
       var lab = $('waFields').querySelector('label[for="' + empty.id + '"]');
@@ -805,9 +824,9 @@
       empty.focus();
       return;
     }
-    var purpose = isDoc ? 'report' : (o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message';
+    var purpose = docOf || ((o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message');
     if (!maySend(purpose)) { say(m, SAID.denied, 'err'); return; }
-    var ref = purpose === 'report' ? rep.id : purpose === 'creator' ? o.optionId : purpose === 'approval' ? o.ref : null;
+    var ref = DOC[purpose] ? rep.id : purpose === 'creator' ? o.optionId : purpose === 'approval' ? o.ref : null;
     var values = {}, header = '', button = '';
     Array.prototype.forEach.call($('waFields').querySelectorAll('[data-var]'), function (f) {
       var key = f.getAttribute('data-var'), v = String(f.value || '').trim();
@@ -823,9 +842,12 @@
     }, function () {
       cx.sending = true;
       $('waSend').disabled = true;
-      say(m, isDoc ? 'Attaching the report…' : 'Sending…');
+      say(m, isDoc ? 'Attaching the PDF…' : 'Sending…');
       var mine = cx;
-      var pdf = isDoc
+      var pdf = isDoc && rep.doc
+        ? Promise.resolve().then(function () { return rep.doc.file(); })
+          .then(function (f) { return toB64(f.blob).then(function (b) { return { b64: b, name: f.name }; }); })
+        : isDoc
         ? (window.ADspaceReports && window.ADspaceReports.keptPdf
           ? window.ADspaceReports.keptPdf(rep.id) : Promise.reject({ code: 'bad-file' }))
           .then(function (f) { return toB64(f.blob).then(function (b) { return { b64: b, name: f.name }; }); })

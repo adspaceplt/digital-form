@@ -4559,7 +4559,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-10: "whatsapp tab should go to the last inside work"): View
   reads the messages, Work (Manage on the panel) sends, Manage (Full Access)
   sets the templates. Its parts `whatsapp.report`, `whatsapp.feedback`,
-  `whatsapp.booking` and `whatsapp.approval` (2026-10-10) follow it or are
+  `whatsapp.booking`, `whatsapp.approval` (2026-10-10) and
+  `whatsapp.documents` (Quotations and letters, 2026-10-14) follow it or are
   shut (No Access), nothing between
   (`VIEW_PARTS`); they replaced `reports.whatsapp`, `clients.whatsapp` and
   `campaigns.whatsapp` (a shut one moved across, the old keys taken off). A
@@ -4567,7 +4568,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   section at View (Reports, Clients, Creator Campaigns), a plain message a
   contact's Clients: Contacts or a creator's Creators List at View, an
   approval reminder Content Review: Content sets or Creator Campaigns:
-  Campaigns at View and the record it names at its own
+  Campaigns at View and the record it names at its own, a quotation
+  Clients: Services at View, a Letter of Offer Clients: Documents at View
   (`wa_may_send`, `ADspaceWhatsApp.may`); at No Access no record offers
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
@@ -4618,6 +4620,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   today), Request feedback on WhatsApp in a client's ⋯, Resend booking in a
   booked creator's ⋯ at Confirmed and Pending visit alone (the booking goes
   out by itself on confirming; the user, 2026-10-11).
+- A quotation and a Letter of Offer (`quotation`, `offer`,
+  `2026-10-14-whatsapp-documents.sql`, the purposes added by
+  `2026-10-14-whatsapp-document-purposes.sql` in the SQL Editor; the user,
+  2026-10-14: the team decides which to send once a client proceeds): Send
+  on WhatsApp in a quotation's ⋯ (not removed, not Not proceeding) and a
+  Letter of Offer's ⋯ on the client's Documents (not voided or replaced,
+  `void`), each drawn once its template is on; the composer takes the
+  record fixed (`o.doc`: `#waDocOne`, a readfield, never a select of one),
+  its PDF drawn in the browser as Download draws it and sent as the
+  Document header; variables the greeting, the client, the reference; to a
+  client contact of that client alone; filed as Quotation / Letter of Offer
+  sent on WhatsApp. Sent by hand only: the one automatic send to a client
+  or creator is a creator's booking confirmed.
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.

@@ -4354,6 +4354,7 @@
   function documentRow(d) {
     var st = DOCS.letterState(d);
     var w = LETTER_WORD[st] || LETTER_WORD.issued;
+    var waOffer = Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('offer'));
     var mapped = (state.docMap || {})[d.id] || [];
     /* Verification is offered only where the letter knows exactly which lines
        it carried. A legacy letter is history and is left as history. */
@@ -4377,6 +4378,10 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
+          /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
+             drawn once the template is on; never a voided or replaced one. */
+          (waOffer && !d.voided_at && !d.superseded_by
+            ? '<button class="kmenu-item" data-a="wa" hidden type="button"><b>Send on WhatsApp</b></button>' : '') +
           (st === 'issued' ? '<button class="kmenu-item" data-a="sign" type="button"><b>Mark signed</b></button>' : '') +
           (st === 'signed' ? '<button class="kmenu-item" data-a="unsign" type="button"><b>Not signed after all</b></button>' : '') +
           (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
@@ -4405,6 +4410,21 @@
       loadDocuments();
     };
     on('download', function () { DOCS.download(d, function (warn) { if (warn) msg('crmDocMsg', warn, 'err'); }); });
+    var waIt = row.querySelector('[data-a="wa"]');
+    if (waIt) {
+      window.ADspaceWhatsApp.on('offer').then(function (yes) { if (yes) waIt.hidden = false; });
+      waIt.addEventListener('click', function () {
+        shut();
+        window.ADspaceWhatsApp.compose({ purpose: 'offer', clientId: d.client_id || (state.client && state.client.id),
+          opener: row.querySelector('[data-a="menu"]'),
+          doc: { id: d.id, title: d.number, file: function () {
+            return DOCS.render(d).then(function (bytes) {
+              return { blob: new Blob([bytes], { type: 'application/pdf' }), name: DOCS.fileName(d) };
+            });
+          } },
+          onSent: function (x, line) { msg('crmDocMsg', line, 'ok'); } });
+      });
+    }
     on('sign', function () {
       shut();
       DOCS.setSigned(d, true, function (err) {
