@@ -63,7 +63,28 @@
     return (from ? '…' : '') + t.slice(from, to) + (to < t.length ? '…' : '');
   }
   function has(text, q) { return String(text || '').toLowerCase().indexOf(String(q).toLowerCase()) > -1; }
+  var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var TOUCH_WORD = { call: 'Call', visit: 'Visit', meeting: 'Meeting', whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
+  /* A section's records are found by their client too (2026-10-14; the
+     user: "searching AC182 … only shows me client directory"): the clients
+     whose name or code match, read once a query and shared by every
+     section (the Clients group's own rows among them, so the table is read
+     once a query), join each section's own filter as `client_id.eq` terms.
+     A reader the clients table refuses finds by the record's own words. */
+  var CL = { q: null, p: null };
+  function clientRows(q) {
+    if (CL.q !== q) {
+      CL = { q: q, p: read(db.from('clients').select('id, slug, name, client_code, stage')
+        .or(any(['name', 'client_code'], q)).order('name').limit(10)) };
+    }
+    return CL.p;
+  }
+  function clientsFor(q) {
+    return clientRows(q).then(function (r) { return (r.rows || []).map(function (c) { return c.id; }); });
+  }
+  function orClient(f, ids) {
+    return f + ids.map(function (id) { return ',client_id.eq.' + id; }).join('');
+  }
   function dayOf(d) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
     return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : '';
@@ -191,8 +212,7 @@
       read: function (q) {
         /* The registered name is a Billing column the table withholds
            (2026-09-28), so a client is found by its name and its code. */
-        var direct = read(db.from('clients').select('id, slug, name, client_code, stage')
-          .or(any(['name', 'client_code'], q)).order('name').limit(LIMIT));
+        var direct = clientRows(q).then(function (r) { return r.error ? r : { rows: (r.rows || []).slice(0, LIMIT) }; });
         if (!may('clients.contacts')) return direct;
         var people = read(db.from('client_contacts')
           .select('name, email, phone, client_id, clients(id, slug, name, client_code, stage)')
@@ -241,8 +261,10 @@
       } },
     { key: 'review', head: 'Content Review', can: function () { return may('review.sets'); },
       read: function (q) {
-        return read(db.from('batches').select('id, title, published, client_id, clients(id, slug, name)')
-          .ilike('title', '%' + q + '%').order('created_at', { ascending: false }).limit(LIMIT));
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('batches').select('id, title, published, client_id, clients(id, slug, name)')
+            .or(orClient(any(['title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
+        });
       },
       row: function (s) {
         var c = s.clients || {};
@@ -256,8 +278,10 @@
       } },
     { key: 'scripts', head: 'Video Scripts', can: function () { return may('scripts'); },
       read: function (q) {
-        return read(db.from('video_scripts').select('id, code, title, period, status, client_id, clients(name)')
-          .or(any(['code', 'title'], q)).order('created_at', { ascending: false }).limit(LIMIT));
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('video_scripts').select('id, code, title, period, status, client_id, clients(name)')
+            .or(orClient(any(['code', 'title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
+        });
       },
       row: function (v) {
         var m = /^(\d{4})-(\d{2})/.exec(v.period || '');
@@ -269,8 +293,10 @@
       } },
     { key: 'campaigns', head: 'Creator Campaigns', can: function () { return may('campaigns.campaigns'); },
       read: function (q) {
-        return read(db.from('campaigns').select('id, title, state, client_id, clients(name)')
-          .ilike('title', '%' + q + '%').order('created_at', { ascending: false }).limit(LIMIT));
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('campaigns').select('id, title, state, client_id, clients(name)')
+            .or(orClient(any(['title'], q), ids)).order('created_at', { ascending: false }).limit(LIMIT));
+        });
       },
       row: function (c) {
         return {
@@ -294,6 +320,24 @@
           id: 'creator-' + k.id, name: k.name, code: '',
           meta: [k.active === false ? 'Inactive' : '', plats.join(', ')],
           open: function () { go('/admin/?s=campaigns&tab=roster', 'campaigns', ['rosterSearch', k.name]); }
+        };
+      } },
+    /* Reports (2026-10-14): by the client's name or code, a white-label
+       brand's name, or the report's title; newest period first. */
+    { key: 'reports', head: 'Reports', can: function () { return may('reports'); },
+      read: function (q) {
+        return clientsFor(q).then(function (ids) {
+          return read(db.from('sm_reports').select('id, kind, title, period_start, period_end, status, brand_name, client_id, clients(name, client_code)')
+            .or(orClient(any(['title', 'brand_name'], q), ids)).order('period_start', { ascending: false }).limit(LIMIT));
+        });
+      },
+      row: function (r) {
+        var c = r.clients || {};
+        return {
+          id: 'report-' + r.id, name: r.brand_name || c.name || '', code: r.brand_name ? '' : c.client_code,
+          meta: [(r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report') + ' · ' + dayOf(r.period_start) + ' to ' + dayOf(r.period_end),
+            REPORT_STATE[r.status] || ''],
+          open: function () { go('/admin/?s=reports&report=' + encodeURIComponent(r.id), 'reports'); }
         };
       } },
     { key: 'register', head: 'Documents',

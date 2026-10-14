@@ -3133,3 +3133,11 @@ tells the team it is ready for a Letter of Offer.
   content, four across with no plan), the budget and term sit side by side
   with no plan, and one-off items are steppers two across, as the extra
   contents are.
+
+- 2026-10-14 · Search finds a client's records by its code. The user: searching
+  AC182 showed the client row and Documents alone. Search had no Reports
+  group, and Content Review, Video Scripts and Creator Campaigns matched
+  only their own title or code. The clients matching the query are now read
+  once (shared with the Clients group, so the table is still read once a
+  query, which `tests/search.js` holds) and their ids join each section's
+  filter; Reports is a group of its own, by title, brand or client.
