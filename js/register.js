@@ -605,7 +605,7 @@
     $('docLangRow').hidden = !quote;
     $('docSignRow').hidden = false;
     if (reseed) $('docSigned').checked = Boolean(t.signed);
-    $('docSerial').placeholder = quote ? 'AQT2601001' : 'Assigned on issue';
+    $('docSerial').placeholder = quote ? 'From the accounting portal' : 'Assigned on issue';
     if (reseed) $('docSerial').value = '';
     var c = issuing.client || clientOf($('docClient').value);
     var m = memberOf($('docMember').value);

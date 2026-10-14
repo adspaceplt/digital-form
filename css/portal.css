@@ -4894,6 +4894,11 @@ body > .shell { width: 100%; }
    edge and its size; the target overflows the line evenly, as a due date's
    does. Pressed, the field takes the figure's place and the tick ends the
    cell. */
+/* A version's row ends in its own Download (ux-audit SVC-9); its date names
+   itself only where the heading is hidden (SVC-4). */
+.cat-row.rcv-row { grid-template-columns: minmax(0, 1fr) 118px 232px auto; }
+.rcv-k { display: none; }
+.is-narrow .rcv-row .rcv-k { display: inline; }
 .cat-row > .svc-rate > .svc-rate-edit { font-size: inherit; margin-left: 0; margin-right: -8px; justify-content: flex-end; }
 .cat-row > .svc-rate:has(> .askfield) { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .cat-row > .svc-rate > .askfield { flex: 1 1 0; min-width: 0; text-align: right; -moz-appearance: textfield; appearance: textfield; }
@@ -4904,7 +4909,7 @@ body > .shell { width: 100%; }
    page keeps one row above the tabs (the user, 2026-10-14). */
 .svc-live {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-  gap: 8px 16px; font-size: 13px; color: var(--ink-mute); min-height: var(--ctl-h-sm);
+  gap: 8px 12px; font-size: 13px; color: var(--ink-mute); min-height: var(--ctl-h-sm);
   flex: 1 1 auto; min-width: 0;
 }
 .svc-live-now > * { white-space: nowrap; }
@@ -4918,7 +4923,9 @@ body > .shell { width: 100%; }
 }
 .svc-live b { color: var(--ink); font-weight: 600; }
 .svc-live-now { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.svc-live-acts { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; }
+/* Tight enough that the line, its Publish and the bar's acts keep one row at
+   1280 with a change waiting (ux-audit SVC-5). */
+.svc-live-acts { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .svctabs { margin-bottom: 12px; }
 /* A block of the rate card's words, edited as the card prints it (2026-10-13):
    numbered points, or a table's rows under its column names; each row's acts
@@ -5107,6 +5114,9 @@ body > .shell { width: 100%; }
 /* A block of the card's words holds no price: its rate track is the Changed
    chip's width or nothing, so the words take the row (ux-audit SVC-3). */
 .is-narrow .cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+/* A version: its name and state, then its date and Download (ux-audit SVC-9). */
+.is-narrow .cat-row.rcv-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name rate" "meta act"; }
+.is-narrow .cat-row.rcv-row > .team-act { align-self: center; margin-block: 0; }
 .is-narrow .cat-row > .team-act:empty,
 .is-narrow .cr-row > .team-act:empty { display: none; }
 /* A header the phone hides is not a header, so it leaves and takes its own
