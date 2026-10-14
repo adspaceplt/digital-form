@@ -3435,6 +3435,66 @@ day one; the salutation added 14 Oct) and the record's tab strip scrolling at
   its own on Wording and Versions; the version line shares its row. SVC-3: a
   wording row on a phone kept the price track and wrapped its words in half
   the row; its middle tracks collapse. The P3 findings wait for the user.
+### 2026-10-15 · Content Review, Video Scripts and Creator Campaigns audit fixes
+The ux-audit of the three sections (report:
+https://claude.ai/artifact/YaMFZabWfGSCu1GRB615xf; grades before: Content
+Review UX C / UI B, Video Scripts B / B, Creator Campaigns D / B), every
+finding fixed at the user's word ("fix all no matter what").
+- Creator Campaigns. CAMP-1: at View the record drew Release, Save, Add
+  creators, Bulk dates, Confirm creators, Unpublish, the invoice and
+  editable fields the database refuses; each is now held to the part the
+  function checks (`campaigns.campaigns`, `campaigns.finance` at Work) and
+  read-only facts are words, and the stand-in's `campaign_qc_pass` refuses a
+  View caller as the live one does. CAMP-2: Add creators' refusal is said
+  on the creator's own row and focused (it sat below the sheet's fold).
+  CAMP-3: Release is the card's one blue (decision 2026-09-20); Saves are
+  tonal. CAMP-4: the head line's draft to release carries Review draft.
+  CAMP-5: Saved. survives the repaint on the row it belongs to. CAMP-6:
+  Draft due moves with the shoot date only while untouched. CAMP-7: the
+  name track widened. CAMP-8: a refusal focuses its field. CAMP-9: a Draft
+  says Not published once. CAMP-10: the QC sheet shows the round's files.
+  CAMP-11: Confirm creators' actions in a sheet foot, a name for an email.
+  CAMP-12: the campaign's selection bar is ink until full (the shared
+  `.railbar-fill` elsewhere unchanged).
+- Content Review. REV-1: client and set rows count changes requested.
+  REV-2: Add to set is the Add assets sheet's foot; Add asset tonal.
+  REV-3: publishing reads the posts again (Confirm internally without a
+  reload). REV-4: Edit on the row of a post with changes requested. REV-5:
+  an empty set draws no Publish. REV-6: no empty ⋯ at View. REV-7: drafts
+  not outlined. REV-8: Accept caption has Undo (the restore is the next
+  round). REV-9 to REV-12: the pen stays with the name, posts are numbered
+  (Post 3 · Instagram Feed), the request reads who · day: note, copy.
+- Video Scripts. VS-1: Add script stores nothing until Save, so Cancel
+  leaves no empty numbered script; Publish is not drawn on an empty script.
+  New script still creates at Create, and Write with AI on an unsaved Add
+  script stores it at that press (the writer reads the script as the
+  caller). VS-2: the month's PDF is the month, unasked. VS-3: on a phone on
+  the shoot day the first unshot scene is brought into view; the link tools
+  stay on the month. VS-4 to VS-10: Shot is a word at View, VC# and Shot are
+  labelled on a phone, the chip keeps the title row, one Saved., the
+  voice-over in the scene tracks, no lone "1 of 1", the question a segment.
+- Glyphs: Publish, Unpublish and Edit drew their own marks; they take the
+  act table's (`js/acts.js` unchanged).
+
+- **2026-10-15** — The audit of Short Links, Handbook, My records and
+  WhatsApp, its P3s and act glyphs (the user, through the parent session:
+  "fix all no matter what"): LNK-1, a phone row's marks stand in three fixed
+  tracks, so a namecard's copy mark stands under a link's; LNK-6, Create
+  says "/slug added." over the list; LNK-7, Pause draws Undo where it
+  happened; the QR row's Download PNG and Copy URL read Download and Copy
+  link, each with its mark (one word an act); HB-1, a Handbook row on a
+  phone keeps its version and day under the name; MINE-2, Log initiative
+  is offered by the bar alone; MINE-3, the open-until sentence is said once,
+  on the month to rate first; MINE-4, Write reflection stands in the bar
+  beside its month; MINE-5, No reviews. gives way while a month waits to
+  be rated; MINE-6 (the glyph check), Letters' Download drew a tray arrow,
+  now the file mark; WA-3, two recipients read alike are told apart by the
+  number's last four; WA-4, `contact_greeting` greets a name led by its
+  salutation whole (Tan left out: a surname too); WA-5, `wa_messages` no
+  longer counts a message Meta failed as sent; WA-6, the messages card names
+  its month, not the tab; WA-7, a template row reads switch then pen on a
+  phone as at a desk; WA-8, Send rests while the composer says the recipient
+  cannot be messaged (`2026-10-15-whatsapp-greeting-and-counts.sql`).
 
 - **2026-10-15** — The same audit's P3 findings, at the user's word through
   the parent session ("fix all no matter what"). Reports: Run audit rests,
