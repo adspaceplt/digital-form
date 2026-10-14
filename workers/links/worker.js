@@ -187,14 +187,12 @@ function page(kind) {
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px 16px; background: #f5f5f5;
+    justify-content: center; padding: 24px 16px; background: #fff;
     color: #1b1a17; line-height: 1.55;
     font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   .panel {
-    background: #fff; border: 1px solid #e2dfd8; border-radius: 14px;
-    box-shadow: 0 1px 2px rgba(19, 24, 26, .05);
-    padding: 32px 28px; max-width: 420px; width: 100%; text-align: center;
+    padding: 32px 8px; max-width: 420px; width: 100%; text-align: center;
   }
   .mark { height: 22px; width: auto; margin-bottom: 20px; }
   h1 { margin: 0 0 8px; font-size: 24px; font-weight: 600; letter-spacing: -.02em; }

@@ -11988,18 +11988,28 @@ button.vs-row { cursor: pointer; }
 .qs-note { margin: 0; font-size: 13px; color: var(--ink-mute); }
 .qs-hint { font-size: 13px; color: var(--ink-mute); }
 .qs-pick, .qs-chip {
-  display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--radius);
+  display: grid; grid-template-columns: minmax(0, 1fr) 22px; column-gap: 12px; align-items: start; padding: 14px; border-radius: var(--radius);
   background: var(--sunk); cursor: pointer; transition: box-shadow var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .qs-pick.is-on, .qs-chip.is-on { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
-.qs-pick input, .qs-chip input { width: 20px; height: 20px; margin: 2px 0 0; flex: 0 0 auto; accent-color: var(--action); }
+.qs-pick:has(input:focus-visible), .qs-chip:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 3px var(--action-ring); }
+.qs-text { grid-column: 1; grid-row: 1; min-width: 0; }
+.qs-pick > input, .qs-chip > input, .qs-mark { grid-column: 2; grid-row: 1; width: 22px; height: 22px; margin: 0; }
+.qs-pick > input, .qs-chip > input { position: relative; z-index: 1; opacity: 0; cursor: pointer; }
+.qs-mark {
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--line-ctl); color: var(--on-fill);
+  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.qs-mark svg { opacity: 0; transition: opacity var(--t-fast) var(--ease); }
+input:checked ~ .qs-mark { background: var(--fill); box-shadow: none; }
+input:checked ~ .qs-mark svg { opacity: 1; }
 .qs-pick b { display: block; font-weight: 600; }
 .qs-pick small { display: block; font-size: 14px; color: var(--ink-soft); }
 .qs-chips { display: grid; gap: 8px; }
 .qs-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .qs-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.qs-chip { align-items: center; min-height: 48px; padding: 0 12px; border-radius: var(--radius-sm); }
-.qs-chip input { margin: 0; }
+.qs-chip { align-items: center; min-height: 48px; padding: 0 12px 0 14px; border-radius: var(--radius-sm); }
 .qs-stepper {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px;
   padding: 0 4px 0 14px; border-radius: var(--radius-sm); background: var(--sunk);

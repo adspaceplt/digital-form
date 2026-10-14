@@ -2937,3 +2937,16 @@ tells the team it is ready for a Letter of Offer.
   Services. The team copies them into the client with Use billing details,
   where the Billing sheet's own guard and record apply.
 - "Proceed quote" is the canvas's own label and is kept as approved.
+
+### 2026-10-14 · The quotation website's choices carry a drawn mark; the short link's cover has no box
+- The user: "The tick is bad ui..". The browser's own tick boxes and radio
+  buttons in the website's choice cards were blue squares and dots that
+  matched nothing else on the page. Each choice is now marked by a 22px
+  ring at the card's right edge, filled in ink with a white tick once
+  chosen, the same for several choices and for one (Apple's selection
+  cards). The input stays over the ring, unseen, so the keyboard and a
+  screen reader use it as before; its focus rings the card.
+- The user, on the short link host's Link not recognised page: "Can this be
+  no outline". The Worker's page drew a bordered, shadowed card on the grey
+  ground. It now stands on white with no box, as the portal's own covers do.
+
