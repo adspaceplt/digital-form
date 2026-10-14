@@ -28,7 +28,7 @@
   var SAID = {
     denied: 'This needs Clients: Services at Work.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
-    'plan-term': 'A plan needs a commitment of six months or more.', 'no-platform': 'Choose at least one platform.',
+    'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.'
@@ -283,8 +283,12 @@
       $('qbTranslate').checked = Boolean(sel.translate);
       $('qbBudget').value = String(sel.budget == null ? 0 : sel.budget);
       var set = (c.snapshot || {}).settings || {};
-      $('qbTerm').innerHTML = [6, 12, 24].map(function (m) {
-        var pct = Number(set[m < 12 ? 'term_6_11' : m < 24 ? 'term_12_23' : 'term_24'] || 0);
+      /* The five terms a quotation is offered on (2026-10-14), each with its
+         adjustment as the rate card version holds it (18 months takes 12's
+         on a version published before it had its own). */
+      $('qbTerm').innerHTML = [3, 6, 12, 18, 24].map(function (m) {
+        var key = { 3: 'term_1_3', 6: 'term_6_11', 12: 'term_12_23', 18: 'term_18_23', 24: 'term_24' }[m];
+        var pct = Number((set[key] != null ? set[key] : m === 18 ? set.term_12_23 : 0) || 0);
         return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
       }).join('');
       $('qbTerm').value = String(sel.term || 6);

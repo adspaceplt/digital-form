@@ -5479,7 +5479,7 @@
   $('svcTax').addEventListener('click', function () {
     window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
       keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
-        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote'], ['details_form_days', 'Details form open for (days)', 'quote']] }, this);
+        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 17 months (%)', 'adj'], ['term_18_23', '18 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote'], ['details_form_days', 'Details form open for (days)', 'quote']] }, this);
   });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {

@@ -398,8 +398,9 @@
       });
       gap(16);
     }
-    var TERMS = [['term_1_3', '1 – 3 months'], ['term_4_5', '4 – 5.9 months'], ['term_6_11', '6 months'],
-      ['term_12_23', '12 months'], ['term_24', '24 months']];
+    /* The five terms a quotation is offered on (2026-10-14). */
+    var TERMS = [['term_1_3', '3 months'], ['term_6_11', '6 months'], ['term_12_23', '12 months'],
+      ['term_18_23', '18 months'], ['term_24', '24 months']];
     var termRows = TERMS.filter(function (t) { return set[t[0]] != null && set[t[0]] !== ''; });
     if (termRows.length) {
       row([C('Discount', thirds[0], { fill: deep }), C('Qualifying Condition', thirds[1], { fill: head }), C('Rate', thirds[2], { fill: head })]);

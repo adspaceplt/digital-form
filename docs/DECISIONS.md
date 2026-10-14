@@ -3184,3 +3184,17 @@ marked Removed; deleted, their personal details and sign-in go as well. The
 row itself is never deleted, since tasks, documents and the record name
 them. The question sheet now opens on a name typed back even when other
 fields come before it, as CLAUDE.md already stated.
+
+### 2026-10-14 · Quotation terms 3, 6, 12, 18 and 24 months
+The user: "we accept flexibility starting from 3 months, 6 months, 12
+months, 18 months and 24 months", each with its own optional discount or
+surcharge kept in Business settings for those with access. `quote_price`
+now accepts those five terms with a plan (the six-month floor, `plan-term`,
+is gone) and 1 only for one-off items alone; 18 to 23 months is its own
+setting (`term_18_23`, seeded from 12's) so 12 and 18 can differ; 12 to 23
+reads 12 to 17. The percentages stay in Tax and terms (`team.settings`), 0
+meaning none, and reach quotations through the rate card version, so a
+change applies after the card is next published; a version published before
+the setting takes 12's for 18. The website's Commitment became a select:
+five choices broke the segment into a lone pill (DESIGN: five or more is a
+select).

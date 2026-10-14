@@ -186,7 +186,7 @@
   var SAL_ZH = { Mr: '先生', Ms: '女士', Mrs: '太太', Mdm: '夫人', Dr: '博士', Prof: '教授' };
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
-  var TERMS = [6, 12, 24];
+  var TERMS = [3, 6, 12, 18, 24];
 
   var lang = 'en';
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
@@ -391,7 +391,9 @@
       h += sec(t().budget, '<select class="select" id="qsBudget">' +
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>', 'qsBudget');
     }
-    if (monthly()) h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true));
+    // Five terms: a select, as the budget is (a segment holds four at most).
+    if (monthly()) h += sec(t().term, '<select class="select" id="qsTerm">' + TERMS.map(function (m) {
+      return '<option value="' + m + '"' + (m === S.term ? ' selected' : '') + '>' + esc(f(t().months, { n: m })) + '</option>'; }).join('') + '</select>', 'qsTerm');
     if (S.need.content && onceList().length) {
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
         onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
@@ -728,7 +730,7 @@
     S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
     S.plan = sel.plan || null; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
     S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate); S.budget = sel.budget == null ? null : Number(sel.budget);
-    S.term = Number(sel.term) >= 6 ? Number(sel.term) : 12; S.once = {}; S.koc = ''; S.kol = false; S.verify = [];
+    S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.koc = ''; S.kol = false; S.verify = [];
     (sel.once || []).forEach(function (o) {
       var c = CAT && CAT.contents.some(function (x) { return x.slug === o.slug; });
       if (c) { S.need.content = true; S.once[o.slug] = o.qty; }

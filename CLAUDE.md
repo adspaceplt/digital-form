@@ -1580,9 +1580,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `detail` and `min_months` are seeded from the rate card and stay editable.
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
-  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–23
-    and 24+ months, each percentage a setting (`term_1_3` 25, `term_4_5`
-    15, `term_6_11` 0, `term_12_23` −5, `term_24` −10).
+  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–17,
+    18–23 and 24+ months, each percentage a setting (`term_1_3` 25,
+    `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
+    from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
+    terms at `team.settings` alone, 0 for none; a quotation takes them from
+    the live rate card version, so a change reaches quotes once the card is
+    published again (a version without 18's takes 12's).
   - The field follows the card only while it still holds the card's figure
     (`svPctCard`).
   - `rateFor(rate, months, adjust, pct)`: a percentage bills the rate × pct;
@@ -4099,8 +4103,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-14-quotations.sql`; the user, 2026-10-13: a quotation sent is
   honoured, and a client may hold several): one calculation,
   `quote_price(snapshot, selection)`, prices every quotation from the live
-  version (`quote_card`), never the draft and never the page: a plan (six
-  months or more, `plan-term`), its platforms (a dearer one inside the
+  version (`quote_card`), never the draft and never the page, on 3, 6,
+  12, 18 or 24 months (`bad-term`; 1 for one-off items alone; the user,
+  2026-10-14), a plan included: a plan, its platforms (a dearer one inside the
   plan adds the difference, one past its count is an Additional platform
   at its fee), extra contents at the plan's whole saving to the nearest
   RM 10 (`extra_rates`), Translate every content (a content a language
