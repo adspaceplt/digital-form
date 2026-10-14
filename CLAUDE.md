@@ -4183,6 +4183,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-07).
 - A short link never takes a colleague's card slug (`links_card_clash`,
   named `/{slug} is a colleague's namecard.`).
+- A slug, a short link's or a card's, is three characters at least
+  (`links_slug_min`, `team_card_slug_min`, `2026-10-14-slug-three-characters.sql`;
+  the user, 2026-10-14): every one and two character address on the links
+  host is the portal's own. A card's slug made from a short name takes the
+  sign-in email's name, else the name with `card` after it.
 - A client's review link as a short link (2026-10-12; the user: "dynamic
   title: {Content Set} {client brand name} - Content Review Portal by
   ADspace"): `/r/{review key}` and `/r/{review key}/{first eight of a set's
