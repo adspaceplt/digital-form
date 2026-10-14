@@ -4834,6 +4834,14 @@ body > .shell { width: 100%; }
 .cat-row.crm-head > .svc-unit { color: inherit; }
 /* On quote is not an amount, so it does not pretend to be one. */
 .cat-row > .svc-rate .muted { font-variant-numeric: normal; }
+/* The price as its own control (ux-audit SVC-1): the figure keeps its right
+   edge and its size; the target overflows the line evenly, as a due date's
+   does. Pressed, the field takes the figure's place and the tick ends the
+   cell. */
+.cat-row > .svc-rate > .svc-rate-edit { font-size: inherit; margin-left: 0; margin-right: -8px; justify-content: flex-end; }
+.cat-row > .svc-rate:has(> .askfield) { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.cat-row > .svc-rate > .askfield { flex: 1 1 0; min-width: 0; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+.cat-row > .svc-rate > .askfield::-webkit-inner-spin-button, .cat-row > .svc-rate > .askfield::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* Rate card versions (2026-10-13): which version is live, and what the
    draft holds that it does not, with Publish at the line's right edge. */
 /* It stands in the command bar between the search and the actions, so the
@@ -4848,6 +4856,9 @@ body > .shell { width: 100%; }
    takes the line under them. Where the tab has no search it shares the row. */
 @media (max-width: 640px) {
   .cmdbar:has(> .cmdbar-find:not([hidden])) > .svc-live { order: 1; flex-basis: 100%; }
+  /* With no search it shares the ⋯'s row, wrapping inside its own width,
+     so the ⋯ never falls to a row of its own (ux-audit SVC-2). */
+  .cmdbar:not(:has(> .cmdbar-find:not([hidden]))) > .svc-live { flex: 1 1 0; }
 }
 .svc-live b { color: var(--ink); font-weight: 600; }
 .svc-live-now { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
@@ -5037,6 +5048,9 @@ body > .shell { width: 100%; }
    and it only collapses on a phone: on a desktop the column is shared with
    rows that do draw the ⋯, and a cell that leaves the grid takes its column
    with it and slides the cells after it one track left. */
+/* A block of the card's words holds no price: its rate track is the Changed
+   chip's width or nothing, so the words take the row (ux-audit SVC-3). */
+.is-narrow .cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) auto auto; }
 .is-narrow .cat-row > .team-act:empty,
 .is-narrow .cr-row > .team-act:empty { display: none; }
 /* A header the phone hides is not a header, so it leaves and takes its own
@@ -5130,9 +5144,12 @@ body > .shell { width: 100%; }
 /* On a phone the brand shares its line with the date and the registered
    name takes a line of its own, because side by side at 110px each the
    longer of the two was cut to its first word. */
-.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "brand date" "who who"; }
+/* Three lines on a phone (ux-audit DOC-3): the reference over its kind, then
+   the recipient (the registered name, or the colleague) beside the date; the
+   brand, which the recipient names again, is left out. */
+.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
+.is-narrow .reg-row > .reg-brand { display: none; }
 .is-narrow .reg-row.is-own { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
-.is-narrow .reg-row > .reg-brand { grid-area: brand; }
 .is-narrow .reg-row > .svc-name { grid-area: name; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
@@ -9133,7 +9150,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-step-t { display: flex; flex-direction: column; min-width: 0; }
 .rp-step-t b { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-step-t small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.is-narrow .rp-steps { grid-auto-columns: minmax(168px, 1fr); }
+/* A step keeps its whole name on a narrow pane; the strip scrolls (ux-audit RPT-3). */
+.is-narrow .rp-steps { grid-auto-columns: minmax(max-content, 1fr); }
 .rp-steps.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .rp-steps.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .rp-steps.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }

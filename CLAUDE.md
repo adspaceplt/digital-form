@@ -1765,9 +1765,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The Register lists `documents` and `client_documents` (`asOffer()`, family
   `offer`), banded Quotation Covers / Letters of Offer / Client Letters / HR
   Letters / Other.
-  - Rows: Document · Brand · Recipient · Issued · ⋯. The HR card heads Team in
-    place of Brand (`teamOf()`: `member_id`, else an Employee ID in the
-    reference).
+  - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
+    out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
+    else an Employee ID in the reference). The search reads a dash as a slash,
+    as `/verify` does, so a file name finds its row.
   - An offer row answers to `clients.documents` and offers Open client record,
     never Void/Delete/Reissue.
 - Serials per family:
@@ -4079,7 +4080,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### Services (the rate card)
 - Two tables, Services and Add-ons, with categories that carry their count.
-  Admins edit; everyone reads. Rates are in RM.
+  Admins edit; everyone reads. Rates are in RM. At Services Full Access the
+  price on a line is changed where it is read (`ADspaceAsk.rename`, empty is
+  On quote), into the draft as the sheet's Save is.
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
 - A line leaves by Set inactive, then Delete permanently (Manage). The delete is
   refused while any live `client_services` line names the slug, and the refusal

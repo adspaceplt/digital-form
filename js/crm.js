@@ -5425,7 +5425,11 @@
       '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
         (diffNow.lines[s.slug] ? ' <span class="chip">' + diffNow.lines[s.slug] + '</span>' : '') + '</b>' +
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
-      '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
+      /* The price is changed where it is read (ux-audit SVC-1): for whoever
+         keeps the card it is the control, as My Work's due date is. */
+      '<span class="svc-rate">' + (maySvc()
+        ? '<button class="tinline svc-rate-edit" type="button" data-a="rate" aria-label="Change the rate of ' + esc(s.name) + '">' + rateWord(s) + '</button>'
+        : rateWord(s)) + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
       '<span class="team-act">' + (maySvc()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -5444,6 +5448,8 @@
     if (maySvc()) {
       wireMenu(row);
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
+      var rb = row.querySelector('[data-a="rate"]');
+      rb.addEventListener('click', function () { rateInPlace(s, rb); });
       var del = row.querySelector('[data-a="del"]');
       if (del) del.addEventListener('click', function () { purgeSvc(s); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
@@ -5452,6 +5458,41 @@
       });
     }
     return row;
+  }
+  function rateWord(s) {
+    return s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>';
+  }
+  /* The figure becomes its field where it stands and a tick beside it saves
+     it (js/ask.js); empty is On quote. The draft takes it, so the line reads
+     Changed until the card is published again, as the sheet's Save does. */
+  function rateInPlace(s, host) {
+    var tick = document.createElement('button');
+    tick.type = 'button';
+    tick.className = 'tl-pen svc-rate-tick';
+    host.parentNode.insertBefore(tick, host.nextSibling);
+    window.ADspaceAsk.rename(host, tick, {
+      type: 'number',
+      value: s.rate == null ? '' : String(s.rate),
+      allowEmpty: true,
+      label: 'Rate of ' + s.name,
+      saveLabel: 'Save the rate',
+      onClose: function () { tick.remove(); },
+      save: function (v) {
+        var rate = v === '' ? null : Number(v);
+        if (rate !== null && !(isFinite(rate) && rate >= 0)) { msg('svcListMsg', 'Enter the rate as an amount in RM.', 'err'); return; }
+        if (rate === (s.rate == null ? null : Number(s.rate))) return;
+        db.from('services').update({ rate: rate }).eq('slug', s.slug).select('slug').then(function (r) {
+          if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('svcListMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          log('service.changed', s.name, changed({ rate: s.rate }, { rate: rate }, [['rate', 'Rate']]));
+          /* Repainted from the row as written, never read again: nothing
+             moves but the figure and its Changed tag. */
+          s.rate = rate;
+          paintServicesPage();
+          msg('svcListMsg', 'Saved.', 'ok');
+        }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
+      }
+    });
   }
   /* A rate card line a client is on stays, because the card is what a person
      picks from and a line that vanishes mid-quote is a line somebody has to
