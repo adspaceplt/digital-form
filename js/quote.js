@@ -470,6 +470,12 @@
       if (S.need.ads && S.need.social && !S.plan) S.withAds = true;
     }
     if (S.step === 'plan' && (!planOf() || !S.platforms.length)) { say('qsMsg', t().planNone); return; }
+    /* Only one-off items asked for (verification alone, say): one of them
+       is picked before the details are asked. */
+    if (S.step === 'custom') {
+      var sel = selection();
+      if (!sel.plan && !adsAsked() && !(sel.once || []).length) { say('qsMsg', t().needNone); return; }
+    }
     if (S.step === 'details') { make(); return; }
     go(a[i + 1]);
   }
