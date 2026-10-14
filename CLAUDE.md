@@ -698,7 +698,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
-  - A field marked `half` sits beside the next one (a date and its time);
+  - A field marked `half` sits beside the next one (a date and its time),
+    `third` three across (a named section of three figures, `.is-third`);
     `head` opens a section with its heading (`.askhead`), and `note` is one
     mute line under the field (`.asknote`, its `aria-describedby`).
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
@@ -1764,9 +1765,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The Register lists `documents` and `client_documents` (`asOffer()`, family
   `offer`), banded Quotation Covers / Letters of Offer / Client Letters / HR
   Letters / Other.
-  - Rows: Document · Brand · Recipient · Issued · ⋯. The HR card heads Team in
-    place of Brand (`teamOf()`: `member_id`, else an Employee ID in the
-    reference).
+  - Rows: Document · Brand · Recipient · Issued · ⋯ (a phone leaves Brand
+    out). The HR card heads Team in place of Brand (`teamOf()`: `member_id`,
+    else an Employee ID in the reference). The search reads a dash as a slash,
+    as `/verify` does, so a file name finds its row.
   - An offer row answers to `clients.documents` and offers Open client record,
     never Void/Delete/Reissue.
 - Serials per family:
@@ -2610,7 +2612,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     it selects no text (a stray selection cancelled the next drag).
   - The capacity strip fills each person's bar from the `estimate_minutes`
     of their open tasks due by the week's end, overdue included, against
-    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
+    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours. It is
+    drawn only while somebody shown has a capacity set.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two
@@ -2646,7 +2649,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   retired stage as skipped.
 - Reason categories are stored keys, named by `reasonWord()`: Client request,
   Scope change, Internal capacity, Pending assets, Pending confirmation,
-  Incorrect date listed.
+  Incorrect date listed. The date sheet asks for one each time (Choose a reason, required;
+  never prefilled), and its act reads Send request where it will only ask.
 - Task fields:
   - Type: Retainer (key `engagement`), Ad hoc, Goodwill, Other (key
     `special`, 2026-10-09).
@@ -4076,7 +4080,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### Services (the rate card)
 - Two tables, Services and Add-ons, with categories that carry their count.
-  Admins edit; everyone reads. Rates are in RM.
+  Admins edit; everyone reads. Rates are in RM. At Services Full Access the
+  price on a line is changed where it is read (`ADspaceAsk.rename`, empty is
+  On quote), into the draft as the sheet's Save is.
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
 - A line leaves by Set inactive, then Delete permanently (Manage). The delete is
   refused while any live `client_services` line names the slug, and the refusal
@@ -4252,6 +4258,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The client's parameters are carried over, minus `q`.
   - `go.adspace.me` is never retired: printed QR codes encode it.
   - The host is `ADSPACE_CONFIG.linkHost`.
+- Bulk import is a sheet (`#importBox`, `links:work`, as the QR sheet's
+  Create, Revoke and Restore): every line taken shuts it; a skipped line stays
+  in the box.
 - Pause and Resume live in the ⋯ (`links:work`).
   - Pause asks first; Resume asks nothing.
   - Both take `.select('id')`, filed as `shortlink.updated` with the detail.
@@ -4684,7 +4693,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   button variable); each variable prefilled from the record (the greeting
   by `contact_greeting`, then the client or the report's brand, or a
   creator's campaign; the report; a named one by its name; the link button
-  a creator's code), a typed one kept; a Report select only for a Document
+  a creator's code), a typed one kept, a numbered one named for what fills it
+  (Greeting, Client, Campaign, Report, Reference, What waits, Link); a Report select only for a Document
   header, the recipient's client's published reports newest first, its file
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming

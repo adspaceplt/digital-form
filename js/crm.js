@@ -2102,11 +2102,13 @@
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
-      var spent = daysSince(c.stage_since) === 0 ? 'the same day' : (ageWord(c) || 'no time');
+      /* A move on the day the stage began reads "the same day", never "after
+         the same day" (2026-10-15, audit CLI-8). */
+      var spent = daysSince(c.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(c) || 'no time');
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
-      log('client.stage', c.name, stageWord(to)[1] + ' after ' + spent +
+      log('client.stage', c.name, stageWord(to)[1] + ' ' + spent +
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
@@ -3631,11 +3633,11 @@
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
           if (q.error || !(q.data || []).length) return;
-          var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : (ageWord(state.client) || 'no time');
+          var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
           if (mine) mine.stage = 'contacted';
-          log('client.stage', state.client.name, 'Contacted after ' + spent);
+          log('client.stage', state.client.name, 'Contacted ' + spent);
           refreshClient(state.client, function () { openClient(state.client); });
         });
       }
@@ -5423,7 +5425,11 @@
       '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
         (diffNow.lines[s.slug] ? ' <span class="chip">' + diffNow.lines[s.slug] + '</span>' : '') + '</b>' +
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
-      '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
+      /* The price is changed where it is read (ux-audit SVC-1): for whoever
+         keeps the card it is the control, as My Work's due date is. */
+      '<span class="svc-rate">' + (maySvc()
+        ? '<button class="tinline svc-rate-edit" type="button" data-a="rate" aria-label="Change the rate of ' + esc(s.name) + '">' + rateWord(s) + '</button>'
+        : rateWord(s)) + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
       '<span class="team-act">' + (maySvc()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -5442,6 +5448,8 @@
     if (maySvc()) {
       wireMenu(row);
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
+      var rb = row.querySelector('[data-a="rate"]');
+      rb.addEventListener('click', function () { rateInPlace(s, rb); });
       var del = row.querySelector('[data-a="del"]');
       if (del) del.addEventListener('click', function () { purgeSvc(s); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
@@ -5450,6 +5458,41 @@
       });
     }
     return row;
+  }
+  function rateWord(s) {
+    return s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>';
+  }
+  /* The figure becomes its field where it stands and a tick beside it saves
+     it (js/ask.js); empty is On quote. The draft takes it, so the line reads
+     Changed until the card is published again, as the sheet's Save does. */
+  function rateInPlace(s, host) {
+    var tick = document.createElement('button');
+    tick.type = 'button';
+    tick.className = 'tl-pen svc-rate-tick';
+    host.parentNode.insertBefore(tick, host.nextSibling);
+    window.ADspaceAsk.rename(host, tick, {
+      type: 'number',
+      value: s.rate == null ? '' : String(s.rate),
+      allowEmpty: true,
+      label: 'Rate of ' + s.name,
+      saveLabel: 'Save the rate',
+      onClose: function () { tick.remove(); },
+      save: function (v) {
+        var rate = v === '' ? null : Number(v);
+        if (rate !== null && !(isFinite(rate) && rate >= 0)) { msg('svcListMsg', 'Enter the rate as an amount in RM.', 'err'); return; }
+        if (rate === (s.rate == null ? null : Number(s.rate))) return;
+        db.from('services').update({ rate: rate }).eq('slug', s.slug).select('slug').then(function (r) {
+          if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('svcListMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          log('service.changed', s.name, changed({ rate: s.rate }, { rate: rate }, [['rate', 'Rate']]));
+          /* Repainted from the row as written, never read again: nothing
+             moves but the figure and its Changed tag. */
+          s.rate = rate;
+          paintServicesPage();
+          msg('svcListMsg', 'Saved.', 'ok');
+        }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
+      }
+    });
   }
   /* A rate card line a client is on stays, because the card is what a person
      picks from and a line that vanishes mid-quote is a line somebody has to

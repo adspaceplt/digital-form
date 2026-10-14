@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015f">
+<link rel="stylesheet" href="/css/portal.css?v=20261015n">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -65,8 +65,8 @@
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/acts.js?v=20261010zc"></script>
 <script src="/js/grow.js?v=20261008"></script>
-<script src="/js/ask.js?v=20261008c"></script>
-<script src="/js/confirm.js?v=20261015a"></script>
+<script src="/js/ask.js?v=20261015a"></script>
+<script src="/js/confirm.js?v=20261015g"></script>
 <script src="/js/sheet.js?v=20261011a"></script>
 <script src="/js/refresh.js?v=20261010zi"></script>
 <script src="/js/form.js?v=20261013"></script>
@@ -82,7 +82,7 @@
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261015c"></script>
 <script src="/js/notice.js?v=20261015c"></script>
-<script src="/js/whatsapp.js?v=20261015c"></script>
+<script src="/js/whatsapp.js?v=20261015d"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261015a"></script>
 <script src="/js/media.js?v=20261012a"></script>
@@ -2417,7 +2417,8 @@
                  They are what a report groups replanning by, so they are
                  nouns and not sentences. -->
             <label class="field-label" for="dueReason" style="margin-top:12px">Reason</label>
-            <select class="select" id="dueReason">
+            <select class="select" id="dueReason" aria-required="true">
+              <option value="">Choose a reason</option>
               <option value="client_request">Client request</option>
               <option value="scope_change">Scope change</option>
               <option value="capacity">Internal capacity</option>
@@ -2755,7 +2756,8 @@
               </div>
               <fieldset class="field engreports">
                 <legend class="field-label">Reports</legend>
-                <label class="tickline"><input type="checkbox" id="engRepSocial"> <span>Accounts report</span></label>
+                <label class="tickline"><input type="checkbox" id="engRepSocial" aria-describedby="engRepNote"> <span>Accounts report</span></label>
+                <p class="asknote" id="engRepNote" hidden>Needs posts planned.</p>
                 <label class="tickline"><input type="checkbox" id="engRepAds"> <span>Advertising report</span></label>
               </fieldset>
             </div>
@@ -2880,7 +2882,7 @@
               <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content task</button>
             </div>
             <label class="field-label" for="qkTitle">Task</label>
-            <textarea class="input" id="qkTitle" placeholder="Write September caption" maxlength="200" rows="1" data-oneline></textarea>
+            <textarea class="input" id="qkTitle" aria-required="true" placeholder="Write September caption" maxlength="200" rows="1" data-oneline></textarea>
             <div class="row">
               <div class="field">
                 <label class="field-label" for="qkOwner">Assigned to</label>
@@ -4751,9 +4753,9 @@
         <div class="bulkbar" id="rhBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="rhBulkAll"> <span id="rhBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="rhBulkPdf" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
-            <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" disabled hidden>Mark as sent</button>
-            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" disabled hidden>Publish</button>
+            <button class="btn btn-sm" id="rhBulkPdf" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>Download</button>
+            <button class="btn btn-sm" id="rhBulkSent" type="button" data-need="reports:work" hidden>Mark as sent</button>
+            <button class="btn btn-sm btn-go" id="rhBulkPublish" type="button" data-need="reports:manage" hidden>Publish</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="rhBulkDone" type="button">Done</button>
         </div>
@@ -4812,17 +4814,32 @@
         </div>
       </div>
 
-      <div class="panel" id="importBox" hidden>
-        <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg><h3>Import existing slugs</h3></div>
-        <p class="hint">One per line: slug, destination, optional label (separated by tab, comma or space). Existing slugs are updated.</p>
-        <textarea class="input textarea" id="importText" rows="8" spellcheck="false"
-          placeholder="spring-launch    https://example.com/spring    Spring campaign
+      <!-- Bulk import is a form like Add link, so it is a sheet over the
+           register, never a panel pushing the list down (ux-audit LNK-3,
+           2026-10-14). -->
+      <div class="sheet" id="importBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+          <div class="sheet-head">
+            <h3 id="importTitle">Bulk import</h3>
+            <button class="iconbtn" id="importClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div>
+                <label class="field-label" for="importText">Links, one a line: short link, destination, label</label>
+                <textarea class="input textarea" id="importText" rows="8" spellcheck="false" aria-required="true" aria-describedby="importNote"
+                  placeholder="spring-launch    https://example.com/spring    Spring campaign
 raya-2026        https://example.com/raya"></textarea>
-        <div class="row acts" style="margin-top:14px">
-          <button class="btn btn-primary" id="runImport" type="button">Import</button>
-          <button class="btn btn-quiet" id="cancelImport" type="button">Cancel</button>
+                <p class="asknote" id="importNote">A short link already in the list takes the new destination.</p>
+              </div>
+            </div>
+            <div class="msg" id="importMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="runImport" type="button">Import</button>
+            <button class="btn btn-quiet" id="cancelImport" type="button">Cancel</button>
+          </div>
         </div>
-        <div class="msg" id="importMsg"></div>
       </div>
 
       <!-- Search, count and both actions on one line, so everything that
@@ -4837,7 +4854,7 @@ raya-2026        https://example.com/raya"></textarea>
             <span class="cmdbar-count" id="linkCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+            <button class="btn btn-sm btn-quiet" id="showImport" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
             <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </span>
         </span>
@@ -4915,10 +4932,8 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint">Revoking stops scans of this code.</p>
-
     <div class="sheet-body">
-      <div class="row" style="margin-bottom:16px">
+      <div class="row qr-new" data-need="links:work">
         <div><label class="field-label" for="qrLabel">Label for a new code</label>
           <input class="input" id="qrLabel" placeholder="Placement"></div>
         <button class="btn btn-primary" id="qrNew" type="button">Create</button>
@@ -5336,16 +5351,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261012a"></script>
-<script src="/js/admin.js?v=20261015c"></script>
+<script src="/js/admin.js?v=20261015h"></script>
 <script src="/js/documents.js?v=20261014a"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261012a"></script>
-<script src="/js/reports.js?v=20261015c"></script>
-<script src="/js/register.js?v=20261014a"></script>
+<script src="/js/reports.js?v=20261015d"></script>
+<script src="/js/register.js?v=20261015a"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
-<script src="/js/quotes.js?v=20261015"></script>
+<script src="/js/quotes.js?v=20261015a"></script>
 <script src="/js/quotepdf.js?v=20261014"></script>
-<script src="/js/crm.js?v=20261015b"></script>
+<script src="/js/crm.js?v=20261015d"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261015"></script>
 <script src="/js/namecard.js?v=20261014g"></script>
@@ -5354,11 +5369,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261014a"></script>
 <script src="/js/campaigns.js?v=20261013"></script>
-<script src="/js/ops.js?v=20261015a"></script>
-<script src="/js/perf.js?v=20261015"></script>
+<script src="/js/ops.js?v=20261015c"></script>
+<script src="/js/perf.js?v=20261015b"></script>
 <script src="/js/health.js?v=20261015"></script>
 <script src="/js/search.js?v=20261014a"></script>
-<script src="/js/overview.js?v=20261015"></script>
+<script src="/js/overview.js?v=20261015c"></script>
 <script src="/js/settings.js?v=20261015c"></script>
 </body>
 </html>

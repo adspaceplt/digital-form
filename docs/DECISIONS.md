@@ -3309,3 +3309,129 @@ blue of the Pantone 2717 C family: light `#2a5793` on `#e6effb` (6.3:1),
 dark `#a7c6ed` on `#1d2735` (8.6:1). It is greyer and softer than the action
 blue (`#0071e3`), so a post date never reads as a button, and it keeps its
 one place.
+
+### 2026-10-15 · Tax and terms fits a phone (ux-audit SET-10)
+The re-audit after SET-1 to SET-9 found the sectioned Tax and terms sheet
+scrolling on a phone to reach its last figure. A named section of three
+figures now runs three across (`third`, six tracks), the unit moves into the
+section's heading (Terms under a year (%)), and 24 months and more reads
+From 24 months so each label holds one line in a third of a phone.
+
+### 2026-10-15 · Performance settings: figures side by side on one line
+The user's screenshot of Performance settings: under Reminders the left
+label ran to two lines ("Days before a month or half month ends (0 for
+none)"), so its field sat lower than its neighbour. The two labels lose
+"(0 for none)", which the heading now says once (Reminders (0 for none)),
+and the sheet's rows of figures align their fields on one line whatever a
+label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
+
+- **2026-10-15** — UX audit of My Work and the Dashboard (`tests/ux-audit/`,
+  the report https://claude.ai/artifact/6ERkzRWEiSeSFC7vsbq3Qj): My Work UX B,
+  UI B; Dashboard UX B, UI A. Its P2 findings ship together. WORK-1: the date
+  sheet's act reads Send request where the date will only be asked for (the
+  sheet was titled Request extension over Save). WORK-2: Reason opens on
+  Choose a reason and is required, because a sheet that opened on Client
+  request filed that reason for anyone who only picked a date, and the
+  replanning figures group by it. WORK-3: Add task's Task field carries its
+  asterisk; the refusal reads Enter the task. WORK-4: in Months the views and
+  the bar's ⋯ share one row on a phone (`.cmdbar.is-views-only`), where the ⋯
+  had stood alone above the strip. OVW-4: a performance review in Needs
+  attention is tagged Performance and named Performance review, Sept, since
+  Review sat in the Section column beside Content Review. OVW-5: work nobody
+  holds reads Unassigned on Detail as on Summary (the database's
+  `open_by_person` still says No task owner; the page renames it). OVW-6: the
+  one-line bars share one grid whose label track is the longest label's, up
+  to two fifths (`fit-content(40%)`, subgrid rows), so Became clients holds
+  its line at 390. The stand-in's General and Video working stages were
+  grouped `in_progress` where the live database groups them `active`, which
+  drew their dots grey; corrected in the tests repository. The P3 findings
+  (board gap, capacity strip, month card grid, Add / New task, explanatory
+  lines, Withdraw width, AQC heading on retired workflows, board edge and
+  phone calendar key, empty chart cards, type sizes, the empty ring on a
+  phone) wait for the user.
+
+- **2026-10-15** — Act glyphs in My Work and the Dashboard, read against
+  `js/acts.js` (asked for from the parent session): every Add, New, Edit,
+  Copy and Open there carries its mark. The one gap was the Dashboard's page
+  turn: Continue to Detail carried its chevron and Back to Summary none, one
+  act drawn two ways. Back to Summary now leads with the chevron toward
+  Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
+  keeps its words.
+
+- **2026-10-15** — The audit's P3 findings for My Work and the Dashboard (the
+  user: "fix the P3s too"). WORK-5 and WORK-6: the capacity strip is drawn
+  only while somebody shown has a weekly capacity (it read "0h planned · no
+  capacity set" against empty bars), and its columns stand 24 apart (20 was
+  off the scale). WORK-7: the month card's Manager, Planned and Files are
+  rows on the card's grid, their values in the Meeting row's column; a tight
+  card keeps each on one line. WORK-8: Months' bar reads Add task, as the
+  list's does. WORK-9: the step card no longer says "Complete this step to
+  move the task to the next stage.", the date sheet no longer says "The
+  promise first made is kept either way.", and a resting Accounts report
+  tick says Needs posts planned. WORK-10: a lone Withdraw keeps its own
+  width. WORK-11: the step heading names the review stage of the task's own
+  workflow (Send to Internal review on General and Video). WORK-12: the
+  board fades the edge with more columns beyond it; the phone calendar's
+  missing key needed nothing, since a post chip names itself (Post ·) under
+  480. OVW-2: an empty chart card's line stands in the middle of its room.
+  OVW-3: the span, the signals and an empty card's line take 12 and 13, so
+  Summary holds eight type sizes. OVW-7: in a narrow pane an empty
+  on-time ring follows the signals; it still stands (the user, 2026-10-12).
+### 2026-10-15 · Clients audit P3s
+At the user's word ("fix all no matter what"): a plan card in Build quote
+keeps each part of its contents whole (`6 reels` no longer breaks after its
+figure; the line wraps between parts, as DESIGN.md's line of parts asks), and
+a stage move on the day the stage began reads "Contacted the same day" where
+it read "Contacted after the same day". Left as they are, each by a recorded
+rule: New lead's thirteen fields (the user: intake asks for what is known on
+day one; the salutation added 14 Oct) and the record's tab strip scrolling at
+1280 with a faded edge (the strip law allows it).
+- **2026-10-15** — UX audit of Short Links, Handbook, My records and WhatsApp
+  (report: https://claude.ai/artifact/7Rkrx5XrG6iZb85s6oLAge; grades Links
+  C/B, Handbook A/A, My records A/A, WhatsApp A/A). Its P1 and P2 fixed:
+  LNK-2, Bulk import and the QR sheet's Create, Revoke and Restore were drawn
+  at Links View, each refused by the database (now `links:work`; viewonly
+  counts Bulk import as a write); LNK-3, Bulk import was a panel unfolding
+  above the list with a hint paragraph, now a sheet whose label names the
+  format, which shuts when every line is taken and keeps only the skipped
+  lines in the box otherwise; LNK-4, Create, Import and a QR's Create
+  disabled nothing while writing and said nothing when the write never
+  answered (now the button's ring and "Not saved. The connection was lost");
+  LNK-5, the QR sheet's own Copied and its explanatory line (now
+  `ADspaceCopy`, the line dropped: Revoke's question says it); MINE-1, four
+  blue Rate yourself buttons when four months were open (now the newest
+  blue, the rest tonal); WA-1, the composer named numbered variables
+  Variable 1, 2 (now Greeting, Client or Campaign, Report or Reference, What
+  waits, Link, from what `prefill` puts in them); WA-2, a template's meta
+  line broke inside "3 variables" on a phone. The stand-in gained PostgREST's
+  `upsert`, which Add link and Bulk import call. Census LNK-1 (Copy marks off
+  one column at 390: x 218 and 266) confirmed and left as P3 with the other
+  P3s for the user. WA-4 ("Dear Ms," where a contact's name starts with a
+  salutation) checked live: 0 of 27 contacts.
+
+- **2026-10-15** — UX audit of Reports, Documents and Services (the
+  `/ux-audit` skill, full walks at 1280 and 390, both themes, as an admin and
+  at View and Manage; report at
+  https://claude.ai/artifact/PaBtd4uKvcoCHjD8YfD8YY). Each section graded UX A,
+  UI B. The P2 findings shipped together. RPT-1: Select reports drew Download
+  and Mark as sent greyed with nothing ticked; the acts now appear with the
+  first tick (DESIGN.md §4), and `tests/reports.js` ticks before it looks for
+  them. RPT-2: a submitter whose group had dropped to View was offered Take
+  back, which `sm_report_return` refuses below Reports Work; Send back and
+  Take back now ask Work. RPT-3: a narrow pane cut the chosen step's name
+  ("Check and sub…"); a step takes its words' width and the strip scrolls.
+  DOC-1: a row whose every ⋯ item was withheld (an entry added by hand with no
+  file, read at View) opened an empty card; the ⋯ is drawn only when one item
+  passes `may()`. DOC-2: the register's search missed a reference typed as its
+  file name writes it (AQT-INT-2609001); dashes and slashes now read alike, as
+  `/verify` reads them. DOC-3: a phone row ran four lines; it is three, the
+  brand left out (the recipient names the client again). SVC-1: a rate took
+  five presses and two sheets; the price on a line is now its own control at
+  Services Full Access (`ADspaceAsk.rename`, a number field, empty for On
+  quote), saved to the draft and filed `service.changed` from and to, the row
+  repainted from what was written. `ADspaceAsk.rename` now checks the date
+  range only for a date, month or date-time field (a number was refused by
+  it). SVC-2: on a phone, with a change waiting, the bar's ⋯ fell to a row of
+  its own on Wording and Versions; the version line shares its row. SVC-3: a
+  wording row on a phone kept the price track and wrapped its words in half
+  the row; its middle tracks collapse. The P3 findings wait for the user.

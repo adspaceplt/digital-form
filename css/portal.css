@@ -1379,6 +1379,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
 .row.fgrid-3 > .span-2 { grid-column: span 2; }
+/* Performance settings: fields side by side keep one line whatever their
+   labels wrap to (2026-10-15, the user's screenshot of Reminders). */
+#rwSFields .row.fgrid, #rwSFields .row.fgrid-3 { align-items: end; }
 /* Cells that come and go together without a box of their own (the Team
    sheet's access date and time); with them gone the first cell takes the row. */
 .row > .fcells { display: contents; }
@@ -2745,6 +2748,14 @@ button.appver {
 .askfields.has-half { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 12px; }
 .askfields.has-half > .askentry { grid-column: 1 / -1; margin-top: 0; }
 .askfields.has-half > .askentry.is-half { grid-column: auto; }
+/* Three figures across (a section of three, 2026-10-15): six tracks, a half
+   spanning three, a third two. */
+.askfields.has-third { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.askfields.has-third > .askentry.is-half { grid-column: span 3; }
+.askfields.has-third > .askentry.is-third { grid-column: span 2; }
+/* Fields side by side keep one line when a narrow label wraps: each entry
+   stands on the row's foot. */
+.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
 /* A question of more than five figures reads as sections (2026-10-14,
@@ -2867,6 +2878,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .dueask-acts { display: flex; gap: 8px; margin-top: 10px; }
 .dueask-acts:empty { display: none; }
 .dueask-acts .btn { flex: 1 1 0; min-width: 0; }
+/* One act alone keeps its own width (ux-audit WORK-10). */
+.dueask-acts .btn:only-child { flex: 0 0 auto; }
 
 /* ---------- The quality check before a client sees the work ----------
    A list of checks reads like the list it is: one row a check, a hairline
@@ -3384,6 +3397,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 
 /* ---------- QR codes ---------- */
+.qr-new { margin-bottom: 16px; }
 .qrrow {
   display: flex; gap: 16px; align-items: flex-start;
   border: 1px solid var(--card-line); border-radius: var(--radius);
@@ -4683,11 +4697,17 @@ body > .shell { width: 100%; }
    above the tasks as a bounded block with the same edge the tables carry. */
 .engcard { border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card); padding: 16px 18px; margin: 0 0 12px; }
 .is-narrow .engcard { padding: 14px; }
-.eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
 .eng-who { min-width: 0; }
-.eng-meta { margin: 0; font-size: 13px; color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
+/* The head's facts are rows on the card's grid (label track, value), the
+   state and ⋯ beside the first of them; a tight card keeps each on one line,
+   where the rows below stack (ux-audit WORK-7, 2026-10-15). */
+.eng-meta { display: grid; gap: 8px; min-width: 0; }
+.eng-meta > .eng-row { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "lab val"; }
+.is-narrow .eng-meta > .eng-row { grid-template-columns: 104px minmax(0, 1fr); }
+.is-tight .eng-meta > .eng-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; }
 .eng-lab { color: var(--ink-mute); }
-.eng-ctl { display: flex; align-items: center; gap: 8px; }
+.eng-ctl { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); }
 .eng-ctl .iconbtn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
 /* The meeting as label-beside-value rows on the card's one grid: the label
    track, the value, and the row's own controls against the right edge.
@@ -4846,6 +4866,14 @@ body > .shell { width: 100%; }
 .cat-row.crm-head > .svc-unit { color: inherit; }
 /* On quote is not an amount, so it does not pretend to be one. */
 .cat-row > .svc-rate .muted { font-variant-numeric: normal; }
+/* The price as its own control (ux-audit SVC-1): the figure keeps its right
+   edge and its size; the target overflows the line evenly, as a due date's
+   does. Pressed, the field takes the figure's place and the tick ends the
+   cell. */
+.cat-row > .svc-rate > .svc-rate-edit { font-size: inherit; margin-left: 0; margin-right: -8px; justify-content: flex-end; }
+.cat-row > .svc-rate:has(> .askfield) { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.cat-row > .svc-rate > .askfield { flex: 1 1 0; min-width: 0; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+.cat-row > .svc-rate > .askfield::-webkit-inner-spin-button, .cat-row > .svc-rate > .askfield::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* Rate card versions (2026-10-13): which version is live, and what the
    draft holds that it does not, with Publish at the line's right edge. */
 /* It stands in the command bar between the search and the actions, so the
@@ -4860,6 +4888,9 @@ body > .shell { width: 100%; }
    takes the line under them. Where the tab has no search it shares the row. */
 @media (max-width: 640px) {
   .cmdbar:has(> .cmdbar-find:not([hidden])) > .svc-live { order: 1; flex-basis: 100%; }
+  /* With no search it shares the ⋯'s row, wrapping inside its own width,
+     so the ⋯ never falls to a row of its own (ux-audit SVC-2). */
+  .cmdbar:not(:has(> .cmdbar-find:not([hidden]))) > .svc-live { flex: 1 1 0; }
 }
 .svc-live b { color: var(--ink); font-weight: 600; }
 .svc-live-now { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
@@ -5049,6 +5080,9 @@ body > .shell { width: 100%; }
    and it only collapses on a phone: on a desktop the column is shared with
    rows that do draw the ⋯, and a cell that leaves the grid takes its column
    with it and slides the cells after it one track left. */
+/* A block of the card's words holds no price: its rate track is the Changed
+   chip's width or nothing, so the words take the row (ux-audit SVC-3). */
+.is-narrow .cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) auto auto; }
 .is-narrow .cat-row > .team-act:empty,
 .is-narrow .cr-row > .team-act:empty { display: none; }
 /* A header the phone hides is not a header, so it leaves and takes its own
@@ -5142,9 +5176,12 @@ body > .shell { width: 100%; }
 /* On a phone the brand shares its line with the date and the registered
    name takes a line of its own, because side by side at 110px each the
    longer of the two was cut to its first word. */
-.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "brand date" "who who"; }
+/* Three lines on a phone (ux-audit DOC-3): the reference over its kind, then
+   the recipient (the registered name, or the colleague) beside the date; the
+   brand, which the recipient names again, is left out. */
+.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
+.is-narrow .reg-row > .reg-brand { display: none; }
 .is-narrow .reg-row.is-own { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
-.is-narrow .reg-row > .reg-brand { grid-area: brand; }
 .is-narrow .reg-row > .svc-name { grid-area: name; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
@@ -7747,6 +7784,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    card lands, not the height of the cards already in it (the user,
    2026-09-28); its cards stay packed at the top. */
 .board { display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.board.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.board.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+.board.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 .bcol { flex: 0 0 248px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
 .bcol-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 6px; border-bottom: 1px solid var(--line); min-height: 30px; }
 .bcol-head h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -7963,7 +8003,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    a person can read their own week off, and a manager the team's. It is a
    planning figure beside the record of what was pressed, never a measure of
    anybody's attention. */
-.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 20px; margin: 0 0 16px; padding: 12px 16px; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
+.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; margin: 0 0 16px; padding: 12px 16px; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
 .caprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 12.5px; min-width: 0; }
 .caprow-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .caprow-fig { color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -8212,6 +8252,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .cmdbar-acts .cmd-secondary { display: none; }
   .cmd-more { display: inline-block; position: relative; }
   .cmdbar-views { flex: 1 1 100%; order: 5; }
+  .cmdbar.is-views-only .cmdbar-views { flex: 1 1 0; order: 0; }
   .cmdbar .btn { flex: 0 0 auto; }
 }
 
@@ -9173,7 +9214,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-step-t { display: flex; flex-direction: column; min-width: 0; }
 .rp-step-t b { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-step-t small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.is-narrow .rp-steps { grid-auto-columns: minmax(168px, 1fr); }
+/* A step keeps its whole name on a narrow pane; the strip scrolls (ux-audit RPT-3). */
+.is-narrow .rp-steps { grid-auto-columns: minmax(max-content, 1fr); }
 .rp-steps.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .rp-steps.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .rp-steps.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
@@ -9664,8 +9706,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 
 /* Bars on one line (2026-10-12): the label, the bar, the figure; a red
    share at the bar's end where part of it is late. */
-.chart-bars.is-inline { gap: 10px; }
-.chart-bars.is-inline .cb-row { display: grid; grid-template-columns: minmax(84px, 26%) minmax(0, 1fr) auto; gap: 12px; align-items: center; font-size: 13px; }
+/* The rows share one grid: the label track is the longest label's, up to
+   two fifths, so a label holds its line on a phone and every bar starts on
+   one edge (ux-audit OVW-6, 2026-10-15). */
+.chart-bars.is-inline { grid-template-columns: fit-content(40%) minmax(0, 1fr) auto; column-gap: 12px; row-gap: 10px; }
+.chart-bars.is-inline .cb-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; font-size: 13px; }
 .chart-bars.is-inline .cb-track { display: flex; margin-top: 0; overflow: hidden; }
 .chart-bars.is-inline .cb-fill { border-radius: 0; min-width: 0; }
 .chart-bars.is-inline .cb-fill:first-child { border-radius: 4px 0 0 4px; min-width: 2px; }
@@ -10368,6 +10413,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-foot { display: flex; justify-content: flex-end; }
 .ovw-turn.btn { flex: 0 0 auto; }
 .ovw-turn .ovgo-chev { width: 15px; height: 15px; margin-left: 4px; }
+.ovw-turn .ovgo-chev.is-back { margin: 0 4px 0 0; transform: scaleX(-1); }
 /* Sales moves: a figure a line, its word over a mute line, the figure at the
    right edge. */
 .ovw-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; margin: 0; }
@@ -10379,7 +10425,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-facts dt { display: grid; gap: 2px; font-size: 13px; color: var(--ink); min-width: 0; }
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.ovw-span { font-size: 12.5px; color: var(--ink-mute); }
+.ovw-span { font-size: 12px; color: var(--ink-mute); }
 /* More figures: the fold's own hairline, its charts under it at the
    page's 12px step. */
 .ovw > .ovw-morefigs { margin: 0; }
@@ -10390,6 +10436,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-glance { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: center; }
 .ovw-glance.is-plain { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ovw-glance { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.is-narrow .ovw-glance.is-ringless > .ovw-meter { order: 1; }
+.ovw-card.is-empty > .ovw-body { display: grid; align-content: center; justify-items: center; text-align: center; }
+/* The Dashboard's lines are 13, its rows' words; an empty card's line too (ux-audit OVW-3). */
+.ovw-card .emptyline b { font-size: 13px; }
 .ovw-meter { display: grid; justify-items: center; min-width: 0; }
 .ovw-meter > .chartcard { width: 100%; padding: 0; background: none; box-shadow: none; }
 .ovw-meter .chart-data { display: none; }
@@ -10404,7 +10454,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-sig-rows { display: grid; }
 .ovw-sig {
   display: grid; grid-template-columns: minmax(0, 1fr) auto 124px; gap: 16px; align-items: baseline;
-  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px;
+  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13px;
 }
 .ovw-sig:first-child { border-top: 0; padding-top: 0; }
 .ovw-sig-name { min-width: 0; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
@@ -11075,6 +11125,8 @@ button.aiu-row:first-child::before { content: none; }
    the day the month starts on. */
 .engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
 .engreports > legend { padding: 0; margin-bottom: 0; }
+/* Why the Accounts report tick rests, under its words (ux-audit WORK-9). */
+.engreports > .asknote { margin: -6px 0 0 27px; }
 
 /* ONE WEIGHT FOR EVERY CHOICE (the user, 2026-10-04: "not one odd weird 500
    weight"). Every tab, view and segment option reads at the body's 400,
@@ -11891,6 +11943,9 @@ button.vs-row { cursor: pointer; }
 .wat-name { display: grid; gap: 2px; min-width: 0; }
 .wat-name b { font-weight: 600; }
 .wat-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.wat-part { white-space: nowrap; }
+/* A template's own name may outrun a phone's row: it alone breaks anywhere. */
+.wat-part:first-child { white-space: normal; }
 .wat-on { display: flex; align-items: center; }
 /* Standing alone in its cell (not a menu row), the switch is its own
    target: the control's full height, the track centred in it. */
@@ -12029,6 +12084,7 @@ button.vs-row { cursor: pointer; }
 /* Download on the row: sending the quotation is the next act every time
    (2026-10-15, audit CLI-5). */
 .qt-dl { justify-self: end; }
+.qb-nb { white-space: nowrap; }
 .qt-amt, .qt-state { display: flex; flex-direction: column; }
 .qt-amt small, .qt-state small { font-size: 12px; color: var(--ink-mute); font-weight: 400; }
 .qt-ref { font-variant-numeric: tabular-nums; }

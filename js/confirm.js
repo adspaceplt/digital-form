@@ -258,14 +258,16 @@
     rows = [];
     var specs = o.fields || (o.field ? [o.field] : []);
     elFields.hidden = !specs.length;
-    elFields.classList.toggle('has-half', specs.some(function (f) { return f && f.half; }));
+    elFields.classList.toggle('has-half', specs.some(function (f) { return f && (f.half || f.third); }));
+    elFields.classList.toggle('has-third', specs.some(function (f) { return f && f.third; }));
     specs.forEach(function (f, n) {
       var id = 'askSheetField' + n;
       /* `head` opens a section of the form with its heading (a sheet of
          more than five figures, DESIGN.md §4). */
       if (f.head) elFields.appendChild(el('h4', 'fsec-h askhead', f.head));
       /* `half` sets a field beside the next half one (a date and its time). */
-      var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
+      /* `third` sets three figures across a row (a section of three). */
+      var wrap = el('div', 'askentry' + (f.half ? ' is-half' : '') + (f.third ? ' is-third' : ''));
       if (f.tick) {
         /* A tick with a lead line (the AI declaration) is one shaded block:
            the line, then its tick. */

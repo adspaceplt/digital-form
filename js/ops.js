@@ -1654,6 +1654,16 @@
       board.appendChild(col);
     });
     box.appendChild(board);
+    /* The edge with more columns beyond it fades, as a strip's does
+       (ux-audit WORK-12, 2026-10-15). */
+    var edges = function () {
+      var max = board.scrollWidth - board.clientWidth;
+      board.classList.toggle('is-more-start', max > 1 && board.scrollLeft > 1);
+      board.classList.toggle('is-more-end', max > 1 && board.scrollLeft < max - 1);
+    };
+    board.addEventListener('scroll', edges, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(edges).observe(board);
+    edges();
   }
 
   /* Dragging a card is the one thing a board is expected to do, and it was the
@@ -2100,7 +2110,10 @@
       if (!team) return me && m.id === me.id;
       return m.capacity_minutes_week || mins[m.id] || open[m.id];
     });
-    if (!people.length) { box.innerHTML = ''; return; }
+    /* With no weekly capacity set for anybody shown, the strip says only
+       "no capacity set" against empty bars, so it is not drawn
+       (ux-audit WORK-6, 2026-10-15). */
+    if (!people.length || !people.some(function (m) { return m.capacity_minutes_week; })) { box.innerHTML = ''; return; }
     var hours = function (n) { return (Math.round(n / 30) / 2) + 'h'; };
     box.innerHTML = '<div class="capstrip">' + people.map(function (m) {
       var used = mins[m.id] || 0, cap = m.capacity_minutes_week || 0;
@@ -2145,6 +2158,11 @@
     /* The client's months are not a filtered list, so the list's own
        controls say nothing about them. */
     var whole = state.view === 'months';
+    /* In Months the bar holds the views and the ⋯ alone, so on a phone they
+       share one row rather than leaving the ⋯ on a row of its own
+       (ux-audit WORK-4, 2026-10-15). */
+    var vbar = seg && seg.closest('.cmdbar');
+    if (vbar) vbar.classList.toggle('is-views-only', whole);
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
@@ -3860,7 +3878,7 @@
   }
   function quickAdd() {
     var title = String($('qkTitle').value || '').trim();
-    if (!title) { msg('qkMsg', 'Say what the task is.', 'err'); $('qkTitle').focus(); return; }
+    if (!title) { msg('qkMsg', 'Enter the task.', 'err'); $('qkTitle').focus(); return; }
     if (!$('qkDue').value) { msg('qkMsg', 'A due date is required.', 'err'); $('qkDue').focus(); return; }
     if (!$('qkLink').value) { msg('qkMsg', 'Choose a client, or Internal.', 'err'); $('qkLink').focus(); return; }
     if (!$('qkOwner').value) { msg('qkMsg', 'Choose who it is assigned to.', 'err'); $('qkOwner').focus(); return; }
@@ -4448,7 +4466,10 @@
     /* In progress, heading for AQC review: the work is sent to whoever
        checks it, with the draft the check needs. */
     if (isWork(g) && target === 'internal_review') {
-      n.title = 'Send to AQC review';
+      /* Named for the stage it goes to, as the button and the strip name it
+         (ux-audit WORK-11). */
+      var aqc = state.stages[t.workflow_id + '|internal_review'];
+      n.title = 'Send to ' + ((aqc && aqc.label) || 'AQC review');
       n.line = 'Send it for review when the draft is ready.';
       if (work) n.go = stepAct(t, 'internal_review');
       return n;
@@ -4489,7 +4510,7 @@
     if (isWork(g)) {
       var toWork = isWork(tg);
       n.title = toWork ? 'Next: ' + labelForKey(target) : 'Finish the draft';
-      n.line = toWork ? 'Complete this step to move the task to the next stage.' : 'Send the draft for review when it is ready.';
+      n.line = toWork ? '' : 'Send the draft for review when it is ready.';
       if (work && target) n.go = stepAct(t, target);
       return n;
     }
@@ -5566,7 +5587,7 @@
             ? ' The latest it may fall is one day before the due date, ' +
               niceDate(t.current_final_due_at) + '.'
             : '')
-        : ' The promise first made is kept either way.');
+        : '');
     /* Error prevention rather than an error message: the picker will not open
        past the day before the commitment. The database refuses it as well,
        because a ceiling only the page knows is not a rule. */
@@ -5576,10 +5597,16 @@
     $('dueTitle').textContent = draft
       ? (was ? 'Change draft date' : 'Set draft date')
       : (needsAsking(t) ? 'Request extension' : 'Change due date');
+    /* An ask moves nothing until the person asked decides, so its act says
+       so (ux-audit WORK-1, 2026-10-15). */
+    $('dueGo').textContent = needsAsking(t) ? 'Send request' : 'Save';
     var cap = draft && t.current_final_due_at ? dayBefore(t.current_final_due_at) : '';
     if (cap) $('dueDate').setAttribute('max', cap); else $('dueDate').removeAttribute('max');
     $('dueDate').value = dateValue(was);
     $('dueNote').value = '';
+    /* No reason is filed that the person did not give: the replanning
+       figures group by it (ux-audit WORK-2). */
+    $('dueReason').value = '';
     msg('dueMsg', '');
     sheet('dueSheet', true);
   }
@@ -6671,7 +6698,7 @@
           (canWork
             ? '<button class="btn btn-sm" id="cwEng" type="button">New month</button>' +
               '<button class="btn btn-sm btn-primary" id="cwNew" type="button">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>'
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add task</button>'
             : '') +
           '</span></span>' +
       '</div>' +
@@ -6823,7 +6850,9 @@
          here is its facts and the controls that change it. */
       '<div class="eng-head">' +
         '<div class="eng-who">' +
-          '<p class="eng-meta">' + facts.map(function (p) { return '<span><span class="eng-lab">' + esc(p[0]) + '</span> ' + p[1] + '</span>'; }).join('') + '</p></div>' +
+          /* The facts are rows on the card's own grid, so their values
+             stand in the Meeting row's column (ux-audit WORK-7). */
+          '<div class="eng-meta">' + facts.map(function (p) { return '<div class="eng-row"><span class="eng-lab">' + esc(p[0]) + '</span><span class="eng-val">' + p[1] + '</span></div>'; }).join('') + '</div></div>' +
         '<div class="eng-ctl">' +
           '<span class="tone eng-phase ' + toneOf(ENG_STATE, phase) + '">' + esc(wordOf(ENG_STATE, phase)) + '</span>' +
           (can ? itemMenu(monthWord(e.period), items) : '') +
@@ -6988,6 +7017,8 @@
     var off = !engWl && !(Number($('engPlanned').value) > 0);
     $('engRepSocial').disabled = off;
     $('engRepSocial').checked = !off && engWant;
+    /* A resting tick says why (ux-audit WORK-9). */
+    if ($('engRepNote')) $('engRepNote').hidden = !off;
   }
   function saveEng() {
     var c = cw.client;
@@ -7598,6 +7629,7 @@
       var row = dueRow, t = row ? row.t : state.task;
       if (!t) return;
       if (!$('dueDate').value) { msg('dueMsg', 'A date is required.', 'err'); return; }
+      if (!$('dueReason').value) { msg('dueMsg', 'Choose a reason.', 'err'); $('dueReason').focus(); return; }
       /* One call, and the database decides whether this is a move or an ask:
          a person moving a date on a task they created themselves needs
          nobody, and everybody else is asking the person who set it. Deciding

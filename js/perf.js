@@ -1573,6 +1573,10 @@
     if (err) { box.hidden = false; UI.failLine(box, 'Rate yourself', said(err), loadSelf); return; }
     var list = st.self || [];
     box.hidden = !list.length;
+    /* One blue a view (ux-audit MINE-1, 2026-10-14): the first month still
+       to rate is the primary; any other open month is the tonal button. */
+    var first = true;
+    var lead = function (g) { if (g || !first) return false; first = false; return true; };
     box.innerHTML = list.map(function (m) {
       var g = m.rating, sc = (g && g.scores) || {};
       return '<div class="ovcard self-card" data-period="' + esc(m.period) + '">' +
@@ -1582,7 +1586,7 @@
                return '<div><dt>' + esc(c[1]) + '</dt><dd>' + esc(num(sc[c[0]])) + '<small> / ' + c[2] + '</small></dd></div>';
              }).join('') + '<div><dt>Total</dt><dd><b>' + esc(num(g.total)) + '</b><small> / 100</small></dd></div></dl>'
            : '<p class="perf-quiet">Open until your ' + esc(m.month) + ' review is shared.</p>' +
-             '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="self" type="button">Rate yourself</button></div>') +
+             '<div class="row acts refl-acts"><button class="btn' + (lead(g) ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button></div>') +
         '</div></div>';
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="self"]'), function (b) {
@@ -2573,8 +2577,8 @@
       ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
       ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
-    ['Reminders', [['remind_before_days', 'Days before a month or half month ends (0 for none)', 'remind', 'Reminder, days before the end'],
-      ['remind_again_days', 'Days after the 1st to remind again (0 for none)', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
+    ['Reminders (0 for none)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
+      ['remind_again_days', 'Days after the 1st to remind again', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
     ['Quarterly prizes', [['prize_individual', 'Top scorer of the quarter (RM)', 'money', 'Top scorer prize'],
       ['prize_department', 'Top department (RM)', 'money', 'Top department prize'],
       ['prize_department_min_total', 'Department score needed to win (out of 100)', 'score', 'Department score needed']], 'fgrid', 'quarters'],

@@ -468,7 +468,7 @@
       return R.reviews().then(function (list) {
         return list.filter(function (r) { return r.status !== 'final'; }).map(function (r) {
           var w = words[r.status] || [r.status === 'none' ? 'Not started' : r.status, ''];
-          return { name: 'Review, ' + lastMonth().short, meta: w[0], tag: 'Review', who: r.name, days: 0,
+          return { name: 'Performance review, ' + lastMonth().short, meta: w[0], tag: 'Performance', who: r.name, days: 0,
                    since: w[0], tone: r.status === 'none' ? 'off' : 'warn',
                    url: '/admin/?s=team&tab=performance&m=' + lastMonth().key, section: 'team' };
         });
@@ -754,7 +754,10 @@
       { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
           if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
-          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; });
+          /* Work nobody holds reads Unassigned, as the list on Summary says it
+             (ux-audit OVW-5, 2026-10-15); the database names it otherwise. */
+          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; })
+            .map(function (r) { if (!r.team_member_id) r.name = 'Unassigned'; return r; });
           if (!list.length) return { empty: 'No open tasks.' };
           return { kind: 'bars', inline: true, rows: list.map(function (r) {
               var late = Number(r.late) || 0;
@@ -853,6 +856,9 @@
         R.report().then(function (d) {
           var f = d.on_time || {}, n = Number(f.reached || 0), met = Number(f.met || 0);
           mbox.innerHTML = '';
+          /* An empty ring follows the signals in a narrow pane, so the first
+             screen of a phone opens on what needs acting on (ux-audit OVW-7). */
+          card.classList.toggle('is-ringless', !n);
           /* The ring stands whatever the period holds (the user, 2026-10-12):
              with nothing reached client review it is empty and reads a dash. */
           CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
@@ -967,6 +973,9 @@
       UI.skeleton(body, 3);
       Promise.resolve().then(function () { return c.load(); }).then(function (out) {
         if (!el.isConnected) return;
+        /* An empty card's line stands in the middle of the room its row gives
+           it (ux-audit OVW-2, 2026-10-15). */
+        el.classList.toggle('is-empty', Boolean(out.empty));
         if (out.empty) { UI.emptyLine(body, out.empty); return; }
         /* A card of figures or a table rather than a chart (Sales moves, By
            person in charge) keeps its card and takes the markup. */
@@ -1068,7 +1077,9 @@
     b.type = 'button';
     b.className = 'btn ovw-turn';
     b.id = 'ovwTurn';
-    b.innerHTML = page === 'summary' ? '<span>Continue to Detail</span>' + CHEV : '<span>Back to Summary</span>';
+    /* The pair is one act drawn one way: each carries the chevron toward
+       the page it turns to (ux-audit, act glyphs, 2026-10-15). */
+    b.innerHTML = page === 'summary' ? '<span>Continue to Detail</span>' + CHEV : CHEV.replace('class="ovgo-chev"', 'class="ovgo-chev is-back"') + '<span>Back to Summary</span>';
     b.addEventListener('click', function () { turn(page === 'summary' ? 'detail' : 'summary'); });
     row.appendChild(b);
     box.appendChild(row);
