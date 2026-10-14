@@ -1726,6 +1726,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     or register function.
   - `legalName` is resolved once.
   - Every line wraps.
+  - The contact is addressed with their salutation (`bill_to.contact_salutation`,
+    `2026-10-14-letter-salutation.sql`): Attn: Ms Jane Doe and Dear Ms Jane
+    Doe; the Billing pane and its contact select, and a client letter's Attn,
+    read it the same way.
 - Letter layout:
   - The closing is reserved on its own. The acceptance page carries the
     sentence naming the reference, date, page count and figure.

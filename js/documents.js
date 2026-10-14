@@ -525,11 +525,13 @@
       var price = priceOf(doc.lines || [], doc.market, lineTax, doc.issued_at);
       text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
 
-      // Our Ref / Date / To / Attn, the colons in one column.
+      // Our Ref / Date / To / Attn, the colons in one column. The contact is
+      // addressed with their salutation where one is held (2026-10-14).
+      var who = ((b.contact_salutation ? b.contact_salutation + ' ' : '') + (b.contact || '')).trim();
       var refs = [
         ['Our Ref', doc.number], ['Date', letterDate(doc.issued_at)],
         ['To', legalName.toUpperCase()],
-        ['Attn', b.contact ? b.contact + (b.contact_role ? ', ' + b.contact_role : '') : '']
+        ['Attn', b.contact ? who + (b.contact_role ? ', ' + b.contact_role : '') : '']
       ].filter(function (f) { return f[1]; });
       /* The value wraps to the column it started in. A registered name or an
          Attn line carrying a full job title is longer than the page is wide,
@@ -549,7 +551,7 @@
       y -= 12;
 
       text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
-      text('Dear ' + (b.contact || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
+      text('Dear ' + (who || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
 
       // The offer: the services and fees, the total, the terms, the acceptance.
       para('Thank you for your interest in our marketing services. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +

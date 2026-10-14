@@ -3207,3 +3207,10 @@ budget on its own line, and Additional contents per month sit under the
 plans once one is chosen (a plan changed drops extras it does not offer).
 The opening page's validity and commitment sentence was removed at the
 user's word; the quotation PDF keeps its own remarks.
+
+### 2026-10-14 · The Letter of Offer addresses its contact by salutation
+The user asked whether a contact's salutation reached Billing. It did not:
+the Billing pane and the Letter of Offer printed the bare name. `issue_letter`
+now keeps `contact_salutation` in the snapshot, the letter reads it on Attn
+and after Dear, and the Billing pane, its contact select and a client
+letter's Attn prefill show it. Letters issued before keep what they printed.
