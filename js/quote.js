@@ -242,6 +242,22 @@
   function monthly() { return Boolean((S.need.social && planOf()) || S.need.ads); }
   function adsAsked() { var p = S.need.social ? planOf() : null; return Boolean(S.need.ads || (p && p.ads)); }
 
+  /* The contents a plan takes more of each month. A plan's graphic is any of
+     the three, so each is offered where the plan holds graphics. */
+  function extrasOf(p) {
+    var kinds = (p.mix || []).reduce(function (a, m) { return a.concat(Object.keys(m)); }, []);
+    return CAT.contents.filter(function (c) {
+      return kinds.indexOf(c.kind) >= 0 || (GRAPHICS.indexOf(c.kind) >= 0 && kinds.indexOf('graphic') >= 0);
+    }).sort(byKind);
+  }
+  /* One-off contents: with a plan, only those its additional contents do not
+     already offer, so a format is never asked twice (the user, 2026-10-14). */
+  function onceList() {
+    var p = S.need.social ? planOf() : null;
+    var monthlyOnes = p ? extrasOf(p).map(function (c) { return c.slug; }) : [];
+    return CAT.contents.filter(function (c) { return monthlyOnes.indexOf(c.slug) < 0; }).sort(byKind);
+  }
+
   function selection() {
     var p = S.need.social ? planOf() : null, once = [];
     var sel = { term: monthly() ? S.term : 1 };
@@ -255,7 +271,7 @@
       sel.translate = S.translate && S.langs.length > 1;
     }
     if (adsAsked()) sel.budget = S.budget == null ? (p && p.ad_budget ? 0 : (CAT.budgets[0] || 0)) : S.budget;
-    if (S.need.content) Object.keys(S.once).forEach(function (k) { if (S.once[k] > 0) once.push({ slug: k, qty: S.once[k] }); });
+    if (S.need.content) onceList().forEach(function (c) { if (S.once[c.slug] > 0) once.push({ slug: c.slug, qty: S.once[c.slug] }); });
     if (S.need.koc && S.koc) once.push({ slug: S.koc, qty: 1 });
     if (S.need.koc && S.kol && CAT.kol) once.push({ slug: CAT.kol, qty: 1 });
     if (S.need.verify) S.verify.forEach(function (k) { once.push({ slug: k, qty: 1 }); });
@@ -352,11 +368,7 @@
   function paintCustom() {
     var p = S.need.social ? planOf() : null, h = '';
     if (p) {
-      var kinds = (p.mix || []).reduce(function (a, m) { return a.concat(Object.keys(m)); }, []);
-      // A plan's graphic is any of the three, so each is offered where the plan holds graphics.
-      var extras = CAT.contents.filter(function (c) {
-        return kinds.indexOf(c.kind) >= 0 || (GRAPHICS.indexOf(c.kind) >= 0 && kinds.indexOf('graphic') >= 0);
-      }).sort(byKind);
+      var extras = extrasOf(p);
       h += sec(t().extra, extras.map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
@@ -371,9 +383,9 @@
         opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>', 'qsBudget');
     }
     if (monthly()) h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true));
-    if (S.need.content) {
+    if (S.need.content && onceList().length) {
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
-        CAT.contents.slice().sort(byKind).map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
+        onceList().map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (S.need.koc) {
       var cr = '';
