@@ -4930,17 +4930,21 @@
   }
   /* The rate card as the team issues it, drawn from the live version and
      saved under its own name (js/ratecardpdf.js). */
-  function cardPdf(btn) {
+  /* `card` is the live version unless a version's row names another, which
+     is read whole at the press (ux-audit SVC-9: every version downloads). */
+  function cardPdf(btn, read) {
     var docs = window.ADspaceDocs, tab = docs && docs.tabFor ? docs.tabFor() : null;
-    var m = $('svcLiveMsg');
+    var m = $('svcLiveMsg'), card = live;
     btn.disabled = true;
     if (m) { m.hidden = true; m.textContent = ''; }
-    Promise.resolve().then(function () {
+    Promise.resolve(read ? read() : live).then(function (c) {
+      if (!c || !c.snapshot) throw new Error('The version could not be read.');
+      card = c;
       if (!window.ADspaceRateCardPdf) throw new Error('The PDF tools are not loaded.');
-      return window.ADspaceRateCardPdf.draw(live);
+      return window.ADspaceRateCardPdf.draw(card);
     }).then(function (blob) {
       btn.disabled = false;
-      docs.save(blob, 'ADspace Rate Card ' + window.ADspaceRateCardPdf.tag(live) + '.pdf', tab);
+      docs.save(blob, 'ADspace Rate Card ' + window.ADspaceRateCardPdf.tag(card) + '.pdf', tab);
     }).catch(function (e) {
       btn.disabled = false;
       if (docs && docs.shut) docs.shut(tab);
@@ -5006,8 +5010,11 @@
           blocks.forEach(function (b) {
             var row = document.createElement('div');
             row.className = 'svc-row cat-row rcw-row';
-            var first = String(b.value || '').split('\n')[0];
-            row.innerHTML = '<span class="svc-name"><b>' + esc(b.label) + '</b><small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
+            /* The label's column list and the row's pipes are how the card
+               stores a table; the row reads them as words (ux-audit SVC-6). */
+            var first = String(b.value || '').split('\n')[0].split(/\s*\|\s*/).join(' · ');
+            var named = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
+            row.innerHTML = '<span class="svc-name"><b>' + esc(named) + '</b><small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
               '<span class="svc-rate">' + (d.words[b.key] ? '<span class="chip">' + d.words[b.key] + '</span>' : '') + '</span>' +
               '<span class="svc-unit"></span>' +
               '<span class="team-act">' + (maySvc()
@@ -5181,8 +5188,17 @@
           row.innerHTML = '<span class="svc-name"><b>v.' + esc(v.version) + '</b><small>' +
               esc(niceDate(String(v.published_at).slice(0, 10)) + (v.published_by ? ' · ' + v.published_by : '') + (v.note ? ' · ' + v.note : '')) + '</small></span>' +
             '<span class="svc-rate">' + (i === 0 ? '<span class="chip-state is-live">Live</span>' : '<span class="chip-state is-off">Replaced</span>') + '</span>' +
-            '<span class="svc-unit">' + (v.valid_until ? esc(niceDate(v.valid_until)) : '<span class="muted">—</span>') + '</span>' +
-            '<span class="team-act"></span>';
+            /* A phone hides the heading, so the date names itself there
+               (ux-audit SVC-4). */
+            '<span class="svc-unit">' + (v.valid_until ? '<span class="rcv-k">Valid until </span>' + esc(niceDate(v.valid_until)) : '<span class="muted">—</span>') + '</span>' +
+            '<span class="team-act"><button class="btn btn-sm" type="button" data-a="dl" aria-label="Download v.' + esc(v.version) + '">Download</button></span>';
+          var dl = row.querySelector('[data-a="dl"]');
+          dl.addEventListener('click', function () {
+            cardPdf(dl, i === 0 && live && live.version === v.version ? null : function () {
+              return db.from('rate_card_versions').select('id, version, valid_until, note, snapshot, published_at, published_by')
+                .eq('id', v.id).maybeSingle().then(function (r) { if (r.error) throw new Error(r.error.message); return r.data; });
+            });
+          });
           table.appendChild(row);
         });
         return table;
