@@ -4111,8 +4111,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Remove with Undo (Restore after). Build quote (`#qbBox`, as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
-  languages, budget and term, one-off items, the lines and totals from
-  `quote_preview` as ticked) makes one (`quotation_create`, a key a press).
+  languages, budget and term, one-off items as steppers two across, the
+  lines and totals from `quote_preview` as ticked; with no plan the
+  platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press).
   Issue Letter of Offer (`quotation_offer`, once) makes the quotation's
   lines the client's To quote lines (`quotation_id`, its term and
   percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
