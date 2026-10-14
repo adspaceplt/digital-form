@@ -400,6 +400,17 @@
     input.addEventListener('blur', function () { setTimeout(function () { shutIt(false); }, 120); });
     input.addEventListener('input', function () { mark(rec); });
     rec.openSearch = openIt;
+    /* A page that hides its search (a tab with nothing to search) hides
+       the mark with it: pressed, the mark gave way to a hidden field. */
+    function follow() {
+      btn.hidden = find.hidden;
+      if (find.hidden) {
+        bar.classList.remove('is-searching');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    }
+    follow();
+    if (window.MutationObserver) new MutationObserver(follow).observe(find, { attributes: true, attributeFilter: ['hidden'] });
   }
   /* The mark says the list is filtered while the field is shut. */
   function mark(rec) {

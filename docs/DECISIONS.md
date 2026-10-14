@@ -3112,3 +3112,10 @@ tells the team it is ready for a Letter of Offer.
   be the main focus". Completed now ranks with the ended bookings in the
   list (faded, last) and the page opens on a running booking; the card is
   the name, the state, the rating while owed, and Booking details shut.
+
+- 2026-10-14 · Command bar search mark follows its field. On Services'
+  Wording and Versions tabs the page hid the search field, but the mark
+  `js/cmdbar.js` draws for it stayed; pressed, the mark gave way to the
+  hidden field and the search vanished (the user's report). The mark now
+  takes its field's `hidden` (a MutationObserver) and an open search shuts
+  when its field is hidden.
