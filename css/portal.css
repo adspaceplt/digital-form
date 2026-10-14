@@ -2719,6 +2719,14 @@ button.appver {
 .askfields.has-half { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 12px; }
 .askfields.has-half > .askentry { grid-column: 1 / -1; margin-top: 0; }
 .askfields.has-half > .askentry.is-half { grid-column: auto; }
+/* Three figures across (a section of three, 2026-10-15): six tracks, a half
+   spanning three, a third two. */
+.askfields.has-third { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.askfields.has-third > .askentry.is-half { grid-column: span 3; }
+.askfields.has-third > .askentry.is-third { grid-column: span 2; }
+/* Fields side by side keep one line when a narrow label wraps: each entry
+   stands on the row's foot. */
+.askfields.has-half > .askentry:is(.is-half, .is-third) { display: flex; flex-direction: column; justify-content: flex-end; }
 .askentry > .input, .askentry > .select, .askentry > textarea.input { width: 100%; }
 .askentry .field-label { display: block; margin-bottom: 6px; }
 /* A question of more than five figures reads as sections (2026-10-14,

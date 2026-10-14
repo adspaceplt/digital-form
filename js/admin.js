@@ -5096,10 +5096,10 @@
      details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
-    ['term_1_3', '1 to 3 months (%)', 'adj', 'Terms under a year'], ['term_4_5', '4 and 5 months (%)', 'adj', 'Terms under a year'],
-    ['term_6_11', '6 to 11 months (%)', 'adj', 'Terms under a year'],
-    ['term_12_23', '12 to 17 months (%)', 'adj', 'Terms of a year or more'], ['term_18_23', '18 to 23 months (%)', 'adj', 'Terms of a year or more'],
-    ['term_24', '24 months and more (%)', 'adj', 'Terms of a year or more']];
+    ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
+    ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
+    ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
+    ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)']];
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
@@ -5113,9 +5113,12 @@
     var seen = {}, prev = null;
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
       var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
+      /* A named section of three figures runs three across, so the sheet
+         fits a phone (2026-10-15, ux-audit SET-10). */
+      var third = Boolean(s) && n === 3;
       var next = MON.next ? MON.next(k[0]) : null;
       var f = { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
-        half: n > 1 && !(n % 2 && at === n),
+        half: !third && n > 1 && !(n % 2 && at === n), third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + next.value : '' };
       if (s && s !== prev) f.head = s;
       prev = s;
