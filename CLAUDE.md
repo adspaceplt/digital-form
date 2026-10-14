@@ -4052,8 +4052,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   words, SST and the term percentages whole in `rate_card_versions`, and
   `rate_card_current()` answers the latest. A client's line, a quote and the
   export are priced from the live version, never the draft; with none
-  published, the card as it stands. The page: the version line (Live
-  v.{n} · valid until, `n changes not published`, Publish), then Rate card,
+  published, the card as it stands. The page: one command bar holding the
+  search (Rate card alone), the version line (Live v.{n} · valid until,
+  `n changes not published`, Publish) and the acts (Download, Tax and terms,
+  Add service on Rate card alone; on a phone the line under the marks where
+  a search stands, else beside the ⋯; the user, 2026-10-14), then Rate card,
   Wording, Versions (`tab=`); a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
 - A block of wording is edited as the card prints it (`#rcwBox`; the user,

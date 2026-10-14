@@ -4786,9 +4786,18 @@ body > .shell { width: 100%; }
 .cat-row > .svc-rate .muted { font-variant-numeric: normal; }
 /* Rate card versions (2026-10-13): which version is live, and what the
    draft holds that it does not, with Publish at the line's right edge. */
+/* It stands in the command bar between the search and the actions, so the
+   page keeps one row above the tabs (the user, 2026-10-14). */
 .svc-live {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
-  gap: 8px 16px; margin: 0 0 12px; font-size: 13px; color: var(--ink-mute); min-height: var(--ctl-h-sm);
+  gap: 8px 16px; font-size: 13px; color: var(--ink-mute); min-height: var(--ctl-h-sm);
+  flex: 1 1 auto; min-width: 0;
+}
+.svc-live-now > * { white-space: nowrap; }
+/* On a phone, beside the search mark and the actions it has no room: it
+   takes the line under them. Where the tab has no search it shares the row. */
+@media (max-width: 640px) {
+  .cmdbar:has(> .cmdbar-find:not([hidden])) > .svc-live { order: 1; flex-basis: 100%; }
 }
 .svc-live b { color: var(--ink); font-weight: 600; }
 .svc-live-now { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
