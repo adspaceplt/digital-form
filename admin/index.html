@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261014o">
+<link rel="stylesheet" href="/css/portal.css?v=20261014p">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4550,11 +4550,13 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
           <input class="input input-sm" id="svcFind" type="search" placeholder="Search the rate card" aria-label="Search the rate card">
         </span>
+        <div class="svc-live" id="svcLive" hidden></div>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet">
             <span class="cmdbar-count" id="svcCount"></span>
           </span>
           <span class="cmdbar-acts">
+            <button class="btn btn-sm" id="svcCardPdf" type="button" hidden>Download</button>
             <button class="btn btn-sm" id="svcTax" type="button" hidden>Tax and terms</button>
             <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
           </span>
@@ -4697,7 +4699,6 @@
       <!-- Rate card versions (2026-10-13): the card is edited as a draft and
            goes live as a numbered version; the line says which is live and
            what is not yet published. -->
-      <div class="svc-live" id="svcLive" hidden></div>
       <p class="msg" id="svcLiveMsg" role="status" hidden></p>
       <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate card views" hidden></nav>
       <div class="msg" id="svcListMsg"></div>
@@ -5338,7 +5339,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/quotes.js?v=20261014a"></script>
 <script src="/js/quotepdf.js?v=20261014"></script>
-<script src="/js/crm.js?v=20261014n"></script>
+<script src="/js/crm.js?v=20261014o"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261014g"></script>
 <script src="/js/namecard.js?v=20261014g"></script>

@@ -4736,6 +4736,7 @@
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
     $('svcLive').hidden = true;
+    $('svcCardPdf').hidden = true;
     loadCatalog(function () {
       loadLive(function () {
         db.from('rate_card_text').select('key, label, page, position, value').order('position').then(function (r) {
@@ -4813,6 +4814,8 @@
     var find = $('svcFind') && $('svcFind').closest('.cmdbar-find');
     if (find) find.hidden = svcTab !== 'card';
     $('svcCount').hidden = svcTab !== 'card';
+    /* A service is added on the card itself, never from its wording or versions. */
+    $('svcAdd').hidden = !maySvc() || svcTab !== 'card';
     diffNow = svcDiff();
     paintLiveLine();
     if (svcTab === 'card') paintCatalog();
@@ -4848,15 +4851,13 @@
           (live.valid_until ? ' · valid until ' + esc(niceDate(live.valid_until)) : '')
         : '<span class="chip-state is-off">Not published</span>') + '</span>' +
       '<span class="svc-live-acts">' +
-        (live ? '<button class="btn btn-sm" id="svcCardPdf" type="button">Download</button>' : '') +
         (live && d.n ? '<span class="svc-live-n">' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published</span>' : '') +
         (maySvc() && (d.n || !live)
           ? '<button class="btn btn-sm btn-primary" id="svcPublish" type="button" data-need="services:manage">' + PLANE + 'Publish</button>' : '') +
       '</span>';
     var pb = $('svcPublish');
     if (pb) pb.addEventListener('click', function () { publishCard(pb, d); });
-    var dl = $('svcCardPdf');
-    if (dl) dl.addEventListener('click', function () { cardPdf(dl); });
+    $('svcCardPdf').hidden = !live;
   }
   /* The rate card as the team issues it, drawn from the live version and
      saved under its own name (js/ratecardpdf.js). */
@@ -5451,6 +5452,7 @@
     openSheet('svcBox');
   }
   $('svcAdd').addEventListener('click', function () { openSvc(null); });
+  $('svcCardPdf').addEventListener('click', function () { cardPdf(this); });
   /* SST and the term percentages a quote is prefilled from, an admin's,
      from a day on (2026-10-05). Follow-up limits moved to the Settings
      page's Clients group (2026-10-11). */

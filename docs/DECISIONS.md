@@ -3119,3 +3119,9 @@ tells the team it is ready for a Letter of Offer.
   hidden field and the search vanished (the user's report). The mark now
   takes its field's `hidden` (a MutationObserver) and an open search shuts
   when its field is hidden.
+
+- 2026-10-14 · Services: one command bar. The user ("wth ui is this") on the
+  phone's Versions tab: a row holding only the ⋯ and Add service, then the
+  version line, then Download alone on a third row. The version line moved
+  into the command bar between the search and the acts, Download joined the
+  acts (behind the ⋯ on a phone), and Add service shows on Rate card alone.
