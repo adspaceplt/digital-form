@@ -3155,3 +3155,16 @@ time to confirm nothing else sends by itself: on the live database the only
 automatic sends are a creator's booking confirmed (`campaign_options_wa`)
 and the team reminders to colleagues (`ops_notifications_wa`), whose
 template is off, so nothing is queued for them.
+
+### 2026-10-14 · A WhatsApp message sent twice is asked about first
+The user asked for a gate so that the same message is not sent twice when
+one colleague missed that another had sent it, or forgot they had. Before a
+send the composer asks the database for the newest message to that person
+for that purpose and record within a window (24 hours, a Business setting,
+`wa_repeat_hours`; 0 turns it off); found, Send asks again in warn naming
+who sent it and when, with Send again. It warns rather than blocks: a
+second send is sometimes intended (a lost message, a correction). `wa-send`
+refuses the send unless that question was answered, so two colleagues
+pressing at nearly the same moment are both asked. The function is
+`wa_sent_recently`: `wa_recent()` already names the console's list of
+recent messages.

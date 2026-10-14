@@ -171,7 +171,7 @@
   function invoke(body) {
     return db().functions.invoke('wa-send', { body: body }).then(function (res) {
       var d = res && res.data;
-      if (res.error || !d || d.error) throw { code: (d && d.error) || 'wa-failed', missing: d && d.missing };
+      if (res.error || !d || d.error) throw { code: (d && d.error) || 'wa-failed', missing: d && d.missing, recent: d && d.recent };
       return d;
     });
   }
@@ -835,11 +835,23 @@
       else button = v;
     });
     var cat = CATEGORY[t.category] || 'template';
-    window.ADspaceConfirm.ask({
-      title: 'Send on WhatsApp?', go: 'Send',
-      body: 'The message goes to ' + r.name + (r.kind === 'contact' && r.client ? ' of ' + r.client : '') + ' on ' + phone(r.number) +
-        '. Meta charges it as a ' + cat + ' message.'
-    }, function () {
+    var costLine = 'Meta charges it as a ' + cat + ' message.';
+    /* Sent recently (2026-10-14; the user: "so no duplicate would be
+       repeated sent"): the same message to the same person about the same
+       record within `wa_repeat_hours` (24, a Business setting) asks again
+       in warn, naming who sent it and when; `wa-send` refuses it unless
+       the second question was answered (`again`). */
+    var ask = function (rec) {
+      window.ADspaceConfirm.ask(rec ? {
+        title: 'Sent recently', go: 'Send again', tone: 'warn',
+        body: recentLine(rec, r) + ' Send it again? ' + costLine
+      } : {
+        title: 'Send on WhatsApp?', go: 'Send',
+        body: 'The message goes to ' + r.name + (r.kind === 'contact' && r.client ? ' of ' + r.client : '') + ' on ' + phone(r.number) +
+          '. ' + costLine
+      }, function () { go(Boolean(rec)); });
+    };
+    var go = function (again) {
       cx.sending = true;
       $('waSend').disabled = true;
       say(m, isDoc ? 'Attaching the PDF…' : 'Sending…');
@@ -856,7 +868,7 @@
         if (file) say(m, 'Sending…');
         return invoke({ action: 'compose', to_kind: r.kind, to_id: r.id, purpose: purpose, ref: ref,
           template: { name: t.name, language: t.language }, values: values, header_value: header, button_value: button,
-          pdf: file ? file.b64 : undefined, filename: file ? file.name : undefined });
+          pdf: file ? file.b64 : undefined, filename: file ? file.name : undefined, again: again || undefined });
       }).then(function (d) {
         if (cx !== mine) return;
         cx.sending = false;
@@ -870,11 +882,29 @@
         if (cx !== mine) return;
         cx.sending = false;
         $('waSend').disabled = false;
+        /* Sent by somebody else while this one was asked: the question
+           again, never a second message unasked. */
+        if (e && e.code === 'recent' && e.recent) { say(m, ''); ask(e.recent); return; }
         /* A refusal the function named, else the report's file that could
            not be read. */
         say(m, said(e && e.code && !e.message ? e : { code: 'bad-file' }), 'err');
       });
-    });
+    };
+    db().rpc('wa_sent_recently', { p_to_kind: r.kind, p_to: r.id, p_purpose: purpose, p_ref: ref, p_template: t.name })
+      .then(function (res) { var d = res && res.data; return d && d.recent ? d : null; })
+      .catch(function () { return null; })
+      .then(function (rec) { if (cx && cx.o === o && !cx.sending) ask(rec); });
+  }
+  /* "Sent on WhatsApp to Lim Wei Ming by Qiao Rou on 14 Oct 14:05, 3 hours
+     ago." A queued one is waiting to send; the queue's own is Automatic. */
+  function recentLine(rec, r) {
+    var mins = Math.max(0, Math.round((Date.now() - Date.parse(rec.at)) / 60000));
+    var ago = mins < 60 ? (mins <= 1 ? 'a minute ago' : mins + ' minutes ago')
+      : Math.round(mins / 60) === 1 ? 'an hour ago' : Math.round(mins / 60) + ' hours ago';
+    var who = rec.to || r.name;
+    var by = rec.by ? ' by ' + rec.by : ' automatically';
+    return (rec.state === 'sent' ? 'Sent on WhatsApp to ' + who : 'Already waiting to send on WhatsApp to ' + who) +
+      by + ' on ' + whenOf(rec.at) + ', ' + ago + '.';
   }
 
   function wireComposer() {
