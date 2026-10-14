@@ -55,7 +55,8 @@
   var GLYPH_PLUS = svg('<path d="M12 5v14M5 12h14"/>');
   var GLYPH_SEARCH = svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>');
   var GLYPH_X = svg('<path d="M6 6l12 12M18 6 6 18"/>');
-  var GLYPH_MORE = svg('<circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>');
+  /* The row ⋯'s own three dots across, so every ⋯ is one glyph (TEAM-7, 2026-10-14). */
+  var GLYPH_MORE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
 
   function selectsOf(bar) {
     return Array.prototype.filter.call(bar.children, function (el) { return el.tagName === 'SELECT'; });

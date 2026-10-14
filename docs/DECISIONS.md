@@ -3228,11 +3228,17 @@ Add service sat above Quotations while the lines sat below it: the pane is now
 Quotations (Build quote) over Service lines (Add service). The website already
 opened the budget on the plan's cover.
 
-### 2026-10-15 · The client portal's meeting time: its track measured at its longest
-The full gate of 15 Oct (run just after midnight) found the Meetings tab's date
-and time clipped at 1200: "Wed 30 Sept 2026, 10:30pm – 11:45pm" needs 260px
-at 13.5px and its track was 240. The earlier gates passed only because the
-suite's meeting fell on a shorter date. The track is 264px, and the suite now
-seeds that longest line. The same gate's three other failures were the suites'
-own clocks reading the UTC day before 8am Malaysia time (fixed in the tests),
-and one uxaudit step that no longer matched the quotation website.
+### 2026-10-14 · Team: the audit's four P2 findings
+The Team audit (UX B, UI A) ranked four P2s; the user said fix them as one
+batch. A month's review drew Save and Share in its first card, above 21
+fields running 2.5 screens (3.7 on a phone): they now sit at the sheet's
+foot with Notify, in a foot of its own class, because a `.sheet-foot`'s
+primary is pressed by Enter and Enter in a score must not share a month.
+Hand-over asked one select a kind, up to nine: with two kinds or more All
+their work to comes first, each kind reading Same as above, so one choice
+hands everything over and the user's "a person for each kind" stands.
+Delete opened on the name under pickers all reading Keep, so a colleague
+could be removed for good still holding clients and tasks, unsaid: the line
+now names what stayed, and an inactive or removed colleague's ⋯ offers Hand
+over work. The command bar's own ⋯ drew three dots stacked beside every
+other ⋯'s three across; it now draws them across.
