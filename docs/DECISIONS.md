@@ -3309,3 +3309,11 @@ blue of the Pantone 2717 C family: light `#2a5793` on `#e6effb` (6.3:1),
 dark `#a7c6ed` on `#1d2735` (8.6:1). It is greyer and softer than the action
 blue (`#0071e3`), so a post date never reads as a button, and it keeps its
 one place.
+
+### 2026-10-15 · Performance settings: figures side by side on one line
+The user's screenshot of Performance settings: under Reminders the left
+label ran to two lines ("Days before a month or half month ends (0 for
+none)"), so its field sat lower than its neighbour. The two labels lose
+"(0 for none)", which the heading now says once (Reminders (0 for none)),
+and the sheet's rows of figures align their fields on one line whatever a
+label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
