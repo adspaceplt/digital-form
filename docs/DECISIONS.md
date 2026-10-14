@@ -3227,3 +3227,12 @@ left, count right, the rate under the item. The pane's Services heading with
 Add service sat above Quotations while the lines sat below it: the pane is now
 Quotations (Build quote) over Service lines (Add service). The website already
 opened the budget on the plan's cover.
+
+### 2026-10-15 · The client portal's meeting time: its track measured at its longest
+The full gate of 15 Oct (run just after midnight) found the Meetings tab's date
+and time clipped at 1200: "Wed 30 Sept 2026, 10:30pm – 11:45pm" needs 260px
+at 13.5px and its track was 240. The earlier gates passed only because the
+suite's meeting fell on a shorter date. The track is 264px, and the suite now
+seeds that longest line. The same gate's three other failures were the suites'
+own clocks reading the UTC day before 8am Malaysia time (fixed in the tests),
+and one uxaudit step that no longer matched the quotation website.
