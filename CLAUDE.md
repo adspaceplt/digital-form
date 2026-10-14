@@ -908,6 +908,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     view segment on a second row.
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
     Clear sets `data-default` (else the first option) and fires `change`.
+    A field the page hides (`.cmdbar-find[hidden]`) takes its search mark with it.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
     `#regSort`): never counted by the badge, never reset by Clear.
