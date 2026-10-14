@@ -4138,8 +4138,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The quotation website (`/quote/`, `js/quote.js`,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
-  asked), Customise (with a plan, Content production lists only the formats
-  its additional contents per month do not; the user, 2026-10-14),
+  asked; each plan names its contents, `4 contents per month: 2 graphics
+  and 2 reels of up to 60 seconds`, its budget on a line of its own, and
+  once a plan is chosen its Additional contents per month are asked under
+  the plans; the user, 2026-10-14), Customise (languages, budget,
+  commitment; with a plan, Content production lists only the formats its
+  additional contents do not),
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or

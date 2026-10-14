@@ -42,7 +42,7 @@
       introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the contents, languages and commitment.',
         'Provide your contact details to receive the quotation immediately.', 'Proceed with your billing details to request the Letter of Offer.'],
-      introNote: 'This takes about three minutes. Each quotation is valid for {d} days, and no commitment is made until the Letter of Offer is signed.',
+      introNote: 'This takes about three minutes.',
       start: 'Start',
       needT: 'What do you need?',
       need: {
@@ -55,7 +55,9 @@
       needNone: 'Select at least one service.',
       planT: 'Platforms and plan', platsH: 'Platforms', planH: 'Plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
-      contents: '{n} contents per month', budgetUpTo: 'advertising budget up to RM {b}',
+      contents: '{n} contents per month', mixOr: ' or ', mixAnd: ' and ',
+      kindN: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel of up to 60 seconds', '{n} reels of up to 60 seconds'] },
+      budgetUpTo: 'Advertising budget up to RM {b}',
       ratesLater: 'The rates will be shown on the final page.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
@@ -108,7 +110,7 @@
       introP: '选择品牌所需的服务，即可即时获得报价。',
       introH: '流程说明',
       introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，即可获得报价。', '确认报价后填写开票资料，申请服务确认函（Letter of Offer）。'],
-      introNote: '整个流程约需三分钟。报价有效期为 {d} 天，签署服务确认函前不构成任何承诺。',
+      introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
       need: {
@@ -121,7 +123,9 @@
       needNone: '请至少选择一项服务。',
       planT: '平台与方案', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
-      contents: '每月 {n} 条内容', budgetUpTo: '广告预算最高 RM {b}',
+      contents: '每月 {n} 条内容', mixOr: '，或 ', mixAnd: '、',
+      kindN: { graphic: ['{n} 条图文', '{n} 条图文'], reel: ['{n} 条短视频（60 秒内）', '{n} 条短视频（60 秒内）'] },
+      budgetUpTo: '广告预算最高 RM {b}',
       ratesLater: '价格将在最后一页显示。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
@@ -328,10 +332,23 @@
       (forId ? '</label>' : '</h2>') + body + '</section>';
   }
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
+  /* What a plan's contents are, so a visitor knows what the count covers
+     (the user, 2026-10-14): "4 contents per month: 2 graphics and 2 reels". */
+  function mixLine(p) {
+    var K = t().kindN;
+    return (p.mix || []).map(function (m) {
+      return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
+        .filter(function (k) { return m[k]; }).map(function (k) {
+          var w = K[k] || ['{n} ' + k, '{n} ' + k];
+          return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
+        }).join(t().mixAnd);
+    }).join(t().mixOr);
+  }
   function planLine(p) {
-    var parts = [f(t().contents, { n: p.contents })];
+    var mix = mixLine(p);
+    var parts = [f(t().contents, { n: p.contents }) + (mix ? (lang === 'zh' ? '：' : ': ') + mix : '')];
     if (p.ad_budget) parts.push(f(t().budgetUpTo, { b: n0(p.ad_budget) }));
-    return parts.join(' · ');
+    return parts.join('\n');   // a line each: the contents, then the budget
   }
 
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
@@ -339,7 +356,7 @@
     return '<div class="qs-step qs-intro"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
         t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
-      '<p class="qs-note">' + esc(f(t().introNote, { d: (CAT && CAT.valid_days) || 30 })) + '</p></div>' +
+      '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
       '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a>' +
       '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
@@ -362,7 +379,15 @@
         '<div class="qs-list">' + plans.map(function (p) {
           return pick('radio', 'plan', p.slug, S.plan === p.slug,
             f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
-        }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>') + '</div>', navFoot());
+        }).join('') + '</div><p class="qs-note">' + esc(t().ratesLater) + '</p>') +
+      '<div id="qsExtraBox">' + extrasHtml() + '</div></div>', navFoot());
+  }
+  /* Additional contents sit under the plan they add to (the user,
+     2026-10-14: on the next page they read as choosing the plan's own). */
+  function extrasHtml() {
+    var p = planOf();
+    if (!p) return '';
+    return sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
   }
 
   function budgetOptions() {
@@ -377,8 +402,6 @@
   function paintCustom() {
     var p = S.need.social ? planOf() : null, h = '';
     if (p) {
-      var extras = extrasOf(p);
-      h += sec(t().extra, extras.map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
         '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
@@ -676,7 +699,14 @@
       S.platforms = S.platforms.filter(function (p) { return p !== el.value; });
       if (el.checked) S.platforms.push(el.value);
     }
-    else if (nm === 'plan') { S.plan = el.value; }
+    else if (nm === 'plan') {
+      S.plan = el.value;
+      // Extras the new plan does not offer leave with the old one.
+      var ok = extrasOf(planOf()).map(function (c) { return c.slug; });
+      Object.keys(S.extra).forEach(function (k) { if (ok.indexOf(k) < 0) delete S.extra[k]; });
+      var xb = document.getElementById('qsExtraBox');
+      if (xb) xb.innerHTML = extrasHtml();
+    }
     else if (nm === 'lang') {
       S.langs = S.langs.filter(function (l) { return l !== el.value; });
       if (el.checked) S.langs.push(el.value);
