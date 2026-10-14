@@ -2102,11 +2102,13 @@
       if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
-      var spent = daysSince(c.stage_since) === 0 ? 'the same day' : (ageWord(c) || 'no time');
+      /* A move on the day the stage began reads "the same day", never "after
+         the same day" (2026-10-15, audit CLI-8). */
+      var spent = daysSince(c.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(c) || 'no time');
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
-      log('client.stage', c.name, stageWord(to)[1] + ' after ' + spent +
+      log('client.stage', c.name, stageWord(to)[1] + ' ' + spent +
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
@@ -3631,11 +3633,11 @@
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
           if (q.error || !(q.data || []).length) return;
-          var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : (ageWord(state.client) || 'no time');
+          var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
           if (mine) mine.stage = 'contacted';
-          log('client.stage', state.client.name, 'Contacted after ' + spent);
+          log('client.stage', state.client.name, 'Contacted ' + spent);
           refreshClient(state.client, function () { openClient(state.client); });
         });
       }
