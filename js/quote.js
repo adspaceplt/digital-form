@@ -222,10 +222,15 @@
     return out;
   }
 
-  /* What the person picked, kept in this tab. */
-  var S = { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
-    plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
-    contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
+  /* What the person picked, kept in this tab while they go through the
+     steps (a refresh keeps their place); the opening page starts afresh,
+     nothing chosen or typed carried over (the user, 2026-10-14). */
+  function blank() {
+    return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
+      plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
+      contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
+  }
+  var S = blank();
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
@@ -496,7 +501,11 @@
     if (paint.lost) { cover(t().lostT, t().lostP); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
     if (Q) { root().innerHTML = paintQuote(); decorate(); return; }
-    if (S.step === 'intro') { root().innerHTML = paintIntro(); decorate(); return; }
+    if (S.step === 'intro') {
+      S = blank();
+      try { sessionStorage.removeItem(KEEP); } catch (e) {}
+      root().innerHTML = paintIntro(); decorate(); return;
+    }
     if (steps().indexOf(S.step) < 0) S.step = 'need';
     root().innerHTML = { need: paintNeed, plan: paintPlan, custom: paintCustom, details: paintDetails }[S.step]();
     decorate();
