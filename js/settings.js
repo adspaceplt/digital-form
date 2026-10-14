@@ -47,6 +47,48 @@
       ((h % 12) || 12) + ':' + (mi < 10 ? '0' : '') + mi + (h < 12 ? ' am' : ' pm');
   }
 
+  /* The figures each Edit row's sheet asks: [key, label, bound, section,
+     its value in a line]. More than five read as sections (audit SET-4,
+     2026-10-14). A figure changed from a later day is said on its row in
+     these words (audit SET-1). */
+  function per(u) { return function (v) { return plural(v, u, u + 's'); }; }
+  function pctOf(v) { return v + '%'; }
+  var TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], details_form_days: ['Details form open', per('day')],
+    term_1_3: ['1 to 3 months', pct], term_4_5: ['4 and 5 months', pct], term_6_11: ['6 to 11 months', pct],
+    term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct] };
+  var SPECS = {
+    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', '', 'Lead', per('hour')],
+      ['proposal_followup_days', 'A proposal waits (days)', 'days', '', 'Proposal', per('day')]] },
+    /* The list is js/admin.js's (the Services bar asks the same sheet). */
+    tax: { title: 'Tax and terms', keys: (bridge.TAX_KEYS || []).map(function (k) { return k.concat(TAX_WORD[k[0]]); }) },
+    due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
+      ['revision_due_days', 'Revision (Client): days after changes are asked', 'due', '', 'Revision', per('day')],
+      ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due', '', 'Approval reminder', per('day')]] },
+    priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours', '', 'Urgent', per('hour')],
+      ['priority_high_hours', 'High: hours from creation', 'hours', '', 'High', per('hour')],
+      ['priority_medium_hours', 'Medium: hours from creation', 'hours', '', 'Medium', per('hour')]] },
+    nudge: { title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every', '', 'Every', per('hour')],
+      ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead', '', 'Not started', per('day')]] },
+    prices: { title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
+      ['ai_price_out', 'Output, a million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
+      ['ai_price_search', 'Web searches, a thousand', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
+    reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow', '', 'Reach within', pctOf]] },
+    resend: { title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
+  };
+  /* The earliest change set from a later day, in the row's words: "From
+     14 Nov 2026: SST 6%". Meta checks is its one switch with a figure. */
+  function nextLine(id) {
+    var M = window.ADspaceMoney;
+    if (!M || !M.next) return '';
+    var keys = id === 'meta' ? [['meta_checks', '', '', '', 'Meta checks', function (v) { return v ? 'on' : 'off'; }]] : (SPECS[id] || {}).keys;
+    if (!keys) return '';
+    var first = '', bits = [];
+    keys.forEach(function (k) { var x = M.next(k[0]); if (x && (!first || x.from < first)) first = x.from; });
+    if (!first) return '';
+    keys.forEach(function (k) { var x = M.next(k[0]); if (x && x.from === first) bits.push(k[4] + ' ' + k[5](x.value)); });
+    return 'From ' + (window.ADspaceClock ? window.ADspaceClock.date(first) : first) + ': ' + parts(bits);
+  }
+
   /* The rows, group by group (regrouped 2026-10-11, the queue's task 46:
      "Vertical list at a desk, drill-down on a phone (iPhone/Mac Settings
      style)"). A group is named for what its rows change; `kind` is the
@@ -108,7 +150,13 @@
     return out;
   }
 
+  /* What a press said, kept on its row through a repaint (audit SET-2). */
+  var said = null;
+  function rowSay(id) {
+    return function (text, tone) { said = text ? { row: id, text: text, tone: tone || '' } : null; paint(); };
+  }
   function rowHtml(r) {
+    var next = nextLine(r.id);
     var ctl = r.kind === 'switch'
       ? '<button class="switch" type="button" role="switch" aria-checked="' + (r.on ? 'true' : 'false') + '" aria-label="' + esc(r.name) + '" data-a="' + r.id + '"></button>'
       : r.kind === 'edit'
@@ -116,7 +164,9 @@
         : '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Open ' + esc(r.name) + '">Open' + CHEV + '</button>';
     return '<div class="stg-row" data-row="' + r.id + '">' +
       '<div class="stg-what"><p class="stg-name">' + esc(r.name) + '</p>' +
-        (r.meta ? '<p class="stg-meta">' + esc(r.meta) + '</p>' : '') + '</div>' +
+        (r.meta ? '<p class="stg-meta">' + esc(r.meta) + '</p>' : '') +
+        (next ? '<p class="stg-meta stg-next">' + esc(next) + '</p>' : '') +
+        (said && said.row === r.id ? '<p class="msg stg-said' + (said.tone ? ' ' + said.tone : '') + '" role="status">' + esc(said.text) + '</p>' : '') + '</div>' +
       '<div class="stg-ctl">' + ctl + '</div></div>';
   }
 
@@ -152,9 +202,12 @@
       return '<button class="stg-go" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '">' + esc(x.name) + '</button>';
     }).join('') + '</nav>' : '') + '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
     if (html !== drawn || box.className !== cls || !box.firstChild) {
+      var had = document.activeElement && box.contains(document.activeElement) ? document.activeElement.getAttribute('data-a') : '';
       drawn = html;
       box.className = cls;
       box.innerHTML = html;
+      var back = had && box.querySelector('[data-a="' + had + '"]');
+      if (back) back.focus({ preventScroll: true });
       if (window.ADspaceGuide && window.ADspaceGuide.relay) window.ADspaceGuide.relay();
     }
     mark();
@@ -239,58 +292,35 @@
       }
       return window.ADspaceMoney.load(true);
     }).then(function () {
-      say(to ? 'Meta checks are on.' : 'Meta checks are off.', 'ok');
-      paint();
+      rowSay('meta')(to ? 'Meta checks are on.' : 'Meta checks are off.', 'ok');
     }).catch(function (e) {
       sw.setAttribute('aria-checked', to ? 'false' : 'true');
       sw.disabled = false;
-      say(String((e && e.message) || e), 'err');
+      rowSay('meta')(String((e && e.message) || e), 'err');
     });
   }
 
   function press(a, btn) {
     say('');
-    var edit = bridge.editSettings;
-    var again = { msg: 'settingsMsg', done: paint };
-    function ed(spec) { Object.keys(again).forEach(function (k) { spec[k] = again[k]; }); edit(spec, btn); }
+    /* The last answer leaves its row, without a repaint under the press. */
+    if (said) {
+      said = null;
+      Array.prototype.forEach.call(document.querySelectorAll('#setList .stg-said'), function (m) { m.remove(); });
+    }
+    if (SPECS[a]) {
+      var sp = SPECS[a];
+      bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3]]; }), msg: rowSay(a), done: paint }, btn);
+      return;
+    }
     if (a === 'upgrade') { if (bridge.upgradeToggle) bridge.upgradeToggle(btn); return; }
     if (a === 'announce') { if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage(btn); return; }
     if (a === 'notice') { if (window.ADspaceNotice) window.ADspaceNotice.manage(btn); return; }
-    if (a === 'followup') {
-      ed({ title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours'], ['proposal_followup_days', 'A proposal waits (days)', 'days']] });
-      return;
-    }
-    if (a === 'tax') {
-      ed({ title: 'Tax and terms', keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
-        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 17 months (%)', 'adj'], ['term_18_23', '18 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote'], ['details_form_days', 'Details form open for (days)', 'quote']] });
-      return;
-    }
-    if (a === 'due') {
-      ed({ title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-        ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
-        ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] });
-      return;
-    }
-    if (a === 'priority') {
-      ed({ title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours'],
-        ['priority_high_hours', 'High: hours from creation', 'hours'], ['priority_medium_hours', 'Medium: hours from creation', 'hours']] });
-      return;
-    }
-    if (a === 'nudge') {
-      ed({ title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every'],
-        ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead']] });
-      return;
-    }
-    if (a === 'prices') { ed({ title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],
-      ['ai_price_search', 'Web searches, a thousand', 'usd']] }); return; }
     if (a === 'meta') { flipMeta(btn); return; }
-    if (a === 'reach') { ed({ title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow']] }); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
-    if (a === 'resend') { ed({ title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week']] }); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
-    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering('settingsMsg'); return; }
+    if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
 
   /* ---- Public holidays (2026-10-14) ------------------------------------
@@ -444,6 +474,7 @@
 
   function enter() {
     say('');
+    said = null;
     fromUrl();
     pinned = chosen;
     var M = window.ADspaceMoney;

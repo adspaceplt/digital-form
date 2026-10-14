@@ -48,6 +48,8 @@
     });
   }
   function msg(id, text, kind) {
+    /* A function says it where it was asked (the Settings page's row). */
+    if (typeof id === 'function') { id(text || '', kind || ''); return; }
     var el = $(id); if (!el) return;
     el.textContent = text || '';
     el.className = 'msg' + (kind && text ? ' ' + kind : '');
