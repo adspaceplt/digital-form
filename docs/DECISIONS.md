@@ -3357,3 +3357,23 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   act drawn two ways. Back to Summary now leads with the chevron toward
   Summary (`.ovgo-chev.is-back`). Set meeting is not an act in the table and
   keeps its words.
+
+- **2026-10-15** — The audit's P3 findings for My Work and the Dashboard (the
+  user: "fix the P3s too"). WORK-5 and WORK-6: the capacity strip is drawn
+  only while somebody shown has a weekly capacity (it read "0h planned · no
+  capacity set" against empty bars), and its columns stand 24 apart (20 was
+  off the scale). WORK-7: the month card's Manager, Planned and Files are
+  rows on the card's grid, their values in the Meeting row's column; a tight
+  card keeps each on one line. WORK-8: Months' bar reads Add task, as the
+  list's does. WORK-9: the step card no longer says "Complete this step to
+  move the task to the next stage.", the date sheet no longer says "The
+  promise first made is kept either way.", and a resting Accounts report
+  tick says Needs posts planned. WORK-10: a lone Withdraw keeps its own
+  width. WORK-11: the step heading names the review stage of the task's own
+  workflow (Send to Internal review on General and Video). WORK-12: the
+  board fades the edge with more columns beyond it; the phone calendar's
+  missing key needed nothing, since a post chip names itself (Post ·) under
+  480. OVW-2: an empty chart card's line stands in the middle of its room.
+  OVW-3: the span, the signals and an empty card's line take 12 and 13, so
+  Summary holds eight type sizes. OVW-7: in a narrow pane an empty
+  on-time ring follows the signals; it still stands (the user, 2026-10-12).

@@ -2611,7 +2611,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     it selects no text (a stray selection cancelled the next drag).
   - The capacity strip fills each person's bar from the `estimate_minutes`
     of their open tasks due by the week's end, overdue included, against
-    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours.
+    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours. It is
+    drawn only while somebody shown has a capacity set.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two
