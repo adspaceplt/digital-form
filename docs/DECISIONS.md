@@ -2949,4 +2949,32 @@ tells the team it is ready for a Letter of Offer.
 - The user, on the short link host's Link not recognised page: "Can this be
   no outline". The Worker's page drew a bordered, shadowed card on the grey
   ground. It now stands on white with no box, as the portal's own covers do.
+- The user, on the Customise step: "different categories item should have
+  some spacings than the others?" Every item sat 8px from the next whatever
+  its category, so Content production ran into KOC campaign, and the KOL
+  tick stood alone. Each category is now a section under its own heading,
+  set off by a hairline and a 24px step, as a sheet's `fsec` is; the KOC
+  select and the KOL tick share one, KOC or KOL campaign; Platforms and
+  Plan are two on their step.
+- The user, the same day: "Can use rounded corners tick instead? Round tick
+  seems like only one option." A round mark reads as one choice of a set,
+  so a tick where several may be chosen is a rounded square, and a ring
+  with a dot is kept for a plan, the one choice. The consent tick takes
+  the same square.
+- The user: "Advertising budget only in social media mgmt or advertising
+  item not all others." A plan with ads chosen and then left (Social media
+  management unticked) still asked the budget on Customise; only a plan
+  still asked for counts now.
+- The user: a plan's graphic is a static post or a carousel ("For static it
+  is just static and carousel"). The plan's additional graphic reads
+  Graphic over Static or carousel on the website, Graphic (static or
+  carousel) in Build quote, and Additional graphic (static or carousel) on
+  the quotation (`2026-10-14-quote-graphic-word.sql`); the one-off Static
+  graphic and Carousel keep their own names.
+- The audit the user asked for, with the same release: a refusal now leaves
+  its field once the field is changed; the status of a quotation stands on
+  its own line under the reference; Download and Chat on WhatsApp sit
+  together under the totals at a desk; a line's quantity and rate sit under
+  its name on a phone; the step count follows the services ticked; the KOC
+  select reads KOC creators under its section's heading.
 
