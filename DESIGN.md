@@ -170,7 +170,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 
 ## 3. Themes
 - Client pages (`/client/`, `/creators/`, `/creator/`, `/review/`, `/verify/`,
-  `/quote/`, the covers) are **light only** and never carry `data-theme`.
+  `/quote/`, `/details/`, the covers) are **light only** and never carry `data-theme`.
 - The console follows the device until somebody chooses.
   - The choice is Theme in the account menu (`#themePick`, a small segment:
     Auto, Light, Dark; the user, 2026-10-10: "add the settings into the

@@ -1158,6 +1158,7 @@
     if (key === 'engagements' && visit) loadEngage(true);
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (key === 'calls' && visit) loadTouches();
+    if (key === 'billing') loadDetForm();
   }
 
   gateTabs();
@@ -2188,9 +2189,130 @@
   }
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
   $('crmBillCancel').addEventListener('click', function () {
+    state.detUse = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
   });
   sheetClose('crmBillClose', 'crmBillCancel');
+
+  /* The client's details form (2026-10-14; the user: "a form … for client
+     to fill in (public link, no need any login …)"): a link made here,
+     answered once on /details/, the answers waiting on this pane for the
+     team to take into Billing with its own Save. */
+  var DF_ROWS = [['legal_name', 'Registered name'], ['company_no', 'Business registration no.'],
+    ['company_no_old', 'Old registration no.'], ['tin', 'TIN'], ['sst_no', 'SST registration no.'],
+    ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
+  var DF_FIELDS = { legal_name: 'crmLegalName', company_no: 'crmCompanyNo', company_no_old: 'crmCompanyNoOld',
+    tin: 'crmTin', sst_no: 'crmSstNo', finance_email: 'crmFinanceEmail', billing_address: 'crmBillAddr' };
+  var DF_SAID = { denied: 'This needs Clients: Billing.', 'not-found': 'This client is outside your access.' };
+  function dfUrl(key) { return location.origin + '/details/?k=' + encodeURIComponent(key); }
+  function loadDetForm() {
+    var box = $('crmDetForm'), c = state.client;
+    if (!box) return;
+    if (!c || !mayPart('clients.billing', 'view')) { box.hidden = true; return; }
+    var id = c.id;
+    db.rpc('client_details_state', { p_client: id }).then(function (r) {
+      if (!state.client || state.client.id !== id) return;
+      var d = r.data || {};
+      if (r.error || d.error) {
+        box.hidden = false;
+        failLine(box, 'Details form', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), loadDetForm);
+        return;
+      }
+      state.detForm = d.form || null;
+      paintDetForm();
+    }).catch(function (e) {
+      if (!state.client || state.client.id !== id) return;
+      box.hidden = false; failLine(box, 'Details form', (e && e.message) || String(e), loadDetForm);
+    });
+  }
+  function paintDetForm() {
+    var box = $('crmDetForm'), f = state.detForm, work = mayPart('clients.billing', 'work');
+    if (!box) return;
+    var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Details form</h4>' + (act || '') + '</div>'; };
+    var day = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) : String(iso).slice(0, 10); };
+    var make = work ? '<button class="btn btn-sm" type="button" data-df="make">Create link</button>' : '';
+    if (!f || f.state === 'used' || f.state === 'expired') {
+      if (!work && !f) { box.hidden = true; return; }
+      box.innerHTML = head(make) + '<dl class="ovfacts"><div><dt>State</dt><dd>' +
+        (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', taken into Billing' : 'Link expired ' + esc(day(f.expires_at))) +
+        '</dd></div></dl><div class="msg" id="crmDfMsg"></div>';
+    } else if (f.state === 'open') {
+      var url = f.key ? dfUrl(f.key) : '';
+      box.innerHTML = head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" type="button" data-df="reset"><b>Reset link</b></button></div></span>' : '') +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
+        (url ? '<div class="rec-linktools"><div class="linkbox">' +
+          '<input class="input readfield" id="crmDfLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
+          '<button class="btn btn-icon" type="button" data-df="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
+          '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
+          '</div></div>' : '') + '<div class="msg" id="crmDfMsg"></div>';
+    } else {
+      var a = f.answers || {};
+      var who = ((a.contact_salutation ? a.contact_salutation + ' ' : '') + (a.contact_name || '')).trim();
+      box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' : '') +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
+        DF_ROWS.filter(function (r) { return a[r[0]]; }).map(function (r) {
+          return '<div><dt>' + esc(r[1]) + '</dt><dd' + (r[0] === 'billing_address' ? ' class="is-pre"' : '') + '>' + esc(a[r[0]]) + '</dd></div>';
+        }).join('') +
+        '<div><dt>Billing contact</dt><dd>' + esc(who) + '<br>' + esc(a.contact_phone || '') + '<br>' + esc(a.contact_email || '') + '</dd></div></dl>' +
+        (work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
+        '<div class="msg" id="crmDfMsg"></div>';
+    }
+    box.hidden = false;
+    if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
+  }
+  function dfLink(reset, btn) {
+    if (btn) btn.disabled = true;
+    db.rpc('client_details_link', { p_client: state.client.id, p_reset: Boolean(reset) }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        msg('crmDfMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), 'err');
+        if (btn) btn.disabled = false; return;
+      }
+      state.detForm = { id: d.id, key: d.key, state: 'open', expires_at: d.expires_at };
+      paintDetForm();
+      msg('crmDfMsg', reset ? 'Link reset. The earlier link no longer opens.' : 'Link created.', 'ok');
+    }).catch(function (e) { msg('crmDfMsg', (e && e.message) || String(e), 'err'); if (btn) btn.disabled = false; });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#crmDetForm [data-df]');
+    var box = $('crmDetForm');
+    if (!b) { if (box && !e.target.closest('#crmDetForm .dform-acts')) Array.prototype.forEach.call(box.querySelectorAll('[data-df-menu]'), function (m) { m.hidden = true; }); return; }
+    var a = b.getAttribute('data-df'), f = state.detForm;
+    if (a === 'make') { dfLink(false, b); return; }
+    if (a === 'menu') {
+      var m = box.querySelector('[data-df-menu]'); m.hidden = !m.hidden; b.setAttribute('aria-expanded', String(!m.hidden));
+      if (!m.hidden) window.ADspaceMenu.place(b, m);
+      return;
+    }
+    if (a === 'reset') {
+      box.querySelector('[data-df-menu]').hidden = true;
+      window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The current link stops working. A new one is made.', go: 'Reset link', tone: 'warn' },
+        function () { dfLink(true); });
+      return;
+    }
+    if (a === 'copy') { window.ADspaceCopy.to(b, $('crmDfLink').value); return; }
+    if (a === 'use' && f && f.answers) {
+      openBilling(b);
+      Object.keys(DF_FIELDS).forEach(function (k) {
+        var el = $(DF_FIELDS[k]);
+        if (el && f.answers[k]) { el.value = f.answers[k]; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      });
+      state.detUse = f.id;
+      msg('crmBillMsg', 'Filled from the details form. Review, then Save.', 'ok');
+      return;
+    }
+    if (a === 'contact' && f && f.answers) {
+      showPane('contacts'); pushUrl();
+      openContact(null);
+      $('ctSalutation').value = f.answers.contact_salutation || '';
+      $('ctName').value = f.answers.contact_name || '';
+      $('ctRole').value = 'Billing';
+      $('ctPhone').value = f.answers.contact_phone || '';
+      $('ctEmail').value = f.answers.contact_email || '';
+      $('ctPrimary').checked = false;
+    }
+  });
 
   /* The content brief (2026-10-10; the user, 2026-10-09: "content not
      interesting"): read first on the Brand pane, edited in the Brand
@@ -2734,6 +2856,11 @@
         .filter(Boolean).join(' · '));
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
       shutSheet('crmBillSheet');
+      /* The details form's answers taken in by this Save (2026-10-14). */
+      if (state.detUse) {
+        var used = state.detUse; state.detUse = null;
+        db.rpc('client_details_used', { p_id: used }).then(function () { loadDetForm(); }).catch(function () {});
+      }
       openClient(state.client);
       msg('crmBillNote', still.length
         ? 'Saved. Required before Active: ' + still.join(', ') + '.'
@@ -5330,7 +5457,7 @@
   $('svcTax').addEventListener('click', function () {
     window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
       keys: [['sst_pct', 'SST (%)', 'pct'], ['term_1_3', '1 to 3 months (%)', 'adj'], ['term_4_5', '4 and 5 months (%)', 'adj'],
-        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote']] }, this);
+        ['term_6_11', '6 to 11 months (%)', 'adj'], ['term_12_23', '12 to 23 months (%)', 'adj'], ['term_24', '24 months and more (%)', 'adj'], ['quote_valid_days', 'Quotation valid for (days)', 'quote'], ['details_form_days', 'Details form open for (days)', 'quote']] }, this);
   });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {
