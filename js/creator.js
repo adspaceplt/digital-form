@@ -87,7 +87,7 @@
       countPeriod: 'Count from {a} to {b}', periodWait: 'The count period is not set.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
       linkWrong: 'This is not a {p} post link.', numWrong: 'Enter whole numbers.',
-      rateHead: 'Your experience',
+      rateHead: 'Your experience', foldHead: 'Booking details',
       rateStar: function (n) { return n + ' out of 5'; },
       rateThanks: 'Thank you.',
       ended: 'This booking has ended.',
@@ -153,7 +153,7 @@
       countPeriod: '统计期间：{a} 至 {b}', periodWait: '统计期间尚未设定。',
       views: '浏览量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
-      rateHead: '合作体验',
+      rateHead: '合作体验', foldHead: '合作详情',
       rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
       rateThanks: '感谢您的评分。',
       payHead: '付款资料', payLine: '请填写您的付款资料。',
@@ -427,12 +427,14 @@
   function liveBooking(b) {
     return b.state !== 'withdrawn' && b.state !== 'replaced';
   }
+  /* Over: ended, or finished and thanked (2026-10-14: a new booking leads). */
+  function overBooking(b) { return !liveBooking(b) || b.state === 'completed'; }
   /* Ordered by what has to be done, not by when it was created: what is
      waiting on them, then what is running, then what is over. */
   function queueOrder(a, b) {
     var rank = function (x) {
       if (needsCreator(x)) return 0;
-      if (!liveBooking(x)) return 2;
+      if (overBooking(x)) return 2;
       return 1;
     };
     var d = rank(a) - rank(b);
@@ -446,7 +448,7 @@
     if (byHash) return byHash.id;
     var mine = rows.filter(needsCreator)[0];
     if (mine) return mine.id;
-    var live = rows.filter(liveBooking)[0];
+    var live = rows.filter(function (b) { return !overBooking(b); })[0];
     return (live || rows[0] || {}).id || null;
   }
 
@@ -472,7 +474,7 @@
            row that needs somebody, so a booking further down the queue still
            reads as needing them without being opened. */
         el.className = 'qrow' + (b.id === picked ? ' is-on' : '') +
-          (needsCreator(b) ? ' is-waiting' : '') + (liveBooking(b) ? '' : ' is-off');
+          (needsCreator(b) ? ' is-waiting' : '') + (overBooking(b) ? ' is-off' : '');
         el.setAttribute('aria-current', b.id === picked ? 'true' : 'false');
         el.innerHTML =
           '<span class="qrow-name">' + esc(title || '') + '</span>' +
@@ -583,11 +585,13 @@
     var title = (lang === 'zh' && b.campaign_zh) ? b.campaign_zh : b.campaign;
     var brief = (lang === 'zh' && b.brief_zh) ? b.brief_zh : b.brief;
 
-    card.innerHTML =
-      '<div class="booking-head"><b>' + esc(title) + '</b>' + (dead ? '' : chip(b.state)) + '</div>' +
-      '<p class="booking-brand">' + esc(b.brand || '') + '</p>' +
-      (dead ? '<p class="hint">' + esc(t().ended) + '</p>' :
-        journeyHtml(b) +
+    /* A finished booking folds to its name and state (the user, 2026-10-14:
+       "so subsequent new bookings could be the main focus"): no steps, the
+       rest under Booking details, shut; the rating stays out until given. */
+    var done = b.state === 'completed';
+    var unrated = done && !Number(b.rating || 0);
+    var rest = dead ? '' :
+        (done ? '' : journeyHtml(b)) +
         (owed ? '<div class="cx-nextup"><p class="cx-eyebrow cx-quietlabel">' + esc(t().nextUpWord) + '</p>' +
           '<p class="cx-nextup-title">' + esc(b.state === 'changes' ? t().handInAgain : t().handIn) + '</p>' +
           countdown + changeNote + filesHtml(b) + deliverHtml(b) + '</div>'
@@ -606,7 +610,15 @@
         (b.can_deliver && !owed ? deliverHtml(b) : '') +
         (postsDue(b.state) ? postsHtml(b) : '') +
         (payDue(b.state) ? payHtml() : '') +
-        (b.state === 'completed' ? rateHtml(b) : ''));
+        (done && !unrated ? rateHtml(b) : '');
+    card.className += done ? ' is-done' : '';
+    card.innerHTML =
+      '<div class="booking-head"><b>' + esc(title) + '</b>' + (dead ? '' : chip(b.state)) + '</div>' +
+      '<p class="booking-brand">' + esc(b.brand || '') + '</p>' +
+      (dead ? '<p class="hint">' + esc(t().ended) + '</p>' :
+        done ? (unrated ? rateHtml(b) : '') +
+          '<details class="booking-fold"><summary>' + esc(t().foldHead) + '</summary><div class="booking-fold-body">' + rest + '</div></details>'
+        : rest);
 
     if (b.can_deliver) wireDeliver(card, b);
     if (postsDue(b.state)) wirePosts(card, b);

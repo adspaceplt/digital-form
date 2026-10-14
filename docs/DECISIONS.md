@@ -3104,3 +3104,11 @@ tells the team it is ready for a Letter of Offer.
   A link works once, closes after `details_form_days` (14, a Business
   setting in Tax and terms), and Reset retires it. The page reads only the
   brand the link is for and when it closes.
+
+### 2026-10-14 · A finished booking folds on the creator's page
+- The user, with a screenshot of a completed booking's full card: fold it
+  to the campaign and its state, openable, with no six-step strip, the
+  rating left open only while not given, "so subsequent new bookings could
+  be the main focus". Completed now ranks with the ended bookings in the
+  list (faded, last) and the page opens on a running booking; the card is
+  the name, the state, the rating while owed, and Booking details shut.

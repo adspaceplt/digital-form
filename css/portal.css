@@ -12128,3 +12128,21 @@ body.qs-page { background: var(--card); }
 .dform-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
 .dform-foot > .btn { flex: 0 0 auto; }
 .dform-acts { position: relative; display: inline-flex; }
+
+/* A finished booking on the creator's page (2026-10-14): its name and state,
+   the rest under one fold, shut. */
+.booking-fold { margin-top: 12px; border-top: 1px solid var(--line-soft); }
+.booking-fold > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+  min-height: var(--ctl-h); padding-top: 4px; font-size: 14px; font-weight: 500; color: var(--ink-soft);
+}
+.booking-fold > summary::-webkit-details-marker { display: none; }
+.booking-fold > summary::after {
+  content: ''; width: 8px; height: 8px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor;
+  transform: rotate(45deg); margin-right: 4px; transition: transform var(--t) var(--ease);
+}
+.booking-fold[open] > summary::after { transform: rotate(-135deg); }
+@media (hover: hover) { .booking-fold > summary:hover { color: var(--ink); } }
+.booking-fold > summary:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-ctl-sm); }
+.booking-fold-body { padding-top: 4px; }
+.booking.is-done .booking-rate { margin-top: 12px; }
