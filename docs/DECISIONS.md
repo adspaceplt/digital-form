@@ -3377,3 +3377,12 @@ label wraps to (`#rwSFields .row.fgrid { align-items: end }`).
   OVW-3: the span, the signals and an empty card's line take 12 and 13, so
   Summary holds eight type sizes. OVW-7: in a narrow pane an empty
   on-time ring follows the signals; it still stands (the user, 2026-10-12).
+### 2026-10-15 · Clients audit P3s
+At the user's word ("fix all no matter what"): a plan card in Build quote
+keeps each part of its contents whole (`6 reels` no longer breaks after its
+figure; the line wraps between parts, as DESIGN.md's line of parts asks), and
+a stage move on the day the stage began reads "Contacted the same day" where
+it read "Contacted after the same day". Left as they are, each by a recorded
+rule: New lead's thirteen fields (the user: intake asks for what is known on
+day one; the salutation added 14 Oct) and the record's tab strip scrolling at
+1280 with a faded edge (the strip law allows it).
