@@ -2977,4 +2977,20 @@ tells the team it is ready for a Letter of Offer.
   together under the totals at a desk; a line's quantity and rate sit under
   its name on a phone; the step count follows the services ticked; the KOC
   select reads KOC creators under its section's heading.
+- The user: "it's good to add a cover page stating what's the purpose of
+  this page, what's expected"; then "this quotation is ready for
+  client-facing", "it is straight for clients or leads to use", and "don't
+  use Priced at". The website opens on Get your quotation: one line (Select
+  the services your brand requires and receive your quotation instantly),
+  What to expect in four numbered steps, one line of time, validity and
+  commitment, then Chat on WhatsApp and Start. Never words for a colleague
+  (Prepare a quotation) or the pricing's source.
+- The user: a plan's graphic is a static post, a GIF or a carousel, the GIF
+  cheaper than the carousel ("u need to have the sequence Static GIF
+  Carousel"). Each is named Graphic (Static), Graphic (GIF), Graphic
+  (Carousel), in that order, then the reels, then the longer video, on the
+  website (a plan's extras and the one-off items alike) and on the
+  quotation (`quote_price` orders a plan's extras so). Each added to a plan
+  takes its own rate less the plan's whole saving, to the nearest RM 10, as
+  every extra content has since the quotations were built.
 

@@ -37,6 +37,13 @@
   var WORDS = {
     en: {
       lang: '中文', step: 'Step {n} of {m}', cont: 'Continue', back: 'Back',
+      introT: 'Get your quotation',
+      introP: 'Select the services your brand requires and receive your quotation instantly.',
+      introH: 'What to expect',
+      introSteps: ['Select the services you require.', 'Choose your plan and customise the contents, languages and commitment.',
+        'Provide your contact details to receive the quotation immediately.', 'Proceed with your billing details to request the Letter of Offer.'],
+      introNote: 'This takes about three minutes. Each quotation is valid for {d} days, and no commitment is made until the Letter of Offer is signed.',
+      start: 'Start',
       needT: 'What do you need?',
       need: {
         social: ['Social media management', 'Monthly content and account management'],
@@ -46,7 +53,7 @@
         verify: ['Account verification', 'Meta Verified and rednote Professional']
       },
       needNone: 'Select at least one service.',
-      planT: 'Platforms and plan', graphicPlan: 'Graphic', graphicSub: 'Static or carousel', platsH: 'Platforms', planH: 'Plan', noAds: 'Without ads', withAds: 'With ads',
+      planT: 'Platforms and plan', platsH: 'Platforms', planH: 'Plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
       contents: '{n} contents per month', budgetUpTo: 'advertising budget up to RM {b}',
       ratesLater: 'The rates will be shown on the final page.',
@@ -97,6 +104,12 @@
     },
     zh: {
       lang: 'EN', step: '第 {n} 步，共 {m} 步', cont: '继续', back: '返回',
+      introT: '获取报价',
+      introP: '选择品牌所需的服务，即可即时获得报价。',
+      introH: '流程说明',
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，即可获得报价。', '确认报价后填写开票资料，申请服务确认函（Letter of Offer）。'],
+      introNote: '整个流程约需三分钟。报价有效期为 {d} 天，签署服务确认函前不构成任何承诺。',
+      start: '开始',
       needT: '您需要什么服务？',
       need: {
         social: ['社交媒体管理', '每月内容制作与账号管理'],
@@ -106,7 +119,7 @@
         verify: ['账号认证', 'Meta 认证与小红书专业号']
       },
       needNone: '请至少选择一项服务。',
-      planT: '平台与方案', graphicPlan: '图文', graphicSub: '静态或轮播', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
+      planT: '平台与方案', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
       contents: '每月 {n} 条内容', budgetUpTo: '广告预算最高 RM {b}',
       ratesLater: '价格将在最后一页显示。',
@@ -156,8 +169,17 @@
         Automotive: '汽车', Tech: '科技', Education: '教育', Other: '其他' }
     }
   };
-  var ZH_KIND = { graphic: '静态图文', gif: 'GIF 动图', carousel: '多图轮播', reel30: '短视频（30 秒内）',
+  // A graphic is named by its kind (the user, 2026-10-14: a plan's graphic is a static post, a carousel or a GIF).
+  var EN_KIND = { graphic: 'Graphic (Static)', carousel: 'Graphic (Carousel)', gif: 'Graphic (GIF)' };
+  var ZH_KIND = { graphic: '图文（静态）', carousel: '图文（轮播）', gif: '图文（GIF 动图）', reel30: '短视频（30 秒内）',
     reel: '短视频（60 秒内）', video120: '短视频（120 秒内）' };
+  // The graphics together, cheapest first, then the reels, then the longer video.
+  var KIND_ORDER = ['graphic', 'gif', 'carousel', 'reel30', 'reel', 'video120'];
+  var GRAPHICS = ['graphic', 'gif', 'carousel'];
+  function byKind(a, b) {
+    var x = KIND_ORDER.indexOf(a.kind), y = KIND_ORDER.indexOf(b.kind);
+    return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
+  }
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
   var TERMS = [6, 12, 24];
@@ -203,7 +225,7 @@
   /* What the person picked, kept in this tab. */
   var S = { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
     plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
-    contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'need', idem: null };
+    contact: { name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
@@ -280,11 +302,21 @@
     return '<section class="qs-sec">' + (forId ? '<label class="qs-sec-h" for="' + forId + '">' : '<h2 class="qs-sec-h">') + esc(head) +
       (forId ? '</label>' : '</h2>') + body + '</section>';
   }
-  function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : c.name; }
+  function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
   function planLine(p) {
     var parts = [f(t().contents, { n: p.contents })];
     if (p.ad_budget) parts.push(f(t().budgetUpTo, { b: n0(p.ad_budget) }));
     return parts.join(' · ');
+  }
+
+  // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
+  function paintIntro() {
+    return '<div class="qs-step qs-intro"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
+        t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
+      '<p class="qs-note">' + esc(f(t().introNote, { d: (CAT && CAT.valid_days) || 30 })) + '</p></div>' +
+      '<div class="qs-foot"><a class="btn" href="' + esc(waLink(null)) + '" target="_blank" rel="noopener">' + esc(t().chat) + '</a>' +
+      '<button class="btn btn-primary" type="button" data-a="start">' + esc(t().start) + '</button></div>';
   }
 
   function paintNeed() {
@@ -294,7 +326,7 @@
         return k !== 'koc' || (CAT.koc.length || CAT.kol);
       }).filter(function (k) { return k !== 'verify' || CAT.verify.length; }).map(function (k) {
         return pick('checkbox', 'need', k, S.need[k], N[k][0], N[k][1]);
-      }).join('') + '</div>', navFoot(true));
+      }).join('') + '</div>', navFoot());
   }
 
   function paintPlan() {
@@ -321,8 +353,11 @@
     var p = S.need.social ? planOf() : null, h = '';
     if (p) {
       var kinds = (p.mix || []).reduce(function (a, m) { return a.concat(Object.keys(m)); }, []);
-      var extras = CAT.contents.filter(function (c) { return kinds.indexOf(c.kind) >= 0; });
-      h += sec(t().extra, extras.map(function (c) { return c.kind === 'graphic' ? stepper('extra', c.slug, t().graphicPlan, S.extra[c.slug] || 0, t().graphicSub) : stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
+      // A plan's graphic is any of the three, so each is offered where the plan holds graphics.
+      var extras = CAT.contents.filter(function (c) {
+        return kinds.indexOf(c.kind) >= 0 || (GRAPHICS.indexOf(c.kind) >= 0 && kinds.indexOf('graphic') >= 0);
+      }).sort(byKind);
+      h += sec(t().extra, extras.map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
       h += sec(t().langs, '<div class="qs-chips qs-three">' +
         ['en', 'zh', 'ms'].map(function (l) { return chip('lang', l, S.langs.indexOf(l) >= 0, t().lang3[l]); }).join('') + '</div>' +
         '<p class="qs-note">' + esc(t().langsNote) + '</p>' +
@@ -338,7 +373,7 @@
     if (monthly()) h += sec(t().term, seg('qsTerm', t().term, TERMS.map(function (m) { return [m, f(t().months, { n: m })]; }), S.term, true));
     if (S.need.content) {
       h += sec(t().once, '<p class="qs-note">' + esc(t().onceNote) + '</p>' +
-        CAT.contents.map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
+        CAT.contents.slice().sort(byKind).map(function (c) { return stepper('once', c.slug, contentName(c), S.once[c.slug] || 0); }).join(''));
     }
     if (S.need.koc) {
       var cr = '';
@@ -449,6 +484,7 @@
     if (paint.lost) { cover(t().lostT, t().lostP); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
     if (Q) { root().innerHTML = paintQuote(); decorate(); return; }
+    if (S.step === 'intro') { root().innerHTML = paintIntro(); decorate(); return; }
     if (steps().indexOf(S.step) < 0) S.step = 'need';
     root().innerHTML = { need: paintNeed, plan: paintPlan, custom: paintCustom, details: paintDetails }[S.step]();
     decorate();
@@ -579,7 +615,8 @@
       return;
     }
     if (a === 'next') next();
-    else if (a === 'back') { var s = steps(); go(s[Math.max(0, s.indexOf(S.step) - 1)]); }
+    else if (a === 'start') go('need');
+    else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
     else if (a === 'proceed') {
       proceeding = true;
       var q = root().querySelector('.qs-quote'); if (q) q.classList.add('is-proceed');

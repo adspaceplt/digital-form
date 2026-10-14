@@ -11982,6 +11982,14 @@ button.vs-row { cursor: pointer; }
 .qs-track { height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
 .qs-track > i { display: block; height: 4px; border-radius: 2px; background: var(--fill); transition: width var(--t-slow) var(--ease); }
 .qs-title { margin: 0; font-family: var(--font-head); font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.25; }
+.qs-lead { margin: 0; font-size: 16px; color: var(--ink-soft); }
+.qs-intro { gap: 24px; }
+.qs-steps { margin: 0; padding: 0; list-style: none; counter-reset: qs-step; display: grid; gap: 12px; }
+.qs-steps li { counter-increment: qs-step; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
+.qs-steps li::before {
+  content: counter(qs-step); align-self: start; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; background: var(--sunk); font-size: 13px; font-weight: 600; color: var(--ink);
+}
 .qs-list { display: grid; gap: 8px; }
 /* A step's categories: each a heading over its items 8px apart, the next set off by a hairline and a 24px step. */
 .qs-secs { display: grid; gap: 24px; }
