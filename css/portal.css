@@ -4358,7 +4358,7 @@ body > .shell { width: 100%; }
 /* A meeting's date and time is a sentence, not an amount: its own track,
    measured on "Wed 30 Sept 2026, 10:30 pm" at the client pages' 16px, and
    never wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 240px var(--state-w) var(--ctl-h); }
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 264px var(--state-w) var(--ctl-h); }
 .meet-row .svc-amt { white-space: nowrap; }
 /* A Register row: the reference and what it is, who it went to, when. Valid
    is the ordinary case, so there is no state column; Void is named beside
