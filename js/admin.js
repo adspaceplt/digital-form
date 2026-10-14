@@ -6429,7 +6429,6 @@
     $('newSlug').value = link ? link.slug : '';
     $('newTarget').value = link ? (link.target_url || '') : '';
     $('newLinkLabel').value = link ? (link.title || '') : '';
-    $('importBox').hidden = true;
     msg('linkMsg', '');
     /* The portal's one form sheet, so it opens over the register rather than
        unfolding above it, and nothing inside takes focus: a field taking
@@ -6538,8 +6537,14 @@
       created_by: actor || null
     };
     var was = editingSlug;
+    var go = this;
+    /* The press answers on the button while the write is out, and a write
+       that never answers is said, never left as a sheet that did nothing
+       (ux-audit LNK-4, 2026-10-14). */
+    go.disabled = true;
 
     db.from('links').upsert(body, { onConflict: 'slug' }).then(function (r) {
+      go.disabled = false;
       if (r.error) {
         msg('linkMsg', /slug-taken/.test(r.error.message) ? '/' + slug + ' is a colleague\'s namecard.' : r.error.message, 'err');
         return;
@@ -6556,6 +6561,9 @@
       }
       logAction(was ? 'shortlink.updated' : 'shortlink.created', '/' + slug, target);
       shutLinkForm();
+    }).catch(function () {
+      go.disabled = false;
+      msg('linkMsg', 'Not saved. The connection was lost; try again.', 'err');
     });
   });
 
@@ -6677,7 +6685,7 @@
             '<button class="btn btn-sm" data-q="dl" type="button">Download PNG</button>' +
             '<button class="btn btn-sm btn-quiet" data-q="copy" type="button">Copy URL</button>' +
             '<button class="btn btn-sm btn-quiet' + (q.active ? ' is-danger' : '') +
-              '" data-q="toggle" type="button">' + (q.active ? 'Revoke' : 'Restore') + '</button>' +
+              '" data-q="toggle" data-need="links:work" type="button">' + (q.active ? 'Revoke' : 'Restore') + '</button>' +
           '</div>' +
         '</div>';
       drawQr(card.querySelector('.qrrow-img'), qrUrl(q.slug, q.code), 132);
@@ -6685,11 +6693,7 @@
         downloadQr(q.slug, q.code, q.label);
       });
       card.querySelector('[data-q="copy"]').addEventListener('click', function (e) {
-        var b = e.currentTarget;
-        navigator.clipboard.writeText(qrUrl(q.slug, q.code)).then(function () {
-          b.textContent = 'Copied';
-          setTimeout(function () { b.textContent = 'Copy URL'; }, 1500);
-        });
+        window.ADspaceCopy.to(e.currentTarget, qrUrl(q.slug, q.code));
       });
       card.querySelector('[data-q="toggle"]').addEventListener('click', function () { toggleQr(q); });
       box.appendChild(card);
@@ -6727,22 +6731,33 @@
       active: true,
       created_by: actor || null
     };
+    var go = this;
+    go.disabled = true;
     db.from('link_qrs').insert(row).then(function (r) {
+      go.disabled = false;
       if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
       logAction('qr.created', '/' + qrLink.slug, row.label || row.code);
       $('qrLabel').value = '';
       msg('qrMsg', '');
       loadQrs();
+    }).catch(function () {
+      go.disabled = false;
+      msg('qrMsg', 'Not saved. The connection was lost; try again.', 'err');
     });
   });
 
+  /* A sheet like Add link (ux-audit LNK-3, 2026-10-14): it opens over the
+     register and its card takes focus, never the box (the phone's keyboard). */
+  function shutImport() {
+    if (window.ADspaceSheet.isOpen($('importBox'))) window.ADspaceSheet.close();
+    else $('importBox').hidden = true;
+  }
   $('showImport').addEventListener('click', function () {
-    $('importBox').hidden = false;
-    shutLinkForm();
     msg('importMsg', '');
-    $('importText').focus();
+    window.ADspaceSheet.show($('importBox'), { opener: this });
   });
-  $('cancelImport').addEventListener('click', function () { $('importBox').hidden = true; });
+  $('cancelImport').addEventListener('click', shutImport);
+  $('importClose').addEventListener('click', shutImport);
 
   /* A paste from Rebrandly is a slug, a destination, and sometimes a name.
      Splitting on tab, comma or a run of spaces covers every export shape
@@ -6774,17 +6789,29 @@
     var rows = Object.keys(seen).map(function (k) { return seen[k]; });
 
     msg('importMsg', 'Importing ' + rows.length + '…');
+    var go = this;
+    go.disabled = true;
     db.from('links').upsert(rows, { onConflict: 'slug' }).then(function (r) {
+      go.disabled = false;
       if (r.error) { msg('importMsg', r.error.message, 'err'); return; }
       logAction('shortlink.imported', rows.length + ' links', '');
       var note = 'Imported ' + rows.length + (rows.length === 1 ? ' link.' : ' links.');
       if (parsed.bad.length) {
-        note += ' Skipped line' + (parsed.bad.length === 1 ? ' ' : 's ') +
-                parsed.bad.join(', ') + ' — could not read a slug and destination.';
+        note += ' ' + parsed.bad.length + (parsed.bad.length === 1 ? ' line is' : ' lines are') +
+                ' left in the box: each needs a short link and a destination.';
       }
-      msg('importMsg', note, parsed.bad.length ? 'warn' : 'ok');
-      $('importText').value = '';
+      /* What was skipped stays in the box to be put right; the rest went. */
+      var lines = String($('importText').value || '').split(/\r?\n/);
+      $('importText').value = parsed.bad.map(function (n) { return lines[n - 1]; }).join('\n');
       loadLinks();
+      /* Every line taken: the sheet shuts and the list says so. A line
+         skipped keeps the sheet open on the lines it names. */
+      if (parsed.bad.length) { msg('importMsg', note, 'warn'); return; }
+      shutImport();
+      msg('linkListMsg', note, 'ok');
+    }).catch(function () {
+      go.disabled = false;
+      msg('importMsg', 'Not imported. The connection was lost; try again.', 'err');
     });
   });
 })();

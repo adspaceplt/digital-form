@@ -3409,6 +3409,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 
 /* ---------- QR codes ---------- */
+.qr-new { margin-bottom: 16px; }
 .qrrow {
   display: flex; gap: 16px; align-items: flex-start;
   border: 1px solid var(--card-line); border-radius: var(--radius);
@@ -11946,6 +11947,9 @@ button.vs-row { cursor: pointer; }
 .wat-name { display: grid; gap: 2px; min-width: 0; }
 .wat-name b { font-weight: 600; }
 .wat-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.wat-part { white-space: nowrap; }
+/* A template's own name may outrun a phone's row: it alone breaks anywhere. */
+.wat-part:first-child { white-space: normal; }
 .wat-on { display: flex; align-items: center; }
 /* Standing alone in its cell (not a menu row), the switch is its own
    target: the control's full height, the track centred in it. */
