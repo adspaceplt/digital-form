@@ -1358,7 +1358,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An over-run stage reads "N days · Overdue" in red, and the group head
     counts them.
 - Intake: Brand name (the trading name; the registered name belongs to Billing),
-  Source, Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
+  Source, Salutation (the contact sheet's own list; 2026-10-14), Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is

@@ -559,15 +559,18 @@
           <section class="fsec" id="crmLeadOnly">
             <h4 class="fsec-h">Contact</h4>
             <div class="row fgrid">
+              <!-- The contact sheet's own list of salutations, copied in by js/crm.js. -->
+              <div><label class="field-label" for="crmContactSal">Salutation</label>
+                <select class="select" id="crmContactSal"><option value="">None</option></select></div>
               <div><label class="field-label" for="crmContactName">Contact person</label>
                 <input class="input" id="crmContactName" aria-required="true" placeholder="John Doe"></div>
-              <div><label class="field-label" for="crmContactEmail">Email</label>
-                <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
               <div><label class="field-label" for="crmContactPhone">Phone</label>
                 <input class="input" id="crmContactPhone" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
               <div><label class="field-label" for="crmContactWa">WhatsApp username</label>
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
                 <input class="input" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
+              <div class="span-all"><label class="field-label" for="crmContactEmail">Email</label>
+                <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
             </div>
           </section>
           <section class="fsec">
@@ -5332,7 +5335,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/quotes.js?v=20261014a"></script>
 <script src="/js/quotepdf.js?v=20261014"></script>
-<script src="/js/crm.js?v=20261014a"></script>
+<script src="/js/crm.js?v=20261014j"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261014g"></script>
 <script src="/js/namecard.js?v=20261014g"></script>

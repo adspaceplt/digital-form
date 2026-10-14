@@ -848,7 +848,10 @@
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
     $('crmLeadOnly').hidden = Boolean(c);
-    ['crmContactName', 'crmContactPhone', 'crmContactWa', 'crmContactEmail'].forEach(function (id) { $(id).value = ''; });
+    /* The salutations are the contact sheet's own list, one copy. */
+    var sal = $('crmContactSal'), ctSal = $('ctSalutation');
+    if (sal && ctSal && sal.options.length < ctSal.options.length) sal.innerHTML = ctSal.innerHTML;
+    ['crmContactSal', 'crmContactName', 'crmContactPhone', 'crmContactWa', 'crmContactEmail'].forEach(function (id) { if ($(id)) $(id).value = ''; });
     // What they asked for is a fact about the client, so editing shows it.
     $('crmEnquiry').value = c ? (c.deal_note || '') : '';
     msg('crmMsg', '');
@@ -946,11 +949,12 @@
     patch.slug = slug;
     db.from('clients').insert(patch).select(API.CLIENT_COLS).single().then(function (r) {
       if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
-      log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + contactName : ''));
+      var salW = ($('crmContactSal') && $('crmContactSal').value) || '';
+      log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + (salW ? salW + ' ' : '') + contactName : ''));
       var open = function () { shutForm(); loadClients(function () { openClient(r.data); }); };
       var phone = val('crmContactPhone'), waU = waUser(val('crmContactWa'));
       db.from('client_contacts').insert({
-        client_id: r.data.id, name: contactName, phone: phone || null,
+        client_id: r.data.id, salutation: ($('crmContactSal') && $('crmContactSal').value) || null, name: contactName, phone: phone || null,
         whatsapp: waU ? '@' + waU : (phone || null),
         email: val('crmContactEmail') || null, lang: 'en', is_primary: true
       }).then(open, open);
