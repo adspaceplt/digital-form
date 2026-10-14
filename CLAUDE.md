@@ -1205,8 +1205,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and every check unchanged):
   - `#grSum` reads the panel back as one sentence.
   - Start from Admin / Manager / Staff / View only; a panel matching none
-    reads `Custom: n changes from {nearest}` (`#grPresetNote`) with the
-    changes listed under it (`#grChanges`), worked out and never stored.
+    reads `Custom: n changes from {nearest}` (`#grPresetNote`, a quiet
+    fold) over the changes (`#grChanges`, shut until it is pressed),
+    worked out and never stored.
     Admin in Start from is the only way to make a group admin.
   - The Dashboard's row first (`#grDash`, On / No Access, no heading; a
     preset leaves it On), filed `Dashboard: On → No Access`, read in the
@@ -1466,7 +1467,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     old BRN, TIN, SST no., billing address, finance email, the billing
     contact's salutation, name, mobile and email; refused by field), telling
     the team at Clients: Billing Work (kind `client.details`, opening
-    Billing). The answers wait on Billing (`client_details_state`): Use
+    Billing). The Active gate's Billing sheet offers it in one line
+    (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
     details fills the Billing sheet and its own Save takes them in
     (`client_details_used`); Add as contact opens Contacts prefilled. The
     form never writes the record. `client_detail_forms` has RLS on, no
@@ -1721,7 +1723,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A typed reference (`p_serial`, the `#pickRef` field, placeholder "Numbered
     automatically") spends no number and is refused where taken
     (`serial-taken`) or badly shaped (`serial-shape`).
-  - A client with no Client ID gets a caution in the sheet, not a refusal.
+  - A client with no Client ID is told at the Reference field, which then
+    asks for one (`#pickRefNote`; the page refuses an empty one), not a refusal
+    to open.
   - The file name swaps `/` for `-`.
 - Letter content:
   - Only To quote lines.
@@ -3176,9 +3180,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Release carries Notify {name}, ticked by default on every month
   (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
   `notified`); unticked, the member is not told and the sheet says so.
-  A draft month's Notify, Save and Share sit at the review sheet's foot
-  (`#pvFoot`, `.qfoot`), where the scores end; never a `.sheet-foot`, whose
-  primary Enter presses: Enter in a score never shares the month.
+  A draft month's Notify, Save (tonal) and Share (the one blue) sit at the
+  review sheet's foot (`#pvFoot`, `.qfoot`), where the scores end; never a
+  `.sheet-foot`, whose primary Enter presses: Enter in a score never shares
+  the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
   themselves on the six scorecard categories in My records, Reviews (Rate
@@ -3330,7 +3335,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the asker's name, never the note); the asker withdraws it and asks again,
   the colleague asked marks it done and reopens it (`health_talk_set`).
 - Team: Health (`tab=health`, `team.health`): the half month's averages as
-  bars (warn under 3) with `n of m checked in`, Colleagues (every active
+  bars (warn under 3) with `n of m checked in` (with nobody agreed, the one
+  line No colleague has agreed to check-ins.), Colleagues (every active
   colleague: this half's five answers, Checked in, or Not agreed /
   Withdrawn as a chip), each opening their history, and the last 90 days'
   talks. `health_team()` sends a colleague's answers only while their
@@ -4142,12 +4148,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#crmQuotes`; the Overview opens on them while any stand): the state
   worked out on read (Valid until, Expired, Letter of Offer requested, Not
   proceeding, Letter of Offer issued once a live letter holds its lines),
-  ⋯ Download, Issue Letter of Offer, Make a copy, Not proceeding / Restore,
+  Download on the row, the ⋯ Issue Letter of Offer, Make a copy, Not proceeding / Restore,
   Remove with Undo (Restore after). Build quote (`#qbBox`, as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
-  lines and totals from `quote_preview` as ticked; with no plan the
+  lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
+  the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press).
   A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
   reels`) and the ad budget it covers; choosing a plan ticks Meta where no
@@ -4438,7 +4445,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member row reads the name with the Employee ID beside it (`.team-eid`,
   mute; still searched), then department and position (and Until), then the
   email; the state column names only the exception: Inactive, Access
-  expired, Removed, or Card off for somebody still working.
+  expired, Removed, or Card off for somebody still working. Inactive,
+  expired and removed colleagues leave their group's card for one Inactive
+  card after the groups, shut until opened (opened for the row a stand-down
+  or Delete moves there). A success line under the bar goes after 8
+  seconds; a refusal or a warning stays until the next act.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a

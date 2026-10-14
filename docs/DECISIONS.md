@@ -3243,6 +3243,33 @@ now names what stayed, and an inactive or removed colleague's ⋯ offers Hand
 over work. The command bar's own ⋯ drew three dots stacked beside every
 other ⋯'s three across; it now draws them across.
 
+### 2026-10-15 · Clients and Dashboard audit, P2 batch
+The UI and UX audit of 14 Oct walked Clients (lead, call, quote to Letter of
+Offer, the Active gate) and graded its UX C on four P2 findings; the user
+said to fix them with the Dashboard's one as a batch. Build quote keeps
+Monthly incl. SST in its foot (the total sat 1.5 screens down at a desk,
+2.4 on a phone, so a choice changed the price out of sight). A quotation's
+Download is on its row (sending it is the next act every time; the ⋯ keeps
+the rest). The Letter of Offer sheet says a client has no Client ID at the
+Reference field, which asks for one, where the field had read Numbered
+automatically and the note sat under Issue letter saying "type one below".
+The Active gate's Billing sheet offers the details form (Create link, Copy
+link, Use details), built that day for exactly this. The Dashboard's
+Committed monthly value reads Committed value in a narrow pane, where the
+whole label was cut with an ellipsis.
+
+### 2026-10-14 · Team: the audit's seven P3 findings
+The user: "fix the remainings too". The group panel's changes now fold under
+Custom: n changes (the sentence above already reads the access back).
+Inactive, expired and removed colleagues leave their group's card and count
+for one shut Inactive card after the groups. Health's half month reads No
+colleague has agreed to check-ins. where it read "0 of 0 checked in". The
+review's Save is tonal, so Share is its one blue. Set access expiry's
+question is two sentences, Delete's under forty words. A success line under
+the Team bar clears after 8 seconds, as the Undo bar does; a refusal or a
+warning stays. The work left with a colleague is said as "1 open task
+stays", "2 open tasks stay".
+
 ### 2026-10-14 · Settings: the audit's last five (SET-5 to SET-9)
 At the user's word, the P3s in one batch. SET-5: a colleague holding one
 part saw a list of one group beside its card; the list is drawn only with
