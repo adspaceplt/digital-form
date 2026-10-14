@@ -51,6 +51,14 @@
     var r = on.length ? on[on.length - 1] : rows[0];
     return r ? Number(r.value) : FIRST[key];
   }
+  /* The next change of a figure set from a later day, if any:
+     `{ from, value }` (the Settings page says it; 2026-10-14). */
+  function next(key) {
+    var day = today();
+    var r = ROWS.filter(function (x) { return x.key === key && x.from > day; })
+      .sort(function (a, b) { return a.from < b.from ? -1 : 1; })[0];
+    return r ? { from: r.from, value: Number(r.value) } : null;
+  }
   function load(force) {
     if (loading && !force) return loading;
     var api = window.ADspaceAPI, db = api && api.client;
@@ -214,6 +222,7 @@
     TAX: TAX,
     load: load,
     setting: setting,
+    next: next,
     rows: function () { return ROWS.slice(); }
   };
 })();

@@ -261,6 +261,9 @@
     elFields.classList.toggle('has-half', specs.some(function (f) { return f && f.half; }));
     specs.forEach(function (f, n) {
       var id = 'askSheetField' + n;
+      /* `head` opens a section of the form with its heading (a sheet of
+         more than five figures, DESIGN.md §4). */
+      if (f.head) elFields.appendChild(el('h4', 'fsec-h askhead', f.head));
       /* `half` sets a field beside the next half one (a date and its time). */
       var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
       if (f.tick) {
@@ -321,6 +324,14 @@
       if (f.value != null) input.value = f.value;
       wrap.appendChild(lab);
       wrap.appendChild(input);
+      /* `note` is one mute line under the field (a figure already changed
+         from a later day). */
+      if (f.note) {
+        var nt = el('p', 'asknote', f.note);
+        nt.id = id + 'Note';
+        input.setAttribute('aria-describedby', nt.id);
+        wrap.appendChild(nt);
+      }
       elFields.appendChild(wrap);
       if (f.choices && f.seg && window.ADspaceForm && ADspaceForm.segment) {
         input.setAttribute('data-seg', '');
