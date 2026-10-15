@@ -1114,7 +1114,7 @@
     row.className = 'crm-row camp-row';
     row.innerHTML =
       '<span class="crm-c crm-c-name">' + esc(campName(c)) + '</span>' +
-      '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + '</span>' +
+      '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(c.client_id, true) : '') + '</span>' +
       '<span class="crm-c camp-c-slots">' + esc(String(c.slots || 0)) + '</span>' +
       /* A campaign nobody has been booked on yet has no amount, and the
          currency sign alone is a fragment that reads like a broken field:

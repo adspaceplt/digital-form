@@ -41,6 +41,8 @@
     return (state.members || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });
   }
   function clientName(c) { return F.named(c.client_code, c.name); }
+  /* A Very Important Client's tag (2026-10-15), from the console's one read. */
+  function vicTag(id, inRow) { var A = window.ADspaceAdmin; return id && A && A.vicTag ? A.vicTag(id, inRow) : ''; }
   var byClient = F.byClient;
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -902,6 +904,10 @@
     } else if (mode === 'due') {
       var order = BANDS.map(function (x) { return x.key; });
       out.sort(function (a, b) { return order.indexOf(a.key) - order.indexOf(b.key); });
+      /* A VIC client's work leads each band (2026-10-15), Urgent delivery
+         being a band of its own above them; the order is otherwise kept. */
+      var A = window.ADspaceAdmin;
+      if (A && A.vicFirst) out.forEach(function (g) { g.rows = A.vicFirst(g.rows, function (t) { return t.client_id; }); });
     } else {
       out.sort(function (a, b) { return String(a.sort).localeCompare(String(b.sort)); });
     }
@@ -1096,12 +1102,12 @@
       .then(function (asks) {
         if (!asks || !asks.length) return;
         var ids = asks.map(function (q) { return q.task_id; });
-        return settled(db.from('ops_tasks').select('id, title, code, content_desc, clients(name)').in('id', ids)).then(function (tasks) {
+        return settled(db.from('ops_tasks').select('id, title, code, content_desc, client_id, clients(name)').in('id', ids)).then(function (tasks) {
           var byId = {};
           (tasks || []).forEach(function (t) { byId[t.id] = t; });
           asks.forEach(function (q) {
             var t = byId[q.task_id] || {};
-            rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at,
+            rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at, client: t.client_id,
               title: 'Extension · ' + (t.content_desc || t.title || t.code || 'Task'),
               meta: [nameOf(q.asked_by), 'to ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
               open: function () { openDrawer(q.task_id); }, request: q.id });
@@ -1110,14 +1116,14 @@
       }));
     // A report submitted to you to confirm.
     if (may('reports', 'view')) jobs.push(settled(db.from('sm_reports')
-      .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, clients(name)')
+      .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, client_id, clients(name)')
       .eq('status', 'review').eq('reviewer_id', me.id)).then(function (list) {
         (list || []).forEach(function (r) {
           var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;
           var days = MON && MON.setting ? Number(MON.setting('report_due_days')) || 7 : 7;
           var due = r.period_end ? new Date(new Date(r.period_end + 'T23:59:59+08:00').getTime() + days * 86400000) : null;
           var late = due && Date.now() > due.getTime();
-          rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late,
+          rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late, client: r.client_id,
             age: late ? lateWord(due) : '',
             title: 'Confirm report · ' + (r.brand_name || (r.clients && r.clients.name) || 'Client'),
             meta: [SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : '', nameOf(r.submitted_by) ? nameOf(r.submitted_by) + ' submitted' : ''].filter(Boolean).join(' · '),
@@ -1136,7 +1142,7 @@
               var urlOf = function (o) { return '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators'; };
               (opts || []).forEach(function (o) {
                 if (o.state !== 'submitted') return;
-                rows.push({ key: 'qc:' + o.id, section: 'campaigns', at: o.submitted_at,
+                rows.push({ key: 'qc:' + o.id, section: 'campaigns', at: o.submitted_at, client: (campById[o.campaign_id] || {}).client_id,
                   title: 'Draft to check · ' + ((o.creators && o.creators.name) || 'Creator'),
                   meta: [title[o.campaign_id], o.revision_round > 1 ? 'Round ' + o.revision_round : ''].filter(Boolean).join(' · '),
                   url: urlOf(o) });
@@ -1152,7 +1158,7 @@
                   asked.forEach(function (o) {
                     var at = since[o.id], cp = campById[o.campaign_id] || {}, who = (o.creators && o.creators.name) || 'Creator';
                     if (!overdue(at) || !cp.client_id) return;
-                    rows.push({ key: 'ap:' + o.id, section: 'campaigns', at: at,
+                    rows.push({ key: 'ap:' + o.id, section: 'campaigns', at: at, client: cp.client_id,
                       title: 'Awaiting approval · ' + ((cp.clients && cp.clients.name) || 'Client'),
                       meta: [who + '\'s draft', cp.title].filter(Boolean).join(' · '),
                       url: urlOf(o),
@@ -1173,7 +1179,7 @@
             .then(function (reqs) {
               (reqs || []).forEach(function (q) {
                 var c0 = byId[q.client_id] || {};
-                rows.push({ key: 'req:' + q.id, section: 'clients', at: q.created_at,
+                rows.push({ key: 'req:' + q.id, section: 'clients', at: q.created_at, client: q.client_id,
                   title: 'Client request · ' + (c0.name || 'Client'),
                   meta: [((window.ADspaceWords || {}).en || {}).rqKind ? (window.ADspaceWords.en.rqKind[q.kind] || q.kind) : q.kind, q.service_label].filter(Boolean).join(' · '),
                   url: '/admin/?client=' + keyOf(c0) + '&tab=requests' });
@@ -1213,7 +1219,7 @@
                       });
                       Object.keys(perSet).forEach(function (bid) {
                         var b = setById[bid], c0 = byId[b.client_id] || {};
-                        rows.push({ key: 'cr:' + bid, section: 'review', at: perSet[bid].at,
+                        rows.push({ key: 'cr:' + bid, section: 'review', at: perSet[bid].at, client: b.client_id,
                           title: 'Client changes · ' + (c0.name || 'Client'),
                           meta: [perSet[bid].n + (perSet[bid].n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
                           url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid) });
@@ -1228,7 +1234,7 @@
                       Object.keys(pending).forEach(function (bid) {
                         var b = setById[bid], c0 = byId[b.client_id] || {}, n = pending[bid];
                         if (!overdue(b.published_at)) return;
-                        rows.push({ key: 'ap:' + bid, section: 'review', at: b.published_at,
+                        rows.push({ key: 'ap:' + bid, section: 'review', at: b.published_at, client: b.client_id,
                           title: 'Awaiting approval · ' + (c0.name || 'Client'),
                           meta: [n + (n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
                           url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid),
@@ -1244,7 +1250,10 @@
     }
     Promise.all(jobs).then(function () {
       if (seq !== WAIT_SEQ) return;
+      var A = window.ADspaceAdmin, vic = function (r) { return Boolean(A && A.vic && A.vic(r.client)); };
       rows.sort(function (a, b) {
+        /* A VIC client's first (2026-10-15), then what is late, then the oldest. */
+        if (vic(a) !== vic(b)) return vic(a) ? -1 : 1;
         if (Boolean(a.late) !== Boolean(b.late)) return a.late ? -1 : 1;
         return String(a.at || '') < String(b.at || '') ? -1 : 1;
       });
@@ -1277,7 +1286,7 @@
           var g = bridge.glyph ? bridge.glyph(r.section) : '';
           return '<div class="wfy-row" data-i="' + i + '">' +
             '<span class="wfy-tile">' + g + '</span>' +
-            '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + '</b>' +
+            '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + vicTag(r.client, true) + '</b>' +
               (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</button>' +
             '<span class="wfy-acts">' + (r.request && mayDecide()
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
@@ -1917,7 +1926,7 @@
             '<circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/>' +
             '<circle cx="15" cy="18" r="1.6"/></svg></span>'
           : '') + '</div>' +
-      '<button class="bcard-title" type="button">' + esc(t.title) + '</button>' +
+      '<button class="bcard-title" type="button">' + esc(t.title) + vicTag(t.client_id, true) + '</button>' +
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
@@ -2276,7 +2285,7 @@
       '<span class="trow-check">' + check + '</span>' +
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
-      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' +
+      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
         (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
@@ -2866,7 +2875,7 @@
     var cl = !ml && t.clients && t.clients.slug
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
     var link = ml ? { label: t.code_period ? monthWord(t.code_period) : 'View month', href: ml.href } : cl;
-    $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
+    $('dwCtx').innerHTML = esc(ctx) + (vicTag(t.client_id) ? ' ' + vicTag(t.client_id) : '') + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
     paintNext(NEXT_DW(), t, n);

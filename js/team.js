@@ -128,7 +128,10 @@
                 /* The lead stages and Past (2026-10-03): No Access, View or
                    Manage on those records, and on everything filed under
                    them in every section (`client_row_seen`). */
-                ['leads', 'Leads'], ['past', 'Past clients']],
+                ['leads', 'Leads'], ['past', 'Past clients'],
+                /* Mark a client VIC, or remove it (2026-10-15): granted, an
+                   admin's by itself. */
+                ['vic', 'Mark VIC clients']],
     /* Each send from a record follows WhatsApp or is shut (2026-10-10):
        they replaced the Clients, Reports and Creator Campaigns parts. */
     whatsapp:  [['report', 'Send a published report'], ['feedback', 'Feedback request'], ['booking', 'Booking message'],
@@ -200,7 +203,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -230,7 +233,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -1061,6 +1064,7 @@
   var ADMIN_TOOLS = [
     ['Portal', ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai']],
     ['My Work', ['ops.numbering', 'ops.override']],
+    ['Clients', ['clients.vic']],
     ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Documents', ['register.types']],

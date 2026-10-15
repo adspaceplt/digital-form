@@ -237,7 +237,7 @@
     var ahead = days.filter(function (d) { return d >= today; })[0], shoot = ahead || days[days.length - 1];
     row.setAttribute('data-id', list[0].id);
     row.innerHTML =
-      '<span class="vs-c-name"><b>' + esc(g.client.name || 'Client') + '</b><small>' +
+      '<span class="vs-c-name"><b>' + esc(g.client.name || 'Client') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(list[0].client_id, true) : '') + '</b><small>' +
         esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span>' +
       '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last</span>') : '<span class="mute">Not set</span>') + '</span>' +
       '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>';

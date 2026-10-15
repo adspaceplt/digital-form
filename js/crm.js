@@ -461,7 +461,9 @@
     var q = val('crmSearch').toLowerCase();
     var stage = $('crmStage').value;
     var owner = $('crmOwner').value;
+    var vicOnly = $('crmVic') && $('crmVic').value === 'vic';
     return state.clients.filter(function (c) {
+      if (vicOnly && !isVic(c.id)) return false;
       /* The number is what somebody holding an invoice searches by, so it is
          searched alongside the two names. */
       if (q && String(c.name || '').toLowerCase().indexOf(q) < 0 &&
@@ -487,6 +489,12 @@
   }
 
   function paintList() {
+    /* The VIC view is drawn while any client is VIC. */
+    if ($('crmVic')) {
+      var anyVic = state.clients.some(function (c) { return isVic(c.id); });
+      if (!anyVic && $('crmVic').value !== 'all') $('crmVic').value = 'all';
+      $('crmVic').hidden = !anyVic;
+    }
     var rows = visible().sort(byCode);
     state.shown = rows;
     paintBulk();
@@ -579,10 +587,10 @@
       '<span class="crm-c crm-c-name">' +
         (picking ? '<input class="trow-pick cl-pick" type="checkbox"' + (state.pick[c.id] ? ' checked' : '') +
           ' aria-label="Select ' + esc(c.name || '') + '">' : '') +
-        '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + '" aria-hidden="true">' +
+        '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + (isVic(c.id) ? ' is-vic' : '') + '" aria-hidden="true">' +
           (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">' : esc(initialsOf(c.name || ''))) +
         '</span>' +
-        '<span class="cl-who">' + esc(c.name || '') +
+        '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') + vicTagOf(c.id, true) + '</span>' +
           (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
         '</span>' +
       '</span>' +
@@ -747,15 +755,16 @@
   var filterKey = '';
   function clearFilters() {
     $('crmSearch').value = ''; $('crmStage').value = 'all'; $('crmOwner').value = 'all';
+    if ($('crmVic')) $('crmVic').value = 'all';
     onFilter();
   }
   function onFilter() {
-    var key = JSON.stringify([val('crmSearch'), $('crmStage').value, $('crmOwner').value]);
+    var key = JSON.stringify([val('crmSearch'), $('crmStage').value, $('crmOwner').value, $('crmVic') ? $('crmVic').value : 'all']);
     if (key === filterKey) return;
     filterKey = key;
     paintList();
   }
-  ['crmSearch', 'crmStage', 'crmOwner'].forEach(function (id) {
+  ['crmSearch', 'crmStage', 'crmOwner', 'crmVic'].forEach(function (id) {
     $(id).addEventListener('input', onFilter);
     $(id).addEventListener('change', onFilter);
   });
@@ -1046,6 +1055,7 @@
       });
     }
     paintRestrict(c);
+    paintVic(c);
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1337,7 +1347,9 @@
         mark.className = 'rec-mark';
         mark.textContent = initialsOf(c.name);
       }
+      mark.classList.toggle('is-vic', isVic(c.id));
     }
+    if ($('crmVicTag')) $('crmVicTag').innerHTML = vicTagOf(c.id);
     /* What identifies the client rather than what describes them: who we
        write to and in which language, and who here owns the account. Each
        part is omitted when it is not known, so the line never stands in for
@@ -1567,6 +1579,78 @@
   /* A restricted account (2026-10-10; the user: "account restricted"): which
      platform, since when and why, red in the rail while it stands, set from
      the ⋯ and cleared in place. Filed under client.edited from and to. */
+  /* VERY IMPORTANT CLIENTS (2026-10-15, the user). The tag and the ring
+     come from the console's one read (`ADspaceAdmin.vic`); an admin, or a
+     group given `clients.vic`, marks a client VIC from the ⋯ with an
+     optional note and its since date, changes the date in place under Key
+     dates, and removes it without a question, Undo where it happened. Every
+     change goes through `client_vic_set`, filed from and to there. */
+  function vicOf(id) { var A = window.ADspaceAdmin; return A && A.vic ? A.vic(id) : null; }
+  function isVic(id) { return Boolean(vicOf(id)); }
+  function vicTagOf(id, inRow) { var A = window.ADspaceAdmin; return A && A.vicTag ? A.vicTag(id, inRow) : ''; }
+  var VIC_SAID = { denied: 'Not saved. Only an admin marks a client VIC.', 'not-found': 'Not saved. This client is no longer available.',
+    'too-long': 'The note is 300 characters at most.', 'bad-date': 'VIC since is today or earlier.' };
+  function paintVic(c) {
+    var on = isVic(c.id), may = mayPart('clients.vic', 'work');
+    $('crmVicSet').hidden = on || !may;
+    $('crmVicOff').hidden = !on || !may;
+    if ($('crmVicTag')) $('crmVicTag').innerHTML = vicTagOf(c.id);
+    var mark = $('crmClientMark');
+    if (mark) mark.classList.toggle('is-vic', on);
+  }
+  function setVic(c, on, note, since, then) {
+    db.rpc('client_vic_set', { p_client: c.id, p_on: on, p_note: note, p_since: since || null }).then(function (r) {
+      if (r.error) { msg('crmWorkMsg', /client_vic_set/.test(r.error.message || '') ? 'This needs a database update.' : r.error.message, 'err'); return; }
+      var d = r.data || {};
+      if (d.error) { msg('crmWorkMsg', VIC_SAID[d.error] || 'Not saved. The database refused the request.', 'err'); return; }
+      var A = window.ADspaceAdmin;
+      (A && A.vicReload ? A.vicReload() : Promise.resolve()).then(function () {
+        if (!state.client || state.client.id !== c.id) return;
+        paintVic(c);
+        railDates(c);
+        if (!$('crmListView').hidden) paintList();
+        if (then) then(d);
+      });
+    }).catch(function (e) { msg('crmWorkMsg', String((e && e.message) || e), 'err'); });
+  }
+  function askVic(c) {
+    var day = today();
+    window.ADspaceConfirm.ask({
+      title: 'Mark as VIC', go: 'Mark as VIC',
+      body: c.name + ' will carry the VIC tag across the console. Clients never see it.',
+      fields: [{ name: 's', label: 'VIC since', type: 'date', value: day, max: day, required: true },
+               { name: 'n', label: 'Note', placeholder: 'Optional', required: false }],
+      check: function (v) { return !v.s ? 'VIC since is required.' : v.s > day ? 'VIC since is today or earlier.' : String(v.n || '').length > 300 ? 'The note is 300 characters at most.' : ''; }
+    }, function (v) {
+      setVic(c, true, String(v.n || '').trim() || null, v.s, function () { msg('crmWorkMsg', 'Marked as VIC.', 'ok'); });
+    });
+  }
+  function vicOff(c) {
+    var was = vicOf(c.id);
+    if (!was) return;
+    setVic(c, false, null, null, function () {
+      msg('crmWorkMsg', '', '');
+      undoBar('VIC removed.', function () {
+        setVic(c, true, was.note || null, ADspaceClock.day(was.since));
+      });
+    });
+  }
+  function wireVicSince(c) {
+    var val = $('crmVicSinceVal'), pen = $('crmVicSinceEdit'), v = vicOf(c.id);
+    if (!val || !pen || !v) return;
+    pen.addEventListener('click', function () {
+      ADspaceAsk.rename(val, pen, {
+        type: 'date',
+        value: ADspaceClock.day(v.since),
+        label: 'VIC since',
+        saveLabel: 'Save VIC since',
+        save: function (day) {
+          if (day > today()) { msg('crmSinceMsg', 'VIC since is today or earlier.', 'err'); railDates(c); return; }
+          setVic(c, true, v.note || null, day, function () { msg('crmSinceMsg', 'Saved.', 'ok'); });
+        }
+      });
+    });
+  }
   var RESTRICT = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['xhs', 'rednote'], ['other', 'Other account']];
   function restrictWord(k) { var r = RESTRICT.filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : 'Account'; }
   function paintRestrict(c) {
@@ -1763,8 +1847,10 @@
         '</span></div>';
     }).join('');
 
+    var vicNow = vicOf(c.id);
     var dates = [
       ['Client since', c.created_at, true],
+      ['VIC since', vicNow && vicNow.since, 'vic'],
       ['Last contact', last, false],
       ['Next follow up', nextAt, false]
     ].filter(function (r) { return r[1]; }).map(function (r) {
@@ -1774,9 +1860,13 @@
          never a second field and a Save button below the list. */
       return '<div class="tl-row tl-date">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
-          '<span class="tl-when' + (late ? ' is-late' : '') + '"' + (r[2] ? ' id="crmSinceVal"' : '') + '>' +
+          '<span class="tl-when' + (late ? ' is-late' : '') + '"' +
+            (r[2] === 'vic' ? ' id="crmVicSinceVal"' : r[2] ? ' id="crmSinceVal"' : '') + '>' +
             esc(niceDate(r[1])) + '</span></span>' +
-        (r[2] && pens ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
+        (r[2] === 'vic'
+          ? (mayPart('clients.vic', 'work') ? '<button class="tl-pen" id="crmVicSinceEdit" type="button" aria-label="Edit VIC since">' + PEN + '</button>'
+              : '<span class="tl-span"></span>')
+          : r[2] && pens ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
               : '<span class="tl-span"></span>') +
         '</div>';
     }).join('');
@@ -1784,6 +1874,7 @@
     if (!trip && !dates) { block.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML = trip + (trip && dates ? '<div class="tl-rule"></div>' : '') + dates;
     wireSince(c);
+    wireVicSince(c);
     wireStages(c);
     wireWhy(c);
     block.hidden = false;
@@ -2049,6 +2140,8 @@
         if (a === 'take') { takeLead(state.client); return; }
         if (a === 'feedback') { askFeedback(state.client); return; }
         if (a === 'restrict') { askRestrict(state.client); return; }
+        if (a === 'vic') { askVic(state.client); return; }
+        if (a === 'vicoff') { vicOff(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);
