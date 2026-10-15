@@ -25,8 +25,14 @@
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
     'bad-value': 'That answer is not one the checklist takes.', 'bad-item': 'This checklist has changed. Open it again.',
     'too-long': 'A note is 1,000 characters at most.', own: 'Somebody other than the person who prepared it signs it off.',
-    'not-started': 'Nothing has been recorded on this checklist.'
+    'not-started': 'Nothing has been recorded on this checklist.',
+    'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
+    'ai-not-set-up': 'AI needs its key in Supabase.', 'ai-key': 'AI refused its key in Supabase.',
+    'ai-busy': 'AI is busy. Try again in a minute.', 'ai-credit': 'The AI account has no credit left.',
+    'ai-slow': 'AI took too long. Try again.', 'ai-failed': 'Not written. Try again.', 'ai-incomplete': 'Not written. Try again.',
+    'ai-model': 'The AI model in Supabase is not available.', 'needs-update': 'This needs a database update.'
   };
+  var AI = function () { return (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || ''; };
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   function said(e) {
     if (!e) return '';
@@ -108,61 +114,93 @@
   }
   function editable(d) { return d.can_work && d.status === 'open'; }
 
-  function itemHtml(d, s, it, off) {
-    var key = s.key + '.' + it.key, a = d.answers[key] || {}, can = editable(d) && !off;
-    var hint = (d.hints || {})[key];
-    if (it.kind === 'tick') {
-      var done = a.state === 'done', na = a.state === 'na';
-      var by = (done || na) && a.by ? (na ? 'Not applicable · ' : '') + a.by + ', ' + day(a.at) : '';
-      return '<div class="ck-row is-tick' + (done ? ' is-done' : '') + (na ? ' is-na' : '') + '" data-key="' + esc(key) + '">' +
-        (can ? '<button class="tcheck' + (done ? ' is-done' : '') + '" type="button" data-a="tick" aria-pressed="' + done + '"' +
-                 (na ? ' disabled' : '') + ' aria-label="' + esc(it.label) + '"></button>'
-             : '<span class="tcheck' + (done ? ' is-done' : '') + '" aria-hidden="true"></span>') +
-        '<span class="ck-lab"><b>' + esc(it.label) + '</b>' + (it.detail ? '<small>' + esc(it.detail) + '</small>' : '') +
-          (hint && !done ? '<small class="ck-hint">' + esc(hint) + '</small>' : '') +
-          (by ? '<small class="ck-by">' + esc(by) + '</small>' : '') + '</span>' +
-        (can ? '<textarea class="input input-sm ck-note" data-oneline data-nodraft rows="1" placeholder="Notes" aria-label="' +
-                 esc('Notes, ' + it.label) + '">' + esc(a.note || '') + '</textarea>'
-             : '<span class="ck-note-read">' + esc(a.note || '') + '</span>') +
-        (can && !done ? '<button class="btn-quiet btn-sm ck-na" type="button" data-a="na">' + (na ? 'Applicable' : 'Not applicable') + '</button>' : '') +
-      '</div>';
-    }
-    var v = valueOf(d, key), field;
-    if (it.kind === 'multi' || it.kind === 'choice') {
-      var on = it.kind === 'multi' ? (Array.isArray(v) ? v : []) : (v ? [v] : []);
-      field = '<span class="ck-chips" role="group" aria-label="' + esc(it.label) + '">' + it.choices.map(function (c) {
-        var sel = on.indexOf(c) >= 0;
-        return can ? '<button class="ck-chip' + (sel ? ' is-on' : '') + '" type="button" data-a="chip" data-c="' + esc(c) + '" aria-pressed="' + sel + '">' + esc(c) + '</button>'
-                   : (sel ? '<span class="ck-chip is-on">' + esc(c) + '</span>' : '');
-      }).join('') + (!can && !on.length ? '<span class="muted">Not set</span>' : '') + '</span>';
-    } else {
-      field = can
-        ? '<textarea class="input ck-text" data-nodraft' + (Number(it.rows) > 1 ? ' rows="' + it.rows + '"' : ' data-oneline rows="1"') +
-            ' aria-label="' + esc(it.label) + '">' + esc(v || '') + '</textarea>'
-        : '<span class="ck-text-read">' + (v ? esc(v) : '<span class="muted">Not set</span>') + '</span>';
-    }
-    return '<div class="ck-row is-field" data-key="' + esc(key) + '" data-kind="' + it.kind + '"><span class="ck-lab"><b>' + esc(it.label) + '</b></span>' + field + '</div>';
+  /* Read first (the user, 2026-10-15: "the checklist is coming back in the
+     wrong design"): a tick is pressed where it is read, every other answer
+     reads as a fact, and the section's Edit opens its fields in a sheet. */
+  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  var XMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function tickHtml(d, s, it, can) {
+    var key = s.key + '.' + it.key, a = d.answers[key] || {}, hint = (d.hints || {})[key];
+    var done = a.state === 'done', na = a.state === 'na';
+    var by = (done || na) && a.by ? (na ? 'Not applicable · ' : '') + a.by + ', ' + day(a.at) : '';
+    return '<div class="ck-row is-tick' + (done ? ' is-done' : '') + (na ? ' is-na' : '') + '" data-key="' + esc(key) + '">' +
+      (can && !na ? '<button class="tcheck' + (done ? ' is-done' : '') + '" type="button" data-a="tick" aria-pressed="' + done + '" aria-label="' + esc(it.label) + '"></button>'
+                  : '<span class="tcheck' + (done ? ' is-done' : '') + '" aria-hidden="true"></span>') +
+      '<span class="ck-lab"><b>' + esc(it.label) + '</b>' + (it.detail ? '<small>' + esc(it.detail) + '</small>' : '') +
+        (hint && !done ? '<small class="ck-hint">' + esc(hint) + '</small>' : '') +
+        (a.note ? '<span class="ck-note-read">' + esc(a.note) + '</span>' : '') +
+        (by ? '<small class="ck-by">' + esc(by) + '</small>' : '') + '</span></div>';
+  }
+  function factWord(it, v) {
+    if (it.kind === 'multi') return Array.isArray(v) && v.length ? v.join(' · ') : '';
+    return v == null ? '' : String(v);
+  }
+  function readTable(it, rows) {
+    var cols = it.columns || [];
+    if (!rows.length) return '<span class="ck-text-read"><span class="muted">Not set</span></span>';
+    return '<div class="ck-table is-read" style="--ck-cols:' + cols.length + '"><div class="ck-tr ck-th">' +
+      cols.map(function (c) { return '<span>' + esc(c[1]) + '</span>'; }).join('') + '</div>' +
+      rows.map(function (r) {
+        return '<div class="ck-tr">' + cols.map(function (c) {
+          return '<span class="ck-td" data-label="' + esc(c[1]) + '">' + (r[c[0]] ? esc(r[c[0]]) : '<span class="muted">Not set</span>') + '</span>';
+        }).join('') + '</div>';
+      }).join('') + '</div>';
+  }
+  function sectionBody(d, s, can) {
+    var out = '', facts = '';
+    var flush = function () { if (facts) { out += '<dl class="ovfacts ck-facts">' + facts + '</dl>'; facts = ''; } };
+    s.items.forEach(function (it) {
+      var key = s.key + '.' + it.key;
+      if (it.kind === 'tick') { flush(); out += tickHtml(d, s, it, can); return; }
+      var v = valueOf(d, key);
+      if (it.kind === 'table') {
+        flush();
+        out += '<div class="ck-row is-table" data-key="' + esc(key) + '"><span class="ck-lab"><b>' + esc(it.label) + '</b></span>' +
+          readTable(it, Array.isArray(v) ? v : []) + '</div>';
+        return;
+      }
+      var w = factWord(it, v);
+      facts += '<div data-key="' + esc(key) + '"><dt>' + esc(it.label) + '</dt><dd class="ck-text-read">' + (w ? esc(w) : '<span class="muted">Not set</span>') + '</dd></div>';
+    });
+    flush();
+    return out;
+  }
+
+  function tableRows(row) {
+    return Array.prototype.map.call(row.querySelectorAll('.ck-tr[data-row]'), function (tr) {
+      var o = {};
+      Array.prototype.forEach.call(tr.querySelectorAll('.ck-cell'), function (c) { o[c.getAttribute('data-col')] = c.value.replace(/\s+/g, ' ').trim(); });
+      return o;
+    });
+  }
+  function itemOf(d, key) {
+    var p = key.split('.'), s = (d.sections || []).filter(function (x) { return x.key === p[0]; })[0];
+    return s && (s.items || []).filter(function (x) { return x.key === p[1]; })[0];
   }
 
   function paint() {
     var d = V.data, c = count(d), st = stateOf(d), na = d.sections_na || [];
-    var cl = V.ctx.client;
-    var html = '<div class="ck-head"><button class="btn-quiet btn-sm ck-back" type="button" data-a="back">All checklists</button>' +
-      '<div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Ver. ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
-      '<span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-      '<button class="btn btn-sm" type="button" data-a="pdf">Download</button></div>' +
-      '<section class="ovcard ck-sec ck-facts"><dl class="ovfacts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
-        '<div><dt>Project Manager</dt><dd>' + esc(cl.owner || 'Not set') + '</dd></div>' +
+    var cl = V.ctx.client, can = editable(d);
+    var html = '<button class="backlink ck-back" type="button" data-a="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>All checklists</button>' +
+      '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Ver. ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
+      '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
+      (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
+      '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" data-menu hidden><button class="kmenu-item" type="button" data-a="pdf"><b>Download</b></button></div></span></div>' +
+      '<dl class="ovfacts ck-facts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
+        '<div><dt>Project Manager</dt><dd>' + (cl.owner ? esc(cl.owner) : '<span class="muted">Not set</span>') + '</dd></div>' +
         '<div><dt>Progress</dt><dd>' + c.done + ' of ' + c.n + ' done</dd></div></dl></section>' +
       '<div class="msg" id="ckMsg"></div>';
     d.sections.forEach(function (s, i) {
       var off = na.indexOf(s.key) >= 0;
       html += '<section class="ovcard ck-sec' + (off ? ' is-off' : '') + '" data-sec="' + esc(s.key) + '"><div class="ck-sec-head"><h4 class="fsec-h">' +
-        (i + 1) + '. ' + esc(s.title) + '</h4>' +
-        (s.platform && editable(d) ? '<button class="btn-quiet btn-sm" type="button" data-a="secna">' + (off ? 'Applicable' : 'Not applicable') + '</button>'
-          : off ? '<span class="chip">Not applicable</span>' : '') + '</div>' +
-        (s.note ? '<p class="ck-sec-note">' + esc(s.note) + '</p>' : '') +
-        (off ? '' : s.items.map(function (it) { return itemHtml(d, s, it, off); }).join('')) + '</section>';
+        (i + 1) + '. ' + esc(s.title) + '</h4><span class="ck-sec-acts">' +
+        (off ? '<span class="chip">Not applicable</span>' : '') +
+        (s.platform && can ? '<button class="btn btn-sm" type="button" data-a="secna">' + (off ? 'Applicable' : 'Not applicable') + '</button>' : '') +
+        (can && !off ? '<button class="btn btn-sm" type="button" data-a="edit">' + PEN + 'Edit</button>' : '') + '</span></div>' +
+        (s.note && !off ? '<p class="ck-sec-note">' + esc(s.note) + '</p>' : '') +
+        (off ? '' : sectionBody(d, s, can)) + '</section>';
     });
     /* The sign-off: prepared by one colleague, reviewed by another. */
     var acts = '', me = d.me, prep = d.prepared;
@@ -172,7 +210,7 @@
         '<button class="btn" type="button" data-a="return">Send back</button>';
     }
     if (d.status === 'signed' && d.can_manage) acts = '<button class="btn" type="button" data-a="reopen">Reopen</button>';
-    html += '<section class="ovcard ck-sec ck-sign"><h4 class="fsec-h">Sign-off</h4><dl class="ovfacts">' +
+    html += '<section class="ovcard ck-sec ck-sign"><h4 class="fsec-h">Sign-off</h4><dl class="ovfacts ck-facts">' +
       '<div><dt>Prepared by</dt><dd>' + (prep ? esc(prep.name + ', ' + day(prep.at)) : '<span class="muted">Not yet</span>') + '</dd></div>' +
       '<div><dt>Reviewed by</dt><dd>' + (d.reviewed ? esc(d.reviewed.name + ', ' + day(d.reviewed.at)) : '<span class="muted">Not yet</span>') + '</dd></div></dl>' +
       (d.status === 'prepared' && prep && prep.id === me ? '<p class="ck-sec-note">Somebody other than you signs it off.</p>' : '') +
@@ -195,42 +233,165 @@
   function wire() {
     var host = V.host, ctx = V.ctx;
     host.querySelector('[data-a="back"]').addEventListener('click', function () { setAddr(null); mount(host, ctx); });
-    host.querySelector('[data-a="pdf"]').addEventListener('click', function () { download(this); });
-    Array.prototype.forEach.call(host.querySelectorAll('.ck-row'), function (row) {
-      var key = row.getAttribute('data-key');
-      var tk = row.querySelector('[data-a="tick"]');
-      if (tk) tk.addEventListener('click', function () {
+    var menuBtn = host.querySelector('.ck-head [data-a="menu"]'), menu = host.querySelector('.ck-head [data-menu]');
+    menuBtn.addEventListener('click', function () {
+      var open = menu.hidden;
+      Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+      menu.hidden = !open;
+      menuBtn.setAttribute('aria-expanded', String(open));
+      if (open && window.ADspaceMenu) window.ADspaceMenu.place(menuBtn, menu);
+    });
+    host.querySelector('[data-a="pdf"]').addEventListener('click', function () { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); download(menuBtn); });
+    var aiB = host.querySelector('[data-a="ai"]');
+    if (aiB) aiB.addEventListener('click', function () { write(aiB); });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="tick"]'), function (tk) {
+      var row = tk.closest('.ck-row'), key = row.getAttribute('data-key');
+      tk.addEventListener('click', function () {
         tk.disabled = true;
-        send({ p_item: key, p_state: row.classList.contains('is-done') ? '' : 'done' }, row, paint);
-      });
-      var na = row.querySelector('[data-a="na"]');
-      if (na) na.addEventListener('click', function () {
-        na.disabled = true;
-        send({ p_item: key, p_state: row.classList.contains('is-na') ? '' : 'na' }, row, paint);
-      });
-      var note = row.querySelector('.ck-note');
-      if (note) note.addEventListener('change', function () { send({ p_item: key, p_note: note.value }); });
-      var tx = row.querySelector('.ck-text');
-      if (tx) tx.addEventListener('change', function () { send({ p_item: key, p_value: tx.value.trim() }); });
-      Array.prototype.forEach.call(row.querySelectorAll('[data-a="chip"]'), function (b) {
-        b.addEventListener('click', function () {
-          var kind = row.getAttribute('data-kind'), c = b.getAttribute('data-c');
-          var cur = Array.prototype.filter.call(row.querySelectorAll('.ck-chip.is-on'), function (x) { return true; })
-            .map(function (x) { return x.getAttribute('data-c'); });
-          var next;
-          if (kind === 'multi') next = cur.indexOf(c) >= 0 ? cur.filter(function (x) { return x !== c; }) : cur.concat(c);
-          else next = cur[0] === c ? '' : c;
-          send({ p_item: key, p_value: next }, row, function (x) {
-            var v = (x.answers[key] || {}).value;
-            var on = kind === 'multi' ? (v || []) : (v ? [v] : []);
-            Array.prototype.forEach.call(row.querySelectorAll('[data-a="chip"]'), function (y) {
-              var s2 = on.indexOf(y.getAttribute('data-c')) >= 0;
-              y.classList.toggle('is-on', s2); y.setAttribute('aria-pressed', String(s2));
-            });
-          });
-        });
+        send({ p_item: key, p_state: row.classList.contains('is-done') ? '' : 'done' }, row, paint).then(function () { tk.disabled = false; });
       });
     });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="edit"]'), function (b) {
+      b.addEventListener('click', function () { editSection(b.closest('[data-sec]').getAttribute('data-sec'), b); });
+    });
+    wireSteps(host, ctx);
+  }
+
+  /* ---- A section's Edit: every answer of the section in one sheet ------- */
+  function editSection(secKey, opener) {
+    var d = V.data, s = (d.sections || []).filter(function (x) { return x.key === secKey; })[0];
+    if (!s) return;
+    var box = $('ckEditSheet');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'sheet'; box.id = 'ckEditSheet'; box.hidden = true;
+      box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ckEditTitle" tabindex="-1" data-narrow="560">' +
+        '<div class="sheet-head"><h3 id="ckEditTitle"></h3><button class="iconbtn" type="button" data-a="x" aria-label="Close">' + XMARK + '</button></div>' +
+        '<div class="sheet-body"><div data-m="body"></div><p class="msg" data-m="msg"></p></div>' +
+        '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="save">Save</button><button class="btn-quiet" type="button" data-a="cancel">Cancel</button></div></div>';
+      document.body.appendChild(box);
+      box.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      box.querySelector('[data-a="cancel"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#' + box.id + ' .sheet-card');
+    }
+    box.querySelector('#ckEditTitle').textContent = s.title;
+    var body = box.querySelector('[data-m="body"]'), msg = box.querySelector('[data-m="msg"]');
+    msg.textContent = ''; msg.className = 'msg';
+    body.innerHTML = s.items.map(function (it) {
+      var key = s.key + '.' + it.key, a = d.answers[key] || {};
+      if (it.kind === 'tick') {
+        return '<div class="ck-ed" data-key="' + esc(key) + '" data-kind="tick"><label class="ck-ed-lab" for="ckEd-' + esc(key) + '">' + esc(it.label) + '</label>' +
+          '<textarea class="input" id="ckEd-' + esc(key) + '" data-oneline data-nodraft rows="1" data-f="note" placeholder="Notes">' + esc(a.note || '') + '</textarea>' +
+          '<label class="tickline"><input type="checkbox" data-f="na"' + (a.state === 'na' ? ' checked' : '') + '><span>Not applicable</span></label></div>';
+      }
+      var v = valueOf(d, key);
+      if (it.kind === 'table') {
+        return '<div class="ck-ed" data-key="' + esc(key) + '" data-kind="table"><span class="ck-ed-lab">' + esc(it.label) + '</span>' +
+          (it.detail ? '<small class="ck-ed-note">' + esc(it.detail) + '</small>' : '') + edTable(it, Array.isArray(v) ? v : []) + '</div>';
+      }
+      if (it.kind === 'choice' || it.kind === 'multi') {
+        var on = it.kind === 'multi' ? (Array.isArray(v) ? v : []) : (v ? [v] : []);
+        return '<div class="ck-ed" data-key="' + esc(key) + '" data-kind="' + it.kind + '"><span class="ck-ed-lab">' + esc(it.label) + '</span>' +
+          '<span class="ck-chips" role="group" aria-label="' + esc(it.label) + '">' + it.choices.map(function (c) {
+            var sel = on.indexOf(c) >= 0;
+            return '<button class="ck-chip' + (sel ? ' is-on' : '') + '" type="button" data-c="' + esc(c) + '" aria-pressed="' + sel + '">' + esc(c) + '</button>';
+          }).join('') + '</span></div>';
+      }
+      return '<div class="ck-ed" data-key="' + esc(key) + '" data-kind="text"><label class="ck-ed-lab" for="ckEd-' + esc(key) + '">' + esc(it.label) + '</label>' +
+        '<textarea class="input" id="ckEd-' + esc(key) + '" data-nodraft data-f="value"' + (Number(it.rows) > 1 ? ' rows="' + it.rows + '"' : ' data-oneline rows="1"') + '>' +
+        esc(v || '') + '</textarea></div>';
+    }).join('');
+    Array.prototype.forEach.call(body.querySelectorAll('.ck-ed'), function (ed) {
+      var kind = ed.getAttribute('data-kind');
+      Array.prototype.forEach.call(ed.querySelectorAll('.ck-chip'), function (b) {
+        b.addEventListener('click', function () {
+          var sel = !b.classList.contains('is-on');
+          if (kind === 'choice' && sel) Array.prototype.forEach.call(ed.querySelectorAll('.ck-chip'), function (y) { y.classList.remove('is-on'); y.setAttribute('aria-pressed', 'false'); });
+          b.classList.toggle('is-on', sel); b.setAttribute('aria-pressed', String(sel));
+        });
+      });
+      if (kind === 'table') wireEdTable(ed, itemOf(d, ed.getAttribute('data-key')));
+    });
+    var save = box.querySelector('[data-a="save"]');
+    save.onclick = function () {
+      var calls = [];
+      Array.prototype.forEach.call(body.querySelectorAll('.ck-ed'), function (ed) {
+        var key = ed.getAttribute('data-key'), kind = ed.getAttribute('data-kind'), a = d.answers[key] || {};
+        if (kind === 'tick') {
+          var note = ed.querySelector('[data-f="note"]').value.trim(), na = ed.querySelector('[data-f="na"]').checked;
+          var args = {};
+          if (note !== (a.note || '')) args.p_note = note;
+          if (na !== (a.state === 'na')) args.p_state = na ? 'na' : '';
+          if (Object.keys(args).length) calls.push(Object.assign({ p_item: key }, args));
+          return;
+        }
+        var now = valueOf(d, key), next;
+        if (kind === 'table') next = tableRows(ed).filter(function (r) { return Object.keys(r).some(function (k) { return r[k]; }); });
+        else if (kind === 'multi') next = Array.prototype.map.call(ed.querySelectorAll('.ck-chip.is-on'), function (x) { return x.getAttribute('data-c'); });
+        else if (kind === 'choice') { var o = ed.querySelector('.ck-chip.is-on'); next = o ? o.getAttribute('data-c') : ''; }
+        else next = ed.querySelector('[data-f="value"]').value.trim();
+        var empty = function (x) { return x == null || x === '' || (Array.isArray(x) && !x.length); };
+        if (empty(now) && empty(next)) return;
+        if (JSON.stringify(now) === JSON.stringify(next) && (d.answers[key] || {}).value != null) return;
+        calls.push({ p_item: key, p_value: next });
+      });
+      if (!calls.length) { window.ADspaceSheet.close(); return; }
+      save.disabled = true;
+      var chain = Promise.resolve(true);
+      calls.forEach(function (args) {
+        chain = chain.then(function (ok) {
+          if (!ok) return false;
+          return V.ctx.db.rpc('client_checklist_set', Object.assign({ p_client: V.ctx.client.id, p_kind: V.kind, p_state: null, p_note: null, p_value: null }, args))
+            .then(function (r) {
+              var x = r.data || {};
+              if (r.error || x.error) { msg.textContent = said(r.error || x.error); msg.className = 'msg err'; return false; }
+              V.data = x; return true;
+            }).catch(function (e) { msg.textContent = said(e); msg.className = 'msg err'; return false; });
+        });
+      });
+      chain.then(function (ok) {
+        save.disabled = false;
+        paint();
+        if (!ok) return;
+        window.ADspaceSheet.close();
+        V.ctx.msg('ckMsg', 'Saved.', 'ok');
+      });
+    };
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
+  /* A table in the sheet: a row an ad set, each cell a one-line box. */
+  function edTable(it, rows) {
+    var cols = it.columns || [];
+    if (!rows.length) rows = [{}];
+    return '<div class="ck-table" style="--ck-cols:' + cols.length + '"><div class="ck-tr ck-th">' +
+      cols.map(function (c) { return '<span>' + esc(c[1]) + '</span>'; }).join('') + '<span></span></div>' +
+      rows.map(function (r, i) { return edRow(cols, r, i); }).join('') + '</div>' +
+      '<button class="btn btn-sm ck-addrow" type="button" data-a="addrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add row</button>';
+  }
+  function edRow(cols, r, i) {
+    return '<div class="ck-tr" data-row="' + i + '">' + cols.map(function (c) {
+      return '<textarea class="input input-sm ck-cell" data-col="' + esc(c[0]) + '" data-oneline data-nodraft rows="1" aria-label="' +
+        esc(c[1] + ', row ' + (i + 1)) + '" placeholder="' + esc(c[1]) + '">' + esc(r[c[0]] || '') + '</textarea>';
+    }).join('') + '<button class="iconbtn ck-rowx" type="button" data-a="rowx" aria-label="Remove row ' + (i + 1) + '">' + XMARK + '</button></div>';
+  }
+  function wireEdTable(ed, it) {
+    var table = ed.querySelector('.ck-table');
+    var wireX = function (b) { b.addEventListener('click', function () { b.closest('.ck-tr').remove(); }); };
+    Array.prototype.forEach.call(ed.querySelectorAll('[data-a="rowx"]'), wireX);
+    ed.querySelector('[data-a="addrow"]').addEventListener('click', function () {
+      var n = table.querySelectorAll('.ck-tr[data-row]').length;
+      if (n >= 12) return;
+      var hold = document.createElement('div');
+      hold.innerHTML = edRow(it.columns || [], {}, n);
+      var tr = hold.firstChild;
+      table.appendChild(tr);
+      wireX(tr.querySelector('[data-a="rowx"]'));
+      tr.querySelector('.ck-cell').focus();
+    });
+  }
+
+  function wireSteps(host, ctx) {
     Array.prototype.forEach.call(host.querySelectorAll('[data-a="secna"]'), function (b) {
       var sec = b.closest('[data-sec]').getAttribute('data-sec');
       b.addEventListener('click', function () {
@@ -261,6 +422,168 @@
           window.ADspaceConfirm.ask({ title: 'Sign off this checklist?', body: 'It is locked once signed, and the month\'s check in My Work is ticked.', go: 'Sign off' }, go);
         } else go();
       });
+    });
+  }
+
+  /* ---- Write with AI (2026-10-15): the playbook's pre-advertising read --
+     What the team knows is asked up front (kept in this browser); the
+     function reads the confirmed Brand analysis, the Ad benchmarks and the
+     linked Meta accounts and proposes an answer for each field; the
+     colleague chooses which to keep in a sheet, declares them read, and
+     each is saved as if typed, with Undo where it happened. */
+  var keep = function (k, v) {
+    try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || '{}') || {}; localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+    return {};
+  };
+  function brandIn(v, name) {
+    if (typeof v === 'string') return v.replace(/\{brand\}/g, name);
+    if (Array.isArray(v)) return v.map(function (x) { return brandIn(x, name); });
+    if (v && typeof v === 'object') { var o = {}; Object.keys(v).forEach(function (k) { o[k] = brandIn(v[k], name); }); return o; }
+    return v;
+  }
+  function word(v) {
+    if (Array.isArray(v)) return v.map(function (x) { return typeof x === 'object' ? Object.keys(x).map(function (k) { return x[k]; }).join(' · ') : x; }).join('\n');
+    return v == null ? '' : String(v);
+  }
+  function write(btn) {
+    var ctx = V.ctx, cl = ctx.client, k = 'adspace-checklist-inputs:' + cl.id;
+    ctx.msg('ckMsg', '');
+    btn.disabled = true;
+    ctx.db.rpc('ai_checklist_left').then(function (r) {
+      btn.disabled = false;
+      var l = r.data || {};
+      if (r.error || l.error) { ctx.msg('ckMsg', said(r.error || l.error), 'err'); return; }
+      if (!l.left) {
+        ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. An admin can turn it on.'
+          : 'No checklist drafts left today. The next is free at 12:00 am.', 'err');
+        return;
+      }
+      var was = keep(k);
+      window.ADspaceConfirm.ask({
+        title: 'Write with AI',
+        body: 'Reads the confirmed Brand analysis, the Ad benchmarks and the linked Meta accounts, then proposes an answer for each field to review before it is saved. ' +
+          l.left + (l.left === 1 ? ' draft' : ' drafts') + ' left today.',
+        go: 'Write',
+        fields: [
+          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
+          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
+            choices: [['', 'Not decided'], ['Leads', 'Leads'], ['Sales', 'Sales'], ['Traffic', 'Traffic'], ['Awareness', 'Awareness']] },
+          { name: 'destination', label: 'Ads send people to', required: false, value: was.destination || '',
+            choices: [['', 'Not decided'], ['Instant Form', 'An instant form'], ['WhatsApp', 'WhatsApp'], ['Messenger', 'Messenger'], ['Website', 'The website']] },
+          { name: 'account', label: 'Ad account', required: false, seg: true, value: was.account || '',
+            choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
+          { name: 'notes', label: 'Notes for the checklist', rows: 3, required: false, placeholder: 'Optional', value: was.notes || '' }],
+        check: function (v) {
+          var b = String(v.budget == null ? '' : v.budget).trim();
+          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Monthly ad budget: a figure above 0.' : '';
+        }
+      }, function (v) {
+        var inputs = { budget: String(v.budget == null ? '' : v.budget).trim(), objective: v.objective || '', destination: v.destination || '',
+          account: v.account || '', notes: String(v.notes || '').trim() };
+        keep(k, inputs);
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.lastChild.textContent = 'Writing';
+        ctx.db.functions.invoke('checklist-draft', { body: { client_id: cl.id, notes: inputs.notes,
+          inputs: { budget: inputs.budget ? Number(inputs.budget) : null, objective: inputs.objective || null,
+            destination: inputs.destination || null, account: inputs.account || null } } }).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.error || !d.fill) {
+            var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e;
+          }
+          done();
+          if (!V || V.ctx.client.id !== cl.id) return;
+          review(brandIn(d.fill, cl.name));
+        }).catch(function (e) {
+          done();
+          var d = e && e.d;
+          ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. The next is free at 12:00 am.' : said(e), 'err');
+        });
+        function done() {
+          var b = V && V.host.querySelector('[data-a="ai"]');
+          if (!b) return;
+          b.disabled = false; b.removeAttribute('aria-busy'); b.lastChild.textContent = 'Write with AI';
+        }
+      });
+    }).catch(function (e) { btn.disabled = false; ctx.msg('ckMsg', said(e), 'err'); });
+  }
+
+  /* The proposals, one a field, each ticked to keep; what the field holds
+     now is said under it where it differs. */
+  function review(fill) {
+    var d = V.data, box = $('ckAiSheet');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'sheet'; box.id = 'ckAiSheet'; box.hidden = true;
+      box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ckAiTitle" tabindex="-1" data-narrow="560">' +
+        '<div class="sheet-head"><h3 id="ckAiTitle">Written by AI</h3><button class="iconbtn" type="button" data-a="x" aria-label="Close">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+        '<div class="sheet-body" data-m="body"></div>' +
+        '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="apply">Apply</button><button class="btn-quiet" type="button" data-a="cancel">Cancel</button></div></div>';
+      document.body.appendChild(box);
+      box.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      box.querySelector('[data-a="cancel"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#' + box.id + ' .sheet-card');
+    }
+    var rows = [], na = d.sections_na || [];
+    d.sections.forEach(function (s) {
+      if (na.indexOf(s.key) >= 0) return;
+      s.items.forEach(function (it) {
+        var key = s.key + '.' + it.key;
+        if (it.kind === 'tick' || !(key in fill)) return;
+        var now = valueOf(d, key), next = fill[key];
+        if (JSON.stringify(now == null ? '' : now) === JSON.stringify(next)) return;
+        rows.push({ key: key, sec: s.title, it: it, now: now, next: next });
+      });
+    });
+    var body = box.querySelector('[data-m="body"]');
+    if (!rows.length) { V.ctx.msg('ckMsg', 'Written by AI: every field already holds what it proposes.', 'ok'); return; }
+    body.innerHTML = rows.map(function (r, i) {
+      var nx = r.it.kind === 'table'
+        ? '<div class="ck-table is-read" style="--ck-cols:' + r.it.columns.length + '"><div class="ck-tr ck-th">' + r.it.columns.map(function (c) { return '<span>' + esc(c[1]) + '</span>'; }).join('') + '</div>' +
+          r.next.map(function (row) { return '<div class="ck-tr">' + r.it.columns.map(function (c) { return '<span class="ck-td" data-label="' + esc(c[1]) + '">' + esc(row[c[0]] || '') + '</span>'; }).join('') + '</div>'; }).join('') + '</div>'
+        : '<span class="ck-ai-val">' + esc(word(r.next)) + '</span>';
+      var nw = r.now == null || r.now === '' || (Array.isArray(r.now) && !r.now.length) ? '' : '<small class="ck-ai-now">Now: ' + esc(word(r.now)) + '</small>';
+      return '<label class="tickline ck-ai-row"><input type="checkbox" checked data-i="' + i + '"><span><b>' + esc(r.sec + ' · ' + r.it.label) + '</b>' + nx + nw + '</span></label>';
+    }).join('');
+    var go = box.querySelector('[data-a="apply"]');
+    var count = function () {
+      var n = body.querySelectorAll('input:checked').length;
+      go.textContent = n ? 'Apply ' + n : 'Apply'; go.disabled = !n;
+    };
+    Array.prototype.forEach.call(body.querySelectorAll('input'), function (x) { x.addEventListener('change', count); });
+    count();
+    go.onclick = function () {
+      var picks = Array.prototype.filter.call(body.querySelectorAll('input:checked'), function () { return true; })
+        .map(function (x) { return rows[Number(x.getAttribute('data-i'))]; });
+      window.ADspaceSheet.close();
+      window.ADspaceConfirm.ai.declare('checklist', 'Apply', function () { apply(picks); });
+    };
+    window.ADspaceSheet.show(box, { opener: V.host.querySelector('[data-a="ai"]') });
+  }
+
+  /* Each kept answer saved as if typed; Undo puts back each field's own. */
+  function apply(picks, undoing) {
+    var ctx = V.ctx, back = [], fail = 0;
+    var chain = Promise.resolve();
+    picks.forEach(function (p) {
+      chain = chain.then(function () {
+        var to = p.next;
+        if (to == null) to = p.it.kind === 'multi' || p.it.kind === 'table' ? [] : '';
+        return ctx.db.rpc('client_checklist_set', { p_client: ctx.client.id, p_kind: V.kind, p_item: p.key, p_state: null, p_note: null, p_value: to })
+          .then(function (r) {
+            var x = r.data || {};
+            if (r.error || x.error) { fail++; return; }
+            V.data = x;
+            back.push({ key: p.key, it: p.it, next: p.now == null ? null : p.now, now: to });
+          }).catch(function () { fail++; });
+      });
+    });
+    return chain.then(function () {
+      paint();
+      if (fail) ctx.msg('ckMsg', fail + (fail === 1 ? ' answer was' : ' answers were') + ' not saved.', 'err');
+      if (undoing || !back.length || !ctx.undo) return;
+      ctx.undo('Written by AI. Read before signing off.', function () { apply(back, true); }, $('ckMsg'));
     });
   }
 
@@ -326,7 +649,8 @@
     var newPage = function () {
       page = pdf.addPage([W, H]); pages.push(page);
       text('ADspace', M, H - 52, 16, mark, ink);
-      text('FOR INTERNAL USE', M + 150, H - 50, 7.5, med, dark);
+      /* Centred on the paper, measured in its own face (the user, 2026-10-15). */
+      text('FOR INTERNAL USE', (W - width('FOR INTERNAL USE', 7.5, med)) / 2, H - 50, 7.5, med, dark);
       y = H - 74;
     };
     var room = function (h) { if (y - h < FLOOR) { newPage(); return true; } return false; };
@@ -387,6 +711,25 @@
       }
       s.items.filter(function (it) { return it.kind !== 'tick'; }).forEach(function (it) {
         var v = (d.answers[s.key + '.' + it.key] || {}).value;
+        /* A table (r1.2): its columns over a row each, under its label. */
+        if (it.kind === 'table') {
+          var tc = it.columns || [], share = [0.22, 0.27, 0.21, 0.13, 0.17];
+          var tw = tc.map(function (c, i) { return FULL * (share[i] || 1 / tc.length); }), tx = [M];
+          for (var q = 1; q < tc.length; q++) tx[q] = tx[q - 1] + tw[q - 1];
+          room(44);
+          text(it.label, M, y - 10, SZ, med, dark); y -= 16;
+          var th = function () { tc.forEach(function (c, i) { rect(tx[i], y - 20, tw[i], 20, fill); text(c[1], tx[i] + 6, y - 13.5, SZ, book, dark); }); y -= 20; };
+          th();
+          (Array.isArray(v) && v.length ? v : [{}]).forEach(function (row) {
+            var ls = tc.map(function (c, i) { return wrap(row[c[0]] || '', tw[i] - 12, 8.5); });
+            var h = Math.max.apply(null, ls.map(function (l) { return l.length; }).concat([1])) * 11 + 9;
+            if (room(h)) th();
+            tc.forEach(function (c, i) { rect(tx[i], y - h, tw[i], h); ls[i].forEach(function (l, j) { text(l, tx[i] + 6, y - 13 - j * 11, 8.5); }); });
+            y -= h;
+          });
+          y -= 8;
+          return;
+        }
         var word = Array.isArray(v) ? v.join(' / ') : v || '';
         if (!word && (it.kind === 'choice' || it.kind === 'multi')) word = '';
         factRow(it.label, word);
