@@ -3705,7 +3705,7 @@ finding fixed at the user's word ("fix all no matter what").
   an ad set) are Business settings, never typed in the function.
 - Gadang Holdings Berhad joins the exact brand names.
 - Next: Write with AI on the Pre-Advertising Checklist with the Meta setup
-  table (r1.2); the Meta Advertising Proposal PDF later.
+  table (r1.2).
 
 ### 2026-10-15 — The client record has six tabs
 - The user: "the sliding tabs are gradually increasing, and its getting
@@ -3909,3 +3909,11 @@ finding fixed at the user's word ("fix all no matter what").
   a desk because the Download track was `auto` (now fixed at 112px).
 - I13 (the stand-in answering a quotation key before client scope, and
   asking billing at Work) had already shipped with the quotation guards.
+
+
+### 2026-10-15 — No Meta Advertising Proposal PDF
+- A client-facing PDF of the Meta plan (objective, ad sets, budget, lead
+  estimate), drawn from the Brand analysis and the Pre-Advertising
+  Checklist, was noted as a later step. The user dropped it: as an agency,
+  the team does not hand its strategy to the client. The plan stays in the
+  internal checklist (FOR INTERNAL USE); no client copy of it is made.
