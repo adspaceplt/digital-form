@@ -2669,7 +2669,7 @@
         $('campPickRail').innerHTML =
           '<p class="railpct"><b>' + chosen.length + ' of ' + slots + ' chosen</b>' +
           '<span>' + pct + '%</span></p>' +
-          '<span class="railbar"><span class="railbar-fill camp-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
+          '<span class="railbar"><span class="railbar-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
           (booked > slots
             ? '<p class="railwarn">' + booked + ' booked · ' + goodwill.length + ' goodwill</p>'
             : '') +
