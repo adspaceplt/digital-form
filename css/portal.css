@@ -10249,6 +10249,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    over the name and 52 under the tagline (the user saw it). These pads put
    56 of air on both sides at a desk and 41 on a phone. */
 .lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
+.lp-intro-act { margin: 24px 0 0; }
+.lp-chat { gap: 8px; }
+.lp-chat svg { width: 15px; height: 15px; }
 .lp-title {
   margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
   font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);

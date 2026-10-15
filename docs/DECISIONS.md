@@ -3555,3 +3555,14 @@ finding fixed at the user's word ("fix all no matter what").
   portal's foot as static markup. Left as decided: the front door's order
   (FRONT-1, 2026-09-28) and the 404's Visit website (NOTFOUND-2,
   2026-09-21).
+
+- **2026-10-15 — The two findings the public pages audit left, fixed at the
+  user's word ("Fix the remaining").** FRONT-1: the front door's one act, Chat
+  on WhatsApp, stood about two screens down (y 1486 of 1717 at 1280); a tonal
+  `.btn-sm` Chat on WhatsApp now stands under the tagline, the first screen's
+  only control, and How can we help? keeps the blue one, so the page's order
+  (2026-09-28) stands. NOTFOUND-2: a client who mistyped a portal address met
+  only Visit website (the marketing site) and Contact support; Client sign-in
+  (`/client/`) is the 404's blue action, the other two tonal beside it, the
+  sign-in taking its own row on a phone. The two console suites logged on
+  2026-10-15 (sets, reports) pass on main as it stands; the log is cleared.
