@@ -681,7 +681,9 @@
   function draw(d, cl) {
     var docs = window.ADspaceDocs;
     var all = JSON.stringify(d.answers) + cl.name;
-    var cjk = /[　-鿿＀-￯]/.test(all + JSON.stringify(d.sections));
+    /* The arrow the team writes (→) is not in the letterhead's face; the
+       Chinese face, which holds it, is fetched for it too. */
+    var cjk = /[　-鿿＀-￯→]/.test(all + JSON.stringify(d.sections));
     return docs.lib().then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
@@ -701,14 +703,25 @@
     var fill = PDF.rgb(0.949, 0.949, 0.949), edge = PDF.rgb(0.91, 0.91, 0.91);
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var hasCjk = function (s) { return /[　-鿿＀-￯]/.test(String(s)); };
-    var face = function (s, f) { return fonts.cjk && hasCjk(s) ? fonts.cjk : f; };
-    var safe = function (s) { s = String(s == null ? '' : s); return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-'); };
-    var width = function (s, size, f) { f = face(s, f || book); return f.widthOfTextAtSize(safe(s), size); };
+    var face = function (s, f) { return fonts.cjk && (hasCjk(s) || s === '→') ? fonts.cjk : f; };
+    var safe = function (s) {
+      s = String(s == null ? '' : s);
+      if (!fonts.cjk) s = s.replace(/→/g, '>');
+      return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-');
+    };
+    /* A line holding the arrow is drawn in parts, the arrow in the face that has it. */
+    var parts = function (s) { s = String(s == null ? '' : s); return fonts.cjk && !hasCjk(s) && s.indexOf('→') >= 0 ? s.split(/(→)/).filter(Boolean) : [s]; };
+    var width = function (s, size, f) {
+      return parts(s).reduce(function (w, p) { var g = face(p, f || book); return w + g.widthOfTextAtSize(safe(p), size); }, 0);
+    };
     var page, y, pages = [];
     var text = function (s, x, yy, size, f, color) {
       if (s == null || s === '') return;
-      f = face(s, f || book);
-      page.drawText(safe(s), { x: x, y: yy, size: size, font: f, color: color || ink });
+      parts(s).forEach(function (p) {
+        var g = face(p, f || book);
+        page.drawText(safe(p), { x: x, y: yy, size: size, font: g, color: color || ink });
+        x += g.widthOfTextAtSize(safe(p), size);
+      });
     };
     var wrap = function (s, max, size, f) {
       var out = [];
