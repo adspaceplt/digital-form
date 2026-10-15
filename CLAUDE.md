@@ -836,7 +836,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   15px, stroke 1.8, in ink; never filled or coloured; a name it does not hold
   draws nothing) and the booking's one step track (`.cx-journey`), drawn
   alike on the selection page and the creator's page, its words `W.journey`
-  in `js/words.js` (Booked, Shoot or Delivery, Draft, Review, Post, Results).
+  in `js/words.js` (Booked, Shoot visit or Delivery, Draft due, Client
+  review, Post date, Results; never a bare verb or a word that could read
+  as one, the user, 2026-10-15), each breaking at its space, never cut.
 - `js/grow.js` (`ADspaceGrow.fit(el)`) is the only way a typed box grows
   (the user, 2026-10-07: "Cell not increasing as i typed? Why still these
   issues again"): every textarea on a page that loads it (the console, the
@@ -2215,7 +2217,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Each booking's card names its step under its head (`.kcard-steps`), the
   client's six steps as the selection page draws them (`ADspaceIcons.journey`,
   `stepOf`), a delivery campaign's own; none before the creator is booked
-  and none once Completed. A completed campaign offers no state move (no
+  and none once Completed. On a phone a booking's head is two lines: the
+  name (one line, cut with an ellipsis) with its link and ⋯, then the
+  state (its dot and whole word, never shortened) at the left and its date
+  at the right (the user, 2026-10-15; `tests/geom.js`). A completed campaign offers no state move (no
   Resume, no Unpublish: its link stays live for the results).
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;

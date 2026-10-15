@@ -115,7 +115,7 @@
       yourCampaign: 'Your campaign',
       stillChoosing: 'Available creators',
       backupsHead: 'Backup creators',
-      shootOn: 'Shoot',
+      shootOn: 'Shoot visit',
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
       platformsLabel: 'Posting on',

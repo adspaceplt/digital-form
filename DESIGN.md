@@ -404,7 +404,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   first).
   - Applies to `.sheet-foot`, `.row.acts`, `.changebox-actions`,
     `.zone-actions`, `.qform-acts`, `.filearm-acts`.
-  - On a phone the two halves are equal, Cancel on the left.
+  - On a phone the two halves are equal, Cancel on the left; with three
+    actions Cancel and the secondary are the halves and the primary takes
+    the row under them, nearest the thumb.
   - A count in the foot sits to the left of the pair (above it on a phone).
 - Controls in a row share a width and a height. `.row` aligns to the top, and
   `.row > .btn` to the bottom. A field standing alone fills its container.

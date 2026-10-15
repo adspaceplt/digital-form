@@ -3607,3 +3607,29 @@ finding fixed at the user's word ("fix all no matter what").
   reads by the sessions (the connector's log lookups, several sessions at
   once) are the likely bulk. The user agreed: logs are read only while a
   fault is being found, for the shortest window, never to confirm a deploy.
+
+### 2026-10-15 · A booking's head holds two lines on a phone; three foot actions are two halves and a row
+- The full gate on main (geom) found the Creators pane's collapsed bookings
+  at 85 to 109px at 390 and 86 to 266px at 320: audit CAMP-7 had let a
+  phone's name wrap rather than lose its end beside the state chip, the
+  link and the ⋯, which left it about 90px at 320. The user ruled (relayed
+  2026-10-15): never shorten a status into a word that changes its meaning
+  ("Visit" for Pending visit reads as an instruction); fix it by layout. A
+  folded row on a phone is two lines: the name, one line cut with an
+  ellipsis, with the link and ⋯ at the right; then the state, its dot and
+  whole word, at the left and its date at the right. Every collapsed
+  booking is one height at 320 and 390.
+- The same ruling for the short labels: the step track reads Booked, Shoot
+  visit (Delivery), Draft due, Client review, Post date, Results in place of
+  Shoot, Draft, Review, Post (a bare verb each, or one that reads as one);
+  a booking's summary Date TBC for Visit TBC (Shoot visit TBC was clipped
+  in the desk column beside the rail); the card's Draft step
+  Draft submission; the selection page's fact Shoot, Shoot visit; the
+  creator's page's Submit, Submit draft. A step's name
+  breaks at its space where its column is narrow rather than being cut
+  ("Book…" and "Resu…" at 320 before); 11px on a phone.
+- qcSheet's foot on a phone (Cancel and Ask a second reviewer as halves,
+  Release to client the row under them, from #466) was right by DESIGN's
+  law and wrong by geom, which held every phone foot to one row of equal
+  halves. geom now holds the law itself: buttons sharing a row share its
+  width, and one alone fills its row; DESIGN states the three-action case.
