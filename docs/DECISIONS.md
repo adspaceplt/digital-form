@@ -3655,3 +3655,14 @@ finding fixed at the user's word ("fix all no matter what").
   reference to the accounting system, not a priced fact, so editing it never
   asks for a new version.
 
+### 2026-10-15 · A Letter of Offer keeps its monthly figures beside a one-off item
+- The user, comparing AQL/AC186/261001 (a 3-month line and Meta Verified,
+  printed as one Total of RM 2,700 + RM 200) with AQL/AC181/261001 (Payable
+  monthly): "for monthly just show the month rate".
+- A letter was priced by the month only while every line shared one term; a
+  one-off item (tenure 1) broke that. Now lines of more than a month on one
+  term are monthly, a one-month line is one-off with its own SST, and
+  `issue_letter` prices it the same (`stale` otherwise). Letters issued
+  before with both kinds redraw in the new layout; the figures are unchanged
+  but for a sen of SST rounding at most.
+

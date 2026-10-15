@@ -48,32 +48,45 @@
   function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust, l.term_pct); }
   function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
 
-  /* One price, worked the same way when the letter is issued and when it is
-     drawn again later, so the stored total and the printed one never drift.
+  /* One price, worked the same way when the letter is issued (by
+     `issue_letter`, to the sen) and when it is drawn again later, so the
+     stored total and the printed one never drift.
 
-     A letter whose lines all run the same term is priced per month, because
-     that is how it is invoiced and how the client thinks about it. `each` is
-     then one month's invoice and the commitment is that month times the term.
-     Mixed or one off lines have no monthly figure, so `each` is the amount. */
+     Where every line of more than a month runs the same term, those lines are
+     priced per month, because that is how they are invoiced and how the client
+     thinks about them: `each` is one month's invoice. A line of one month
+     beside them is a one-off item (`once`), with its own SST, never folding
+     the monthly figures into one whole (the user, 2026-10-15). Lines of mixed
+     terms have no monthly figure: every line is its whole amount, in `each`.
+     The subtotal, SST and total are the whole commitment: the term's months
+     and the one-off items. */
+  function isMonthly(l, term) { return term > 0 && Math.max(1, Number(l.tenure || 1)) === term; }
   function priceOf(lines, market, taxOn, at) {
-    var ns = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
-    var term = (ns.length && ns[0] > 1 && ns.every(function (x) { return x === ns[0]; })) ? ns[0] : 0;
-    var each = lines.reduce(function (s, l) {
-      return s + Number(l.qty || 0) * rateOf(l) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
-    }, 0);
+    var long = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); }).filter(function (x) { return x > 1; });
+    var term = (long.length && long.every(function (x) { return x === long[0]; })) ? long[0] : 0;
+    var each = 0, once = 0;
+    lines.forEach(function (l) {
+      var v = Number(l.qty || 0) * rateOf(l);
+      if (isMonthly(l, term)) each += v; else once += v * Math.max(1, Number(l.tenure || 1));
+    });
+    if (!term) { each = once; once = 0; }
     var eachTax = MON.taxOf(each, market, taxOn, at);
     var eachTotal = Math.round((each + eachTax) * 100) / 100;
+    var onceTax = MON.taxOf(once, market, taxOn, at);
+    var onceTotal = Math.round((once + onceTax) * 100) / 100;
     var n = term || 1;
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
     return {
       term: term, each: each, eachTax: eachTax, eachTotal: eachTotal,
-      subtotal: Math.round(each * n * 100) / 100,
-      tax: Math.round(eachTax * n * 100) / 100,
-      total: Math.round(eachTotal * n * 100) / 100
+      once: once, onceTax: onceTax, onceTotal: onceTotal,
+      subtotal: r2(r2(each * n) + once),
+      tax: r2(r2(eachTax * n) + onceTax),
+      total: r2(r2(eachTotal * n) + onceTotal)
     };
   }
   // What one line puts on the invoice the Amount column is totalling.
   function lineAmount(l, term) {
-    return Number(l.qty || 0) * rateOf(l) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
+    return Number(l.qty || 0) * rateOf(l) * (isMonthly(l, term) ? 1 : Math.max(1, Number(l.tenure || 1)));
   }
   /* "12 October 2026 to 11 April 2027" for a termed line, "12 October 2026"
      for a dated one, "6 months" for a term without a start. */
@@ -599,7 +612,7 @@
                       : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(rateOf(l), doc.market),
               cols.rate, y, 10);
         right(MON.money2(lineAmount(l, price.term), doc.market), cols.amt, y, 10);
-        var amtNote = price.term ? 'per month' : (n > 1 ? n + ' months' : '');
+        var amtNote = isMonthly(l, price.term) ? 'per month' : price.term ? 'one-off' : (n > 1 ? n + ' months' : '');
         if (amtNote) right(amtNote, cols.amt, y - LROW, 8.5, font, mute);
         y -= LROW;
         names.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10, bold); y -= LROW; });
@@ -624,10 +637,22 @@
         right(value, R, y, size, f, ink);
         y -= 15;
       };
-      trow('Subtotal', MON.money2(price.each, doc.market));
-      trow(Number(price.eachTax) ? MON.taxLabel(doc.market, doc.issued_at) : 'SST not applicable', MON.money2(price.eachTax, doc.market));
+      var taxWord = Number(price.eachTax) || Number(price.onceTax) ? MON.taxLabel(doc.market, doc.issued_at) : 'SST not applicable';
+      var oneOff = price.term && price.once > 0;
+      trow(oneOff ? 'Monthly subtotal' : 'Subtotal', MON.money2(price.each, doc.market));
+      trow(taxWord, MON.money2(price.eachTax, doc.market));
       y += 4; rule(y, lx, R, true); y -= 14;
       trow(price.term ? 'Payable monthly' : 'Total', MON.money2(price.eachTotal, doc.market), 'strong');
+      /* One-off items beside monthly lines are billed once, under their own
+         subtotal, so the monthly figure stays the one the client is invoiced
+         each month (2026-10-15). */
+      if (oneOff) {
+        y -= 8; need(52);
+        trow('One-off subtotal', MON.money2(price.once, doc.market));
+        trow(taxWord, MON.money2(price.onceTax, doc.market));
+        y += 4; rule(y, lx, R, true); y -= 14;
+        trow('Payable once', MON.money2(price.onceTotal, doc.market), 'strong');
+      }
       y -= 12;
 
       /* The conditions in one block instead of a sentence here and a sentence
@@ -637,7 +662,7 @@
       var terms = [];
       if (price.term) {
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months.');
-        terms.push('The total payable over the ' + price.term + ' month term is ' +
+        terms.push('The total payable over the ' + price.term + ' month term' + (price.once > 0 ? ', one-off items included,' : '') + ' is ' +
                    MON.money2(price.total, doc.market) + (Number(price.tax) ? ' including SST.' : '.'));
       }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
@@ -681,8 +706,9 @@
       };
       var sumRows = price.term
         ? [['Monthly fee', moneyWord(price.eachTotal)],
-           ['Contract term', price.term + ' months'],
-           ['Total contract value', moneyWord(price.total)]]
+           ['Contract term', price.term + ' months']]
+            .concat(price.once > 0 ? [['One-off fees', moneyWord(price.onceTotal)]] : [])
+            .concat([['Total contract value', moneyWord(price.total)]])
         : [['Total payable', moneyWord(price.eachTotal)]];
 
       var SIGH = 91;          // 32mm of signing room, not a ruled line

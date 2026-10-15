@@ -1741,11 +1741,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The file name swaps `/` for `-`.
 - Letter content:
   - Only To quote lines.
-  - Priced by the month when every line shares a term ("Payable monthly"; the
-    commitment stated in TERMS). Otherwise Total.
+  - Priced by the month when every line of more than a month shares a term
+    ("Payable monthly", the amount reading per month; the commitment stated
+    in TERMS); a one-month line beside them is a one-off item under its own
+    One-off subtotal, SST and Payable once (reading one-off), and TERMS and
+    the acceptance count it in the total (`2026-10-15-letter-one-off-items.sql`;
+    the user, 2026-10-15). Lines on two terms of more than a month: Total.
   - `priceOf()` computes the snapshot and the drawing. `issue_letter` works
     the same price from the stored lines (the term's rate rounded to the
-    cent, by the month where every line shares a term, SST at today's rate
+    cent, by the month where every line of more than a month shares a
+    term with a one-month line its own one-off subtotal, SST at today's rate
     unless exempt) and keeps the page's figures only within a sen, else
     refuses `stale` with its own (audit S4, 2026-10-10).
   - `verify_letter` confirms only the lines as printed: a line removed since
