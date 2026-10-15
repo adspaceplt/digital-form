@@ -4331,7 +4331,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `quote_price(snapshot, selection)`, prices every quotation from the live
   version (`quote_card`), never the draft and never the page, on 3, 6,
   12, 18 or 24 months (`bad-term`; 1 for one-off items alone; the user,
-  2026-10-14), a plan included: a plan, its platforms (a dearer one inside the
+  2026-10-14; the pages' one list `ADspaceMoney.QUOTE_TERMS`, held equal to
+  `quote_price` by `tests/sql.js`; an extra content's line found by its
+  `spec.kind`, never its slug), a plan included: a plan, its platforms (a dearer one inside the
   plan adds the difference, one past its count is an Additional platform
   at its fee), extra contents at the plan's whole saving to the nearest
   RM 10 (`extra_rates`), Translate every content (a content a language
@@ -4718,7 +4720,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Delete's line (1 client and 1 open task stay with …), and an inactive
     or removed colleague's ⋯ offers Hand over work, the same pickers.
   - Delete then asks Their data, Keep / Delete, and the name typed back
-    (the question opens on it); `team_member_remove` (`own`,
+    (the question opens on it); `team_member_remove_check` answers the
+    removal's own refusals before any work moves
+    (`2026-10-15-colleague-remove-check.sql`), then `team_member_remove` (`own`,
     `system-account`, `bad-name`, `last-admin`) sets them inactive and
     stamps `removed_at` (the row reads Removed, with no Set active);
     Delete their data also removes the mobile, the namecard (off, its short
@@ -4927,8 +4931,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   header, the recipient's client's published reports newest first, its file
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
   `wa-send` reads itself as the caller through `sign-download`, never the
-  page's bytes, a quotation's or letter's refused unless it is a PDF
-  (`bad-file`; audit S3, 2026-10-15); the
+  page's bytes, a quotation's or letter's refused unless it is a PDF whose
+  title names the record's own reference (`bad-file`; audit S3, 2026-10-15;
+  the letter's PDF titled `Letter of Offer {number}`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
   asks `wa_compose_prepare` as the colleague (the number and the record are

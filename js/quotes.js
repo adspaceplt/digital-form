@@ -253,6 +253,12 @@
       return s.active !== false && s.spec && s.spec.role === role;
     });
   }
+  /* The rate card line an extra content is priced from, by what it is
+     (`spec.kind`: a static graphic, a reel), never by its slug. */
+  function extraSlug(kind) {
+    var c = B.card && svcs(B.card, 'content').filter(function (x) { return x.spec.kind === kind; })[0];
+    return c ? c.slug : null;
+  }
   function feeOf(p) {
     var f = svcs(B.card, 'platform').filter(function (x) { return x.spec.platform === p; })[0];
     return f ? Number(f.rate) : 0;
@@ -282,8 +288,8 @@
       Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
         i.checked = (sel.platforms || []).indexOf(i.value) > -1;
       });
-      $('qbGraphic').value = String((sel.extra || {})['static-graphic'] || 0);
-      $('qbReel').value = String((sel.extra || {})['reels-60'] || 0);
+      $('qbGraphic').value = String((sel.extra || {})[extraSlug('graphic')] || 0);
+      $('qbReel').value = String((sel.extra || {})[extraSlug('reel')] || 0);
       Array.prototype.forEach.call(document.querySelectorAll('#qbLangs input'), function (i) {
         i.checked = (sel.langs || ['en']).indexOf(i.value) > -1;
       });
@@ -293,9 +299,9 @@
       /* The five terms a quotation is offered on (2026-10-14), each with its
          adjustment as the rate card version holds it (18 months takes 12's
          on a version published before it had its own). */
-      $('qbTerm').innerHTML = [3, 6, 12, 18, 24].map(function (m) {
-        var key = { 3: 'term_1_3', 6: 'term_6_11', 12: 'term_12_23', 18: 'term_18_23', 24: 'term_24' }[m];
-        var pct = Number((set[key] != null ? set[key] : m === 18 ? set.term_12_23 : 0) || 0);
+      $('qbTerm').innerHTML = window.ADspaceMoney.QUOTE_TERMS.map(function (m) {
+        var key = window.ADspaceMoney.termKey(m);
+        var pct = Number((set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : 0) || 0);
         return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
       }).join('');
       $('qbTerm').value = String(sel.term || 6);
@@ -429,8 +435,8 @@
     if (sel.plan) {
       sel.extra = {};
       var g = Math.max(0, Math.floor(Number($('qbGraphic').value) || 0)), r = Math.max(0, Math.floor(Number($('qbReel').value) || 0));
-      if (g) sel.extra['static-graphic'] = g;
-      if (r) sel.extra['reels-60'] = r;
+      if (g && extraSlug('graphic')) sel.extra[extraSlug('graphic')] = g;
+      if (r && extraSlug('reel')) sel.extra[extraSlug('reel')] = r;
     } else { sel.translate = false; }
     Array.prototype.forEach.call(document.querySelectorAll('#qbOnce input'), function (i) {
       var n = Math.max(0, Math.floor(Number(i.value) || 0));
@@ -443,8 +449,9 @@
      answer that prices the lines. */
   function hints(d) {
     var x = (d && d.extra_rates) || {};
-    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = x['static-graphic'] != null ? 'RM ' + rm(x['static-graphic']) + ' each' : '';
-    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = x['reels-60'] != null ? 'RM ' + rm(x['reels-60']) + ' each' : '';
+    var gs = extraSlug('graphic'), rs = extraSlug('reel');
+    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = gs && x[gs] != null ? 'RM ' + rm(x[gs]) + ' each' : '';
+    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = rs && x[rs] != null ? 'RM ' + rm(x[rs]) + ' each' : '';
     var p = planOf(), tr = svcs(B.card, 'language')[0];
     var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
     var langs = document.querySelectorAll('#qbLangs input:checked').length;

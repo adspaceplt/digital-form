@@ -784,10 +784,19 @@
       }, function (v) {
         /* A hand-over that failed removes nobody: the question stays open
            saying so (audit I3, 2026-10-15). */
-        return Promise.resolve(handTo(m, own, v)).then(function (moved) {
-          if (moved === false) return { held: true };
+        /* Who may be removed is asked before any work moves: a refusal
+           only the removal knew (the last admin) had left the work handed
+           over and the colleague in place (audit, 2026-10-15). A database
+           without the check goes on as before. */
+        return Promise.resolve(db.rpc('team_member_remove_check', { p_member: m.id })).then(function (c) {
+          var e = c && !c.error && c.data && c.data.error;
+          if (e) return { refused: e };
+          return Promise.resolve(handTo(m, own, v)).then(function (moved) { return moved === false ? { held: true } : null; });
+        }).then(function (pre) {
+          if (pre) return pre;
           return db.rpc('team_member_remove', { p_member: m.id, p_erase: v.data === 'erase', p_name: v.name });
         }).then(function (r) {
+          if (r && r.refused) return REMOVE_SAID[r.refused] || r.refused;
           if (r && r.held) return 'Some work could not be handed over, so ' + m.name + ' was not removed. Choose again, or keep it with them.';
           var d = (r && r.data) || {};
           if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : String(r.error.message || r.error);
