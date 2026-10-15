@@ -3998,3 +3998,20 @@ finding fixed at the user's word ("fix all no matter what").
   room; on blur the card rose back under the finger.
 - Date, time, datetime-local, month and week now count as a select does.
   `tests/tabbar.js` holds both sides.
+
+### 2026-10-15 — White label in one pick and one group
+- The user asked whether a white-label report could be made straight from
+  Reports, then whether the brands could sit under their client like parent
+  and child, and the Brand pane's Reports and Brands become one group.
+- New report: the For field is gone; the Client list holds each active
+  brand straight under its client (`Peakle › Digital IT Zone · White
+  label`), so one pick sets both. The head ⋯'s White label stays for
+  correcting a draft.
+- The Brand pane: one White label group (White label, Wide logo, Brands
+  with Add brand) in place of a Reports group and a Brands group.
+- Found while checking it: a report made for the client and then given a
+  brand left the month's report task In progress under its maker, never
+  following the report again. Trigger `sm_reports_brand_task` now puts it
+  back to To do under the month's manager (unless another of the client's
+  own reports in the month holds it), and a report given back to the
+  client takes it again.

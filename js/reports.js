@@ -368,34 +368,51 @@
           '<select class="select" id="rpNewKind" data-seg>' + TYPES.map(function (t) {
             return '<option value="' + t.key + '">' + esc(t.seg) + '</option>';
           }).join('') + '</select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
         /* A white-label client's report is for the client itself or one of
-           its brands (2026-10-07): each its own report a month. */
-        '<div class="row" id="rpNewForRow" hidden><div><label class="field-label" for="rpNewFor">For</label><select class="select" id="rpNewFor"></select></div></div>' +
+           its brands (2026-10-07), each its own report a month; the brands
+           are listed under their client in the one list (the user,
+           2026-10-15: one pick, never a second field). */
+        '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMode">Period</label>' +
           '<select class="select" id="rpNewMode" data-seg><option value="month">Monthly</option><option value="adhoc">Ad hoc</option></select></div></div>' +
         '<div class="row" id="rpNewMonthRow"><div><label class="field-label" for="rpNewMonth">Content month</label><select class="select" id="rpNewMonth" aria-required="true"></select></div></div>' +
         '<div class="row fgrid" id="rpNewDates" hidden><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div>' +
       '</section>', FOOT('Create'));
-    $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
-      return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
-    }).join('');
-    var forSeq = 0;
-    var paintFor = function () {
-      var cid = $('rpNewClient').value, c = hub.byClient[cid] || {}, seq = ++forSeq;
-      $('rpNewForRow').hidden = true; $('rpNewFor').innerHTML = '';
-      if (!cid || !c.white_label || !(bridge.may && bridge.may('reports.whitelabel', 'work'))) return;
-      db.rpc('client_brands_list', { p_client: cid }).then(function (q) {
-        if (seq !== forSeq) return;
-        var bs = ((q && q.data && q.data.brands) || []).filter(function (b) { return b.active; });
-        if (!bs.length) return;
-        $('rpNewFor').innerHTML = '<option value="">' + esc(c.name) + '</option>' +
-          bs.map(function (b) { return '<option value="' + esc(b.id) + '">' + esc(b.name) + ' · White label</option>'; }).join('');
-        $('rpNewForRow').hidden = false;
-        if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpNewFor'));
-      }).catch(function () {});
+    /* The pick: a client's own value is its id; a brand's is `b:{id}`,
+       carrying its client. */
+    var brandsOf = {};
+    var paintClients = function () {
+      var sel = $('rpNewClient'), keep = sel.value;
+      sel.innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
+        return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>' +
+          (brandsOf[c.id] || []).map(function (b) {
+            return '<option value="b:' + esc(b.id) + '" data-client="' + esc(c.id) + '">' +
+              esc(c.name + ' \u203a ' + b.name + ' · White label') + '</option>';
+          }).join('');
+      }).join('');
+      if (keep && sel.querySelector('option[value="' + keep.replace(/"/g, '') + '"]')) sel.value = keep;
+      if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
     };
+    var picked = function () {
+      var v = $('rpNewClient').value || '';
+      if (v.indexOf('b:') !== 0) return { client: v, brand: '' };
+      var o = $('rpNewClient').selectedOptions && $('rpNewClient').selectedOptions[0];
+      return { client: (o && o.getAttribute('data-client')) || '', brand: v.slice(2) };
+    };
+    paintClients();
+    /* Each white-label client's active brands, read once a sheet: a handful
+       of partners, each its own read (`client_brands_list` takes one). */
+    if (bridge.may && bridge.may('reports.whitelabel', 'work')) {
+      hub.clients.filter(function (c) { return c.white_label; }).forEach(function (c) {
+        db.rpc('client_brands_list', { p_client: c.id }).then(function (q) {
+          var bs = ((q && q.data && q.data.brands) || []).filter(function (b) { return b.active; });
+          if (!bs.length) return;
+          brandsOf[c.id] = bs;
+          paintClients();
+        }).catch(function () {});
+      });
+    }
     var monSeq = 0, months = [];
     var monthWord = function (p) { return MON[Number(p.slice(5, 7)) - 1] + ' ' + p.slice(0, 4); };
     /* Where the months cannot be read (an older database), the last twelve
@@ -409,8 +426,8 @@
       return out;
     };
     var paintMonths = function () {
-      var sel = $('rpNewMonth'), cid = $('rpNewClient').value, kind = $('rpNewKind').value || 'social', seq = ++monSeq;
-      var brand = !$('rpNewForRow').hidden && $('rpNewFor').value;
+      var who = picked(), sel = $('rpNewMonth'), cid = who.client, kind = $('rpNewKind').value || 'social', seq = ++monSeq;
+      var brand = who.brand;
       var draw = function (list, override, wl) {
         months = list;
         var today = ymd(new Date()), pick = '', keep = sel.value;
@@ -455,10 +472,8 @@
         draw(d.months || [], d.may_override, d.white_label);
       }).catch(function () { if (seq === monSeq) draw(calendar(), true, true); });
     };
-    $('rpNewClient').onchange = function () { paintFor(); paintMonths(); };
-    $('rpNewFor').onchange = paintMonths;
+    $('rpNewClient').onchange = paintMonths;
     $('rpNewKind').onchange = paintMonths;
-    paintFor();
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
     $('rpNewMode').value = 'month';
     if (window.ADspaceForm) { window.ADspaceForm.paint($('rpNewKind')); window.ADspaceForm.paint($('rpNewMode')); }
@@ -489,7 +504,7 @@
     var go = box.querySelector('[data-a="go"]');
     go.onclick = function () {
       var m = $('rpNewMonth').value, a = $('rpNewStart').value, b = $('rpNewEnd').value;
-      var client = $('rpNewClient').value;
+      var client = picked().client;
       if (!client) { say(sm, 'Choose a client.', 'err'); $('rpNewClient').focus(); return; }
       if (adhoc()) {
         if (!a) { say(sm, 'Choose a start date.', 'err'); $('rpNewStart').focus(); return; }
@@ -501,7 +516,7 @@
         a = mon.starts; b = mon.ends;
       }
       go.disabled = true;
-      var brand = $('rpNewForRow').hidden ? '' : $('rpNewFor').value;
+      var brand = picked().brand;
       var asked = adhoc(), kind = $('rpNewKind').value || 'social';
       (asked ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand || null, p_on_request: true })
         : brand ? db.rpc('sm_report_create_for', { p_client: client, p_start: a, p_end: b, p_kind: kind, p_brand: brand })

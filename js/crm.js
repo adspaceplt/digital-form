@@ -2529,9 +2529,13 @@
       ]) +
       readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]) +
       readGroup('Content brief', BRIEF.map(function (f) { var v = briefOf(c)[f[1]]; return [f[2], v ? esc(v) : '', false, true]; })) +
-      (c.white_label ? readGroup('Reports', [['White label', 'On'],
-        ['Wide logo', c.report_logo ? '<span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span>' : '', true]]) +
-        '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">Brands</h4><div data-m="list"></div></section>' : '') +
+      /* White label is one group (the user, 2026-10-15): the switch, the
+         wide logo and the brands it covers, read together. */
+      (c.white_label ? '<section class="readgroup wl-brands" id="crmWlBrands"><h4 class="fsec-h">White label</h4><dl class="ovfacts">' +
+        '<div><dt>White label</dt><dd>On</dd></div>' +
+        '<div><dt>Wide logo</dt>' + (c.report_logo ? '<dd><span class="widelogo is-read"><img src="' + esc(c.report_logo) + '" alt="Wide logo"></span></dd>'
+          : '<dd class="is-missing">Required</dd>') + '</div>' +
+        '<div><dt>Brands</dt><dd data-m="list"></dd></div></dl></section>' : '') +
       '<section class="readgroup meta-links" id="crmMetaRead"><div class="readgroup-head"><h4 class="fsec-h">Meta</h4>' +
         (mayPart('clients', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
         '</div><div data-m="list"></div></section>' +
