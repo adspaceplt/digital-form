@@ -55,7 +55,8 @@
   function pctOf(v) { return v + '%'; }
   var TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')],
     term_1_3: ['1 to 3 months', pct], term_4_5: ['4 and 5 months', pct], term_6_11: ['6 to 11 months', pct],
-    term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct] };
+    term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct],
+    fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SPECS = {
     details: { title: 'Details form', keys: [['details_form_days', 'Open for (days)', 'quote', '', 'Open', per('day')]] },
     followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', 'Every client', 'Lead', per('hour')],
@@ -223,7 +224,8 @@
     var pin = num('ai_price_in'), pout = num('ai_price_out');
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
-        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])) }]);
+        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])
+          .concat(num('fx_sgd') == null ? [] : ['S$1 = RM ' + num('fx_sgd')])) }]);
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',

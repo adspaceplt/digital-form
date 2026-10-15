@@ -65,7 +65,7 @@
       langs: 'Languages', langsNote: 'Your contents are shared across the languages selected, at no extra charge.',
       translate: 'Translate every content into each language selected', translateNote: 'Charged per content, per language',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
-      budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above RM {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
+      budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
       koc: 'KOC creators', kocNone: 'None', kocN: '{n} creators', kocCustom: 'Custom list (quoted on request)',
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
@@ -77,10 +77,10 @@
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand.', consent: 'Tick the consent to continue.' },
       make: 'Proceed quote', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
-      line: 'Service', qty: 'Qty', rate: 'Rate (RM)', sub: 'Subtotal (RM)', onReq: 'Quoted on request',
+      line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
       proceed: 'Proceed', download: 'Download', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
-      billManaged: 'The fees include the management of an advertising budget of up to RM\u00a0{b} per month. The advertising budget is billed separately.',
+      billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       validLong: 'This quotation is valid until {d}.', basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', brnSg: 'UEN', brnHintSg: '9 or 10 characters', addr: 'Billing address',
       ask: 'Request Letter of Offer', asking: 'Sending…',
@@ -136,7 +136,7 @@
       langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
       translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
-      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 RM {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n} 个月',
+      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n} 个月',
       once: '内容制作', onceNote: '一次性，按件收费',
       koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
@@ -148,10 +148,10 @@
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', consent: '请勾选同意后继续。' },
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
-      line: '服务', qty: '数量', rate: '单价 (RM)', sub: '小计 (RM)', onReq: '另行报价',
+      line: '服务', qty: '数量', rate: '单价 ({c})', sub: '小计 ({c})', onReq: '另行报价',
       proceed: '继续办理', download: '下载', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
-      billManaged: '费用包括代为管理每月最高 RM\u00a0{b} 的广告预算。广告预算另行收费。',
+      billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       validLong: '本报价有效期至 {d}。', basis: '价格依据 ADspace 价目表 v.{v}。',
       billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', brnSg: 'UEN 编号', brnHintSg: '9 或 10 位', addr: '账单地址',
       ask: '申请服务确认函', asking: '提交中…',
@@ -476,15 +476,20 @@
       '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
   }
 
+  /* A Singapore lead's quotation is in S$: its totals say so and carry the
+     rate it was priced at, which turns the card's own RM budgets too
+     (2026-10-15). */
+  function qc() { return Q && Q.totals && Q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
+  function qb(n) { var fx = Q && Q.totals && Number(Q.totals.fx); return fx ? Math.round(Number(n) / fx) : Number(n); }
   function totalsRows(tt) {
     var r = [];
     if (tt.month) {
       var w = t(), sst = f(w.sst, { p: tt.sst_pct });
       r.push([w.monthSub, n2(tt.month.subtotal)]);
       if (Number(tt.term_pct)) r.push([f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }), n2(tt.month.term)]);
-      r.push([w.monthExcl, n2(tt.month.excl)], [sst, n2(tt.month.sst)], [w.monthly, 'RM ' + n2(tt.month.incl), 1]);
+      r.push([w.monthExcl, n2(tt.month.excl)], [sst, n2(tt.month.sst)], [w.monthly, qc() + ' ' + n2(tt.month.incl), 1]);
     }
-    if (tt.once) r.push([t().onceSub, n2(tt.once.subtotal)], [f(t().sst, { p: tt.sst_pct }), n2(tt.once.sst)], [t().oneOff, 'RM ' + n2(tt.once.incl), 1]);
+    if (tt.once) r.push([t().onceSub, n2(tt.once.subtotal)], [f(t().sst, { p: tt.sst_pct }), n2(tt.once.sst)], [t().oneOff, qc() + ' ' + n2(tt.once.incl), 1]);
     return r;
   }
   function paintQuote() {
@@ -503,7 +508,7 @@
         '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
     var notes = [], managed = managedBudget(q);
-    if (managed) notes.push(f(t().billManaged, { b: n0(managed) }));
+    if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
     else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
     if (!gone) notes.push(f(t().validLong, { d: day(q.valid_until, true) }));
     notes.push(f(t().basis, { v: q.version }));
@@ -520,7 +525,7 @@
       (gone ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span></div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
-      '<span class="qs-num qs-r">' + esc(t().rate) + '</span><span class="qs-num">' + esc(t().sub) + '</span></div>' + lines + '</div>' +
+      '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       (gone ? '' : '<button class="btn btn-primary qs-proceed" type="button" data-a="proceed">' + esc(t().proceed) + '</button>') +
       '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
@@ -546,7 +551,7 @@
      figure, never typed. */
   function budgetOnRequest() {
     var top = CAT && CAT.budgets && CAT.budgets.length ? Number(CAT.budgets[CAT.budgets.length - 1]) : 0;
-    return top ? f(t().budgetOver, { b: n0(top) }) : t().budgetReq;
+    return top ? f(t().budgetOver, { c: qc(), b: n0(qb(top)) }) : t().budgetReq;
   }
   function waLink(q) {
     var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
@@ -558,8 +563,8 @@
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
       '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
       '<dl class="qs-facts"><dt>' + esc(t().ref) + '</dt><dd>' + esc(q.ref) + '</dd>' +
-      (tt.month ? '<dt>' + esc(t().monthly) + '</dt><dd>RM ' + esc(n2(tt.month.incl)) + '</dd>' : '') +
-      (tt.once ? '<dt>' + esc(t().oneOff) + '</dt><dd>RM ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
+      (tt.month ? '<dt>' + esc(t().monthly) + '</dt><dd>' + qc() + ' ' + esc(n2(tt.month.incl)) + '</dd>' : '') +
+      (tt.once ? '<dt>' + esc(t().oneOff) + '</dt><dd>' + qc() + ' ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
       '<dt>' + esc(t().status) + '</dt><dd><span class="chip-state is-warn">' + esc(t().requested) + '</span></dd></dl>' +
       '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>';
   }

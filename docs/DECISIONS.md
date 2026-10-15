@@ -4034,3 +4034,19 @@ finding fixed at the user's word ("fix all no matter what").
   title (the quotation PDF already did; the Letter of Offer is now titled
   `Letter of Offer {number}`), which `wa-send` reads in the PDF's
   compressed object streams before it uploads anything.
+
+## 2026-10-15 — A Singapore client's quotation is priced in S$
+- The user (2026-10-15): "singapore client reprice in S$, however needs a
+  place for us to input the currency rates so MYR plans or items charge in
+  SGD rate with dynamic manual input rates somewhere best fit". The rate
+  is a Business setting in Tax and terms (`fx_sgd`, the ringgit to S$1,
+  from a day on like every figure there), never seeded: a guessed rate
+  would price a real quotation, so a Singapore client is refused (`no-fx`)
+  until the team sets it.
+- Converted in the database, not on the page: the live card's rates are
+  turned before `quote_price` runs, so the term adjustment, SST and every
+  total are worked out on S$ figures and add up to the cent. The card's
+  budget tiers are left in RM, because the page sends the tier it offers
+  and the price matches it; only their words are shown in S$, in whole
+  dollars. A quotation keeps the rate it was priced at (`totals.fx`), so a
+  later change of rate never moves one already sent.
