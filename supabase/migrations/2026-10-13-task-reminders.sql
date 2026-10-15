@@ -2,7 +2,9 @@
 -- TASK REMINDERS — on a weekday from 10:00 to 18:00 MYT each colleague is
 -- told what of their own needs them: one notice every few hours, never one
 -- a task.
--- 2026-10-13. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- 2026-10-13. Superseded in part: 2026-10-14-public-holidays.sql adds the
+-- holiday check to the schedules, so run that file after this one.
+-- Safe to run twice. Rollback at the foot. Mirrored byte for byte
 -- in supabase/schema.sql under the same banner; tests/ops.js compares the
 -- two.
 --

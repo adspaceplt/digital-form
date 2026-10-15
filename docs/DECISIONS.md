@@ -3816,3 +3816,30 @@ finding fixed at the user's word ("fix all no matter what").
   reminder goes to whoever is still active.
 - Left as it was: a `last-admin` refusal after the hand-over leaves the
   work moved and the colleague in place (the page names the refusal).
+
+### 2026-10-15 — What a function answers is held to the reader's level (audit S4, S5, S7, S10, S11, I7, I10, I12)
+- The Pre-Advertising Checklist prefilled the registered name and the newest
+  quotation for any Clients View reader. The registered name now needs
+  Clients: Billing View (or Documents Work), else the brand is used; the
+  quotation needs Clients: Services View, as does the onboarding hint.
+- CLIENT BILLING COLUMNS granted every column but the billing list, so a
+  second run handed `script_key` (which opens `/script/` alone) to every
+  colleague. It is now withheld with the billing columns.
+- "Billing details received" told everyone at Clients: Billing Work, whatever
+  their scope. It is now held to the bands and client scope that would let
+  them read the client; the form also refuses a contact phone over 30
+  characters.
+- WhatsApp sent a superseded Letter of Offer or a quotation marked Not
+  proceeding when an older page asked. `wa_compose_prepare` refuses both as
+  `void`.
+- Undo after Accept caption wrote back the caption the page sent, over any
+  correction made since. It now restores the round kept in
+  `post_versions` and refuses `moved` where the file, title or caption has
+  changed.
+- The greeting read "Ms Ms Jane Doe" where the name repeated its
+  salutation, and "Tan" for Tan Sri Ahmad. A salutation is said once, and
+  the two-word titles are kept whole.
+- Re-run hazards: the quotations file grants its columns one by one, so a
+  run never hands back `billing`; the details form and public holidays
+  banners state they run after the function hygiene file; the task
+  reminders banner says the holidays file supersedes its schedules.

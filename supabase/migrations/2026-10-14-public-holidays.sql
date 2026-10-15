@@ -30,6 +30,8 @@
 --   * The seed: Johor's published holidays for 2026 and 2027, written only
 --     into an empty table (a seed is a first run, not a running list).
 --
+-- ORDER: after 2026-10-07-function-hygiene.sql, whose `open_to_anon` grants
+-- anon this section's public reads; run before it, they are revoked.
 -- Safe to run twice. Rollback: drop the four functions and the table, and
 -- schedule the two reminders again with their earlier commands
 -- ('select public.ops_tasks_remind()', 'select public.ops_tasks_nudge()').

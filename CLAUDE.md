@@ -1487,8 +1487,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     answers once (`client_details_submit`: registered name in capitals, BRN,
     old BRN, TIN, SST no., billing address, finance email, the billing
     contact's salutation, name, mobile and email; refused by field), telling
-    the team at Clients: Billing Work (kind `client.details`, opening
-    Billing). The Active gate's Billing sheet offers it in one line
+    the team at Clients: Billing Work whose bands and client scope reach the
+    client (kind `client.details`, opening Billing). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
     details fills the Billing sheet and its own Save takes them in
     (`client_details_used`); Add as contact opens Contacts prefilled. The
@@ -1506,7 +1506,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Clients View, so the gate still names what is missing.
   - Every read of `clients` names `ADspaceAPI.CLIENT_COLS` or its own list,
     never `*` (refused). A new column is granted by running the CLIENT
-    BILLING COLUMNS section again. The stand-in refuses `*` and every
+    BILLING COLUMNS section again; `script_key` stays withheld with the
+    billing columns. The stand-in refuses `*` and every
     billing column, top level or embedded.
 - Checklists (`tab=checklists`, `js/checklists.js`,
   `2026-10-15-client-checklists.sql`; the user, 2026-10-15: the team's New
@@ -1525,7 +1526,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   section Not applicable (`client_checklist_set`, Clients Work,
   client scope; `locked`, `bad-item`, `bad-value`, `too-long`; filed
   `client.edited`); the pre-advertising one prefilled from the record (the
-  registered name, the newest quotation, the brief's competitors, the
+  registered name at Clients: Billing View, else the brand; the newest
+  quotation at Clients: Services View; the brief's competitors, the
   confirmed Brand analysis's SWOT; `checklist_prefill`). Mark as prepared
   (`incomplete` with what is left), Sign off by another colleague (asked;
   `own`), Send back, and Reopen at Manage (asked; the signed copy kept in
@@ -1649,8 +1651,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     Prof, Dato', Datin, Datuk, Dato' Sri, Datin Sri, Tan Sri, Puan Sri, Tun,
     Tuan, Puan, Encik, Cik, or None), shown before the name on the row and
     filed from and to. `contact_greeting(salutation, name)` greets with the
-    salutation and the whole name, else the whole name where its first word
-    is a salutation (never Tan, a surname too), else the name's first word
+    salutation and the whole name (the salutation said once), else the whole
+    name where it opens on a salutation (never Tan, a surname too; Tan Sri,
+    Puan Sri, Dato' Sri, Datin Sri and Datuk Sri kept whole), else the
+    name's first word
     (`2026-10-15-whatsapp-greeting-and-counts.sql`).
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
@@ -2058,8 +2062,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   request takes a note or a caption edit, sent only where changed and kept
   as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
   caption with Accept caption (the next round), whose Undo puts back the
-  caption and the round decided on (`review_caption_undo`, refused `moved`
-  once that round is decided or edited; 2026-10-15). The noun is caption, never
+  round kept in `post_versions` (`review_caption_undo`, refused `moved`
+  once that round is decided or its file, title or caption changed since;
+  2026-10-15). The noun is caption, never
   copy. The console's Edit replaces the file, uploaded at Save.
 - A request not yet answered is changed with Edit request (the Request
   changes button while one stands): it reopens with the note and the
@@ -4868,8 +4873,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-14-whatsapp-document-purposes.sql` in the SQL Editor; the user,
   2026-10-14: the team decides which to send once a client proceeds): Send
   on WhatsApp in a quotation's ⋯ (not removed, not Not proceeding) and a
-  Letter of Offer's ⋯ on the client's Documents (not voided or replaced,
-  `void`), each drawn once its template is on; the composer takes the
+  Letter of Offer's ⋯ on the client's Documents (not voided or replaced;
+  `wa_compose_prepare` refuses either `void`), each drawn once its template is on; the composer takes the
   record fixed (`o.doc`: `#waDocOne`, a readfield, never a select of one),
   its PDF drawn in the browser as Download draws it and sent as the
   Document header; variables the greeting, the client, the reference; to a

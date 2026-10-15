@@ -40,7 +40,8 @@ begin
    where c.table_schema = 'public' and c.table_name = 'clients'
      and c.column_name not in ('legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no',
                                'bill_contact', 'bill_contact_email', 'bill_contact_phone',
-                               'bill_contact_id', 'finance_email', 'billing_address');
+                               'bill_contact_id', 'finance_email', 'billing_address',
+                               'script_key');
   execute format('grant select (%s) on table public.clients to authenticated', cols);
 end $$;
 
