@@ -74,6 +74,25 @@
       ['ai_price_out', 'Output, a million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
       ['ai_price_search', 'Web searches, a thousand', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
     reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow', '', 'Reach within', pctOf]] },
+    /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
+       against (2026-10-15, the client analysis playbook). */
+    bench: { title: 'Ad benchmarks', keys: [
+      ['bench_cpr_low', 'Tier 1 from', 'rm', 'Property cost per result (RM)', 'Property from RM', String],
+      ['bench_cpr_mid', 'Tier 2 from', 'rm', 'Property cost per result (RM)', 'Tier 2 from RM', String],
+      ['bench_cpr_high', 'Tier 3 from', 'rm', 'Property cost per result (RM)', 'Tier 3 from RM', String],
+      ['bench_cpr_top', 'Tier 3 up to', 'rm', 'Property cost per result (RM)', 'Up to RM', String],
+      ['bench_msg_min', 'Low', 'rm', 'Messaging cost per result (RM)', 'Messaging low RM', String],
+      ['bench_msg_target', 'Target', 'rm', 'Messaging cost per result (RM)', 'Messaging target RM', String],
+      ['bench_msg_max', 'High', 'rm', 'Messaging cost per result (RM)', 'Messaging high RM', String],
+      ['bench_form_min', 'Low', 'rm', 'Lead form cost per result (RM)', 'Lead form low RM', String],
+      ['bench_form_target', 'Target', 'rm', 'Lead form cost per result (RM)', 'Lead form target RM', String],
+      ['bench_form_max', 'High', 'rm', 'Lead form cost per result (RM)', 'Lead form high RM', String],
+      ['bench_cpm_min', '1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
+      ['bench_cpm_max', '1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
+      ['bench_cpl_rise', 'Cost per lead rise a year (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
+      ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
+      ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
+      ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     resend: { title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
   };
   /* The earliest change set from a later day, in the row's words: "From
@@ -193,7 +212,10 @@
       biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
         meta: meta ? 'On · Import from Meta, Report audit' : 'Off' },
       biz && { id: 'reach', name: 'Reach allowance', kind: 'edit',
-        meta: num('reach_allowance_pct') == null ? '' : 'Within ' + num('reach_allowance_pct') + '% of Meta' }]);
+        meta: num('reach_allowance_pct') == null ? '' : 'Within ' + num('reach_allowance_pct') + '% of Meta' },
+      biz && { id: 'bench', name: 'Ad benchmarks', kind: 'edit',
+        meta: num('bench_msg_target') == null ? '' : parts(['Messaging RM ' + num('bench_msg_target'), 'Lead form RM ' + num('bench_form_target'),
+          'Ad spend ' + num('bench_ad_spend_pct') + '%', 'Ad set RM ' + num('bench_adset_daily') + ' a day']) }]);
     var pin = num('ai_price_in'), pout = num('ai_price_out');
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',

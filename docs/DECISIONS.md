@@ -3685,3 +3685,24 @@ finding fixed at the user's word ("fix all no matter what").
 - Template editing in Settings is deferred; the template lives in the
   migration (`checklist_template`) and a row keeps the copy it began with.
 
+
+### 2026-10-15 — Brand analysis follows the team's client analysis playbook
+- The user shared the playbook from their own analysis sessions and asked
+  for its thinking in the Brand analysis, adapted to the portal ("1 yes").
+- Kept: one run, structured output, the existing sections (the writers and
+  the checklist prefill read positioning, audiences, pillars and SWOT).
+- Added: the entity and parent group checked first; every fact labelled
+  Official, Listing or Third party; conflicting figures marked To confirm
+  rather than settled; place described by what buyers know; the competitor
+  map (direct, indirect, legacy, disruptor); What works, What is weak
+  (trust leaks), Where ADspace fits, To confirm with the client, Next
+  question; Budget realism in Ad targeting.
+- The playbook's back-and-forth questions became three fields asked before
+  the run (budget, objective, ad account), so the analysis never stops to
+  ask.
+- The playbook's Meta Malaysia benchmarks (cost per result tiers, messaging
+  and lead form ranges, impressions, the 83.75% ad spend share, RM 30 a day
+  an ad set) are Business settings, never typed in the function.
+- Gadang Holdings Berhad joins the exact brand names.
+- Next: Write with AI on the Pre-Advertising Checklist with the Meta setup
+  table (r1.2); the Meta Advertising Proposal PDF later.
