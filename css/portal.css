@@ -6822,6 +6822,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The rail's titles are the same size as the pane's section titles, because
    they head the same kind of thing: a block of the record. As 11px eyebrows
    the rail read as a footnote to the pane rather than as its other half. */
+/* A rail block's title with its way to the whole (Recent activity's View
+   all), the control's target overflowing the title's line evenly. */
+.railhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.railhead .railtitle { margin: 0; }
+.railhead .ovgo { margin: -8px -10px -8px 0; }
 .railtitle {
   margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
 }
@@ -7085,6 +7090,11 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 .rectabs, .tabrow { overflow-y: hidden; overscroll-behavior-x: contain; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--line); }
 .rectabs .tab, .tabrow .tab { margin-bottom: 0; }
 .rec-pane { grid-area: pane; min-width: 0; }
+/* The client record's parts (2026-10-15): a tab holding two or three parts
+   draws them one under the other, 24px apart, in the grid's one pane area. */
+.rec-panes { grid-area: pane; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+.rec-panes > .rec-pane[hidden] { display: none; }
+.rec-panes > .rec-pane > .pane-form:first-child { padding-top: 0; }
 .pane-form { padding: 12px 0 0; }
 .pane-form-head { margin: 0 0 12px; }
 /* A record's client link and the act that hands it over (a campaign, a
@@ -7157,12 +7167,12 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
   .rec:not(.cportal) > .rec-rail { display: contents; }
   .rec:not(.cportal) > .rec-rail > * { order: 0; }
   .rec:not(.cportal) > .rectabs { grid-area: auto; order: 1; }
-  .rec:not(.cportal) > .rec-pane { grid-area: auto; order: 2; }
+  .rec:not(.cportal) > .rec-pane, .rec:not(.cportal) > .rec-panes { grid-area: auto; order: 2; }
   .rec:not(.cportal) > .rec-rail > .rail-after { order: 3; }
   /* The last block before the tabs keeps its rule, which is then the step
      down to the strip; the first block after the pane takes the same step
      up from it, because the pane's last section draws no rule of its own. */
-  .rec:not(.cportal) > .rec-pane:not([hidden]) { margin-bottom: 24px; }
+  .rec:not(.cportal) > .rec-pane:not([hidden]), .rec:not(.cportal) > .rec-panes { margin-bottom: 24px; }
   /* ...even when it is the last block of all: a campaign's rail has nothing
      after the pane, so Timing gave up its rule and the strip sat hard under
      "Total so far" on a phone (2026-09-27). */

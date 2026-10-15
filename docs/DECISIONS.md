@@ -3706,3 +3706,16 @@ finding fixed at the user's word ("fix all no matter what").
 - Gadang Holdings Berhad joins the exact brand names.
 - Next: Write with AI on the Pre-Advertising Checklist with the Meta setup
   table (r1.2); the Meta Advertising Proposal PDF later.
+
+### 2026-10-15 — The client record has six tabs
+- The user: "the sliding tabs are gradually increasing, and its getting
+  longer. do you think its good to keep it this way". Ten tabs (eleven with
+  Requests) ran off a phone's strip.
+- Six tabs, agreed ("yes go ahead"): Overview, Calls and visits,
+  Engagements (months, then Checklists), Services, Brand, Account
+  (Contacts, Billing, Documents). The Activity record opens from the rail's
+  Recent activity (View all).
+- The parts stay whole, one under the other, each keeping its heading and
+  its address, so links written by search, Documents, My Work and the
+  Reports gate (`tab=billing`, `tab=documents`, `tab=checklists`) land
+  unchanged.
