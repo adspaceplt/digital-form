@@ -434,7 +434,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   large corner, the bar in sight under its scrim and out of reach
   (`--sheet-floor`, `--sheet-top`; the user, 2026-10-11: "every panel
   opens a card above the bar on mobile"); a field taking the
-  keyboard under a finger hides it (`is-typing`). It floats (the user,
+  keyboard under a finger hides it (`is-typing`), never a select, date or
+  time, which opens the system's picker (a card that moved under it jumped
+  back under the finger; 2026-10-15). It floats (the user,
   2026-10-11, after Instagram's): a glass pill 10px above the home bar
   inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
   slides to it and follows a finger dragged along the bar, letting go

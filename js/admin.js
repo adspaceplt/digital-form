@@ -1420,14 +1420,16 @@
     }
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     /* The keyboard: a field that takes typing hides the bar under a finger,
-       and it returns once nothing is typed in. A select opens the system's
-       own wheel and leaves the bar where it is. */
+       and it returns once nothing is typed in. A select, a date or a time
+       opens the system's own picker and leaves the bar where it is: the card
+       above it moved while the calendar was open and jumped back under the
+       finger reaching for its button (2026-10-15). */
     var touch = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
     var typingOff = 0;
     function typing(el) {
       if (!el || !el.matches) return false;
       if (el.isContentEditable || el.matches('textarea')) return true;
-      return el.matches('input') && !/^(button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/i.test(el.type || '');
+      return el.matches('input') && !/^(button|checkbox|radio|range|color|file|submit|reset|image|hidden|date|time|datetime-local|month|week)$/i.test(el.type || '');
     }
     document.addEventListener('focusin', function (e) {
       if (!touch || !touch.matches || !typing(e.target)) return;

@@ -3987,3 +3987,14 @@ finding fixed at the user's word ("fix all no matter what").
   never changed: a client marked or cleared later does not rewrite a month
   already scored. The client is held without a foreign key, so removing a
   client never touches a review.
+
+### 2026-10-15 — A date field leaves the tab bar where it is
+- Reported on an iPhone (Mark as VIC): the question card moved while the
+  date picker was open and jumped back once a day was chosen, so the press
+  meant for Mark as VIC missed.
+- Cause: focus on any input but a few button-like types set `is-typing`,
+  which hides the tab bar and lowers every card's floor. A date or time
+  field opens the system's picker, not the keyboard, so nothing needed the
+  room; on blur the card rose back under the finger.
+- Date, time, datetime-local, month and week now count as a select does.
+  `tests/tabbar.js` holds both sides.
