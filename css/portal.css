@@ -4532,7 +4532,7 @@ body > .shell { width: 100%; }
    at 12.5px, `Performance review` needs 157px and `Changes requested` 155,
    and in 124px they drew as "Performance r" and "Changes requ". A name longer
    than that (a label the team writes) ends in an ellipsis rather than a cut. */
-.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 170px var(--ctl-h); }
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 160px 156px 170px var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -8660,12 +8660,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (hover: hover) { .tinline:hover { color: var(--ink); } }
 .tinline[hidden] { display: none; }
 .tinline-pick { width: 100%; min-width: 0; }
-/* While a person is picked in place, the cell lets the picker show whole
-   (the code and the name) and its focus ring, which the cell's clip had
-   cut to four corners (the user, 2026-10-15). It sits over the Due column
-   only while it is open. */
-.task-owner:has(> .tinline-pick) { overflow: visible; position: relative; z-index: 2; }
-.task-owner > .tinline-pick { width: max-content; min-width: 100%; max-width: 260px; }
+/* While a person is picked in place, the picker keeps to its column (160px,
+   room for a code and a name) and its focus ring shows whole, which the
+   cell's clip had cut to four corners (the user, 2026-10-15). */
+.task-owner:has(> .tinline-pick) { overflow: visible; }
 .task-due { display: block; }
 .task-due.is-over .tinline, .task-due.is-over > span { color: var(--err); font-weight: 600; }
 .task-row > .team-act { justify-self: end; }
