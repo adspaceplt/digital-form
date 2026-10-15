@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015zf">
+<link rel="stylesheet" href="/css/portal.css?v=20261015zg">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -304,6 +304,18 @@
         <p class="aboutpop-text" id="sectionAboutText"></p>
         <button class="btn btn-sm aboutpop-guide" id="sectionGuide" type="button" hidden>Show me around</button>
       </div>
+      <!-- A Very Important Client (2026-10-15): what VIC asks of the team,
+           from any VIC tag (js/admin.js, `vicTag`). -->
+      <div class="kmenu vicpop" id="vicPop" hidden role="dialog" aria-labelledby="vicPopName">
+        <div class="popcard-head">
+          <span class="vicpop-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg><span id="vicPopName">Very Important Client (VIC)</span></span>
+          <button class="iconbtn popcard-x" id="vicPopHide" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <p>Please give this client's requests and work prompt, priority attention.</p>
+        <p>Issues on VIC work count double in performance reviews.</p>
+        <p class="vicpop-note" id="vicPopNote" hidden></p>
+        <p class="vicpop-foot" id="vicPopFoot"></p>
+      </div>
       <span class="console-spacer"></span>
       <!-- ===== Console search (js/search.js) =====
            One search across the sections this person may read. Cmd / Ctrl + K
@@ -522,6 +534,11 @@
           <select class="select select-sm" id="crmOwner" aria-label="Filter by person in charge">
             <option value="all">All people</option>
           </select>
+          <!-- Very Important Clients (2026-10-15), drawn while any is held. -->
+          <select class="select select-sm" id="crmVic" aria-label="Filter by VIC" hidden>
+            <option value="all">All clients</option>
+            <option value="vic">VICs</option>
+          </select>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet">
               <span class="cmdbar-count" id="crmCount"></span>
@@ -654,6 +671,7 @@
             <div class="rec-who">
               <div class="rec-name">
                 <h2 id="crmClientName"></h2>
+                <span id="crmVicTag"></span>
               </div>
               <p class="rec-id-meta" id="crmIdMeta"></p>
             </div>
@@ -679,6 +697,8 @@
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-a="edit">Edit</button>
                   <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-a="feedback" hidden>Request feedback on WhatsApp</button>
                   <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-a="restrict" hidden>Mark account restricted</button>
+                  <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
+                  <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
               </div>
@@ -1463,7 +1483,7 @@
       <div class="rec-id">
         <span class="rec-mark" id="wsMark" aria-hidden="true"></span>
         <div class="rec-who">
-          <div class="rec-name"><h2 id="wsClientName"></h2></div>
+          <div class="rec-name"><h2 id="wsClientName"></h2><span id="wsVicTag"></span></div>
           <p class="rec-id-meta" id="wsMeta"></p>
         </div>
         <div class="rec-ctl">
@@ -5384,30 +5404,30 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261012a"></script>
-<script src="/js/admin.js?v=20261015l"></script>
+<script src="/js/admin.js?v=20261015zg"></script>
 <script src="/js/documents.js?v=20261015m"></script>
 <script src="/js/letters.js?v=20261007i"></script>
 <script src="/js/smreport.js?v=20261012a"></script>
-<script src="/js/reports.js?v=20261015m"></script>
+<script src="/js/reports.js?v=20261015zg"></script>
 <script src="/js/register.js?v=20261015b"></script>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/quotes.js?v=20261015k"></script>
 <script src="/js/quotepdf.js?v=20261015k"></script>
 <script src="/js/checklists.js?v=20261015g"></script>
-<script src="/js/crm.js?v=20261015n"></script>
+<script src="/js/crm.js?v=20261015zg"></script>
 <script src="/js/sales.js?v=20261012l"></script>
-<script src="/js/team.js?v=20261015k"></script>
+<script src="/js/team.js?v=20261015zg"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
-<script src="/js/scripts.js?v=20261015a"></script>
+<script src="/js/scripts.js?v=20261015zg"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261015c"></script>
-<script src="/js/ops.js?v=20261015d"></script>
+<script src="/js/campaigns.js?v=20261015zg"></script>
+<script src="/js/ops.js?v=20261015zg"></script>
 <script src="/js/perf.js?v=20261015c"></script>
 <script src="/js/health.js?v=20261015"></script>
-<script src="/js/search.js?v=20261015"></script>
-<script src="/js/overview.js?v=20261015d"></script>
+<script src="/js/search.js?v=20261015zg"></script>
+<script src="/js/overview.js?v=20261015zg"></script>
 <script src="/js/settings.js?v=20261015d"></script>
 </body>
 </html>

@@ -3917,3 +3917,34 @@ finding fixed at the user's word ("fix all no matter what").
   Checklist, was noted as a later step. The user dropped it: as an agency,
   the team does not hand its strategy to the client. The plan stays in the
   internal checklist (FOR INTERNAL USE); no client copy of it is made.
+
+### 2026-10-15 — VIC clients: marked by admins, tagged wherever the client is named
+- The user asked for a way to mark the clients who need the team's prompt,
+  priority attention. First called VIP; the user renamed it VIC (Very
+  Important Client, "not Person") after the mockup. Gold A (antique) was
+  chosen of two golds shown beside Medium priority's yellow and the amber
+  waiting dot.
+- Admins alone set and clear it: a granted part, `clients.vic`, an admin's
+  by itself and offered to a group as Manage alone, never
+  `allowed('admin')`. Internal only: never on a client page, link page or
+  PDF.
+- The data: `clients.vic_at`, `vic_by`, `vic_note` (300), written only by
+  `client_vic_set` (a trigger refuses any other write), filed
+  `client.edited` from and to. The since date is the user's addition after
+  the mockup ("should be kept under key dates and editable"): asked on Mark
+  as VIC, prefilled with today, and changed in place under the record's
+  Key dates.
+- The console reads the VIC clients once beside `me()` (`vic_clients()`),
+  rather than a column added to every list's own read: one request, every
+  screen tagged from it, and a page served before the migration simply
+  shows no tag. `CLIENT_COLS` was left alone for that reason.
+- A list row, a My Work name and a search result are already one button, so
+  their tag is part of that button and shows its card on a desk's hover; the
+  record head's, the task card's and the board's are buttons. The user
+  confirmed this after it was explained.
+- A notice about a VIC client's work is titled "VIC · …" by a trigger on
+  `ops_notifications`, so the bell and the push say it whichever function
+  wrote the notice.
+- Not wanted (the user): a default High priority for VIC work; tasks are
+  preplanned. Follow-up limits, reminders and the performance weighting
+  ship as their own releases.

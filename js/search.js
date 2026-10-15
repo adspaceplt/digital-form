@@ -235,7 +235,7 @@
       row: function (c) {
         var via = c.via;
         return {
-          id: 'client-' + c.id, name: c.name, code: c.client_code,
+          id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
           meta: via ? [via.name, via.email || via.phone] : [stageOf(c.stage)],
           open: function () {
             go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : ''), 'clients');
@@ -470,7 +470,7 @@
         shown.push(r);
         var meta = (r.meta || []).filter(function (x) { return x != null && String(x).trim(); });
         html += '<button class="srow" type="button" role="option" aria-selected="false" tabindex="-1" id="sr-' + n + '" data-n="' + n + '">' +
-          '<span class="srow-name">' + mark(r.name, q) + '</span>' +
+          '<span class="srow-name">' + mark(r.name, q) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</span>' +
           (r.code ? '<span class="srow-code">' + mark(r.code, q) + '</span>' : '') +
           (meta.length ? '<span class="srow-meta">' + meta.map(function (m) { return mark(m, q); }).join(' · ') + '</span>' : '') +
           '</button>';

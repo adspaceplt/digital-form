@@ -172,7 +172,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage, ratecard |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage, ratecard, vic |
+| VIC clients (`client_vic_set`, `vic_clients`, `ADspaceAdmin.vicTag`) | vic, crm, perms, search, overview, sql, then `ui` |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
@@ -1153,7 +1154,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.health` (Health check-ins, every colleague's answers by name,
   2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
-  approved files, 2026-10-10); each offers Manage
+  approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
+  2026-10-15); each offers Manage
   alone (on or off). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1653,6 +1655,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   block (`#crmRestrict`, `.railgate.is-restricted`) with Clear (never asks,
   Undo where it happened), each filed `client.edited` from and to. The
   Dashboard's Clients tab lists them (Restricted accounts, the longest first).
+- VIC, a Very Important Client (`2026-10-15-vic-clients.sql`; the user,
+  2026-10-15, "VIC … Very Important Client not Person"): internal alone,
+  never on a client page, link page or PDF. `clients.vic_at` (the day it
+  became VIC), `vic_by`, `vic_note` (300) are written only by
+  `client_vic_set(p_client, p_on, p_note, p_since)` (`clients.vic` at Work,
+  the client in scope at View; `denied`, `not-found`, `too-long`,
+  `bad-date`; filed `client.edited` from and to); trigger
+  `clients_vic_guard` refuses any other write (`vic-function`). The console
+  reads `vic_clients()` once beside `me()` and every screen asks
+  `ADspaceAdmin.vic(id)`, never a read of its own. One tag
+  (`ADspaceAdmin.vicTag(id, inRow)`, `.chip-vic`, the crown and VIC in
+  gold): a button opening `#vicPop` (Very Important Client (VIC); prompt,
+  priority attention; issues count double in performance reviews; the
+  note; VIC since {day} · set by {name}) on a desk's hover, a press or the
+  keyboard's focus, docked on a phone, Escape first; inside a row that is
+  one button it is part of that button and shows its card on hover alone.
+  Where it shows: the Clients list (the tag, the logo's gold ring, a VICs
+  view drawn while any is held), the record head (tag and ring; the ⋯'s
+  Mark as VIC, asking VIC since and a note, or Remove VIC, never asked,
+  Undo where it happened; VIC since under Key dates, its pen at the part),
+  Content Review's list and client head, My Work's rows, board cards and
+  task card (a VIC client's work leads each band of the day axis, Urgent
+  delivery a band above it), Waiting for you (VIC rows first), the
+  Dashboard's Needs attention (VIC first among equals), the Creator
+  Campaigns, Reports and Video Scripts lists, and console search. A notice
+  about a VIC client's work is titled "VIC · …" (trigger
+  `ops_notifications_vic`), the bell and the push alike. No priority is
+  set by it.
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`;
     each logo field has Upload (`wireLogoUpload`): the picture is drawn down

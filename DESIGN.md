@@ -45,6 +45,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys, refuses, or is late** (danger items, the billing gate, blocked; a date already passed: overdue, late, Urgent, Urgent delivery, a lead over its follow-up time) |
 | `--pub` / `--pub-bg` | `#2a5793` / `#e6effb` | `#a7c6ed` / `#1d2735` | The post date on the My Work calendar, nowhere else: a pastel blue of Pantone 2717 C (the user, 2026-10-15, in place of purple), greyer than the action blue |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
+| `--vic` / `--vic-ink` / `--vic-bg` | `#b08a32` / `#7a5a0e` / `#f7f0dc` | `#c9a24c` / `#e3c272` / `#2b2517` | A Very Important Client's antique gold (the user, 2026-10-15, gold A): the VIC tag (`--vic-ink` on `--vic-bg`, 6.4:1 light, 9.6:1 dark), its crown and the ring round the client's logo, nothing else; browner than Medium's yellow, cooler than the amber dot |
 | `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else (2026-10-11) |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
@@ -65,7 +66,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   the action, green done or live, amber waiting or still running, red needs
   acting on now or destroys, grey not started or closed. A fact (High,
   Goodwill, White label, You) is a grey tag, never a status colour. Health's
-  pink and the calendar's pastel blue keep their one place.
+  pink, the calendar's pastel blue and a VIC's gold keep their one place.
   - Every primary is blue: Add, Create and Save as much as Publish, Release
     and Approve.
   - Copy link, Preview, Edit, Cancel, row actions and every caution (Unpublish,
@@ -215,6 +216,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, `body.is-plain`; the line never restates the title |
 | Status | The dot and its word in ink (`.chip-state`, or `.chip` / `.tone` with `is-ok`, `is-live`, `is-warn`, `is-danger`, `is-off`); a fact is the bare grey `.chip`; `select.state-select` (a tonal pop-up: the buttons' shade, no outline, its dot in the box and the chevron at its end; never blue) only for a state that moves as the work |
 | A priority's deadline (My Work) | The one status drawn filled (the user, 2026-10-11, D3 + B): a 4px strip down a task row's or board card's left edge (an inset shade, `.pri-urgent` red, `.pri-high` amber, `.pri-medium` yellow, `.pri-over` red) and, while it comes before the due date, `.task-pri` in the Due column (a board card's foot): 12/600, padding 2px 8px, radius 5, the level's tint (`--err-bg`, `--warn-bg`, `--soon-bg`), its words in ink while it counts down and `--err` once over; the task card's `.task-deadline` line on `--sunk` with the same strip. Normal, or a deadline met, draws neither |
+| A Very Important Client | `.chip-vic` (`ADspaceAdmin.vicTag`): the crown and VIC, 11.5/600, radius 5, `--vic-ink` on `--vic-bg`, after the client's name; a button opening `#vicPop` (a `.popcard`: the crown in `--vic` and Very Important Client (VIC) at 500, two sentences, the note shaded, the since line mute), or a part of a row that is one button; the logo disc ringed (`.is-vic`, 2px of the card then 1.5px of `--vic`) |
 | Undo | `.undobar` / `.undobar-here`: `--sunk` ground, hairline, ordinary ink, `.btn-sm`, 8 seconds |
 | A row's next step under a finger (My Work) | The row swiped left: its cells drift a fifth of the way, the stage and the ⋯ fade, and `.trow-next` (the blue `.btn`, the step's own words) stands at the right edge, 8px in; it shows the act and never takes it |
 | Several records at once | `.bulkbar`, sticky over the list: the tick for all with its count, the acts a ticked record can take (drawn only then, never greyed), Done. On a phone, or in a narrow pane (`data-narrow`), Done shares the count's line and the acts the next as equal parts, never breaking a label |

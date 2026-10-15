@@ -271,7 +271,7 @@
     bookings: function () {
       return once('bookings', function () {
         return db.from('campaign_options')
-          .select('id, state, visit_date, submission_due, submitted_at, campaign_id, campaigns(id, title, owner), creators(name)')
+          .select('id, state, visit_date, submission_due, submitted_at, campaign_id, campaigns(id, title, owner, client_id), creators(name)')
           .in('state', ['pending_visit', 'pending_draft', 'changes', 'submitted', 'reviewing', 'scheduled'])
           .then(rows).then(function (l) { return l || []; });
       });
@@ -334,7 +334,7 @@
     { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
       return R.report().then(function (d) {
         return (d.late || []).map(function (t) {
-          return { name: taskName(t), meta: t.client || 'Internal', tag: 'Task', who: t.owner || 'Unassigned',
+          return { name: taskName(t), meta: t.client || 'Internal', tag: 'Task', who: t.owner || 'Unassigned', client: t.client_id, clientName: t.client,
                    late: true, days: Number(t.days_over) || 0, since: overWord(t),
                    url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
         });
@@ -345,7 +345,7 @@
       return R.openTasks().then(function (list) {
         return list.filter(function (t) { var st = t.clients && t.clients.stage; return st === 'paused' || st === 'past'; }).map(function (t) {
           var n = t.current_final_due_at ? CK.between(CK.day(t.current_final_due_at), CK.today()) : null;
-          return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '',
+          return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '', client: t.client_id,
                    late: n > 0, days: n > 0 ? n : 0, since: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' late' : 'Due ' + dateWord(t.current_final_due_at),
                    tone: n > 0 ? '' : 'warn', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
         });
@@ -357,7 +357,7 @@
         return items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; }).map(function (x) {
           var c = { slug: x.slug, id: x.client_id };
           return { name: (SM && SM.titleOf ? SM.titleOf({ kind: x.kind }) : x.kind) + ', ' + lastMonth().short,
-                   meta: [x.brand || x.client, STAGE_WORD[x.status] || x.status].filter(Boolean).join(' · '), tag: 'Report',
+                   meta: [x.brand || x.client, STAGE_WORD[x.status] || x.status].filter(Boolean).join(' · '), tag: 'Report', client: x.client_id,
                    who: x.assignee || '', late: Boolean(x.late), days: x.late ? reportLateDays(x) : 0,
                    since: x.late ? daysWord(reportLateDays(x)) + ' late' : 'Due ' + dateWord(x.due), tone: x.late ? '' : 'off',
                    url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
@@ -372,7 +372,7 @@
       return R.inReview().then(function (list) {
         return list.map(function (r) {
           return { name: SM && SM.titleOf ? SM.titleOf(r) : r.title,
-                   meta: [(r.clients && r.clients.name) || 'Client', 'In review'].join(' · '), tag: 'Report',
+                   meta: [(r.clients && r.clients.name) || 'Client', 'In review'].join(' · '), tag: 'Report', client: r.client_id,
                    who: (r.clients && r.clients.owner) || '', days: daysSince(r.submitted_at), since: sinceWord(r.submitted_at), tone: 'warn',
                    url: '/admin/?s=reports&report=' + encodeURIComponent(r.id), section: 'reports' };
         });
@@ -386,7 +386,7 @@
           return { c: c, h: (now - new Date(c.stage_since || c.created_at).getTime()) / 3600000 };
         }).filter(function (x) { return x.h > STALE[x.c.stage]; }).map(function (x) {
           var c = x.c, d = Math.floor(x.h / 24);
-          return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, 'Overdue'].join(' · '), tag: 'Lead', who: c.owner || '',
+          return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, 'Overdue'].join(' · '), tag: 'Lead', who: c.owner || '', client: c.id,
                    late: true, days: d, since: daysWord(d), url: clientUrl(c), section: 'clients' };
         });
       });
@@ -395,7 +395,7 @@
       return R.clients().then(function (list) {
         return list.filter(function (c) { return c.restricted_since; }).map(function (c) {
           return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', 'Restricted', c.restricted_note].filter(Boolean).join(' · '),
-                   tag: 'Client', who: c.owner || '', late: true, days: daysSince(c.restricted_since), since: sinceWord(c.restricted_since),
+                   tag: 'Client', who: c.owner || '', client: c.id, late: true, days: daysSince(c.restricted_since), since: sinceWord(c.restricted_since),
                    url: clientUrl(c), section: 'clients' };
         });
       });
@@ -405,7 +405,7 @@
         return list.map(function (q) {
           var c = q.clients || {};
           return { name: [(W.rqKind || {})[q.kind] || q.kind, q.service_label].filter(Boolean).join(': '),
-                   meta: [c.name || 'Client', (W.rqState || {})[q.state] || q.state].join(' · '), tag: 'Request', who: c.owner || '',
+                   meta: [c.name || 'Client', (W.rqState || {})[q.state] || q.state].join(' · '), tag: 'Request', who: c.owner || '', client: q.client_id,
                    days: daysSince(q.created_at), since: sinceWord(q.created_at), tone: 'warn', url: clientUrl(c, 'services'), section: 'clients' };
         });
       });
@@ -415,7 +415,7 @@
         return list.map(function (x) {
           var c = x.s.clients || {};
           return { name: x.s.title, meta: [c.name || 'Client', x.ok + ' of ' + x.n + ' approved', x.ch ? x.ch + ' changes requested' : ''].filter(Boolean).join(' · '),
-                   tag: 'Content Review', who: c.owner || '', days: daysSince(x.s.published_at || x.s.created_at),
+                   tag: 'Content Review', who: c.owner || '', client: c.id || x.s.client_id, days: daysSince(x.s.published_at || x.s.created_at),
                    since: sinceWord(x.s.published_at || x.s.created_at), tone: 'warn',
                    url: '/admin/?s=review&client=' + encodeURIComponent(c.id || x.s.client_id) + '&set=' + encodeURIComponent(x.s.id), section: 'review' };
         });
@@ -425,7 +425,7 @@
       return R.noSet().then(function (list) {
         return list.map(function (x) {
           return { name: x.c.name, meta: 'No set this month' + (x.last ? ' · Last set ' + dateWord(x.last) : ''), tag: 'Content Review',
-                   who: x.c.owner || '', days: 0, since: 'Not started', tone: 'off',
+                   who: x.c.owner || '', client: x.c.id, days: 0, since: 'Not started', tone: 'off',
                    url: '/admin/?s=review&client=' + encodeURIComponent(x.c.id), section: 'review' };
         });
       });
@@ -439,7 +439,7 @@
           var o = x.o, cp = o.campaigns || {};
           return { name: (o.creators && o.creators.name) || 'Creator',
                    meta: [cp.title, o.state === 'pending_visit' ? 'Visit ' + dateWord(x.due) : 'Draft due ' + dateWord(x.due)].filter(Boolean).join(' · '),
-                   tag: 'Campaign', who: cp.owner || '', late: true, days: daysSince(x.due), since: daysWord(daysSince(x.due)) + ' late',
+                   tag: 'Campaign', who: cp.owner || '', client: cp.client_id, late: true, days: daysSince(x.due), since: daysWord(daysSince(x.due)) + ' late',
                    url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=schedule', section: 'campaigns' };
         });
       });
@@ -449,7 +449,7 @@
         return list.filter(function (o) { return o.state === 'submitted'; }).map(function (o) {
           var cp = o.campaigns || {};
           return { name: (o.creators && o.creators.name) || 'Creator', meta: [cp.title, (W.step || {}).submitted || 'Submitted'].filter(Boolean).join(' · '),
-                   tag: 'Campaign', who: cp.owner || '', days: daysSince(o.submitted_at), since: sinceWord(o.submitted_at), tone: 'warn',
+                   tag: 'Campaign', who: cp.owner || '', client: cp.client_id, days: daysSince(o.submitted_at), since: sinceWord(o.submitted_at), tone: 'warn',
                    url: '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators', section: 'campaigns' };
         });
       });
@@ -459,7 +459,7 @@
         return (list || []).map(function (c) {
           var what = c.kind === 'pre_ads' ? 'Pre-Advertising Checklist' : 'New Client Onboarding Checklist';
           var st = c.status === 'prepared' ? 'Waiting for sign-off' : c.started ? 'In progress' : 'Not started';
-          return { name: what, meta: [c.name, st].join(' · '), tag: 'Client', who: c.owner || '',
+          return { name: what, meta: [c.name, st].join(' · '), tag: 'Client', who: c.owner || '', client: c.client_id,
                    days: daysSince(c.since), since: sinceWord(c.since), tone: c.started ? 'warn' : 'off',
                    url: clientUrl({ slug: c.slug, id: c.client_id }, 'checklists') + '&list=' + c.kind, section: 'clients' };
         });
@@ -469,7 +469,7 @@
       return R.letters().then(function (list) {
         return list.map(function (d) {
           var c = d.clients || {};
-          return { name: d.number, meta: [c.name || 'Client', 'Issued ' + dateWord(d.issued_at)].join(' · '), tag: 'Document', who: c.owner || '',
+          return { name: d.number, meta: [c.name || 'Client', 'Issued ' + dateWord(d.issued_at)].join(' · '), tag: 'Document', who: c.owner || '', client: c.id || d.client_id,
                    days: daysSince(d.issued_at), since: daysWord(daysSince(d.issued_at)), tone: 'warn', url: clientUrl(c, 'documents'), section: 'clients' };
         });
       });
@@ -487,6 +487,13 @@
     } }
   ];
   function rank(r) { return r.late ? 0 : r.tone === 'off' ? 2 : 1; }
+  /* A VIC client's row (2026-10-15): by its client's id, else (the late
+     tasks, which name their client alone) by its name. */
+  function vicOfRow(r) {
+    var A = window.ADspaceAdmin;
+    if (!A || !A.vic) return null;
+    return A.vic(r.client) || (r.clientName && A.vicByName ? A.vic(A.vicByName(r.clientName)) : null);
+  }
   function attention() {
     var live = SOURCES.filter(function (s) { return s.can(); });
     return Promise.all(live.map(function (s) {
@@ -496,7 +503,9 @@
     })).then(function (all) {
       var out = [], failed = [];
       all.forEach(function (a) { if (a.failed) failed.push(a); else out = out.concat(a.rows); });
-      out.sort(function (a, b) { return rank(a) - rank(b) || b.days - a.days || String(a.name).localeCompare(String(b.name)); });
+      out.forEach(function (r) { var v = vicOfRow(r); r.vic = v ? v.client_id : ''; });
+      /* VIC first among equals: late before waiting before not started, then VIC. */
+      out.sort(function (a, b) { return rank(a) - rank(b) || (a.vic ? 0 : 1) - (b.vic ? 0 : 1) || b.days - a.days || String(a.name).localeCompare(String(b.name)); });
       return { rows: out, failed: failed };
     });
   }
@@ -1128,7 +1137,7 @@
           var since = r.late ? '<b class="is-err">' + esc(r.since) + '</b>'
             : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
           return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
-            '<span class="ovw-att-what"><b>' + esc(r.name) + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
+            '<span class="ovw-att-what"><b>' + esc(r.name) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
             '<span class="ovw-att-sec"><span class="chip">' + esc(r.tag) + '</span></span>' +
             '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
             '<span class="ovw-att-since">' + since + '</span></button>';

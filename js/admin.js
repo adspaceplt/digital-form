@@ -662,6 +662,96 @@
     if (typeof m === 'string') return Boolean(SYSTEM.ids[m] || SYSTEM.names[m]);
     return Boolean(m.system || SYSTEM.ids[m.id || m.team_member_id] || (m.name && SYSTEM.names[m.name] && !m.id));
   }
+  /* VERY IMPORTANT CLIENTS (2026-10-15, the user). Which clients are VIC is
+     read once beside me() (`vic_clients()`: the client, since when, who set
+     it and the note), so every screen tags a client from this one read and
+     no list reads it again. A database without the function, or a read that
+     fails, leaves the map empty: no tag, never a broken screen. */
+  var VIC = {};
+  function loadVic() {
+    return db.rpc('vic_clients').then(function (r) {
+      var next = {};
+      (r && !r.error && r.data || []).forEach(function (v) { if (v && v.client_id) next[v.client_id] = v; });
+      VIC = next;
+    }, function () {});
+  }
+  function vicOf(id) { return (id && VIC[id]) || null; }
+  /* A client named alone (My Work's late list names its client), by name. */
+  function vicByName(name) {
+    var n = String(name || '').trim().toLowerCase();
+    if (!n) return '';
+    for (var k in VIC) if (String(VIC[k].name || '').trim().toLowerCase() === n) return k;
+    return '';
+  }
+  var CROWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
+    'stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg>';
+  /* The tag. A button wherever it stands alone; `inRow` where the row is one
+     button already (a control is never nested), a part of that row that
+     shows its card on a desk's hover and names itself to a screen reader. */
+  function vicTag(id, inRow) {
+    if (!vicOf(id)) return '';
+    return inRow
+      ? '<span class="chip-vic" data-vic="' + esc(id) + '">' + CROWN + 'VIC<span class="sr">, Very Important Client</span></span>'
+      : '<button class="chip-vic" type="button" data-vic="' + esc(id) + '" aria-haspopup="dialog" aria-expanded="false" ' +
+          'aria-label="VIC, Very Important Client">' + CROWN + 'VIC</button>';
+  }
+  /* VIC clients first, keeping the order otherwise (Array.sort is stable). */
+  function vicFirst(list, idOf) {
+    return list.map(function (x, i) { return [vicOf(idOf(x)) ? 0 : 1, i, x]; })
+      .sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (x) { return x[2]; });
+  }
+  var vicHeld = { tag: null, timer: 0 };
+  function vicShut(back) {
+    var pop = $('vicPop');
+    clearTimeout(vicHeld.timer);
+    if (!pop || pop.hidden) return;
+    pop.hidden = true;
+    var t = vicHeld.tag;
+    vicHeld.tag = null;
+    if (t && t.tagName === 'BUTTON') { t.setAttribute('aria-expanded', 'false'); if (back) t.focus(); }
+  }
+  function vicOpen(tag) {
+    var pop = $('vicPop'), v = vicOf(tag && tag.getAttribute('data-vic'));
+    if (!pop || !v) return;
+    clearTimeout(vicHeld.timer);
+    if (vicHeld.tag && vicHeld.tag !== tag && vicHeld.tag.tagName === 'BUTTON') vicHeld.tag.setAttribute('aria-expanded', 'false');
+    vicHeld.tag = tag;
+    $('vicPopNote').textContent = v.note || '';
+    $('vicPopNote').hidden = !v.note;
+    $('vicPopFoot').textContent = ['VIC since ' + ADspaceClock.date(v.since), v.by_name ? 'set by ' + v.by_name : ''].filter(Boolean).join(' \u00b7 ');
+    pop.hidden = false;
+    if (tag.tagName === 'BUTTON') tag.setAttribute('aria-expanded', 'true');
+    ADspaceMenu.pop(tag, pop, 'left');
+  }
+  var fineHover = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
+  document.addEventListener('click', function (e) {
+    var tag = e.target.closest && e.target.closest('button.chip-vic');
+    if (tag) {
+      e.preventDefault(); e.stopPropagation();
+      if (vicHeld.tag === tag && !$('vicPop').hidden) vicShut(false); else vicOpen(tag);
+      return;
+    }
+    if (!(e.target.closest && e.target.closest('#vicPop'))) vicShut(false);
+  }, true);
+  document.addEventListener('focusin', function (e) {
+    var tag = e.target.closest && e.target.closest('button.chip-vic');
+    if (tag && e.target.matches(':focus-visible')) vicOpen(tag);
+    else if (!(e.target.closest && e.target.closest('#vicPop'))) vicShut(false);
+  });
+  document.addEventListener('mouseover', function (e) {
+    if (!fineHover || !fineHover.matches) return;
+    var tag = e.target.closest && e.target.closest('.chip-vic');
+    if (tag) { if (vicHeld.tag !== tag || $('vicPop').hidden) vicHeld.timer = setTimeout(function () { vicOpen(tag); }, 150); else clearTimeout(vicHeld.timer); return; }
+    if (e.target.closest && e.target.closest('#vicPop')) { clearTimeout(vicHeld.timer); return; }
+    if (vicHeld.tag) { clearTimeout(vicHeld.timer); vicHeld.timer = setTimeout(function () { vicShut(false); }, 200); }
+  });
+  /* Heard first, on the window, so the card shuts before a sheet under it. */
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('vicPop') && !$('vicPop').hidden) { e.stopImmediatePropagation(); e.stopPropagation(); vicShut(true); }
+  }, true);
+  if ($('vicPopHide')) $('vicPopHide').addEventListener('click', function () { vicShut(true); });
+  ADspaceMenu.onScroll(function () { vicShut(false); });
+
   var meLoaded = false;
   var meFailed = false;
   function loadMe(then) {
@@ -675,7 +765,7 @@
       SYSTEM = { ids: {}, names: {} };
       (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; });
     }, function () {});
-    var go = function () { Promise.all([rates.then(null, function () {}), sys]).then(then, then); };
+    var go = function () { Promise.all([rates.then(null, function () {}), sys, loadVic()]).then(then, then); };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
       if (!r.error) return r;
@@ -711,7 +801,7 @@
     /* `leads` and `past` are the lead stages and Past (2026-10-03): they
        narrow what the Clients level opens on those records, in the database
        (`client_row_seen`) as here. */
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past', 'vic'],
     /* WhatsApp (2026-10-10): a send for a report, a feedback request or a
        creator's booking follows the section unless a group shuts it. */
     whatsapp:  ['report', 'feedback', 'booking', 'approval'],
@@ -750,7 +840,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -2179,7 +2269,7 @@
       row.className = 'crm-row cr-client-row';
       row.setAttribute('data-id', c.id);
       row.innerHTML =
-        '<span class="crm-c crm-c-name">' + esc(c.name) + '</span>' +
+        '<span class="crm-c crm-c-name">' + esc(c.name) + vicTag(c.id, true) + '</span>' +
         '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
@@ -2772,7 +2862,9 @@
         mark.className = 'rec-mark'; mark.textContent = initials;
       });
     } else { mark.className = 'rec-mark'; mark.textContent = initials; }
+    mark.classList.toggle('is-vic', Boolean(vicOf(c.id)));
     $('wsClientName').textContent = c.name || '';
+    if ($('wsVicTag')) $('wsVicTag').innerHTML = vicTag(c.id);
     $('wsMeta').textContent = [
       c.handle_ig ? 'Instagram @' + String(c.handle_ig).replace(/^@/, '') : '',
       c.handle_tiktok ? 'TikTok @' + String(c.handle_tiktok).replace(/^@/, '') : '',
@@ -5304,6 +5396,13 @@
     ICON: ICON,
     glyph: sectionGlyph,
     isSystem: isSystem,
+    /* Very Important Clients (2026-10-15): the one read and the one tag. */
+    vic: vicOf,
+    vicTag: vicTag,
+    vicFirst: vicFirst,
+    vicByName: vicByName,
+    vicReload: loadVic,
+    vicMark: function (el, id) { if (el) el.classList.toggle('is-vic', Boolean(vicOf(id))); },
     hold: hold,
     iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's

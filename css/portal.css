@@ -55,6 +55,14 @@
      icons"): Pantone 214 C, on Health's glyph and its chosen answers alone. */
   --health:     #ce0f69;
   --health-bg:  #fcebf3;
+  /* A Very Important Client's own mark (2026-10-15, the user chose gold A
+     of two): a muted antique gold on its tag, its crown and the ring round
+     its logo, nothing else; browner than Medium's yellow and cooler than the
+     amber waiting dot. Words in `--vic-ink` hold 6.4:1 on white and 5.6:1 on
+     `--vic-bg`. */
+  --vic:        #b08a32;
+  --vic-ink:    #7a5a0e;
+  --vic-bg:     #f7f0dc;
   /* The namecard (js/namecard.js) is the brand's own five tones, light in
      both themes as the post mockups are: never redefined below. */
   --nc-ground:  #ffffff;
@@ -235,6 +243,9 @@
     --pub-bg:     #1d2735;
     --health:     #f57eb6;
     --health-bg:  #2e1a24;
+    --vic:        #c9a24c;
+    --vic-ink:    #e3c272;
+    --vic-bg:     #2b2517;
     --ok-solid:   #4aa876;
     --on-ok:      #07150e;
     --warn:       #cf9350;
@@ -10190,6 +10201,34 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop-guide { align-self: flex-start; margin-top: 10px; }
 .aboutpop.is-dock .aboutpop-guide { width: 100%; min-height: var(--ctl-h); }
 
+/* A VERY IMPORTANT CLIENT (2026-10-15, the user). One tag wherever the
+   client is named (`ADspaceAdmin.vicTag`): VIC after a crown, in the dark
+   gold on its pale ground, a fact's tag in shape. It is a button where it
+   stands alone, and a part of the row where the row is one button; either
+   way its card (`#vicPop`) says what VIC asks of the team. The client's logo
+   disc wears a thin gold ring (`.is-vic`). */
+.chip-vic {
+  display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; align-self: center;
+  font: 600 11.5px/1.5 var(--font); padding: 2px 7px 2px 6px; border: 0; border-radius: 5px;
+  background: var(--vic-bg); color: var(--vic-ink); white-space: nowrap; vertical-align: middle;
+}
+.chip-vic svg { width: 12px; height: 12px; flex: 0 0 auto; stroke-width: 2; }
+button.chip-vic { cursor: pointer; position: relative; }
+/* The tag's target reaches the floor without moving its line. */
+button.chip-vic::after { content: ""; position: absolute; inset: -8px -4px; }
+button.chip-vic[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--vic); }
+.cl-mark.is-vic, .rec-mark.is-vic { box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--vic); }
+.vicpop.popcard { display: grid; gap: 8px; width: min(320px, calc(100vw - 16px)); padding: 14px 16px 16px; }
+.vicpop.is-dock { padding: 18px 20px 20px; }
+.vicpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 15px; font-weight: 500; letter-spacing: -.01em; color: var(--ink); }
+.vicpop-name svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--vic); stroke-width: 2; }
+.vicpop p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.vicpop .vicpop-note { background: var(--sunk); border-radius: var(--radius-ctl-sm); padding: 8px 10px; color: var(--ink);
+  overflow-wrap: anywhere; }
+.vicpop .vicpop-foot { font-size: 12.5px; color: var(--ink-mute); }
+.vicpop.is-dock p { font-size: 14px; }
+
 /* =========================================================================
    A FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07)
    A card, never a cover: on the floating ground like the ⓘ card, hung from
@@ -12654,3 +12693,12 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 .ck-acts > .btn { flex: 0 0 auto; }
 .is-narrow .ck-item { grid-template-columns: minmax(0, 1fr) auto 16px; }
 .mcheck-open { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.cl-name .chip-vic { margin-left: 6px; }
+#crmVicTag:empty { display: none; }
+/* Room for a VIC ring inside the name cell, which clips its overflow. */
+.crm-row.client-row .crm-c-name { padding-block: 4px; margin-block: -4px; padding-left: 4px; margin-left: -4px; }
+.wfy-what .chip-vic { margin-left: 6px; }
+.cr-client-row .crm-c-name .chip-vic, .camp-c-client .chip-vic, .rp-name b .chip-vic, .vs-c-name b .chip-vic,
+.ovw-att-what b .chip-vic, .srow-name .chip-vic { margin-left: 6px; }
+#wsVicTag:empty { display: none; }
+.bcard-title .chip-vic { margin-left: 6px; vertical-align: 1px; }

@@ -5341,7 +5341,7 @@
             var wl = r.brand_id && r.brand_name;
             b2.innerHTML = (picking ? '<span class="rh-pick"><input class="trow-pick" type="checkbox"' + (hub.pick[r.id] ? ' checked' : '') +
                 ' aria-label="Select ' + esc((wl ? r.brand_name : (c.name || '')) + ' ' + periodWord(r.period_start, r.period_end)) + '"></span>' : '') +
-              '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+              '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.client_id, true) : '') + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
                 (r.on_request ? '<span class="chip rp-wl">On request</span>' : '') +
                 '</b><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
