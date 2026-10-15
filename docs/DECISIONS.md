@@ -4015,3 +4015,22 @@ finding fixed at the user's word ("fix all no matter what").
   back to To do under the month's manager (unless another of the client's
   own reports in the month holds it), and a report given back to the
   client takes it again.
+
+## 2026-10-15 — Removal checked before the hand-over; typed quotation figures and the WhatsApp document check (audit follow-up)
+- Delete on a colleague handed their work over first, so a refusal only
+  `team_member_remove` knew (the last admin with access) left the work
+  moved and the colleague in place. `team_member_remove_check` answers the
+  same refusals, writing nothing, and the page asks it before the
+  hand-over; the removal still asks every one itself.
+- The quotation terms were typed twice on the pages; they are now one list
+  (`ADspaceMoney.QUOTE_TERMS`, with `termKey`) that `tests/sql.js` holds
+  equal to `quote_price`'s. Build quote found its extra contents by the
+  slugs `static-graphic` and `reels-60`; it now finds the card's line by
+  `spec.kind`. The quotation PDF named the top budget tier as RM 20,000;
+  a budget past the card's tiers now reads as above the rate card's
+  highest tier, so a new tier never leaves the PDF wrong.
+- WhatsApp sent a quotation or a letter from the page's own bytes, checked
+  only as a PDF. The file must now carry the record's own reference in its
+  title (the quotation PDF already did; the Letter of Offer is now titled
+  `Letter of Offer {number}`), which `wa-send` reads in the PDF's
+  compressed object streams before it uploads anything.

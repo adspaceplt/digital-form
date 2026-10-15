@@ -193,7 +193,7 @@
     }
     if ((t.on_request || []).length) {
       notes.push('The following are quoted on request: ' + t.on_request.map(function (x) {
-        return x === 'budget' ? 'advertising budget above RM 20,000' : x;
+        return x === 'budget' ? 'an advertising budget above the highest tier on our rate card' : x;
       }).join(', ') + '.');
     }
     notes.push('Upon your written confirmation of this quotation, or the issue of a PO reference, a Letter of Offer will be issued ' +

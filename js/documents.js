@@ -478,6 +478,9 @@
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
+      /* The file names its reference: wa-send sends a letter only where it
+         does (2026-10-15). */
+      pdf.setTitle(k.title + ' ' + String(doc.number || '')); pdf.setAuthor('ADSPACE PLT');
       return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];

@@ -196,7 +196,7 @@
   var SAL_ZH = { Mr: '先生', Ms: '女士', Mrs: '太太', Mdm: '夫人', Dr: '博士', Prof: '教授' };
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
-  var TERMS = [3, 6, 12, 18, 24];
+  var TERMS = window.ADspaceMoney.QUOTE_TERMS;
 
   var lang = 'en';
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}

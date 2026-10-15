@@ -150,6 +150,16 @@
     }
     return 0;
   }
+  /* The setting a term's adjustment is read from. */
+  function termKey(months) {
+    var n = Math.max(1, Math.floor(Number(months || 1)));
+    for (var i = 0; i < TERM_PCT.length; i++) if (n >= TERM_PCT[i][0] && n <= TERM_PCT[i][1]) return TERM_PCT[i][2];
+    return null;
+  }
+  /* The terms a quotation is offered on (the user, 2026-10-14), one list for
+     Build quote and the quotation website; `quote_price` refuses any other
+     (tests/quotes.js holds the two equal). */
+  var QUOTE_TERMS = [3, 6, 12, 18, 24];
   function hasPct(pct) { return pct !== null && pct !== undefined && pct !== '' && !isNaN(Number(pct)); }
   /* The name of an adjustment, for the tick that applies it and the line
      that carries it: named for what it does to the figure, in the direction
@@ -214,6 +224,8 @@
     termAdj: termAdj,
     termNote: termNote,
     termPct: termPct,
+    termKey: termKey,
+    QUOTE_TERMS: QUOTE_TERMS,
     rateFor: rateFor,
     TERMS: TERMS,
     TERM_PCT: TERM_PCT,

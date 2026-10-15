@@ -141,6 +141,43 @@ function pdfFrom(b64: string): Uint8Array | null {
     return isPdf(b) ? b : null;
   } catch { return null; }
 }
+/* A quotation's or a letter's PDF names its own reference (2026-10-15): the
+   page draws it with the reference in the file's title, so a file that does
+   not carry the record's reference is not that record's. pdf-lib keeps the
+   title in a compressed object stream as UTF-16 hex, so each stream is
+   inflated and searched as text and as that hex. */
+const hexOf = (s: string) => Array.from(s).map((c) => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase();
+async function inflate(b: Uint8Array): Promise<string> {
+  try {
+    const out = new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate')));
+    return new TextDecoder('latin1').decode(new Uint8Array(await out.arrayBuffer()));
+  } catch { return ''; }
+}
+async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
+  if (!ref) return false;
+  const raw = new TextDecoder('latin1').decode(b);
+  const hex = hexOf(ref), lit = '(' + ref;
+  const hit = (t: string) => t.indexOf(lit) >= 0 || t.toUpperCase().replace(/\s+/g, '').indexOf(hex) >= 0;
+  if (hit(raw)) return true;
+  const re = /stream\r?\n/g;
+  let m: RegExpExecArray | null, seen = 0;
+  while ((m = re.exec(raw)) && seen < 400) {
+    seen++;
+    const start = m.index + m[0].length, end = raw.indexOf('endstream', start);
+    if (end < 0) break;
+    let stop = end;
+    while (stop > start && (b[stop - 1] === 0x0a || b[stop - 1] === 0x0d)) stop--;
+    if (stop - start > 4 * 1024 * 1024) continue;
+    if (hit(await inflate(b.subarray(start, stop)))) return true;
+  }
+  return false;
+}
+async function refOf(db: any, purpose: string, id: string): Promise<string> {
+  const r = purpose === 'quotation'
+    ? await db.from('quotations').select('ref').eq('id', id).maybeSingle()
+    : await db.from('client_documents').select('number').eq('id', id).maybeSingle();
+  return r.error || !r.data ? '' : String(purpose === 'quotation' ? r.data.ref : r.data.number || '');
+}
 async function keptReport(db: any, auth: string, reportId: string): Promise<Uint8Array | null> {
   const v = await db.from('sm_report_versions').select('id, version_no, published_at, withdrawn_at')
     .eq('report_id', reportId).order('version_no', { ascending: false });
@@ -345,6 +382,9 @@ Deno.serve(async (req) => {
       const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
       const bytes = purpose === 'report' ? await keptReport(db, auth, String(ref)) : pdfFrom(String(body.pdf || ''));
       if (!bytes) return json({ error: 'bad-file' }, 200, origin);
+      if (purpose !== 'report' && !(await namesRef(bytes, await refOf(db, purpose, String(ref))))) {
+        return json({ error: 'bad-file' }, 200, origin);
+      }
       const up = await uploadPdf(bytes, filename);
       if (!up.id) {
         console.error('wa-send: upload refused', up.error);
