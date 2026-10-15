@@ -4186,6 +4186,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press).
+  Each line's Qty, Rate (RM) and Months (a monthly line's; the term
+  until typed) are fields in the lines table (`p_sel.edits` by the line's
+  `key`, kind|slug|label; `2026-10-15-quotation-rates.sql`, the user,
+  2026-10-15: "fully customised for the rates qty and months"): priced
+  again by `quote_adjust` inside `quote_preview` and `quotation_make`
+  (`bad-edit`), the card's rate kept as `list_rate` and named under the
+  line (Rate card RM …), the commitment counting each line's months,
+  filed `n lines changed`, Issue Letter of Offer giving each line its
+  months; a website quotation is never adjusted; empty puts the card's
+  figure back.
   A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
   reels`) and the ad budget it covers; choosing a plan ticks Meta where no
   platform is ticked; the budget opens on the plan's own (`Included: up to

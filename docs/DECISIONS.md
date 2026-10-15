@@ -3633,3 +3633,18 @@ finding fixed at the user's word ("fix all no matter what").
   law and wrong by geom, which held every phone foot to one row of equal
   halves. geom now holds the law itself: buttons sharing a row share its
   width, and one alone fills its row; DESIGN states the three-action case.
+
+### 2026-10-15 · Build quote: qty, rate and months typed on each line
+- The user: Build quote "does not allow price change … could you allow the
+  price changes?", then "this is better since fully customised for the rates
+  qty and months", pointing at the board approved earlier.
+- The selection carries `edits` by line key; the database prices them
+  (`quote_adjust`), so the console, the kept quotation and its PDF still read
+  one calculation. The term's percentage stays the quotation's (as the board
+  drew it); a line on fewer months counts its own months in the commitment
+  and on the Letter of Offer. The website never sends edits (stripped in
+  `quotation_make`).
+- The Services sheet's tick reads Apply short term adjustment / Apply long
+  term discount with the figure in its Percentage field alone (the user:
+  "just show the numbers changed based on the term").
+

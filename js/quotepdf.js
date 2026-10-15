@@ -143,6 +143,8 @@
         wrap(d, cw[0] - 20, BODY, book).forEach(function (s, i) { rows.push({ s: s, c: mute, b: i === 0, x: 8 }); });
       });
       if (l.basis === 'once') rows.push({ s: 'One-off', c: mute });
+      /* A line quoted for months of its own says so (2026-10-15). */
+      if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) rows.push({ s: l.months + ' months', c: mute });
       var h = rows.length * 12.4 + 12;
       if (room(h)) headRow();
       for (var i = 0; i < 4; i++) rect(cx[i], y - h, cw[i], h, null);
@@ -198,7 +200,9 @@
       'and work will begin per the agreed timeline. The Letter of Offer and our Service Terms at go.adspace.me/svc-terms together ' +
       'form the binding contract.');
     if (t.month) {
-      notes.push('The total commitment for ' + both(t.term) + ' months is RM ' + amt(t.commitment) + ' incl. SST' +
+      var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
+      notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
+        ' is RM ' + amt(t.commitment) + ' incl. SST' +
         (t.once ? ', one-off items included.' : '.'));
     }
     room(40);
