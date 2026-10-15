@@ -3593,3 +3593,18 @@ finding fixed at the user's word ("fix all no matter what").
   its `post_versions` row stand: they describe the caption on show again.
   Order: the page (which falls back to the caption alone where the
   function is missing), then the migration; rollback drops the function.
+
+### 2026-10-15 · A booking's head holds two lines on a phone; three foot actions are two halves and a row
+- The full gate on main (geom) found the Creators pane's collapsed bookings
+  at 85 to 109px at 390 and 86 to 266px at 320: audit CAMP-7 had let a
+  phone's name wrap rather than lose its end beside the state chip, the
+  link and the ⋯, which left it about 90px at 320. The state now stands on
+  the second line opposite the summary, the name has the first line to
+  itself with its link and ⋯ (spanning the state's column), and it keeps
+  one line, cut with an ellipsis only where a name is longer than the line.
+  Every collapsed booking is 89px at 320 and 390.
+- qcSheet's foot on a phone (Cancel and Ask a second reviewer as halves,
+  Release to client the row under them, from #466) was right by DESIGN's
+  law and wrong by geom, which held every phone foot to one row of equal
+  halves. geom now holds the law itself: buttons sharing a row share its
+  width, and one alone fills its row; DESIGN states the three-action case.

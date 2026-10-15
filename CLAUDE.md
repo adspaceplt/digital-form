@@ -2211,7 +2211,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Each booking's card names its step under its head (`.kcard-steps`), the
   client's six steps as the selection page draws them (`ADspaceIcons.journey`,
   `stepOf`), a delivery campaign's own; none before the creator is booked
-  and none once Completed. A completed campaign offers no state move (no
+  and none once Completed. On a phone a booking's head is two lines: the
+  name (one line, cut with an ellipsis) with its link and ⋯, then the
+  summary with the state opposite it (`tests/geom.js`). A completed campaign offers no state move (no
   Resume, no Unpublish: its link stays live for the results).
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;

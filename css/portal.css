@@ -5156,17 +5156,19 @@ body > .shell { width: 100%; }
    it has got to, and what the booking is. The state keeps a line it can be
    read down rather than sharing one with a summary that would squeeze it. */
 .is-tight .bookreg-head { display: none; }
-/* Two lines, not three: the name with its state and ⋯ at the right edge, as
-   every card head in the portal reads, then the summary under the name. */
+/* Two lines, as a phone list row reads: the name with its link and ⋯ at
+   the right edge, then the summary with the state opposite it. The state
+   left the name's line (2026-10-15, geom): beside the chip, the link and
+   the ⋯ a name had 90px at 320 and wrapped to three and four lines (audit
+   CAMP-7 had let it wrap rather than cut its end). With the line to itself
+   a name holds one line and every collapsed booking is one height. */
 .is-tight .bookreg .kcard-head {
   grid-template-columns: auto minmax(0, 1fr) auto auto;
-  grid-template-areas: "lead name tags act" "lead sum sum sum";
+  grid-template-areas: "lead name name act" "lead sum tags tags";
   gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
 .is-tight .bookreg .kcard-lead { grid-area: lead; }
-/* A phone's name wraps to a second line rather than losing its end beside
-   the chip (2026-10-14, audit CAMP-7). */
-.is-tight .bookreg .kcard-name { grid-area: name; white-space: normal; overflow-wrap: anywhere; }
+.is-tight .bookreg .kcard-name { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
 .is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: end; flex-wrap: nowrap; }
 .is-tight .bookreg .kcard-sum {
@@ -5175,7 +5177,8 @@ body > .shell { width: 100%; }
 }
 /* On a phone these are named areas, so an empty one is a blank line held
    open by the gap and can safely leave. */
-.is-tight .bookreg .kcard-sum:empty, .is-tight .bookreg .kcard-tags:empty { display: none; }
+.is-tight .bookreg .kcard-sum:empty { visibility: hidden; }
+.is-tight .bookreg .kcard-tags:empty { display: none; }
 /* Two lines, not four: who and what they cost, then where to find them with
    their record at the end of the same line. A grid row each for the links
    and the record put a 120px row on the screen, which is five creators on a
