@@ -106,22 +106,28 @@ async function review(request, env, key, set) {
 
 /* The other links a client or a creator is sent, as short links
    (2026-10-13; the user: "video script and creator campaigns and creator
-   portal … so we can show client brand name"): /s/{key} a client's Video
-   Scripts, /c/{key} a campaign's creator selection, /p/{code} a creator's
-   own page. As /r/, nothing is stored: the address is the key the link
-   already carried. A chat app is answered a page naming the campaign and the
-   brand where the key may show them (`share_link_preview`); everybody else is
-   sent on to the page itself. The client portal signs in by email and has no
-   such link. */
-const SHARE = /^([scp])\/([A-Za-z0-9_-]{6,64})$/;
+   portal … so we can show client brand name"). Re-lettered 2026-10-15 (the
+   user: "use v for video script, take s back for selection", "C reserved
+   for client portal"): /s/{key} a campaign's creator selection, /v/{key} a
+   client's Video Scripts, /p/{code} a creator's own page, and /c alone the
+   client portal's sign-in. A link sent before keeps working: an /s/ key
+   that is a client's Video Scripts key opens their scripts (the two keys
+   never overlap; `share_link_preview` `which` says which), and /c/{key}
+   opens its campaign. As /r/, nothing is stored: the address is the key the
+   link already carried. A chat app is answered a page naming the campaign
+   and the brand where the key may show them (`share_link_preview`);
+   everybody else is sent on to the page itself. */
+const SHARE = /^([scvp])\/([A-Za-z0-9_-]{6,64})$/;
+const PORTAL_ROUTE = /^c\/?$/;
 const SHARE_KIND = {
-  s: { kind: 'script', path: '/script/?k=', name: 'Video Scripts by ADspace',
+  script: { kind: 'script', path: '/script/?k=', name: 'Video Scripts by ADspace',
        line: 'The videos planned for the month, scene by scene.' },
-  c: { kind: 'campaign', path: '/creators/?k=', name: 'Creator Selection by ADspace',
+  campaign: { kind: 'campaign', path: '/creators/?k=', name: 'Creator Selection by ADspace',
        line: 'Choose the creators for this campaign, then follow their drafts and posts.' },
-  p: { kind: 'creator', path: '/creator/?k=', name: 'Creator Portal by ADspace',
+  creator: { kind: 'creator', path: '/creator/?k=', name: 'Creator Portal by ADspace',
        line: 'The brief, the shoot and where to hand in the draft.' }
 };
+const LETTER_KIND = { v: 'script', c: 'campaign', p: 'creator' };
 
 async function sharePreview(env, kind, key) {
   const r = await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/share_link_preview', {
@@ -142,7 +148,17 @@ async function sharePreview(env, kind, key) {
 /* "{Campaign} {Brand} - Creator Selection by ADspace", each part only where
    it is known. */
 async function share(request, env, letter, key) {
-  const k = SHARE_KIND[letter];
+  let kind = LETTER_KIND[letter];
+  if (letter === 's') {
+    /* A selection key, else a Video Scripts link sent before 2026-10-15. A
+       failed read sends it to the selection page, which says so if it is
+       not one. */
+    let w = {};
+    try { w = await sharePreview(env, 'which', key); }
+    catch (e) { console.error('share_link_preview which failed: ' + e.message); }
+    kind = w.kind === 'script' ? 'script' : 'campaign';
+  }
+  const k = SHARE_KIND[kind];
   const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
   const to = base + k.path + encodeURIComponent(key);
   if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
@@ -283,6 +299,8 @@ export default {
     if (rv) return review(request, env, rv[1], rv[2]);
     const sh = SHARE.exec(path);
     if (sh) return share(request, env, sh[1], sh[2]);
+    /* /c alone is the client portal, which signs in by email (2026-10-15). */
+    if (PORTAL_ROUTE.test(path)) return goTo((env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '') + '/client/');
 
     /* A slug is one segment. Anything deeper is not a link we issued, and
        asking the database about it would only be a slower way to say so. */

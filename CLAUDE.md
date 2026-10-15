@@ -4517,9 +4517,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   answers by itself (2026-10-14; the user: "there should have a place to see
   all hi.adspace.me/{slugs}"), each a card shut until opened: Content
   Review (`/r/{key}`, an Active client in Content Review), Video Scripts
-  (`/s/{key}`, read through `script_links()`: the key is withheld from the
-  table, `2026-10-14-script-links-list.sql`), Creator selection (`/c/{key}`, not a draft; Completed as a
-  chip) and Creator pages (`/p/{code}`, Inactive as a chip); each read only
+  (`/v/{key}`, `/s/` before 2026-10-15, read through `script_links()`: the key is withheld from the
+  table, `2026-10-14-script-links-list.sql`), Creator selection (`/s/{key}`, `/c/` before 2026-10-15, not a
+  draft; Completed as a chip) and Creator pages (`/p/{code}`, Inactive as a chip); each read only
   where its section (or `campaigns.creators`) is at View, a failed read
   `Could not load the {group} links.` with Try again; Copy and Open, no ⋯
   (changed where the record is). The count and the search take them in.
@@ -4542,9 +4542,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`tests/links.js`, `tests/reviewlink.js`).
 - The other links a client or a creator is sent, as short links the same
   way (2026-10-13; the user: "video script and creator campaigns and creator
-  portal"; the client portal signs in by email and has none): `/s/{script
-  key}` a client's Video Scripts, `/c/{selection key}` a campaign's creator
-  selection, `/p/{creator code}` a creator's own page. A preview reader is
+  portal"): `/s/{selection key}` a campaign's creator selection, `/v/{script
+  key}` a client's Video Scripts, `/p/{creator code}` a creator's own page,
+  and `/c` alone the client portal's sign-in (re-lettered 2026-10-15, the
+  user: "use v for video script, take s back for selection", "C reserved
+  for client portal"; `2026-10-15-short-links-relettered.sql`). A link sent
+  before keeps working: `/s/` a Video Scripts key opens the scripts
+  (`share_link_preview` `which`), `/c/{key}` its campaign. The console
+  writes the new letters once `shareLetters` is on in js/config.js (the
+  Worker live first), `ADspaceAdmin.shortLink(kind, …)` by kind
+  (`campaign`, `script`, `creator`). A preview reader is
   answered from `share_link_preview(p_kind, p_key)` (anon): the brand for
   scripts (a script published), the campaign and the brand for a selection
   (no access code, not a draft) and for a creator with one open booking,
