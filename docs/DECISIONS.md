@@ -3795,3 +3795,24 @@ finding fixed at the user's word ("fix all no matter what").
   typed RM 20,000. The PDF of a kept quotation still names RM 20,000, since
   the quotation keeps no card; the terms list and two content slugs stay
   typed in the pages and in `quote_price` alike.
+
+### 2026-10-15 — A colleague who leaves takes nothing with them (audit I3, I4, S6, S9, I9)
+- Delete ran `team_member_remove` even when the hand-over of their work had
+  been refused, and said Removed in green over the warning. It now stops:
+  the question stays open, saying the colleague was not removed. A partial
+  move of person in charge files each client that did move.
+- Delete their data emptied the namecard slug, and the slug trigger made it
+  again from the name, so the short link was never freed. The trigger now
+  leaves it empty once `erased_at` is set.
+- An extension on a task whose creator had left was asked of them, and
+  their phone kept receiving notifications. The decider falls back to the
+  first active admin who is not a system account, and the devices go on Set
+  inactive, an expiry or a removal (`team_members_leaving`, run in the SQL
+  Editor since it removes rows).
+- `team_hand_over` refuses one's own row and a system account, as
+  `team_member_remove` did; a removed colleague is never made active again.
+- A removal ends their helper and reviewer places on tasks and withdraws
+  the open talks colleagues asked of them; an on-site meeting's outstation
+  reminder goes to whoever is still active.
+- Left as it was: a `last-admin` refusal after the hand-over leaves the
+  work moved and the colleague in place (the page names the refusal).

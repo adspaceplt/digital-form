@@ -4652,6 +4652,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`erased_at`). Their name, Employee ID and group, their name on past
     work and the documents they signed, and their own HR letters and
     performance records are kept either way.
+  - Leaving (`2026-10-15-colleague-leaving.sql`, audit I3, I4, S6, S9, I9):
+    a Delete whose hand-over failed removes nobody (the question stays open
+    saying so); an erased colleague's card slug stays empty
+    (`team_card_slug`); `team_hand_over` refuses `own` and
+    `system-account`; a removed colleague is never made active again
+    (`team_access_guard`, `removed`); an extension on a task whose creator
+    has left is asked of the first active admin who is not a system account
+    (`ops_due_decider`); an on-site meeting's outstation reminder goes to
+    its leader while active, else the month's manager; trigger
+    `team_members_leaving` takes a colleague's notification devices on Set
+    inactive, an expiry or a removal, and on a removal ends their helper and
+    reviewer places on tasks and withdraws the open talks asked of them.
 - Access expiry (`2026-10-01-team-access-expiry.sql`,
   `2026-10-03-team-access-time.sql`):
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`

@@ -728,9 +728,13 @@
     var owned = function (table, list, to) {
       if (!to || !list.length) return;
       jobs.push(db.from(table).update({ owner: to }).in('id', list.map(function (c) { return c.id; })).select('id').then(function (r) {
-        if (r.error || (r.data || []).length < list.length) return { bad: true };
-        list.forEach(function (c) { log(table === 'clients' ? 'client.edited' : 'campaign.edited', c.name || c.title, 'Person in charge: ' + m.name + ' to ' + to); });
-        return { ok: true };
+        if (r.error) return { bad: true };
+        /* Each record that moved is filed, even where others were refused (audit, 2026-10-15). */
+        var got = (r.data || []).map(function (x) { return x.id; });
+        list.filter(function (c) { return got.indexOf(c.id) > -1; }).forEach(function (c) {
+          log(table === 'clients' ? 'client.edited' : 'campaign.edited', c.name || c.title, 'Person in charge: ' + m.name + ' to ' + to);
+        });
+        return got.length < list.length ? { bad: true } : { ok: true };
       }));
     };
     owned('clients', own.clients, nameOf(v.clients));
@@ -775,9 +779,13 @@
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Delete']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
       }, function (v) {
-        return Promise.resolve(handTo(m, own, v)).then(function () {
+        /* A hand-over that failed removes nobody: the question stays open
+           saying so (audit I3, 2026-10-15). */
+        return Promise.resolve(handTo(m, own, v)).then(function (moved) {
+          if (moved === false) return { held: true };
           return db.rpc('team_member_remove', { p_member: m.id, p_erase: v.data === 'erase', p_name: v.name });
         }).then(function (r) {
+          if (r && r.held) return 'Some work could not be handed over, so ' + m.name + ' was not removed. Choose again, or keep it with them.';
           var d = (r && r.data) || {};
           if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : String(r.error.message || r.error);
           if (d.error) return REMOVE_SAID[d.error] || d.error;
