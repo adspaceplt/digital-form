@@ -6873,11 +6873,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railpct b { font-weight: 600; }
 .railpct span { margin-left: auto; color: var(--ink-mute); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .railbar { display: block; height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
-.railbar-fill { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
-/* A campaign's selection: ink while it fills, green only once every slot is
-   taken (2026-10-14, audit CAMP-12: green at 75% read as done). */
-.railbar-fill.camp-fill { background: var(--fill); }
-.railbar-fill.camp-fill.is-done { background: var(--ok-solid); }
+/* Ink while it fills, green only once complete (2026-10-15, audit CAMP-12:
+   green at 75% read as done): a client's profile, a set's approvals, a
+   campaign's selection alike. */
+.railbar-fill { display: block; height: 100%; background: var(--fill); border-radius: 3px; }
+.railbar-fill.is-done { background: var(--ok-solid); }
 
 /* The campaign rail's own blocks. Money is right aligned on one grid so the
    total sits directly under the figures it is the sum of, which is the whole
