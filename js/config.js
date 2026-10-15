@@ -120,6 +120,11 @@ window.ADSPACE_CONFIG = {
      (/s/, /c/, /p/ on the host above), answered by the links Worker
      (workers/links/worker.js, live 2026-10-13); false writes the long link. */
   shareLinks: true,
+  /* The letters re-set on 2026-10-15 (the user): selection /s/, Video
+     Scripts /v/, /c the client portal. True once the links Worker that
+     answers them is live in Cloudflare; until then the console writes /c/
+     and /s/ as before (the new Worker answers both). */
+  shareLetters: false,
 
   /* Cloudflare Turnstile SITE key for the sign-in captcha (js/captcha.js).
      Public by design, like the anon key; the SECRET key lives only in the

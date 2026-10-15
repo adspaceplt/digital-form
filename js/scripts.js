@@ -728,7 +728,7 @@
   /* The address and Copy link give the short link (hi.adspace.me/s/{key},
      2026-10-13), so a chat app's preview names the brand; Preview is the
      page itself. */
-  function shareLink(key) { return bridge.shortLink ? bridge.shortLink('s', key, clientLink(key)) : clientLink(key); }
+  function shareLink(key) { return bridge.shortLink ? bridge.shortLink('script', key, clientLink(key)) : clientLink(key); }
   function withKey(reset) {
     var cid = st.open.client_id;
     return rpc('script_link', { p_client: cid, p_reset: Boolean(reset) }).then(function (d) {

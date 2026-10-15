@@ -4096,3 +4096,15 @@ finding fixed at the user's word ("fix all no matter what").
 - The lesson, in CLAUDE.md's guardrails: a fault between two pages is
   fixed and tested in both orders; a file that will not load is tested at
   its source (the pass and the CDN) before a page is blamed.
+
+### 2026-10-15 — Short links re-lettered: /s selection, /v scripts, /c the client portal
+- The user, 2026-10-15: "Can creator campaign use hi.adspace.me/s instead
+  of /c, reserve hi.adspace.me/c to client portal"; then "use v for video
+  script, take s back for selection". /s had been Video Scripts since
+  2026-10-13 and links had gone out, so the Worker asks
+  `share_link_preview('which', key)` for an /s/ key (a campaign tried
+  first; the keys never overlap) and old /c/{key} keeps opening its
+  campaign; /c alone goes to /client/. The details form keeps its full
+  address. The console writes the new letters only once `shareLetters` is
+  on, after the user pastes the Worker, so no link is written that the live
+  Worker would send to the wrong page.

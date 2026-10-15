@@ -745,7 +745,7 @@
      app's preview names the booking's campaign and brand. */
   function creatorLink(c) {
     var long = location.origin + '/creator/?k=' + encodeURIComponent(c || '');
-    return bridge.shortLink ? bridge.shortLink('p', c, long) : long;
+    return bridge.shortLink ? bridge.shortLink('creator', c, long) : long;
   }
   function paintCode(c) {
     var box = $('crCodeBox');
@@ -1369,7 +1369,7 @@
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
   /* The address and Copy link give the short link (hi.adspace.me/c/{key},
      2026-10-13); Open is the page itself. */
-  function campaignShare(c) { return bridge.shortLink ? bridge.shortLink('c', c.access_token, campaignUrl(c)) : campaignUrl(c); }
+  function campaignShare(c) { return bridge.shortLink ? bridge.shortLink('campaign', c.access_token, campaignUrl(c)) : campaignUrl(c); }
 
   var ncDraft = keepDraft('addOptionBox', ['ncName', 'ncRate'], {
     get: function () {

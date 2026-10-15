@@ -75,9 +75,17 @@
      way (2026-10-13): `s` a client's Video Scripts, `c` a campaign's
      selection, `p` a creator's own page, each the key the long link carries
      (workers/links, share_link_preview); the long link where none can be. */
-  function shortLink(letter, key, long) {
-    var host = cfg && cfg.linkHost;
-    if (!host || !cfg.shareLinks || !/^[scp]$/.test(letter) || !/^[A-Za-z0-9_-]{6,64}$/.test(key || '')) return long;
+  /* A record's short link by its kind: `campaign` (creator selection),
+     `script` (Video Scripts), `creator` (a creator's page). The letters
+     moved on 2026-10-15 (selection /s/, scripts /v/) once the Worker that
+     answers them is live (`shareLetters`). */
+  function letterOf(kind) {
+    var L = cfg && cfg.shareLetters ? { campaign: 's', script: 'v', creator: 'p' } : { campaign: 'c', script: 's', creator: 'p' };
+    return L[kind] || '';
+  }
+  function shortLink(kind, key, long) {
+    var host = cfg && cfg.linkHost, letter = letterOf(kind);
+    if (!host || !cfg.shareLinks || !letter || !/^[A-Za-z0-9_-]{6,64}$/.test(key || '')) return long;
     return 'https://' + host + '/' + letter + '/' + key;
   }
 
@@ -5411,6 +5419,7 @@
     TAX_KEYS: TAX_KEYS,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
+    letterOf: letterOf,
     brandGate: brandGate,
     brandSay: brandSay,
     brandWords: brandWords,
@@ -6318,14 +6327,14 @@
       return db.rpc('script_links').then(function (r) {
         if (r.error || !r.data || r.data.error) throw r.error || new Error((r.data && r.data.error) || 'refused');
         return (r.data.links || []).filter(function (c) { return c.key; }).map(function (c) {
-          return { slug: 's/' + c.key, url: origin + '/script/?k=' + c.key, label: who(c) };
+          return { slug: letterOf('script') + '/' + c.key, url: origin + '/script/?k=' + c.key, label: who(c) };
         });
       });
     }
     if (k === 'c') {
       return take(db.from('campaigns').select('id, title, access_token, state, clients(name, client_code)'), function (c) {
         if (!c.access_token || c.state === 'draft') return null;
-        return { slug: 'c/' + c.access_token, url: origin + '/creators/?k=' + c.access_token,
+        return { slug: letterOf('campaign') + '/' + c.access_token, url: origin + '/creators/?k=' + c.access_token,
                  label: (c.title || 'Untitled campaign') + (c.clients ? ' · ' + c.clients.name : ''), off: c.state === 'completed' ? 'Completed' : '' };
       });
     }
