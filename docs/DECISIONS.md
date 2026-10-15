@@ -3719,3 +3719,15 @@ finding fixed at the user's word ("fix all no matter what").
   its address, so links written by search, Documents, My Work and the
   Reports gate (`tab=billing`, `tab=documents`, `tab=checklists`) land
   unchanged.
+
+### 2026-10-15 — A Letter of Offer shows the first month due
+- The user, on a letter with monthly lines and a one-off item: "why need
+  so complex, just provide first month due total at the summary table part
+  instead of spliting it now, and in the terms remove duplicate of mentions
+  3 months"; "use Monthly incl. SST instead of Value / Price all these weird
+  terms"; "remove duplicate including SST".
+- One summary: Monthly subtotal, One-off subtotal, one SST line, First
+  month due in bold, then Monthly incl. SST. TERMS names the term once. The
+  acceptance lists Monthly incl. SST, Minimum term, First month due and
+  Total for the term incl. SST, with no Item / Value head.
+- Only the drawing changed: the figures `issue_letter` keeps are the same.

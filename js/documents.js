@@ -639,19 +639,27 @@
       };
       var taxWord = Number(price.eachTax) || Number(price.onceTax) ? MON.taxLabel(doc.market, doc.issued_at) : 'SST not applicable';
       var oneOff = price.term && price.once > 0;
-      trow(oneOff ? 'Monthly subtotal' : 'Subtotal', MON.money2(price.each, doc.market));
-      trow(taxWord, MON.money2(price.eachTax, doc.market));
-      y += 4; rule(y, lx, R, true); y -= 14;
-      trow(price.term ? 'Payable monthly' : 'Total', MON.money2(price.eachTotal, doc.market), 'strong');
-      /* One-off items beside monthly lines are billed once, under their own
-         subtotal, so the monthly figure stays the one the client is invoiced
-         each month (2026-10-15). */
+      /* One summary, one figure to pay first (the user, 2026-10-15: "just
+         provide first month due total at the summary table part instead of
+         spliting it"; "use Monthly incl. SST" as the quotation does). The
+         one-off items are billed with the first month, so their subtotal
+         sits beside the month's and one SST line covers both; the first
+         month due is the figure in bold, then what each later month is. */
+      var sst = Number(price.tax) > 0;
+      var incl = sst ? ' incl. SST' : '';
+      var firstDue = Math.round((Number(price.eachTotal) + Number(price.onceTotal || 0)) * 100) / 100;
       if (oneOff) {
-        y -= 8; need(52);
+        trow('Monthly subtotal', MON.money2(price.each, doc.market));
         trow('One-off subtotal', MON.money2(price.once, doc.market));
-        trow(taxWord, MON.money2(price.onceTax, doc.market));
+        trow(taxWord, MON.money2(Math.round((Number(price.eachTax) + Number(price.onceTax)) * 100) / 100, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
-        trow('Payable once', MON.money2(price.onceTotal, doc.market), 'strong');
+        trow('First month due', MON.money2(firstDue, doc.market), 'strong');
+        trow('Monthly' + incl, MON.money2(price.eachTotal, doc.market));
+      } else {
+        trow('Subtotal', MON.money2(price.each, doc.market));
+        trow(taxWord, MON.money2(price.eachTax, doc.market));
+        y += 4; rule(y, lx, R, true); y -= 14;
+        trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');
       }
       y -= 12;
 
@@ -661,9 +669,9 @@
          off: a monthly figure alone is not a figure anyone can be held to. */
       var terms = [];
       if (price.term) {
-        terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months.');
-        terms.push('The total payable over the ' + price.term + ' month term' + (price.once > 0 ? ', one-off items included,' : '') + ' is ' +
-                   MON.money2(price.total, doc.market) + (Number(price.tax) ? ' including SST.' : '.'));
+        /* The term is stated once (the user, 2026-10-15). */
+        terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months, a total of ' +
+                   MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ' with the one-off items' : '') + '.');
       }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       need(24 + terms.length * 26);
@@ -701,21 +709,20 @@
 
          The whole of it is kept on one page: a stamp box on a sheet of its own
          is a signature that proves nothing about what was signed. */
-      var moneyWord = function (v) {
-        return MON.money2(v, doc.market) + (Number(price.tax) ? ', including SST' : '');
-      };
+      /* The figures named as the summary names them, each carrying incl.
+         SST in its label once, never a column of "including SST". */
       var sumRows = price.term
-        ? [['Monthly fee', moneyWord(price.eachTotal)],
-           ['Contract term', price.term + ' months']]
-            .concat(price.once > 0 ? [['One-off fees', moneyWord(price.onceTotal)]] : [])
-            .concat([['Total contract value', moneyWord(price.total)]])
-        : [['Total payable', moneyWord(price.eachTotal)]];
+        ? [['Monthly' + incl, MON.money2(price.eachTotal, doc.market)],
+           ['Minimum term', price.term + ' months']]
+            .concat(price.once > 0 ? [['First month due', MON.money2(firstDue, doc.market)]] : [])
+            .concat([['Total for the term' + incl, MON.money2(price.total, doc.market)]])
+        : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
 
       var SIGH = 91;          // 32mm of signing room, not a ruled line
       var FIELDH = 29;        // 10mm for each of the three fields
       var acceptH = 18 + LH   // heading
         + LH * 2 + 10         // the sentence
-        + 14 + sumRows.length * 15 + 10   // the summary
+        + 8 + sumRows.length * 15 + 10    // the summary
         + 26                  // the page count line
         + LH + 14             // the execution heading
         + SIGH + 30           // the signing area and its label
@@ -734,9 +741,7 @@
 
       // The figures, from the same calculation the price table used.
       var sumL = M, sumR = R;
-      text('Item', sumL, y, 9, bold, mute);
-      right('Value', sumR, y, 9, bold, mute);
-      y -= 7; rule(y); y -= 13;
+      rule(y); y -= 15;
       sumRows.forEach(function (r) {
         text(r[0], sumL, y, 10);
         right(r[1], sumR, y, 10, bold);
