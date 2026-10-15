@@ -12449,8 +12449,13 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-nowrap { white-space: nowrap; }
 body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
-/* A status wraps inside its cell, its dot on the first line, never past the shaded box. */
-.qs-facts .chip-state { font-size: inherit; white-space: normal; }
+/* A status keeps one line: under 560 the facts read label over value, so
+   the longest (Letter of Offer requested) has the box's width (2026-10-15). */
+.qs-facts .chip-state { font-size: inherit; }
+@media (max-width: 560px) {
+  .qs-facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .qs-facts dd + dt { margin-top: 10px; }
+}
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
 /* The client's details form on Billing (2026-10-14): its lone act keeps its
