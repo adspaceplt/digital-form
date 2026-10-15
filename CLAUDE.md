@@ -4342,7 +4342,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   apart; the term's percentage on the monthly subtotal, SST on the rest at
   the rate in force on the day it is priced (MYT), none for a client whose
   `sst_applies` is false (`quote_tax_snap`; a preview names its client in
-  `p_sel.client`, never kept; `2026-10-15-quotation-tax-day.sql`).
+  `p_sel.client`, never kept; `2026-10-15-quotation-tax-day.sql`). A
+  Singapore client's is in S$ (`2026-10-15-quotation-in-sgd.sql`; the
+  user, 2026-10-15): `fx_sgd`, the ringgit to S$1 (Tax and terms,
+  Singapore; four decimals, unset until the team sets it), turns every
+  rate on the card to the cent (`quote_fx_snap`) and every RM figure in a
+  line's words to whole dollars (`quote_fx_out`), the totals marked
+  `currency` SGD with the `fx`; the budgets the page sends stay the card's;
+  refused `no-fx` while unset (Build quote says so; a Singapore lead on
+  the website gets no quotation); Build quote, the row, the PDF and the
+  website read S$, and a Letter of Offer takes the S$ lines as they stand.
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
   `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines

@@ -31,7 +31,8 @@
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
-    expired: 'This quotation has expired. Make a copy to quote again.'
+    expired: 'This quotation has expired. Make a copy to quote again.',
+    'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
   };
   function said(e) {
     if (!e) return '';
@@ -40,6 +41,15 @@
     return SAID[m] || m;
   }
   function rm(n) { return MON.money2(n, 'MY').replace(/^RM /, ''); }
+  /* A Singapore client's quotation is in S$ (2026-10-15): the database
+     prices it at the Tax and terms rate (`fx_sgd`, the ringgit to S$1) and
+     marks its totals SGD. The card is in RM, so what Build quote shows from
+     the card itself (a plan's fee, a step's rate, the budgets) is shown at
+     the same rate: a rate to the cent, a budget in whole dollars. */
+  var CUR = 'RM', FX = null;
+  function curOf(q) { return q && q.totals && q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
+  function cv(n) { return FX ? Math.round(Number(n) / FX * 100) / 100 : Number(n); }
+  function whole(n) { return Number(FX ? Math.round(Number(n) / FX) : n).toLocaleString('en-MY'); }
   function acct(n) { n = Number(n || 0); return n < 0 ? '(' + rm(-n) + ')' : rm(n); }
 
   /* What a quotation is now, worked out on every read: removed, a Letter of
@@ -58,9 +68,9 @@
   function monthly(q) { var m = q.totals && q.totals.month; return m ? m.incl : null; }
   function headline(q) {
     var m = monthly(q);
-    if (m != null) return ['RM ' + rm(m), 'Monthly incl. SST'];
+    if (m != null) return [curOf(q) + ' ' + rm(m), 'Monthly incl. SST'];
     var o = q.totals && q.totals.once;
-    return o ? ['RM ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
+    return o ? [curOf(q) + ' ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
   }
   /* Every column but `billing`, which the table answers to nobody: the
      billing a prospect gave on the website is read through
@@ -276,6 +286,9 @@
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
     $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
+    FX = ctx.client.market === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
+    CUR = FX == null ? 'RM' : 'S$';
+    if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
     card(ctx, function (c, err) {
       if (!c) { ctx.msg('qtMsg', said(err) || 'No rate card version is live.', 'err'); B = null; return; }
       B.card = c;
@@ -316,7 +329,7 @@
             '<input class="qb-stepval" type="number" min="0" max="999" step="1" inputmode="numeric" id="' + id + '" data-slug="' + esc(s.slug) +
             '" value="' + esc(once[s.slug] || 0) + '" aria-label="' + nm + '">' +
             '<button class="iconbtn qb-stepbtn" type="button" data-step="1" data-for="' + id + '" aria-label="One more ' + nm + '">' + PLUS + '</button>' +
-            '<span class="qb-stepname">' + nm + ' <small class="qb-rate">RM ' + esc(rm(s.rate)) + ' each</small></span></div>';
+            '<span class="qb-stepname">' + nm + ' <small class="qb-rate">' + CUR + ' ' + esc(rm(cv(s.rate))) + ' each</small></span></div>';
         }).join('');
       }).join('');
       $('qbOnceMore').open = Boolean((sel.once || []).length);
@@ -337,10 +350,10 @@
     $('qbPlans').innerHTML = list.map(function (p) {
       var on = p.slug === B.plan;
       return '<button class="qb-plan' + (on ? ' is-on' : '') + '" type="button" role="radio" aria-checked="' + on + '" data-plan="' + esc(p.slug) + '">' +
-        '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · RM ' + esc(rm(p.rate).replace(/\.00$/, '')) +
+        '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · ' + CUR + ' ' + esc(rm(cv(p.rate)).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
         '<small>' + p.spec.contents + ' contents: ' + mixWords(p.spec.mix || [], true) + '</small>' +
-        (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(MON.money(p.spec.ad_budget, 'MY')) + '</small>' : '') +
+        (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
         '</span></button>';
     }).join('');
   }
@@ -356,10 +369,11 @@
     var p = planOf(), cover = p && p.spec.ad_budget ? Number(p.spec.ad_budget) : 0;
     var tiers = svcs(B.card, 'ads').concat(svcs(B.card, 'booster')).map(function (x) { return Number(x.spec.budget) || 0; })
       .filter(function (b, i, a) { return b > 0 && a.indexOf(b) === i; }).sort(function (a, b) { return a - b; });
-    var n0 = function (v) { return Number(v).toLocaleString('en-MY'); };
-    var opts = [[0, cover ? 'Included: up to RM ' + n0(cover) : 'None']];
-    tiers.forEach(function (b) { if (b > cover) opts.push([b, 'Up to RM ' + n0(b)]); });
-    if (tiers.length) opts.push([-1, 'Above RM ' + n0(tiers[tiers.length - 1]) + ' (on request)']);
+    /* The values stay the card's (RM), which the database matches; the
+       words are the client's currency. */
+    var opts = [[0, cover ? 'Included: up to ' + CUR + ' ' + whole(cover) : 'None']];
+    tiers.forEach(function (b) { if (b > cover) opts.push([b, 'Up to ' + CUR + ' ' + whole(b)]); });
+    if (tiers.length) opts.push([-1, 'Above ' + CUR + ' ' + whole(tiers[tiers.length - 1]) + ' (on request)']);
     var val = String(keep == null ? $('qbBudget').value : keep);
     if (!opts.some(function (o) { return String(o[0]) === val; })) val = '0';
     $('qbBudget').innerHTML = opts.map(function (o) {
@@ -415,7 +429,7 @@
         else if (ticked.length < p.spec.platforms) add = f > meta ? f - meta : '';
         else add = f;
       }
-      i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + Number(add).toLocaleString('en-MY') : '';
+      i.parentNode.querySelector('.qb-rate').textContent = add ? '+' + cv(add).toLocaleString('en-MY') : '';
     });
   }
   /* A plan needs a platform: Meta is ticked for it where none is, and can
@@ -450,12 +464,12 @@
   function hints(d) {
     var x = (d && d.extra_rates) || {};
     var gs = extraSlug('graphic'), rs = extraSlug('reel');
-    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = gs && x[gs] != null ? 'RM ' + rm(x[gs]) + ' each' : '';
-    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = rs && x[rs] != null ? 'RM ' + rm(x[rs]) + ' each' : '';
+    $('qbBox').querySelector('[data-rate-for="qbGraphic"]').textContent = gs && x[gs] != null ? CUR + ' ' + rm(x[gs]) + ' each' : '';
+    $('qbBox').querySelector('[data-rate-for="qbReel"]').textContent = rs && x[rs] != null ? CUR + ' ' + rm(x[rs]) + ' each' : '';
     var p = planOf(), tr = svcs(B.card, 'language')[0];
     var n = p ? p.spec.contents + (Number($('qbGraphic').value) || 0) + (Number($('qbReel').value) || 0) : 0;
     var langs = document.querySelectorAll('#qbLangs input:checked').length;
-    $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + Number(tr.rate).toLocaleString('en-MY') : '';
+    $('qbTrRate').textContent = p && tr && langs > 1 ? n * (langs - 1) + ' × ' + cv(tr.rate).toLocaleString('en-MY') : '';
   }
   var timer = null;
   function preview() {
@@ -490,27 +504,27 @@
      while the lines and totals sit at the sheet's end (2026-10-15). */
   function sumOf(d) {
     var t = (d && d.totals) || {}, out = [];
-    if (t.month) out.push('RM ' + acct(t.month.incl) + ' monthly');
-    if (t.once) out.push('RM ' + acct(t.once.incl) + ' one-off');
+    if (t.month) out.push(CUR + ' ' + acct(t.month.incl) + ' monthly');
+    if (t.once) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
     return out.length ? out.join(' · ') + ' incl. SST' : '';
   }
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
     var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span>Line</span><span class="svc-rate">Qty</span>' +
-      '<span class="svc-rate">Rate (RM)</span><span class="svc-rate">Months</span><span class="svc-rate">Subtotal (RM)</span></div>' +
+      '<span class="svc-rate">Rate (' + CUR + ')</span><span class="svc-rate">Months</span><span class="svc-rate">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
         /* Quantity, rate and months are typed where they are read; a line
            quoted off the card names the card's rate under it. */
         var sub = [];
-        if (l.list_rate != null) sub.push('Rate card RM ' + rm(l.list_rate));
+        if (l.list_rate != null) sub.push('Rate card ' + CUR + ' ' + rm(l.list_rate));
         var box = function (what, v, cls, mode, label) {
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
         return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + '</span>' +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
-          '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (RM)</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (RM)') + '</span>' +
+          '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
             '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
@@ -519,15 +533,15 @@
     if (t.month) {
       tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
       if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
-      tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', 'RM ' + acct(t.month.incl), 1]);
+      tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
     }
-    if (t.once) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', 'RM ' + acct(t.once.incl), 1]);
+    if (t.once) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', CUR + ' ' + acct(t.once.incl), 1]);
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
     var notes = [];
-    if (t.budget > 0) notes.push('Advertising budget of up to ' + MON.money(t.budget, 'MY') + ' per month is billed separately.');
-    if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + MON.money(topBudget(), 'MY') : x; }).join(', ') + '.');
+    if (t.budget > 0) notes.push('Advertising budget of up to ' + CUR + ' ' + whole(t.budget) + ' per month is billed separately.');
+    if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + CUR + ' ' + whole(topBudget()) : x; }).join(', ') + '.');
     if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
     return out;
   }
@@ -578,7 +592,7 @@
       var i = e.target.closest('.qb-val');
       if (!i || !B) return;
       var k = i.getAttribute('data-key'), what = i.getAttribute('data-what');
-      var raw = String(i.value).replace(/[,\s]/g, '').replace(/^RM/i, '');
+      var raw = String(i.value).replace(/[,\s]/g, '').replace(/^(RM|S\$)/i, '');
       var ok = what === 'rate' ? /^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(raw) :
         what === 'qty' ? /^[0-9]{1,4}$/.test(raw) && Number(raw) >= 1 : /^[0-9]{1,2}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 36;
       var e1 = B.edits[k] || {};

@@ -5310,10 +5310,11 @@
      reads the figures again and repaints. `spec`: { title, keys: [[key,
      label, kind]], msg (an element id), done }. Kinds: hours, days, pct
      (0 to 100), adj (-100 to 100), every (0 to 24 hours), ahead (0 to 30
-     days) and week (0 to 168 hours), where 0 sends or asks none. */
+     days) and week (0 to 168 hours), where 0 sends or asks none; fx (the
+     ringgit to one Singapore dollar, four decimals) may stay unset. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true],
-    rm: [0, 10000, false], share: [1, 100, false] };
+    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true] };
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The
      details form's days are the Settings page's Clients group (SET-9). */
@@ -5322,7 +5323,9 @@
     ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
     ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
     ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
-    ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)']];
+    ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
+    /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
+    ['fx_sgd', 'RM to S$1', 'fx', 'Singapore']];
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
@@ -5340,7 +5343,8 @@
          fits a phone (2026-10-15, ux-audit SET-10). */
       var third = Boolean(s) && n === 3;
       var next = MON.next ? MON.next(k[0]) : null;
-      var f = { name: k[0], label: k[1], type: 'number', value: String(MON.setting(k[0])), required: true,
+      var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
+      var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
         half: !third && n > 1 && !(n % 2 && at === n), third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + next.value : '' };
       if (s && s !== prev) f.head = s;
@@ -5353,7 +5357,9 @@
         if (!v.from || v.from < day) return 'From is today or a later day.';
         for (var i = 0; i < spec.keys.length; i++) {
           var k = spec.keys[i], b = SET_BOUND[k[2]], x = String(v[k[0]] == null ? '' : v[k[0]]).trim(), n = Number(x);
-          if (x === '' || isNaN(n) || n < b[0] || n > b[1] || (b[2] && n % 1) || Math.round(n * 100) !== n * 100) {
+          var dp = Math.pow(10, b[3] || 2);
+          if (x === '' && b[4] && MON.setting(k[0]) == null) continue;
+          if (x === '' || isNaN(n) || n < b[0] || n > b[1] || (b[2] && n % 1) || Math.abs(Math.round(n * dp) - n * dp) > 1e-6) {
             return k[1] + ': ' + (b[2] ? 'a whole number from ' : 'a number from ') + b[0] + ' to ' + b[1] + '.';
           }
         }
@@ -5361,7 +5367,10 @@
       }
     }, function (v) {
       var vals = {};
-      spec.keys.forEach(function (k) { var n = Number(v[k[0]]); if (n !== MON.setting(k[0], v.from)) vals[k[0]] = n; });
+      spec.keys.forEach(function (k) {
+        if (String(v[k[0]] == null ? '' : v[k[0]]).trim() === '') return;
+        var n = Number(v[k[0]]); if (n !== MON.setting(k[0], v.from)) vals[k[0]] = n;
+      });
       if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'ok'); return; }
       db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
         var d = r.data || {};

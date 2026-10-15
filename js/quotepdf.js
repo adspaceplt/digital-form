@@ -129,7 +129,9 @@
     var cx = [M, M + cw[0], M + cw[0] + cw[1], M + cw[0] + cw[1] + cw[2]];
     var headRow = function () {
       var hh = 24;
-      ['Description', 'Qty', 'Rate (RM)', 'Subtotal (RM)'].forEach(function (h, i) {
+      /* A Singapore client's quotation is in S$ (its totals say so; 2026-10-15). */
+      var cur = (q.totals || {}).currency === 'SGD' ? 'S$' : 'RM';
+      ['Description', 'Qty', 'Rate (' + cur + ')', 'Subtotal (' + cur + ')'].forEach(function (h, i) {
         rect(cx[i], y - hh, cw[i], hh, fill);
         if (i === 0) text(h, cx[i] + 6, y - hh / 2 - 3.2, BODY, book, dark);
         else right(h, cx[i] + cw[i] - 6, y - hh / 2 - 3.2, BODY, book, dark);
@@ -202,7 +204,7 @@
     if (t.month) {
       var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
-        ' is RM ' + amt(t.commitment) + ' incl. SST' +
+        ' is ' + ((q.totals || {}).currency === 'SGD' ? 'S$ ' : 'RM ') + amt(t.commitment) + ' incl. SST' +
         (t.once ? ', one-off items included.' : '.'));
     }
     room(40);
