@@ -1749,7 +1749,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Rounded to the cent where charged.
   - `issue_letter` snapshots it and `get_portal` sends it.
 - Calls and visits carry next actions and an Undo (Done or Reopen on the
-  row; Edit and Remove, or Restore and Delete, in the row's ⋯); a removed entry is listed
+  row; Edit and Remove, or Restore and Delete, in the row's ⋯), and who
+  logged it by name (`by_whom`; an older entry's sign-in email reads as
+  the active colleague's name, else nothing; 2026-10-15); a removed entry is listed
   on asking with Restore and Delete (Clients: Calls at Manage, asked first,
   `client.touch_deleted`). A Meeting entry
   (`2026-10-05-meetings-outside-a-month.sql`) takes a time (MYT), a length
