@@ -5164,14 +5164,19 @@ body > .shell { width: 100%; }
    CAMP-7 had let it wrap rather than cut its end). With the line to itself
    a name holds one line and every collapsed booking is one height. */
 .is-tight .bookreg .kcard-head {
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  grid-template-areas: "lead name name act" "lead tags sum sum";
+  grid-template-columns: auto max-content minmax(0, 1fr);
+  grid-template-areas: "lead name name" "lead tags sum";
   gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
-.is-tight .bookreg .kcard-lead { grid-area: lead; }
+/* The link and the ⋯ stand over the end of the name's line, which keeps
+   their room clear, so the second line has the row's whole width for the
+   state's whole word and its date (320: "Changes requested" beside a date). */
+.is-tight .bookreg .kcard-head > .kcard-act { grid-area: name; justify-self: end; }
+.is-tight .bookreg .kcard-head:has(.kcard-act > :nth-child(2)) > .kcard-name { padding-right: calc(2 * var(--ctl-h) + 10px); }
+.is-tight .bookreg .kcard-head:has(.kcard-act > :only-child) > .kcard-name { padding-right: calc(var(--ctl-h) + 8px); }
+.is-tight .bookreg .kcard-lead { grid-area: lead; min-width: max-content; }
 .is-tight .bookreg .kcard-name { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
-.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; min-width: max-content; }
 .is-tight .bookreg .kcard-sum {
   grid-area: sum; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; text-align: right; color: var(--ink-mute);
