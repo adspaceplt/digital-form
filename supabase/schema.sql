@@ -51647,7 +51647,7 @@ create or replace trigger team_members_leaving after update of active, removed_a
 -- DATA HELD TO ITS LEVEL — what a function answers or tells is held to the
 -- reader's own parts and scope, and a document no longer standing is not
 -- sent (2026-10-15)
--- ====================================================================
+-- ===========================================================================
 -- WHY (the audit of 2026-10-15, S4, S7, S10, S11, I7, I12)
 --   * S4: the Pre-Advertising Checklist prefilled the registered name (a
 --     billing column) and the newest quotation for any Clients View reader,
