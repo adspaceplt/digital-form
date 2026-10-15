@@ -379,12 +379,12 @@
       });
     } },
     { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
-      var STALE = window.ADspaceCRM.staleH();
+      var STALE = window.ADspaceCRM.staleH;
       return R.clients().then(function (list) {
         var now = Date.now();
         return list.filter(function (c) { return c.stage === 'lead' || c.stage === 'proposal'; }).map(function (c) {
           return { c: c, h: (now - new Date(c.stage_since || c.created_at).getTime()) / 3600000 };
-        }).filter(function (x) { return x.h > STALE[x.c.stage]; }).map(function (x) {
+        }).filter(function (x) { return x.h > STALE(x.c)[x.c.stage]; }).map(function (x) {
           var c = x.c, d = Math.floor(x.h / 24);
           return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, 'Overdue'].join(' · '), tag: 'Lead', who: c.owner || '', client: c.id,
                    late: true, days: d, since: daysWord(d), url: clientUrl(c), section: 'clients' };

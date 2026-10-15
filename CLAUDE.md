@@ -1386,8 +1386,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Past never Active, Churned Active to Past, Resumed Paused back to Active,
   a Win-back Past back to Active; Committed monthly value a month of each
   confirmed line by market, never added across currencies.
-- The follow-up limits (`staleH()`, settings `lead_followup_hours` 48 and
-  `proposal_followup_days` 21, calendar days):
+- The follow-up limits (`staleH(c)`, settings `lead_followup_hours` 48 and
+  `proposal_followup_days` 21, calendar days; a VIC client's
+  `vic_lead_followup_hours` 24 and `vic_proposal_followup_days` 7,
+  `2026-10-15-vic-followups.sql`, under VIC clients in the same sheet):
   - Lead and Proposal sent read Overdue past theirs;
   - Contacted has no limit.
   - An over-run stage reads "N days · Overdue" in red, and the group head
@@ -3108,7 +3110,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     opens it, several are counted ("5 tasks need attention: 2 overdue, 1
     Urgent, 2 not started.") with the first three named, opening My Work
     (kind `tasks.nudge`, push tag `tasks-nudge`), never more often than
-    `task_remind_hours` (3); both Business settings (Settings, My Work:
+    `task_remind_hours` (3); a VIC client's tasks are named first and
+    counted apart ("2 for VIC clients"), and one that falls overdue after
+    the colleague's last reminder is told at once, inside the window too
+    (2026-10-15); both Business settings (Settings, My Work:
     Task reminders, 0 sends none). Not sent on WhatsApp.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
