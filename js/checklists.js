@@ -445,25 +445,34 @@
     if (Array.isArray(v)) return v.map(function (x) { return typeof x === 'object' ? Object.keys(x).map(function (k) { return x[k]; }).join(' · ') : x; }).join('\n');
     return v == null ? '' : String(v);
   }
+  /* One press from the checklist (the user, 2026-10-15: "i need to go brand
+     do first then go back to engagements"): with no confirmed Brand
+     analysis the same question runs it first, shows it here to confirm
+     (which fills the empty Content brief), then writes the checklist. */
+  var OBJ_BA = { Leads: 'enquiries', Sales: 'traffic', Traffic: 'traffic', Awareness: 'awareness' };
   function write(btn) {
     var ctx = V.ctx, cl = ctx.client, k = 'adspace-checklist-inputs:' + cl.id;
     ctx.msg('ckMsg', '');
     btn.disabled = true;
-    ctx.db.rpc('ai_checklist_left').then(function (r) {
+    Promise.all([ctx.db.rpc('ai_checklist_left'), ctx.db.rpc('ai_brand_ready', { p_client: cl.id }), ctx.db.rpc('ai_analysis_left')]).then(function (rs) {
       btn.disabled = false;
-      var l = r.data || {};
-      if (r.error || l.error) { ctx.msg('ckMsg', said(r.error || l.error), 'err'); return; }
+      var l = rs[0].data || {}, ready = rs[1].data || {}, al = rs[2].data || {};
+      if (rs[0].error || l.error) { ctx.msg('ckMsg', said(rs[0].error || l.error), 'err'); return; }
       if (!l.left) {
         ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. An admin can turn it on.'
           : 'No checklist drafts left today. The next is free at 12:00 am.', 'err');
         return;
       }
+      var needBa = !rs[1].error && !ready.error && !ready.analysis;
+      if (needBa && !al.left) { ctx.msg('ckMsg', 'No Brand analysis is confirmed, and no analyses are left today. The next is free at 12:00 am.', 'err'); return; }
       var was = keep(k);
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: 'Reads the confirmed Brand analysis, the Ad benchmarks and the linked Meta accounts, then proposes an answer for each field to review before it is saved. ' +
-          l.left + (l.left === 1 ? ' draft' : ' drafts') + ' left today.',
-        go: 'Write',
+        body: (needBa
+          ? 'No Brand analysis is confirmed for this client, so one is run first from the website, the profiles and Meta, for you to confirm here; confirming it also fills the Content brief where it is empty. Then the checklist is written. '
+          : 'Reads the confirmed Brand analysis, the Ad benchmarks and the linked Meta accounts, then proposes an answer for each field to review before it is saved. ') +
+          l.left + (l.left === 1 ? ' checklist draft' : ' checklist drafts') + (needBa ? ' and ' + al.left + (al.left === 1 ? ' analysis' : ' analyses') : '') + ' left today.',
+        go: needBa ? 'Run' : 'Write',
         fields: [
           { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
           { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
@@ -481,31 +490,101 @@
         var inputs = { budget: String(v.budget == null ? '' : v.budget).trim(), objective: v.objective || '', destination: v.destination || '',
           account: v.account || '', notes: String(v.notes || '').trim() };
         keep(k, inputs);
-        btn.disabled = true;
-        btn.setAttribute('aria-busy', 'true');
-        btn.lastChild.textContent = 'Writing';
-        ctx.db.functions.invoke('checklist-draft', { body: { client_id: cl.id, notes: inputs.notes,
-          inputs: { budget: inputs.budget ? Number(inputs.budget) : null, objective: inputs.objective || null,
-            destination: inputs.destination || null, account: inputs.account || null } } }).then(function (res) {
-          var d = res && res.data;
-          if (res.error || !d || d.error || !d.fill) {
-            var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e;
-          }
-          done();
-          if (!V || V.ctx.client.id !== cl.id) return;
-          review(brandIn(d.fill, cl.name));
-        }).catch(function (e) {
-          done();
-          var d = e && e.d;
-          ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. The next is free at 12:00 am.' : said(e), 'err');
-        });
-        function done() {
-          var b = V && V.host.querySelector('[data-a="ai"]');
-          if (!b) return;
-          b.disabled = false; b.removeAttribute('aria-busy'); b.lastChild.textContent = 'Write with AI';
-        }
+        if (needBa) analyseFirst(inputs); else draft(inputs);
       });
     }).catch(function (e) { btn.disabled = false; ctx.msg('ckMsg', said(e), 'err'); });
+  }
+  function busy(on) {
+    var b = V && V.host.querySelector('[data-a="ai"]');
+    if (!b) return;
+    b.disabled = on;
+    if (on) b.setAttribute('aria-busy', 'true'); else b.removeAttribute('aria-busy');
+    b.lastChild.textContent = on ? 'Writing' : 'Write with AI';
+  }
+  function analyseFirst(inputs) {
+    var ctx = V.ctx, cl = ctx.client;
+    busy(true);
+    var obj = inputs.objective === 'Leads' && (inputs.destination === 'WhatsApp' || inputs.destination === 'Messenger') ? 'messages' : OBJ_BA[inputs.objective] || null;
+    ctx.db.functions.invoke('brand-analysis', { body: { client_id: cl.id, notes: inputs.notes,
+      inputs: { objective: obj, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } } }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
+      busy(false);
+      if (!V || V.ctx.client.id !== cl.id) return;
+      showAnalysis(d.analysis, inputs);
+    }).catch(function (e) {
+      busy(false);
+      var m = e && e.message;
+      ctx.msg('ckMsg', m === 'no-source' ? 'Add the website, an Instagram or Facebook handle, or link Meta accounts on Brand first.'
+        : m === 'ai-limit' ? 'No analyses left today. The next is free at 12:00 am.' : said(e), 'err');
+    });
+  }
+  /* The analysis read here before it is confirmed: the parts the checklist
+     and the brief are written from. */
+  function showAnalysis(row, inputs) {
+    var a = row.analysis || {}, p = a.positioning || {}, sw = a.swot || {}, ct = a.content || {}, ad = a.ads || {}, br = a.brief || {};
+    var lst = function (x) { return (x || []).length ? '<ul class="ck-ba-list">' + x.map(function (y) { return '<li>' + esc(y) + '</li>'; }).join('') + '</ul>' : ''; };
+    var sec = function (t, body) { return body ? '<section class="ck-ba-sec"><h4 class="fsec-h">' + esc(t) + '</h4>' + body + '</section>' : ''; };
+    var fact = function (rows) {
+      rows = rows.filter(function (r) { return r[1]; });
+      return rows.length ? '<dl class="ovfacts">' + rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>'; }).join('') + '</dl>' : '';
+    };
+    var box = $('ckBaSheet');
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'sheet'; box.id = 'ckBaSheet'; box.hidden = true;
+      box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ckBaTitle" tabindex="-1" data-narrow="560">' +
+        '<div class="sheet-head"><h3 id="ckBaTitle">Brand analysis</h3><button class="iconbtn" type="button" data-a="x" aria-label="Close">' + XMARK + '</button></div>' +
+        '<div class="sheet-body" data-m="body"></div>' +
+        '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="go">Confirm and write</button><button class="btn-quiet" type="button" data-a="cancel">Cancel</button></div></div>';
+      document.body.appendChild(box);
+      box.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      box.querySelector('[data-a="cancel"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#ckBaSheet .sheet-card');
+    }
+    box.querySelector('[data-m="body"]').innerHTML =
+      (row.hypothesis ? '<p class="msg warn ck-ba-hyp">A starting hypothesis to test</p>' : '') +
+      sec('Brand positioning', fact([['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
+        ['Competitors', esc((p.competitors || []).join(', '))]])) +
+      sec('Target audiences', fact((a.audiences || []).map(function (x) { return [x.name, esc([x.who, x.pains].filter(Boolean).join(' · '))]; }))) +
+      sec('SWOT', fact([['Strengths', lst(sw.strengths)], ['Weaknesses', lst(sw.weaknesses)], ['Opportunities', lst(sw.opportunities)], ['Threats', lst(sw.threats)]])) +
+      sec('Content brief', fact([['Audience', esc(br.audience || '')], ['Content pillars', lst(br.pillars && br.pillars.length ? br.pillars : ct.pillars)], ['Tone of voice', esc(br.tone || '')]])) +
+      sec('Ad targeting', fact([['Objectives', lst(ad.objectives)], ['Budget realism', esc(ad.realism || '')]]));
+    var go = box.querySelector('[data-a="go"]');
+    go.disabled = false;
+    go.onclick = function () {
+      window.ADspaceSheet.close();
+      window.ADspaceConfirm.ai.declare('analysis', 'Confirm', function () {
+        V.ctx.db.rpc('brand_analysis_confirm', { p_id: row.id, p_on: true }).then(function (r) {
+          var x = r.data || {};
+          if (r.error || x.error) { V.ctx.msg('ckMsg', said(r.error || x.error), 'err'); return; }
+          if (V.ctx.brief) V.ctx.brief(x.filled || []);
+          draft(inputs);
+        }).catch(function (e) { V.ctx.msg('ckMsg', said(e), 'err'); });
+      });
+    };
+    window.ADspaceSheet.show(box, { opener: V.host.querySelector('[data-a="ai"]') });
+    V.ctx.msg('ckMsg', 'Brand analysis version ' + row.version + ' written. Confirm it to write the checklist; until then it waits as a draft on Brand.', 'ok');
+  }
+  function draft(inputs) {
+    var ctx = V.ctx, cl = ctx.client;
+    busy(true);
+    ctx.db.functions.invoke('checklist-draft', { body: { client_id: cl.id, notes: inputs.notes,
+      inputs: { budget: inputs.budget ? Number(inputs.budget) : null, objective: inputs.objective || null,
+        destination: inputs.destination || null, account: inputs.account || null } } }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.fill) {
+        var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e;
+      }
+      busy(false);
+      if (!V || V.ctx.client.id !== cl.id) return;
+      ctx.msg('ckMsg', '');
+      review(brandIn(d.fill, cl.name));
+    }).catch(function (e) {
+      busy(false);
+      var d = e && e.d;
+      ctx.msg('ckMsg', d && d.error === 'ai-limit' ? 'No checklist drafts left today. The next is free at 12:00 am.' : said(e), 'err');
+    });
   }
 
   /* The proposals, one a field, each ticked to keep; what the field holds
