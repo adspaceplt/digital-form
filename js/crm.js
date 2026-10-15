@@ -1115,7 +1115,7 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'calls', 'engagements', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  var PANES = ['overview', 'calls', 'engagements', 'checklists', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
   var pane = 'overview';
 
   function paneFromUrl() {
@@ -1159,7 +1159,15 @@
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (key === 'calls' && visit) loadTouches();
     if (key === 'billing') loadDetForm();
+    /* The checklists are read on every visit and on a record opened on
+       them (2026-10-15). */
+    if (key === 'checklists' && window.ADspaceChecklists && state.client &&
+        (visit || ckFor !== state.client.id)) {
+      ckFor = state.client.id;
+      window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg });
+    }
   }
+  var ckFor = null;
 
   gateTabs();
   Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {

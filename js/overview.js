@@ -454,6 +454,17 @@
         });
       });
     } },
+    { key: 'checklists', title: 'Client checklists not signed off', can: canClients, load: function () {
+      return db.rpc('client_checklists_due').then(rows).then(function (list) {
+        return (list || []).map(function (c) {
+          var what = c.kind === 'pre_ads' ? 'Pre-Advertising Checklist' : 'New Client Onboarding Checklist';
+          var st = c.status === 'prepared' ? 'Waiting for sign-off' : c.started ? 'In progress' : 'Not started';
+          return { name: what, meta: [c.name, st].join(' · '), tag: 'Client', who: c.owner || '',
+                   days: daysSince(c.since), since: sinceWord(c.since), tone: c.started ? 'warn' : 'off',
+                   url: clientUrl({ slug: c.slug, id: c.client_id }, 'checklists') + '&list=' + c.kind, section: 'clients' };
+        });
+      });
+    } },
     { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); }, load: function () {
       return R.letters().then(function (list) {
         return list.map(function (d) {

@@ -3666,3 +3666,22 @@ finding fixed at the user's word ("fix all no matter what").
   before with both kinds redraw in the new layout; the figures are unchanged
   but for a sen of SST rounding at most.
 
+### 2026-10-15 · Client checklists on the record
+- The user sent the team's two PDFs (New Client Onboarding Checklist,
+  Pre-Advertising Checklist, ver. r1.1-26) and asked where they belong.
+  Answer agreed: a Checklists tab on the client record, once per client
+  (the user: "once per client only"), the Dashboard listing the unsigned
+  ones (the user: "i suppose yes").
+- Each item is a tick with a note, stamped with who and when; choices are
+  chips; platform sections can be Not applicable. Sign-off is two people
+  (prepared, reviewed), as the paper form's two signature lines; signed
+  locks it, Reopen keeps the signed copy.
+- My Work's two month ticks now follow the sign-off instead of being
+  ticked by hand, so the month and the checklist never disagree.
+- The pre-advertising checklist prefills from what the record holds
+  (registered name, newest quotation, competitors, confirmed SWOT).
+- The credentials register stays a tick: passwords are never kept in the
+  portal.
+- Template editing in Settings is deferred; the template lives in the
+  migration (`checklist_template`) and a row keeps the copy it began with.
+

@@ -206,6 +206,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
+| `checklists.js`, the CLIENT CHECKLISTS section | checklists, work, overview, sql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -1497,6 +1498,29 @@ Each line is a rule that broke once. Its reason is in the archive.
     never `*` (refused). A new column is granted by running the CLIENT
     BILLING COLUMNS section again. The stand-in refuses `*` and every
     billing column, top level or embedded.
+- Checklists (`tab=checklists`, `js/checklists.js`,
+  `2026-10-15-client-checklists.sql`; the user, 2026-10-15: the team's New
+  Client Onboarding and Pre-Advertising Checklists, ver. r1.1-26, once per
+  client): one `client_checklists` row a client and kind (RLS on, no
+  policy, no grant), the template copied in when it is first written
+  (`checklist_template`). The pane lists both, `list=` opening one: a tick
+  with its note kept with who and when, a choice as chips, words as a field,
+  a platform section Not applicable (`client_checklist_set`, Clients Work,
+  client scope; `locked`, `bad-item`, `bad-value`, `too-long`; filed
+  `client.edited`); the pre-advertising one prefilled from the record (the
+  registered name, the newest quotation, the brief's competitors, the
+  confirmed Brand analysis's SWOT; `checklist_prefill`). Mark as prepared
+  (`incomplete` with what is left), Sign off by another colleague (asked;
+  `own`), Send back, and Reopen at Manage (asked; the signed copy kept in
+  `history`) through `client_checklist_step`; signed, it locks and ticks
+  the month's check of that key (`ready`), and Reopen unticks it. A month's
+  check is never ticked by hand (`ops_engagement_set_check` refuses
+  `use-checklist`); My Work shows it with Open on the client's checklist.
+  Download draws its PDF (FOR INTERNAL USE, ver. r1.1-26). Not signed off on
+  an Active client, unless the month marks it Not needed, is a Dashboard
+  Needs attention row (`client_checklists_due`). A client's passwords are
+  never kept: the credentials item is a tick. The templates are edited in
+  the migration, not in Settings, for now.
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
   policy, no grant): a client, and each white-label brand, links ad accounts
   (up to 20), one Facebook Page and one Instagram account, each Meta's id and
@@ -3005,8 +3029,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     the month stays in production until its report is done.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
-    (`ops_engagements_hand_on_checks`).
-  - `ops_engagement_set_check` stamps who ticked it.
+    (`ops_engagements_hand_on_checks`), ticked by the client's checklist
+    signed off (Clients, Checklists) and marked Not needed by hand.
   - Its stage is worked out on every load (`engPhase()`), never picked:
     Planning until the ticks are answered and the meeting set (or not
     needed); Ready until the meeting has passed and the month holds a task;
