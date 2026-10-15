@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015r">
+<link rel="stylesheet" href="/css/portal.css?v=20261015s">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -74,7 +74,11 @@
   @media (max-width: 640px) {
     .doorbar { padding: 0 16px; }
     .door { padding: 20px 16px calc(20px + var(--head-h) / 2); }
+    /* Client sign-in, the way back into the portal (UX audit NOTFOUND-2,
+       2026-10-15), takes the row; the other two share the next as halves. */
+    .door-acts { flex-wrap: wrap; }
     .door-acts > .btn { flex: 1 1 0; min-width: 0; }
+    .door-acts > .btn-primary { flex: 1 1 100%; }
   }
 </style>
 </head>
@@ -90,7 +94,8 @@
     <h1>Page not found</h1>
     <p>Please contact your ADspace account manager.</p>
     <div class="door-acts">
-      <a class="btn btn-sm btn-primary" href="https://adspacestudios.com" rel="nofollow">Visit website</a>
+      <a class="btn btn-sm btn-primary" href="/client/">Client sign-in</a>
+      <a class="btn btn-sm" href="https://adspacestudios.com" rel="nofollow">Visit website</a>
       <a class="btn btn-sm" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance">Contact support</a>
     </div>
   </div>

@@ -353,8 +353,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     failed read leaves the hours);
   - Visit: the address and Get directions (the Google Maps listing);
   - How can we help?: one sentence, then Chat on WhatsApp opening
-    `wa.me/adspace`; the number is never on the page or in its business
-    details;
+    `wa.me/adspace` (the blue one); a tonal `.btn-sm` Chat on WhatsApp
+    under the tagline puts it in the first screen (2026-10-15); the number
+    is never on the page or in its business details;
   - the head: the title and descriptions name ADspace as adspacestudios.com
     does (Digital Marketing Agency in Johor Bahru & Singapore), Open Graph
     and a large-image card, and one JSON-LD graph (the Organization, the
@@ -375,7 +376,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `sitemap.xml` names `/` alone (`tests/seo.js`).
 - `404.html` is the portal's cover:
   - English only, white, title 17px, line 14px;
-  - Visit website and Contact support as `.btn-sm`;
+  - Client sign-in (`/client/`, the one blue), Visit website and Contact
+    support as `.btn-sm`, Client sign-in taking its own row on a phone
+    (2026-10-15); the portal's foot as static markup;
   - no `noscript` redirect.
   - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
