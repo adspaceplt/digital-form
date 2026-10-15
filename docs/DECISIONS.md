@@ -3602,6 +3602,12 @@ finding fixed at the user's word ("fix all no matter what").
   label stands over its value). Re-run on 7955e39: cssguard, uxaudit (0
   warnings) and matrix ok, `gate: ok`. The log #474 opened is cleared.
 
+- 2026-10-15, log reads. Supabase's billing page showed Log Query at 50.4 of
+  100 GB for the cycle (a new allowance; over it, logs are degraded). Log
+  reads by the sessions (the connector's log lookups, several sessions at
+  once) are the likely bulk. The user agreed: logs are read only while a
+  fault is being found, for the shortest window, never to confirm a deploy.
+
 ### 2026-10-15 · A booking's head holds two lines on a phone; three foot actions are two halves and a row
 - The full gate on main (geom) found the Creators pane's collapsed bookings
   at 85 to 109px at 390 and 86 to 266px at 320: audit CAMP-7 had let a
