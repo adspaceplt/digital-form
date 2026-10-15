@@ -75,7 +75,7 @@
     /* A booking's six steps, named under each mark on the client's page and
        the creator's own (2026-10-08); a seeding campaign delivers in place
        of the shoot. */
-    journey: ['Booked', 'Shoot', 'Draft', 'Review', 'Post', 'Results'], journeyDelivery: 'Delivery',
+    journey: ['Booked', 'Shoot visit', 'Draft due', 'Client review', 'Post date', 'Results'], journeyDelivery: 'Delivery',
     /* What a campaign is called on screen when its name would render as
        nothing. The record is never renamed behind anybody's back. */
     untitled: 'Untitled campaign',

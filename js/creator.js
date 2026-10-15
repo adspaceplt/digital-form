@@ -62,7 +62,7 @@
       dropTitle: 'Add photos or videos', dropSub: 'Up to 1 GB each',
       directions: 'Directions', call: 'Call', whatsapp: 'WhatsApp',
       captionHint: 'Caption to publish with this post.',
-      submit: 'Submit', submitting: 'Submitting…', update: 'Update submission',
+      submit: 'Submit draft', submitting: 'Submitting…', update: 'Update submission',
       needFiles: 'Attach at least one file.',
       uploading: 'Uploading', saving: 'Saving', remove: 'Remove',
       filesHead: 'Submitted files',

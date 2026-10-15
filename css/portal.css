@@ -5157,23 +5157,24 @@ body > .shell { width: 100%; }
    read down rather than sharing one with a summary that would squeeze it. */
 .is-tight .bookreg-head { display: none; }
 /* Two lines, as a phone list row reads: the name with its link and ⋯ at
-   the right edge, then the summary with the state opposite it. The state
+   the right edge, then the state (its dot and whole word) at the left and
+   its date at the right (the user's ruling, 2026-10-15). The state
    left the name's line (2026-10-15, geom): beside the chip, the link and
    the ⋯ a name had 90px at 320 and wrapped to three and four lines (audit
    CAMP-7 had let it wrap rather than cut its end). With the line to itself
    a name holds one line and every collapsed booking is one height. */
 .is-tight .bookreg .kcard-head {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  grid-template-areas: "lead name name act" "lead sum tags tags";
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "lead name name act" "lead tags sum sum";
   gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
 .is-tight .bookreg .kcard-lead { grid-area: lead; }
 .is-tight .bookreg .kcard-name { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
-.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: end; flex-wrap: nowrap; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; }
 .is-tight .bookreg .kcard-sum {
   grid-area: sum; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; text-align: left; color: var(--ink-mute);
+  text-overflow: ellipsis; text-align: right; color: var(--ink-mute);
 }
 /* On a phone these are named areas, so an empty one is a blank line held
    open by the gap and can safely leave. */
@@ -11485,7 +11486,13 @@ button.aiu-row:first-child::before { content: none; }
 .cx-journey li.is-done::before { background: var(--ink-mute); }
 .cx-journey li.is-now::before { background: var(--dot-wait); }
 .cx-journey li.is-now { color: var(--ink); font-weight: 600; }
-.cx-journey span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A step's name is two words at most (Shoot visit, Client review), never
+   cut: it breaks at its space where its column is narrow (2026-10-15, the
+   user: a status is never shortened into a word that changes its meaning). */
+.cx-journey span { overflow-wrap: normal; word-break: keep-all; hyphens: none; }
+@media (max-width: 400px) { .cx-journey li { font-size: 11px; } .cx-journey { gap: 3px; } }
+.is-tight .cx-journey li { font-size: 11px; }
+.is-tight .cx-journey { gap: 3px; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }

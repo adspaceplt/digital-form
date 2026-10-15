@@ -3402,7 +3402,7 @@
   function isDelivery() {
     return (state.campaign || {}).push_format === 'seeding';
   }
-  function visitWord() { return isDelivery() ? 'Delivery' : 'Visit'; }
+  function visitWord() { return isDelivery() ? 'Delivery' : 'Shoot visit'; }
   /* The client's six steps under a booked creator (2026-10-08): the same
      track, words and map the client's own page reads (ADspaceIcons), so a
      colleague on a call sees what the client sees; the Step column keeps the
@@ -3656,7 +3656,7 @@
          its guide is about handing a file in, which View cannot. */
       (drafting && (w || draftRead) ?
       '<div class="kstep kstep-work">' +
-        '<div class="kstep-title">Draft</div>' +
+        '<div class="kstep-title">Draft submission</div>' +
         (w ? draftGuide(o) : '') +
         requestHtml(o) +
         approvalHtml(o) +
