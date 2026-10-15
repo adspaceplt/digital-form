@@ -31,6 +31,8 @@
 --     taken into the record by the team's own Save, stamped.
 --   The answers never write into the record by themselves.
 --
+-- ORDER: after 2026-10-07-function-hygiene.sql, whose `open_to_anon` grants
+-- anon this section's public reads; run before it, they are revoked.
 -- Safe to run twice. Rollback: drop the six functions and the table, and
 -- delete the `details_form_days` setting.
 -- ===========================================================================

@@ -68,7 +68,12 @@ create table if not exists public.quotations (
 create index if not exists quotations_client_idx on public.quotations (client_id, issued_at desc);
 alter table public.quotations enable row level security;
 revoke all on table public.quotations from public, anon;
-grant select on table public.quotations to authenticated;
+-- Column by column, so a run of this file never hands back `billing`, which
+-- the QUOTATION WEBSITE section withholds (audit I10, 2026-10-15).
+revoke select on table public.quotations from authenticated;
+grant select (id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source,
+              issued_at, valid_until, made_by, contact, access_key, requested_at, idem, removed_at, removed_by)
+  on table public.quotations to authenticated;
 do $p$
 begin
   if not exists (select 1 from pg_policies where tablename = 'quotations' and policyname = 'quotations_read') then
