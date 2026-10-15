@@ -587,7 +587,11 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- None open.
+- 2026-10-15, on main at fa81923 (`ui` gate, tests 84a64cc): uxaudit fails
+  the ads report's Check and submit (`div.rp-sec` Figures adds 12px of its
+  own to the 12px stack gap, 1280 and 390, both themes) and the quotation
+  website's Request received at 390 (`chip-state` "Letter of Offer
+  requested" wraps).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
