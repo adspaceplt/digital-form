@@ -3893,3 +3893,19 @@ finding fixed at the user's word ("fix all no matter what").
 - Pictures from Meta named a refused write as Meta holding no picture, and
   its Undo filed every picture as put back; both now say what happened.
 - A Letter of Offer with a one-off item keeps its whole summary on one page.
+
+### 2026-10-15 — The daily gate runs every suite, and the walks reach the new screens (audit R1, R2, I13)
+- `acts`, `deletes` and `analysis` each had a STATUS row and a place in the
+  File → suites map but were not in the gate's BROWSER list, so the daily
+  `all` never ran them. They are in it now.
+- uxaudit and matrix walked none of the screens built on 2026-10-13 to 15:
+  Build quote, a client's quotations, the rate card's Wording and Versions,
+  the wording sheet, the Set inactive and Delete questions for a colleague
+  holding work, and Billing with an answered details form. Each is seeded
+  through the functions the page calls and walked at 1280 and 390, both
+  themes; matrix holds the four routes.
+- Walked, they found two faults: Build quote's steppers were 32px targets
+  (now a control's height), and the Versions heading sat off its columns at
+  a desk because the Download track was `auto` (now fixed at 112px).
+- I13 (the stand-in answering a quotation key before client scope, and
+  asking billing at Work) had already shipped with the quotation guards.
