@@ -3593,3 +3593,11 @@ finding fixed at the user's word ("fix all no matter what").
   its `post_versions` row stand: they describe the caption on show again.
   Order: the page (which falls back to the caption alone where the
   function is missing), then the migration; rollback drops the function.
+
+- **2026-10-15 — The `ui` gate's two layout faults, shipped in #475.** The
+  gate on main (2469d3a, tests 0530d18) failed uxaudit on the ads report's
+  Check and submit (a `.ovcard`'s own 12px margin laid on the `.rp-sec` gap:
+  `.rp-sec > .ovcard` now has none) and on the quotation's Request received
+  at 390 (the status wrapped: it keeps one line, and on a phone each fact's
+  label stands over its value). Re-run on 7955e39: cssguard, uxaudit (0
+  warnings) and matrix ok, `gate: ok`. The log #474 opened is cleared.
