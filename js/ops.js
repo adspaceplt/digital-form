@@ -6374,14 +6374,16 @@
         var line = done ? 'Ticked' + (by ? ' by ' + by : '') + (when ? ' · ' + when : '')
           : na ? 'Not needed' + (by ? ' · ' + by : '') + (when ? ' · ' + when : '') : '';
         return '<div class="mcheck' + (done ? ' is-done' : na ? ' is-na' : '') + '" data-key="' + esc(x.key) + '">' +
-          (can
-            ? '<button class="tcheck' + (done ? ' is-done' : '') + '" type="button" data-a="tick" aria-pressed="' + done + '"' +
-                (na ? ' disabled' : '') + ' aria-label="' + esc(checkWord(x.key)) + '"></button>'
-            : '<span class="tcheck' + (done ? ' is-done' : '') + '" aria-hidden="true"></span>') +
+          /* The tick is the checklist's sign-off on the client's record
+             (2026-10-15): the row opens it, and Not needed stays here. */
+          '<span class="tcheck' + (done ? ' is-done' : '') + '" aria-hidden="true"></span>' +
           '<span class="mcheck-lab"><span>' + esc(checkWord(x.key)) + '</span>' +
-            (line ? '<small>' + esc(line) + '</small>' : '') + '</span>' +
+            (line ? '<small>' + esc(line.replace(/^Ticked/, 'Signed off')) + '</small>' : '') + '</span>' +
           (can && !done
             ? '<button class="btn-quiet btn-sm mcheck-na" type="button" data-a="na">' + (na ? 'Needed' : 'Not needed') + '</button>'
+            : '') +
+          (e.client_id && !na
+            ? '<button class="btn-quiet btn-sm mcheck-open" type="button" data-a="open">Open</button>'
             : '') +
         '</div>';
       }).join('') +
@@ -6398,8 +6400,11 @@
           after((d && d.checks) || []);
         }, function () { if (btn) btn.disabled = false; });
       };
-      var tk = row.querySelector('[data-a="tick"]');
-      if (tk) tk.addEventListener('click', function () { send(cur === 'ready' ? 'not_started' : 'ready', tk); });
+      var op = row.querySelector('[data-a="open"]');
+      if (op) op.addEventListener('click', function () {
+        history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(e.client_id) + '&tab=checklists&list=' + encodeURIComponent(key));
+        if (bridge.show) bridge.show('clients');
+      });
       var na = row.querySelector('[data-a="na"]');
       if (na) na.addEventListener('click', function () { send(cur === 'na' ? 'not_started' : 'na', na); });
     });

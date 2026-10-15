@@ -12533,3 +12533,68 @@ body.qs-page { background: var(--card); }
   .qfoot > .perf-notify { order: -1; flex: 1 1 100%; margin: 0; }
 }
 :root.has-tabbar .sheet-side .qfoot { padding-bottom: 12px; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+/* CLIENT CHECKLISTS (2026-10-15): the onboarding and pre-advertising
+   checklists on a client's record. The list is two rows, each a button
+   opening its checklist; a checklist is a head, its facts, a card a
+   section and the sign-off. */
+.ck-list { overflow: hidden; }
+.ck-item {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--state-w) 16px; align-items: center; gap: 4px 14px;
+  width: 100%; padding: 12px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; text-align: left; cursor: pointer; font: inherit; color: var(--ink);
+}
+.ck-item:last-child { border-bottom: 0; }
+@media (hover: hover) { .ck-item:hover { background: var(--sunk); } }
+.ck-item-name { display: grid; gap: 2px; min-width: 0; }
+.ck-item-name b { font-size: 14px; font-weight: 600; }
+.ck-item-meta { font-size: 12.5px; color: var(--ink-mute); }
+.ck-chev { display: flex; justify-content: flex-end; color: var(--ink-mute); }
+.ck-chev svg { width: 16px; height: 16px; }
+.ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.ck-head .ck-back { grid-column: 1 / -1; justify-self: start; }
+.ck-sign .ovfacts { margin-top: 8px; }
+.is-tight .ck-head { grid-template-columns: minmax(0, 1fr) auto; }
+.is-tight .ck-head .chip-state { grid-column: 1; grid-row: 3; }
+.ck-title { min-width: 0; display: grid; gap: 2px; }
+.ck-title h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.ck-title small { font-size: 12.5px; color: var(--ink-mute); }
+.ck-sec { padding: 16px 18px; }
+.is-narrow .ck-sec { padding: 14px; }
+.ck-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ck-sec-head .fsec-h { margin: 0; }
+.ck-sec.is-off .fsec-h { color: var(--ink-mute); }
+.ck-sec-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.ck-row {
+  display: grid; align-items: start; gap: 4px 12px; padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.ck-sec-head + .ck-row, .ck-sec-note + .ck-row { margin-top: 8px; }
+.ck-row.is-tick { grid-template-columns: 18px minmax(0, 1fr) minmax(0, 220px) auto; }
+.ck-row.is-tick .tcheck { margin: calc((20px - var(--ctl-h)) / 2); }
+.ck-row.is-tick span.tcheck { display: block; }
+.ck-row.is-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); align-items: center; }
+.ck-lab { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
+.ck-lab b { font-weight: 500; }
+.ck-lab small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.ck-lab .ck-hint { color: var(--ink-soft); }
+.ck-row.is-na .ck-lab b { color: var(--ink-mute); }
+.ck-note-read { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.ck-na { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.ck-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ck-chip {
+  min-height: var(--ctl-h-sm); padding: 0 12px; border: 0; border-radius: 999px;
+  background: var(--tonal); color: var(--ink-soft); font: inherit; font-size: 12.5px; cursor: pointer;
+}
+span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
+@media (hover: hover) { button.ck-chip:hover { background: var(--tonal-hover); } }
+.ck-chip.is-on { background: var(--fill); color: var(--on-fill); }
+.ck-text-read { font-size: 14px; overflow-wrap: anywhere; white-space: pre-line; }
+.ck-acts { margin-top: 12px; }
+.ck-acts > .btn { flex: 0 0 auto; }
+.is-narrow .ck-row.is-tick { grid-template-columns: 18px minmax(0, 1fr); }
+.is-narrow .ck-row.is-tick > .ck-note, .is-narrow .ck-row.is-tick > .ck-note-read { grid-column: 2; }
+.is-narrow .ck-row.is-tick > .ck-na { grid-column: 2; justify-self: start; }
+.is-narrow .ck-row.is-field { grid-template-columns: minmax(0, 1fr); }
+.is-narrow .ck-item { grid-template-columns: minmax(0, 1fr) auto 16px; }
+.mcheck-open { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); }

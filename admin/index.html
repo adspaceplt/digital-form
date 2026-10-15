@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015x">
+<link rel="stylesheet" href="/css/portal.css?v=20261015y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -703,6 +703,7 @@
                  (2026-10-10): drawn for a client engaged now or before, or
                  one holding anything there (js/engage.js). -->
             <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false" hidden>Engagements</button>
+            <button class="tab" data-pane="checklists" type="button" role="tab" aria-selected="false">Checklists</button>
             <button class="tab" data-pane="contacts" data-part="clients.contacts" type="button" role="tab" aria-selected="false">Contacts</button>
             <button class="tab" data-pane="billing" data-part="clients.billing" type="button" role="tab" aria-selected="false">Billing</button>
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
@@ -733,6 +734,13 @@
         </div>
         <div class="msg" id="crmEngageMsg"></div>
         <div id="crmWorkList"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="checklists" hidden>
+        <!-- The New Client Onboarding and Pre-Advertising checklists, once a
+             client, recorded item by item and signed off (js/checklists.js). -->
+        <div class="viewhead"><span class="headmark"><h2>Checklists</h2></span></div>
+        <div id="crmChecklists"></div>
           </div>
 
           <div class="rec-pane" data-pane="contacts" hidden>
@@ -5376,7 +5384,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/engage.js?v=20261010zc"></script>
 <script src="/js/quotes.js?v=20261015b"></script>
 <script src="/js/quotepdf.js?v=20261015"></script>
-<script src="/js/crm.js?v=20261015h"></script>
+<script src="/js/checklists.js?v=20261015a"></script>
+<script src="/js/crm.js?v=20261015i"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261015"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
@@ -5385,11 +5394,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261014a"></script>
 <script src="/js/campaigns.js?v=20261015c"></script>
-<script src="/js/ops.js?v=20261015c"></script>
+<script src="/js/ops.js?v=20261015d"></script>
 <script src="/js/perf.js?v=20261015c"></script>
 <script src="/js/health.js?v=20261015"></script>
 <script src="/js/search.js?v=20261015"></script>
-<script src="/js/overview.js?v=20261015c"></script>
+<script src="/js/overview.js?v=20261015d"></script>
 <script src="/js/settings.js?v=20261015c"></script>
 </body>
 </html>
