@@ -50933,6 +50933,704 @@ grant execute on function public.ai_draft_set_limit(text, integer) to authentica
 
 -- END OF CHECKLIST WRITER ----------------------------------------------------
 
+-- QUOTE WEBSITE GUARDS — the quotation website keeps a visitor to their own
+-- lead, reads a number as the team types it, and stores only what it prices
+-- (2026-10-15)
+-- ===========================================================================
+-- WHY (the audit of 2026-10-15, S1, S2, I1, I2)
+--   * S2: a lead was reused when the email OR the number matched, so anybody
+--     who knew one of them filed a quotation (and, through Proceed, billing
+--     details) under a real lead, and read that lead's name back.
+--   * I2: `8123 4567` (Singapore without 65) and `12-345 6789` (a Malaysian
+--     mobile without its 0) were refused, though `wa_number` reads both; a
+--     lead keyed by the team as `012…` never matched the incoming `6012…`.
+--   * S1: the selection was stored as sent (any key, arrays of any length),
+--     and two posts at once could each pass the five-a-day count.
+--   * I1: Proceed asked a 12-digit registration number of everyone, so a
+--     Singapore prospect (a UEN) could never press it.
+--
+-- WHAT CHANGED
+--   * `quote_website_number(p_raw)` (internal): the digits in international
+--     form, as `wa_number` reads them: a leading 0 is Malaysia, eight digits
+--     Singapore, nine or ten starting 1 a Malaysian mobile without its 0.
+--   * `quote_website_create`:
+--     - reuses a lead only where one of its live contacts holds both the
+--       email and the number (the stored number read the same way); any
+--       other visitor gets a lead of their own, for the team to merge;
+--     - keeps the brand the visitor typed in the quotation's contact
+--       (`contact.brand`), which is what the visitor reads back;
+--     - stores only the keys `quote_price` reads, each bounded (platforms
+--       and languages from their lists, at most 20 one-off items and 10
+--       extra formats, no `edits`);
+--     - takes a transaction lock on the email and on the number before the
+--       five-a-day count, so parallel posts are counted one after another.
+--   * `quote_website_read` answers `brand` from the quotation's contact
+--     (else the quotation's own) and `market` (MY or SG, from the client).
+--   * `quote_website_request` accepts a Singapore UEN (nine or ten
+--     characters, its letters in capitals) where the client's market is SG,
+--     and 12 digits otherwise.
+--
+-- ORDER
+--   This file, then the pages (`js/quote.js` reads `market` and sends the
+--   UEN), then `quote-request` (it refuses while `TURNSTILE_SECRET` is
+--   unset). A page from before sends the 12 digits it always did and reads
+--   the brand it typed.
+--
+-- Safe to run twice. Rollback: run QUOTE WEBSITE SALUTATION's
+-- quote_website_create and QUOTATION WEBSITE's quote_website_read and
+-- quote_website_request again; drop function quote_website_number(text).
+-- ===========================================================================
+
+create or replace function public.quote_website_number(p_raw text)
+returns text
+language sql immutable set search_path = public as $$
+  select case
+           when d ~ '^0[1-9]' then '6' || d
+           when d ~ '^[3689][0-9]{7}$' then '65' || d
+           when d ~ '^1[0-9]{8,9}$' then '60' || d
+           else d end
+    from (select regexp_replace(coalesce(p_raw, ''), '[^0-9]', '', 'g') as d) x
+$$;
+revoke all on function public.quote_website_number(text) from public, anon, authenticated;
+
+create or replace function public.quote_website_create(p_sel jsonb, p_contact jsonb, p_idem text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_name  text := btrim(regexp_replace(coalesce(p_contact->>'name', ''), '\s+', ' ', 'g'));
+  v_email text := lower(btrim(coalesce(p_contact->>'email', '')));
+  v_wa    text := public.quote_website_number(p_contact->>'whatsapp');
+  v_brand text := btrim(regexp_replace(coalesce(p_contact->>'brand', ''), '\s+', ' ', 'g'));
+  v_ind   text := nullif(btrim(coalesce(p_contact->>'industry', '')), '');
+  v_lang  text := case when p_contact->>'lang' = 'zh' then 'zh' else 'en' end;
+  v_sal   text := nullif(btrim(coalesce(p_contact->>'salutation', '')), '');
+  v_idem  text := nullif(btrim(coalesce(p_idem, '')), '');
+  v_sel   jsonb;
+  v_q     public.quotations;
+  v_c     public.clients;
+  v_base  text;
+  v_slug  text;
+  v_n     int := 1;
+  v_r     jsonb;
+  v_new   boolean := false;
+begin
+  if v_idem is null or length(v_idem) > 80 then return jsonb_build_object('error', 'bad-request'); end if;
+  select * into v_q from public.quotations q where q.idem = v_idem;
+  if v_q.id is not null then
+    return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key, 'again', true);
+  end if;
+  if length(v_name) < 2 or length(v_name) > 80 then return jsonb_build_object('error', 'bad-name'); end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_email) > 160 then return jsonb_build_object('error', 'bad-email'); end if;
+  if v_wa !~ '^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$' then return jsonb_build_object('error', 'bad-whatsapp'); end if;
+  if length(v_brand) < 2 or length(v_brand) > 120 then return jsonb_build_object('error', 'bad-brand'); end if;
+  if v_ind is not null and v_ind not in ('Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
+                                         'Automotive', 'Tech', 'Education', 'Other') then
+    return jsonb_build_object('error', 'bad-industry');
+  end if;
+  if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
+      'Dato'' Sri', 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik') then
+    return jsonb_build_object('error', 'bad-salutation');
+  end if;
+  if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
+  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
+  if jsonb_typeof(p_sel->'once') = 'array' and jsonb_array_length(p_sel->'once') > 20
+     or jsonb_typeof(p_sel->'extra') = 'object' and (select count(*) from jsonb_object_keys(p_sel->'extra')) > 10 then
+    return jsonb_build_object('error', 'bad-selection');
+  end if;
+
+  -- What the price reads, and nothing else.
+  v_sel := jsonb_strip_nulls(jsonb_build_object(
+    'mix', case when jsonb_typeof(p_sel->'mix') = 'string' and length(p_sel->>'mix') <= 20 then p_sel->'mix' end,
+    'plan', case when jsonb_typeof(p_sel->'plan') = 'string' and length(p_sel->>'plan') <= 80 then p_sel->'plan' end,
+    'term', case when jsonb_typeof(p_sel->'term') in ('number', 'string') and length(p_sel->>'term') <= 4 then p_sel->'term' end,
+    'budget', case when jsonb_typeof(p_sel->'budget') in ('number', 'string') and length(p_sel->>'budget') <= 12 then p_sel->'budget' end,
+    'translate', case when jsonb_typeof(p_sel->'translate') = 'boolean' then p_sel->'translate' end,
+    'platforms', (select jsonb_agg(distinct v) from jsonb_array_elements_text(
+                    case when jsonb_typeof(p_sel->'platforms') = 'array' then p_sel->'platforms' else '[]'::jsonb end) v
+                   where v in ('meta', 'tiktok', 'rednote', 'linkedin')),
+    'langs', (select jsonb_agg(distinct l) from jsonb_array_elements_text(
+                case when jsonb_typeof(p_sel->'langs') = 'array' then p_sel->'langs' else '[]'::jsonb end) l
+               where l in ('en', 'zh', 'ms')),
+    'extra', case when jsonb_typeof(p_sel->'extra') = 'object' then
+               (select jsonb_object_agg(left(k, 80), p_sel->'extra'->k) from jsonb_object_keys(p_sel->'extra') k) end,
+    'once', case when jsonb_typeof(p_sel->'once') = 'array' then
+              (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('slug', left(o->>'slug', 80), 'qty', o->'qty')))
+                 from jsonb_array_elements(p_sel->'once') o where jsonb_typeof(o) = 'object') end));
+
+  -- Two posts at once are counted one after the other.
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || least(v_email, v_wa), 0));
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || greatest(v_email, v_wa), 0));
+  if (select count(*) from public.quotations q
+       where q.source = 'website' and q.issued_at > now() - interval '1 day'
+         and (lower(q.contact->>'email') = v_email or q.contact->>'whatsapp' = '+' || v_wa)) >= 5 then
+    return jsonb_build_object('error', 'limit');
+  end if;
+
+  -- A lead this person already is (the same contact holds both the email
+  -- and the number), else a new one.
+  select c.* into v_c from public.clients c
+    join public.client_contacts k on k.client_id = c.id
+   where c.stage in ('lead', 'contacted', 'proposal')
+     and k.archived_at is null
+     and lower(k.email) = v_email
+     and public.quote_website_number(k.whatsapp) = v_wa
+   order by c.created_at desc limit 1;
+  if v_c.id is null then
+    v_base := btrim(regexp_replace(lower(v_brand), '[^a-z0-9]+', '-', 'g'), '-');
+    if v_base = '' then v_base := 'client'; end if;
+    v_slug := v_base;
+    while exists (select 1 from public.clients c where lower(c.slug) = v_slug) loop
+      v_n := v_n + 1; v_slug := v_base || '-' || v_n;
+    end loop;
+    insert into public.clients (name, access_token, stage, industry, source, market, slug, deal_note)
+    values (v_brand, public.new_link_key(), 'lead', v_ind, 'website',
+            case when v_wa like '65%' then 'SG' else 'MY' end, v_slug,
+            'Quotation requested on the website.')
+    returning * into v_c;
+    insert into public.client_contacts (client_id, salutation, name, email, whatsapp, lang, is_primary)
+    values (v_c.id, v_sal, v_name, v_email, '+' || v_wa, v_lang, true);
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Website', 'client.added', v_c.name, 'Website · ' || coalesce(v_sal || ' ', '') || v_name);
+    v_new := true;
+  end if;
+
+  v_r := public.quotation_make(v_c.id, v_sel, v_idem, 'website', null,
+    jsonb_strip_nulls(jsonb_build_object('salutation', v_sal, 'name', v_name, 'email', v_email,
+      'whatsapp', '+' || v_wa, 'lang', v_lang, 'brand', v_brand)));
+  if v_r ? 'error' then
+    if v_new then raise exception using message = 'quote:' || (v_r->>'error'); end if;
+    return v_r;
+  end if;
+  select * into v_q from public.quotations where id = (v_r->>'id')::uuid;
+  perform public.quote_tell(v_c.id, 'quote.website', 'Quotation made on the website · ' || v_c.name,
+    v_q.ref || ' · ' || coalesce('Monthly incl. SST RM ' ||
+      to_char((v_q.totals->'month'->>'incl')::numeric, 'FM999,999,990.00'), 'one-off') || ' · ' || v_name,
+    v_q.id::text);
+  return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key);
+exception when raise_exception then
+  if sqlerrm like 'quote:%' then return jsonb_build_object('error', substr(sqlerrm, 7)); end if;
+  raise;
+end $$;
+revoke all on function public.quote_website_create(jsonb, jsonb, text) from public, anon, authenticated;
+grant execute on function public.quote_website_create(jsonb, jsonb, text) to service_role;
+
+create or replace function public.quote_website_read(p_key text)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce((
+    select jsonb_build_object('ref', q.ref, 'brand', coalesce(q.contact->>'brand', q.brand), 'version', q.version,
+      'issued_at', q.issued_at, 'valid_until', q.valid_until, 'lines', q.lines, 'totals', q.totals,
+      'selection', q.selection, 'attention', q.contact->>'name',
+      'status', q.status, 'requested', q.requested_at is not null,
+      'market', case when c.market = 'SG' then 'SG' else 'MY' end,
+      'today', (now() at time zone 'Asia/Kuala_Lumpur')::date)
+      from public.quotations q
+      left join public.clients c on c.id = q.client_id
+     where p_key ~ '^[a-z0-9]{8}$' and q.access_key = p_key and q.source = 'website' and q.removed_at is null),
+    jsonb_build_object('error', 'not-found'))
+$$;
+revoke all on function public.quote_website_read(text) from public;
+grant execute on function public.quote_website_read(text) to anon, authenticated;
+
+create or replace function public.quote_website_request(p_key text, p_billing jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_q    public.quotations;
+  v_sg   boolean;
+  v_reg  text := upper(btrim(regexp_replace(coalesce(p_billing->>'registered_name', ''), '\s+', ' ', 'g')));
+  v_brn  text := upper(regexp_replace(coalesce(p_billing->>'brn', ''), '[^0-9A-Za-z]', '', 'g'));
+  v_addr text := btrim(coalesce(p_billing->>'address', ''));
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  select * into v_q from public.quotations q
+   where q.access_key = p_key and q.source = 'website' and q.removed_at is null for update;
+  if v_q.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_q.requested_at is not null then return jsonb_build_object('ok', true, 'again', true); end if;
+  if v_q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if v_q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  select c.market = 'SG' into v_sg from public.clients c where c.id = v_q.client_id;
+  if length(v_reg) < 3 or length(v_reg) > 160 or length(v_addr) < 10 or length(v_addr) > 400
+     or (coalesce(v_sg, false) and v_brn !~ '^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$')
+     or (not coalesce(v_sg, false) and v_brn !~ '^[0-9]{12}$') then
+    return jsonb_build_object('error', 'bad-billing');
+  end if;
+  update public.quotations
+     set billing = jsonb_build_object('registered_name', v_reg, 'brn', v_brn, 'address', v_addr),
+         requested_at = now(), status = 'requested'
+   where id = v_q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_q.contact->>'name', 'Website'), 'client.quotation', v_q.brand,
+          v_q.ref || ' · Letter of Offer requested on the website');
+  perform public.quote_tell(v_q.client_id, 'quote.requested', 'Letter of Offer requested · ' || v_q.brand,
+    v_q.ref || ' · ' || v_reg, v_q.id::text);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quote_website_request(text, jsonb) from public;
+grant execute on function public.quote_website_request(text, jsonb) to anon, authenticated;
+
+-- END OF QUOTE WEBSITE GUARDS -----------------------------------------------
+
+-- ===========================================================================
+-- QUOTATION TAX DAY — a quotation charges SST at the rate in force on its own
+-- day, never on a client exempt from it, and an expired one issues no Letter
+-- of Offer (2026-10-15)
+-- ===========================================================================
+-- WHY (the audit of 2026-10-15, I1, I5, I6, S8)
+--   * I5: SST was the rate kept in the rate card version when it was
+--     published, so an SST change set from a later day left every later
+--     quotation on the old rate while the Letter of Offer used the new one.
+--   * I1: `quote_price` charged SST whatever the client's `sst_applies`, so
+--     an exempt client's quotation read "incl. SST" and its Letter of Offer
+--     carried none.
+--   * I6: Issue Letter of Offer worked on a quotation the page showed as
+--     Expired.
+--   * S8: `rate_card_current()` answered every colleague, though the tables
+--     it reads answer Services at View.
+--
+-- WHAT CHANGED
+--   * `quote_tax_snap(p_snap, p_client)` (internal): the version's snapshot
+--     with `settings.sst_pct` set to today's SST (MYT, `app_setting`), or 0
+--     where the client's `sst_applies` is false.
+--   * `quote_preview(p_sel)` prices on it; `p_sel.client` (optional, a
+--     client the caller sees at View) names whose exemption applies, and is
+--     never priced or kept.
+--   * `quotation_make` prices on it for its client, and keeps no `client`.
+--   * `quotation_offer` refuses `expired` once `valid_until` has passed
+--     (MYT); the page offers it only while the quotation is valid.
+--   * `rate_card_current()` answers at Services or Clients: Services View.
+--
+-- ORDER
+--   This file, then the pages (`js/quotes.js` sends `client` with a
+--   preview and names `expired`). A page from before previews without the
+--   exemption (Make still applies it) and is told `expired` in its general
+--   words.
+--
+-- Safe to run twice. Rollback: run QUOTATION RATES's quote_preview,
+-- quotation_make and quotation_offer and RATE CARD VERSIONS's
+-- rate_card_current again; drop function quote_tax_snap(jsonb, uuid).
+-- ===========================================================================
+
+create or replace function public.quote_tax_snap(p_snap jsonb, p_client uuid)
+returns jsonb
+language sql stable set search_path = public as $$
+  select jsonb_set(coalesce(p_snap, '{}'::jsonb), '{settings}',
+           coalesce(p_snap->'settings', '{}'::jsonb) || jsonb_build_object('sst_pct',
+             case when exists (select 1 from public.clients c where c.id = p_client and c.sst_applies is false) then 0
+                  else coalesce(public.app_setting('sst_pct', (now() at time zone 'Asia/Kuala_Lumpur')::date),
+                                (p_snap->'settings'->>'sst_pct')::numeric, 0) end))
+$$;
+revoke all on function public.quote_tax_snap(jsonb, uuid) from public, anon, authenticated;
+
+create or replace function public.quote_preview(p_sel jsonb)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_card jsonb := public.quote_card();
+  v_cl uuid;
+begin
+  if not public.is_team() or not public.allowed('clients.services', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
+  if coalesce(p_sel->>'client', '') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+     and public.client_scope_ok('client', (p_sel->>'client')::uuid, 'view') then
+    v_cl := (p_sel->>'client')::uuid;
+  end if;
+  return public.quote_adjust(public.quote_price(public.quote_tax_snap(v_card->'snapshot', v_cl), p_sel - 'client'), p_sel->'edits') ||
+         jsonb_build_object('version', v_card->>'version');
+end $$;
+revoke all on function public.quote_preview(jsonb) from public, anon;
+grant execute on function public.quote_preview(jsonb) to authenticated;
+
+create or replace function public.quotation_make(p_client uuid, p_sel jsonb, p_idem text, p_source text,
+                                                 p_by text, p_contact jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_c public.clients;
+  v_card jsonb := public.quote_card();
+  v_p jsonb;
+  v_q public.quotations;
+  v_now timestamptz := now();
+  v_days int;
+  v_sel jsonb := case when jsonb_typeof(p_sel) is distinct from 'object' then p_sel
+                      when p_source = 'console' then p_sel - 'client'
+                      else p_sel - 'edits' - 'client' end;
+begin
+  if p_idem is not null then
+    select * into v_q from public.quotations q where q.idem = p_idem;
+    if v_q.id is not null then return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref, 'again', true); end if;
+  end if;
+  select * into v_c from public.clients where id = p_client;
+  if v_c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_p := public.quote_adjust(public.quote_price(public.quote_tax_snap(v_card->'snapshot', v_c.id), v_sel), v_sel->'edits');
+  if v_p ? 'error' then return v_p; end if;
+  v_days := coalesce(public.app_setting('quote_valid_days', (v_now at time zone 'Asia/Kuala_Lumpur')::date), 30)::int;
+  insert into public.quotations (ref, client_id, brand, version, version_id, selection, lines, totals, source,
+                                 issued_at, valid_until, made_by, contact, idem, access_key)
+  values (public.quote_ref(v_c.name, v_now), v_c.id, v_c.name, v_card->>'version', (v_card->>'id')::uuid, v_sel,
+          v_p->'lines', v_p->'totals' || jsonb_build_object('on_request', v_p->'on_request'), p_source,
+          v_now, (v_now at time zone 'Asia/Kuala_Lumpur')::date + v_days, p_by, p_contact, p_idem,
+          case when p_source = 'website' then public.new_link_key() end)
+  returning * into v_q;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(p_by, 'Website'), 'client.quotation', v_c.name,
+          v_q.ref || ' sent · ' || coalesce('Monthly incl. SST RM ' ||
+            to_char((v_q.totals->'month'->>'incl')::numeric, 'FM999,999,990.00'), 'one-off') ||
+          ' · rate card v.' || v_q.version ||
+          case coalesce((v_p->>'adjusted')::int, 0) when 0 then '' when 1 then ' · 1 line changed'
+               else ' · ' || (v_p->>'adjusted') || ' lines changed' end);
+  return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref, 'key', v_q.access_key);
+end $$;
+revoke all on function public.quotation_make(uuid, jsonb, text, text, text, jsonb) from public, anon, authenticated;
+
+create or replace function public.quotation_offer(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_q public.quotations;
+  v_l jsonb;
+  v_ids uuid[] := '{}';
+  v_id uuid;
+begin
+  if me.id is null or not public.allowed('clients.services', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_q from public.quotations where id = p_id for update;
+  if v_q.id is null or v_q.removed_at is not null or not public.client_scope_ok('client', v_q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if v_q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  select coalesce(array_agg(s.id order by s.created_at), '{}') into v_ids
+    from public.client_services s where s.quotation_id = v_q.id and s.archived_at is null;
+  if array_length(v_ids, 1) is not null then return jsonb_build_object('ok', true, 'ids', to_jsonb(v_ids), 'again', true); end if;
+  if v_q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  for v_l in select * from jsonb_array_elements(v_q.lines) loop
+    insert into public.client_services (client_id, service_slug, label, qty, rate, unit, state, note,
+                                        tenure, term_adjust, term_pct, detail, quotation_id)
+    values (v_q.client_id,
+            case when exists (select 1 from public.services s where s.slug = v_l->>'slug') then v_l->>'slug' end,
+            v_l->>'label', (v_l->>'qty')::numeric, (v_l->>'rate')::numeric,
+            case when v_l->>'basis' = 'month' then 'Per month' else 'One-off' end, 'quoted',
+            'Quotation ' || v_q.ref,
+            case when v_l->>'basis' = 'month' then coalesce((v_l->>'months')::int, (v_q.totals->>'term')::int) else 1 end,
+            v_l->>'basis' = 'month', case when v_l->>'basis' = 'month' then (v_q.totals->>'term_pct')::numeric else 0 end,
+            nullif(array_to_string(array(select jsonb_array_elements_text(coalesce(v_l->'detail', '[]'::jsonb))), E'\n'), ''),
+            v_q.id)
+    returning id into v_id;
+    v_ids := v_ids || v_id;
+  end loop;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', v_q.brand, v_q.ref || ' · ' || array_length(v_ids, 1) || ' lines To quote for the Letter of Offer');
+  return jsonb_build_object('ok', true, 'ids', to_jsonb(v_ids));
+end $$;
+revoke all on function public.quotation_offer(uuid) from public, anon;
+grant execute on function public.quotation_offer(uuid) to authenticated;
+
+create or replace function public.rate_card_current()
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('id', v.id, 'version', v.version, 'valid_until', v.valid_until,
+           'published_at', v.published_at, 'published_by', v.published_by, 'snapshot', v.snapshot)
+    from public.rate_card_versions v
+   where public.is_team() and (public.allowed('services', 'view') or public.allowed('clients.services', 'view'))
+   order by v.published_at desc
+   limit 1
+$$;
+revoke all on function public.rate_card_current() from public, anon;
+grant execute on function public.rate_card_current() to authenticated;
+
+-- END OF QUOTATION TAX DAY ----------------------------------------------------
+
+-- ===========================================================================
+-- COLLEAGUE LEAVING — a colleague who leaves takes no work, device or short
+-- link with them, and a removed colleague stays removed (2026-10-15)
+-- ===========================================================================
+-- WHY (the audit of 2026-10-15, I4, S6, S9, I9)
+--   * I4: Delete their data emptied the namecard slug, and the slug trigger
+--     made it again from the name that stays, so the short link was never
+--     freed.
+--   * S6: an extension on a task a departed colleague created was still
+--     asked of them, and their phone kept its notification device after Set
+--     inactive or a removal with their data kept.
+--   * S9: `team_hand_over` did not refuse one's own row or a system account,
+--     and a direct update could make a removed colleague active again.
+--   * I9: a removed colleague's helper and reviewer places on tasks, the
+--     talks colleagues asked of them, and an on-site meeting's outstation
+--     reminder stayed with them.
+--
+-- WHAT CHANGED
+--   * `team_card_slug` leaves the slug empty once `erased_at` is set.
+--   * `ops_due_decider` asks the task's creator while they are active, else
+--     the first active admin who is not a system account.
+--   * `team_hand_over` refuses `own` and `system-account`.
+--   * `team_access_guard` refuses `removed` to an update making a removed
+--     colleague active.
+--   * `ops_outstation_remind` tells the meeting's leader while active, else
+--     the month's manager while active.
+--   * `team_members_leaving` (trigger, after update): Set inactive, an
+--     expiry or a removal takes away the colleague's notification devices; a
+--     removal ends their helper and reviewer places on tasks and withdraws
+--     the open talks colleagues asked of them.
+--
+-- ORDER
+--   This file, then the page (`js/team.js` stops a Delete whose hand-over
+--   failed). The trigger's function removes rows (the devices), so it is
+--   run in the SQL Editor: the part from "LEAVING TRIGGER" to the end.
+--
+-- Safe to run twice. Rollback: run COLLEAGUE HAND-OVER's team_hand_over,
+-- NAMECARD SHORT LINKS' team_card_slug, TEAM ACCESS TIME's
+-- team_access_guard, ON-SITE MEETINGS' ops_outstation_remind and the
+-- operations ops_due_decider again; remove the trigger team_members_leaving.
+-- ===========================================================================
+
+create or replace function public.team_card_slug()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  -- A colleague whose details were deleted keeps no short link: their
+  -- slug is freed, never made again from the name that stays.
+  if new.erased_at is not null then
+    new.card_slug := null;
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and new.card_slug is not distinct from old.card_slug then
+    return new;
+  end if;
+  if new.card_slug is null or btrim(new.card_slug) = '' then
+    new.card_slug := public.card_slug_free(public.card_slug_from(new.name, new.email), new.id);
+    return new;
+  end if;
+  new.card_slug := lower(btrim(new.card_slug));
+  if new.card_slug !~ '^[a-z0-9][a-z0-9._-]{2,79}$' then
+    raise exception 'slug-shape' using hint = 'At least three lowercase letters, digits, dots, dashes or underscores.';
+  end if;
+  if exists (select 1 from public.links l where l.slug = new.card_slug)
+     or exists (select 1 from public.team_members t where t.card_slug = new.card_slug and t.id <> new.id) then
+    raise exception 'slug-taken' using errcode = '23505';
+  end if;
+  return new;
+end $$;
+revoke all on function public.team_card_slug() from public, anon, authenticated;
+
+create or replace function public.ops_due_decider(p_task uuid, p_kind text)
+returns uuid
+language sql security definer stable set search_path = public as $$
+  select case when p_kind = 'first_draft' then null
+              else coalesce(
+                (select t.created_by from public.ops_tasks t
+                   join public.team_members m on m.id = t.created_by and m.active
+                  where t.id = p_task),
+                (select m.id from public.team_members m
+                  where m.active and not coalesce(m.system, false) and (m.is_admin or m.role = 'admin')
+                  order by m.name, m.id limit 1),
+                (select t.created_by from public.ops_tasks t where t.id = p_task))
+         end
+$$;
+grant execute on function public.ops_due_decider(uuid, text) to authenticated;
+
+create or replace function public.team_hand_over(p_member uuid, p_to jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me      public.team_members := public.ops_me();
+  v_from  public.team_members;
+  v_who   public.team_members;
+  v_kind  text;
+  v_id    text;
+  v_to    uuid;
+  v_n     integer;
+  v_skip  integer := 0;
+  v_moved jsonb := '{}'::jsonb;
+  v_lines text[] := '{}';
+  v_cl    text;
+  r       record;
+  v_kinds constant text[] := array['tasks', 'months', 'meetings', 'repeats', 'reviews', 'extensions', 'templates'];
+  v_words constant text[] := array['open tasks', 'months', 'meetings', 'repeating tasks', 'reports to review',
+                                   'extension requests', 'templates'];
+  v_one   constant text[] := array['open task', 'month', 'meeting', 'repeating task', 'report to review',
+                                   'extension request', 'template'];
+begin
+  if me.id is null or not public.allowed('team', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_from from public.team_members x where x.id = p_member;
+  if v_from.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_from.id = me.id then return jsonb_build_object('error', 'own'); end if;
+  if coalesce(v_from.system, false) then return jsonb_build_object('error', 'system-account'); end if;
+  if jsonb_typeof(p_to) is distinct from 'object' then return jsonb_build_object('error', 'bad-request'); end if;
+  for v_kind in select jsonb_object_keys(p_to) loop
+    if not (v_kind = any(v_kinds)) then return jsonb_build_object('error', 'bad-kind', 'kind', v_kind); end if;
+    v_id := nullif(btrim(coalesce(p_to ->> v_kind, '')), '');
+    if v_id is null then continue; end if;
+    if v_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      return jsonb_build_object('error', 'bad-person', 'kind', v_kind);
+    end if;
+    select * into v_who from public.team_members x
+     where x.id = v_id::uuid and x.active and not coalesce(x.system, false) and x.id <> p_member;
+    if v_who.id is null then return jsonb_build_object('error', 'bad-person', 'kind', v_kind); end if;
+  end loop;
+
+  for v_kind in select unnest(v_kinds) loop
+    v_id := nullif(btrim(coalesce(p_to ->> v_kind, '')), '');
+    if v_id is null then continue; end if;
+    v_to := v_id::uuid;
+    select * into v_who from public.team_members x where x.id = v_to;
+    v_n := 0;
+    if v_kind = 'tasks' then
+      for r in select t.id, t.stage_key from public.ops_tasks t
+                where t.archived_at is null and t.completed_at is null and t.cancelled_at is null
+                  and exists (select 1 from public.ops_task_assignees a where a.task_id = t.id and a.responsibility = 'owner'
+                                 and a.ended_at is null and a.team_member_id = p_member)
+                order by t.id for update of t loop
+        update public.ops_task_assignees a set ended_at = now()
+         where a.task_id = r.id and a.responsibility = 'owner' and a.ended_at is null;
+        insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+        values (r.id, v_to, 'owner', me.id);
+        update public.ops_tasks t set version = t.version + 1, updated_at = now() where t.id = r.id;
+        perform public.ops_log(r.id, 'assignment_changed',
+          jsonb_build_object('owner_id', p_member), jsonb_build_object('owner_id', v_to),
+          jsonb_build_object('handover', true, 'stage_key', r.stage_key, 'note', 'Handed over from ' || v_from.name));
+        v_n := v_n + 1;
+      end loop;
+    elsif v_kind = 'months' then
+      for r in select e.id from public.ops_engagements e
+                where e.manager_id = p_member and e.status not in ('completed', 'cancelled') order by e.id for update loop
+        update public.ops_engagements e set manager_id = v_to, updated_at = now(), version = e.version + 1 where e.id = r.id;
+        perform public.ops_engagement_log(r.id, 'edited', jsonb_build_object('handover', true,
+          'manager_id', jsonb_build_object('from', p_member, 'to', v_to)));
+        v_n := v_n + 1;
+      end loop;
+    elsif v_kind = 'meetings' then
+      for r in select e.id from public.ops_engagements e
+                where e.meeting_owner_id = p_member and e.status not in ('completed', 'cancelled')
+                  and e.meeting_at > now() order by e.id for update loop
+        update public.ops_engagements e set meeting_owner_id = v_to, updated_at = now(), version = e.version + 1 where e.id = r.id;
+        perform public.ops_engagement_log(r.id, 'edited', jsonb_build_object('handover', true,
+          'meeting_owner_id', jsonb_build_object('from', p_member, 'to', v_to)));
+        v_n := v_n + 1;
+      end loop;
+    elsif v_kind = 'repeats' then
+      update public.ops_recurring_rules x set owner_id = v_to, updated_at = now()
+       where x.owner_id = p_member and x.active;
+      get diagnostics v_n = row_count;
+    elsif v_kind = 'reviews' then
+      for r in select s.id, s.client_id, s.submitted_by, s.period_start, s.period_end from public.sm_reports s
+                where s.reviewer_id = p_member and s.status = 'review' order by s.id for update loop
+        if r.submitted_by is not distinct from v_to or not public.sm_report_may_review(v_to) then
+          v_skip := v_skip + 1;
+          continue;
+        end if;
+        perform set_config('adspace.sm_fn', 'on', true);
+        update public.sm_reports s set reviewer_id = v_to where s.id = r.id;
+        perform set_config('adspace.sm_fn', 'off', true);
+        perform public.sm_report_log(r.id, 'report.reassigned', 'Reviewer: ' || v_from.name || ' → ' || v_who.name);
+        select c.name into v_cl from public.clients c where c.id = r.client_id;
+        perform public.sm_report_notify(v_to, r.id, 'report.review', 'Report to review',
+          coalesce(v_cl, 'A client') || ' · ' || public.sm_period_word(r.period_start, r.period_end));
+        v_n := v_n + 1;
+      end loop;
+    elsif v_kind = 'extensions' then
+      update public.ops_due_requests x set decider_id = v_to where x.decider_id = p_member and x.state = 'asked';
+      get diagnostics v_n = row_count;
+    elsif v_kind = 'templates' then
+      update public.ops_task_templates x set default_owner_id = v_to, updated_at = now()
+       where x.default_owner_id = p_member and x.active;
+      get diagnostics v_n = row_count;
+    end if;
+    if v_n > 0 then
+      v_moved := v_moved || jsonb_build_object(v_kind, v_n);
+      v_lines := v_lines || (v_n || ' ' || (case when v_n = 1 then v_one else v_words end)[array_position(v_kinds, v_kind)]
+        || ' → ' || v_who.name);
+    end if;
+  end loop;
+
+  if array_length(v_lines, 1) > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'team.changed', v_from.name, 'Work handed over: ' || array_to_string(v_lines, '; '));
+  end if;
+  return jsonb_build_object('ok', true, 'moved', v_moved, 'skipped', jsonb_build_object('reviews', v_skip));
+end $$;
+revoke all on function public.team_hand_over(uuid, jsonb) from public, anon;
+grant execute on function public.team_hand_over(uuid, jsonb) to authenticated;
+
+create or replace function public.team_access_guard()
+returns trigger language plpgsql as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  ends timestamptz := public.team_access_ends(new.access_until, new.access_until_time);
+  moved boolean := new.access_until is distinct from old.access_until
+                   or new.access_until_time is distinct from old.access_until_time;
+begin
+  if moved and who <> '' and lower(old.email) = who then
+    raise exception 'own-expiry' using hint = 'Another admin sets your access date.';
+  end if;
+  if new.active and not old.active and new.removed_at is not null then
+    raise exception 'removed' using hint = 'A removed colleague does not come back; add them again.';
+  end if;
+  if new.active and not old.active then
+    if ends is not null and ends <= now() then
+      raise exception 'expired-date' using hint = 'Move the access date first.';
+    end if;
+    new.expired_at := null;
+  elsif old.expired_at is not null and moved and (ends is null or ends > now()) then
+    new.active := true;
+    new.expired_at := null;
+  end if;
+  return new;
+end $$;
+
+create or replace function public.ops_outstation_remind()
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare r record; n integer := 0;
+begin
+  for r in
+    select e.id, e.meeting_at, coalesce((select t.id from public.team_members t where t.id = e.meeting_owner_id and t.active),
+                                       (select t.id from public.team_members t where t.id = e.manager_id and t.active)) as who, c.name as client_name
+      from public.ops_engagements e
+      left join public.clients c on c.id = e.client_id
+     where e.meeting_channel = 'onsite' and not e.meeting_na and e.meeting_at is not null
+       and e.outstation_told_at is null
+       and e.meeting_at + make_interval(mins => coalesce(e.meeting_minutes, 30)) <= now()
+       and coalesce(e.status, '') <> 'cancelled'
+     for update of e skip locked
+  loop
+    if r.who is not null and exists (select 1 from public.team_members t where t.id = r.who and t.active) then
+      insert into public.ops_notifications (team_member_id, kind, title, body, link, dedupe_key)
+      values (r.who, 'outstation', 'Submit the outstation record',
+              coalesce(r.client_name, 'Client') || ' · on-site meeting on ' ||
+                public.register_day((r.meeting_at at time zone 'Asia/Kuala_Lumpur')::date),
+              'https://go.adspace.me/outstation',
+              'outstation.' || r.id::text || '.' || extract(epoch from r.meeting_at)::bigint::text)
+      on conflict (dedupe_key) do nothing;
+      n := n + 1;
+    end if;
+    update public.ops_engagements set outstation_told_at = now() where id = r.id;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.ops_outstation_remind() from public, anon, authenticated;
+
+-- LEAVING TRIGGER (run in the SQL Editor: it removes the devices)
+create or replace function public.team_members_leaving()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if old.active and not new.active then
+    delete from public.push_subscriptions s where s.team_member_id = new.id;
+  end if;
+  if old.removed_at is null and new.removed_at is not null then
+    update public.ops_task_assignees a set ended_at = now()
+     where a.team_member_id = new.id and a.ended_at is null and a.responsibility <> 'owner';
+    update public.health_talks h set status = 'withdrawn', closed_at = now()
+     where h.with_id = new.id and h.status = 'open';
+  end if;
+  return null;
+end $$;
+revoke all on function public.team_members_leaving() from public, anon, authenticated;
+create or replace trigger team_members_leaving after update of active, removed_at on public.team_members
+  for each row execute function public.team_members_leaving();
+
+-- END OF COLLEAGUE LEAVING ---------------------------------------------------
+
 -- ===========================================================================
 -- ANALYSIS FILLS THE BRIEF — a confirmed Brand analysis writes the Content
 -- brief's empty parts (2026-10-15)

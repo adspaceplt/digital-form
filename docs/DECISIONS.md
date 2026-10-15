@@ -3755,6 +3755,68 @@ finding fixed at the user's word ("fix all no matter what").
   head's ⋯, and the phone review stacks a table's rows instead of breaking
   words.
 
+### 2026-10-15 — The quotation website keeps a visitor to their own lead (audit S1, S2, I1, I2)
+- The audit of the releases since 13 October found that a lead was reused
+  when the email *or* the number matched, so anybody knowing one of a real
+  lead's details filed a quotation under it, read its name back and, with
+  Proceed, attached billing details the team could copy into Billing.
+- Now a lead is reused only where one contact holds both; anyone else gets
+  a lead of their own and the team merges. The visitor reads the brand they
+  typed, kept in the quotation's contact; the team's notice still names the
+  client the quotation is filed under.
+- A number is read as `wa_number` reads it (eight digits Singapore, nine or
+  ten from 1 a Malaysian mobile), on the page and in the database, so
+  `8123 4567` and a lead keyed `012…` are recognised.
+- Only the selection keys `quote_price` reads are kept, bounded; the
+  five-a-day count runs under a lock on the email and the number.
+- `quote-request` refuses every request while `TURNSTILE_SECRET` is unset
+  (the user confirmed it set on 2026-10-15): the per-contact count counts
+  whatever is typed, so it was never a guard alone.
+- A Singapore lead proceeds with its UEN; the 12-digit number stays for
+  Malaysia.
+
+### 2026-10-15 — A quotation charges SST on its own day, and never on an exempt client (audit I1, I5, I6, S8)
+- SST was read from the rate card version as published, so a rate set to
+  change from a later day left every later quotation on the old rate while
+  the Letter of Offer took the new one; and `quote_price` charged SST on a
+  client whose `sst_applies` is false. `quote_tax_snap` now gives the price
+  today's SST (MYT), or none for an exempt client, in the preview (which
+  names its client) and when a quotation is made.
+- Singapore clients keep SST, as `js/money.js` holds (the tax is ours). The
+  currency stays as it was: a quotation reads RM, while a Letter of Offer
+  for a Singapore client prints S$ over the same figures. That is left for
+  the user to decide.
+- Issue Letter of Offer refuses an expired quotation (`expired`), and the
+  row's menu no longer offers it there.
+- `rate_card_current()` answers only at Services or Clients: Services View,
+  as the tables it reads do.
+- The console and the quotation PDFs format figures through `js/money.js`;
+  the console states the largest budget the live card covers instead of a
+  typed RM 20,000. The PDF of a kept quotation still names RM 20,000, since
+  the quotation keeps no card; the terms list and two content slugs stay
+  typed in the pages and in `quote_price` alike.
+
+### 2026-10-15 — A colleague who leaves takes nothing with them (audit I3, I4, S6, S9, I9)
+- Delete ran `team_member_remove` even when the hand-over of their work had
+  been refused, and said Removed in green over the warning. It now stops:
+  the question stays open, saying the colleague was not removed. A partial
+  move of person in charge files each client that did move.
+- Delete their data emptied the namecard slug, and the slug trigger made it
+  again from the name, so the short link was never freed. The trigger now
+  leaves it empty once `erased_at` is set.
+- An extension on a task whose creator had left was asked of them, and
+  their phone kept receiving notifications. The decider falls back to the
+  first active admin who is not a system account, and the devices go on Set
+  inactive, an expiry or a removal (`team_members_leaving`, run in the SQL
+  Editor since it removes rows).
+- `team_hand_over` refuses one's own row and a system account, as
+  `team_member_remove` did; a removed colleague is never made active again.
+- A removal ends their helper and reviewer places on tasks and withdraws
+  the open talks colleagues asked of them; an on-site meeting's outstation
+  reminder goes to whoever is still active.
+- Left as it was: a `last-admin` refusal after the hand-over leaves the
+  work moved and the colleague in place (the page names the refusal).
+
 ### 2026-10-15 · Brand analysis no longer waits for the brief; the checklist runs it
 - The user: the analysis used to need only the brand, its website and
   profiles; the portal asked for the Content brief first, though the
