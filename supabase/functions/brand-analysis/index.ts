@@ -81,7 +81,9 @@ const text = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim(
    the team's words, a caption or a brief is masked. */
 const scrub = (s: string) => s
   .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
-  .replace(/(\+?\d[\d\s-]{7,}\d)/g, '[number]');
+  // A number written with spaces, dashes, dots or brackets, nine digits or
+  // more (audit S12, 2026-10-15): a date such as 2026-10-15 stays.
+  .replace(/\+?\(?\d[\d\s().-]{6,}\d/g, (m) => (m.replace(/\D/g, '').length >= 9 ? '[number]' : m));
 const words = (v: unknown, n: number) => scrub(text(v, n));
 
 /* ---- Meta, read as meta-import reads it ---------------------------------- */

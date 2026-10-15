@@ -129,8 +129,34 @@ async function sendTemplate(to: string, name: string, lang: string, params: stri
   return { ok: true, id: (body.messages && body.messages[0] && body.messages[0].id) || '' };
 }
 
-async function uploadPdf(b64: string, filename: string): Promise<{ id?: string; error?: string }> {
-  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+/* A document's bytes (audit S3, 2026-10-15): a report's are its kept PDF,
+   read as the caller through sign-download for the version on the client
+   portal, never what the page sends; a quotation's or a letter's are the
+   page's drawing, and must be a PDF. Malformed base64 reads as nothing. */
+const isPdf = (b: Uint8Array) => b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46;
+function pdfFrom(b64: string): Uint8Array | null {
+  if (!b64 || b64.length > 20 * 1024 * 1024) return null;
+  try {
+    const b = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    return isPdf(b) ? b : null;
+  } catch { return null; }
+}
+async function keptReport(db: any, auth: string, reportId: string): Promise<Uint8Array | null> {
+  const v = await db.from('sm_report_versions').select('id, version_no, published_at, withdrawn_at')
+    .eq('report_id', reportId).order('version_no', { ascending: false });
+  const live = ((v.data || []) as Record<string, any>[]).filter((x) => x.published_at && !x.withdrawn_at)[0];
+  if (v.error || !live) return null;
+  const res = await fetch(Deno.env.get('SUPABASE_URL')! + '/functions/v1/sign-download', {
+    method: 'POST',
+    headers: { 'Authorization': auth, 'apikey': Deno.env.get('SUPABASE_ANON_KEY')!, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reportVersion: live.id })
+  }).catch(() => null);
+  if (!res || !res.ok) return null;
+  const b = new Uint8Array(await res.arrayBuffer().catch(() => new ArrayBuffer(0)));
+  return isPdf(b) ? b : null;
+}
+
+async function uploadPdf(bytes: Uint8Array, filename: string): Promise<{ id?: string; error?: string }> {
   const form = new FormData();
   form.append('messaging_product', 'whatsapp');
   form.append('type', 'application/pdf');
@@ -316,10 +342,10 @@ Deno.serve(async (req) => {
 
     let doc: { id: string; filename: string } | undefined;
     if (t.header === 'DOCUMENT') {
-      const b64 = String(body.pdf || '');
       const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
-      if (!b64 || b64.length > 20 * 1024 * 1024) return json({ error: 'bad-file' }, 200, origin);
-      const up = await uploadPdf(b64, filename);
+      const bytes = purpose === 'report' ? await keptReport(db, auth, String(ref)) : pdfFrom(String(body.pdf || ''));
+      if (!bytes) return json({ error: 'bad-file' }, 200, origin);
+      const up = await uploadPdf(bytes, filename);
       if (!up.id) {
         console.error('wa-send: upload refused', up.error);
         await record(false, null, 'upload: ' + (up.error || ''));
@@ -355,10 +381,10 @@ Deno.serve(async (req) => {
   const values = [p.first || p.name || 'there', p.client || '', String(body.title || '').slice(0, 200)].slice(0, Number(p.params) || 0);
   let doc: { id: string; filename: string } | undefined;
   if (action === 'report') {
-    const b64 = String(body.pdf || '');
     const filename = String(body.filename || 'Report.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
-    if (!b64 || b64.length > 20 * 1024 * 1024) return json({ error: 'bad-file' }, 200, origin);
-    const up = await uploadPdf(b64, filename);
+    const bytes = await keptReport(db, auth, id);
+    if (!bytes) return json({ error: 'bad-file' }, 200, origin);
+    const up = await uploadPdf(bytes, filename);
     if (!up.id) {
       console.error('wa-send: upload refused', up.error);
       await db.rpc('wa_record', { p_purpose: 'report', p_ref: id, p_client: p.client_id, p_number: p.number, p_name: p.name,
