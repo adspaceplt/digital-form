@@ -186,6 +186,8 @@
       '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Ver. ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
       '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
       (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
+      '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>' +
       '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" data-menu hidden><button class="kmenu-item" type="button" data-a="pdf"><b>Download</b></button></div></span></div>' +
       '<dl class="ovfacts ck-facts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
@@ -242,6 +244,8 @@
       if (open && window.ADspaceMenu) window.ADspaceMenu.place(menuBtn, menu);
     });
     host.querySelector('[data-a="pdf"]').addEventListener('click', function () { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); download(menuBtn); });
+    var pvB = host.querySelector('.ck-head [data-a="preview"]');
+    pvB.addEventListener('click', function () { preview(pvB); });
     var aiB = host.querySelector('[data-a="ai"]');
     if (aiB) aiB.addEventListener('click', function () { write(aiB); });
     Array.prototype.forEach.call(host.querySelectorAll('[data-a="tick"]'), function (tk) {
@@ -678,10 +682,26 @@
     }).catch(function (e) { btn.disabled = false; docs.shut(tab); V.ctx.msg('ckMsg', said(e), 'err'); });
   }
 
+  /* Preview PDF opens a tab at the press and puts the drawn file in it
+     (a blocked tab downloads it); Download (the ⋯) saves it under its name. */
+  function preview(btn) {
+    var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client, tab = null;
+    if (!docs) return;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    btn.disabled = true;
+    draw(d, cl).then(function (blob) {
+      btn.disabled = false;
+      return docs.save(blob, cl.name + ' ' + d.title + '.pdf', tab);
+    }).catch(function (e) { btn.disabled = false; docs.shut(tab); V.ctx.msg('ckMsg', said(e), 'err'); });
+  }
+
   function draw(d, cl) {
     var docs = window.ADspaceDocs;
     var all = JSON.stringify(d.answers) + cl.name;
-    var cjk = /[　-鿿＀-￯]/.test(all + JSON.stringify(d.sections));
+    /* The arrow the team writes (→) is not in the letterhead's face; the
+       Chinese face, which holds it, is fetched for it too. */
+    var cjk = /[　-鿿＀-￯→]/.test(all + JSON.stringify(d.sections));
     return docs.lib().then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
@@ -701,14 +721,25 @@
     var fill = PDF.rgb(0.949, 0.949, 0.949), edge = PDF.rgb(0.91, 0.91, 0.91);
     var book = fonts.font, reg = fonts.bold, med = fonts.med || fonts.bold, mark = fonts.mark || med;
     var hasCjk = function (s) { return /[　-鿿＀-￯]/.test(String(s)); };
-    var face = function (s, f) { return fonts.cjk && hasCjk(s) ? fonts.cjk : f; };
-    var safe = function (s) { s = String(s == null ? '' : s); return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-'); };
-    var width = function (s, size, f) { f = face(s, f || book); return f.widthOfTextAtSize(safe(s), size); };
+    var face = function (s, f) { return fonts.cjk && (hasCjk(s) || s === '→') ? fonts.cjk : f; };
+    var safe = function (s) {
+      s = String(s == null ? '' : s);
+      if (!fonts.cjk) s = s.replace(/→/g, '>');
+      return fonts.custom ? s : s.replace(/[^\x20-\x7E\xA0-\xFF]/g, '-');
+    };
+    /* A line holding the arrow is drawn in parts, the arrow in the face that has it. */
+    var parts = function (s) { s = String(s == null ? '' : s); return fonts.cjk && !hasCjk(s) && s.indexOf('→') >= 0 ? s.split(/(→)/).filter(Boolean) : [s]; };
+    var width = function (s, size, f) {
+      return parts(s).reduce(function (w, p) { var g = face(p, f || book); return w + g.widthOfTextAtSize(safe(p), size); }, 0);
+    };
     var page, y, pages = [];
     var text = function (s, x, yy, size, f, color) {
       if (s == null || s === '') return;
-      f = face(s, f || book);
-      page.drawText(safe(s), { x: x, y: yy, size: size, font: f, color: color || ink });
+      parts(s).forEach(function (p) {
+        var g = face(p, f || book);
+        page.drawText(safe(p), { x: x, y: yy, size: size, font: g, color: color || ink });
+        x += g.widthOfTextAtSize(safe(p), size);
+      });
     };
     var wrap = function (s, max, size, f) {
       var out = [];

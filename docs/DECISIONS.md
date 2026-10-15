@@ -3860,6 +3860,24 @@ finding fixed at the user's word ("fix all no matter what").
 - The tests caught the Brand pane redraw erasing the confirm's Undo line;
   the line is now drawn after the brief is read again.
 
+### 2026-10-15 · The Pre-Advertising Checklist as the team writes it (r1.3-26)
+- The user sent three Pre-Advertising Checklists the team wrote by hand
+  ("this is the pre-advertising report that i expected when draft with
+  AI"). They write Country as shares ("(Primary 35%) … (Secondary 65%) …"),
+  Re-Targeting as a plan by month, tracking as notes, and add Primary
+  Destination, Monthly Budget and Lead Destination; the template offered
+  chips. Chose: a new version, r1.3-26, with those as written answers
+  (a checklist started before keeps its version).
+- `checklist-draft`'s instructions carry the team's style, distilled with
+  no client's name or number in the code: short working notes; approx.,
+  TBC and →; the core ad set first, then a second, then those waiting
+  (MONTH 2+, ON HOLD, RM 0); CTA as button → destination; competitors
+  three a column; remarks led by their topic, with the lead estimate from
+  the ad spend and the benchmark cost per lead, the 90-day pull for a
+  mature account, and the Budget note last.
+- The team's own PDFs printed → as "à". The letterhead's Slate faces lack
+  the glyph, so the portal's PDF draws it in Noto Sans SC, fetched for it.
+
 ### 2026-10-15 — A document sent on WhatsApp is the record's own (audit S3, S12, I8, I11)
 - `wa-send` attached whatever PDF the page sent, so a report of another
   client could go to a contact as theirs. A report's file is now its kept
