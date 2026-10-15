@@ -186,6 +186,8 @@
       '<section class="ovcard ck-head"><div class="ck-title"><h3>' + esc(d.title) + '</h3><small>Ver. ' + esc(d.version) + ' · ' + esc(d.lead || '') + '</small></div>' +
       '<div class="ck-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
       (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
+      '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>' +
       '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" data-menu hidden><button class="kmenu-item" type="button" data-a="pdf"><b>Download</b></button></div></span></div>' +
       '<dl class="ovfacts ck-facts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
@@ -242,6 +244,8 @@
       if (open && window.ADspaceMenu) window.ADspaceMenu.place(menuBtn, menu);
     });
     host.querySelector('[data-a="pdf"]').addEventListener('click', function () { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); download(menuBtn); });
+    var pvB = host.querySelector('.ck-head [data-a="preview"]');
+    pvB.addEventListener('click', function () { preview(pvB); });
     var aiB = host.querySelector('[data-a="ai"]');
     if (aiB) aiB.addEventListener('click', function () { write(aiB); });
     Array.prototype.forEach.call(host.querySelectorAll('[data-a="tick"]'), function (tk) {
@@ -671,6 +675,20 @@
     var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client;
     if (!docs) return;
     var tab = docs.tabFor ? docs.tabFor() : null;
+    btn.disabled = true;
+    draw(d, cl).then(function (blob) {
+      btn.disabled = false;
+      return docs.save(blob, cl.name + ' ' + d.title + '.pdf', tab);
+    }).catch(function (e) { btn.disabled = false; docs.shut(tab); V.ctx.msg('ckMsg', said(e), 'err'); });
+  }
+
+  /* Preview PDF opens a tab at the press and puts the drawn file in it
+     (a blocked tab downloads it); Download (the ⋯) saves it under its name. */
+  function preview(btn) {
+    var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client, tab = null;
+    if (!docs) return;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
     btn.disabled = true;
     draw(d, cl).then(function (blob) {
       btn.disabled = false;
