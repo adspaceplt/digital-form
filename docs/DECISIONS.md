@@ -4050,3 +4050,13 @@ finding fixed at the user's word ("fix all no matter what").
   and the price matches it; only their words are shown in S$, in whole
   dollars. A quotation keeps the rate it was priced at (`totals.fx`), so a
   later change of rate never moves one already sent.
+
+### 2026-10-15 — Next actions name who logged them
+- The user, 2026-10-15, on the Clients list's Next actions: "why such weird
+  email showing up here". A call or visit kept `by_whom` as the sign-in
+  email (`actor()`), and the card printed it under the action. New entries
+  keep the colleague's name; an older entry's email is read as the name of
+  the active colleague holding it, else nothing is said (a stood-down
+  colleague's address is never shown). The rows were left as stored: the
+  page reads them, so no data was rewritten. The card is drawn again when
+  the team list answers after it, reading nothing again.
