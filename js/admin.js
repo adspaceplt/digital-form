@@ -66,10 +66,14 @@
      host, the client's key, and with a set the first eight characters of its
      id, so a chat app's preview names the set and the brand
      (workers/links, review_link_preview). Nothing is stored for it. */
+  /* Written as the full link since 2026-10-15 (the user: "full links
+     everywhere except namecards"; `shareLinks` off); a set's link opens on
+     that set (#s-{first eight of its id}), as the short link did. */
   function shareUrl(c, b) {
     var host = cfg && cfg.linkHost;
-    if (!host || !c || !/^[A-Za-z0-9_-]{6,64}$/.test(c.access_token || '')) return reviewUrl(c);
-    return 'https://' + host + '/r/' + c.access_token + (b ? '/' + String(b.id).slice(0, 8) : '');
+    var set = b ? String(b.id).slice(0, 8) : '';
+    if (!host || !cfg.shareLinks || !c || !/^[A-Za-z0-9_-]{6,64}$/.test(c.access_token || '')) return reviewUrl(c) + (set ? '#s-' + set : '');
+    return 'https://' + host + '/r/' + c.access_token + (set ? '/' + set : '');
   }
   /* The other links a client or a creator is sent, as short links the same
      way (2026-10-13): `s` a client's Video Scripts, `c` a campaign's

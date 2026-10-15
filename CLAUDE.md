@@ -2179,10 +2179,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     settings as a sheet with one Save, Reset access link, Remove from Content
     Review), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
-    address and Copy link the short link `hi.adspace.me/r/{key}`, Preview
-    the review page itself; a published set's head adds Copy link
-    (`#copySetLink`, beside Publish, equal halves on a phone) for
-    `/r/{key}/{first eight of the set's id}` (2026-10-12); the
+    address and Copy link the review page's own link, Preview the page;
+    a published set's head adds Copy link (`#copySetLink`, beside
+    Publish, equal halves on a phone) for that link with `#s-{first eight
+    of the set's id}` (2026-10-12; full links since 2026-10-15); the
     sets are a card a content month (`batches.period`, YYYY-MM, empty for
     Ad hoc; `2026-10-10-sets-by-month.sql`), newest first and open, Ad hoc
     last, a row a set (name, the state at the right, the post count read for
@@ -4555,8 +4555,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   answered from `share_link_preview(p_kind, p_key)` (anon): the brand for
   scripts (a script published), the campaign and the brand for a selection
   (no access code, not a draft) and for a creator with one open booking,
-  else the plain title. The console's address and Copy link give the short
-  link (`ADspaceAdmin.shortLink`), Preview and Open the page itself.
+  else the plain title. The console's address and Copy link give the
+  page's full digital.adspace.me link (the user, 2026-10-15: "full links
+  everywhere except namecards"; `shareLinks` off in js/config.js, which
+  `ADspaceAdmin.shortLink` and `shareUrl` read), and a namecard keeps its
+  short link; the Worker still answers every short link already sent.
 
 ### Video Scripts (`js/scripts.js`, `js/scriptpdf.js`, `?s=scripts`; `script/`, `js/script.js`)
 - One script is one full video (the user, 2026-10-09), its own section on

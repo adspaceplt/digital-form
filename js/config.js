@@ -119,7 +119,11 @@ window.ADSPACE_CONFIG = {
   /* The script, selection and creator links are written as short links
      (/s/, /c/, /p/ on the host above), answered by the links Worker
      (workers/links/worker.js, live 2026-10-13); false writes the long link. */
-  shareLinks: true,
+  /* Off since 2026-10-15 (the user: "full links everywhere except
+     namecards"): Copy link and the address give each page's full link. The
+     links Worker still answers every short link already sent, and a
+     colleague's namecard keeps its short link (printed QR codes). */
+  shareLinks: false,
   /* The letters re-set on 2026-10-15 (the user): selection /s/, Video
      Scripts /v/, /c the client portal. True once the links Worker that
      answers them is live in Cloudflare; until then the console writes /c/
