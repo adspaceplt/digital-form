@@ -112,8 +112,24 @@
     var m = /^https:\/\/mycdn\.adspace\.me(\/content\/(?:creator\/)?[A-Za-z0-9-]{1,64}\/)/i.exec(String(src || ''));
     return m ? m[1] : '';
   }
+  /* A colleague's pass covers the whole of content/ (2026-10-15, the user:
+     every file in the console stopped loading once a client's link was
+     opened in the same browser). A client page opened beside the console
+     leaves that pass alone and sets none of its own, since CloudFront
+     refuses a file sent two passes; the console, for its part, takes away
+     every folder a client page left before it asks, fresh or not. */
+  function colleague(p) { return !!p && !p.review && !p.campaign && !p.creator; }
+  function teamPassLive() { return cookie(FOR) === tagOf({}) && until() - Date.now() > 5 * 60 * 1000; }
+  function clearFolders() {
+    var left = known();
+    if (!left.length) return;
+    left.forEach(function (path) { if (FOLDER.test(path)) drop(path); });
+    remember([]);
+  }
   function ask(force) {
     if (!isOn() || !proof) return Promise.resolve(false);
+    if (colleague(proof)) clearFolders();
+    else if (teamPassLive()) return Promise.resolve(true);
     if (!force && fresh(2 * HOUR)) return Promise.resolve(true);
     if (inflight) return inflight;
     var API = window.ADspaceAPI, db = API && API.client;
