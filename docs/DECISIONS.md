@@ -3976,3 +3976,14 @@ finding fixed at the user's word ("fix all no matter what").
   `task_remind_hours`: the rule is "became overdue after this colleague's
   last reminder" (the earlier of its priority's deadline and its due day's
   end), so it is told once, with no table of its own to remember it.
+
+### 2026-10-15 — An issue on a VIC client's work counts double in a review
+- The user: mistreatment of a VIC client "would 2x penalize your
+  performance". The portal's word stays issue (never breach or
+  mistreatment): an issue may name its client, and one on a VIC client's
+  work takes its points off times `ded_vic` (2), a Performance setting from
+  a quarter on like every other figure, still under the month's cap.
+- Whether an issue was a VIC client's is stamped when it is logged and
+  never changed: a client marked or cleared later does not rewrite a month
+  already scored. The client is held without a foreign key, so removing a
+  client never touches a review.

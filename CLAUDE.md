@@ -3269,6 +3269,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     returns the `cap` and `points` it used, and the page names them from
     there, never a figure of its own.
   - L3 caps at B; L4 caps at D.
+  - An issue may name the client it concerns (`perf_breaches.client_id`,
+    the issue sheet's Client, optional; `bad-client`); on a VIC client's
+    work it is stamped `vic` at logging (trigger `perf_breaches_vic`, never
+    changed after: `vic-stamped`) and its points are times `ded_vic` (2,
+    from Q3 2026, Performance settings' Months part, 1 to 10;
+    `perf_deduction_vic_at`), still under `ded_cap`; the review sheet, the
+    member's page and the printed record read "VIC client · ×2" on it
+    (`2026-10-15-vic-performance.sql`). Never a score in a notification.
 - A member sees nothing of a month, breaches included, until it is released.
   - A dispute window from release of the month's `dispute_days` setting
     (7; 3 before 2026-10-01; a month keeps the window it was given), item
