@@ -202,9 +202,11 @@
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
   function t() { return WORDS[lang]; }
   function f(s, o) { return String(s).replace(/\{(\w+)\}/g, function (m, k) { return o && o[k] != null ? o[k] : m; }); }
-  function n0(v) { return Number(v || 0).toLocaleString('en-MY'); }
+  /* Figures through the one money formatter (js/money.js), its sign left to the table head. */
+  var MON = window.ADspaceMoney;
+  function n0(v) { return MON.money(v, 'MY').replace(/^RM /, ''); }
   function n2(v) {
-    var x = Number(v || 0), s = Math.abs(x).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var x = Number(v || 0), s = MON.money2(Math.abs(x), 'MY').replace(/^RM /, '');
     return x < 0 ? '(' + s + ')' : s;
   }
   function day(iso, long) {

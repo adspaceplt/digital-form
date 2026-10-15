@@ -23,8 +23,6 @@
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var PLAT = [['meta', 'Meta'], ['tiktok', 'TikTok'], ['rednote', 'rednote'], ['linkedin', 'LinkedIn']];
   var LANG = [['en', 'English'], ['zh', 'Chinese'], ['ms', 'Malay']];
-  var BUDGETS = [[0, 'None'], [2000, 'Up to RM 2,000'], [4000, 'Up to RM 4,000'], [8000, 'Up to RM 8,000'],
-    [14000, 'Up to RM 14,000'], [20000, 'Up to RM 20,000'], [-1, 'Above RM 20,000 (on request)']];
   var SAID = {
     denied: 'This needs Clients: Services at Work.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
@@ -32,7 +30,8 @@
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
-    'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.'
+    'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
+    expired: 'This quotation has expired. Make a copy to quote again.'
   };
   function said(e) {
     if (!e) return '';
@@ -118,7 +117,7 @@
             items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
           }
           if (maySet && !q.removed_at) {
-            if (st[0] !== 'Not proceeding' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
+            if (st[0] !== 'Not proceeding' && st[0] !== 'Expired' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
             if (q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) items.push('<button class="kmenu-item" data-a="billing" type="button"><b>Use billing details</b></button>');
             items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
             items.push(q.status === 'not_proceeding'
@@ -335,7 +334,7 @@
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · RM ' + esc(rm(p.rate).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
         '<small>' + p.spec.contents + ' contents: ' + mixWords(p.spec.mix || [], true) + '</small>' +
-        (p.spec.ad_budget ? '<small>Ad budget up to RM ' + Number(p.spec.ad_budget).toLocaleString('en-MY') + '</small>' : '') +
+        (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(MON.money(p.spec.ad_budget, 'MY')) + '</small>' : '') +
         '</span></button>';
     }).join('');
   }
@@ -343,6 +342,10 @@
      with ads opens on the budget it covers, "included in the plan", and
      offers only the larger ones; with no such plan the list opens on None.
      The steps are the card's own (Meta advertising and the boosters). */
+  /* The largest budget the live card covers, said where a larger one is on request. */
+  function topBudget() {
+    return svcs(B.card, 'ads').concat(svcs(B.card, 'booster')).reduce(function (m, x) { return Math.max(m, Number(x.spec.budget) || 0); }, 0);
+  }
   function budgets(keep) {
     var p = planOf(), cover = p && p.spec.ad_budget ? Number(p.spec.ad_budget) : 0;
     var tiers = svcs(B.card, 'ads').concat(svcs(B.card, 'booster')).map(function (x) { return Number(x.spec.budget) || 0; })
@@ -457,7 +460,8 @@
       B.priced = null;
       $('qbSave').disabled = true;
       $('qbSum').textContent = '';
-      B.ctx.db.rpc('quote_preview', { p_sel: B.sel }).then(function (r) {
+      /* The client named, so its SST exemption applies (2026-10-15, audit I1). */
+      B.ctx.db.rpc('quote_preview', { p_sel: Object.assign({ client: B.ctx.client.id }, B.sel) }).then(function (r) {
         if (!B || seq !== B.seq) return;
         var d = r.data || {};
         hints(d);
@@ -515,8 +519,8 @@
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
     var notes = [];
-    if (t.budget > 0) notes.push('Advertising budget of up to RM ' + Number(t.budget).toLocaleString('en-MY') + ' per month is billed separately.');
-    if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above RM 20,000' : x; }).join(', ') + '.');
+    if (t.budget > 0) notes.push('Advertising budget of up to ' + MON.money(t.budget, 'MY') + ' per month is billed separately.');
+    if ((d.on_request || []).length) notes.push('On request: ' + d.on_request.map(function (x) { return x === 'budget' ? 'advertising budget above ' + MON.money(topBudget(), 'MY') : x; }).join(', ') + '.');
     if (notes.length) out += '<p class="qb-note">' + esc(notes.join(' ')) + '</p>';
     return out;
   }

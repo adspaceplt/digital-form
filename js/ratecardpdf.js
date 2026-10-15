@@ -58,7 +58,7 @@
     var v = Number(n);
     if (n == null || n === '' || isNaN(v)) return '';
     var whole = Math.abs(v - Math.round(v)) < 0.005;
-    return 'RM ' + v.toLocaleString('en-MY', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 });
+    return window.ADspaceMoney.money(v, 'MY', whole ? 0 : 2);
   }
   function lines(s) {
     return String(s || '').split(/\r?\n/).map(function (l) { return l.replace(/^\s*(::|[-•])\s*/, '').trim(); })
