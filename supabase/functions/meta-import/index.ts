@@ -250,6 +250,11 @@ async function creativePicture(ad: string, linked: Set<string>): Promise<{ type:
   }
 }
 
+/* Meta's own image hosts, the only addresses `pictures` reads. */
+function metaHost(u: string): boolean {
+  try { const h = new URL(u); return h.protocol === 'https:' && /(^|\.)(fbcdn\.net|cdninstagram\.com)$/.test(h.hostname); } catch { return false; }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -305,16 +310,30 @@ Deno.serve(async (req) => {
       /* Only Meta's own image hosts are fetched: the addresses came from
          this report's own read, and nothing else is reached from here. */
       const urls = (Array.isArray(body.urls) ? body.urls : []).map(String)
-        .filter((u) => { try { const h = new URL(u); return h.protocol === 'https:' && /(^|\.)(fbcdn\.net|cdninstagram\.com)$/.test(h.hostname); } catch { return false; } })
+        .filter((u) => metaHost(u))
         .slice(0, 6);
       const pictures = await Promise.all(urls.map(async (u) => {
         try {
           const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
-          const res = await fetch(u, { signal: ctl.signal }); clearTimeout(t);
+          const res = await fetch(u, { signal: ctl.signal });
           const type = res.headers.get('content-type') || '';
-          if (!res.ok || !/^image\//.test(type)) return { url: u, error: 'not-read' };
-          const buf = new Uint8Array(await res.arrayBuffer());
-          if (buf.length > 4 * 1024 * 1024) return { url: u, error: 'too-large' };
+          /* A redirect must land on Meta's own hosts too, and a picture is
+             read only up to its 4 MB (audit S12, 2026-10-15). */
+          if (!res.ok || !/^image\//.test(type) || !metaHost(res.url || u)) { clearTimeout(t); ctl.abort(); return { url: u, error: 'not-read' }; }
+          const MAX = 4 * 1024 * 1024;
+          if (Number(res.headers.get('content-length') || 0) > MAX) { clearTimeout(t); ctl.abort(); return { url: u, error: 'too-large' }; }
+          const parts: Uint8Array[] = []; let size = 0;
+          const reader = res.body!.getReader();
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.length;
+            if (size > MAX) { clearTimeout(t); ctl.abort(); return { url: u, error: 'too-large' }; }
+            parts.push(value);
+          }
+          clearTimeout(t);
+          const buf = new Uint8Array(size); let at = 0;
+          for (const part of parts) { buf.set(part, at); at += part.length; }
           let bin = '';
           for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
           return { url: u, type: type.split(';')[0], b64: btoa(bin) };

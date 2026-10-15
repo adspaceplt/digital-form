@@ -4638,6 +4638,9 @@
           if (!replace) q0 = q0.is('thumb_data', null);
           return q0.select('*').then(function (res) {
             var row = (res && res.data || [])[0];
+            /* A refused write (the report left draft meanwhile) is named,
+               never read as Meta holding nothing (audit I8, 2026-10-15). */
+            if (res && res.error) { refused = refused || 'not-saved'; return; }
             if (!row) return;
             before[row.id] = a.thumb_data || null;
             st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
@@ -4649,22 +4652,29 @@
         var ids = Object.keys(before), n = ids.length, missed = want.length - n;
         paintAds();
         if (!n) {
-          say(line, refused ? (META_SAID[refused] || 'Meta did not answer. Try again.') : 'Meta holds no picture for these ads.', refused ? 'err' : 'warn');
+          say(line, refused === 'not-saved' ? 'Not saved. The database refused the request.'
+            : refused ? (META_SAID[refused] || 'Meta did not answer. Try again.') : 'Meta holds no picture for these ads.', refused ? 'err' : 'warn');
           return;
         }
         var swapped = ids.filter(function (id) { return before[id]; }).length;
         fileReport('report.saved', 'From Meta: ' + [n - swapped ? plural(n - swapped, 'picture') + ' added' : '',
           swapped ? plural(swapped, 'picture') + ' replaced' : ''].filter(Boolean).join(', '));
         if (missed) say(line, plural(missed, 'ad') + ' took no picture. ' +
-          (refused ? (META_SAID[refused] || 'Meta did not answer.') : 'Meta holds none for ' + (missed === 1 ? 'it.' : 'them.')), 'warn');
+          (refused === 'not-saved' ? 'The database refused the request.'
+            : refused ? (META_SAID[refused] || 'Meta did not answer.') : 'Meta holds none for ' + (missed === 1 ? 'it.' : 'them.')), 'warn');
         undoBar(plural(n, 'picture') + ' taken from Meta.', st.host.querySelector('.rp-ads'), function () {
           Promise.all(ids.map(function (id) {
             return db.from('sm_report_ads').update({ thumb_data: before[id] }).eq('id', id).select('*').then(function (res) {
               var row = (res && res.data || [])[0];
-              if (row) st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
-            });
-          })).then(function () {
-            fileReport('report.saved', 'From Meta: ' + plural(n, 'picture') + ' put back');
+              if (!row) return 0;
+              st.ads = st.ads.map(function (x) { return x.id === row.id ? row : x; });
+              return 1;
+            }).catch(function () { return 0; });
+          })).then(function (done) {
+            /* Only what came back is filed (audit I8). */
+            var back = done.reduce(function (t, x) { return t + x; }, 0);
+            if (back) fileReport('report.saved', 'From Meta: ' + plural(back, 'picture') + ' put back');
+            if (back < n) say(line, 'Not saved. The database refused the request.', 'err');
             paintAds();
           });
         });

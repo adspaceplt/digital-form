@@ -3859,3 +3859,19 @@ finding fixed at the user's word ("fix all no matter what").
   checklist is written. Captions and scripts keep their gate.
 - The tests caught the Brand pane redraw erasing the confirm's Undo line;
   the line is now drawn after the brief is read again.
+
+### 2026-10-15 — A document sent on WhatsApp is the record's own (audit S3, S12, I8, I11)
+- `wa-send` attached whatever PDF the page sent, so a report of another
+  client could go to a contact as theirs. A report's file is now its kept
+  PDF of the version on the client portal, read by `wa-send` as the caller
+  through `sign-download`; a quotation's or a letter's must decode and
+  begin `%PDF`, and malformed base64 answers `bad-file` before anything
+  reaches Meta. Left as it was: a quotation's and a letter's bytes are the
+  page's drawing (they are never stored), checked to be a PDF only.
+- Brand analysis masked dates as numbers and missed numbers written with
+  brackets or dots; it now masks any run of nine digits or more however it
+  is written. `meta-import` `pictures` holds a redirect to Meta's hosts and
+  reads a picture only up to 4 MB.
+- Pictures from Meta named a refused write as Meta holding no picture, and
+  its Undo filed every picture as put back; both now say what happened.
+- A Letter of Offer with a one-off item keeps its whole summary on one page.

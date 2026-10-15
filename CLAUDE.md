@@ -4118,8 +4118,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   leaves out people Meta could not age, which Ads Manager's export by age
   counts (2609W3_Balance: 800 against 6,484). Then each ad or post with no picture of its own takes
   Meta's (an ad's creative, a post's image or a reel's cover frame), read
-  through `meta-import` `pictures` (Meta's own image hosts alone, six a
-  call, 4 MB each; Meta's addresses expire within days; each ad's creative,
+  through `meta-import` `pictures` (Meta's own image hosts alone, a redirect
+  held to them too, six a call, read only up to 4 MB each; Meta's addresses expire within days; each ad's creative,
   as each post's metric here and in `brand-analysis`, asked of Meta on its
   own: Graph v26 refuses the `?ids=` read of many at once, 2026-10-12), drawn down to the
   320px JPEG and kept on the row (`.is('thumb_data', null)`: a picture the
@@ -4864,7 +4864,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   a creator's code), a typed one kept, a numbered one named for what fills it
   (Greeting, Client, Campaign, Report, Reference, What waits, Link); a Report select only for a Document
   header, the recipient's client's published reports newest first, its file
-  the kept PDF the client portal hands over (`ADspaceReports.keptPdf`); the
+  the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
+  `wa-send` reads itself as the caller through `sign-download`, never the
+  page's bytes, a quotation's or letter's refused unless it is a PDF
+  (`bad-file`; audit S3, 2026-10-15); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
   asks `wa_compose_prepare` as the colleague (the number and the record are

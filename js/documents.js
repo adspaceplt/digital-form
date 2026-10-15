@@ -627,7 +627,9 @@
          invoiced: a month at a time where the services run by the month.
          The whole commitment is a term below, in words, so it is disclosed
          without being the number in bold. */
-      need(66);
+      /* The one-off summary is five rows and a rule, about 85pt: kept whole
+         on its page (audit I11, 2026-10-15). */
+      need(price.term && price.once > 0 ? 90 : 66);
       var lx = R - 230;
       var trow = function (label, value, kind) {
         var strong = kind === 'strong';
