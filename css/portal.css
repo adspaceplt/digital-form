@@ -12576,6 +12576,12 @@ body.qs-page { background: var(--card); }
 .ck-facts + .ck-row { margin-top: 12px; }
 .ck-row.is-table { grid-template-columns: minmax(0, 1fr); }
 .ck-row.is-table .ck-lab b { font-size: 13px; color: var(--ink-mute); font-weight: 400; }
+/* A Brand analysis read on the checklist before it is confirmed. */
+.ck-ba-sec + .ck-ba-sec { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line-soft); }
+.ck-ba-sec .fsec-h { margin: 0 0 12px; }
+.ck-ba-hyp { margin: 0 0 16px; }
+.ck-ba-list { margin: 0; padding-left: 18px; }
+.ck-ba-list li + li { margin-top: 4px; }
 /* A section's Edit: every answer of one section, a field each. */
 .ck-ed { display: grid; gap: 6px; min-width: 0; }
 .ck-ed + .ck-ed { margin-top: 16px; }

@@ -192,6 +192,7 @@ Content: what worked and what did not, from the post figures and reports given (
 Ad targeting: the objectives to run and why (the team's objective first where one is given); age bands from the follower and ad figures where given; interests and behaviours specific to Meta's targeting; placements (never Audience Network); a budget split by objective as whole percentages adding up to 100; the budget realism as above; one line on what to test first.
 To confirm with the client: every fact marked to confirm and anything the analysis needs from the client that no page shows (prices, unit counts, the sales process, who answers enquiries and how fast, the CRM), one point each.
 Next question: the one question to ask the client next that would most change the plan.
+Content brief: what the team writes content from, in the brand's own terms: the audience in one or two sentences; their pains; the content pillars, one a line; the tone of voice in one or two sentences. Where the record already holds a brief, keep to it.
 
 STANDARDS
 Specific, local and ownable. Never generic advice such as "post product photos", "run a giveaway", "share testimonials" or "create awareness" unless it is developed into a sharp idea with its hook and its reason.
@@ -233,6 +234,8 @@ const SCHEMA = obj({
     test: str('What to test first') }),
   confirm: list('To confirm with the client, one point each'),
   next_question: str('The one question to ask the client next'),
+  brief: obj({ audience: str('The audience, in one or two sentences'), pains: str('Their pains, in one or two sentences'),
+    pillars: list('Content pillars, one a line'), tone: str('The tone of voice, in one or two sentences') }),
   sources: { type: 'array', description: 'The web pages read and used', items: obj({ url: str('The address'), title: str('A short title') }) }
 });
 const SUBMIT = { name: 'submit_analysis', description: 'Submit the finished brand analysis.', strict: true, input_schema: SCHEMA };
@@ -283,7 +286,9 @@ function tidy(a: any) {
     content: { worked: cap(c.worked, 6, 500), not_worked: cap(c.not_worked, 6, 500), pillars: cap(c.pillars, 6, 300), formats: cap(c.formats, 6, 400) },
     ads: { objectives: cap(d.objectives, 6, 400), ages: cap(d.ages, 6, 200), interests: cap(d.interests, 12, 200),
            placements: cap(d.placements, 8, 200), budget, realism: text(d.realism, 800), test: text(d.test, 600) },
-    confirm: cap(a.confirm, 8, 300), next_question: text(a.next_question, 300)
+    confirm: cap(a.confirm, 8, 300), next_question: text(a.next_question, 300),
+    brief: { audience: text(a.brief && a.brief.audience, 600), pains: text(a.brief && a.brief.pains, 600),
+      pillars: cap(a.brief && a.brief.pillars, 6, 200), tone: text(a.brief && a.brief.tone, 400) }
   };
 }
 const urlKey = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, '').replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase();
@@ -324,13 +329,16 @@ Deno.serve(async (req) => {
   if (cl.error || !cl.data) return json({ error: 'client-scope' }, 200, origin);
   const c = cl.data as Record<string, unknown>;
 
-  /* The Content brief's audience, pillars and tone first (2026-10-12),
-     asked before the press is counted, so a refusal counts nothing. */
-  const ready = await db.rpc('ai_brand_ready', { p_client: clientId });
-  if (ready.error) return json({ error: 'needs-update' }, 200, origin);
-  const rd = (ready.data || {}) as Record<string, unknown>;
-  if (rd.error) return json({ error: String(rd.error) }, 200, origin);
-  if (Array.isArray(rd.missing) && rd.missing.length) return json({ error: 'no-brief', missing: rd.missing }, 200, origin);
+  /* Something to read first (2026-10-15: the analysis writes the Content
+     brief, so it no longer waits for one): the website, a handle or a
+     linked Meta account, asked before the press is counted. */
+  const hasPlace = !!text(c.website, 300) || ['handle_ig', 'handle_fb', 'handle_tiktok', 'handle_xhs'].some((f) => !!text(c[f], 120));
+  if (!hasPlace) {
+    const lk0 = await db.rpc('meta_links_list', { p_client: clientId });
+    const ls0 = lk0 && !lk0.error && lk0.data ? ((lk0.data as Record<string, unknown>).links || []) as Record<string, unknown>[] : [];
+    if (!ls0.some((x) => !x.brand_id && (((x.ad_accounts || []) as unknown[]).length || x.page || x.instagram)))
+      return json({ error: 'no-source' }, 200, origin);
+  }
 
   /* Count the press before anything is read past the client itself. */
   const claim = await db.rpc('ai_analysis_claim', { p_client: clientId });

@@ -1543,7 +1543,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Write with AI on it (Clients Work, an open checklist; the user, 2026-10-15)
   asks up front the monthly ad budget, the objective, where the ads send
   people, the ad account and notes (kept under
-  `adspace-checklist-inputs:{client id}`), then `checklist-draft` reads the
+  `adspace-checklist-inputs:{client id}`); with no confirmed Brand
+  analysis the same press runs one first (the user, 2026-10-15: never Brand
+  first and back again), read in `#ckBaSheet` and confirmed there with the
+  declaration (filling the brief), then `checklist-draft` reads the
   confirmed Brand analysis (`no-analysis` without one), the Ad benchmarks
   and the linked Meta accounts and proposes every field but the ticks,
   following the playbook's Meta rules; nothing is written until the
@@ -1577,12 +1580,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Write with AI waits for the brand (`ai_brand_ready(p_client)`,
   `2026-10-12-ai-needs-the-brand.sql`; the user, 2026-10-12): a caption or a
   script needs the brief's Audience, Content pillars and Tone of voice and a
-  confirmed Brand analysis, Run analysis the three parts alone; reports are
-  not held. The press asks nothing until then: one `.msg.warn` line under
-  the button names what is missing, with Open Brand where the colleague
-  reads Clients (`ADspaceAdmin.brandGate`, `brandSay`), and `caption-draft`,
-  `script-draft` and `brand-analysis` refuse the same (`no-brief` with
-  `missing`, `no-analysis`) before a use is counted.
+  confirmed Brand analysis; reports are not held. The press asks nothing
+  until then: one `.msg.warn` line under the button names what is missing,
+  with Open Brand where the colleague reads Clients
+  (`ADspaceAdmin.brandGate`, `brandSay`), and `caption-draft` and
+  `script-draft` refuse the same (`no-brief` with `missing`,
+  `no-analysis`) before a use is counted. Run analysis asks no brief
+  (2026-10-15): it needs something to read, the website, a handle or a
+  linked Meta account (`no-source`), and writes the brief itself
+  (`analysis.brief`); confirming a version fills each empty part of the
+  brief from it (`2026-10-15-analysis-fills-brief.sql`, at Clients Work in
+  scope; a part already written is never replaced; filed `client.brand`,
+  said on the Undo line).
 - Brand analysis (`2026-10-10-brand-analysis.sql`, `brand-analysis`; the
   user, 2026-10-10: "deep analysis of this clients … target audiences,
   SWOTs, advantages disadvantages, ads targetting"; "anyone could run it"):
