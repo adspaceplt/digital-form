@@ -140,6 +140,16 @@
   }
   // The address of a client, wherever one is built.
   function keyOf(c) { return (c && (c.slug || c.id)) || ''; }
+  /* Who logged a call or visit, by name. Entries logged before 2026-10-15
+     hold the sign-in email; it is read as the colleague's name, and an
+     address no active colleague holds is left unsaid. */
+  function whoLogged(v) {
+    v = String(v || '');
+    if (v.indexOf('@') < 0) return v;
+    var m = (state.team || []).filter(function (t) { return String(t.email || '').toLowerCase() === v.toLowerCase(); })[0];
+    return m ? m.name : '';
+  }
+
   function niceDate(d) {
     if (!d) return '';
     /* Days are Malaysia's (js/clock.js), whatever the device's clock: a day
@@ -390,6 +400,7 @@
       state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });
       peopleSelect($('crmOwnerPick'), state.team);
       fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'All people');
+      if (state.due) paintDue();
       if (then) then();
     }, function () { if (then) then(); });
   }
@@ -3639,7 +3650,7 @@
       '<div class="touch-body">' +
         '<p class="touch-summary">' + esc(tc.summary) + '</p>' +
         '<p class="touch-meta">' +
-          [tc.contact_name ? 'With ' + tc.contact_name : '', tc.by_whom ? 'by ' + tc.by_whom : '',
+          [tc.contact_name ? 'With ' + tc.contact_name : '', whoLogged(tc.by_whom) ? 'by ' + whoLogged(tc.by_whom) : '',
            tc.updated_at ? 'edited' : '']
             .filter(Boolean).map(esc).join(' · ') +
         '</p>' +
@@ -3870,7 +3881,7 @@
       db.from('client_touches').update(row).eq('id', editingTouch.id).select('id').then(after);
     } else {
       row.client_id = state.client.id;
-      row.by_whom = actor() || null;
+      row.by_whom = (bridge.me && bridge.me() && bridge.me().name) || actor() || null;
       db.from('client_touches').insert(row).select('id').then(after);
     }
   });
@@ -5932,7 +5943,6 @@
      lead. Each line opens its client, and Done clears it from here without
      touching the log entry it came from. */
   function loadDue() {
-    var box = $('crmDueList');
     db.from('client_touches').select('*').not('next_action', 'is', null)
       .is('done_at', null).is('archived_at', null)
       .order('next_at', { ascending: true, nullsFirst: false }).limit(50)
@@ -5943,43 +5953,51 @@
           if (a.next_at && b.next_at) return a.next_at < b.next_at ? -1 : a.next_at > b.next_at ? 1 : 0;
           return a.next_at ? -1 : b.next_at ? 1 : 0;
         });
-        var byId = {};
-        state.clients.forEach(function (c) { byId[c.id] = c; });
-        $('crmDue').hidden = !rows.length;
-        var over = rows.filter(function (t) { return t.next_at && t.next_at < today(); }).length;
-        $('crmDueCount').textContent = rows.length + ' open' + (over ? ' · ' + over + ' overdue' : '');
-        box.innerHTML = '';
-        rows.forEach(function (t) {
-          var c = byId[t.client_id];
-          var due = t.next_at && t.next_at < today();
-          var soon = !due && t.next_at && t.next_at <= ADspaceClock.addDays(today(), 6);
-          var row = document.createElement('div');
-          row.className = 'due-row' + (due ? ' is-due' : soon ? ' is-soon' : '');
-          row.innerHTML =
-            '<span class="due-when">' + esc(t.next_at ? niceDate(t.next_at) : 'No date') +
-              (due ? '<em>overdue</em>' : soon ? '<em>this week</em>' : '') + '</span>' +
-            '<button class="due-client" type="button">' + esc(c ? c.name : 'Client') + '</button>' +
-            '<span class="due-what">' + esc(t.next_action) +
-              (t.by_whom ? '<small>' + esc(t.by_whom) + '</small>' : '') + '</span>' +
-            '<button class="btn btn-sm" data-a="done" type="button">Done</button>';
-          row.querySelector('.due-client').addEventListener('click', function () { if (c) openClient(c); });
-          row.querySelector('[data-a="done"]').addEventListener('click', function () {
-            db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id).select('id')
-              .then(function (r) {
-                if (r.error || !(r.data || []).length) { loadDue(); return; }
-                log('client.action_done', c ? c.name : '', t.next_action);
-                undoBar('Marked done: ' + t.next_action, function () {
-                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).select('id').then(function (u) {
-                    if (u.error || !(u.data || []).length) msg('crmListMsg', 'Not restored. The database refused the request.', 'warn');
-                    loadDue();
-                  }).catch(loadDue);
-                });
-                loadDue();
-              });
-          });
-          box.appendChild(row);
-        });
+        state.due = rows;
+        paintDue();
       }, function () { $('crmDue').hidden = true; });
+  }
+
+  /* Draws what loadDue read. The team list may answer after it, and then
+     draws it again with each colleague's name; nothing is read again. */
+  function paintDue() {
+    var box = $('crmDueList'), rows = state.due || [];
+    var byId = {};
+    state.clients.forEach(function (c) { byId[c.id] = c; });
+    $('crmDue').hidden = !rows.length;
+    var over = rows.filter(function (t) { return t.next_at && t.next_at < today(); }).length;
+    $('crmDueCount').textContent = rows.length + ' open' + (over ? ' · ' + over + ' overdue' : '');
+    box.innerHTML = '';
+    rows.forEach(function (t) {
+      var c = byId[t.client_id];
+      var due = t.next_at && t.next_at < today();
+      var soon = !due && t.next_at && t.next_at <= ADspaceClock.addDays(today(), 6);
+      var row = document.createElement('div');
+      row.className = 'due-row' + (due ? ' is-due' : soon ? ' is-soon' : '');
+      row.innerHTML =
+        '<span class="due-when">' + esc(t.next_at ? niceDate(t.next_at) : 'No date') +
+          (due ? '<em>overdue</em>' : soon ? '<em>this week</em>' : '') + '</span>' +
+        '<button class="due-client" type="button">' + esc(c ? c.name : 'Client') + '</button>' +
+        '<span class="due-what">' + esc(t.next_action) +
+          (whoLogged(t.by_whom) ? '<small>' + esc(whoLogged(t.by_whom)) + '</small>' : '') + '</span>' +
+        '<button class="btn btn-sm" data-a="done" type="button">Done</button>';
+      row.querySelector('.due-client').addEventListener('click', function () { if (c) openClient(c); });
+      row.querySelector('[data-a="done"]').addEventListener('click', function () {
+        db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id).select('id')
+          .then(function (r) {
+            if (r.error || !(r.data || []).length) { loadDue(); return; }
+            log('client.action_done', c ? c.name : '', t.next_action);
+            undoBar('Marked done: ' + t.next_action, function () {
+              db.from('client_touches').update({ done_at: null }).eq('id', t.id).select('id').then(function (u) {
+                if (u.error || !(u.data || []).length) msg('crmListMsg', 'Not restored. The database refused the request.', 'warn');
+                loadDue();
+              }).catch(loadDue);
+            });
+            loadDue();
+          });
+      });
+      box.appendChild(row);
+    });
   }
 
   /* The close mark in each sheet's head presses that sheet's own Cancel, so
