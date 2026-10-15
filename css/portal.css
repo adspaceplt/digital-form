@@ -4930,7 +4930,10 @@ body > .shell { width: 100%; }
    cell. */
 /* A version's row ends in its own Download (ux-audit SVC-9); its date names
    itself only where the heading is hidden (SVC-4). */
-.cat-row.rcv-row { grid-template-columns: minmax(0, 1fr) 118px 232px auto; }
+/* The Download track is fixed, so the heading's empty cell keeps the
+   rows' columns (audit R2, 2026-10-15). */
+.cat-row.rcv-row { grid-template-columns: minmax(0, 1fr) 118px 232px 112px; }
+.cat-row.rcv-row > .team-act { justify-self: end; }
 .rcv-k { display: none; }
 .is-narrow .rcv-row .rcv-k { display: inline; }
 .cat-row > .svc-rate > .svc-rate-edit { font-size: inherit; margin-left: 0; margin-right: -8px; justify-content: flex-end; }
@@ -12309,9 +12312,10 @@ button.vs-row { cursor: pointer; }
 .qb-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .qb-three > [hidden] { display: none; }
 .qb-step { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.qb-stepbtn { width: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; border-radius: var(--radius-ctl-sm); background: var(--tonal); }
+/* A stepper's marks and count are full targets (audit R2, 2026-10-15). */
+.qb-stepbtn { width: var(--ctl-h); height: var(--ctl-h); min-width: 0; border-radius: var(--radius-ctl); background: var(--tonal); }
 .qb-stepval {
-  width: 32px; text-align: center; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600;
+  width: 32px; height: var(--ctl-h); text-align: center; border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600;
   color: var(--ink); -moz-appearance: textfield; appearance: textfield;
 }
 .qb-stepval::-webkit-outer-spin-button, .qb-stepval::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
