@@ -3566,6 +3566,7 @@ finding fixed at the user's word ("fix all no matter what").
   (`/client/`) is the 404's blue action, the other two tonal beside it, the
   sign-in taking its own row on a phone. The two console suites logged on
   2026-10-15 (sets, reports) pass on main as it stands; the log is cleared.
+
 ### 2026-10-15 · New script held to Save; bars green only once complete; Accept caption's Undo puts the round back
 - New script, as Add script already did, opens its editor and stores
   nothing until Save: Cancel left an empty numbered script on the month and
