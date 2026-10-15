@@ -476,7 +476,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices, Public holidays), Clients (Follow-up limits, Details form), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
-  checks, Reach allowance),
+  checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
   (Templates, Sent again), Documents (Document types); a group with
   no row drawn is left out. One page at every width, each group a card under
@@ -1563,7 +1563,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   competitors'; sections Brand positioning, Target audiences, SWOT,
   Content, Ad targeting, Sources (pages the search returned only), "A
   starting hypothesis to test" where the client has no reports, results or
-  Meta posts. **The brand name goes to Claude for this function alone (the
+  Meta posts. The team's client analysis playbook (2026-10-15): Run
+  analysis asks up front a monthly ad budget, the main objective and the
+  ad account (New, Mature; kept in this browser under
+  `adspace-analysis-inputs:{client id}`), never a question back; the
+  research checks the entity and its parent group first, labels each fact
+  Official, Listing or Third party and marks one its sources disagree on To
+  confirm, places a business by what buyers know, and maps competitors
+  (direct, indirect, legacy, disruptor); a version holding them leads with
+  What it is, What works and what is weak (trust leaks), Where ADspace fits
+  (channels first, next, later; what to fix before paid traffic; the
+  commercial angle), and ends with To confirm with the client and Next
+  question, Ad targeting adding Budget realism against the Ad benchmarks
+  (sixteen Business settings, `bench_*`, `2026-10-15-ad-benchmarks.sql`:
+  cost per result by kind, impressions, the ad spend share of a budget
+  83.75%, RM 30 a day an ad set), read by the function as the caller; an
+  earlier version reads as it was. **The brand name goes to Claude for this function alone (the
   user, 2026-10-10, for the web research); never a contact, and an email or
   number typed into the words is masked.** `brand_analyses` (RLS on, no
   policy, no grant) keeps every run as the next version

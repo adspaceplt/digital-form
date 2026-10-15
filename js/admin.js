@@ -5218,7 +5218,8 @@
      (0 to 100), adj (-100 to 100), every (0 to 24 hours), ahead (0 to 30
      days) and week (0 to 168 hours), where 0 sends or asks none. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
-    every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true] };
+    every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true],
+    rm: [0, 10000, false], share: [1, 100, false] };
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The
      details form's days are the Settings page's Clients group (SET-9). */

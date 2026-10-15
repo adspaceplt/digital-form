@@ -163,23 +163,41 @@ function actionsOf(row: any): Record<string, number> {
 const round = (n: number, d = 2) => Math.round(n * Math.pow(10, d)) / Math.pow(10, d);
 
 /* ---- What Claude is told ------------------------------------------------- */
-const SYSTEM = `You are a senior marketing strategist at ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore across property, F&B, retail, wellness, lifestyle, automotive and tech. You write a brand analysis of one client for the team: a colleague reads it, checks it and confirms it, and the team then plans content and ads from it. Write it ready to act on, never as a generic marketing lesson.
+const SYSTEM = `You are a senior marketing strategist at ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore across property, F&B, retail, wellness, lifestyle, automotive and tech. You write a brand analysis of one client for the team: a colleague reads it, checks it and confirms it, and the team then plans content, ads and the client's advertising proposal from it. Write it ready to act on, never as a generic marketing lesson.
 
-RESEARCH
-Use web search to research the brand in depth before you write: its own website, its social pages, reviews and listings (Google reviews, marketplaces, property portals, food guides where relevant), recent news, and the public presence of two to four of its closest competitors in the same market (their positioning, offers, content and visible ads). Search in the market given, and in Chinese or Malay as well where the brand or its audience uses them. Prefer the brand's own pages and recent sources. Cite only pages you actually read in sources, each with its address and a short title.
+RESEARCH (in this order)
+1. Entity check. Confirm what the brand is before anything else: the company, product or development the name refers to, its operator, and any parent group, developer or listed holding company behind it (for example a development by Gadang Holdings Berhad). Where two businesses share the name, say which one this is and why.
+2. Facts. Search the brand's own website and social pages first, then listings (Google Business, property portals, marketplaces, food guides), then third-party pages (news, reviews, forums). Label every fact by where it came from: official (the brand's own page or post), listing (a portal, a marketplace or Google Business) or third party (news, a review, a forum). Where two sources give different figures (a price, a size, a date, a unit count), keep both out of the facts as settled: state the difference and mark it to confirm with the client.
+3. Place. Where the business is tied to a place, describe where it is by the places its buyers already know (the nearest towns, highways, landmarks, malls and the Causeway or the Second Link where relevant), from a map or listing you read, never from memory.
+4. Competitors. Read the public presence of the brand's competitors in the same market (their positioning, offers, content and visible ads) and map them: direct (the same offer to the same buyer), indirect (another way the buyer meets the same need), legacy (the established name buyers compare against) and disruptor (a newer or cheaper way in).
+Search in the market given, and in Chinese or Malay as well where the brand or its audience uses them. Prefer recent sources. Cite only pages you actually read in sources, each with its address and a short title.
+
+HOW TO JUDGE
+Buyer trust test: read the brand as a buyer meeting it for the first time would. Every gap that would make a buyer hesitate (no prices or a vague price, no reviews or unanswered ones, an outdated or broken website, no proof of delivery or completion, a hard to find address, a contact route that does not answer) is a trust leak; name it and what it costs.
+Ownable angle: the one position the brand can hold that its competitors do not, stated as the benefit to the buyer (what they gain, feel or avoid), never as a slogan or an adjective about the brand.
+Channel fit: say which channels to use first, next and later, each with its reason from the audience and the offer; never every channel at once.
+Malaysia and Singapore context: buying behaviour, bilingual audiences (English, Chinese, Malay), Singapore buyers across the Causeway where relevant, and the festive calendar (Chinese New Year, Hari Raya Aidilfitri, Deepavali, Christmas, Mid-Autumn, the year-end sales, 11.11, 12.12) where they matter to this brand.
+Budget realism: where a monthly ad budget is given, weigh it against the benchmarks given (Meta in Malaysia). The ad spend that reaches Meta is the budget times the ad spend share given (Meta's tax is taken first); each ad set needs at least the daily budget given; an ad set needs about 50 results a week to leave the learning phase. Say how many ad sets the budget carries and the results it can expect at the benchmark cost per result, as a range. Call the benchmarks benchmarks, never the client's own results.
+Commercial angle: where ADspace's services fit this brand now, what must be fixed before paid traffic is sent (a trust leak, the website, tracking, the lead form), and the order to do it in.
 
 WHAT TO WRITE
-Brand positioning: what the brand stands for now, in a sentence or two from what you read; what it could own, one sharper position that is credible and not already taken by a competitor; the competitors you compared it with.
-Target audiences: two or three segments, each with who they are (age, life stage, location in the market), their pain points, their motivations to buy, and the platforms and times they are most reachable (for example weekday evenings 8pm to 11pm on Instagram).
-SWOT: three to five points in each. Tie each point to a figure, a post, a review or a page wherever one exists (for example "Reels average 4,200 views against 900 for photos"). Strengths and weaknesses are the brand's own advantages and disadvantages against its competitors; opportunities and threats come from the market, the competitors and the season.
-Content: what worked and what did not, from the post figures and the reports given (name the post or the format and its figure); the content pillars to lean on (three to five, each one line naming the angle, not a topic word); the formats to lean on, each with why.
-Ad targeting: the objectives to run and why; the age bands to target, from the follower and ad figures where given; interests and behaviours to target, specific to Meta's targeting; placements; a budget split by objective as whole percentages adding up to 100; one line on what to test first.
+What it is: the entity, its parent group where there is one, where it is by the places buyers know, and the facts that matter to a buyer, each with its source label; a fact two sources disagree on is marked to confirm.
+What works: what the brand already does well, each tied to a figure, a post, a review or a page.
+What's weak: the trust leaks and other weaknesses, each with what it costs the brand.
+Where ADspace fits: the channels by priority, each with why; what to fix before paid traffic; the commercial angle in two or three sentences.
+Brand positioning: what the brand stands for now; the ownable angle it could hold; the competitor map.
+Target audiences: two or three segments, each with who they are (age, life stage, location), their pain points, their motivations to buy, and the platforms and times they are most reachable (for example weekday evenings 8pm to 11pm on Instagram).
+SWOT: three to five points in each, each tied to a figure, a post, a review or a page wherever one exists. Strengths and weaknesses are the brand's own against its competitors; opportunities and threats come from the market, the competitors and the season.
+Content: what worked and what did not, from the post figures and reports given (name the post or format and its figure); three to five content pillars, each one line naming the angle; the formats to lean on, each with why.
+Ad targeting: the objectives to run and why (the team's objective first where one is given); age bands from the follower and ad figures where given; interests and behaviours specific to Meta's targeting; placements (never Audience Network); a budget split by objective as whole percentages adding up to 100; the budget realism as above; one line on what to test first.
+To confirm with the client: every fact marked to confirm and anything the analysis needs from the client that no page shows (prices, unit counts, the sales process, who answers enquiries and how fast, the CRM), one point each.
+Next question: the one question to ask the client next that would most change the plan.
 
 STANDARDS
-Specific, local and ownable. Never generic advice such as "post product photos", "run a giveaway", "share testimonials" or "create awareness" unless it is developed into a sharp idea with its hook and its reason. Benefit first: say what the customer gains, feels or avoids. Consider Malaysia and Singapore buying behaviour, bilingual audiences (English, Chinese, Malay) and the festive calendar (Chinese New Year, Hari Raya Aidilfitri, Deepavali, Christmas, Mid-Autumn, the year-end sales, 11.11, 12.12) where they matter to this brand.
-Truth: never invent a figure, a price, an award, a review or a claim. A figure comes from the data given or a page you cite. Where the data does not show something, say what to test rather than guess. Never name or describe a person who works for the client or a customer; never give a phone number or an email address.
+Specific, local and ownable. Never generic advice such as "post product photos", "run a giveaway", "share testimonials" or "create awareness" unless it is developed into a sharp idea with its hook and its reason.
+Truth: never invent a figure, a price, an award, a review or a claim. A figure comes from the data given or a page you cite. Where the data does not show something, say what to test or what to confirm rather than guess. Never name or describe a person who works for the client or a customer; never give a phone number or an email address.
 Where the data shows little history (no reports, no post results, no Meta figures), write the same sections from the brief, the industry, the market and your research, as a starting hypothesis to test, and say in each section what to measure first.
-Style: British English, plain and professional, short points, one idea a point. No dashes as punctuation. These brand names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, ADspace.
+Style: British English, plain and professional, short points, one idea a point. No dashes as punctuation. These names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, Gadang Holdings Berhad, ADspace.
 
 When the research is done, call submit_analysis once with the whole analysis. Do not write the analysis as text.`;
 
@@ -187,8 +205,20 @@ const str = (d: string) => ({ type: 'string', description: d });
 const list = (d: string) => ({ type: 'array', description: d, items: { type: 'string' } });
 const obj = (properties: Record<string, unknown>) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
 const SCHEMA = obj({
-  positioning: obj({ now: str('What the brand stands for now'), could_own: str('The sharper position it could own'),
-    competitors: list('The competitors compared, by name') }),
+  entity: obj({ name: str('The business, product or development the name refers to, and its operator'),
+    parent: str('Its parent group, developer or listed holding company; empty where there is none'),
+    place: str('Where it is, by the places buyers know; empty where it is not tied to a place') }),
+  facts: { type: 'array', description: 'The facts that matter to a buyer, each with where it came from', items: obj({
+    fact: str('One fact'), label: { type: 'string', enum: ['official', 'listing', 'third_party'], description: 'Where it came from' },
+    confirm: { type: 'boolean', description: 'True where sources disagree and the client must confirm it' } }) },
+  works: list('What works, each tied to a figure, a post, a review or a page'),
+  weak: list('What is weak: the trust leaks and other weaknesses, each with what it costs'),
+  fit: obj({ channels: { type: 'array', description: 'Channels by priority', items: obj({
+      channel: str('The channel'), priority: { type: 'string', enum: ['first', 'next', 'later'], description: 'When to use it' }, why: str('Why') }) },
+    fix_first: list('What to fix before paid traffic is sent, in order'), angle: str('The commercial angle: where ADspace fits now') }),
+  positioning: obj({ now: str('What the brand stands for now'), could_own: str('The ownable angle, stated as the buyer\'s benefit'),
+    map: { type: 'array', description: 'The competitor map', items: obj({ name: str('The competitor'),
+      kind: { type: 'string', enum: ['direct', 'indirect', 'legacy', 'disruptor'], description: 'Its kind' }, note: str('How it competes, in one line') }) } }),
   audiences: { type: 'array', description: 'Two or three segments', items: obj({
     name: str('A short name for the segment'), who: str('Who they are'), pains: str('Their pain points'),
     motivations: str('Their motivations to buy'), reach: str('The platforms and times they are most reachable') }) },
@@ -199,7 +229,10 @@ const SCHEMA = obj({
     interests: list('Interests and behaviours to target'), placements: list('Placements'),
     budget: { type: 'array', description: 'Budget split by objective, whole percentages adding up to 100', items: obj({
       objective: str('The objective'), share: { type: 'integer', description: 'Percent of the budget' } }) },
+    realism: str('Budget realism against the benchmarks; empty where no budget is given'),
     test: str('What to test first') }),
+  confirm: list('To confirm with the client, one point each'),
+  next_question: str('The one question to ask the client next'),
   sources: { type: 'array', description: 'The web pages read and used', items: obj({ url: str('The address'), title: str('A short title') }) }
 });
 const SUBMIT = { name: 'submit_analysis', description: 'Submit the finished brand analysis.', strict: true, input_schema: SCHEMA };
@@ -220,8 +253,27 @@ function tidy(a: any) {
     const drift = 100 - budget.reduce((t: number, b: { share: number }) => t + b.share, 0);
     if (budget.length) budget[0].share += drift;
   }
+  const e = a.entity || {}, f = a.fit || {};
+  const pick = (v: unknown, ok: string[], dflt: string) => ok.indexOf(String(v)) > -1 ? String(v) : dflt;
+  // deno-lint-ignore no-explicit-any
+  const map = (Array.isArray(p.map) ? p.map : []).slice(0, 8).map((x: any) => ({ name: text(x && x.name, 120),
+    kind: pick(x && x.kind, ['direct', 'indirect', 'legacy', 'disruptor'], 'direct'), note: text(x && x.note, 300) }))
+    .filter((x: { name: string }) => x.name);
   return {
-    positioning: { now: text(p.now, 1200), could_own: text(p.could_own, 1200), competitors: cap(p.competitors, 6, 120) },
+    entity: { name: text(e.name, 300), parent: text(e.parent, 200), place: text(e.place, 400) },
+    // deno-lint-ignore no-explicit-any
+    facts: (Array.isArray(a.facts) ? a.facts : []).slice(0, 12).map((x: any) => ({ fact: text(x && x.fact, 400),
+      label: pick(x && x.label, ['official', 'listing', 'third_party'], 'third_party'), confirm: !!(x && x.confirm) }))
+      .filter((x: { fact: string }) => x.fact),
+    works: cap(a.works, 6, 500), weak: cap(a.weak, 6, 500),
+    fit: {
+      // deno-lint-ignore no-explicit-any
+      channels: (Array.isArray(f.channels) ? f.channels : []).slice(0, 6).map((x: any) => ({ channel: text(x && x.channel, 80),
+        priority: pick(x && x.priority, ['first', 'next', 'later'], 'next'), why: text(x && x.why, 400) }))
+        .filter((x: { channel: string }) => x.channel),
+      fix_first: cap(f.fix_first, 5, 400), angle: text(f.angle, 800) },
+    positioning: { now: text(p.now, 1200), could_own: text(p.could_own, 1200), map,
+      competitors: map.map((x: { name: string }) => x.name).slice(0, 6) },
     // deno-lint-ignore no-explicit-any
     audiences: (Array.isArray(a.audiences) ? a.audiences : []).slice(0, 3).map((x: any) => ({
       name: text(x && x.name, 120), who: text(x && x.who, 600), pains: text(x && x.pains, 800),
@@ -230,7 +282,8 @@ function tidy(a: any) {
             opportunities: cap(s.opportunities, 6, 500), threats: cap(s.threats, 6, 500) },
     content: { worked: cap(c.worked, 6, 500), not_worked: cap(c.not_worked, 6, 500), pillars: cap(c.pillars, 6, 300), formats: cap(c.formats, 6, 400) },
     ads: { objectives: cap(d.objectives, 6, 400), ages: cap(d.ages, 6, 200), interests: cap(d.interests, 12, 200),
-           placements: cap(d.placements, 8, 200), budget, test: text(d.test, 600) }
+           placements: cap(d.placements, 8, 200), budget, realism: text(d.realism, 800), test: text(d.test, 600) },
+    confirm: cap(a.confirm, 8, 300), next_question: text(a.next_question, 300)
   };
 }
 const urlKey = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, '').replace(/[?#].*$/, '').replace(/\/$/, '').toLowerCase();
@@ -247,6 +300,18 @@ Deno.serve(async (req) => {
   const clientId = String(body && body.client_id || '');
   if (!/^[0-9a-f-]{36}$/i.test(clientId)) return json({ error: 'bad-request' }, 400, origin);
   const notes = words(body && body.notes, 3000);
+  /* What the team knows up front (2026-10-15, the client analysis
+     playbook): the objective, a monthly ad budget and the ad account. */
+  const inRaw = (body && typeof body.inputs === 'object' && body.inputs) || {};
+  const OBJECTIVES: Record<string, string> = { enquiries: 'Enquiries through a lead form', messages: 'Messages on WhatsApp or Messenger',
+    traffic: 'Website visits or sales', awareness: 'Awareness' };
+  const ACCOUNTS: Record<string, string> = { new: 'New ad account', mature: 'Ad account that has run ads before' };
+  const budgetIn = Number(inRaw.budget);
+  const inputs = {
+    objective: OBJECTIVES[String(inRaw.objective || '')] || null,
+    monthly_ad_budget_rm: isFinite(budgetIn) && budgetIn > 0 && budgetIn <= 10000000 ? Math.round(budgetIn * 100) / 100 : null,
+    ad_account: ACCOUNTS[String(inRaw.account || '')] || null
+  };
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
@@ -412,6 +477,29 @@ Deno.serve(async (req) => {
     const fbPosts = meta.facebook ? ((meta.facebook as Record<string, unknown[]>).posts || []).length : 0;
     const hypothesis = !reps.length && !results.length && !igPosts && !fbPosts && !meta.ads_last_six_months;
 
+    /* The Meta Malaysia benchmarks are Business settings (AD BENCHMARKS),
+       read as the caller and taken as they stand today. */
+    const benchmarks: Record<string, number> = {};
+    const st = await db.rpc('app_settings_read');
+    if (!st.error && st.data && Array.isArray((st.data as Record<string, unknown>).settings)) {
+      const today = String((st.data as Record<string, unknown>).today || new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10));
+      ((st.data as Record<string, unknown>).settings as { key: string; from: string; value: number }[])
+        .filter((r) => /^bench_/.test(r.key) && r.from <= today)
+        .sort((x, y) => (x.from < y.from ? -1 : 1))
+        .forEach((r) => { benchmarks[r.key] = Number(r.value); });
+    }
+    const B = (k: string) => (benchmarks[k] == null ? null : benchmarks[k]);
+    const bench = Object.keys(benchmarks).length ? {
+      market: 'Meta advertising in Malaysia',
+      property_cost_per_result_rm: { tier_1: [B('bench_cpr_low'), B('bench_cpr_mid')], tier_2: [B('bench_cpr_mid'), B('bench_cpr_high')], tier_3: [B('bench_cpr_high'), B('bench_cpr_top')] },
+      messaging_cost_per_result_rm: { low: B('bench_msg_min'), target: B('bench_msg_target'), high: B('bench_msg_max') },
+      lead_form_cost_per_result_rm: { low: B('bench_form_min'), target: B('bench_form_target'), high: B('bench_form_max') },
+      cost_per_1000_impressions_rm: [B('bench_cpm_min'), B('bench_cpm_max')],
+      cost_per_lead_rise_a_year_pct: B('bench_cpl_rise'), reels_share_of_impressions_pct: B('bench_reels_share'),
+      ad_spend_share_of_budget_pct: B('bench_ad_spend_pct'), least_daily_budget_an_ad_set_rm: B('bench_adset_daily')
+    } : null;
+    basis.benchmarks = !!bench;
+
     const brief: Record<string, string> = {};
     const rawBrief = (c.brief && typeof c.brief === 'object') ? c.brief as Record<string, unknown> : {};
     for (const k of ['audience', 'pains', 'pillars', 'tone', 'avoid', 'competitors', 'hooks']) {
@@ -428,6 +516,7 @@ Deno.serve(async (req) => {
       brief: Object.keys(brief).length ? brief : null,
       brand_notes: words(c.brand_notes, 1500) || null,
       team_notes: notes || null,
+      team_inputs: inputs, benchmarks: bench,
       history: hypothesis ? 'little' : 'some',
       published_reports: reports, post_results: results, meta
     };

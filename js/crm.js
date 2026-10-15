@@ -2554,6 +2554,39 @@
     }).join('') + '</dl>';
   }
   function baSec(title, rows) { return '<div class="ba-sec"><h5 class="fsec-h">' + esc(title) + '</h5>' + baFacts(rows) + '</div>'; }
+  /* The client analysis playbook's sections (2026-10-15): drawn only for a
+     version that holds them, so an earlier version reads as it was. */
+  var BA_LABEL = { official: 'Official', listing: 'Listing', third_party: 'Third party' };
+  var BA_KIND = { direct: 'Direct', indirect: 'Indirect', legacy: 'Legacy', disruptor: 'Disruptor' };
+  var BA_WHEN = { first: 'First', next: 'Next', later: 'Later' };
+  function baMap(map) {
+    return '<ul class="ba-list">' + map.map(function (x) {
+      return '<li><span class="ba-name">' + esc(x.name) + ' <span class="chip">' + esc(BA_KIND[x.kind] || x.kind) + '</span></span>' + esc(x.note || '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  function baPlaybook(a) {
+    var e = a.entity || {}, f = a.fit || {}, out = '';
+    var facts = a.facts || [];
+    if (e.name || facts.length) {
+      out += baSec('What it is', [['Entity', esc(e.name || '')]]
+        .concat(e.parent ? [['Parent group', esc(e.parent)]] : [])
+        .concat(e.place ? [['Where', esc(e.place)]] : [])
+        .concat(facts.length ? [['Facts', '<ul class="ba-list ba-facts">' + facts.map(function (x) {
+          return '<li>' + esc(x.fact) + ' <span class="chip">' + esc(BA_LABEL[x.label] || 'Third party') + '</span>' +
+            (x.confirm ? ' <span class="chip-state is-warn">To confirm</span>' : '') + '</li>';
+        }).join('') + '</ul>']] : []));
+    }
+    if ((a.works || []).length || (a.weak || []).length) {
+      out += baSec('What works and what is weak', [['What works', baList(a.works)], ['What is weak', baList(a.weak)]]);
+    }
+    if ((f.channels || []).length || f.angle) {
+      out += baSec('Where ADspace fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
+          return '<li><span class="ba-name">' + esc(x.channel) + ' <span class="chip">' + esc(BA_WHEN[x.priority] || x.priority) + '</span></span>' + esc(x.why || '') + '</li>';
+        }).join('') + '</ul>' : ''],
+        ['Fix before paid traffic', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]]);
+    }
+    return out;
+  }
   function baRead(b) {
     b = b || {};
     var bits = [];
@@ -2595,8 +2628,9 @@
         ['Read from', baRead(v.basis)]
       ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
       (v.hypothesis ? '<p class="msg warn ba-hypo">A starting hypothesis to test</p>' : '') +
+      baPlaybook(a) +
       baSec('Brand positioning', [['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
-        ['Compared with', esc((p.competitors || []).join(', '))]]) +
+        (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]]) +
       '<div class="ba-sec"><h5 class="fsec-h">Target audiences</h5>' + baFacts((a.audiences || []).map(function (s) {
         return [s.name, [['Who they are', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
           .filter(function (x) { return x[1]; }).map(function (x) { return '<p class="ba-line"><span class="ba-k">' + esc(x[0]) + '</span>' + esc(x[1]) + '</p>'; }).join('')];
@@ -2608,7 +2642,9 @@
       baSec('Ad targeting', [['Objectives', baList(ad.objectives)], ['Age bands', esc((ad.ages || []).join(' · '))],
         ['Interests', esc((ad.interests || []).join(' · '))], ['Placements', esc((ad.placements || []).join(' · '))],
         ['Budget by objective', esc((ad.budget || []).map(function (x) { return x.objective + ' ' + x.share + '%'; }).join(' · '))],
-        ['Test first', esc(ad.test || '')]]) +
+        ['Test first', esc(ad.test || '')]].concat(ad.realism ? [['Budget realism', esc(ad.realism)]] : [])) +
+      ((a.confirm || []).length ? baSec('To confirm with the client', [['Points', baList(a.confirm)]]) : '') +
+      (a.next_question ? baSec('Next question', [['Ask', esc(a.next_question)]]) : '') +
       ((v.sources || []).length ? '<div class="ba-sec"><h5 class="fsec-h">Sources</h5><div class="ba-sources">' + v.sources.map(function (x) {
         return /^https:\/\//i.test(x.url || '') ? '<a class="plink" href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || x.url) + '</a>' : '';
       }).join('') + '</div></div>' : '') +
@@ -2651,19 +2687,37 @@
       var left = (q && q.data) || {};
       if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
       if (!left.left) { baMsg(baLimit(left)); return; }
-      var key = 'adspace-analysis-notes:' + c.id;
+      var key = 'adspace-analysis-notes:' + c.id, ikey = 'adspace-analysis-inputs:' + c.id;
+      /* What the team knows is asked up front (2026-10-15, the client
+         analysis playbook), so the analysis never comes back with questions
+         it could have been told; kept in this browser with the notes. */
+      var was = {};
+      try { was = JSON.parse(baKeep(ikey) || '{}') || {}; } catch (e0) { was = {}; }
       window.ADspaceConfirm.ask({
         title: 'Run analysis',
         body: 'Reads the website, public pages and competitors on the web, with the brief, published reports, post results and Meta where linked. ' +
           left.left + (left.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Run',
-        fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }]
+        fields: [
+          { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
+          { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
+            choices: [['', 'Not decided'], ['enquiries', 'Enquiries (lead form)'], ['messages', 'Messages (WhatsApp)'], ['traffic', 'Website visits or sales'], ['awareness', 'Awareness']] },
+          { name: 'account', label: 'Ad account', required: false, value: was.account || '', seg: true,
+            choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
+          { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }],
+        check: function (v) {
+          var b = String(v.budget == null ? '' : v.budget).trim();
+          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Monthly ad budget: a figure above 0.' : '';
+        }
       }, function (v) {
         var notes = String(v.notes || '').trim();
+        var inputs = { objective: v.objective || '', budget: String(v.budget == null ? '' : v.budget).trim(), account: v.account || '' };
         baKeep(key, notes);
+        baKeep(ikey, inputs.objective || inputs.budget || inputs.account ? JSON.stringify(inputs) : '');
         ba.running = c.id;
         paintAnalysis(c);
-        db.functions.invoke('brand-analysis', { body: { client_id: c.id, notes: notes } }).then(function (res) {
+        db.functions.invoke('brand-analysis', { body: { client_id: c.id, notes: notes,
+          inputs: { objective: inputs.objective || null, budget: inputs.budget ? Number(inputs.budget) : null, account: inputs.account || null } } }).then(function (res) {
           var d = res && res.data;
           if (res.error || !d || d.error || !d.analysis) { var e = new Error((d && d.error) || 'ai-failed'); e.d = d; throw e; }
           ba.running = null;
