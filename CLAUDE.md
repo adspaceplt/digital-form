@@ -2914,6 +2914,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   the new row says Added. (`state.rowSaid`).
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
+- A colleague whose group holds My Work at No Access takes no tasks (the
+  user, 2026-10-15, option A: contract staff on sales; no setting of its
+  own): every My Work picker leaves them out (`ADspaceAdmin.takesTasks`,
+  an admin always offered), Team's hand-over offers them for clients,
+  campaigns and reviews alone (`TASK_KINDS`), the noon reminder skips them,
+  and the database refuses them a live assignment or a month to manage
+  (`ops_takes_tasks`, triggers `ops_task_assignees_takes_tasks` and
+  `ops_engagements_takes_tasks`, `no-tasks`;
+  `2026-10-15-tasks-need-my-work.sql`). Work already theirs is left as it
+  is.
 - Every colleague picker on a create form starts on the person creating it
   (Assigned to, a new month's Manager or one with none, a new lead's and a new
   campaign's Person in charge); they change it where someone else takes it.

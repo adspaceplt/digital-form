@@ -662,6 +662,17 @@
     if (typeof m === 'string') return Boolean(SYSTEM.ids[m] || SYSTEM.names[m]);
     return Boolean(m.system || SYSTEM.ids[m.id || m.team_member_id] || (m.name && SYSTEM.names[m.name] && !m.id));
   }
+  /* Who is offered for My Work (2026-10-15, the user: contract staff on
+     sales take no tasks). A colleague whose group holds My Work at No
+     Access is never offered for a task, a month, a meeting or a hand-off of
+     work; an admin always is. The database holds the same rule
+     (`ops_takes_tasks`). A row read without its access map is offered. */
+  function takesTasks(m) {
+    if (!m || isSystem(m)) return false;
+    if (m.is_admin || m.role === 'admin' || !m.access) return true;
+    var lv = m.access.ops;
+    return Boolean(lv) && lv !== 'none';
+  }
   /* VERY IMPORTANT CLIENTS (2026-10-15, the user). Which clients are VIC is
      read once beside me() (`vic_clients()`: the client, since when, who set
      it and the note), so every screen tags a client from this one read and
@@ -5407,6 +5418,7 @@
     ICON: ICON,
     glyph: sectionGlyph,
     isSystem: isSystem,
+    takesTasks: takesTasks,
     /* Very Important Clients (2026-10-15): the one read and the one tag. */
     vic: vicOf,
     vicTag: vicTag,

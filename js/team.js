@@ -531,7 +531,9 @@
         (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
         (self ? ' <span class="tone">You</span>' : '') +
         (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
-        (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
+        /* A line of parts wraps between its parts, never inside one, so Until
+           and its time are read whole (the user, 2026-10-15). */
+        (whoLine(m) ? '<small>' + whoLine(m).split(' · ').map(function (x) { return /^Until /.test(x) ? '<span class="team-part">' + esc(x) + '</span>' : esc(x); }).join(' · ') + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       /* The exception only: Inactive, Access expired, or a card turned off
@@ -682,8 +684,15 @@
      keeps the user's "a person for each kind". */
   var HAND_KEEP = '__keep';
   function handKinds() { return ['clients', 'campaigns'].concat(HELD_KINDS.map(function (k) { return k[0]; })); }
+  /* The kinds that are My Work's go only to a colleague who takes tasks
+     (`ADspaceAdmin.takesTasks`): a group at My Work No Access is offered for
+     clients, campaigns and reviews alone (2026-10-15). */
+  var TASK_KINDS = ['tasks', 'months', 'meetings', 'repeats', 'extensions', 'templates'];
   function handFields(m, own, held) {
-    var people = takers(m).map(function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; });
+    var A = window.ADspaceAdmin;
+    var named = function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; };
+    var people = takers(m).map(named);
+    var workers = takers(m).filter(function (x) { return !A || !A.takesTasks || A.takesTasks(x); }).map(named);
     if (!people.length) return [];
     var kinds = [];
     var add = function (name, label, n) { if (n > 0) kinds.push({ name: name, label: label + ' (' + n + ')' }); };
@@ -691,9 +700,13 @@
     add('campaigns', 'Open campaigns', own.campaigns.length);
     HELD_KINDS.forEach(function (k) { add(k[0], k[1], Number(held[k[0]]) || 0); });
     var keep = ['', 'Keep with ' + m.name];
-    if (kinds.length < 2) return kinds.map(function (k) { return { name: k.name, label: k.label, required: false, choices: [keep].concat(people) }; });
-    return [{ name: 'all', label: 'All their work to', required: false, choices: [keep].concat(people) }].concat(kinds.map(function (k) {
-      return { name: k.name, label: k.label, required: false, choices: [['', 'Same as above'], [HAND_KEEP, 'Keep with ' + m.name]].concat(people) };
+    var whoFor = function (k) { return TASK_KINDS.indexOf(k) > -1 ? workers : people; };
+    if (kinds.length < 2) return kinds.map(function (k) { return { name: k.name, label: k.label, required: false, choices: [keep].concat(whoFor(k.name)) }; });
+    /* All their work goes to one person, so where any of it is My Work's it
+       offers only those who take tasks. */
+    var anyTask = kinds.some(function (k) { return TASK_KINDS.indexOf(k.name) > -1; });
+    return [{ name: 'all', label: 'All their work to', required: false, choices: [keep].concat(anyTask ? workers : people) }].concat(kinds.map(function (k) {
+      return { name: k.name, label: k.label, required: false, choices: [['', 'Same as above'], [HAND_KEEP, 'Keep with ' + m.name]].concat(whoFor(k.name)) };
     }));
   }
   /* Each kind's colleague as chosen: its own pick, else All their work to;

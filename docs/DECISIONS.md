@@ -4060,3 +4060,18 @@ finding fixed at the user's word ("fix all no matter what").
   colleague's address is never shown). The rows were left as stored: the
   page reads them, so no data was rewritten. The card is drawn again when
   the team list answers after it, reading nothing again.
+
+### 2026-10-15 — A colleague without My Work takes no tasks
+- The user, 2026-10-15: contract staff "focusing on sales or whatsoever,
+  not tasks related" should be "excluded from being assigned". Offered A
+  (from the group's My Work level, no new setting) or B (a Takes tasks
+  switch on each group); the user chose A. Every My Work picker offered
+  every active colleague whatever their access, and the noon reminder told
+  each to add tasks. Now a group at My Work No Access is left out of the
+  pickers and the reminder, Team's hand-over offers them only what is not
+  My Work's, and the database refuses an assignment or a month's manager
+  (`no-tasks`). Live data on the day: (Sales) Executive was already at No
+  Access and held no task or month, so nothing needed moving.
+- Same day: the Team row's Until line is kept whole, wrapping before it
+  rather than cut ("Until 1 Oct 2027, 11.59…"); the in-place Assigned to
+  picker in My Work shows its whole label and its focus ring.

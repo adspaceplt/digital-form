@@ -38,7 +38,9 @@
      capacity bars, and still named where it already acted. */
   function pickable() {
     var S = window.ADspaceAdmin;
-    return (state.members || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });
+    return (state.members || []).filter(function (m) {
+      return S && S.takesTasks ? S.takesTasks(m) : !(S && S.isSystem && S.isSystem(m));
+    });
   }
   function clientName(c) { return F.named(c.client_code, c.name); }
   /* A Very Important Client's tag (2026-10-15), from the console's one read. */
@@ -151,6 +153,7 @@
   var SAID = {
     'not-team': 'Team record not found. Contact an admin.',
     'denied': 'You do not have access to do that.',
+    'no-tasks': 'That colleague has no access to My Work, so takes no tasks.',
     'not-found': 'That task is no longer there.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
     'not-live': 'Results are recorded once the post is live.',
@@ -525,7 +528,7 @@
       db.from('ops_workflows').select('id, key, name, active').order('key'),
       db.from('ops_workflow_stages').select('*').order('position'),
       db.from('ops_task_templates').select('*').eq('active', true).order('name'),
-      db.from('team_members').select('id, name, email, active, capacity_minutes_week, staff_code').eq('active', true).order('name'),
+      db.from('team_members').select('id, name, email, active, capacity_minutes_week, staff_code, access, is_admin, role').eq('active', true).order('name'),
       /* The stage decides which list a client is offered on: Client is the
          clients engaged now, Lead the records not yet one. */
       db.from('clients').select('id, name, stage, slug, client_code').order('name')
@@ -2611,7 +2614,7 @@
       sel.disabled = true;
       db.rpc('ops_assign_task', { p_task: t.id, p_owner: pick, p_version: t.version }).then(function (r) {
         var d = r.data;
-        if (r.error || (d && d.error)) { sel.disabled = false; put(); rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
+        if (r.error || (d && d.error)) { sel.disabled = false; put(); rowNote(el, said(r.error ? r.error.message : d.error, t)); return; }
         state.owners[t.id] = nameOf(pick); state.ownerIds[t.id] = pick;
         state.rowSaid = { id: t.id, word: 'Reassigned to ' + nameOf(pick) + '.' };
         done();
