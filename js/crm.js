@@ -5353,7 +5353,7 @@
      looking for a line to quote, and they rarely remember its exact title. */
   function svcMatch(s) {
     if (!svcFind) return true;
-    var hay = [s.name, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
+    var hay = [s.name, s.sku, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
     return hay.indexOf(svcFind) > -1;
   }
 
@@ -5442,6 +5442,9 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
         (diffNow.lines[s.slug] ? ' <span class="chip">' + diffNow.lines[s.slug] + '</span>' : '') + '</b>' +
+        /* The Bukku item code under the name, in the token face, as a
+           client's ID sits under theirs (2026-10-15). */
+        (s.sku ? '<small class="svc-sku">' + esc(s.sku) + '</small>' : '') +
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       /* The price is changed where it is read (ux-audit SVC-1): for whoever
          keeps the card it is the control, as My Work's due date is. */
@@ -5568,6 +5571,7 @@
     $('svcTitle').textContent = s ? 'Edit service' : 'New service';
     $('svcCat').value = s ? s.category : CATS[0];
     $('svcName').value = s ? s.name : '';
+    $('svcSku').value = s ? (s.sku || '') : '';
     $('svcRate').value = s && s.rate != null ? Number(s.rate) : '';
     $('svcUnit').value = s ? (s.unit || '') : '';
     $('svcMin').value = s ? Math.max(1, Number(s.min_months || 1)) : 1;
@@ -5592,17 +5596,28 @@
   $('svcSave').addEventListener('click', function () {
     var name = val('svcName');
     if (!name) { msg('svcMsg', 'A name is required.', 'err'); $('svcName').focus(); return; }
+    /* The SKU is Bukku's item code as typed: letters, digits and . _ / -,
+       one line each (services_sku_idx), optional. */
+    var sku = val('svcSku');
+    if (sku && !/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,39}$/.test(sku)) {
+      msg('svcMsg', 'Enter the SKU as letters, digits and . _ / - only.', 'err'); $('svcSku').focus(); return;
+    }
     var sp = readSpec();
     if (sp.err) { msg('svcMsg', sp.err, 'err'); if ($(sp.at)) $(sp.at).focus(); return; }
-    var row = { category: $('svcCat').value, name: name,
+    var row = { category: $('svcCat').value, name: name, sku: sku || null,
                 rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null,
                 min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null, spec: sp.spec };
     var after = function (r) {
-      if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
+      if (r.error) {
+        var dup = /services_sku_idx|duplicate key/i.test(r.error.message || '');
+        msg('svcMsg', dup ? 'That SKU is already on another line.' : r.error.message, 'err');
+        if (dup) $('svcSku').focus();
+        return;
+      }
       if (!(r.data || []).length) { msg('svcMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingSvc ? 'service.changed' : 'service.added', name, editingSvc
         ? changed(Object.assign({}, editingSvc, { spec: specWord(editingSvc.spec) }), Object.assign({}, row, { spec: specWord(row.spec) }),
-            [['category', 'Category'], ['name', 'Name'], ['rate', 'Rate'], ['unit', 'Unit'],
+            [['category', 'Category'], ['name', 'Name'], ['sku', 'SKU'], ['rate', 'Rate'], ['unit', 'Unit'],
             ['min_months', 'Minimum months'], ['detail', 'Inclusions'], ['spec', 'In quotes']])
         : row.category);
       shutSheet('svcBox'); editingSvc = null;
