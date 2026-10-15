@@ -142,6 +142,7 @@
     'bad-eval-date': 'The date of evaluation falls on or after the first day of the month reviewed, and not after today.',
     'bad-payload': 'That could not be saved.',
     'bad-category': 'Pick a category.',
+    'bad-client': 'Pick a client from the list.',
     'bad-severity': 'Pick a lower level than the issue has now.',
     'what-needed': 'Say what happened.',
     'reason-needed': 'A reason is needed.',
@@ -1001,9 +1002,9 @@
       if (b.late) flags.push('Reported late');
       var voiding = st.editing === 'void:' + b.id;
       return '<div class="perf-breach" data-breach="' + esc(b.id) + '">' +
-        '<div class="perf-breach-top"><b>' + esc(SEV_WORD[b.severity]) + '</b><span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span></div>' +
+        '<div class="perf-breach-top"><b>' + esc(SEV_WORD[b.severity]) + '</b>' + vicMark(b) + '<span class="perf-breach-pts">' + esc(num(b.deduction)) + '</span></div>' +
         '<p class="perf-breach-what">' + esc(b.what) + '</p>' +
-        '<small>' + esc([dateWord(b.occurred_on), BREACH_CAT[b.category]].concat(flags).join(' · ')) + '</small>' +
+        '<small>' + esc([dateWord(b.occurred_on), BREACH_CAT[b.category], b.client_name].concat(flags).filter(Boolean).join(' · ')) + '</small>' +
         (b.evidence && manage() ? '<small class="perf-breach-ev">' + esc(b.evidence) + '</small>' : '') +
         (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Withdraw</button>' : '') +
         (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Why is it withdrawn?</label>' +
@@ -1016,6 +1017,24 @@
       ? '<button class="btn btn-quiet btn-sm qcard-act" id="pvBreachAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add issue</button>' : '';
     var form = draft && st.editing === 'breach' ? breachForm(r) : '';
     return card('Issues this month', empty + rows + form, act, 'pvBreaches');
+  }
+  /* An issue on a VIC client's work (2026-10-15): the gold tag, VIC client
+     and its multiplier, stamped when it was logged. */
+  function vicWord(b) { return b && b.vic ? 'VIC client · ×' + num(b.vic_x || 2) : ''; }
+  function vicMark(b) {
+    return b && b.vic ? '<span class="chip-vic perf-vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8 12.5l4-6.5 4 6.5 4.5-4-1.8 10H5.3z"/></svg>' + esc(vicWord(b)) + '</span>' : '';
+  }
+  /* The clients an issue may name, read once a visit, code first; a read
+     refused leaves None alone. */
+  var issueClients = null;
+  function readIssueClients(then) {
+    if (issueClients || !db) { then(); return; }
+    db.from('clients').select('id, name, client_code').then(function (res) {
+      var F = window.ADspaceForm;
+      issueClients = (res && !res.error && res.data || []).slice().sort(F && F.byClient ? F.byClient : function () { return 0; });
+      then();
+    }).catch(function () { issueClients = []; then(); });
   }
   function breachForm(r) {
     var today = ADspaceClock.today(), last = ADspaceClock.addDays(ADspaceClock.addMonths(String(r.period).slice(0, 7), 1) + '-01', -1);
@@ -1031,6 +1050,11 @@
         Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + less(k)) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
       '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
+      '<label class="field-label" for="pvBClient">Client</label><select class="select" id="pvBClient"><option value="">None</option>' +
+        (issueClients || []).map(function (c) {
+          var F = window.ADspaceForm, A = window.ADspaceAdmin;
+          return '<option value="' + esc(c.id) + '">' + esc((F && F.named ? F.named(c.client_code, c.name) : c.name) + (A && A.vic && A.vic(c.id) ? ' · VIC' : '')) + '</option>';
+        }).join('') + '</select>' +
       '<label class="field-label" for="pvBWhat">What happened</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
       '<label class="field-label" for="pvBEv">Reference</label><textarea class="input" id="pvBEv" rows="1" data-oneline maxlength="500" placeholder="Optional"></textarea>' +
       '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Reported late' + less('late') + '</span></label>' +
@@ -1279,7 +1303,7 @@
       st.editing = 'dispute'; paintSheet();
       var f = $('pvDisputeForm'); if (f) f.scrollIntoView({ block: 'nearest' });
     });
-    on('pvBreachAdd', function () { st.editing = 'breach'; paintSheet(); });
+    on('pvBreachAdd', function () { readIssueClients(function () { st.editing = 'breach'; paintSheet(); }); });
 
     Array.prototype.forEach.call($('pvBody').querySelectorAll('[data-a="cancel"]'), function (b) {
       b.addEventListener('click', function () { st.editing = null; paintSheet(); });
@@ -1321,12 +1345,13 @@
       if (!what) { msg('pvMsg', said({ error: 'what-needed' }), 'err'); $('pvBWhat').focus(); return; }
       var pay = { occurred_on: $('pvBDate').value, category: $('pvBCat').value, severity: Number($('pvBSev').value),
                   what: what, evidence: $('pvBEv').value.trim(), late: $('pvBLate').checked };
+      if ($('pvBClient') && $('pvBClient').value) pay.client_id = $('pvBClient').value;
       if ($('pvBRep').value) pay.repeated = $('pvBRep').value === 'yes';
       var go = function () {
         call('perf_breach_log', { p_token: token, p_member: r.team_member_id, p_payload: pay }, function (d) {
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
           st.editing = null; sheetDirty = true;
-          reread(function () { msg('pvMsg', 'Added. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + '.', 'ok'); });
+          reread(function () { msg('pvMsg', 'Added. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + (d.vic ? ', a VIC client\'s' : '') + '.', 'ok'); });
         });
       };
       /* A breach against a month nobody has started starts it, so the
@@ -1908,15 +1933,16 @@
          widest entry; what happened takes the rest. */
       var fit = function (ws, font) { return Math.max.apply(null, ws.map(function (s) { return p.width(s, TY.cell, font || book); })) + PADX * 2 + 2; };
       var dW = fit(['30 Sept 2026']), ptW = fit(['Points'], reg) + PADX * 2;
-      var lvW = fit(Object.keys(SEV_WORD).map(function (k) { return SEV_WORD[k]; }).concat(Object.keys(BREACH_CAT).map(function (k) { return BREACH_CAT[k]; })));
+      var lvW = fit(Object.keys(SEV_WORD).map(function (k) { return SEV_WORD[k]; }).concat(Object.keys(BREACH_CAT).map(function (k) { return BREACH_CAT[k]; }))
+        .concat(br.filter(function (b) { return b.vic; }).map(vicWord)));
       table([{ w: dW }, { w: lvW }, { w: W - dW - lvW - ptW }, { w: ptW, align: 'center' }],
         ['Date', 'Level', 'What happened', 'Points'],
         br.map(function (b) {
           var flags = [];
           if (b.repeated) flags.push('Repeated in the quarter' + less('repeat'));
           if (b.late) flags.push('Reported late' + less('late'));
-          return [dateWord(b.occurred_on), SEV_WORD[b.severity] + '\n' + BREACH_CAT[b.category],
-                  b.what + (flags.length ? ' ' + flags.join('. ') + '.' : ''), num(b.deduction)];
+          return [dateWord(b.occurred_on), SEV_WORD[b.severity] + '\n' + BREACH_CAT[b.category] + (b.vic ? '\n' + vicWord(b) : ''),
+                  b.what + (b.client_name ? ' (' + b.client_name + ')' : '') + (flags.length ? ' ' + flags.join('. ') + '.' : ''), num(b.deduction)];
         }));
       y -= SP.line;
       para('Each issue is recorded once, under the area it affected most. Putting it right adds no points back, but can keep it from going further; the issue stays on the record.', TY.small, book, SOFT);
@@ -2583,6 +2609,8 @@
     ['Extra points off, and the limit', [['ded_repeat', 'Repeated in the quarter', 'points', 'Extra points off, repeated'],
       ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
       ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
+    /* An issue on a VIC client's work (2026-10-15): its points times this. */
+    ['VIC clients', [['ded_vic', 'Points on an issue on a VIC client\'s work, times', 'times', 'Points times, VIC client']], '', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
     ['Reminders (0 for none)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
       ['remind_again_days', 'Days after the 1st to remind again', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
@@ -2610,6 +2638,7 @@
     if (kind === 'days') return Number(v) + (Number(v) === 1 ? ' day' : ' days');
     if (kind === 'remind') return Number(v) === 0 ? 'None' : Number(v) + (Number(v) === 1 ? ' day' : ' days');
     if (kind === 'points') return Number(v) + (Number(v) === 1 ? ' point' : ' points');
+    if (kind === 'times') return '×' + Number(v);
     return String(Number(v));
   }
   /* A label read back without its unit, which the value then carries. */
@@ -2699,7 +2728,7 @@
       var v = /^\d+(\.\d{1,2})?$/.test(raw) ? Number(raw) : NaN;
       if (isNaN(v) || (kind === 'count' && (v > 6 || v % 1)) || ((kind === 'score' || kind === 'pct' || kind === 'points') && v > 100) ||
           (kind === 'units' && v > 10) || (kind === 'days' && (v < 1 || v > 30 || v % 1)) ||
-          (kind === 'remind' && (v > 14 || v % 1))) { bad = el; return; }
+          (kind === 'remind' && (v > 14 || v % 1)) || (kind === 'times' && (v < 1 || v > 10))) { bad = el; return; }
       if (String(v) !== String(Number(el.getAttribute('data-was')))) vals[k] = v;
     });
     if (bad) {

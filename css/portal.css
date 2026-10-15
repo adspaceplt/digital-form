@@ -12702,3 +12702,5 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 .ovw-att-what b .chip-vic, .srow-name .chip-vic { margin-left: 6px; }
 #wsVicTag:empty { display: none; }
 .bcard-title .chip-vic { margin-left: 6px; vertical-align: 1px; }
+/* An issue on a VIC client's work names it beside its level (2026-10-15). */
+.perf-breach-top .perf-vic { margin-right: auto; }
