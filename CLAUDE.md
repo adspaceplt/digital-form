@@ -800,7 +800,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   away: CloudFront refuses a file sent two passes, which a client's link
   opened beside the console left (2026-10-12); a file refused on a folder
   another page left a pass on loads again once it is taken away
-  (`ADspaceMedia.renew`), and Add assets' check that the CDN serves a stored
+  (`ADspaceMedia.renew`). A colleague's pass is never taken away by a client
+  page: a client page opened while a colleague's pass is live (the team
+  previewing a link in the console's browser) sets no pass of its own and
+  draws on the colleague's, and the console takes away every folder a client
+  page left each time it asks, fresh or not (2026-10-15, the second outage:
+  the fix of 2026-10-12 covered the client page first, never the console
+  first; `tests/mediapass.js` holds both orders). Add assets' check that the CDN serves a stored
   file reads it with the pass, asked again once; with the pass on, a file
   S3 took is never refused by that check. An answer in the earlier
   shape (one pass over `content/`, no `passes`) is set on the root as before,
@@ -5294,4 +5300,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - **Replies to the user are corporate, short and instructions first**: what
   changed, what it means for them, what they must do. No narration, no essays.
 - The same error twice is a stop: name the cause, never try a third time.
+- A fault between two pages, tabs or sides (a cookie, a pass, a lock) is
+  fixed and tested in both orders, never only the one reported. A file that
+  will not load is tested at its source before any page is blamed: ask
+  `media-pass` as the page does and fetch the file with its cookies
+  (refused without, served with, is a browser fault). The media pass broke
+  this way twice (2026-10-12, 2026-10-15).
   Partial work is labelled partial, never reported as done.

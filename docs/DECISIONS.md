@@ -4075,3 +4075,24 @@ finding fixed at the user's word ("fix all no matter what").
 - Same day: the Team row's Until line is kept whole, wrapping before it
   rather than cut ("Until 1 Oct 2027, 11.59…"); the in-place Assigned to
   picker in My Work shows its whole label and its focus ring.
+
+### 2026-10-15 — The media pass broke a second time, the other way round
+- The user, 2026-10-15: every file under content/ in the console stopped
+  loading ("its serious attention needed"; "This is the second time this
+  media pass errors happened. Could you remember your mistakes"). Found:
+  `media-pass` answered 200 to every call, and with its pass each file
+  loaded from mycdn.adspace.me (images, the .mov originals, their .web.mp4
+  copies), without it 403; so the browser held the wrong cookies. The
+  console's colleague pass covers /content/; a client link opened in the
+  same browser (the team previewing Laman Citra's selection page) took
+  that pass away and set its own folders, and the console's files then
+  failed. The fix of 2026-10-12 had covered only the client page opened
+  first, then the console.
+- Now a client page leaves a live colleague's pass alone and sets none,
+  drawing on it; the console clears every folder a client page left each
+  time it asks. `tests/mediapass.js` asserts the console-first order with a
+  stand-in CDN that refuses none or two passes, and fails on the code
+  before the fix.
+- The lesson, in CLAUDE.md's guardrails: a fault between two pages is
+  fixed and tested in both orders; a file that will not load is tested at
+  its source (the pass and the CDN) before a page is blamed.
