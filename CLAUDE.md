@@ -87,7 +87,11 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - Every shell command runs without a permission prompt (`.claude/settings.json`
   `Bash`; the user, 2026-10-10: "Auto allow bash"), as do the read-only GitHub
   and Supabase lookups (workflow runs, a PR, edge functions, logs,
-  migrations; 2026-10-04). So is a release's own work (the user,
+  migrations; 2026-10-04). Supabase's logs are read only while a fault is
+  being found, for the shortest window that holds it, never to confirm a
+  deploy (the Pages run and a live read do that): every log read counts
+  against the organisation's log query allowance (the user, 2026-10-15). So
+  is a release's own work (the user,
   2026-10-11: "auto merge all PRs and allow all sessions"): opening,
   updating and merging a PR, applying its migration and deploying its edge
   function, in the order the release states, and starting or messaging a
