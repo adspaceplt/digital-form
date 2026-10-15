@@ -3561,7 +3561,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     report made puts it In progress under its maker; in review, confirmed
     or published and not yet sent, Waiting; marked as sent, Review. Done is
     the owner's own press: a finished or cancelled task never moves, nothing
-    moves one to Done, and a white-label brand's report leaves it alone.
+    moves one to Done, and a white-label brand's report leaves it alone; a
+    report given a brand after it was made puts the task back to To do
+    under the month's manager (unless another of the client's own reports
+    in the month holds it), and one given back to its client takes it
+    again (trigger `sm_reports_brand_task`, `2026-10-15-white-label-task.sql`).
     Each move is filed on the task with `report_id`; a fault never fails
     the report's write. A draft report deleted puts its unfinished task
     back to To do, filed Report deleted (`sm_reports_task_reset`,
@@ -3628,7 +3632,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `clients_white_label_logo` too; filed `client.brand`). Both the tick and
     the report's choice are Reports: White label at Work (a granted part;
     `clients_white_label_guard`, the Brand sheet's Reports section drawn only
-    for it). Brands (`2026-10-07-white-label-brands.sql`): a white-label
+    for it). The Brand pane reads it as one White label group (`#crmWlBrands`:
+    White label, Wide logo, then Brands with Add brand; 2026-10-15). Brands (`2026-10-07-white-label-brands.sql`): a white-label
     client keeps a saved list (`client_brands`, RLS on, no policy, no
     grant; `client_brands_list`, `client_brand_save` at Reports: White
     label; unique within the client in any case, `taken`; stood down, never
@@ -3636,8 +3641,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `client.brand`), on its Brand with Add brand and each brand's ⋯ Rename /
     Set inactive. A report is its client plus a brand (`sm_reports.brand_id`;
     the client's own has none): one a client, kind, period and brand
-    (`sm_reports_client_brand_period_idx`), New report's For (the client or
-    an active brand, `sm_report_create_for`), the head ⋯'s White label (any
+    (`sm_reports_client_brand_period_idx`), New report's Client list (each
+    active brand straight under its client, `{client} › {brand} · White
+    label`, value `b:{brand id}`; one pick, no For field; the user,
+    2026-10-15; `sm_report_create_for`), the head ⋯'s White label (any
     report not published; `sm_report_brand`, `exists`, `bad-brand`, filed
     from and to), accounts carried from the same brand's last report and
     the AI quota counted by brand (`ai_drafts.brand_id`, filled by
