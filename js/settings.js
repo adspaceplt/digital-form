@@ -58,8 +58,11 @@
     term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct] };
   var SPECS = {
     details: { title: 'Details form', keys: [['details_form_days', 'Open for (days)', 'quote', '', 'Open', per('day')]] },
-    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', '', 'Lead', per('hour')],
-      ['proposal_followup_days', 'A proposal waits (days)', 'days', '', 'Proposal', per('day')]] },
+    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', 'Every client', 'Lead', per('hour')],
+      ['proposal_followup_days', 'A proposal waits (days)', 'days', 'Every client', 'Proposal', per('day')],
+      /* A VIC's own, shorter (2026-10-15). */
+      ['vic_lead_followup_hours', 'A VIC lead waits (hours)', 'hours', 'VIC clients', 'VIC lead', per('hour')],
+      ['vic_proposal_followup_days', 'A VIC proposal waits (days)', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
     /* The list is js/admin.js's (the Services bar asks the same sheet). */
     tax: { title: 'Tax and terms', keys: (bridge.TAX_KEYS || []).map(function (k) { return k.concat(TAX_WORD[k[0]]); }) },
     due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
@@ -189,7 +192,8 @@
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
-        meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days')]) },
+        meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
+          num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
       /* The client's details form (2026-10-14, ux-audit SET-9: it sat in
          Tax and terms). */
       biz && { id: 'details', name: 'Details form', kind: 'edit',

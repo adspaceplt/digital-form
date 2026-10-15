@@ -3964,3 +3964,15 @@ finding fixed at the user's word ("fix all no matter what").
 - Not wanted (the user): a default High priority for VIC work; tasks are
   preplanned. Follow-up limits, reminders and the performance weighting
   ship as their own releases.
+
+### 2026-10-15 — A VIC lead is followed up sooner, and a VIC client's work leads the reminders
+- The user's item 10: two Business settings, `vic_lead_followup_hours` (24)
+  and `vic_proposal_followup_days` (7), edited in Settings' Follow-up limits
+  under their own heading (VIC clients), read by `staleH(c)` for a VIC
+  client wherever a lead's or proposal's wait is judged (the list, the
+  Dashboard's cold leads, the sales figures).
+- Task reminders name a VIC client's tasks first and count them apart. A
+  VIC task that falls overdue is told at once even inside
+  `task_remind_hours`: the rule is "became overdue after this colleague's
+  last reminder" (the earlier of its priority's deadline and its due day's
+  end), so it is told once, with no table of its own to remember it.

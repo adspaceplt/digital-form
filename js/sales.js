@@ -63,7 +63,8 @@
       if (LEADS[c.stage]) {
         f.pipeline[c.stage].push(c);
         var since = new Date(c.stage_since || c.created_at).getTime();
-        if (STALE[c.stage] && (now - since) / 3600000 > STALE[c.stage]) f.pipeline.cold.push(c);
+        var lim = window.ADspaceCRM.staleH(c)[c.stage];
+        if (lim && (now - since) / 3600000 > lim) f.pipeline.cold.push(c);
       }
       if (c.stage === 'paused') f.pausedNow.push(c);
       if (c.stage === 'active') f.activeNow.push(c);

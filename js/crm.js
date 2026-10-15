@@ -253,12 +253,15 @@
      team to ignore the mark. */
   /* The two limits are settings an admin changes (the Clients bar's ⋯,
      Follow-up limits; `app_settings`, 2026-10-05), read in hours. */
-  function staleH() {
+  /* A VIC lead waits less (2026-10-15): its own two limits, Business
+     settings beside the standard ones, for a client that is VIC. */
+  function staleH(c) {
     var S = window.ADspaceMoney.setting;
+    if (c && isVic(c.id)) return { lead: S('vic_lead_followup_hours'), proposal: S('vic_proposal_followup_days') * 24 };
     return { lead: S('lead_followup_hours'), proposal: S('proposal_followup_days') * 24 };
   }
   function isStale(c) {
-    var limit = staleH()[(c && c.stage) || 'lead'];
+    var limit = staleH(c)[(c && c.stage) || 'lead'];
     if (!limit || !c || !c.stage_since) return false;
     var t = Date.parse(c.stage_since);
     return !isNaN(t) && (Date.now() - t) / 3600000 >= limit;
