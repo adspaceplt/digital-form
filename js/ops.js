@@ -6402,7 +6402,11 @@
       };
       var op = row.querySelector('[data-a="open"]');
       if (op) op.addEventListener('click', function () {
-        history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(e.client_id) + '&tab=checklists&list=' + encodeURIComponent(key));
+        /* The client's address is its slug, as every other link writes it. */
+        var c0 = (state.clients || []).filter(function (c) { return c.id === e.client_id; })[0] ||
+          (e.clients && e.clients.slug ? e.clients : null);
+        history.replaceState(null, '', '/admin/?s=clients&client=' + encodeURIComponent((c0 && c0.slug) || e.client_id) +
+          '&tab=checklists&list=' + encodeURIComponent(key));
         if (bridge.show) bridge.show('clients');
       });
       var na = row.querySelector('[data-a="na"]');
