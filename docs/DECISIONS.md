@@ -3816,3 +3816,19 @@ finding fixed at the user's word ("fix all no matter what").
   reminder goes to whoever is still active.
 - Left as it was: a `last-admin` refusal after the hand-over leaves the
   work moved and the colleague in place (the page names the refusal).
+
+### 2026-10-15 · Brand analysis no longer waits for the brief; the checklist runs it
+- The user: the analysis used to need only the brand, its website and
+  profiles; the portal asked for the Content brief first, though the
+  website, Facebook and Instagram were filled and Meta linked, and the
+  Brand pane sat two tabs from the checklist ("its here and there linked
+  and not in proper sequence"). Chose: the analysis fills the brief, and
+  the checklist runs the analysis right there.
+- `brand-analysis` refuses `no-source` (no website, handle or Meta link)
+  in place of `no-brief`, and returns a `brief` part; confirming a version
+  fills each empty part of the brief (never one written by hand).
+- The checklist's Write with AI, with no confirmed analysis, runs it under
+  the same press: read in a sheet, confirmed with the declaration, then the
+  checklist is written. Captions and scripts keep their gate.
+- The tests caught the Brand pane redraw erasing the confirm's Undo line;
+  the line is now drawn after the brief is read again.

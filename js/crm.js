@@ -1197,7 +1197,8 @@
     if (parts.indexOf('checklists') > -1 && window.ADspaceChecklists && state.client &&
         (visit || ckFor !== state.client.id)) {
       ckFor = state.client.id;
-      window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg, undo: undoBar });
+      window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg, undo: undoBar,
+        brief: function (filled) { if (filled.length) { ba.id = null; briefAgain(state.client); } } });
     }
     /* A part named by itself, below its tab's first, is brought into view. */
     if (!TABS[key] && parts[0] !== key) {
@@ -2563,7 +2564,8 @@
     'ai-incomplete': 'No analysis came back. Try again.',
     denied: 'This needs Clients at View.',
     'client-scope': 'This client is outside your access.',
-    'not-found': 'This analysis is no longer available.'
+    'not-found': 'This analysis is no longer available.',
+    'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
   };
   function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
   function baClock(iso) { return iso ? ADspaceClock.clock(iso) : ''; }
@@ -2721,12 +2723,11 @@
     baMsg('');
     btn.disabled = true;
     var AD = window.ADspaceAdmin;
-    /* The Content brief first (2026-10-12): the analysis reads it, and the
-       brief is on this pane, so the line names what to fill in. */
-    Promise.all([db.rpc('ai_analysis_left'), AD.brandGate(c.id, false)]).then(function (both) {
+    /* No brief first (2026-10-15): the analysis writes it, from the
+       website, the handles and Meta; confirming fills what is empty. */
+    Promise.all([db.rpc('ai_analysis_left')]).then(function (both) {
       var q = both[0];
       btn.disabled = false;
-      if (both[1]) { AD.brandSay($('crmAnalysisMsg'), both[1].text, null); return; }
       var left = (q && q.data) || {};
       if ((q && q.error) || left.error) { var x = new Error(q && q.error ? q.error.message : left.error); throw x; }
       if (!left.left) { baMsg(baLimit(left)); return; }
@@ -2772,11 +2773,23 @@
           ba.running = null;
           paintAnalysis(c);
           if (state.client !== c) return;
-          if (e && e.message === 'no-brief') AD.brandSay($('crmAnalysisMsg'), AD.brandWords('no-brief', e.d && e.d.missing), null);
-          else baMsg(baSaid(e));
+          baMsg(baSaid(e));
         });
       });
     }).catch(function (e) { btn.disabled = false; baMsg(baSaid(e)); });
+  }
+  /* The brief a confirmed analysis filled, read back onto the record. */
+  /* The Brand pane drawn again with the brief the analysis filled; `then`
+     runs once it is drawn (it redraws the analysis's own box). */
+  function briefAgain(c, then) {
+    var done = function () { if (then) then(); };
+    db.from('clients').select('brief').eq('id', c.id).maybeSingle().then(function (r) {
+      if (r && !r.error && r.data) {
+        c.brief = r.data.brief;
+        if (state.client === c) paintBrandRead(c);
+      }
+      done();
+    }).catch(done);
   }
   function confirmAnalysis(c, v, on) {
     var go = function () {
@@ -2785,7 +2798,12 @@
         if ((q && q.error) || d.error) { baMsg(q && q.error ? baSaid(q.error) : BA_SAID[d.error] || 'Not saved.'); return; }
         ba.versions = (ba.versions || []).map(function (x) { return x.id === d.id ? d : x; });
         paintAnalysis(c);
-        undoBar(on ? 'Brand analysis confirmed.' : 'Confirmation withdrawn.', function () { confirmAnalysis(c, d, !on); }, $('crmAnalysisMsg'));
+        var filled = d.filled || [];
+        var said = function () {
+          undoBar(on ? 'Brand analysis confirmed.' + (filled.length ? ' Content brief filled: ' + filled.join(', ') + '.' : '') : 'Confirmation withdrawn.',
+            function () { confirmAnalysis(c, d, !on); }, $('crmAnalysisMsg'));
+        };
+        if (filled.length) briefAgain(c, said); else said();
       }).catch(function (e) { baMsg(baSaid(e)); });
     };
     baMsg('');
