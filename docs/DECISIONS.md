@@ -3555,3 +3555,30 @@ finding fixed at the user's word ("fix all no matter what").
   portal's foot as static markup. Left as decided: the front door's order
   (FRONT-1, 2026-09-28) and the 404's Visit website (NOTFOUND-2,
   2026-09-21).
+
+### 2026-10-15 · New script held to Save; bars green only once complete; Accept caption's Undo puts the round back
+- New script, as Add script already did, opens its editor and stores
+  nothing until Save: Cancel left an empty numbered script on the month and
+  the client's link. Write with AI on a script not yet saved had two ways
+  open: send the fields with no row, or save once first. `script-draft`
+  reads the script, its client and its month as the caller and claims the
+  use against the script's row, so a writer with no row would mean a second
+  path in the function; the smaller change is the existing one (the row is
+  made once, `video_script_new` with the press's key) said in the Write
+  with AI question itself ("The new script is saved first, taking its
+  number."), so nothing is stored without the colleague's press.
+- `.railbar-fill` was green at any share, so a profile at 75% read as done
+  (audit CAMP-12). It is the ink fill while it fills and green (`is-done`)
+  only at 100%, one rule for Clients' Profile, a set's approvals and a
+  campaign's selection.
+- Accept caption makes round N+1 (`posts_revision`). Its Undo wrote the old
+  caption back, which the trigger rightly read as a correction of N+1,
+  nobody having decided on it, so the client was asked about a "new" round
+  holding the caption they had asked to change. A page never writes
+  `round`, so the Undo is `review_caption_undo(p_post, p_round, p_caption,
+  p_caption_zh)` (`2026-10-15-accept-caption-undo.sql`): Content Review
+  sets at Work, refused `moved` unless the post is on p_round + 1 with no
+  decision on it, the caption and round put back. Round N's decision and
+  its `post_versions` row stand: they describe the caption on show again.
+  Order: the page (which falls back to the caption alone where the
+  function is missing), then the migration; rollback drops the function.

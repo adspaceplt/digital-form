@@ -195,7 +195,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
 | Counts and money | `.tallies` > `.tallygroup` > `.tally` > `.tally-cell` (`is-total`, `is-warn`) |
-| Completeness | `.ringline` > `.ring` + "2 of 4" |
+| Completeness | `.ringline` > `.ring` + "2 of 4"; a bar (`.railbar-fill`) in ink while it fills, green (`is-done`) only once complete |
 | A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`): `.rec-id` identity, `.rectabs` panes, `.rec-rail` of `.railblock`s |
 | A record with no artwork (a task) | `.rec-id-plain`: the number as a token (copy control) heading the record, no mark |
 | One record with steps | `.kcard` > `.kcard-head` (name, then summary, then the state beside the ⋯) + `.kstep` |

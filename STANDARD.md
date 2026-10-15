@@ -589,8 +589,7 @@ Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - 2026-10-15, on main at 9320c5f (found by the public pages release):
   `tests/reports.js` Select reports on Published and on Confirmed fails (the
-  bulk bar's Mark as sent / Publish), and `tests/sets.js` fails on a
-  `.asknote` locator that now meets the month sheet's `#engRepNote` too.
+  bulk bar's Mark as sent / Publish).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
