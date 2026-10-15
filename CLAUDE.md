@@ -4107,6 +4107,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   price on a line is changed where it is read (`ADspaceAsk.rename`, empty is
   On quote), into the draft as the sheet's Save is.
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
+- A line carries its Bukku item code (`services.sku`,
+  `2026-10-15-service-sku.sql`; the user, 2026-10-15): typed in the line's
+  sheet beside Category (letters, digits and . _ / -, 40 at most,
+  optional), one line each ignoring case (`services_sku_idx`, "That SKU is
+  already on another line."), shown under the name in the token face
+  (`.svc-sku`) and found by the Services search and console search; filed
+  from and to; not part of `rate_card_draft`, so it never marks the card
+  Changed. Shown on the rate card alone, never on a quotation, letter or
+  PDF.
 - A line leaves by Set inactive, then Delete permanently (Manage). The delete is
   refused while any live `client_services` line names the slug, and the refusal
   says how many.

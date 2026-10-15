@@ -392,12 +392,12 @@
       } },
     { key: 'services', head: 'Services', can: function () { return may('services'); },
       read: function (q) {
-        return read(db.from('services').select('slug, name, category, active')
-          .ilike('name', '%' + q + '%').order('position').limit(LIMIT));
+        return read(db.from('services').select('slug, name, sku, category, active')
+          .or(any(['name', 'sku'], q)).order('position').limit(LIMIT));
       },
       row: function (s) {
         return {
-          id: 'service-' + s.slug, name: s.name, code: '',
+          id: 'service-' + s.slug, name: s.name, code: s.sku || '',
           meta: [s.category, s.active === false ? 'Inactive' : ''],
           open: function () { go('/admin/?s=services', 'services', ['svcFind', s.name]); }
         };

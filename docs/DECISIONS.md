@@ -3648,3 +3648,10 @@ finding fixed at the user's word ("fix all no matter what").
   term discount with the figure in its Percentage field alone (the user:
   "just show the numbers changed based on the term").
 
+### 2026-10-15 · Rate card lines carry their Bukku SKU
+- The user: "can the services or packages add the SKU code"; chose typed to
+  match Bukku, shown on the rate card (console) only.
+- Kept out of the version snapshot and the draft comparison: it is a
+  reference to the accounting system, not a priced fact, so editing it never
+  asks for a new version.
+
