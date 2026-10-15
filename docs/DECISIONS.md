@@ -3731,3 +3731,23 @@ finding fixed at the user's word ("fix all no matter what").
   acceptance lists Monthly incl. SST, Minimum term, First month due and
   Total for the term incl. SST, with no Item / Value head.
 - Only the drawing changed: the figures `issue_letter` keeps are the same.
+
+### 2026-10-15 — The quotation website keeps a visitor to their own lead (audit S1, S2, I1, I2)
+- The audit of the releases since 13 October found that a lead was reused
+  when the email *or* the number matched, so anybody knowing one of a real
+  lead's details filed a quotation under it, read its name back and, with
+  Proceed, attached billing details the team could copy into Billing.
+- Now a lead is reused only where one contact holds both; anyone else gets
+  a lead of their own and the team merges. The visitor reads the brand they
+  typed, kept in the quotation's contact; the team's notice still names the
+  client the quotation is filed under.
+- A number is read as `wa_number` reads it (eight digits Singapore, nine or
+  ten from 1 a Malaysian mobile), on the page and in the database, so
+  `8123 4567` and a lead keyed `012…` are recognised.
+- Only the selection keys `quote_price` reads are kept, bounded; the
+  five-a-day count runs under a lock on the email and the number.
+- `quote-request` refuses every request while `TURNSTILE_SECRET` is unset
+  (the user confirmed it set on 2026-10-15): the per-contact count counts
+  whatever is typed, so it was never a guard alone.
+- A Singapore lead proceeds with its UEN; the 12-digit number stays for
+  Malaysia.

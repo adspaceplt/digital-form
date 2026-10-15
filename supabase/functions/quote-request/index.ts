@@ -11,12 +11,14 @@
  *
  * Cloudflare Turnstile: with the secret `TURNSTILE_SECRET` set (the same
  * secret key as the dashboard's CAPTCHA protection, docs/SIGN-IN-SECURITY.md)
- * a request without a token Cloudflare accepts is refused (`captcha`). Until
- * it is set the database's own limit is the only guard.
+ * a request without a token Cloudflare accepts is refused (`captcha`). With
+ * the secret unset every request is refused (`captcha`): the database's
+ * five-a-day count is per contact, and a contact is whatever is typed, so it
+ * is never the only guard (audit S1, 2026-10-15).
  *
  * Deploy:  supabase functions deploy quote-request
  * Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (the platform's);
- *          TURNSTILE_SECRET (optional, above).
+ *          TURNSTILE_SECRET (required, above).
  * Verify JWT: OFF. It is called by somebody who has no account.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -44,7 +46,10 @@ function json(body: unknown, status: number, origin: string | null) {
 
 async function human(token: string, ip: string | null): Promise<boolean> {
   const secret = Deno.env.get('TURNSTILE_SECRET');
-  if (!secret) return true;
+  if (!secret) {
+    console.error('quote-request: TURNSTILE_SECRET is not set; refusing');
+    return false;
+  }
   if (!token) return false;
   const form = new FormData();
   form.append('secret', secret);
