@@ -12563,14 +12563,50 @@ body.qs-page { background: var(--card); }
 .ck-item-meta { font-size: 12.5px; color: var(--ink-mute); }
 .ck-chev { display: flex; justify-content: flex-end; color: var(--ink-mute); }
 .ck-chev svg { width: 16px; height: 16px; }
-.ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
-.ck-head .ck-back { grid-column: 1 / -1; justify-self: start; }
-.ck-sign .ovfacts { margin-top: 8px; }
-.is-tight .ck-head { grid-template-columns: minmax(0, 1fr) auto; }
-.is-tight .ck-head .chip-state { grid-column: 1; grid-row: 3; }
+.ck-back { margin-bottom: 12px; }
+.ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 16px; padding: 18px 20px; margin-bottom: 12px; }
+.ck-ctl { display: flex; align-items: center; gap: 8px; }
+.ck-head .ck-facts { grid-column: 1 / -1; }
+.is-narrow .ck-head { padding: 14px; grid-template-columns: minmax(0, 1fr); }
+.is-narrow .ck-ctl .chip-state { margin-right: auto; }
+.ck-sec-acts { display: flex; align-items: center; gap: 8px; }
+.ck-sec-acts .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.ck-facts { margin: 0; }
+.ck-sec-head + .ck-facts, .ck-sec-note + .ck-facts, .ck-row + .ck-facts { margin-top: 12px; }
+.ck-facts + .ck-row { margin-top: 12px; }
+.ck-row.is-table { grid-template-columns: minmax(0, 1fr); }
+.ck-row.is-table .ck-lab b { font-size: 13px; color: var(--ink-mute); font-weight: 400; }
+/* A section's Edit: every answer of one section, a field each. */
+.ck-ed { display: grid; gap: 6px; min-width: 0; }
+.ck-ed + .ck-ed { margin-top: 16px; }
+.ck-ed-lab { font-size: 13px; font-weight: 600; }
+.ck-ed-note { font-size: 12.5px; color: var(--ink-mute); }
+.ck-ed .tickline { margin-top: 2px; }
 .ck-title { min-width: 0; display: grid; gap: 2px; }
 .ck-title h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .ck-title small { font-size: 12.5px; color: var(--ink-mute); }
+/* A checklist table (r1.2's Campaign Setup): its columns across, a row an
+   ad set, each cell a one-line box; a narrow pane stacks each row. */
+.ck-table { display: grid; gap: 6px; min-width: 0; }
+.ck-tr { display: grid; grid-template-columns: repeat(var(--ck-cols, 5), minmax(0, 1fr)) 38px; gap: 6px; align-items: start; }
+.ck-table.is-read .ck-tr, .ck-table:not(:has(.ck-cell)) .ck-tr { grid-template-columns: repeat(var(--ck-cols, 5), minmax(0, 1fr)); }
+.ck-th { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ck-td { font-size: 13px; overflow-wrap: anywhere; }
+.ck-addrow { justify-self: start; }
+.is-narrow .ck-tr:not(.ck-th) { grid-template-columns: minmax(0, 1fr) 38px; background: var(--sunk); border-radius: var(--radius-sm); padding: 8px; }
+.is-narrow .ck-table.is-read .ck-tr:not(.ck-th), .is-narrow .ck-table:not(:has(.ck-cell)) .ck-tr:not(.ck-th) { grid-template-columns: minmax(0, 1fr); }
+.is-narrow .ck-tr .ck-cell, .is-narrow .ck-tr .ck-td { grid-column: 1; }
+.is-narrow .ck-tr .ck-rowx { grid-column: 2; grid-row: 1; }
+.is-narrow .ck-th { display: none; }
+.is-narrow .ck-td::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+/* Write with AI's proposals: each a tick over the answer, what the field
+   holds now under it in the mute ink. */
+.ck-ai-row.tickline { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.ck-ai-row:first-child { border-top: 0; padding-top: 0; }
+.ck-ai-row b { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.ck-ai-val { display: block; white-space: pre-line; overflow-wrap: anywhere; }
+.ck-ai-now { display: block; margin-top: 4px; color: var(--ink-mute); white-space: pre-line; overflow-wrap: anywhere; }
+.ck-ai-row .ck-table { margin-top: 2px; }
 .ck-sec { padding: 16px 18px; }
 .is-narrow .ck-sec { padding: 14px; }
 .ck-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -12582,17 +12618,16 @@ body.qs-page { background: var(--card); }
   border-top: 1px solid var(--line-soft);
 }
 .ck-sec-head + .ck-row, .ck-sec-note + .ck-row { margin-top: 8px; }
-.ck-row.is-tick { grid-template-columns: 18px minmax(0, 1fr) minmax(0, 220px) auto; }
+.ck-row.is-tick { grid-template-columns: 18px minmax(0, 1fr); }
 .ck-row.is-tick .tcheck { margin: calc((20px - var(--ctl-h)) / 2); }
 .ck-row.is-tick span.tcheck { display: block; }
-.ck-row.is-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1.618fr); align-items: center; }
 .ck-lab { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
 .ck-lab b { font-weight: 500; }
 .ck-lab small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .ck-lab .ck-hint { color: var(--ink-soft); }
 .ck-row.is-na .ck-lab b { color: var(--ink-mute); }
-.ck-note-read { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
-.ck-na { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.ck-note-read { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; white-space: pre-line; }
+.ck-by { color: var(--ink-mute); }
 .ck-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .ck-chip {
   min-height: var(--ctl-h-sm); padding: 0 12px; border: 0; border-radius: 999px;
@@ -12604,9 +12639,5 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 .ck-text-read { font-size: 14px; overflow-wrap: anywhere; white-space: pre-line; }
 .ck-acts { margin-top: 12px; }
 .ck-acts > .btn { flex: 0 0 auto; }
-.is-narrow .ck-row.is-tick { grid-template-columns: 18px minmax(0, 1fr); }
-.is-narrow .ck-row.is-tick > .ck-note, .is-narrow .ck-row.is-tick > .ck-note-read { grid-column: 2; }
-.is-narrow .ck-row.is-tick > .ck-na { grid-column: 2; justify-self: start; }
-.is-narrow .ck-row.is-field { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ck-item { grid-template-columns: minmax(0, 1fr) auto 16px; }
 .mcheck-open { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); }

@@ -3732,6 +3732,29 @@ finding fixed at the user's word ("fix all no matter what").
   Total for the term incl. SST, with no Item / Value head.
 - Only the drawing changed: the figures `issue_letter` keeps are the same.
 
+### 2026-10-15 — Write with AI on the Pre-Advertising Checklist
+- The user: "b yes" to the checklist written with AI and the Meta setup
+  table; later "the pre-advertising checklist is not AI integrated? i sent
+  u the md earlier on about how to perform the analysis".
+- The checklist reads what Brand analysis concluded (confirmed only), the
+  Ad benchmarks and the Meta links; the playbook's Meta rules (A/Spend after
+  tax, RM 30 a day an ad set, the learning phase, no Audience Network, the
+  frequency cap on Reach alone) are the function's instructions.
+- A proposal is never saved by itself: the colleague ticks what to keep,
+  declares it read, and each answer is saved as if typed, with Undo.
+- Ver. r1.2-26 adds the Campaign Setup table (Item, Details, Audience, CTA,
+  A/Spend); checklists already started keep r1.1-26.
+- FOR INTERNAL USE on the checklist and rate card PDFs is centred on the
+  paper (the user: "should be at the paper aligned center").
+- All checklists is the quiet Back with its arrow (the user: "not good ui").
+- Read first (the user: "the checklist is coming back in the wrong
+  design"; chose Read first, edit per section): the first build was one
+  long open form of empty outlined boxes, against DESIGN.md's record that
+  reads first and edits in a sheet. Now each section reads as facts, ticks
+  stay pressable, each section's Edit opens a sheet, Download sits in the
+  head's ⋯, and the phone review stacks a table's rows instead of breaking
+  words.
+
 ### 2026-10-15 — The quotation website keeps a visitor to their own lead (audit S1, S2, I1, I2)
 - The audit of the releases since 13 October found that a lead was reused
   when the email *or* the number matched, so anybody knowing one of a real
