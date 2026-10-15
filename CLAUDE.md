@@ -1534,10 +1534,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   check is never ticked by hand (`ops_engagement_set_check` refuses
   `use-checklist`); My Work shows it with Open on the client's checklist.
   Download draws its PDF (FOR INTERNAL USE centred on the paper). The
-  Pre-Advertising Checklist is ver. r1.2-26 (`2026-10-15-checklist-writer.sql`;
-  a checklist started before keeps its template): Meta Campaign Setup holds
+  Pre-Advertising Checklist is ver. r1.3-26 (`2026-10-15-checklist-r13.sql`;
+  a checklist started before keeps its template): Campaign Details asks
+  Primary Destination and Monthly Budget; Meta Campaign Setup holds
   Campaign Setup, a table of Item, Details, Audience, CTA and A/Spend (kind
-  `table`, twelve rows, 400 a cell, Add row and a row's ×, saved whole).
+  `table`, twelve rows, 400 a cell, Add row and a row's ×, saved whole);
+  Country, Ad Re-Targeting and Tracking (Pixel / Analytics Connection, Lead
+  Destination, Tracking Relevance, Ads Reporting Schedule) are written
+  answers, as the team writes them (the user's three checklists,
+  2026-10-15). `checklist-draft` writes to that standard (`SYSTEM`: short
+  working notes, approx., TBC, → to where a button leads, ad sets funded
+  in order with MONTH 2+ / ON HOLD, the lead estimate, Budget note); the
+  PDF draws → in the Chinese face, which holds it.
   Write with AI on it (Clients Work, an open checklist; the user, 2026-10-15)
   asks up front the monthly ad budget, the objective, where the ads send
   people, the ad account and notes (kept under
