@@ -3593,3 +3593,13 @@ finding fixed at the user's word ("fix all no matter what").
   its `post_versions` row stand: they describe the caption on show again.
   Order: the page (which falls back to the caption alone where the
   function is missing), then the migration; rollback drops the function.
+
+### 2026-10-15 · The day's ui gate: Check and submit's stack, Request received's chip
+- Check and submit's section is a grid with a 12px gap, and its cards were
+  `.ovcard`, which carries a 12px margin of its own for a pane that stacks
+  them without a gap: checks to audit to Key dates stood 24px apart where
+  no action row sat between them. `.rp-sec > .ovcard` gives the margin
+  back, so the gap is the one step.
+- #470 let the quotation website's status wrap so it stayed in the shaded
+  box; a chip never wraps. At 560 and under the facts read label over
+  value instead, so Letter of Offer requested has the box's width.
