@@ -4092,8 +4092,10 @@
     }
     var adj = MON.termAdj(months, svPctValue());
     $('svAdjRow').hidden = !adj && !card;
-    if (adj) $('svAdjustWord').textContent = 'Apply the ' + adj;
-    else if (card) $('svAdjustWord').textContent = 'Apply the term adjustment';
+    /* The words name the kind alone; the figure is the field's (the user,
+       2026-10-15: "just show the numbers changed"). */
+    if (adj) $('svAdjustWord').textContent = 'Apply ' + adj.replace(/^[^A-Za-z]*%\s*/, '');
+    else if (card) $('svAdjustWord').textContent = 'Apply term adjustment';
     else $('svAdjust').checked = false;
   }
   $('svTenure').addEventListener('input', function () { syncAdjust(false); });

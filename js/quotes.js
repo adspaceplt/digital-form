@@ -31,7 +31,8 @@
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
-    'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.'
+    'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
+    'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.'
   };
   function said(e) {
     if (!e) return '';
@@ -263,7 +264,10 @@
 
   function build(ctx, sel, opener) {
     sel = sel || {};
-    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null };
+    /* `edits`: a line's quantity, rate and months the team typed, by the
+       line's key (2026-10-15, the user: "fully customised for the rates qty
+       and months"); priced and kept by the database as typed. */
+    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})) };
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
     $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
@@ -429,6 +433,7 @@
       var n = Math.max(0, Math.floor(Number(i.value) || 0));
       if (n) sel.once.push({ slug: i.getAttribute('data-slug'), qty: n });
     });
+    if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     return sel;
   }
   /* The rates beside the extras and the translation come from the same
@@ -461,6 +466,9 @@
           return;
         }
         B.priced = d;
+        /* What was typed for a line the selection no longer holds is let go. */
+        var keys = (d.lines || []).map(function (l) { return l.key; });
+        Object.keys(B.edits).forEach(function (k) { if (keys.indexOf(k) < 0) delete B.edits[k]; });
         $('qbLines').innerHTML = table(d);
         $('qbSum').textContent = sumOf(d);
         $('qbSave').disabled = false;
@@ -479,11 +487,21 @@
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
     var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span>Line</span><span class="svc-rate">Qty</span>' +
-      '<span class="svc-rate">Rate (RM)</span><span class="svc-rate">Subtotal (RM)</span></div>' +
+      '<span class="svc-rate">Rate (RM)</span><span class="svc-rate">Months</span><span class="svc-rate">Subtotal (RM)</span></div>' +
       rows.map(function (l) {
-        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (l.basis === 'once' ? '<small>One-off</small>' : '') + '</span>' +
-          '<span class="svc-rate qb-qty">' + esc(l.qty) + '</span><span class="svc-rate qb-rate">' + esc(rm(l.rate)) + '</span>' +
-          '<span class="qb-calc">' + esc(l.qty + ' × ' + rm(l.rate)) + '</span>' +
+        /* Quantity, rate and months are typed where they are read; a line
+           quoted off the card names the card's rate under it. */
+        var sub = [];
+        if (l.list_rate != null) sub.push('Rate card RM ' + rm(l.list_rate));
+        var box = function (what, v, cls, mode, label) {
+          return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
+            esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
+        };
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + '</span>' +
+          '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
+          '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (RM)</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (RM)') + '</span>' +
+          '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
+            '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
     var tot = [];
@@ -536,6 +554,33 @@
       $(id).addEventListener('input', on);
     });
     ['qbPlats', 'qbLangs', 'qbOnce'].forEach(function (id) { $(id).addEventListener('change', on); $(id).addEventListener('input', on); });
+    /* A figure typed: Create waits for the figures it will keep; Enter or
+       leaving the field prices it again. Empty, or the card's own figure,
+       puts back the card's. */
+    $('qbLines').addEventListener('input', function (e) {
+      if (B && e.target.closest('.qb-val')) $('qbSave').disabled = true;
+    });
+    $('qbLines').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing && e.target.closest('.qb-val')) { e.preventDefault(); e.target.blur(); }
+    });
+    $('qbLines').addEventListener('change', function (e) {
+      var i = e.target.closest('.qb-val');
+      if (!i || !B) return;
+      var k = i.getAttribute('data-key'), what = i.getAttribute('data-what');
+      var raw = String(i.value).replace(/[,\s]/g, '').replace(/^RM/i, '');
+      var ok = what === 'rate' ? /^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(raw) :
+        what === 'qty' ? /^[0-9]{1,4}$/.test(raw) && Number(raw) >= 1 : /^[0-9]{1,2}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 36;
+      var e1 = B.edits[k] || {};
+      if (raw === '') delete e1[what];
+      else if (ok) e1[what] = raw;
+      else {
+        $('qbMsg').textContent = SAID['bad-edit']; $('qbMsg').className = 'msg err';
+        i.focus(); return;
+      }
+      if (Object.keys(e1).length) B.edits[k] = e1; else delete B.edits[k];
+      $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
+      preview();
+    });
     $('qbCancel').addEventListener('click', function () { window.ADspaceSheet.close(); B = null; });
     $('qbClose').addEventListener('click', function () { $('qbCancel').click(); });
     $('qbSave').addEventListener('click', function () {

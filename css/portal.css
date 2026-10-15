@@ -12240,7 +12240,6 @@ button.vs-row { cursor: pointer; }
 .qb-hint { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .qb-hint:empty { display: none; }
 .qb-table { margin-bottom: 0; }
-.qb-row { grid-template-columns: minmax(0, 1fr) 56px 110px 120px; }
 .qb-row > .svc-rate { text-align: right; font-variant-numeric: tabular-nums; }
 .qb-name { font-size: 13.5px; }
 .qb-name small { display: block; }
@@ -12251,14 +12250,26 @@ button.vs-row { cursor: pointer; }
 .qb-tot > .is-total { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 600; color: var(--ink); }
 .qb-tot > .is-total dt { color: var(--ink); }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
-.qb-calc { display: none; }
+/* A line's quantity, rate and months are typed where they are read
+   (2026-10-15): each field keeps a row of words' height, its target
+   overflowing the row evenly; on a phone they run under the name, each
+   under its label, the subtotal at the right of the name. */
+.qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; align-items: center; }
+.qb-val { width: 100%; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; margin-block: -6px; }
+@media (pointer: coarse) { .qb-val { margin-block: -9px; } }
+.qb-lab { display: none; }
+.qb-once { font-size: 12.5px; color: var(--ink-mute); }
 @media (max-width: 560px) {
-  .qb-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "calc amt"; row-gap: 2px; padding-inline: 12px; }
+  .qb-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr); grid-template-areas: "name name amt" "qty rate mo"; column-gap: 8px; row-gap: 8px; padding-inline: 12px; align-items: end; }
   .qb-row.crm-head { display: none; }
   .qb-row > .qb-name { grid-area: name; }
-  .qb-row > .qb-qty, .qb-row > .qb-rate { display: none; }
-  .qb-row > .qb-calc { display: block; grid-area: calc; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-  .qb-row > .qb-amt { grid-area: amt; }
+  .qb-row > .qb-qty { grid-area: qty; }
+  .qb-row > .qb-rate { grid-area: rate; }
+  .qb-row > .qb-mo { grid-area: mo; }
+  .qb-row > .qb-amt { grid-area: amt; align-self: start; }
+  .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .qb-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+  .qb-val { margin-block: 0; }
   .qb-tot { max-width: none; }
 }
 .qb-headtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
