@@ -5161,7 +5161,7 @@
     var pct = n ? Math.round(ok / n * 100) : 0;
     $('setProgress').innerHTML =
       '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
-      '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+      '<span class="railbar"><span class="railbar-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
       (ch ? '<p class="setprog-note"><span class="tone is-danger">' + ch + (ch === 1 ? ' change requested' : ' changes requested') + '</span></p>' : '');
     block.hidden = false;
   }
@@ -5820,11 +5820,33 @@
           var before = { caption: p.caption == null ? null : p.caption, caption_zh: p.caption_zh == null ? null : p.caption_zh };
           var back = {};
           Object.keys(patch).forEach(function (k) { back[k] = before[k]; });
+          /* Undo puts back the caption and the round the client decided
+             on (2026-10-15): the round is the database's to set, so it goes
+             through `review_caption_undo`; a database without it restores
+             the caption alone, as before. */
+          var wasRound = p.round || 1;
           undoHere(postName(p) + ': caption accepted.', function () {
-            db.from('posts').update(back).eq('id', p.id).select('id').then(function (res2) {
-              if (res2.error || !(res2.data || []).length) { msg('setMsg', 'Not undone. The database refused the request.', 'err'); return; }
+            var done = function () {
               logAction('post.edited', state.client.name + ' \u2014 ' + (state.batch.title || ''), postName(p) + ': accepted caption undone');
               loadPosts();
+            };
+            var plain = function () {
+              return db.from('posts').update(back).eq('id', p.id).select('id').then(function (res2) {
+                if (res2.error || !(res2.data || []).length) { msg('setMsg', 'Not undone. The database refused the request.', 'err'); return; }
+                done();
+              });
+            };
+            db.rpc('review_caption_undo', { p_post: p.id, p_round: wasRound,
+              p_caption: 'caption' in back ? back.caption : (p.caption == null ? null : p.caption),
+              p_caption_zh: 'caption_zh' in back ? back.caption_zh : (p.caption_zh == null ? null : p.caption_zh) }).then(function (r3) {
+              if (r3.error && /PGRST202|Could not find the function/i.test((r3.error.code || '') + ' ' + (r3.error.message || ''))) return plain();
+              var d3 = r3.data || {};
+              if (r3.error || d3.error) {
+                msg('setMsg', d3.error === 'moved' ? 'Not undone. The post has changed since the caption was accepted.' :
+                  d3.error === 'denied' ? 'Not undone. The database refused the request.' : 'Not undone. ' + ((r3.error && r3.error.message) || d3.error), 'err');
+                return;
+              }
+              done();
             }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not undone.', 'err'); });
           }, $('postStages'));
         }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });

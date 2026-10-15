@@ -1658,7 +1658,7 @@
     var short = parts.filter(function (p) { return p[1] < p[2]; });
     box.innerHTML =
       '<p class="railpct"><b>' + pct + '% complete</b><span>' + done + ' of ' + all + '</span></p>' +
-      '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+      '<span class="railbar"><span class="railbar-fill' + (pct >= 100 ? ' is-done' : '') + '" style="width:' + pct + '%"></span></span>' +
       (short.length
         ? '<button class="railmiss" type="button" data-go="' +
             (short[0][0] === 'Billing' ? 'billing' : short[0][0] === 'Brand profile' ? 'brand' :

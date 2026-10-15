@@ -1968,7 +1968,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   a failed send keeps the request and the edit open. A
   request takes a note or a caption edit, sent only where changed and kept
   as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
-  caption with Accept caption (the next round). The noun is caption, never
+  caption with Accept caption (the next round), whose Undo puts back the
+  caption and the round decided on (`review_caption_undo`, refused `moved`
+  once that round is decided or edited; 2026-10-15). The noun is caption, never
   copy. The console's Edit replaces the file, uploaded at Save.
 - A request not yet answered is changed with Edit request (the Request
   changes button while one stands): it reopens with the note and the
@@ -4336,10 +4338,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   `seq` and `code` YYMMVSNN (`2610VS01`), NN the lowest free a client a
   month (unique), `engagement_id` the client's My Work month where one
   exists (never required). New script asks the client, the month (last
-  month, this month and the next six, as My Work offers) and the type
-  (`video_script_new`); Add script (at the end of the month's tabs) opens
-  a New script editor, stores nothing until Save (2026-10-15), then takes
-  the month's next number with the header copied (platform, language,
+  month, this month and the next six, as My Work offers) and the type,
+  and Add script (at the end of the month's tabs) the month's next: each
+  opens a New script editor and stores nothing until Save
+  (`video_script_new`, then `video_script_save`; Cancel back to where it
+  was opened; 2026-10-15); Write with AI on it says the script is saved
+  first, taking its number (`script-draft` reads the row). Save takes
+  the month's next number, Add script's with the header copied (platform, language,
   shooting date and time, venue, duration, cast) and the script empty; the
   editor's Content month moves it, taking that month's number (filed with
   both codes). `series_id` / `video_no` are no longer read.

@@ -287,15 +287,22 @@
     var m = $('vsNewMsg'), btn = $('vsNewGo');
     var client = $('vsNewClient').value;
     if (!client) { say(m, 'Choose a client.'); $('vsNewClient').focus(); return; }
-    btn.disabled = true;
-    rpc('video_script_new', { p_client: client, p_period: $('vsNewMonth').value, p_kind: $('vsNewKind').value, p_from: null, p_idem: st.idem })
-      .then(function (d) {
-        btn.disabled = false;
-        window.ADspaceSheet.clean();
-        window.ADspaceSheet.close();
-        st.loaded = false;
-        openScript(d.id, true, true);
-      }).catch(function (e) { btn.disabled = false; say(m, said(e)); });
+    /* The editor opens on the new script, stored only by its Save
+       (2026-10-15, audit VS-1 as Add script): Cancel leaves no empty
+       numbered script on the month or the client's link. */
+    var c = st.clients.filter(function (x) { return x.id === client; })[0] || {};
+    var period = $('vsNewMonth').value, kind = $('vsNewKind').value;
+    window.ADspaceSheet.clean();
+    window.ADspaceSheet.close();
+    st.open = null;
+    st.pending = {
+      args: { p_client: client, p_period: period, p_kind: kind, p_from: null, p_idem: st.idem },
+      s: { id: null, client_id: client, period: period, kind: kind, title: '', reference_url: null,
+           platform: null, language: null, shoot_on: null, shoot_time: null, venue: null,
+           duration_minutes: null, cast_names: null, context: '', vo: '', remarks: '',
+           clients: { name: c.name, client_code: c.client_code }, version: null }
+    };
+    openEdit(btn, false);
   });
 
   /* ---- One video ------------------------------------------------------------- */
@@ -864,7 +871,8 @@
     st.pending = null;
     st.base = '';
     $('vsEditView').hidden = true;
-    $('vsRecord').hidden = false;
+    /* New script's editor returns to the list it was opened from. */
+    if (st.open) $('vsRecord').hidden = false; else $('vsListView').hidden = false;
     if (bridge.setUrl) bridge.setUrl();
   }
   /* Cancel with changes asks first; nothing else leaves the page with them
@@ -873,7 +881,7 @@
     if (!dirty()) { closeEditor(); return; }
     var s = edited();
     window.ADspaceConfirm.ask({ title: 'Discard changes?', body: s.id || !st.pending ? 'The changes to ' + label(s) + ' are not saved.' : 'The new script is not saved.',
-      go: 'Discard', tone: 'warn' }, function () { closeEditor(); paintRecord(); });
+      go: 'Discard', tone: 'warn' }, function () { closeEditor(); if (st.open) paintRecord(); });
   }
   window.addEventListener('beforeunload', function (e) {
     if (!dirty()) return;
@@ -901,7 +909,7 @@
     $('vsContext').value = s.context || '';
     $('vsVo').value = s.vo || '';
     $('vsNotes').value = s.remarks || '';
-    st.draft = st.scenes.map(function (x) { return { id: x.id, visual: x.visual || '', line: x.line || '' }; });
+    st.draft = (st.pending ? [] : st.scenes).map(function (x) { return { id: x.id, visual: x.visual || '', line: x.line || '' }; });
     if (!st.draft.length) st.draft.push({ id: null, visual: '', line: '' });
     kindPaint();
     sayWrite('');
@@ -1008,7 +1016,10 @@
       closeEditor();
       if (fresh) {
         /* The new script opens on its own page, its number assigned. */
+        st.loaded = false;
         st.mode = 'script';
+        $('vsListView').hidden = true;
+        $('vsRecord').hidden = false;
         st.open = { id: sid };
       }
       return readScript(sid).then(function () {
@@ -1138,7 +1149,7 @@
         value: keep('adspace-script-notes:' + noteKey) });
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
+        body: (st.pending && !st.pending.s.id ? 'The new script is saved first, taking its number. ' : '') + (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
         var notes = String(v.notes || '').trim();
