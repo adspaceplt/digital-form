@@ -3402,7 +3402,9 @@
   function isDelivery() {
     return (state.campaign || {}).push_format === 'seeding';
   }
-  function visitWord() { return isDelivery() ? 'Delivery' : 'Shoot visit'; }
+  /* The summary's date slot, said as what is not set yet (2026-10-15: the
+     bare Visit read as an instruction). */
+  function visitWord() { return isDelivery() ? 'Delivery' : 'Date'; }
   /* The client's six steps under a booked creator (2026-10-08): the same
      track, words and map the client's own page reads (ADspaceIcons), so a
      colleague on a call sees what the client sees; the Step column keeps the

@@ -3616,7 +3616,8 @@ finding fixed at the user's word ("fix all no matter what").
 - The same ruling for the short labels: the step track reads Booked, Shoot
   visit (Delivery), Draft due, Client review, Post date, Results in place of
   Shoot, Draft, Review, Post (a bare verb each, or one that reads as one);
-  a booking's summary Shoot visit TBC for Visit TBC; the card's Draft step
+  a booking's summary Date TBC for Visit TBC (Shoot visit TBC was clipped
+  in the desk column beside the rail); the card's Draft step
   Draft submission; the selection page's fact Shoot, Shoot visit; the
   creator's page's Submit, Submit draft. A step's name
   breaks at its space where its column is narrow rather than being cut
