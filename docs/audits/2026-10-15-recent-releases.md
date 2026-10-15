@@ -6,31 +6,29 @@
 - **Tests:** `digital-form-tests` at `eb7308b`.
 - **Live database:** project `hwwuigvdfubuymchsvyx`, read only (catalogue and grant queries; no logs, no writes).
 
-Severity runs Critical, High, Medium, Low. Nothing was found at Critical. Each finding names the caller who meets it.
+Severity runs Critical, High, Medium, Low. Nothing was found at Critical or High. Each finding names the caller who meets it.
 
 ## Summary
 
 | | High | Medium | Low |
 |---|---|---|---|
-| Safety (S) | 1 | 6 | 5 |
+| Safety (S) | 0 | 6 | 6 |
 | Integrity (I) | 0 | 4 | 9 |
 | Structure (R) | 0 | 2 | 2 |
 
-Fix first: S1, S2, S3, S4, I1, I3.
+Fix first: S2, S3, S4, I1, I3.
 
 ## Safety
 
-### S1 · High (conditional) · Quotation website · `supabase/functions/quote-request/index.ts:45-48`, `quote_website_create`
-- **Path to failure:** a script posts straight to `quote-request`; CORS does not stop a script.
-  - While the secret `TURNSTILE_SECRET` is unset, `human()` returns true for every request (`if (!secret) return true;`).
-  - The only limit is five a day per contact, counted on the email or number the caller types. Neither is verified, so a new invented pair each time passes.
-  - The count is not locked, so parallel posts from one contact also pass.
+### S1 · Low · Quotation website · `supabase/functions/quote-request/index.ts:45-48`, `quote_website_create`
+- **Status:** the user confirmed on 15 Oct that `TURNSTILE_SECRET` is set, so every request needs a token Cloudflare accepts. What remains is lower risk.
+- **Path to failure:**
+  - With the secret set, each request needs a fresh Turnstile token, so a script cannot create leads in bulk. A person solving the challenge each time still can, because the limit of five a day per contact is counted on the email or number typed, and neither is verified.
+  - The count is not locked, so parallel posts from one contact can each pass it.
   - `selection.once` and `selection.platforms` have no length bound, and unknown keys are stored and handed back.
-- **Result of each request:**
-  - a new lead in Clients;
-  - a quotation row;
-  - a bell notice and a push to every colleague who works leads, titled with up to 120 characters the caller chose.
-- **Evidence:** the deployed source (version 2) matches the repository. Whether the secret is set could not be read: the connector lists no secret names. Live there are 3 leads with source Website and 0 website quotations.
+  - `human()` still returns true whenever the secret is unset, so removing the secret silently removes the guard.
+- **Result of each request:** a new lead in Clients, a quotation row, and a bell notice and push to every colleague who works leads.
+- **Evidence:** the deployed source (version 2) matches the repository. Live there are 3 leads with source Website and 0 website quotations.
 - **Fix:**
   - Refuse when the secret is unset, unless an explicit opt-out is set.
   - Add a per-IP and a global hourly limit in the function.
@@ -277,7 +275,6 @@ Fix first: S1, S2, S3, S4, I1, I3.
   - The stand-in refuses unknown arguments for every new function.
 
 ## Not checked
-- **Whether `TURNSTILE_SECRET` is set:** the connector cannot list secret names, so S1's severity stands as conditional. The user can confirm it under Edge Functions, Secrets.
 - **Deployed edge function sources:** only `quote-request` was compared with the repository. The others were read from the repository alone.
 - **Browser suites, uxaudit and matrix:** not run; another session runs the full gate today. No finding above rests on a browser run.
 - **Supabase logs:** not read, as instructed.
