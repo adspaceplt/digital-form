@@ -587,10 +587,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `overview` (2026-10-15, found running it by hand for the VIC release; the
-  same on main with the suites as they stood): "reports in review and
-  reports owed are listed" fails, and the Harbour Deli row it then presses
-  matches three rows (strict mode).
+- None open.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
