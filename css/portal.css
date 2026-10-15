@@ -9353,6 +9353,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ctl .btn svg { width: 14px; height: 14px; }
 /* Check and submit: what the report holds, one line a step. */
 .rp-checks, .rp-aicheck { padding: 0; }
+/* A report step's section spaces its blocks by its own 12px gap; a card's
+   own bottom margin laid the step twice (uxaudit stack, 2026-10-15). */
+.rp-sec > .ovcard { margin-bottom: 0; }
 .rp-check { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 16px; }
 .rp-check + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-check-mark { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
@@ -12464,8 +12467,13 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-nowrap { white-space: nowrap; }
 body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
-/* A status wraps inside its cell, its dot on the first line, never past the shaded box. */
-.qs-facts .chip-state { font-size: inherit; white-space: normal; }
+/* A status reads whole on its line (a value never wraps); on a phone each
+   fact's label stands over its value, so the status takes the box's width. */
+.qs-facts .chip-state { font-size: inherit; white-space: nowrap; }
+@media (max-width: 480px) {
+  .qs-facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .qs-facts dd + dt { margin-top: 10px; }
+}
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
 /* The client's details form on Billing (2026-10-14): its lone act keeps its
