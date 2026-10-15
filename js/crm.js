@@ -1197,7 +1197,7 @@
     if (parts.indexOf('checklists') > -1 && window.ADspaceChecklists && state.client &&
         (visit || ckFor !== state.client.id)) {
       ckFor = state.client.id;
-      window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg });
+      window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg, undo: undoBar });
     }
     /* A part named by itself, below its tab's first, is brought into view. */
     if (!TABS[key] && parts[0] !== key) {

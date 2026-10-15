@@ -113,7 +113,8 @@
     var newPage = function (title) {
       page = pdf.addPage([W, H]);
       text('ADspace', M, HEAD_Y, 16, mark, ink);
-      text('FOR INTERNAL USE', 264.5, HEAD_Y + 2, 8, med, dark);
+      /* Centred on the paper, measured in its own face (the user, 2026-10-15). */
+      text('FOR INTERNAL USE', (W - width('FOR INTERNAL USE', 8, med)) / 2, HEAD_Y + 2, 8, med, dark);
       y = HEAD_Y - 14;
       if (title) { text(title, M, y - 14, 18, reg, ink); y -= 26; }
     };

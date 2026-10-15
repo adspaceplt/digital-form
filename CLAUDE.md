@@ -206,7 +206,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
 | `ratecardpdf.js`, the rate card versions | ratecard, crm, sql |
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
-| `checklists.js`, the CLIENT CHECKLISTS section | checklists, work, overview, sql, then `ui` |
+| `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -1513,9 +1513,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   Client Onboarding and Pre-Advertising Checklists, ver. r1.1-26, once per
   client): one `client_checklists` row a client and kind (RLS on, no
   policy, no grant), the template copied in when it is first written
-  (`checklist_template`). The pane lists both, `list=` opening one: a tick
-  with its note kept with who and when, a choice as chips, words as a field,
-  a platform section Not applicable (`client_checklist_set`, Clients Work,
+  (`checklist_template`). The pane lists both, `list=` opening one, read
+  first (the user, 2026-10-15: "the checklist is coming back in the wrong
+  design"): a head card (title, version, state, Write with AI, a ⋯ holding
+  Download, the facts), then a card a section where a tick is pressed in
+  place (its note and who and when under it) and every other answer reads
+  as a fact (Not set where empty), a table as a table; no field stands open
+  on the pane. A section's Edit (`#ckEditSheet`) opens all its answers in a
+  sheet: a tick's Notes and Not applicable, words as a field, a choice as
+  chips, a table a row at a time; Save sends only what changed. A platform
+  section Not applicable (`client_checklist_set`, Clients Work,
   client scope; `locked`, `bad-item`, `bad-value`, `too-long`; filed
   `client.edited`); the pre-advertising one prefilled from the record (the
   registered name, the newest quotation, the brief's competitors, the
@@ -1526,7 +1533,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   the month's check of that key (`ready`), and Reopen unticks it. A month's
   check is never ticked by hand (`ops_engagement_set_check` refuses
   `use-checklist`); My Work shows it with Open on the client's checklist.
-  Download draws its PDF (FOR INTERNAL USE, ver. r1.1-26). Not signed off on
+  Download draws its PDF (FOR INTERNAL USE centred on the paper). The
+  Pre-Advertising Checklist is ver. r1.2-26 (`2026-10-15-checklist-writer.sql`;
+  a checklist started before keeps its template): Meta Campaign Setup holds
+  Campaign Setup, a table of Item, Details, Audience, CTA and A/Spend (kind
+  `table`, twelve rows, 400 a cell, Add row and a row's ×, saved whole).
+  Write with AI on it (Clients Work, an open checklist; the user, 2026-10-15)
+  asks up front the monthly ad budget, the objective, where the ads send
+  people, the ad account and notes (kept under
+  `adspace-checklist-inputs:{client id}`), then `checklist-draft` reads the
+  confirmed Brand analysis (`no-analysis` without one), the Ad benchmarks
+  and the linked Meta accounts and proposes every field but the ticks,
+  following the playbook's Meta rules; nothing is written until the
+  colleague keeps the ticked proposals in `#ckAiSheet` (what a field holds
+  now said under it), declares them read (`ADspaceConfirm.ai.declare`) and
+  each is saved as if typed, Undo where it happened. Its own count
+  (`ai_checklist_claim`: `checklist` 10, `checklist_admin` 20), priced and
+  set on AI usage; the client's name goes as {brand}. Not signed off on
   an Active client, unless the month marks it Not needed, is a Dashboard
   Needs attention row (`client_checklists_due`). A client's passwords are
   never kept: the credentials item is a tick. The templates are edited in
@@ -5068,7 +5091,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
