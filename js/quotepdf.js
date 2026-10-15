@@ -35,7 +35,7 @@
   }
   function dayOf(ts) { return window.ADspaceClock ? window.ADspaceClock.day(ts) : String(ts).slice(0, 10); }
   function amt(n) {
-    var v = Number(n || 0), s = Math.abs(v).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var v = Number(n || 0), s = window.ADspaceMoney.money2(Math.abs(v), 'MY').replace(/^RM /, '');
     return v < 0 ? '(' + s + ')' : s;
   }
   function fileName(q) { return 'ADspace Quotation ' + String(q.ref || '').replace(/\//g, '-') + '.pdf'; }

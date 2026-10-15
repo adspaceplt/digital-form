@@ -4211,7 +4211,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_note)`, Services Full Access; `bad-version`, `version-taken`,
   `bad-date`, `no-change`; filed `service.published`) keeps the lines, the
   words, SST and the term percentages whole in `rate_card_versions`, and
-  `rate_card_current()` answers the latest. A client's line, a quote and the
+  `rate_card_current()` answers the latest (at Services or Clients: Services
+  View). A client's line, a quote and the
   export are priced from the live version, never the draft; with none
   published, the card as it stands. The page: one command bar holding the
   search (Rate card alone), the version line (Live v.{n} · valid until,
@@ -4261,7 +4262,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   RM 10 (`extra_rates`), Translate every content (a content a language
   after the first), the advertising budget past the plan's cover (Meta
   advertising, then coverage; past the largest, on request), one-off items
-  apart; the term's percentage on the monthly subtotal, SST on the rest.
+  apart; the term's percentage on the monthly subtotal, SST on the rest at
+  the rate in force on the day it is priced (MYT), none for a client whose
+  `sst_applies` is false (`quote_tax_snap`; a preview names its client in
+  `p_sel.client`, never kept; `2026-10-15-quotation-tax-day.sql`).
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
   `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines
@@ -4295,7 +4299,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   from the card's Meta advertising and boosters, None where no plan covers
   one (the user, 2026-10-14). The pane reads Quotations (Build quote) over
   Service lines (Add service), each heading over its own list.
-  Issue Letter of Offer (`quotation_offer`, once) makes the quotation's
+  Issue Letter of Offer (`quotation_offer`, once, refused `expired` past
+  `valid_until` and not offered then) makes the quotation's
   lines the client's To quote lines (`quotation_id`, its term and
   percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
   ADSPACE PLT at the head's right, the facts, Description · Qty · Rate (RM)

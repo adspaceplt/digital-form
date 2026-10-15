@@ -3774,3 +3774,24 @@ finding fixed at the user's word ("fix all no matter what").
   whatever is typed, so it was never a guard alone.
 - A Singapore lead proceeds with its UEN; the 12-digit number stays for
   Malaysia.
+
+### 2026-10-15 — A quotation charges SST on its own day, and never on an exempt client (audit I1, I5, I6, S8)
+- SST was read from the rate card version as published, so a rate set to
+  change from a later day left every later quotation on the old rate while
+  the Letter of Offer took the new one; and `quote_price` charged SST on a
+  client whose `sst_applies` is false. `quote_tax_snap` now gives the price
+  today's SST (MYT), or none for an exempt client, in the preview (which
+  names its client) and when a quotation is made.
+- Singapore clients keep SST, as `js/money.js` holds (the tax is ours). The
+  currency stays as it was: a quotation reads RM, while a Letter of Offer
+  for a Singapore client prints S$ over the same figures. That is left for
+  the user to decide.
+- Issue Letter of Offer refuses an expired quotation (`expired`), and the
+  row's menu no longer offers it there.
+- `rate_card_current()` answers only at Services or Clients: Services View,
+  as the tables it reads do.
+- The console and the quotation PDFs format figures through `js/money.js`;
+  the console states the largest budget the live card covers instead of a
+  typed RM 20,000. The PDF of a kept quotation still names RM 20,000, since
+  the quotation keeps no card; the terms list and two content slugs stay
+  typed in the pages and in `quote_price` alike.
