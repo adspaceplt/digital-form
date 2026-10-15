@@ -12569,6 +12569,9 @@ body.qs-page { background: var(--card); }
 .ck-head .ck-facts { grid-column: 1 / -1; }
 .is-narrow .ck-head { padding: 14px; grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ck-ctl .chip-state { margin-right: auto; }
+.ck-pdf-short { display: none; }
+.is-tight .ck-pdf-long { display: none; }
+.is-tight .ck-pdf-short { display: inline; }
 .ck-sec-acts { display: flex; align-items: center; gap: 8px; }
 .ck-sec-acts .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
 .ck-facts { margin: 0; }

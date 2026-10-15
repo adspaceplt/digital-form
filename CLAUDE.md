@@ -1516,8 +1516,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   policy, no grant), the template copied in when it is first written
   (`checklist_template`). The pane lists both, `list=` opening one, read
   first (the user, 2026-10-15: "the checklist is coming back in the wrong
-  design"): a head card (title, version, state, Write with AI, a ⋯ holding
-  Download, the facts), then a card a section where a tick is pressed in
+  design"): a head card (title, version, state, Write with AI, Preview PDF
+  (a tab opened at the press; PDF on a tight pane), a ⋯ holding Download,
+  the facts), then a card a section where a tick is pressed in
   place (its note and who and when under it) and every other answer reads
   as a fact (Not set where empty), a table as a table; no field stands open
   on the pane. A section's Edit (`#ckEditSheet`) opens all its answers in a
