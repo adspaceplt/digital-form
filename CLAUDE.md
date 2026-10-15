@@ -1791,11 +1791,17 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Letter content:
   - Only To quote lines.
   - Priced by the month when every line of more than a month shares a term
-    ("Payable monthly", the amount reading per month; the commitment stated
-    in TERMS); a one-month line beside them is a one-off item under its own
-    One-off subtotal, SST and Payable once (reading one-off), and TERMS and
-    the acceptance count it in the total (`2026-10-15-letter-one-off-items.sql`;
-    the user, 2026-10-15). Lines on two terms of more than a month: Total.
+    (the amount reading per month; the summary ending Monthly incl. SST in
+    bold, as a quotation's does); a one-month line beside them is a one-off
+    item (reading one-off) billed with the first month: one summary of
+    Monthly subtotal, One-off subtotal, one SST line, First month due in
+    bold, then Monthly incl. SST (the user, 2026-10-15: "just provide first
+    month due total"; `2026-10-15-letter-one-off-items.sql` prices it).
+    TERMS states the term once, with the whole term's total incl. SST; the
+    acceptance lists Monthly incl. SST, Minimum term, First month due (with
+    a one-off item) and Total for the term incl. SST, under no Item / Value
+    head and never "including SST" after a figure. Lines on two terms of
+    more than a month: Total incl. SST.
   - `priceOf()` computes the snapshot and the drawing. `issue_letter` works
     the same price from the stored lines (the term's rate rounded to the
     cent, by the month where every line of more than a month shares a
