@@ -82,10 +82,10 @@
       billSep: 'The advertising budget is billed separately.',
       billManaged: 'The fees include the management of an advertising budget of up to RM\u00a0{b} per month. The advertising budget is billed separately.',
       validLong: 'This quotation is valid until {d}.', basis: 'Rates are based on the ADspace Rate Card v.{v}.',
-      billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', addr: 'Billing address',
+      billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', brnSg: 'UEN', brnHintSg: '9 or 10 characters', addr: 'Billing address',
       ask: 'Request Letter of Offer', asking: 'Sending…',
       askNote: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
-      billBad: { reg: 'Enter the registered company name.', brn: 'Enter the 12-digit registration number.', addr: 'Enter the billing address.' },
+      billBad: { reg: 'Enter the registered company name.', brn: 'Enter the 12-digit registration number.', brnSg: 'Enter the UEN.', addr: 'Enter the billing address.' },
       doneT: 'Request received', doneTo: 'Once ADspace approves your quotation, the Letter of Offer will be sent to {wa} on WhatsApp.',
       doneAny: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
@@ -153,10 +153,10 @@
       billSep: '广告预算另行收费。',
       billManaged: '费用包括代为管理每月最高 RM\u00a0{b} 的广告预算。广告预算另行收费。',
       validLong: '本报价有效期至 {d}。', basis: '价格依据 ADspace 价目表 v.{v}。',
-      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', addr: '账单地址',
+      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', brnSg: 'UEN 编号', brnHintSg: '9 或 10 位', addr: '账单地址',
       ask: '申请服务确认函', asking: '提交中…',
       askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
-      billBad: { reg: '请填写公司注册名称。', brn: '请填写 12 位注册编号。', addr: '请填写账单地址。' },
+      billBad: { reg: '请填写公司注册名称。', brn: '请填写 12 位注册编号。', brnSg: '请填写 UEN 编号。', addr: '请填写账单地址。' },
       doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送服务确认函。',
       doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
       monthSub: '每月小计', commit: '{n} 个月合约优惠（{p}%）', termAdj: '{n} 个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
@@ -219,7 +219,11 @@
   }
   function waDigits(s) {
     var d = String(s || '').replace(/[^0-9]/g, '');
+    /* As the database reads it (quote_website_number): a leading 0 is
+       Malaysia, eight digits Singapore, nine or ten from 1 a Malaysian mobile. */
     if (/^0[1-9]/.test(d)) d = '6' + d;
+    else if (/^[3689][0-9]{7}$/.test(d)) d = '65' + d;
+    else if (/^1[0-9]{8,9}$/.test(d)) d = '60' + d;
     return d;
   }
   function waOk(d) { return /^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$/.test(d); }
@@ -501,10 +505,12 @@
     else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
     if (!gone) notes.push(f(t().validLong, { d: day(q.valid_until, true) }));
     notes.push(f(t().basis, { v: q.version }));
+    var sg = q.market === 'SG';
     var aside = gone ? '' :
       '<aside class="qs-bill" id="qsBill"><h2>' + esc(t().billT) + '</h2><form class="qs-form" id="qsBillForm" novalidate>' +
         field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true" value="' + esc(billTyped.reg) + '">') +
-        field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHint) +
+        (sg ? field('qsBrn', t().brnSg, true, '<input class="input qs-caps" id="qsBrn" autocapitalize="characters" maxlength="12" placeholder="201912345K" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHintSg)
+            : field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHint)) +
         field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true">' + esc(billTyped.addr) + '</textarea>') +
         '<button class="btn btn-primary" id="qsAsk" type="submit">' + esc(t().ask) + '</button>' +
         '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
@@ -670,11 +676,12 @@
   }
   function request(e) {
     e.preventDefault();
-    var reg = $('qsReg').value.replace(/\s+/g, ' ').trim().toUpperCase(), brn = $('qsBrn').value.replace(/[^0-9]/g, ''), addr = $('qsAddr').value.trim();
+    var reg = $('qsReg').value.replace(/\s+/g, ' ').trim().toUpperCase(), sg = Q && Q.market === 'SG',
+        brn = sg ? $('qsBrn').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase() : $('qsBrn').value.replace(/[^0-9]/g, ''), addr = $('qsAddr').value.trim();
     var first = null, bad = function (id, w) { say(id + 'Msg', w); $(id).setAttribute('aria-invalid', 'true'); first = first || $(id); };
     ['qsReg', 'qsBrn', 'qsAddr'].forEach(function (id) { say(id + 'Msg', ''); $(id).removeAttribute('aria-invalid'); });
     if (reg.length < 3) bad('qsReg', t().billBad.reg);
-    if (!/^[0-9]{12}$/.test(brn)) bad('qsBrn', t().billBad.brn);
+    if (sg ? !/^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(brn) : !/^[0-9]{12}$/.test(brn)) bad('qsBrn', sg ? t().billBad.brnSg : t().billBad.brn);
     if (addr.length < 10) bad('qsAddr', t().billBad.addr);
     if (first) { first.focus(); return; }
     var btn = $('qsAsk'); btn.disabled = true; btn.textContent = t().asking;

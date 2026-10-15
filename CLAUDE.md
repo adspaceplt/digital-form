@@ -4317,15 +4317,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
   Singapore WhatsApp number, brand, industry, consent; a free email is
   advised against, never refused), then the quotation priced by
-  `quote_price` through `quote-request` (Turnstile, checked where the
-  secret `TURNSTILE_SECRET` is set; Verify JWT off), which calls
-  `quote_website_create` (the server's alone): a lead whose contact holds
-  the email or number is used again while Lead, Contacted or Proposal sent,
-  else a lead made (Source Website, nobody's), the quotation kept with
-  `source` website and its key (`?q=`), five a contact a day. No rate is
+  `quote_price` through `quote-request` (Turnstile, every request refused
+  while the secret `TURNSTILE_SECRET` is unset; Verify JWT off), which calls
+  `quote_website_create` (the server's alone): a lead one of whose contacts
+  holds both the email and the number is used again while Lead, Contacted
+  or Proposal sent, else a lead made (Source Website, nobody's), the
+  quotation kept with `source` website, its key (`?q=`) and the brand typed
+  (`contact.brand`, what the visitor reads back), five a contact a day
+  counted under a lock on each, only the selection keys the price reads
+  kept, the number read as `wa_number` reads it (`quote_website_number`;
+  `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). No rate is
   shown before the quotation (`quote_catalogue`, anon, holds none). Proceed
   (beside it at a desk) asks the registered name, a 12-digit registration
-  number and the address (`quote_website_request`, anon, by the key;
+  number (a Singapore lead its UEN, `market` read with the quotation) and
+  the address (`quote_website_request`, anon, by the key;
   `expired`, `not-proceeding`, `bad-billing`), Request received after.
   The team who work leads are told at each step (kinds `quote.website`,
   `quote.requested`; `ops_notifications.client_id` opens the lead's
