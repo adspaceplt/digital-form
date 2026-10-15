@@ -3918,6 +3918,22 @@ finding fixed at the user's word ("fix all no matter what").
   the team does not hand its strategy to the client. The plan stays in the
   internal checklist (FOR INTERNAL USE); no client copy of it is made.
 
+### 2026-10-15 — Gate findings on d9c81d7
+- The day's full gate (d9c81d7 · tests 1b4a661) ended PROBLEM (7).
+- Page faults, fixed: My Work's Open on a month's checklist check wrote the
+  client's id into the address; it now writes the slug, as every other link
+  does. The Services sheet's new Category and SKU row split in halves while
+  the sheet's other two-field rows split a third and two thirds; it now
+  splits as they do.
+- Test faults, fixed in the suites: the View walk read the row "New Client
+  Onboarding Checklist" as a New button (a row that opens a record is read)
+  and now also walks an open checklist at View; the Dashboard checks named a
+  client whose unsigned checklists now join Needs attention, so they look at
+  its report rows; the client portal suite pressed a Contacts tab that is
+  Account's since the six tabs.
+- Build quote's targets and the rate card's Versions heading were fixed the
+  same day by #495.
+
 ### 2026-10-15 — VIC clients: marked by admins, tagged wherever the client is named
 - The user asked for a way to mark the clients who need the team's prompt,
   priority attention. First called VIP; the user renamed it VIC (Very
