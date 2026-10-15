@@ -1417,10 +1417,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     else amber); it opens the client's Months view. It is read from the
     Engagements pane's answer, never a read of its own.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
-  - Overview, Calls and visits (`tab=calls`, Clients: Calls, never behind
-    the Activity record's access; 2026-10-11), Engagements, Contacts,
-    Billing, Brand, Services, Documents, Activity (the Record of changes);
-  - Requests once a contact has portal access or a request exists.
+  six tabs (the user, 2026-10-15: the strip "gradually increasing"), each
+  showing its parts one under the other (`#crmPanes`, 24px apart), each
+  part keeping its heading and its own address (`tab=billing` opens
+  Account on Billing, so every older link lands):
+  - Overview; Calls and visits (`tab=calls`, Clients: Calls, never behind
+    the Activity record's access; 2026-10-11); Engagements (the months,
+    drawn for a client engaged now or before or holding anything, then
+    Checklists; the tab stays for a lead's checklists); Services (with
+    Requests once a contact has portal access or a request exists);
+    Brand; Account (Contacts, Billing, Documents, each behind its part,
+    the tab drawn where any is readable);
+  - the Activity record (the Record of changes, `tab=activity`) has no tab:
+    the rail's Recent activity opens it (View all, `#crmLogAll`), the strip
+    then marking none.
   - There is no Work pane. `tab=work` lands in My Work's Months view
     (`view=months&wc=slug`); there is no Reports pane, and `tab=reports`
     lands on Engagements.

@@ -85,6 +85,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-part]'), function (b) {
       b.hidden = !mayPart(b.getAttribute('data-part'), 'view');
     });
+    /* Account holds three parts: drawn where any one is readable. */
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-parts]'), function (b) {
+      b.hidden = !b.getAttribute('data-parts').split(' ').some(function (k) { return mayPart(k, 'view'); });
+    });
   }
 
   function esc(s) {
@@ -1115,8 +1119,24 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'calls', 'engagements', 'checklists', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  /* Six tabs (2026-10-15; the user: the strip was "gradually increasing,
+     and its getting longer"). Each tab shows its parts one under the other,
+     each part keeping its own heading and its own address: `tab=billing`
+     opens Account on Billing, so every link written before still lands.
+     The Activity record has no tab: it opens from the rail's Recent
+     activity (View all), and the strip then marks none. */
+  var TABS = { overview: ['overview'], calls: ['calls'], engagements: ['engagements', 'checklists'],
+    services: ['services'], brand: ['brand'], account: ['contacts', 'billing', 'documents'], activity: ['activity'] };
+  var GROUP_OF = {};
+  Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
+  var PANES = Object.keys(GROUP_OF).concat(['account']);
+  var PART_OF = { calls: 'clients.calls', services: 'clients.services', contacts: 'clients.contacts',
+    billing: 'clients.billing', documents: 'clients.documents' };
   var pane = 'overview';
+  /* Engagements is drawn for a client engaged now or before, or one holding
+     anything there (js/engage.js); a lead's waits for the answer. Its tab
+     stays for the checklists. */
+  var engShown = null;
 
   function paneFromUrl() {
     var t = new URLSearchParams(location.search).get('tab') || '';
@@ -1124,6 +1144,15 @@
        link lands on the client's reports by month. */
     if (t === 'reports') t = 'engagements';
     return PANES.indexOf(t) >= 0 || t === 'work' ? t : 'overview';
+  }
+  /* A part is drawn where its reader may open it. */
+  function partOk(k) {
+    if (k === 'activity') return maySeeActivity();
+    if (k === 'engagements') {
+      var c = state.client, ENG = window.ADspaceEngage;
+      return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
+    }
+    return !PART_OF[k] || mayPart(PART_OF[k], 'view');
   }
 
   /* `visit` is a move somebody made to the pane (its tab, Back, a link on
@@ -1138,45 +1167,59 @@
       return;
     }
     if (PANES.indexOf(key) < 0) key = 'overview';
-    if (key === 'activity' && !maySeeActivity()) key = 'overview';
-    var tabOf = document.querySelector('#crmTabs .tab[data-pane="' + key + '"]');
-    if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
+    var group = TABS[key] ? key : GROUP_OF[key];
+    var parts = TABS[group].filter(partOk);
+    /* A part not readable falls to its tab's first readable part; a tab
+       with none falls to Overview. Engagements' own part waits for its
+       answer, so its tab never falls while the checklists stand. */
+    if (!parts.length) { key = 'overview'; group = 'overview'; parts = ['overview']; }
+    else if (!TABS[key] && parts.indexOf(key) < 0) key = parts[0];
     pane = key;
     /* On its own pane the act is the pane's head's: offered once on a screen. */
     var lc = $('crmLogCall');
-    if (lc) lc.classList.toggle('is-here', key === 'calls');
+    if (lc) lc.classList.toggle('is-here', group === 'calls');
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
-      var on = b.getAttribute('data-pane') === key;
+      var on = b.getAttribute('data-pane') === group;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-selected', String(on));
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.rec-pane'), function (el) {
-      el.hidden = el.getAttribute('data-pane') !== key;
+    Array.prototype.forEach.call(document.querySelectorAll('#crmWork .rec-pane'), function (el) {
+      el.hidden = parts.indexOf(el.getAttribute('data-pane')) < 0;
     });
-    if (key === 'activity' && !(state.log || []).length) loadClientLog();
-    if (key === 'overview') paintSummary();
-    if (key === 'engagements' && visit) loadEngage(true);
+    if (parts.indexOf('activity') > -1 && !(state.log || []).length) loadClientLog();
+    if (group === 'overview') paintSummary();
+    if (group === 'engagements' && visit) loadEngage(true);
     /* A visit reads the calls again: a colleague may have logged one since. */
-    if (key === 'calls' && visit) loadTouches();
-    if (key === 'billing') loadDetForm();
+    if (group === 'calls' && visit) loadTouches();
+    if (parts.indexOf('billing') > -1) loadDetForm();
     /* The checklists are read on every visit and on a record opened on
        them (2026-10-15). */
-    if (key === 'checklists' && window.ADspaceChecklists && state.client &&
+    if (parts.indexOf('checklists') > -1 && window.ADspaceChecklists && state.client &&
         (visit || ckFor !== state.client.id)) {
       ckFor = state.client.id;
       window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg });
+    }
+    /* A part named by itself, below its tab's first, is brought into view. */
+    if (!TABS[key] && parts[0] !== key) {
+      var el = document.querySelector('#crmWork .rec-pane[data-pane="' + key + '"]');
+      if (el) requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
     }
   }
   var ckFor = null;
 
   gateTabs();
   Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
-    if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
     b.addEventListener('click', function () {
       if (b.getAttribute('data-pane') === pane) return;
       showPane(b.getAttribute('data-pane'), true);
       pushUrl();
     });
+  });
+  /* The whole Activity record, from the rail's Recent activity. */
+  if ($('crmLogAll')) $('crmLogAll').addEventListener('click', function () {
+    if (pane === 'activity') return;
+    showPane('activity', true);
+    pushUrl();
   });
   /* Back and Forward move between panes, because the pane is in the address
      and the address is what the browser remembers. */
@@ -3738,10 +3781,11 @@
     if (!c || !ENG) return;
     /* The tab is drawn for a client engaged now or before, or one holding
        anything there; a lead's waits for the answer. */
-    var tab = document.querySelector('#crmTabs .tab[data-pane="engagements"]');
     var show = ENGAGED.indexOf(c.stage) > -1 || ENG.holds(c.id);
-    if (tab) tab.hidden = !show;
-    if (!show && pane === 'engagements' && ENG.loaded(c.id)) { showPane('overview'); setUrl(); }
+    if (show !== engShown) {
+      engShown = show;
+      if (GROUP_OF[pane] === 'engagements' || pane === 'engagements') { showPane(pane); setUrl(); }
+    }
     paintEngageActions(c);
     ENG.paint($('crmWorkList'), c, $('crmEngageMsg'));
   }

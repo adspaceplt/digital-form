@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261015z">
+<link rel="stylesheet" href="/css/portal.css?v=20261015za">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -702,16 +702,22 @@
             <!-- The client's work by content month, its reports included
                  (2026-10-10): drawn for a client engaged now or before, or
                  one holding anything there (js/engage.js). -->
-            <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false" hidden>Engagements</button>
-            <button class="tab" data-pane="checklists" type="button" role="tab" aria-selected="false">Checklists</button>
-            <button class="tab" data-pane="contacts" data-part="clients.contacts" type="button" role="tab" aria-selected="false">Contacts</button>
-            <button class="tab" data-pane="billing" data-part="clients.billing" type="button" role="tab" aria-selected="false">Billing</button>
-            <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
+            <!-- Six tabs (2026-10-15; the user: the strip "gradually
+                 increasing ... getting longer"): Engagements holds the
+                 client's work by month and its checklists, Account its
+                 contacts, billing and documents; the Activity record opens
+                 from the rail's Recent activity. Each part keeps its own
+                 address (`tab=billing`), which opens its tab on it. -->
+            <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false">Engagements</button>
             <button class="tab" data-pane="services" data-part="clients.services" type="button" role="tab" aria-selected="false">Services</button>
-            <button class="tab" data-pane="documents" data-part="clients.documents" type="button" role="tab" aria-selected="false">Documents</button>
-            <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
+            <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
+            <button class="tab" data-pane="account" data-parts="clients.contacts clients.billing clients.documents" type="button" role="tab" aria-selected="false">Account</button>
           </nav>
 
+          <!-- The record's parts in one column (2026-10-15): a tab shows its
+               parts one under the other, so they share the grid's one pane
+               area through this box. -->
+          <div class="rec-panes" id="crmPanes">
           <div class="rec-pane" data-pane="overview">
         <!-- What this client needs, and where everything else stands. Built
              only from what the record has already loaded: no second read, no
@@ -1341,6 +1347,8 @@
           </div>
 
 
+          </div>
+
           <!-- The rail carries what is true whichever pane is open, in the
                order somebody needs it: what to do next, what is stopping the
                record, how much of it is filled in, the dates that matter, the
@@ -1407,7 +1415,8 @@
           <!-- The last few things the portal recorded about this client. The
                whole record is one tab away; this is the excerpt. -->
           <div class="railblock rail-after" id="crmRailLogBlock" hidden>
-            <h3 class="railtitle">Recent activity</h3>
+            <div class="railhead"><h3 class="railtitle">Recent activity</h3>
+              <button class="btn btn-quiet btn-sm ovgo" type="button" id="crmLogAll" data-go="activity">View all<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
             <div id="crmRailLog"></div>
           </div>
           </aside>
@@ -5385,7 +5394,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261015b"></script>
 <script src="/js/quotepdf.js?v=20261015"></script>
 <script src="/js/checklists.js?v=20261015a"></script>
-<script src="/js/crm.js?v=20261015j"></script>
+<script src="/js/crm.js?v=20261015k"></script>
 <script src="/js/sales.js?v=20261012l"></script>
 <script src="/js/team.js?v=20261015"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
