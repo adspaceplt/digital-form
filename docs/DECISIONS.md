@@ -4108,3 +4108,15 @@ finding fixed at the user's word ("fix all no matter what").
   address. The console writes the new letters only once `shareLetters` is
   on, after the user pastes the Worker, so no link is written that the live
   Worker would send to the wrong page.
+
+- 2026-10-15 · Full links everywhere except namecards. The user, weighing
+  short links against the site's own ("Suddenly think that the copy using hi
+  short links not great idea"; "1, full links everywhere except
+  namecards"): Copy link and the shown address on Content Review (the
+  review link and a set's), the selection page, Video Scripts and a
+  creator's page give the full digital.adspace.me address, which carries
+  the site's own name in a chat and needs no second service to open.
+  `shareLinks: false` in js/config.js; a set's link is the review link with
+  `#s-{eight}`. Namecards keep their short link (printed QR codes). The
+  links Worker still answers every short link already sent; pasting the
+  re-lettered Worker is now needed only for bare /c to open the portal.
