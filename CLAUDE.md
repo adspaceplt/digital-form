@@ -3898,6 +3898,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     throughout and what the team wrote prints as written (the user,
     2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
+    Chinese drafts read smooth and easy, as an account manager writes to
+    the owner, never a stiff audit report (`ZH`, TONE IN CHINESE; the
+    user, 2026-10-16).
     Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point, and candid both ways (the user,
@@ -3912,7 +3915,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     our work, praise no figure carries, comfort phrases in place of a figure,
     words that colour a figure) are never used, and the check finds them and
     a picture brighter than the figures. The ads field `fix` is headed Areas
-    to improve.
+    to improve: an ad that cost more is read against its objective's own
+    cost per result (`group_cost_per_result`, the marked ads left out) or
+    the previous period, never against the best ad by name, as a multiple
+    or a gap, or as the worst or highest (the user, 2026-10-16: "is this a
+    proper way … to present client-facing report"), and an ad within about
+    a fifth of that figure is not an area to improve.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`), by subject
     (the report, or any of the same client and kind whose period shares a
@@ -4137,6 +4145,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     bolds it, puts it last with ¹ and one neutral note under the table (Not
     ranked: minimal delivery), never the word error. Nothing marks one by
     itself (an ad made days before the period ends spends little).
+    `report-draft` reads it as `not_ranked` (left out of `cost_rank`, its
+    reason never sent) and never names it an error or a mark, even where
+    the notes do; the check flags those words (`AVOID`).
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).

@@ -4149,3 +4149,24 @@ finding fixed at the user's word ("fix all no matter what").
   client). The pane now keeps the contact sent, Not in Contacts with Add as
   contact, until Contacts holds them; Use details picks them as the billing
   contact where they exist, and a contact added from the form becomes it.
+
+- 2026-10-16 · Mistake: Write with AI named an ad error to the client. The
+  Ad error release kept the word out of the PDF but never told
+  `report-draft`, so a Chinese draft wrote 「Ad Error」 and ranked the ad
+  among its peers (found by the user on a draft). The function now reads
+  `ad_error` as `not_ranked`, leaves it out of `cost_rank`, and `AVOID`
+  forbids naming it an error or a mark in either language. The same day the
+  user asked Chinese drafts to read smoother: TONE IN CHINESE in `ZH`.
+
+- 2026-10-16 · Areas to improve read against the objective, not the best ad.
+  A draft called an ad the most expensive, "more than twice" another ad
+  and "RM 5.90 higher" than a third. The user: as an agency, is this a
+  proper way to present a client-facing report? It was not, and our own
+  instructions taught it: SHARED's example read "nearly three times the
+  cost of 2609_OpenHouse". The function now hands each ad its objective's
+  cost per result and words a shortfall as a refinement against that.
+- 2026-10-16 · Mistake: report-draft deployed incomplete for about three
+  minutes (version 29). Pasting the function by hand, a placeholder went
+  out in place of the file's second half, so Write with AI failed until
+  version 30. A deploy is now read back and compared with the repo before
+  the next step, and never sent as a part.
