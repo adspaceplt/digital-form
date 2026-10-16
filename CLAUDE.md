@@ -1507,7 +1507,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     client (kind `client.details`, opening Billing). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
     details fills the Billing sheet and its own Save takes them in
-    (`client_details_used`); Add as contact opens Contacts prefilled. The
+    (`client_details_used`), picking the billing contact the client sent
+    where Contacts holds them (email, else the number's last nine digits);
+    while Contacts does not, the form keeps showing them, Not in Contacts,
+    with Add as contact, before and after Use details, which opens Contacts
+    prefilled and makes the contact saved the billing contact. The
     form never writes the record. `client_detail_forms` has RLS on, no
     policy, no grant.
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
