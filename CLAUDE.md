@@ -5264,7 +5264,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
-  the live source is read back (the user, 2026-09-30).
+  the live source is read back (the user, 2026-09-30) and compared with the
+  repo file before anything else; a file is always sent whole, never in
+  part (2026-10-16: a half file broke `report-draft` for three minutes).
 - The report lists what the user does by hand: a dashboard setting.
 - Every go-live report names the version the console shows exactly as the rail reads it (`v{YY.MM.DD} · {commit}`), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
