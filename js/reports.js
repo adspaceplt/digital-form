@@ -720,7 +720,10 @@
     var r = st.open || {};
     if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None';
     if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None';
-    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None';
+    if (k === 'ads') {
+      var nErr = st.ads.filter(adErr).length;
+      return st.ads.length ? plural(st.ads.length, 'ad') + (nErr ? ' · ' + nErr + ' marked as ad error' : '') : 'None';
+    }
     if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
     if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
     return (STATUS[r.status] || STATUS.draft)[0];
@@ -3658,7 +3661,7 @@
   function sortAds() {
     var ord = {}; OBJECTIVES.forEach(function (o, i) { ord[o[0]] = i; });
     st.ads.sort(function (a, b) {
-      var d = (adPlat(a) === 'tiktok') - (adPlat(b) === 'tiktok') || ord[a.objective] - ord[b.objective];
+      var d = (adPlat(a) === 'tiktok') - (adPlat(b) === 'tiktok') || ord[a.objective] - ord[b.objective] || adErr(a) - adErr(b);
       if (d) return d;
       var ca = adCpr(a), cb = adCpr(b);
       if (ca === null && cb !== null) return 1;
@@ -3874,11 +3877,11 @@
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(adName(a.name)) + '</b><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
+            '<span class="rp-name"><b>' + esc(adName(a.name)) + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</b><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
-            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
+            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate', adErr(a) ? 'Clear ad error' : 'Mark ad error'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join(''); }).join('');
     if (pick) { wirePick(box); return; }
@@ -3896,7 +3899,33 @@
       if (act === 'Edit') adSheet(a, btn);
       if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
       if (act === 'Remove') removeAd(a);
+      if (act === 'Mark ad error') markAdError(a);
+      if (act === 'Clear ad error') setAdError(a, null);
     });
+  }
+
+  /* An ad error (2026-10-16; the user: a row such as RM 0.01 spent for 40
+     results is a fault, not the cheapest ad): the team marks it with a
+     reason. The ad stays on the report and in every total; the PDF leaves
+     it out of the ranking, never marks it cheapest, and notes it under its
+     table in neutral words. The reason is the team's alone. */
+  function adErr(a) { return !!(a && String(a.ad_error || '').trim()); }
+  function markAdError(a) {
+    window.ADspaceConfirm.ask({ title: 'Mark ad error?', body: 'The ad stays on the report and in every total. The PDF leaves it out of the ranking and notes it under its table.', go: 'Mark ad error',
+      field: { label: 'Reason', rows: 2, need: 'A reason is required.', placeholder: 'Meta delivery error' } }, function (why) {
+      setAdError(a, String(why || '').trim().slice(0, 200));
+    });
+  }
+  function setAdError(a, why) {
+    var was = a.ad_error || null;
+    var m = st.host.querySelector('[data-m="head"]');
+    db.from('sm_report_ads').update({ ad_error: why }).eq('id', a.id).select('id').then(function (res) {
+      if (res.error || !(res.data || []).length) { say(m, said(res.error || 'Not saved. The database refused the request.'), 'err'); return; }
+      a.ad_error = why;
+      fileReport('report.saved', 'Ad · ' + adName(a.name) + ' · ' + (why ? 'Marked as ad error: ' + why : 'Ad error cleared'));
+      sortAds(); paintAds();
+      if (why) undoBar(adName(a.name) + ' marked as ad error.', st.host.querySelector('.rp-ads'), function () { setAdError(a, was); });
+    }).catch(function (e) { say(m, said(e), 'err'); });
   }
 
   /* The team's reference to the ads a row was built from (the console's

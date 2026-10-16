@@ -4124,6 +4124,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first.
+  - Ad error (`sm_report_ads.ad_error`, `2026-10-16-ad-error.sql`; the
+    user, 2026-10-16: a Meta delivery fault read as the cheapest ad): an
+    ad's ⋯ Mark ad error asks a reason (200 at most) on a draft at Work, the
+    row reads the Ad error chip and sits last in its objective, Clear ad
+    error never asks, each filed `report.saved` with Undo where it
+    happened. It stays in every total and table; the PDF never ranks or
+    bolds it, puts it last with ¹ and one neutral note under the table (Not
+    ranked: minimal delivery), never the word error. Nothing marks one by
+    itself (an ad made days before the period ends spends little).
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
