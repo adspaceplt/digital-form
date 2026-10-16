@@ -80,7 +80,7 @@ Never as praise: excellent, outstanding, exceptional, remarkable, impressive, am
 Never as comfort in place of a figure: room to grow, valuable insights, valuable learnings, a learning opportunity, a clear signal, laid a strong foundation, positive momentum, despite the challenges. In Chinese: 仍有提升空间, 宝贵经验, 学习机会, 打下坚实基础, 积极势头, 尽管面临挑战. Say what fell short, by how much, and what we will change.
 No word that colours a figure up or down, before or around it: only, just, merely, a mere, as few as, barely, a whopping, as many as, unfortunately, sadly, thankfully, encouragingly. In Chinese: 仅, 仅仅, 仅有, 只, 只有, 才, 高达, 足足, 竟, 竟然, 遗憾, 可惜, 幸好. Give the figure plainly ("278 views and 10 engagements", "获得278次观看与10次互动").
 A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank), never worked out by reading the figures.
-An ad with not_ranked true recorded minimal delivery and is left out of the ranking: never call it the cheapest or the dearest, never judge the work by it, and never write "ad error", "Ad Error", "error", "marked", "flagged", 广告错误, 错误 or 标记 of it, nor say the team marked it, even where the notes use those words: those words are internal. Where it needs a mention, say its delivery was too limited to compare ("投放量有限，暂不纳入比较").
+An ad with not_ranked true recorded minimal delivery and is left out of the ranking: never call it the cheapest or the dearest, never judge the work by it, and never write "ad error", "Ad Error", "error", "marked", "flagged", 广告错误, 错误 or 标记 of it, nor say the team marked it, even where the notes use those words: those words are internal. Where it needs a mention, say so in the draft's own language, never the other: in English "its delivery was too limited to compare"; in Chinese "投放量有限，暂不纳入比较".
 Never compare one ad with another by name as a multiple or a gap (two times, double, three times, RM 5.90 more than, 两倍, 三倍, 高出, 比…高), and never call an ad's cost the worst or the highest (最差, 最高); read it against its objective's cost per result (group_cost_per_result) instead.`;
 
 /* What every draft keeps to (the user, 2026-10-01): only what a client
@@ -227,7 +227,7 @@ function adName(s: unknown): string { return String(s ?? '').trim().replace(/[\s
    filled with the name, and a Chinese honorific that slipped through is put
    back to the name too. With no name held, {brand} reads 品牌 or the brand. */
 function brandIn(s: string, name: string): string {
-  const zh = /[\u4e00-\u9fff]/.test(s);
+  const zh = /[一-鿿]/.test(s);
   const n = name || (zh ? '品牌' : 'the brand');
   return s.replace(/\{\s*brand\s*\}/gi, n)
     .replace(/(贵|貴)(公司|司|品牌|企业|企業|方)|您公司/g, n);
