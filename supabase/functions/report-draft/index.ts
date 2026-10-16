@@ -79,7 +79,9 @@ const AVOID = `Never said of our creative, design, copy, caption, content plan o
 Never as praise: excellent, outstanding, exceptional, remarkable, impressive, amazing, incredible, perfect, flawless, seamless, phenomenal, a huge success, all goals achieved, every ad performed well, no issues, as always, consistently strong. In Chinese: 完美, 卓越, 出色, 优异, 非常成功, 圆满成功, 全面提升, 毫无问题, 零失误, 一如既往, 持续优秀. Give the figure instead.
 Never as comfort in place of a figure: room to grow, valuable insights, valuable learnings, a learning opportunity, a clear signal, laid a strong foundation, positive momentum, despite the challenges. In Chinese: 仍有提升空间, 宝贵经验, 学习机会, 打下坚实基础, 积极势头, 尽管面临挑战. Say what fell short, by how much, and what we will change.
 No word that colours a figure up or down, before or around it: only, just, merely, a mere, as few as, barely, a whopping, as many as, unfortunately, sadly, thankfully, encouragingly. In Chinese: 仅, 仅仅, 仅有, 只, 只有, 才, 高达, 足足, 竟, 竟然, 遗憾, 可惜, 幸好. Give the figure plainly ("278 views and 10 engagements", "获得278次观看与10次互动").
-A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank), never worked out by reading the figures.`;
+A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank), never worked out by reading the figures.
+An ad with not_ranked true recorded minimal delivery and is left out of the ranking: never call it the cheapest or the dearest, never judge the work by it, and never write "ad error", "Ad Error", "error", "marked", "flagged", 广告错误, 错误 or 标记 of it, nor say the team marked it, even where the notes use those words: those words are internal. Where it needs a mention, say its delivery was too limited to compare ("投放量有限，暂不纳入比较").
+Never compare one ad with another by name as a multiple or a gap (two times, double, three times, RM 5.90 more than, 两倍, 三倍, 高出, 比…高), and never call an ad's cost the worst or the highest (最差, 最高); read it against its objective's cost per result (group_cost_per_result) instead.`;
 
 /* What every draft keeps to (the user, 2026-10-01): only what a client
    needs, short, and never a word against the work we made for them; nor,
@@ -91,7 +93,7 @@ HONEST BOTH WAYS
 The report is a partner's: as plain about what fell short as about what worked, so the client can trust both. Never write as if every ad worked, nothing went wrong or results are always strong: that reads as fake. Never write a good month down either: give each result its figure and its real weight.
 A month weaker than the one before is called weaker, with its figures, in the summary, never left for the reader to find.
 What worked: the figure, then the choice behind it (the offer we led with, the hook, the format, the audience we picked). Praise only what a figure shows, in plain words ("the strongest", "the lowest cost per lead", "rose by 18%").
-What fell short: the figure and how far short (against the other ads of its objective, the other posts on its platform or the previous period), then what we will change ("2609_Facilities brought 6 leads at RM 38.90 each, nearly three times the cost of 2609_OpenHouse; we will pause it and rework the offer"). Areas to improve names what truly delivered least, even in a good month, and never invents a shortfall.
+What fell short: an optimisation the client can see we are on, never a verdict. Give the ad's own figure, read against its objective's cost per result (group_cost_per_result) or the previous period, then what we will change ("2609_Facilities brought 6 leads at RM 38.90 each, above the RM 23.41 average for Leads; we will rework the offer and test a new opening"). Never measure an ad against the best one by name, never as a multiple or a gap ("two times", "nearly three times", "RM 5.90 higher than", "两倍", "高出"), never "the worst", "the most expensive" or "最高" of an ad's cost, and never call the month's results poor: say what will be refined. An ad within about a fifth of its objective's cost per result is working as planned and is not an area to improve. Areas to improve names what truly delivered least, even in a good month, and never invents a shortfall.
 Judge the result, never the work: we made the creatives, copy, captions, content plan, schedule and targeting, so never call them bad or blame them; say what the audience did and what we will change.
 Where the figures show why, say so; where they do not, say that plainly ("the figures do not point to a single cause") and what we will test to find out. Never explain a shortfall away with a reason the notes do not give: no blaming the client (their product, price, stock or reply time), the platform, the algorithm or the season unless the notes say so.
 When the notes say something went wrong on our side (a late launch, a broken link, an ad paused in error, a budget set wrongly), say so in one plain sentence, with what it affected where the figures show it and what we have done about it. Never hide it, never dramatise it, never invent one.
@@ -110,7 +112,8 @@ Write only what the client needs to understand the month and the next step; the 
 const ZH = `
 
 LANGUAGE
-This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们. Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name): "{brand}本月的潜在客户成本下降". Never 贵公司, 貴公司, 贵司, 貴司, 贵品牌, 貴品牌, 贵方, 贵企业 or 您公司: these honorifics read stiff to a Malaysian or Singaporean business owner. Use 您 sparingly, never in place of {brand}. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.`;
+This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们. Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name): "{brand}本月的潜在客户成本下降". Never 贵公司, 貴公司, 贵司, 貴司, 贵品牌, 貴品牌, 贵方, 贵企业 or 您公司: these honorifics read stiff to a Malaysian or Singaporean business owner. Use 您 sparingly, never in place of {brand}. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.
+TONE IN CHINESE (the team, 2026-10-16): smooth and easy to read, as a trusted account manager writes to the business owner, never a stiff audit report. Short, flowing sentences with natural connectives (所以, 因此, 接下来, 另外); plain words over report jargon. Avoid 鉴于, 综上所述, 据此, 予以, 系, 其中, 该数据, 该广告, 遭到, 不足以评估 and chains of 的. Example: "2610W1_Steps 带来 2 次消息对话，每次 RM 23.90，高于消息类广告每次 RM 15.20 的平均成本。接下来我们会调整开头的画面，看看能否把成本降下来。"`;
 
 /* The house style, taken from the team's approved ads reports (the user,
    2026-10-01) and tightened where those reports were loosest: a reason for
@@ -125,13 +128,13 @@ TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
 
 READING THE FIGURES
-Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the cheapest; out of ads_in_group), worked out for you: say an ad is the cheapest, the second or the dearest only from it. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
+Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the cheapest; out of ads_in_group), worked out for you: say an ad is the cheapest or the second only from it, and never name an ad the dearest; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
 Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
 Summary (intro): one paragraph of two or three sentences. Total spend for the period and its change against the previous period in percent, with the reason when the notes give one; how results, cost per result and reach moved against the previous period where it is given, said plainly whichever way they went; which objective took most of the budget and why; the strongest ad with its result count, cost per result and CTR. Lead with the client's goal when the notes name one.
 What worked (worked): two to four points, one a line, grouped by objective, strongest first; each names the ad, its result count, cost per result and the one or two rates that explain it, then what that shows. A line starting with "- " is a sub-point under the line above, for a second ad in the same objective or a caveat.
-Areas to improve (fix): one to three points, one a line, on the ads that delivered least: the figure that shows it and how far short it fell (against the other ads of its objective or the previous period), what its own rates suggest about the audience, and what we will change (pause, rework the offer, retarget, a new opening). If one step covers several ads, say so once.
+Areas to improve (fix): one to three points, one a line, on the ads that delivered least: the figure that shows it, read against its objective's cost per result or the previous period, what its own rates suggest about the audience, and what we will change (pause, rework the offer, retarget, a new opening). If one step covers several ads, say so once.
 Focus for next month (focus): two or three points: how the budget splits across objectives (in percent where the notes or the data support it), which ads continue and where, what new creatives or audiences we will test, and the next period's dates and budget when the notes give them. Each point says "We will".
 
 FORM
@@ -142,7 +145,7 @@ intro: September spend was RM 2,140.50, 12.40% lower than August, as part of the
 worked: 2609_OpenHouse generated 31 leads at RM 14.20 cost per lead with the highest CTR of 3.85%, showing that the open house offer is the clearest reason to enquire.
 - Its hold rate of 11.20% was also the strongest, so viewers stayed for the details as well as the opening.
 For Awareness, 2608_Skyline reached 96,400 people at RM 2.05 per 1,000 reached, keeping {brand} visible at low cost.
-fix: 2609_Facilities brought 6 leads at RM 38.90 each, nearly three times the cost of 2609_OpenHouse; 31% stopped for its opening but few enquired, so we will pause it and rework the offer.
+fix: 2609_Facilities brought 6 leads at RM 38.90 each, above the RM 23.41 average for Leads; 31% stopped for its opening but fewer went on to enquire, so we will refine the offer before running it again.
 Messaging cost RM 9.80 per conversation against RM 6.40 in August; the figures do not point to a single cause, so we will test a broader audience to find out.
 focus: We will keep about 80% of the budget on Leads and 20% on Awareness.
 We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is ready.`;
@@ -442,7 +445,7 @@ Deno.serve(async (req) => {
   }
   if (kind === 'ads') {
     const ads = await db.from('sm_report_ads')
-      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform')
+      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform, ad_error')
       .eq('report_id', id).order('position', { ascending: true });
     if (ads.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ads.data || []).length) return json({ error: 'no-ads' }, 200, origin);
@@ -469,11 +472,24 @@ Deno.serve(async (req) => {
     const adRows = ads.data as Record<string, unknown>[];
     const cprOf = (a: Record<string, unknown>) => num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? num(a.spend)! / num(a.results)! : null);
     const groupOf = (a: Record<string, unknown>) => [a.platform || 'meta', a.objective || '', a.result_label || ''].join('|');
+    /* An ad the team marked (2026-10-16, `ad_error`) is never ranked, as
+       the PDF leaves it out; its reason stays with the team. */
+    const marked = (a: Record<string, unknown>) => !!String(a.ad_error || '').trim();
+    /* The objective's own cost per result (its spend over its results, the
+       marked ads left out), so a shortfall is read against the objective,
+       never against its best ad (the user, 2026-10-16). */
+    const groupAvg = (a: Record<string, unknown>) => {
+      const g = adRows.filter((b) => !marked(b) && groupOf(b) === groupOf(a) && num(b.results) && num(b.spend) !== null);
+      const res = g.reduce((t, b) => t + num(b.results)!, 0), sp = g.reduce((t, b) => t + num(b.spend)!, 0);
+      return g.length > 1 && res ? Math.round(sp / res * 100) / 100 : null;
+    };
     const rankAd = (a: Record<string, unknown>) => {
       const mine = cprOf(a);
-      const peers = adRows.filter((b) => groupOf(b) === groupOf(a) && num(b.results) && cprOf(b) !== null);
+      const peers = adRows.filter((b) => !marked(b) && groupOf(b) === groupOf(a) && num(b.results) && cprOf(b) !== null);
+      if (marked(a)) return { cost_rank: null, ads_in_group: peers.length, not_ranked: true };
       if (mine === null || !num(a.results)) return { cost_rank: null, ads_in_group: peers.length };
-      return { cost_rank: 1 + peers.filter((b) => cprOf(b)! < mine - 0.0001).length, ads_in_group: peers.length };
+      return { cost_rank: 1 + peers.filter((b) => cprOf(b)! < mine - 0.0001).length, ads_in_group: peers.length,
+        group_cost_per_result: groupAvg(a) };
     };
     data.ads = adRows.map((a) => ({
       ...rankAd(a),
