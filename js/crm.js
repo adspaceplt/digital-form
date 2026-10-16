@@ -2396,9 +2396,12 @@
     var make = work ? '<button class="btn btn-sm" type="button" data-df="make">Create link</button>' : '';
     if (!f || f.state === 'used' || f.state === 'expired') {
       if (!work && !f) { box.hidden = true; return; }
+      var ua = f && f.state === 'used' && f.answers, uwho = ua ? dfWho(ua) : '', uin = ua ? dfContactOf(ua) : null;
       box.innerHTML = head(make) + '<dl class="ovfacts"><div><dt>State</dt><dd>' +
         (!f ? 'Not sent' : f.state === 'used' ? 'Received ' + esc(day(f.submitted_at)) + ', taken into Billing' : 'Link expired ' + esc(day(f.expires_at))) +
-        '</dd></div></dl><div class="msg" id="crmDfMsg"></div>';
+        '</dd></div>' + (uwho ? '<div><dt>Billing contact</dt><dd>' + esc(uwho) + (uin ? '' : '<br>Not in Contacts') + '</dd></div>' : '') + '</dl>' +
+        (uwho && !uin && work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
+        '<div class="msg" id="crmDfMsg"></div>';
     } else if (f.state === 'open') {
       var url = f.key ? dfUrl(f.key) : '';
       box.innerHTML = head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -2411,19 +2414,32 @@
           '</div></div>' : '') + '<div class="msg" id="crmDfMsg"></div>';
     } else {
       var a = f.answers || {};
-      var who = ((a.contact_salutation ? a.contact_salutation + ' ' : '') + (a.contact_name || '')).trim();
+      var who = dfWho(a), inC = dfContactOf(a);
       box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
         DF_ROWS.filter(function (r) { return a[r[0]]; }).map(function (r) {
           return '<div><dt>' + esc(r[1]) + '</dt><dd' + (r[0] === 'billing_address' ? ' class="is-pre"' : '') + '>' + esc(a[r[0]]) + '</dd></div>';
         }).join('') +
         '<div><dt>Billing contact</dt><dd>' + esc(who) + '<br>' + esc(a.contact_phone || '') + '<br>' + esc(a.contact_email || '') + '</dd></div></dl>' +
-        (work && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
+        (work && !inC && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
         '<div class="msg" id="crmDfMsg"></div>';
     }
     box.hidden = false;
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
     if ($('crmBillAsk') && !$('crmBillAsk').hidden) paintBillAsk();
+  }
+  /* The billing contact the client sent (2026-10-16; the user: the full
+     name sent on the form was nowhere in the portal): found among the
+     client's contacts by email, else by the number's last nine digits. */
+  function dfWho(a) { return ((a.contact_salutation ? a.contact_salutation + ' ' : '') + (a.contact_name || '')).trim(); }
+  function dfContactOf(a) {
+    var em = String(a.contact_email || '').trim().toLowerCase(), ph = String(a.contact_phone || '').replace(/\D/g, '').slice(-9);
+    return (state.contacts || []).filter(function (ct) {
+      if (ct.archived_at) return false;
+      if (em && String(ct.email || '').trim().toLowerCase() === em) return true;
+      var p = String(ct.phone || '').replace(/\D/g, '').slice(-9);
+      return ph.length === 9 && p === ph;
+    })[0] || null;
   }
   /* The client's answers into the Billing sheet, for its own Save. */
   function useDetails(b) {
@@ -2435,7 +2451,10 @@
       if (el && f.answers[k]) { el.value = f.answers[k]; el.dispatchEvent(new Event('input', { bubbles: true })); }
     });
     state.detUse = f.id;
-    msg('crmBillMsg', 'Filled from the details form. Review, then Save.', 'ok');
+    var ct = dfContactOf(f.answers), main = mainContact(), who = dfWho(f.answers);
+    if (ct) { $('crmBillContact').value = main && ct.id === main.id ? '' : ct.id; $('crmBillContact').dispatchEvent(new Event('input', { bubbles: true })); }
+    msg('crmBillMsg', ct || !who ? 'Filled from the details form. Review, then Save.'
+      : 'Filled from the details form. ' + who + ' is not in Contacts: after Save, use Add as contact on the details form.', ct || !who ? 'ok' : 'warn');
   }
   /* The Active gate's Billing sheet offers the details form (2026-10-15,
      audit CLI-6): what the team would type, the client can send. */
@@ -2511,6 +2530,7 @@
       $('ctPhone').value = f.answers.contact_phone || '';
       $('ctEmail').value = f.answers.contact_email || '';
       $('ctPrimary').checked = false;
+      state.dfContact = f.id;
     }
   });
 
@@ -3208,6 +3228,18 @@
      timestamp and sits under "Removed" until someone puts them back. */
   var showRemovedContacts = false;
 
+  /* A contact added from the details form is the client's billing contact,
+     as the client named them. */
+  function dfBillTo(id, name) {
+    var c = state.client;
+    db.from('clients').update({ bill_contact_id: id }).eq('id', c.id).select('id').then(function (r) {
+      if (!r.error && (r.data || []).length) {
+        c.bill_contact_id = id;
+        log('client.billing', c.name, 'Billing contact · from the details form');
+      }
+      loadContacts();
+    }).catch(function () { loadContacts(); });
+  }
   function loadContacts() {
     var box = $('crmContacts');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
@@ -3220,6 +3252,7 @@
         paintSummary();
         var gone = all.filter(function (c) { return c.archived_at; });
         paintBilling(state.client);
+        if (state.detForm) paintDetForm();
         $('crmContactNames').innerHTML = state.contacts.map(function (ct) {
           return '<option value="' + esc(ct.name) + '"></option>';
         }).join('');
@@ -3477,7 +3510,7 @@
        focus raises the keyboard and zooms the page past the rest of the form,
        and the first field is rarely the one somebody came to change. */
   }
-  function shutContact() { shutSheet('crmContactBox'); editingContact = null; }
+  function shutContact() { shutSheet('crmContactBox'); editingContact = null; state.dfContact = null; }
   $('crmAddContact').addEventListener('click', function () { openContact(null); });
   $('ctCancel').addEventListener('click', shutContact);
 
@@ -3502,8 +3535,9 @@
       log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
         editingContact ? changed(editingContact, row, [['salutation', 'Salutation'], ['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
           ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
+      var fromForm = !editingContact && state.dfContact, newId = r.data[0].id;
       shutContact();
-      loadContacts();
+      if (fromForm && !row.is_primary && mayPart('clients.billing', 'work')) dfBillTo(newId, name); else loadContacts();
     };
     var go = function () {
       if (editingContact) {

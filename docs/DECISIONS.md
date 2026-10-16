@@ -4140,3 +4140,12 @@ finding fixed at the user's word ("fix all no matter what").
   neutral footnote; the client never reads "error". An automatic low-spend
   check was declined: ads launched near the period's end spend little and
   are not faults.
+
+- 2026-10-16 · Mistake: the details form's billing contact was lost. A client
+  sent their full name on the details form, and the team found it nowhere
+  in the portal. Use details took the company fields into Billing but never
+  the contact, and once used the pane hid the answers and Add as contact,
+  so the name could no longer be reached (found by the user on a live
+  client). The pane now keeps the contact sent, Not in Contacts with Add as
+  contact, until Contacts holds them; Use details picks them as the billing
+  contact where they exist, and a contact added from the form becomes it.
