@@ -4177,3 +4177,14 @@ finding fixed at the user's word ("fix all no matter what").
   and the chosen word reads at 400 like the rest, so nothing marked it
   (found by the user on a phone). Dark `--seg-on` is now #57544f, clear of
   the track on both the card and the shaded ground.
+
+- 2026-10-16 · An admin reviews their own report. Submitting asked an
+  admin to name another colleague as reviewer, though an admin already
+  confirms their own report (2026-10-02). The user: that violates the
+  hierarchy. The admin is now offered as Me and chosen; the record reads
+  Reviewer: themselves (admin). Anyone else still names another colleague.
+- 2026-10-16 · Mistake: an English commentary check suggested Chinese
+  words. The not-ranked rule in AVOID gave its one wording in Chinese
+  (投放量有限，暂不纳入比较), and the check copied it into an English
+  report's fix (found by the user). The rule now gives the English and the
+  Chinese wording, each for its own language.

@@ -1968,7 +1968,7 @@
   }
 
   /* Who reviews: the colleagues the database offers (Reports Full Access or
-     an admin, never the submitter), the client's last reviewer first
+     an admin, never the submitter unless an admin), the client's last reviewer first
      chosen. One question with the reviewer as its field. */
   function pickReviewer(r, btn, m, ask, then) {
     if (btn) btn.disabled = true;
@@ -1979,7 +1979,8 @@
       var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
       if (!pool.length) { say(m, 'No colleague at Reports Full Access can review it.', 'err'); return; }
       var pick = (pool.filter(function (x) { return x.last; })[0] || pool[0]).id;
-      var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
+      /* An admin may review their own (2026-10-16): offered as Me, chosen. */
+      var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, x.self ? 'Me (' + x.name + ')' : (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
       /* A late report, or one past its month's gate, says why in the same
          question (2026-10-04). */
       if (ask.reason || ask.ai) {
@@ -2020,7 +2021,7 @@
           pickReviewer(r, b, m, ask, function (who, why) {
             var args = { p_id: r.id, p_reviewer: who };
             if (why) args.p_reason = why;
-            stepCall('sm_report_submit', args, 'Submitted to ' + nameOf(who) + '.', b, m, ai ? function () {
+            stepCall('sm_report_submit', args, who === myId() ? 'Submitted. You review it.' : 'Submitted to ' + nameOf(who) + '.', b, m, ai ? function () {
               fileReport('report.saved', 'Commentary written with AI, read and confirmed', r);
             } : null);
           });

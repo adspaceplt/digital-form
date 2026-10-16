@@ -3558,7 +3558,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A report is submitted to a named reviewer (`sm_reports.reviewer_id`,
     `2026-10-04-report-reviewer.sql`), asked for in Submit's question from
     `sm_report_reviewers` (Reports Full Access or an admin, never the
-    submitter, the client's last reviewer chosen). Only the reviewer, or an
+    submitter, the client's last reviewer chosen; an admin submitting is
+    offered as Me and chosen, and confirms their own:
+    `2026-10-16-admin-reviews-own-report.sql`). Only the reviewer, or an
     admin after "Confirm in place of {name}?" (filed "in place of"),
     confirms (`not-reviewer`); the reviewer, an admin or the submitter
     (Take back) sends it back. Change reviewer in the head's ⋯ (submitter,
@@ -5267,6 +5269,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the live source is read back (the user, 2026-09-30) and compared with the
   repo file before anything else; a file is always sent whole, never in
   part (2026-10-16: a half file broke `report-draft` for three minutes).
+  The connector turns a `\u` escape into its character, so a function file
+  writes such characters as themselves, keeping the read-back byte for byte.
 - The report lists what the user does by hand: a dashboard setting.
 - Every go-live report names the version the console shows exactly as the rail reads it (`v{YY.MM.DD} · {commit}`), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
