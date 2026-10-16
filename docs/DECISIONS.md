@@ -4188,3 +4188,11 @@ finding fixed at the user's word ("fix all no matter what").
   (投放量有限，暂不纳入比较), and the check copied it into an English
   report's fix (found by the user). The rule now gives the English and the
   Chinese wording, each for its own language.
+
+- 2026-10-16 · Mistake: the full gate's `search` suite failed (the only
+  failure on f146209). On 2026-10-15 the stand-in's Marketing group was
+  given My Work, as the live group holds it, and only the suites that had
+  failed were run again; `search` signs in as that group to prove a
+  section the reader cannot open is never asked, and still expected no My
+  Work. The suite now takes My Work from the group in its own seed, and a
+  change to the seed's maps runs every suite that signs in as that group.
