@@ -4120,3 +4120,15 @@ finding fixed at the user's word ("fix all no matter what").
   `#s-{eight}`. Namecards keep their short link (printed QR codes). The
   links Worker still answers every short link already sent; pasting the
   re-lettered Worker is now needed only for bare /c to open the portal.
+
+- 2026-10-16 · Every mistake is written down. The user, after the media pass
+  broke twice and the gate failed on a stale test seed: "note down all
+  mistakes". A mistake that reaches the user or the gate is now written in
+  the push that fixes it, the rule in its loaded file and the story here.
+  The first two: the media pass (2026-10-12, 2026-10-15; a client page took
+  away the colleague's pass, fixed and tested only in the order reported the
+  first time) and the stand-in's seed (2026-10-15: #507 left out of every
+  My Work picker a colleague whose group holds no My Work, and the seed's
+  Marketing group held none though every live working group does, so the
+  team, work, handoff and sysacct suites offered nobody; found by the full
+  gate on 593e752, fixed in the tests repo at 402af07).
