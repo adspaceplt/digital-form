@@ -68,6 +68,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
     LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
     a column or an argument adds it to the map.
+  - Its seed holds the live groups' access maps: a change to who a page
+    offers or allows is checked against the live map (`team_roles.access`)
+    and the seed before it merges (2026-10-15: the seed's Marketing group
+    held no My Work, so the gate's pickers offered nobody).
   - It can refuse or delay on request: `window.__failRead`, `__slowRead`,
     `__refuseDelete`, `__refuseUpdate`, `__refuseRpc`, `__meet`.
 - Harness facts:
@@ -5316,4 +5320,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `media-pass` as the page does and fetch the file with its cookies
   (refused without, served with, is a browser fault). The media pass broke
   this way twice (2026-10-12, 2026-10-15).
-  Partial work is labelled partial, never reported as done.
+- Partial work is labelled partial, never reported as done.
+- Every mistake that reaches the user or the gate is written in the push
+  that fixes it (the user, 2026-10-16: "note down all mistakes"): the rule,
+  one line, in its loaded file; the story in `docs/DECISIONS.md` Part 3
+  (what broke, why, how it was found).
