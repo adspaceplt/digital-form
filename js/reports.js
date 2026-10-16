@@ -1978,7 +1978,9 @@
       if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
       var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
       if (!pool.length) { say(m, 'No colleague at Reports Full Access can review it.', 'err'); return; }
-      var pick = (pool.filter(function (x) { return x.last; })[0] || pool[0]).id;
+      /* Changing the reviewer opens on another colleague, never on Me. */
+      var pick = (pool.filter(function (x) { return x.last; })[0] ||
+        (ask.skip && pool.filter(function (x) { return !x.self; })[0]) || pool[0]).id;
       /* An admin may review their own (2026-10-16): offered as Me, chosen. */
       var who = { name: 'who', label: 'Reviewer', choices: pool.map(function (x) { return [x.id, x.self ? 'Me (' + x.name + ')' : (x.code ? x.code + ' · ' : '') + x.name]; }), value: pick };
       /* A late report, or one past its month's gate, says why in the same
