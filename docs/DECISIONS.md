@@ -4170,3 +4170,10 @@ finding fixed at the user's word ("fix all no matter what").
   out in place of the file's second half, so Write with AI failed until
   version 30. A deploy is now read back and compared with the repo before
   the next step, and never sent as a part.
+
+- 2026-10-16 · Mistake: the chosen option of a segment could not be seen in
+  dark. `--seg-on` dark was #3a3938, the same shade as the tonal track over
+  a shaded block (the Commentary step's Draft language, English / 中文),
+  and the chosen word reads at 400 like the rest, so nothing marked it
+  (found by the user on a phone). Dark `--seg-on` is now #57544f, clear of
+  the track on both the card and the shaded ground.
