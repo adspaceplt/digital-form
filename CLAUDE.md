@@ -71,7 +71,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - Its seed holds the live groups' access maps: a change to who a page
     offers or allows is checked against the live map (`team_roles.access`)
     and the seed before it merges (2026-10-15: the seed's Marketing group
-    held no My Work, so the gate's pickers offered nobody).
+    held no My Work, so the gate's pickers offered nobody). A change to the
+    seed's maps runs every suite that signs in as that group (`grep -l`
+    its colleague), since a suite may rest on the old map; one that needs
+    another map sets it in its own seed (2026-10-16: `search`).
   - It can refuse or delay on request: `window.__failRead`, `__slowRead`,
     `__refuseDelete`, `__refuseUpdate`, `__refuseRpc`, `__meet`.
 - Harness facts:
