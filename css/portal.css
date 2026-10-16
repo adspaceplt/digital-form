@@ -277,7 +277,7 @@
     --tonal:        rgba(242,239,236,.09);
     --tonal-hover:  rgba(242,239,236,.135);
     --tonal-press:  rgba(242,239,236,.18);
-    --seg-on:       #3a3938;
+    --seg-on:       #57544f;   /* lifted 2026-10-16: #3a3938 matched the track on a shaded block */
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(23,23,23,.72);
