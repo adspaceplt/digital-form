@@ -4132,3 +4132,11 @@ finding fixed at the user's word ("fix all no matter what").
   Marketing group held none though every live working group does, so the
   team, work, handoff and sysacct suites offered nobody; found by the full
   gate on 593e752, fixed in the tests repo at 402af07).
+
+- 2026-10-16 · Ad error on an Advertising Report. The PDF bolded an ad as
+  the cheapest whose low cost came from a Meta delivery fault. Its spend
+  must stay so the totals tally, so the team marks it by hand (Mark ad
+  error, a reason) and the PDF leaves it out of the ranking with a ¹ and a
+  neutral footnote; the client never reads "error". An automatic low-spend
+  check was declined: ads launched near the period's end spend little and
+  are not faults.

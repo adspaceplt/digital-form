@@ -1826,6 +1826,9 @@
          so a weak row reads as the creative tried several ways (the user,
          2026-10-02, their option B). */
       var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended, and the next round builds on the creatives that did.';
+      /* The note under a table holding an ad the team marked as an ad error
+         (2026-10-16): neutral words for the client, never "error". */
+      var NOT_RANKED = '\u00b9 Not ranked: this ad recorded minimal delivery during the period, so its cost per result is not comparable.';
 
       // ------------------------------------------------ Executive summary
       (function summary() {
@@ -2119,23 +2122,35 @@
           var tally = made > kinds ? kinds + ' creative' + (kinds === 1 ? '' : 's') + '  ·  ' + fmt(made) + ' ads'
             : g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's');
           blockTitle(g.name + '  ·  ' + tally + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
-          // The group ranked by what a result cost, the cheapest first and in weight.
-          var ranked = g.ads.slice().sort(function (p, q) {
+          /* The group ranked by what a result cost, the cheapest first and in
+             weight. An ad the team marked as an ad error (`ad_error`,
+             2026-10-16) is printed whole, its spend in every total, but is
+             not ranked: it comes last, is never the cheapest, and carries
+             the mark the note under the table explains. */
+          var errOf = function (a) { return !!words(a.ad_error).trim(); };
+          var byCost = function (p, q) {
             if (p._cpr === null && q._cpr === null) return (num(q.spend) || 0) - (num(p.spend) || 0);
             if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
-          });
+          };
+          var fair = g.ads.filter(function (a) { return !errOf(a); }).sort(byCost);
+          var ranked = fair.concat(g.ads.filter(errOf).sort(byCost));
           /* The cheapest is marked only where the results are the same
              kind: a lead and an ad recall lift are not bought at one price. */
-          var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
-          var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
+          var oneKind = uniq(fair.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
+          var best = fair.length > 1 && oneKind && fair[0]._cpr !== null ? fair[0] : null;
           /* The ad's name takes the room the figures do not need, so a name
              reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
           var rankHead = [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'];
           var rankRows = ranked.map(function (a) {
             var f = a === best ? med : book;
-            return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f }].concat(rankFig(a).map(function (t0) { return { t: t0, f: f }; })) };
+            return { cells: [{ t: adName(a.name) + (errOf(a) ? ' \u00b9' : '') + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f }].concat(rankFig(a).map(function (t0) { return { t: t0, f: f }; })) };
           });
           table(rankW.map(function (w0, i) { return i ? { w: w0 } : { w: w0, align: 'left' }; }), rankHead, rankRows, { labelCol: false });
+          if (fair.length < g.ads.length) {
+            var fn = sh.linesOf(NOT_RANKED, CW, TY.small, book);
+            need(S(0) + fn.length * S(0));
+            fn.forEach(function (ln) { y -= S(0); sh.draw(pg.page, ln, M, y, TY.small, MUTE); });
+          }
           /* A full block step before the next objective, so each reads as
              its own table (the user, 2026-10-01). */
           y -= BLOCK;
