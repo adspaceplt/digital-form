@@ -566,7 +566,7 @@
     $('amountPdf').hidden = !c.invoice_url;
     /* A private invoice has no address of its own: the press asks
        sign-download for a five-minute link with this page's own key. */
-    $('amountPdf').href = c.invoice_url && !/^private\//.test(c.invoice_url) ? c.invoice_url : '#';
+    $('amountPdf').href = c.invoice_url && /^https:\/\//i.test(c.invoice_url) ? c.invoice_url : '#';
     $('amountPdf').setAttribute('data-private', /^private\//.test(c.invoice_url || '') ? '1' : '');
     $('amountPdf').innerHTML = esc(t().pdf) + EXT_ICON;
     paintRollup(booked);
@@ -844,10 +844,13 @@
     }).join('') + '</div>';
   }
 
+  /* A link with a scheme is drawn only on http or https: `javascript://`
+     passes the scheme test and runs on a press (audit M1, 2026-10-17). */
   function absUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
-    return /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u.replace(/^\/+/, '');
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return /^https?:\/\//i.test(u) ? u : '';
+    return 'https://' + u.replace(/^\/+/, '');
   }
 
   // ---- Draft review -------------------------------------------------------

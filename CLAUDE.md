@@ -1047,6 +1047,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
+- A stored address drawn as a link is held to the web twice: a check on its
+  column (`^https?://`, an invoice `https://` or `private/`) and the page
+  drawing it only on http or https (`absUrl` answers nothing for another
+  scheme; 2026-10-17: `javascript://` passed the scheme test). A value
+  drawn as HTML is escaped where it is put in, never where it is joined.
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
   policy-refusable update takes `.select('id')`, and an empty answer is named
