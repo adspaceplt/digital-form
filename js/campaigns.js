@@ -2253,8 +2253,8 @@
           '<span class="deliv-name">' + esc(f.name || f.url) + '</span>' +
           '<span class="deliv-kind">' + esc((f.kind || '').split('/')[0] || 'file') + '</span></a>';
       }).join('');
-      var pasted = o.draft_url
-        ? '<a class="deliv-file" href="' + esc(o.draft_url) + '" target="_blank" rel="noopener">' +
+      var pasted = absUrl(o.draft_url)
+        ? '<a class="deliv-file" href="' + esc(absUrl(o.draft_url)) + '" target="_blank" rel="noopener">' +
           '<span class="deliv-name">' + esc(o.draft_url) + '</span>' +
           '<span class="deliv-kind">link</span></a>' : '';
       var cap = o.draft_caption
@@ -3688,8 +3688,8 @@
           (w ? '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
             '" placeholder="https://"></label>'
-            : o.draft_url ? '<div class="kfield kfield-wide"><span>Draft link</span>' +
-              '<a class="plink kread-link" href="' + esc(o.draft_url) + '" target="_blank" rel="noopener">' +
+            : absUrl(o.draft_url) ? '<div class="kfield kfield-wide"><span>Draft link</span>' +
+              '<a class="plink kread-link" href="' + esc(absUrl(o.draft_url)) + '" target="_blank" rel="noopener">' +
               esc(o.draft_url) + '</a></div>' : '') +
         '</div>' +
       '</div>' : '') +
@@ -4219,10 +4219,13 @@
   function today() { return ADspaceClock.today(); }
 
   // A link typed without its scheme is still a link.
+  /* A link with a scheme is drawn only on http or https: `javascript://`
+     passes the scheme test and runs on a press (audit M1, 2026-10-17). */
   function absUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
-    return /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u.replace(/^\/+/, '');
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return /^https?:\/\//i.test(u) ? u : '';
+    return 'https://' + u.replace(/^\/+/, '');
   }
 
   /* The campaign ⋯ menus only: the account menu is shut by its own control,
@@ -4443,7 +4446,7 @@
       (files.length ? files.length + (files.length === 1 ? ' file' : ' files') : 'pasted link');
     var fbox = $('qcFiles');
     if (fbox) {
-      var link = (patch && patch.draft_url) || o.draft_url;
+      var link = absUrl((patch && patch.draft_url) || o.draft_url);
       fbox.innerHTML = files.map(function (f) {
         var k = mediaKind(f);
         if (k === 'video') {
@@ -4931,7 +4934,7 @@
       cur.innerHTML =
         (privateFile(c.invoice_url)
           ? '<button class="btn btn-icon" id="invView" type="button">' + leave + '</button>'
-          : '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">' + leave + '</a>') +
+          : '<a class="btn btn-icon" href="' + esc(absUrl(c.invoice_url)) + '" target="_blank" rel="noopener">' + leave + '</a>') +
         (c.invoice_uploaded_at
           ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
         (mayFinance ? '<button class="btn btn-danger" id="invRemove" type="button">Remove PDF</button>' : '');

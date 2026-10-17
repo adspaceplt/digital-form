@@ -6850,9 +6850,11 @@
     el.setAttribute('data-eng', e.id);
     var checks = checksOf(e, cw.checks);
     var facts = [
-      ['Manager', nameOf(e.manager_id)],
-      ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' post' : ' posts') : ''],
-      ['Files', e.drive_url ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
+    /* Each fact's value is drawn as HTML: words are escaped here, and the
+       folder is a link only on https (audit M3, M4, 2026-10-17). */
+      ['Manager', esc(nameOf(e.manager_id))],
+      ['Planned', e.planned_count ? esc(e.planned_count + (e.planned_count === 1 ? ' post' : ' posts')) : ''],
+      ['Files', /^https:\/\//i.test(e.drive_url || '') ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var n = countFor(e, cw.counts, cw.tasks);
     var phase = engPhase(e, checks, n);
@@ -7053,6 +7055,10 @@
       reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
         .map(function (x) { return x[1]; })
     };
+    if (payload.drive_url && !/^https:\/\//i.test(payload.drive_url)) {
+      msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
+      return;
+    }
     var btn = $('engGo');
     btn.disabled = true;
     call('ops_engagement_upsert', { p_payload: payload }, 'engMsg', function () {

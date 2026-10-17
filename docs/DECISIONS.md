@@ -4304,3 +4304,18 @@ finding fixed at the user's word ("fix all no matter what").
   such a caller, and the removal's check answers before any work moves.
   Not covered: Team Full Access still sets any group's levels and granted
   parts, the power of that level.
+
+- 2026-10-17 · Mistake: four links and one name could run script
+  (security audit of 2026-10-16, finding M, none closed by finding 2's
+  quote escaping). `absUrl` on the selection page and in the console took
+  `javascript://%0aalert(1)` as an address because it matched the scheme
+  test, and a booking's draft link (typed by the team, sent to the client
+  by `get_campaign`) was drawn through it, or raw, as a link; a campaign's
+  invoice was drawn as a link with no scheme test; a month's Manager was
+  put into My Work's facts as HTML unescaped; a month's Drive folder was
+  stored and drawn unchecked. `absUrl` answers nothing for any scheme but
+  http and https, every draft link and invoice is drawn through it (the
+  client's page draws an invoice only on https), the month's facts escape
+  their words and draw the folder only on https, and the sheet asks for
+  an https folder. `2026-10-17-links-held-to-the-web.sql` adds checks on
+  the three columns; checked live first, none of the stored values fails.
