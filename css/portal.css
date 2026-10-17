@@ -978,9 +978,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   color: #9aa3a8; font-size: 12px; background:
     repeating-linear-gradient(45deg, #f2f4f5 0 10px, #eceff1 10px 20px);
 }
-.r-11  { aspect-ratio: 1 / 1; }
-.r-45  { aspect-ratio: 4 / 5; }
-.r-34  { aspect-ratio: 3 / 4; }
 .r-916 { aspect-ratio: 9 / 16; }
 
 /* Carousel */
@@ -1145,7 +1142,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 6px;
 }
 .fb-ad-carousel .mk-arrow { top: 40%; }
-
 
 /* Facebook */
 .mk-fb {
@@ -1328,7 +1324,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 
 }
 
-
 /* =========================================================================
    TEAM ADMIN
    ========================================================================= */
@@ -1336,7 +1331,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 12px;
 }
-.panel.narrow { max-width: 520px; margin-top: 48px; }
 .cards + .panel { margin-top: 24px; }
 .panel h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
 /* A hint is 13px wherever it is. It was scoped to `.panel`, so the moment a
@@ -1352,16 +1346,12 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .viewhead h2, .viewhead h3 { flex: 1 1 auto; }
 /* The display sizes carry the brand face; everything smaller stays on the
    system stack, where a hinted system face beats a downloaded one at 12px. */
-.viewhead h2, .crm-title h2, .rec-name h2, .cover-panel h2, .camphead h1, .batch-title {
+.viewhead h2, .rec-name h2, .cover-panel h2, .batch-title {
   font-family: var(--font-head);
 }
 .viewhead h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .viewhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .viewhead .btn { flex: 0 0 auto; }
-.sectionlabel {
-  font-size: 12px; letter-spacing: 0;
-  color: var(--ink-mute); font-weight: 600; margin: 24px 0 12px;
-}
 
 /* Bottom alignment dropped the label of any field standing next to a taller
    one, which is what made Date and Time sit at two different heights. Each
@@ -1426,7 +1416,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .fsec-h small { font-size: 12px; font-weight: 400; color: var(--ink-mute); text-align: right; }
 /* The section's title is the step above its first field; the sheet's 16px
    between rows starts after it. */
-.fsec > .fsec-h + .row, .fsec > .fsec-h + .seg-field { margin-top: 0; }
+.fsec > .fsec-h + .row { margin-top: 0; }
 /* A tick under a section's fields is a field of its own, on the same step. */
 .fsec > .tickline, .fsec > .tickstack { margin-top: 16px; }
 .fsec > .fsec-h + .tickline, .fsec > .fsec-h + .tickstack { margin-top: 0; }
@@ -1515,7 +1505,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .linkbtn.is-danger { color: var(--err); }
 @media (hover: hover) { .linkbtn.is-danger:hover { color: var(--err-hi); } .linkbtn.is-danger:hover::before { background: var(--err-bg); } }
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
-.dangerrow { margin-top: 14px; }
 /* Who this device decides as, under a client page's name card, with Change
    and Forget (js/decide.js, 2026-10-08). */
 .decide-as {
@@ -1535,8 +1524,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   .decide-as .btn { flex: 1 1 0; }
 }
 
-
-
 .linkbox { display: flex; gap: 8px; flex-wrap: wrap; }
 .linkbox .input {
   flex: 1 1 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
@@ -1547,8 +1534,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    height and printed its word against the top of it, a few pixels above the
    field and the buttons either side. */
 .linkbox .tone, .linkbox .chip, .linkbox .chip-state { flex: 0 0 auto; align-self: center; }
-.btn-wa { border-color: #25d366; color: #0f7a3d; }
-.btn-wa:hover { background: #25d366; border-color: #25d366; color: #fff; }
 
 /* Upload */
 .drop {
@@ -1571,13 +1556,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .linkrow .btn { flex: 0 0 auto; }
 
 /* Google Drive import */
-.drivebox {
-  margin-top: 16px; padding: 16px; border: 1px solid var(--line);
-  border-radius: var(--radius); background: #fbfbfb;
-}
-.drivebox-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
-.drivebox-head b { font-size: 13.5px; font-weight: 600; }
-.drivebox .linkrow { margin-top: 0; }
 
 .drive-actions { display: flex; align-items: center; gap: 14px; margin: 16px 0 12px; }
 .drive-files {
@@ -1783,16 +1761,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   .draft-media { flex: 0 0 auto; width: 100%; height: 180px; }
 }
 
-
 /* =========================================================================
    BATCH 2 ADDITIONS
    ========================================================================= */
-.beta {
-  display: inline-block; vertical-align: 2px; margin-left: 6px;
-  font-size: 12px; font-weight: 700; letter-spacing: 0;
-  padding: 1px 6px; border-radius: 4px;
-  background: none; color: var(--ink-mute); border: 1px solid var(--line);
-}
 
 /* Foldable content sets */
 .batch-head {
@@ -1882,7 +1853,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .btn-danger:active { background: var(--err-bg); color: var(--err-hi); }
 .btn-icon { display: inline-flex; align-items: center; gap: 7px; }
 .btn-icon svg { width: 14px; height: 14px; }
-.dangerrow { display: flex; gap: 10px; align-items: center; }
 
 .saved.is-editing { align-items: flex-start; background: var(--sunk); }
 /* Every field and the action pair run the body's width, so the captions,
@@ -1907,7 +1877,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 
 @media (max-width: 640px) {
   .batch-progress { margin-left: 0; }
-  .dangerrow { flex-wrap: wrap; }
 }
 
 /* Sign in sits in the middle of the page, under the same header as everywhere
@@ -1999,8 +1968,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   .cover { min-height: calc(100dvh - 55px); }
 }
 .cover-inner { max-width: 440px; width: 100%; text-align: center; }
-
-
 
 /* The notice is the whole page here. An outline and a shadow around it only
    added a box to look at.
@@ -2160,16 +2127,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 
 /* Work in progress sits on the inset ground (2026-10-07: no amber box). */
 .zone-draft { background: var(--sunk); border-color: transparent; }
-.zone-actions {
-  display: flex; justify-content: flex-start; gap: 10px; align-items: center;
-  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft);
-}
 
 /* Output stays plain white, it is the finished thing */
 .zone-out { background: var(--card); }
-
-.panel-danger { border-color: #f0d5d3; background: #fffafa; }
-.panel-danger h3 { color: var(--err-hi); }
 
 .saved-note.is-warn { align-self: center; max-width: 260px; }
 
@@ -2186,10 +2146,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .reask span {
   font-size: 13px; color: var(--ink-soft); line-height: 1.5;
   white-space: pre-wrap; overflow-wrap: anywhere;
-}
-
-@media (max-width: 640px) {
-  .zone-actions { flex-wrap: wrap; }
 }
 
 /* Disclosure for actions that are needed rarely and are hard to undo */
@@ -2226,18 +2182,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
 }
 .act:last-child { border-bottom: 0; }
-.act-head {
-  padding: 4px 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute); border-bottom: 1px solid var(--line);
-}
-.act-tag {
-  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0;
-  padding: 3px 8px; border-radius: 5px; max-width: 100%;
-  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
-.act-tag.is-danger { background: var(--err-bg); color: var(--err-hi); }
-.act-tagcell { min-width: 0; }
 .act-subject { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The confirm sheet's list: the creator's whole name, the rate at the right
    edge on the totals' own line (SELECTION-8). */
@@ -2245,20 +2189,12 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 #confirmList .act-subject { white-space: normal; overflow-wrap: anywhere; }
 #confirmList .act-when { text-align: right; color: var(--ink); }
 .act-when { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
-.act-detail, .act-who {
-  color: var(--ink-mute); font-size: 12.5px; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 
 @media (max-width: 560px) {
   /* Two lines on a phone: what and to what, then the rest. */
   .act { grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; }
-  .act-head { display: none; }
   .act-when { order: 3; }
-  .act-tagcell { order: 1; }
   .act-subject { order: 2; white-space: normal; }
-  .act-detail { order: 4; grid-column: 2; white-space: normal; }
-  .act-who { order: 5; grid-column: 2; }
 }
 
 /* =========================================================================
@@ -2290,21 +2226,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .disclosure svg.disclosure-mark {
   width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
 }
-
-/* Groups inside the client settings drawer, so handles, profile and the
-   destructive pair read as three separate things rather than one long form. */
-.subsection + .subsection { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
-/* Two jobs in one panel: each carries its own eyebrow, and the second is
-   ruled off from the first rather than running on from it. */
-.subsection > h4 {
-  font-size: 12.5px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 3px;
-}
-.subsection > .hint { margin-bottom: 12px; }
-
-
-/* Scrollbar-free horizontal rhythm for the danger pair */
-.dangerrow { display: flex; gap: 10px; flex-wrap: wrap; }
-.dangerrow .btn { flex: 0 0 auto; }
 
 /* A page that is nothing but a notice or a sign in form: white to the edges. */
 body.is-plain { background: var(--card); }
@@ -2708,7 +2629,6 @@ button.appver {
   .headlink { min-width: var(--ctl-h); justify-content: center; padding: 0; text-decoration: none; }
 }
 .headlink:hover { color: var(--ink); background: var(--line-soft); text-decoration-color: currentColor; }
-
 
 /* ---------- Sheet ----------
    Opens over the work and hands it straight back, so reading the record never
@@ -3179,10 +3099,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 /* Money and totals in a row at the scale's 600, never the browser's bold
    700 (the client pages audit, PO-2, 2026-10-08). */
 .svc-amt b, .is-total b, .cp-panes b { font-weight: 600; }
-/* Labelled groups of cells side by side; one under the other on a phone. */
-.tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 0; }
-.tallygroup .tally { margin-top: 6px; }
-@media (max-width: 900px) { .tallies { grid-template-columns: 1fr; } }
 
 /* ---------- Profile link rows ---------- */
 .profrow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -3197,7 +3113,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    only thing wearing it was an outbound profile link. Those are .plink now,
    the component the contact row already uses for a phone and an email. */
 
-
 /* =========================================================================
    CREATOR SELECTION  (client facing)
    ========================================================================= */
@@ -3207,15 +3122,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   min-height: var(--ctl-h); padding: 0 12px; font-size: 12.5px; color: var(--ink-soft); flex: 0 0 auto;
 }
 .langtoggle:hover { border-color: var(--ink-mute); color: var(--ink); }
-.brand-client { max-height: 26px; width: auto; border-radius: 6px; }
-
-/* ---------- Campaign heading ----------
-   Not the review page's cover: that one is a full height hero, which here just
-   pushed the thing the client came to do below the fold. */
-.camphead { margin: 22px 0 4px; }
-.camphead h1 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
-.camphead p { font-size: 13.5px; color: var(--ink-mute); margin-top: 6px; }
-.camphead-due { font-weight: 500; color: var(--ink-soft) !important; }
 
 /* ---------- Progress ----------
    Determinate, because the slot count is known and fixed by the invoice. It
@@ -3726,7 +3632,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    that can afford to lose a row. */
 .bookreg .kcard-sum:empty { min-height: 1px; }
 
-
 /* ---------- Client-facing bookings ----------
    One card per confirmed creator, in the same language as the console's
    cards: flat, hairline, a state chip, the live one marked on its edge. */
@@ -3841,19 +3746,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .amountfold-link:hover { color: var(--ink); text-decoration: underline; }
 .amountfold .totals { margin: 6px 0 8px; max-width: none; }
 
-.booking-results {
-  display: flex; flex-direction: column; gap: 3px;
-  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line-soft);
-  font-size: 12.5px; color: var(--ink-mute);
-}
-.booking-results b { font-weight: 600; color: var(--ink-soft); }
-.booking-cta { margin-top: 11px; }
-
-@media (max-width: 560px) {
-  .prod-sum { flex: 1 1 100%; white-space: normal; }
-  .booking-cta { width: 100%; }
-}
-
 /* Backups are part of the selection, so their count sits with the count. */
 .progress-backup { color: var(--ink-mute); margin-top: 4px; }
 .progress-backup.is-ok { color: var(--ok); }
@@ -3873,7 +3765,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    it is. */
 .btn-quiet.is-danger { color: #a3312a; }
 .btn-quiet.is-danger:hover { color: #a3312a; border-color: #a3312a; }
-
 
 /* ---------- Add creators (a sheet, 2026-10-10) ----------
    The Creators List in its fee bands, a tick a creator; a tick opens the
@@ -4001,27 +3892,14 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
 /* Counts and money on one line, small enough to be read as a row rather than
    a wall of tiles. */
-.stats { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px 22px; margin: 4px 0 16px; }
 .stat { display: flex; flex-direction: column; gap: 1px; }
 .stat b { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .stat span { font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .stat.is-total b { color: var(--ink); }
 .stat.is-warn b, .stat.is-warn span { color: var(--ink); }
-.stat-gap { width: 1px; background: var(--line); align-self: stretch; margin: 2px 0; }
-@media (max-width: 640px) {
-  .stats { gap: 10px 16px; }
-  .stat-gap { flex: 1 1 100%; height: 1px; width: auto; margin: 2px 0; }
-}
 
 /* The one date on the client's page with a consequence. */
 .camphead-purpose { font-size: 15px; color: var(--ink-soft); margin-top: 6px; }
-.camphead-due {
-  display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 12px; padding: 6px 12px; border-radius: 999px;
-  background: var(--sunk); color: var(--ink) !important; font-weight: 600 !important;
-  font-size: 13px;
-}
-.camphead-due:empty, .camphead-due[hidden] { display: none; }
 
 /* A profile link reads as an instruction now, not a tag. */
 .plink { padding: 5px 11px; font-weight: 500; }
@@ -4061,7 +3939,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
-
   /* Action rows: a button keeps a readable width and wraps to the next line
      rather than squeezing its label onto three. */
   .kactions .btn,
@@ -4095,7 +3972,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .disclosure .muted { font-size: 12px; }
   .disclosure-body { padding: 4px 14px 16px; }
   .hint { font-size: 12.5px; line-height: 1.5; }
-  .subsection + .subsection { margin-top: 18px; padding-top: 16px; }
   .empty { padding: 16px 15px; }
 
   /* Creator cards: the head keeps the name and status on one line with the
@@ -4110,7 +3986,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* Shoot date and time pair on one line. Publish date would otherwise orphan
      next to an empty half, so it takes the width. */
   .kfields { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .kfield-wide, .kfield-pub { grid-column: 1 / -1; }
+  .kfield-wide { grid-column: 1 / -1; }
   .kactions { gap: 8px; }
 
   /* Terms wraps to two lines instead of crushing the money against the edge. */
@@ -4152,15 +4028,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .linkish { padding: 8px 2px; }
 }
 
-
 /* ---------- Activity record ----------
    One record for the whole portal, so it needs a way in other than scrolling:
    the tabs answer "what happened in campaigns" and the day headings give the
    eye somewhere to stop. */
-.acttabs {
-  display: flex; gap: 4px; flex-wrap: wrap;
-  margin: 12px 0 4px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
-}
 .acttab {
   border: 1px solid transparent; border-radius: var(--radius-sm);
   background: none; padding: 6px 11px; font-size: 12.5px; font-weight: 500;
@@ -4171,7 +4042,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .acttab.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 @media (max-width: 560px) {
-  .acttabs { gap: 3px; }
   .acttab { padding: 8px 10px; font-size: 12px; }
 }
 
@@ -4227,7 +4097,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    word Overdue beside it, because the mark has to survive a reader who
    cannot tell the two apart. */
 .crm-age.is-late { color: var(--err); font-weight: 600; }
-.crm-c-mkt { font-variant-numeric: tabular-nums; }
 #crmList {
   background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   padding-top: 12px; overflow: hidden;
@@ -4236,9 +4105,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 #crmList .empty { border: 0; margin: 0; }
 
 .crm-reach { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
-/* Which language they answer in describes the person, so it sits with the
-   person rather than at the far end of the row. */
-.crm-lang { font-size: 12px; color: var(--ink-mute); }
 
 /* THE CLIENT'S MONTHS (2026-10-10): the record's Engagements pane, a card a
    content month (js/engage.js). A row is the section's glyph on a tonal
@@ -4277,16 +4143,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .is-narrow .cmonth-state { grid-column: 3; grid-row: 1; justify-self: stretch; text-align: right; }
 .is-narrow .cmonth-row:not(.is-file) > .cmonth-end { display: none; }
 .is-narrow .cmonth-row.is-file > .cmonth-end { grid-column: 3; grid-row: 2; }
-
-/* Name, state and the control that changes them, together. */
-.crm-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-/* The name takes the slack, so the stage and Edit land in the same place on
-   every client. Sized to its content the stage sat straight after the name and
-   moved with it: 115px in on Furiku Matcha, 98px on Laman Citra, and 700px
-   short of the edge on both. State second from the end and the action last is
-   where this portal's tables already put them. */
-.crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; flex: 1 1 auto; min-width: 0; }
-.crm-title .btn { flex: 0 0 auto; margin-left: auto; }
 
 /* A checkbox with its label, sized to be tapped rather than aimed at. */
 .tickline {
@@ -4337,7 +4193,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      belongs on that line, not under it: left showing, it was a grid item with
      no area in the template, so it took an implicit third row of its own and
      printed the same date the meta line already carried. */
-  .crm-c-ind, .crm-c-mkt, .crm-c-own, .crm-c-seen { display: none; }
+  .crm-c-ind, .crm-c-own, .crm-c-seen { display: none; }
   /* The one line the phone gets is a summary, not a value cell, so it wraps
      rather than being cut: "Laman Citra · 10 creators · RM 8,640.00" came out
      as "Laman Citra · 10 creators · R…", which loses the figure that is the
@@ -4600,21 +4456,8 @@ body > .shell { width: 100%; }
 }
 .task-deadline[hidden] { display: none; }
 .is-narrow .task-row > .task-due > small { display: none; }
-.task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
-.task-go .crm-chev { width: 16px; height: 16px; }
 
-.tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
-/* A link's address is the row's meta line: one line that ends in an ellipsis
-   (the whole address is in Edit, and Open goes there). Unbroken, it ran on
-   under Open on a phone. Its label is typed, and breaks anywhere. */
-.tlink-row .svc-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tlink-row .svc-name b { overflow-wrap: anywhere; }
-.tlink-row > .team-act { align-items: center; gap: 4px; }
-.tlink-kind { min-width: 0; }
-.tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
-.tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tsess-row.is-total { border-top: 1px solid var(--line); }
 /* Time in each stage: the stage, how often the work came back to it, and the
    time, both figures on the right edge. */
 .tstage-row { grid-template-columns: minmax(0, 1fr) 72px 110px; }
@@ -4627,8 +4470,6 @@ body > .shell { width: 100%; }
 .ovsec-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 8px; }
 .ovsec-title + .crm-table { margin-bottom: 0; }
 .crm-table + .ovsec-title, .empty + .ovsec-title { margin-top: 24px; }
-.tact-when { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tact-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The task number is the mark, because that is what an invoice, a message and
    a spreadsheet row all name a task by; a monogram of a title says nothing. */
@@ -4653,13 +4494,6 @@ body > .shell { width: 100%; }
    the meta line wrapped the owner's name onto a line of its own. */
 .is-narrow .rec-id.rec-id-plain { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "token ctl" "who who"; row-gap: 4px; }
 .is-narrow .rec-id.rec-id-plain .rec-ctl { align-self: center; }
-/* The task's name is its code and its description on one line, in the
-   heading's own face, because together they are the file name a saved export
-   takes. The code reads mute so the description carries the weight; a task
-   with no description says so in the same mute. */
-.task-code { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.task-code[hidden] { display: none; }
-#taskDesc.is-blank { color: var(--ink-mute); font-weight: 500; }
 /* The pen that edits the description and the control that copies the name
    sit on the name's line at the icon button's floor, taking the negative
    block margin the rate card's ⋯ takes so a 38px target does not set the
@@ -4841,7 +4675,6 @@ body > .shell { width: 100%; }
    target: the group takes that line's height and the target overflows it
    evenly (2026-09-28, they hung 12px below the line on a phone). */
 .is-tight .eng-ctl { justify-content: flex-end; height: calc(13px * 1.55); }
-.eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
    label, when it was made, and one target that clears the control floor. */
@@ -4855,56 +4688,9 @@ body > .shell { width: 100%; }
 .checkrow input { width: 18px; height: 18px; accent-color: var(--action); cursor: pointer; }
 .checkrow-label { font-size: 13.5px; color: var(--ink); min-width: 0; }
 .checkrow.is-done .checkrow-label { color: var(--ink-mute); text-decoration: line-through; }
-.checkrow-when { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
-
-/* The rail's stage block: where it is now, the one move that carries it on,
-   and every other move the workflow allows behind a select. Eight buttons in
-   a rail is eight things to read before doing the one that matters. */
-/* At its own width, never a slab across the rail: full width it was the
-   loudest thing on the page, louder than the overdue line above it, and on a
-   phone it was the banner this portal's section heads have refused for
-   months. The chip that stood over it is gone too; the head already carries
-   the stage. */
-.railnow { margin: 0 0 10px; }
-/* The one forward action, and the way back beside it. Revert undoes a state,
-   so it is a neutral outline button and never a second blue one: this portal
-   spends one blue action a view and the forward move is it. They wrap rather
-   than shrink, because a button squeezed under its label is worse than two
-   lines. */
-.railmoves { display: flex; flex-wrap: wrap; gap: 8px; }
-.railmove { width: auto; }
-.railback, .railhand { min-width: 0; }
-.railother { margin-top: 12px; }
-.railother .field-label { display: block; margin-bottom: 4px; }
-.railother .select { width: 100%; }
-.raildate { display: flex; align-items: baseline; gap: 10px; }
-.raildate dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
-.raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
-.raildate dd.is-over { color: var(--err); font-weight: 600; }
-/* A commitment that moved keeps where it moved from under the date it is now,
-   in the mute face, because the original is written once so replanning can
-   be seen and the rail is the one place the dates are stated. */
-.raildate dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-mute); }
-.raildate.has-from { align-items: start; }
-/* Move a date sits under the dates it moves, on their left margin, as the
-   client record's Key dates carry their edit. */
-/* Two controls now, one per date, so the row wraps rather than squeezing them:
-   "Request extension" beside "Change draft date" is wider than the rail at
-   every width the rail has. */
-.rail-date-edit.rail-date-go { display: flex; flex-wrap: wrap; gap: 8px; }
-.rail-date-go .ovgo { margin: 0 0 0 -10px; }
-.rail-date-edit.rail-date-go[hidden] { display: none; }
-/* The Overview's links: the kind, then the label as the link, one a line. */
-.ovlinks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.ovlinks li { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13.5px; }
-.ovlinks a, .ovlinks li > span:last-child {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
 .ovnote:last-child { margin-bottom: 0; }
-.ovfact { min-width: 0; }
 .mute { color: var(--ink-mute); }
 #crmDocuments .reg-table { margin-top: 12px; }
 /* The reference is a copy control in the row's own face: the target clears
@@ -5104,7 +4890,6 @@ body > .shell { width: 100%; }
 .state-select.is-off    { --sdot: var(--dot-off); }
 /* In hand is a stage with no tone: the select with no dot. */
 .state-select:not(.is-ok):not(.is-warn):not(.is-danger):not(.is-off) { --sdot: transparent; }
-.crm-title .state-select { flex: 0 0 auto; }
 /* How much of a group is filled: a ring and the count. */
 .ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .ring { width: 18px; height: 18px; flex: 0 0 auto; transform: rotate(-90deg); }
@@ -5323,12 +5108,7 @@ body > .shell { width: 100%; }
 .is-narrow .task-row > .trow-check { height: 22px; display: flex; align-items: center; }
 .is-narrow .task-row > .team-act { margin-top: 0; }
 .is-narrow .task-row.crm-head { display: none; }
-.is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
-.is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
 .is-narrow .tstage-row { grid-template-columns: minmax(0, 1fr) 56px 96px; }
-.is-narrow .tsess-row { grid-template-columns: minmax(0, 1fr) 110px; grid-template-areas: "name mins" "who mins"; }
-.is-narrow .tsess-row > .tsess-who { grid-area: who; }
-.is-narrow .tsess-row > .tsess-mins { grid-area: mins; align-self: center; }
 /* What happened owns the first line; when and who share the second, which is
    the shape the client record's own activity rows take. */
 .is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
@@ -5404,7 +5184,6 @@ body > .shell { width: 100%; }
 .touch-meet { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
 .touch-meet > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
 .touch-meetmsg { margin-top: 8px; }
-.touch-del { grid-area: del; }
 @media (max-width: 640px) {
   .touch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when del" "body body"; }
   .touch-when { flex-direction: row; align-items: center; }
@@ -5467,7 +5246,6 @@ body > .shell { width: 100%; }
   border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px;
 }
 .crm-removed-toggle { display: block; margin: 6px 0 12px; }
-.crm-group-worth { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
 /* ---------- The client register ----------
@@ -5734,18 +5512,6 @@ body > .shell { width: 100%; }
    the tickboxes carry what has no ladder, so the panel says which is which
    without a line of copy explaining it. */
 .permbox { margin-top: 4px; }
-/* The capabilities sit under the grid, divided from it, and wrap rather than
-   forcing a column width the section names do not want. */
-.permbox > .perm:first-of-type { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
-/* The switches. The label is the target, so the row clears the control floor
-   even though the box in it is 18px. */
-.perm {
-  display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h);
-  font-size: 13px; color: var(--ink-soft); cursor: pointer;
-}
-.perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
-.perm input:disabled { opacity: .45; }
-.perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
 /* The panel, simpler (2026-10-10): the sections in the rail's two chunks,
    each one row (the name, its levels at the right edge, the line of what the
    level allows with Customise under them), then Admin tools. A narrow sheet
@@ -5952,13 +5718,7 @@ body.no-view-ops-all [data-need="ops.all:view"],
 body.no-view-ops-reports [data-need="ops.reports:view"],
 body.no-work-ops-workflows [data-need="ops.workflows:work"],
 body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important; }
-/* What a deletion takes with it, counted from the record rather than
-   described. A list, because four facts in a sentence is a sentence nobody
-   finishes reading before pressing the button. */
-.dellist { margin: 10px 0 14px; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); }
-.dellist li { margin: 3px 0; }
 @media (pointer: coarse) {
-  .perm input { width: 22px; height: 22px; }
   /* The whole row is the label, so the target is already the row's height;
      the box itself grows so a finger has something to aim at. */
   .checkrow input { width: 22px; height: 22px; }
@@ -6167,15 +5927,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* What the team released, in the sheet the client decides in: the creator's
    own files and the caption that goes out with them. The caption is read, not
    typed, so it is text on the sunk ground and not a field. */
-#draftFiles { margin: 14px 0 0; }
-#draftCaptionWrap { margin-top: 14px; }
-#draftCaptionWrap .field-label { margin-bottom: 5px; }
 .draft-caption {
   margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.55;
   color: var(--ink); background: var(--sunk); border: 0;
   border-radius: var(--radius-sm); padding: 10px 12px;
 }
-#draftOpen { margin-top: 14px; }
 
 /* The same progress the console draws on Content Review, so a creator sending
    a 300 MB video is told what is moving and how far, and the label can say it
@@ -6193,7 +5949,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   flex: 1 1 auto; min-width: 0; text-align: center; letter-spacing: .18em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase;
 }
-#signOutLine { margin-top: 22px; }
 
 /* What the creator handed in, on the campaign card. The same thumbnails their
    own page draws, because it is the same files and a reviewer should recognise
@@ -6929,12 +6684,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 .railfoot { margin: 7px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .railwarn { margin: 7px 0 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
-/* Whether the client can open the link at all: the chip carries the word, so
-   the state survives greyscale, and the line under it says what that means. */
-.raillinkstate { display: grid; gap: 6px; margin: 0 0 10px; justify-items: start; }
-.raillinkstate > span:last-child { font-size: 12.5px; color: var(--ink-soft); }
-.railgo { width: 100%; justify-content: space-between; gap: 8px; }
-.railgo .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
 
 /* The campaign and task rails still list plain dates. Glyph, label, then the
    date on the right, tabular so a column of them lines up on the day. */
@@ -6948,22 +6697,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* An overdue date is the one anybody scans for: the late colour and the
    weight together, so the mark survives greyscale. */
 .raildates dd.is-late { color: var(--err); font-weight: 600; }
-/* A field and the one button that saves it, centred on each other: `end`
-   aligned their boxes' bottoms, and a text-only button of a different height
-   beside a 44px field then printed its word above the field's own line. */
-.rail-date-edit {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px;
-  align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
-}
-/* No rule under nothing. The dates above are omitted one by one when the
-   record does not hold them, so a rail with none left a heading, a gap and a
-   hairline over an empty list. */
-.raildates:empty + .rail-date-edit, .facts:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
-.rail-date-edit label {
-  grid-column: 1 / -1; font-size: 12px; font-weight: 600;
-  letter-spacing: 0; color: var(--ink-mute);
-}
-.rail-date-edit .btn { min-width: 0; }
 
 /* Every date and every duration in one block: the stage journey above a rule
    and the dates the record holds below it.
@@ -7210,7 +6943,6 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-
 /* ---------- The campaign command centre ----------
    One campaign is a booking desk, a schedule, a set of deliverables, a
    conversation with the client and an invoice. All five used to be one column,
@@ -7268,7 +7000,7 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 /* On a phone the body runs the card's width; Draft due and Publish still
    share a line, so five creators are not fifteen stacked boxes. */
 .is-tight .sched-body { padding: 0 14px 14px; }
-.sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
+.pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
@@ -7547,7 +7279,6 @@ body.is-canvas { overflow: hidden; }
 .cp-card .crm-head, .cp-card .svc-row { padding-inline: 0; }
 .cp-card .svc-row:last-child { border-bottom: 0; padding-bottom: 0; }
 .cp-card .csv-total { padding-inline: 0; padding-bottom: 0; }
-.cp-card > .ui-empty, .cp-card .ui-empty { margin: 0; padding: 0; background: none; border: 0; }
 
 /* The overview's lines: a label beside its figure. */
 .cp-lines { display: grid; gap: 8px; margin: 0; }
@@ -8004,7 +7735,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   cursor: pointer; border-radius: 6px; overflow-wrap: anywhere;
 }
 @media (hover: hover) { .bcard-title:hover { color: var(--action-ink); } }
-.bcard-meta { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The move is the commonest act on a card as it is on a row, so the card
    carries the same tinted select, at the same place on every card. */
 .bcard-stage { display: flex; }
@@ -8431,43 +8161,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    shape this portal gives a value that is only read; its size is the size the
    thing it holds is set in. */
 
-/* ---------- The task page: one next step ----------
-   A compact head on the page ground, then the one thing to do next, then the
-   work. The head is not a card: the number, the state and the ⋯ share one
-   line, the name sits under them, and one line says whose it is and what it
-   makes. Hairlines separate; nothing here is a rounded box. */
-.thead { padding: 4px 0 16px; margin: 0 0 16px; border-bottom: 1px solid var(--line); }
-.thead-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
-.thead-ctl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-/* The shared chip pins itself to the top of its row, which is right beside a
-   name and wrong beside a 44px ⋯: the state stood above the number's line. */
-.thead-ctl .chip { align-self: center; margin-top: 0; }
-.thead .rec-token { margin-left: -6px; }
-.thead .rec-name { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-width: 0; }
-.thead .rec-name h2 {
-  margin: 0; min-width: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em;
-  line-height: 25px; overflow-wrap: anywhere;
-}
-.thead-meta {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px;
-  margin: 4px 0 0; font-size: 13px; color: var(--ink-soft);
-}
-.thead-meta > span:empty { display: none; }
-/* The timer, while it runs, beside the title it is timing. Green, because it
-   is a live state; the word says so too. */
-.thead-run { color: var(--ok); font-weight: 600; font-variant-numeric: tabular-nums; }
-.thead-run[hidden] { display: none; }
-.thead .msg:empty { display: none; }
-
-/* The record grid gains a row for the next step above the tabs; the rail
-   still runs the height of all three. */
-.rec.rec-task {
-  grid-template-rows: auto auto 1fr;
-  grid-template-areas: "next rail" "tabs rail" "pane rail";
-}
-.tnext { grid-area: next; min-width: 0; padding: 0 0 20px; }
-.tnext .msg:empty { display: none; }
-.tnext .msg { margin-top: 8px; }
 /* The workflow as thin bars, one a step: done quiet, current in the action
    colour, the rest a hairline. Not buttons, and named for a screen reader. */
 .tsteps { margin: 0 0 14px; }
@@ -8478,42 +8171,13 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tsteps-bar li.is-now { background: var(--fill); }
 .tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .tsteps-word b { color: var(--ink); font-weight: 600; }
-.tnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
 /* A blocker is the warn colour and says so in words; the list under it is
    each thing that is missing, and the button is the first of them. */
-.tnext.is-blocked .tnext-title::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--dot-wait); }
-.tnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
-.tnext-line[hidden] { display: none; }
 .tnext-list { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink); }
 .tnext-list[hidden] { display: none; }
 .tnext-list li + li { margin-top: 2px; }
 .tnext-late { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--err); }
 .tnext-late[hidden] { display: none; }
-/* One filled action, and at most one quiet one beside it. They keep their
-   own widths at a desk; on a phone they are the row's two halves. */
-.tnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.tnext-acts[hidden] { display: none; }
-.tnext-acts .btn { flex: 0 0 auto; }
-@media (max-width: 640px) {
-  .tnext-acts .btn { flex: 1 1 0; min-width: 0; }
-}
-
-/* The Work pane: the brief, the video, the checklist, the files and links.
-   A section with nothing in it is not drawn. */
-.tsec { margin: 0 0 24px; }
-.tsec:last-child { margin-bottom: 0; }
-.tsec[hidden] { display: none; }
-.tsec-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.tsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
-.tsec-head .tsec-title { margin: 0; }
-.tsec-head .btn { margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
-/* A section's quiet action ends on the pane's right margin whatever its
-   length, as the sheet's card actions do: a centred word in a 92px box
-   stopped short of the longer labels beside it. */
-.tsec-head .btn-quiet { min-width: 0; margin-right: -8px; }
-.tlinkform { padding: 12px 0; margin: 0 0 12px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
-.tlinkform[hidden] { display: none; }
-.tlinkform .row:first-child { margin-top: 0; }
 
 /* The rail's facts: a label beside its value, one a line, because a rail is
    read down. The value can carry its own control (Change beside the owner,
@@ -8607,14 +8271,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .givelist { margin: 0; padding-left: 16px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-@media (max-width: 1100px) {
-  .rec.rec-task { grid-template-rows: none; grid-template-areas: none; }
-  .rec.rec-task > .tnext { grid-area: auto; order: 0; }
-}
 @media (max-width: 640px) {
   .tfacts > div { grid-template-columns: 104px minmax(0, 1fr); }
 }
-
 
 /* ---------- My Work as a daily task list ----------
    The row is where routine work happens: the circle completes an everyday
@@ -8669,19 +8328,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .task-row > .team-act { justify-self: end; }
 .trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
 
-/* The Workload view: one row a person. */
-.load-row { grid-template-columns: minmax(0, 1fr) repeat(6, 88px); }
-.load-n { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
-.load-n.is-over { color: var(--err); font-weight: 600; }
-.load-lab { display: none; }
-.load-row.crm-head > span:not(:first-child) { text-align: right; }
-.is-narrow .load-row { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; row-gap: 6px; }
-/* The person heads their own counts: the shared phone rule names this cell
-   `name`, and with no template the name area lands wherever it can. */
-.is-narrow .load-row > .svc-name { grid-area: 1 / 1 / 2 / -1; }
-.is-narrow .load-n { text-align: left; display: flex; flex-direction: column; font-size: 15px; }
-.is-narrow .load-lab { display: block; font-size: 12px; color: var(--ink-mute); }
-
 /* ---------- The task, opened from a list ----------
    The portal's own sheet, docked to the right at a desk so the list it was
    opened from stays on the screen beside it, and the bottom sheet every other
@@ -8711,7 +8357,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The task's stage in its head: the list's own select, at the list's width. */
 .stagepick { display: inline-flex; align-self: center; }
 .stagepick .state-select { width: auto; min-width: var(--state-w); max-width: 220px; }
-.thead-ctl .stagepick { flex: 0 0 auto; }
 .qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
 .qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
 .qhead-ctx[hidden] { display: none; }
@@ -8792,7 +8437,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhead-name .rec-pen[hidden] { display: none; }
 @media (hover: hover) { .qhead-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
 .qhead-name .askfield { flex: 1 1 auto; }
-.qpri { max-width: var(--state-w); }
 .qcard-count { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 /* The hairline between items is the item row's, so it runs under the ⋯ as
    well; the check row's own rule would stop short of it. A single-line row
@@ -8812,14 +8456,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qhand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
 .qhand[hidden] { display: none; }
 .qhand .tickline { margin: 0; }
-.qhand > .stepkeep { flex: 1 1 100%; }
 .qhand .select { flex: 1 1 180px; max-width: 260px; }
 .qhand .select[hidden] { display: none; }
 .qhand .tickline[hidden] { display: none; }
 .qhand-lab { font-size: 13px; color: var(--ink-soft); }
 .qhand-lab[hidden] { display: none; }
-.tnext .qhand { margin-top: 12px; }
-.tnext .qrate { margin-top: 12px; }
 .qnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .qnext-acts:empty { display: none; }
 .qnext-acts .btn { flex: 0 0 auto; }
@@ -8858,11 +8499,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .stephand[hidden] { display: none; }
 .stephand .tickline { margin: 0; }
 .stephand .tickline[hidden] { display: none; }
-/* Keep it assigned to me: the portal's switch at the line's right edge
-   (the user, 2026-10-11: the tick box read as from nowhere). */
-.stepkeep { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
-.stepkeep[hidden] { display: none; }
-.stepkeep > span { font-size: var(--field-text); color: var(--ink); }
 @media (max-width: 640px) {
   /* On a phone it is the sheet every other form is: from the floor, the
      screen's width, rounded at the top. */
@@ -9163,8 +8799,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font-size: 12.5px; font-weight: 400; color: var(--ink-soft); }
 .rp-idspop-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .popcard.is-dock.rp-idspop .rp-idspop-acts .btn { min-height: var(--ctl-h); flex: 1 1 100%; }
-.rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
+.rp-ver, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .rp-post-row.crm-head > .rp-n1, .rp-post-row.crm-head > .rp-n2,
 .rp-acc-row.crm-head > :nth-child(2), .rp-acc-row.crm-head > :nth-child(3) { text-align: right; }
@@ -9408,7 +9044,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-audit-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
 .rp-audit-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .rp-audit-head + .rp-check { border-top: 1px solid var(--line-soft); }
-.rp-finding + .rp-check, .rp-f-note + .rp-check, .rp-f-more + .rp-check, .rp-metatable + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-finding + .rp-check, .rp-f-more + .rp-check, .rp-metatable + .rp-check { border-top: 1px solid var(--line-soft); }
 .rp-f-more { padding: 4px 16px 12px 52px; }
 .is-narrow .rp-part { grid-template-columns: 24px minmax(0, 1fr); }
 .is-narrow .rp-part > .rp-aicheck-acts { grid-column: 2; flex-wrap: wrap; }
@@ -9431,7 +9067,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-f-acts { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .rp-f-acts .btn { flex: 0 0 auto; min-width: 0; }
 .rp-finding.is-applied > :not(.rp-f-acts) { opacity: .55; }
-.rp-f-note { margin: 0; padding: 0 16px 12px 52px; font-size: 12.5px; color: var(--ink-soft); }
 /* What the reader must know or do on the audit card (2026-10-12, the user:
    the card's words "blend together and don't look like warning or
    instructions"): a shaded note under its part, led by the amber dot, in
@@ -9488,7 +9123,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-m-act .btn { margin-block: 2px 0; }
 .rp-aicheck > .msg:not(.warn) { padding: 0 16px 12px 52px; }
 .rp-aicheck > .msg:empty { display: none; }
-.is-narrow .rp-finding, .is-narrow .rp-f-note, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
+.is-narrow .rp-finding, .is-narrow .rp-aicheck > .msg { padding-left: 16px; }
 .rp-check.is-missing .rp-check-t small { color: var(--ink-soft); }
 /* Past its due time is late, not merely not done: red, as late is everywhere. */
 .rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
@@ -9737,11 +9372,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    width as a record's strip does (the user, 2026-10-03). */
 .tabrow.poststages { width: 100%; }
 .tabrow.poststages .tab { flex: 1 0 auto; text-align: center; }
-/* The Overview's sections sit over a grid of cards the page's width, so its
-   strip runs that width at a desk too (the user, 2026-10-07: "the desktop
-   width and the strip width"). */
-.tabrow.ovwtabs { width: 100%; }
-.tabrow.ovwtabs .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {
   .tabrow { width: 100%; }
   .tabrow .tab { flex: 1 0 auto; text-align: center; }
@@ -10275,7 +9905,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .guide-on { outline: 2px solid var(--action-ring); outline-offset: 3px; }
 /* A row runs its table's width, and the table clips what falls outside it:
    a row's ring is drawn inside the row. */
-.guide-on:is(.crm-row, .svc-row, .hb-row, .wam-row, .camp-row, .cr-client-row, .ovw-row, .qrow) { outline-offset: -2px; }
+.guide-on:is(.crm-row, .svc-row, .hb-row, .wam-row, .camp-row, .cr-client-row, .qrow) { outline-offset: -2px; }
 /* The account menu docked on a phone: the card at the foot of the screen,
    its rows at the finger's height, Sign out last and nearest the thumb. */
 .popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
@@ -10521,7 +10151,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    phone (`.chartgrid`). A list card is a chart card's shape: its title with a
    count and View all on one line, then five rows that each open a record,
    name over meta on the left and the figure over its age at the right edge. */
-.ovw > .ovw-head:first-child { margin-top: 0; }
 .ovw-cardhead { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
 .ovw-cardhead h3 { margin: 0; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .ovw-cardhead .tone { flex: 0 0 auto; }
@@ -10530,30 +10159,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-cardhead .ovgo { margin: -8px -6px -8px auto; flex: 0 0 auto; }
 /* A card left alone on the last row takes the row, never half of it. */
 .ovw-grid:not(.is-three) > .ovw-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.ovw-rows { display: grid; }
-.ovw-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: start;
-  width: calc(100% + 16px); min-height: var(--ctl-h); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
-  border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
-  transition: background-color var(--t-fast);
-}
-.ovw-row:first-child { border-top: 0; }
-.ovw-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); border-radius: var(--radius-ctl-sm); }
-@media (hover: hover) { .ovw-row:hover { background: var(--sunk); } }
-.ovw-who, .ovw-fig { display: grid; gap: 2px; min-width: 0; }
-.ovw-who b { font-weight: 600; overflow-wrap: anywhere; }
-.ovw-who small, .ovw-fig small { font-size: 12.5px; color: var(--ink-mute); }
-.ovw-who small { overflow-wrap: anywhere; }
-.ovw-fig { justify-items: end; text-align: right; }
-.ovw-fig b, .ovw-fig small { white-space: nowrap; }
-.ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.ovw-fig b.is-warn { color: var(--ink); }
-.ovw-fig small.is-warn { color: var(--ink-soft); }
-.ovw-fig b.is-err { color: var(--err); }
-.ovw-fig small.is-err { color: var(--err); }
-/* A month's progress over the list of what is left: the ring and its words,
-   then the rows. */
-.ovw-progress { display: flex; margin: 0 0 4px; font-size: 13px; color: var(--ink-soft); }
 /* The rest of the list, a press away in the card: a quiet button whose words
    sit on the rows' own edge, giving its padding back to the side and below. */
 .ovw-more.btn { min-width: 0; margin: 4px 0 -6px -13px; align-self: flex-start; }
@@ -10596,10 +10201,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .ovw-span { font-size: 12px; color: var(--ink-mute); }
-/* More figures: the fold's own hairline, its charts under it at the
-   page's 12px step. */
-.ovw > .ovw-morefigs { margin: 0; }
-.ovw-morebody { display: grid; gap: 12px; padding-top: 12px; }
 .ovw-when > .select { flex: 0 0 auto; width: auto; min-width: 156px; }
 /* The glance: the ring on the left, the signals on the right; one column
    in a narrow pane, the ring centred over them. */
@@ -11313,7 +10914,6 @@ button.aiu-row:first-child::before { content: none; }
 .cmdbar-views .acttab, .cmdbar-views .acttab.is-on, .acttab, .acttab.is-on,
 .seg-opt, .seg-opt.is-on, .navitem.is-on, .railfoot.is-on, .picker-opt.is-on { font-weight: 400; }
 
-
 /* ---- White label (2026-10-07): a client's wide logo for reports, on a
    white strip (the PDF's own page) in the Brand sheet and its read pane. */
 .widelogo { display: flex; align-items: center; height: 72px; margin-bottom: 8px; padding: 12px 16px; border-radius: var(--radius-sm); background: #fff; }
@@ -11360,7 +10960,6 @@ button.aiu-row:first-child::before { content: none; }
 .meta-accs { display: grid; gap: 4px; max-height: 40dvh; overflow-y: auto; }
 .meta-accs .tickline { min-height: var(--ctl-h); }
 @media (max-width: 640px) { .wl-acts > .btn:not([hidden]) { flex: 1 1 0; } }
-#ptLogoOff { margin-top: 8px; }
 
 /* =========================================================================
    HEALTH (js/health.js, 2026-10-07)

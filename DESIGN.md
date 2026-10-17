@@ -114,9 +114,9 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 
 | Level | Size / weight / tracking | Where |
 |---|---|---|
-| Display | 24/600/-.02em (21 phone); 26 review hero; 20 batch title | `.cover-panel h2`, `.camphead h1`, `.batch-title` |
+| Display | 24/600/-.02em (21 phone); 26 review hero; 20 batch title | `.cover-panel h2`, `.batch-title` |
 | Section heading | 19/600/-.02em | `.viewhead h2`, record name (the creator portal's `h1` too) |
-| Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.tnext-title`, `.qnext-title`, `.lockcard-title`) |
+| Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.qnext-title`, `.lockcard-title`) |
 | Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
 | Money in a row | 13.5px tabular, its figure at 600 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
@@ -328,7 +328,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
   the card and the page. The walk seeds a 120-character link on both client
   pages. An address that is a row's meta line under its name is one line
-  ending in an ellipsis (`.tlink-row`); the whole address is one press away.
+  ending in an ellipsis; the whole address is one press away.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The

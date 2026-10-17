@@ -4412,3 +4412,18 @@ finding fixed at the user's word ("fix all no matter what").
   page's clock at 23:40; the suite now holds it at 15:10 for the slot
   checks (tests 066fd80). Every other suite, `ui`, uxaudit and matrix
   passed.
+
+- 2026-10-17 · The portal carried weight it did not use (security audit of
+  2026-10-16, finding K). `admin/drive-test/`, the page that checked Google
+  would let the portal read the team's folders before Drive import was
+  built, is removed (`docs/DRIVE-IMPORT-CHECK.md` keeps the key's setup).
+  The front door no longer preloads `css/OPTIMA.TTF` (40 KB): the face is
+  `font-display: swap` after `local('Optima')`, so the preload only put
+  it ahead of the page. About 410 lines of `css/portal.css` that no page
+  draws are gone, and dead selectors are taken out of lists that stay
+  (`.crm-title`, `.camphead`, `.seg-field`, `.kfield-pub`, `.crm-c-mkt`,
+  `.sched-plat`, `.rp-live`, `.rp-f-note`, `.ovw-row`): every class was
+  read against every page, script and suite first, and a rule whose class
+  a script still draws stays (`.stat`, `.tsess-mins`, `.tnext-list`).
+  The comments over the rules that stay are kept; DESIGN.md no longer
+  names `.camphead h1`, `.tnext-title` or `.tlink-row`.
