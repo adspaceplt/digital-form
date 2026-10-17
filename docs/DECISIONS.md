@@ -4541,3 +4541,14 @@ finding fixed at the user's word ("fix all no matter what").
   page's `quotePrice` reads; a letter issued before redraws as issued.
   `tests/lettersql.js` makes the lines with the real `quotation_offer` and
   takes each expected figure from the real `quote_adjust`.
+
+- 2026-10-17 · The client portal's meetings start on Malaysia's month (the
+  review of the audit's fix batches, finding 8). MALAYSIA TIME IN THE
+  DATABASE wrote `portal_meetings`' window as `date_trunc('month', now() at
+  time zone 'Asia/Kuala_Lumpur') at time zone 'Asia/Kuala_Lumpur' - interval
+  '3 months'`; `at time zone` binds before `-`, so the three months were
+  taken on the UTC calendar (in March: 29 November MYT, not 1 December).
+  `2026-10-17-portal-meetings-from-malaysias-month.sql` subtracts first,
+  then converts. #529's migration held the shape nowhere else;
+  `tests/sql.js` now fails any last definition that takes months off a
+  converted moment, and evaluates the window on a UTC server.
