@@ -4266,3 +4266,12 @@ finding fixed at the user's word ("fix all no matter what").
   `gen_random_bytes` as `new_link_key` does, in the same 31-character
   alphabet and length (`2026-10-17-creator-codes-from-strong-random.sql`);
   codes already issued are kept.
+
+- 2026-10-17 · Mistake: a campaign's link could approve a draft the team
+  had sent back (security audit of 2026-10-16, finding B). `review_draft`
+  ruled on any booking at Changes requested, including one the team
+  returned to the creator, which the selection page shows as Pending
+  draft; a call made by hand moved it to Scheduled. It now answers
+  `not-reviewing` there (`2026-10-17-team-send-back-stays.sql`), the
+  stand-in alike; a client's own request is still theirs to turn into an
+  approval.
