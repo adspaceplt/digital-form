@@ -4274,10 +4274,12 @@
           : '';
         throw new Error('Could not start the upload. ' + r.error.message + hint);
       }
-      if (!r.data || !r.data.uploadUrl) throw new Error(
-        'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+      if (!r.data || !r.data.uploadUrl) throw new Error(r.data && r.data.error === 'bad_extension'
+        ? 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.'
+        : 'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
 
-      return putToS3(r.data.uploadUrl, blob, contentType, onProgress).then(function () {
+      /* The type sign-upload signed into the PUT, sent back exactly (2026-10-17). */
+      return putToS3(r.data.uploadUrl, blob, r.data.contentType || contentType, onProgress).then(function () {
         // The file is in the bucket, but that does not prove CloudFront serves it
         // at the URL we are about to save. What this catches is a misconfigured
         // distribution, which is the same for every file, so one check a session
@@ -5457,6 +5459,8 @@
     whoName: whoName,
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
     putToS3: putToS3,
+    // A file's extension as sign-upload reads it: its type first, then its name.
+    extFor: extFor,
     // Where you are, and how far down. The address bar is shared property.
     setUrl: setUrl,
     pushUrl: pushUrl,

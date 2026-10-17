@@ -24,7 +24,22 @@ const ALLOWED_ORIGINS = [
   'http://localhost:8899'
 ];
 
-const EXT_OK = /^[a-z0-9]{1,5}$/;
+/* What the pages upload, and the one type each is stored as (audit
+   2026-10-16, finding 4): a content set's videos and pictures and their cover
+   frames, a client's logo, a creator's draft (pictures, videos, a PDF), the
+   team's hand-in for a creator (and a ZIP), an invoice and a report's kept
+   PDF. Nothing a browser would run (HTML, SVG, script) is signed. The type
+   is signed into the PUT, so the uploader cannot choose another. */
+const EXT_TYPE: Record<string, string> = {
+  mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', webm: 'video/webm',
+  mkv: 'video/x-matroska', mpg: 'video/mpeg', mpeg: 'video/mpeg',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
+  heic: 'image/heic', heif: 'image/heif', avif: 'image/avif',
+  pdf: 'application/pdf', zip: 'application/zip'
+};
+/* A signed PUT is good for fifteen minutes from signing (aws4fetch's own
+   default is a day); a long upload only has to start inside it. */
+const PUT_EXPIRES = 900;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /* What a colleague may upload, and what each needs. `field` names the
@@ -174,13 +189,14 @@ Deno.serve(async (req) => {
   const ext = String(body.ext ?? '').toLowerCase();
   const size = Number(body.size ?? 0);
 
-  if (!EXT_OK.test(ext)) return json({ error: 'bad_extension' }, 400, origin);
-  if (!size || size > MAX_BYTES) return json({ error: 'too_large' }, 400, origin);
+  const contentType = Object.prototype.hasOwnProperty.call(EXT_TYPE, ext) ? EXT_TYPE[ext] : '';
+  if (!contentType) return json({ error: 'bad_extension' }, 400, origin);
+  if (!Number.isSafeInteger(size) || size < 1 || size > MAX_BYTES) return json({ error: 'too_large' }, 400, origin);
 
   // 3. Sign a PUT for one key we choose. The browser never picks the path.
   const bucket = Deno.env.get('S3_BUCKET')!;
   const region = Deno.env.get('S3_REGION')!;
-  const prefix = Deno.env.get('S3_PREFIX') ?? 'portal';
+  const prefix = Deno.env.get('S3_PREFIX') ?? 'content';
   const cdnBase = (Deno.env.get('CDN_BASE') ?? '').replace(/\/+$/, '');
 
   /* A private file (a campaign's invoice PDF, 2026-10-02) goes under
@@ -201,14 +217,20 @@ Deno.serve(async (req) => {
     service: 's3'
   });
 
-  const signed = await aws.sign(new Request(target, { method: 'PUT' }), {
-    aws: { signQuery: true, allHeaders: false },
-    headers: {}
+  /* The type and the size claimed are signed into the PUT: S3 refuses a
+     body of another length or another Content-Type, so the claim is the
+     file (audit 2026-10-16, finding 4). The page sends `contentType` back
+     exactly; the browser sets the length from the file itself. */
+  const signed = await aws.sign(`${target}?X-Amz-Expires=${PUT_EXPIRES}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType, 'Content-Length': String(size) },
+    aws: { signQuery: true, allHeaders: true }
   });
 
   return json({
     uploadUrl: signed.url,
     publicUrl: priv ? null : `${cdnBase}/${key}`,
-    key
+    key,
+    contentType
   }, 200, origin);
 });
