@@ -160,7 +160,12 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   PROBLEM too.
 - `SKIP` is not a pass.
 - If port 8899 is not up, the gate starts the local server itself:
-  `setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &`.
+  `setsid nohup node tests/serve.js 8899 >/dev/null 2>&1 &` (http-server's
+  answers with the pages' script integrity taken off, so the stand-in loads;
+  2026-10-17).
+- Every CDN script on a portal page names its version and carries its
+  `integrity` hash and `crossorigin="anonymous"` (`tests/sql.js`); a new
+  version is hashed from the file the CDN serves.
 
 **Tiers: what checks each kind of change, in the day's full gate and by hand while a fault is found; before a merge, only the row's screenshots and `node --check` (a migration also its Postgres suite).**
 
