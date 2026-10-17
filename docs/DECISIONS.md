@@ -4444,3 +4444,15 @@ finding fixed at the user's word ("fix all no matter what").
   selection or creator key is refused with nothing signed. Breaking the
   function three ways (a contact given `content/`, the inactive check
   taken out, the feed's refusal ignored) fails it each time.
+
+- 2026-10-17 · A booking's post link is held to the web (the review of
+  the audit's fix batches, finding 1). #528 held a draft link, an invoice
+  and a Drive folder to http or https, but not `option_posts.post_url`,
+  which the team writes straight into the table at Creator Campaigns
+  Work: `javascript:…` there was drawn as a link in the console and on the
+  creator's page. `2026-10-17-post-links-on-the-web.sql` adds the same
+  check (`option_posts_post_url_web`); read live first, one of nine links
+  failed, a rednote link typed `ttps://…`, which the migration gives its
+  letter back. Both pages draw the link through `absUrl` (the creator's
+  page gains the console's copy). `tests/sql.js` holds the migration, the
+  refusals and both pages' drawing.
