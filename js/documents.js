@@ -86,7 +86,7 @@
   function priceOf(lines, market, taxOn, at) {
     var long = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); }).filter(function (x) { return x > 1; });
     var term = (long.length && long.every(function (x) { return x === long[0]; })) ? long[0] : 0;
-    var each = 0, once = 0;
+    var each = 0, once = 0, quote = null;
     var qm = quoteMode(lines);
     if (qm) {
       var base = 0, rest = 0;
@@ -96,6 +96,10 @@
       });
       var adj = base + cents(base * qm.pct / 100);
       if (term) { each = adj; once = rest; } else { each = adj + rest; }
+      /* What the letter prints: the lines at their rates before the term, and
+         the term's percentage as one row on their subtotal, as the quotation
+         prints it, so the rows add up to the subtotal (2026-10-17). */
+      quote = { pct: qm.pct, base: base, adj: cents(base * qm.pct / 100), rest: rest };
     } else {
       lines.forEach(function (l) {
         var v = Number(l.qty || 0) * rateOf(l);
@@ -111,7 +115,7 @@
     var n = term || 1;
     var r2 = function (v) { return Math.round(v * 100) / 100; };
     return {
-      sstPct: qm ? qm.sst : null,
+      sstPct: qm ? qm.sst : null, quote: quote,
       term: term, each: each, eachTax: eachTax, eachTotal: eachTotal,
       once: once, onceTax: onceTax, onceTotal: onceTotal,
       subtotal: r2(r2(each * n) + once),
@@ -651,7 +655,12 @@
         String(l.detail || '').split(/\r?\n/).forEach(function (d) {
           if (d.replace(/\s/g, '')) incl = incl.concat(wrap(d, descW, 8.5));
         });
-        var metaWord = [l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
+        /* A quoted letter prints the rate before the term and the term as
+           one row of the summary, so the line names no adjustment. */
+        var qd = price.quote;
+        var shownRate = qd ? Number(l.rate || 0) : rateOf(l);
+        var shownAmt = qd ? q * shownRate * (isMonthly(l, price.term) ? 1 : n) : lineAmount(l, price.term);
+        var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
@@ -659,10 +668,10 @@
         // The rate the client is billed, term adjustment included, because that
         // is the figure they are accepting. Why it differs from the rate card
         // is named on the mute line below, never left to be discovered.
-        right(q === 1 ? MON.money2(rateOf(l), doc.market)
-                      : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(rateOf(l), doc.market),
+        right(q === 1 ? MON.money2(shownRate, doc.market)
+                      : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(shownRate, doc.market),
               cols.rate, y, 10);
-        right(MON.money2(lineAmount(l, price.term), doc.market), cols.amt, y, 10);
+        right(MON.money2(shownAmt, doc.market), cols.amt, y, 10);
         var amtNote = isMonthly(l, price.term) ? 'per month' : price.term ? 'one-off' : (n > 1 ? n + ' months' : '');
         if (amtNote) right(amtNote, cols.amt, y - LROW, 8.5, font, mute);
         y -= LROW;
@@ -680,7 +689,8 @@
          without being the number in bold. */
       /* The one-off summary is five rows and a rule, about 85pt: kept whole
          on its page (audit I11, 2026-10-15). */
-      need(price.term && price.once > 0 ? 90 : 66);
+      var qd = price.quote, qadj = qd && Number(qd.pct) ? 1 : 0;
+      need((price.term && price.once > 0 ? 90 : 66) + qadj * 15);
       var lx = R - 230;
       var trow = function (label, value, kind) {
         var strong = kind === 'strong';
@@ -702,15 +712,26 @@
       var sst = Number(price.tax) > 0;
       var incl = sst ? ' incl. SST' : '';
       var firstDue = Math.round((Number(price.eachTotal) + Number(price.onceTotal || 0)) * 100) / 100;
+      /* A quoted letter: the rows' subtotal, then the term's row, as the
+         quotation's totals read (`12-Month Commitment (5%)`). */
+      var signed = function (v) { return v < 0 ? '(' + MON.money2(-v, doc.market) + ')' : MON.money2(v, doc.market); };
+      var termRow = function () {
+        if (!qadj) return;
+        var pc = Math.round(Math.abs(qd.pct) * 100) / 100;
+        trow((price.term ? price.term + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
+          .replace(/^./, function (c) { return price.term ? c : c.toUpperCase(); }), signed(qd.adj));
+      };
       if (oneOff) {
-        trow('Monthly subtotal', MON.money2(price.each, doc.market));
+        trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
+        termRow();
         trow('One-off subtotal', MON.money2(price.once, doc.market));
         trow(taxWord, MON.money2(Math.round((Number(price.eachTax) + Number(price.onceTax)) * 100) / 100, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow('First month due', MON.money2(firstDue, doc.market), 'strong');
         trow('Monthly' + incl, MON.money2(price.eachTotal, doc.market));
       } else {
-        trow('Subtotal', MON.money2(price.each, doc.market));
+        trow('Subtotal', MON.money2(qd ? qd.base + (price.term ? 0 : qd.rest) : price.each, doc.market));
+        termRow();
         trow(taxWord, MON.money2(price.eachTax, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');

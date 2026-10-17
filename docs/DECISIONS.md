@@ -4470,3 +4470,16 @@ finding fixed at the user's word ("fix all no matter what").
   `valid_until` is today or later in Malaysia; otherwise today's rates.
   `tests/lettersql.js` holds a valid, a last-day, an expired, a removed
   quotation and a renewal after SST moved from 6% to 8%.
+
+- 2026-10-17 · A quoted letter's rows add up to its subtotal (the review
+  of the audit's fix batches, finding 3). Since LETTERS PRICED AS QUOTED a
+  letter from one quotation takes the term percentage once on the
+  subtotal, but the table still printed each line's rate with the
+  percentage on it, rounded line by line: on #530's figures the rows
+  summed to RM 1,806.14 under a subtotal of RM 1,806.15. The table now
+  prints such a letter's lines at their rates before the term and the
+  summary carries the term as one row (`6-month commitment (5%)`, in
+  brackets), as the quotation's PDF does; the line's own term note is
+  left out. Other letters are unchanged (their rows are each line's
+  rounded amount, which is what they are priced on). `tests/pdfcases.js`
+  draws the case and reads the figures back from the PDF.
