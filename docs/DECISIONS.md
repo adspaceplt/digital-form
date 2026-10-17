@@ -4196,3 +4196,16 @@ finding fixed at the user's word ("fix all no matter what").
   section the reader cannot open is never asked, and still expected no My
   Work. The suite now takes My Work from the group in its own seed, and a
   change to the seed's maps runs every suite that signs in as that group.
+
+- 2026-10-17 · Mistake: `delete_client` let any signed-in account delete
+  any client (security audit of 2026-10-16, finding 1). Its first version
+  refused anyone not a colleague at Clients Full Access; the version of
+  2026-10-10 that files its own entry (audit R1) was rewritten from an
+  older copy and lost both refusals, so a client's portal login or a
+  colleague at View could delete a client and everything filed under it
+  (the scope trigger did not stop it: it lets a caller with no team row
+  through). The stand-in kept the refusal, so no browser suite saw it.
+  `2026-10-17-delete-client-at-manage.sql` puts the refusal back before
+  anything is read, and `tests/lettersql.js` holds View, Work, a non-team
+  login and Full Access. A replaced function keeps every refusal of the one
+  before.
