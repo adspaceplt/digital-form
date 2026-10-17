@@ -1042,6 +1042,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     the screen under a press. A coarse pointer is left alone.
 
 ### Writes, refusals, reversibility
+- A security definer function replaced keeps every refusal of the one
+  before it (2026-10-17: `delete_client` lost its own and refused no one).
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
   policy-refusable update takes `.select('id')`, and an empty answer is named
@@ -1825,7 +1827,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Delete client:
   - in the record's ⋯, as a sheet counting from the loaded record;
   - the name typed back, plus the delete code where `delete_code_set()`;
-  - `delete_client` re-checks at the press and files `client.deleted`
+  - `delete_client` re-checks at the press (an active colleague at Clients
+    Manage, `Not allowed`) and files `client.deleted`
     itself, in the transaction that deletes (audit R1); the page files
     nothing.
   - Paused and Past are the everyday exits.
