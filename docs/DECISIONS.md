@@ -4483,3 +4483,18 @@ finding fixed at the user's word ("fix all no matter what").
   left out. Other letters are unchanged (their rows are each line's
   rounded amount, which is what they are priced on). `tests/pdfcases.js`
   draws the case and reads the figures back from the PDF.
+
+- 2026-10-17 · WhatsApp messages are no longer lost as Not confirmed
+  (the review of the audit's fix batches, finding 4). `wa-send` claimed
+  twenty rows a round, five rounds, at up to 25 seconds a send: past the
+  edge function's time, so the rows it never reached stayed at Sending
+  and `wa_claim` marked them Not confirmed five minutes later, never
+  sent. A DNS or connect failure, which certainly sent nothing, was also
+  Not confirmed. Now the drain claims one row at a time and starts no
+  send after 90 seconds (`DRAIN_BUDGET_MS`, the last send's 25 seconds
+  still inside 150); `wa_claim` gives one row unless asked, five at most
+  (`2026-10-17-whatsapp-queue-a-few-at-a-time.sql`); and a request whose
+  Deno error says it never left (`client error (Connect)`, DNS, refused,
+  TLS) is filed `not sent:` and queued again, a timeout or a dropped
+  connection staying Not confirmed. `tests/wafn.js` holds the claims,
+  the budget and each failure; `tests/sql.js` the cap.

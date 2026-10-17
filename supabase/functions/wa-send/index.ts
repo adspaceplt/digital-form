@@ -97,6 +97,15 @@ function clean(p: string, max: number): string {
    one is given; a text header's variable and a link button's variable where
    the template has them (named where Meta holds it with named variables).
    Meta's own refusal is kept for the log, never shown. */
+/* How long one send to Meta may take, and how long the queue goes on
+   starting sends: the last one started ends inside the edge function's
+   time, so a claimed row is never left at Sending unfiled. */
+const SEND_TIMEOUT_MS = 25000;
+const DRAIN_BUDGET_MS = 90000;
+/* Deno's words for a request that failed before it was sent: the address,
+   the connection or the TLS handshake. Anything else may have reached Meta. */
+const NEVER_LEFT = /client error \(Connect\)|dns error|failed to lookup address|name or service not known|no such host|connection refused|tcp connect error|network is unreachable|no route to host|invalid peer certificate|certificate verify failed|tls handshake|handshake failure/i;
+
 async function sendTemplate(to: string, name: string, lang: string, params: string[], doc?: { id: string; filename: string },
                             button?: string, more?: More): Promise<Sent> {
   const m = more || {};
@@ -118,7 +127,10 @@ async function sendTemplate(to: string, name: string, lang: string, params: stri
   /* A send whose answer never came (the connection dropped, it timed out,
      Meta answered 5xx) may have reached the client: it is filed `unknown:`,
      which the database keeps as Not confirmed and never sends again
-     (audit C, 2026-10-17). Only Meta's own refusal is a failure to retry. */
+     (audit C, 2026-10-17). A request that never left (no address found, no
+     connection made, the TLS handshake refused) sent nothing, so it is a
+     failure the queue tries again, as Meta's own refusal is (2026-10-17,
+     the review's finding 4). */
   let res: Response;
   try {
     res = await fetch(await graphUrl('/messages'), {
@@ -126,9 +138,14 @@ async function sendTemplate(to: string, name: string, lang: string, params: stri
       headers: { 'Authorization': 'Bearer ' + TOKEN(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template',
         template: { name, language: { code: lang }, components } }),
-      signal: AbortSignal.timeout(25000)
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS)
     });
   } catch (e) {
+    const err = e as Error;
+    const timedOut = !!err && (err.name === 'TimeoutError' || err.name === 'AbortError');
+    if (!timedOut && NEVER_LEFT.test(String((err && err.message) || e))) {
+      return { ok: false, error: ('not sent: ' + String(e)).slice(0, 480) };
+    }
     return { ok: false, unknown: true, error: ('unknown: ' + String(e)).slice(0, 480) };
   }
   const body = await res.json().catch(() => null) as Record<string, any> | null;
@@ -316,9 +333,15 @@ Deno.serve(async (req) => {
   if (action === 'drain') {
     if (missing.length) return json({ ok: false, missing }, 200, origin);
     const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    /* One row claimed at a time, and none after the budget: twenty claimed
+       at once outran the function's time, and the rows never tried were
+       left at Sending, which the queue then marks Not confirmed, never sent
+       (2026-10-17, the review's finding 4). What is left waits, queued, for
+       the next wake. */
     let sent = 0, failed = 0;
-    for (let round = 0; round < 5; round++) {
-      const got = await svc.rpc('wa_claim', { p_limit: 20 });
+    const started = Date.now();
+    for (let n = 0; n < 40 && Date.now() - started < DRAIN_BUDGET_MS; n++) {
+      const got = await svc.rpc('wa_claim', { p_limit: 1 });
       const rows = (got.data || []) as Record<string, any>[];
       if (got.error || !rows.length) break;
       for (const r of rows) {
