@@ -998,7 +998,7 @@
         (window.ADspaceIcons ? window.ADspaceIcons.svg('upload') : '') +
         '<b>' + esc(t().dropTitle) + '</b><span>' + esc(t().dropSub) + '</span>' +
         '<input class="cx-drop-in" type="file" id="pick-' + esc(b.id) + '" multiple ' +
-          'accept="image/*,video/*,.pdf" data-a="pick" aria-label="' + esc(t().addFiles) + '"></label>' +
+          'accept="' + esc(API.uploadAccept(['image', 'video', 'pdf'])) + '" data-a="pick" aria-label="' + esc(t().addFiles) + '"></label>' +
       '<div class="filegrid" data-held' + ((held[b.id] || []).length ? '' : ' hidden') + '>' +
         heldHtml(b.id) + '</div>' +
       /* The same progress the console draws on Content Review: what is going
@@ -1216,8 +1216,15 @@
       return db.functions.invoke('sign-upload', {
         body: { ext: ext || 'bin', size: file.size, creatorCode: code, optionId: b.id }
       }).then(function (r) {
-        if (r.error) throw new Error(r.error.message || 'could not be signed');
-        if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
+        if (!r.error && r.data && r.data.uploadUrl) return r;
+        /* The reason is read where supabase-js leaves a non-2xx answer
+           (2026-10-17): a type sign-upload does not take is said so. */
+        return API.fnRefusal(r).then(function (why) {
+          var e = new Error(why || (r.error && r.error.message) || 'refused');
+          e.refused = why;
+          throw e;
+        });
+      }).then(function (r) {
         return putToS3(r.data.uploadUrl, file, r.data.contentType || typeOf(file), function (p) {
           show(i, n, file, p, p >= 1);
         }).then(function () {
@@ -1288,7 +1295,7 @@
       lock(true);
       btn.textContent = t().submitting;
       say('');
-      var failed = [];
+      var failed = [], wrongType = 0;
 
       function run(i) {
         if (i >= list.length) return Promise.resolve();
@@ -1297,6 +1304,7 @@
           h.sent = true;
         }, function (e) {
           failed.push(h.file.name);
+          if (e && e.refused === 'bad_extension') wrongType++;
           if (window.console) console.warn('[creator upload] ' + h.file.name, e);
         }).then(function () { return run(i + 1); });
       }
@@ -1316,6 +1324,9 @@
           var text = failed.length === 1
             ? fill(t().failOne, { file: failed[0] })
             : fill(t().failMany, { n: failed.length });
+          /* A file of a kind sign-upload does not take is named for what it
+             is, never "Please try again" (2026-10-17). */
+          if (wrongType) text = (wrongType === failed.length ? '' : text + ' ') + t().uploadType;
           /* Repainted from the database so the files that did go up show as
              handed in, and the answer written onto the card that replaced
              this one. */

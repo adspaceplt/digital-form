@@ -4206,6 +4206,23 @@
     return String(mimeType || '').indexOf('video') === 0 ? 'mp4' : 'jpg';
   }
 
+  /* sign-upload's answer, or its refusal in the team's words: the reason
+     is read from the non-2xx body where supabase-js leaves it (2026-10-17). */
+  function signedUpload(r) {
+    if (!r.error && r.data && r.data.uploadUrl) return r;
+    return API.fnRefusal(r).then(function (code) {
+      if (code === 'bad_extension') throw new Error(window.ADspaceWords.en.uploadType);
+      if (code) throw new Error('Upload was refused: ' + code);
+      var fn = (window.ADSPACE_CONFIG.s3 || {}).functionName || 'sign-upload';
+      var m = (r.error && r.error.message) || 'unknown reason';
+      var hint = /failed to send|fetch/i.test(m)
+        ? ' The browser could not reach it. In the Supabase dashboard, open Edge ' +
+          'Functions, check a function named "' + fn + '" exists, and turn OFF its "Verify JWT" setting.'
+        : '';
+      throw new Error('Could not start the upload. ' + m + hint);
+    });
+  }
+
   function storePoster(blob) {
     if (!blob) return Promise.resolve(null);
     return storeBlob(blob, 'jpg', 'image/jpeg').then(function (url) { return url; },
@@ -4265,18 +4282,7 @@
     // S3. The file never passes through Supabase, so there is no size ceiling.
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
       body: Object.assign({ ext: ext || 'bin', clientId: cid, size: blob.size }, ref)
-    }).then(function (r) {
-      if (r.error) {
-        var hint = /failed to send|fetch/i.test(r.error.message || '')
-          ? ' The browser could not reach it. In the Supabase dashboard, open Edge ' +
-            'Functions, check a function named "' + (cfg.s3.functionName || 'sign-upload') +
-            '" exists, and turn OFF its "Verify JWT" setting.'
-          : '';
-        throw new Error('Could not start the upload. ' + r.error.message + hint);
-      }
-      if (!r.data || !r.data.uploadUrl) throw new Error(r.data && r.data.error === 'bad_extension'
-        ? 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.'
-        : 'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+    }).then(signedUpload).then(function (r) {
 
       /* The type sign-upload signed into the PUT, sent back exactly (2026-10-17). */
       return putToS3(r.data.uploadUrl, blob, r.data.contentType || contentType, onProgress).then(function () {
@@ -5461,6 +5467,8 @@
     putToS3: putToS3,
     // A file's extension as sign-upload reads it: its type first, then its name.
     extFor: extFor,
+    // sign-upload's answer, or its refusal in the team's words.
+    signedUpload: signedUpload,
     // Where you are, and how far down. The address bar is shared property.
     setUrl: setUrl,
     pushUrl: pushUrl,
@@ -6108,7 +6116,7 @@
           /* The revised file goes in here; it stays on this device until
              Save, like every other file picked in this section. */
           '<label class="saved-file"><span>Replace file</span>' +
-            '<input class="input" type="file" data-f="file" multiple accept="image/*,video/*"></label>' +
+            '<input class="input" type="file" data-f="file" multiple accept="' + API.uploadAccept(['image', 'video']) + '"></label>' +
           (decided ? '<span class="saved-asked">Saves as revision ' + (round + 1) + '.</span>' : '') +
           '<div class="changebox-actions">' +
             '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save</button>' +

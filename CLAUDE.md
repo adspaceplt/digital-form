@@ -5223,7 +5223,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   video, picture, PDF, ZIP; never HTML, SVG or script; `bad_extension`),
   each with its one type, and signs that type and the size claimed into
   the PUT for fifteen minutes (`X-Amz-Expires` 900); every page PUTs with
-  the `contentType` it answers (2026-10-17, audit finding 4).
+  the `contentType` it answers (2026-10-17, audit finding 4). Every picker
+  that feeds it offers only those extensions (`ADspaceAPI.uploadAccept`),
+  and its refusal, a non-2xx that supabase-js leaves on `r.error.context`,
+  is read by `ADspaceAPI.fnRefusal` and said in words (`W.uploadType`),
+  never "non-2xx".
 - A client's review link and a campaign's selection link carry an
   eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
   made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in

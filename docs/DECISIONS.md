@@ -4509,3 +4509,18 @@ finding fixed at the user's word ("fix all no matter what").
   `incomplete` out of those three; the colleague's day still counts it
   (the user: "count every failure except rejected"). The stand-in holds
   the same rule; `tests/sql.js` runs the three functions.
+
+- 2026-10-17 · A refused upload type is said in words, and the pickers no
+  longer offer it (the review of the audit's fix batches, finding 6).
+  sign-upload refuses with a 400 (`bad_extension`), which supabase-js
+  hands back as `r.error` with the body unread on `r.error.context`; the
+  pages read only `r.data`, so the console's friendly sentence was never
+  reached and people saw "Edge Function returned a non-2xx status code"
+  (the creator's page: "could not be uploaded. Please try again"). The
+  stand-in had answered refusals as data, kinder than the real client.
+  `ADspaceAPI.fnRefusal` reads the code either way and `W.uploadType`
+  says it (the console's uploads through `signedUpload`, the team's
+  hand-in and invoice, the creator's page); the pickers' accept lists
+  come from `ADspaceAPI.uploadAccept`, sign-upload's own extensions with
+  their types, so .avi, .3gp, .tif, .bmp and .svg are no longer offered.
+  The stand-in now refuses with the non-2xx shape.

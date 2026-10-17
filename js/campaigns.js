@@ -3677,7 +3677,7 @@
             ? '<label class="kfield kfield-wide"><span>Upload for ' +
                 esc((o.creators || {}).name || 'the creator') + '</span>' +
                 '<input class="input" type="file" multiple data-a="teamfiles" ' +
-                'accept="video/*,image/*,.pdf,.zip"></label>' +
+                'accept="' + window.ADspaceAPI.uploadAccept(['video', 'image', 'pdf', 'zip']) + '"></label>' +
               '<div class="kfield-wide teamheld" data-teamheld' +
                 ((teamHeld[o.id] || []).length ? '' : ' hidden') + '>' + teamHeldHtml(o.id) + '</div>' +
               '<div class="progress kupload" data-teamup hidden>' +
@@ -3814,9 +3814,7 @@
         : (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
       return db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
         body: { ext: ext, clientId: state.campaign.client_id, size: file.size, purpose: 'campaign', optionId: o.id }
-      }).then(function (r) {
-        if (r.error) throw new Error(r.error.message || 'could not be signed');
-        if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
+      }).then(bridge.signedUpload).then(function (r) {
         var kind = mediaKind({ name: file.name, kind: (file.type || '').split('/')[0] });
         return putToS3(r.data.uploadUrl, file, r.data.contentType || file.type || 'application/octet-stream', function (p) {
           show(i, n, file, p, p >= 1);
@@ -5039,9 +5037,7 @@
              docs/S3-STORAGE.md §5): the row then keeps the key, not an address. */
           body: { ext: 'pdf', clientId: c.client_id, size: file.size, private: !!(cfg.s3 && cfg.s3.privateInvoices),
                   purpose: 'invoice', campaignId: c.id }
-        }).then(function (r) {
-          if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
-          if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+        }).then(bridge.signedUpload).then(function (r) {
           return putToS3(r.data.uploadUrl, file, r.data.contentType || 'application/pdf').then(function () { return r.data.publicUrl || r.data.key; });
         })
       : Promise.resolve(null);
