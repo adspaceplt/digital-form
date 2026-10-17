@@ -27,10 +27,6 @@
 (function () {
   'use strict';
 
-  function esc(s) {
-    return String(s == null ? '' : s);
-  }
-
   /* Edit the thing where it sits.
      `host` is the element showing the value; `btn` is what opened it and what
      now saves it. Returns nothing: the caller gets its value through `save`.
@@ -238,5 +234,5 @@
     };
   }
 
-  window.ADspaceAsk = { rename: rename, inline: inline, note: note, esc: esc };
+  window.ADspaceAsk = { rename: rename, inline: inline, note: note };
 })();

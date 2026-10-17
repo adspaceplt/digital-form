@@ -4209,3 +4209,19 @@ finding fixed at the user's word ("fix all no matter what").
   anything is read, and `tests/lettersql.js` holds View, Work, a non-team
   login and Full Access. A replaced function keeps every refusal of the one
   before.
+
+- 2026-10-17 · Mistake: a creator could run script in a colleague's
+  console (security audit of 2026-10-16, finding 2). `creator_add_file`
+  (anon, a creator's code) stored the file's address, name and kind as the
+  page sent them, and the console and the selection page draw the address
+  inside `src` and `href` through an `esc` that left `"` alone, so an
+  address holding `" onerror="…` ran with no press. The function now takes
+  only the address `sign-upload` makes for that booking
+  (`https://mycdn.adspace.me/content/creator/{booking}/{uuid}.{ext}`), a
+  name of 1 to 255 and a kind the page sends; every page's `esc` that left
+  out `"` or `'` (twenty-one copies) escapes both, and `ADspaceAsk.esc`,
+  which escaped nothing and was used nowhere, is gone. Checked live: no
+  stored file address or name holds a quote or an angle bracket; the three
+  addresses off the creator path are the team's own hand-ins, under the
+  client's folder, which this function never writes. The thirty-odd
+  copies of `esc` are not merged here.
