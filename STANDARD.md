@@ -563,14 +563,13 @@ section holds only what is true of the project as a whole.
   dialog.
 
 ### Open security findings
-- The audit of 2026-10-16 (five findings) is being closed one release
-  each: 1 (`delete_client` refused no one), 2 (a creator's file address
-  drawn unescaped in the console), 3 (a post link holding a quote) and 4
+- None open from the audit of 2026-10-16's five must-fix findings: 1
+  (`delete_client` refused no one), 2 (a creator's file address drawn
+  unescaped in the console), 3 (a post link holding a quote) and 4
   (`sign-upload` signing any extension, type and size for a day) closed
-  2026-10-17; 5 (three
-  internal helpers open) was already closed by
-  `2026-09-27-internal-helpers-stay-internal.sql`.
-- Before it: none open. The audit of 2026-10-10 closed in five batches (the last, F3:
+  and live on 2026-10-17; 5 (three internal helpers open) was already
+  closed by `2026-09-27-internal-helpers-stay-internal.sql`.
+- The audit of 2026-10-10 closed in five batches (the last, F3:
   a media pass per client folder). Checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
   which answers false for anybody who is not an active colleague. The
