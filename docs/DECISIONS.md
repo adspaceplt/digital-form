@@ -4353,3 +4353,17 @@ finding fixed at the user's word ("fix all no matter what").
   `js/documents.js`); every other letter is priced as before.
   `tests/lettersql.js` holds sen rates, an SST change, two terms and a
   mixed letter, and runs the page's own `priceOf` against the database.
+
+- 2026-10-17 · Mistake: a Write with AI run that used the model but gave no
+  answer was free (security audit of 2026-10-16, finding G). Every daily
+  limit counts the rows not marked failed, and the five edge functions
+  marked a run failed whenever it ended without a usable answer: stopped
+  at its length, refused, nothing parsable, a brand analysis out of turns.
+  Those runs had cost tokens, and a run made to fail could be repeated
+  without limit. The user's rule: "count every failure except rejected".
+  A run whose tokens were kept (input above nought) is now `incomplete`,
+  whichever of `ai_draft_done` and `ai_draft_tokens` arrives first
+  (`2026-10-17-ai-runs-counted-as-they-ran.sql`); a request the API
+  refused before generating keeps no tokens and stays failed. No edge
+  function changed: each already keeps a run's tokens whenever the model
+  answered.
