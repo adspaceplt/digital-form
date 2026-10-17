@@ -4275,3 +4275,16 @@ finding fixed at the user's word ("fix all no matter what").
   `not-reviewing` there (`2026-10-17-team-send-back-stays.sql`), the
   stand-in alike; a client's own request is still theirs to turn into an
   approval.
+
+- 2026-10-17 · Mistake: Content Review's Client settings part could change
+  the whole client row (security audit of 2026-10-16, finding D).
+  `clients_update` lets a write through at Clients Work or at
+  `review.settings` Work, since Content Review writes the client's handles,
+  logo, passcode, key, review flag and Drive folder, and a policy cannot
+  name columns; a group holding that part alone could rename a client,
+  move its stage or change its Client ID. Trigger `client_review_columns`
+  (`2026-10-17-review-settings-held-to-their-columns.sql`) refuses such a
+  caller's page write that changes any other column (`review-columns`). It
+  runs as the caller, so a function (running as its owner) is not held,
+  and is named to fire before every other trigger on the table, reading
+  the columns as the page sent them. The stand-in refuses the same.
