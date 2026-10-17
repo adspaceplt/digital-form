@@ -4225,3 +4225,12 @@ finding fixed at the user's word ("fix all no matter what").
   addresses off the creator path are the team's own hand-ins, under the
   client's folder, which this function never writes. The thirty-odd
   copies of `esc` are not merged here.
+
+- 2026-10-17 · Mistake: a creator's post link could carry script
+  (security audit of 2026-10-16, finding 3). `post_link_ok` held the link
+  to the platform's own host and nothing more, so
+  `https://instagram.com/x"onmouseover="…` was stored and drawn as a link
+  on the selection page, the console and the creator's page. It now
+  refuses a link holding `"`, `'`, `<`, `>`, a backslash or a backtick
+  (`link`); the pages escape both quotes since finding 2. Checked live:
+  none of the nine stored post links holds one.

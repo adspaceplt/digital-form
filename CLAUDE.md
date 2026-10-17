@@ -2529,7 +2529,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     placement, the post link (the platform's own host, `post_link_ok()`),
     its date, and views, engagements and impressions over the count period.
     `creator_post_save` writes them (`entered_by` creator, filed
-    `campaign.results`); numbers are refused (`period`) until the team sets
+    `campaign.results`; a link holding `"`, `'`, `<`, `>`, a backslash or a
+    backtick refused `link`, `2026-10-17-post-links-plain.sql`); numbers are refused (`period`) until the team sets
     `measure_from`/`measure_to`, which only the console writes; until then
     the page says nothing about the period. The first link at Scheduled
     moves the booking to Posted.
