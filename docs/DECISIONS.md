@@ -4248,3 +4248,13 @@ finding fixed at the user's word ("fix all no matter what").
   answers, and a creator's or the team's file with no extension in its
   name takes the one its type has. `S3_PREFIX` falls back to `content`,
   as the docs set it.
+
+- 2026-10-17 · Mistake: anyone could list the old Storage bucket `content`
+  (security audit of 2026-10-16, finding H). `content_public_read` let
+  anon and every signed-in account select from `storage.objects` in it,
+  which lists every file's path and so every client folder's id. Nothing
+  has been written there since uploads moved to S3; the policy is dropped
+  (`2026-10-17-legacy-bucket-unlisted.sql`) and the schema no longer makes
+  it. The bucket and its one file stay: a 2.5 MB PNG of 9 Sept 2026 under
+  the folder of a client since deleted, named by no post, version or
+  client, still served at its public address.
