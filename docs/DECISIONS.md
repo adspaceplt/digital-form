@@ -4456,3 +4456,17 @@ finding fixed at the user's word ("fix all no matter what").
   letter back. Both pages draw the link through `absUrl` (the creator's
   page gains the console's copy). `tests/sql.js` holds the migration, the
   refusals and both pages' drawing.
+
+- 2026-10-17 · A letter takes its quotation's rates only while the
+  quotation stands (the review of the audit's fix batches, finding 2).
+  LETTERS PRICED AS QUOTED priced a letter at the quotation's term
+  percentage and SST whenever every line carried one `quotation_id`; the
+  link is never cleared and the quotation's validity was never read, so a
+  renewal on the same confirmed lines (crm.js sends `renewal` down the
+  same path) or a replacement after the quotation lapsed charged the SST
+  of the day it was quoted. `issue_letter` (`2026-10-17-letters-priced-as-
+  quoted-while-valid.sql`) and the page's `quoteOf` now take them only
+  where it is not a renewal, the quotation is not removed and its
+  `valid_until` is today or later in Malaysia; otherwise today's rates.
+  `tests/lettersql.js` holds a valid, a last-day, an expired, a removed
+  quotation and a renewal after SST moved from 6% to 8%.

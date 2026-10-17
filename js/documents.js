@@ -157,12 +157,15 @@
      works the same price from the stored lines and keeps these figures only
      where they agree to the sen (audit S4, 2026-10-10), so a line changed
      since the sheet opened is refused rather than printed at the old price. */
-  function quoteOf(client, lines, quotes) {
+  function quoteOf(client, lines, quotes, renewal) {
     /* Lines a quotation made carry its SST rate, read from the quotation
-       the page holds, as the database reads it. */
+       the page holds, as the database reads it: only while it stands
+       (unexpired, not removed) and never on a renewal (2026-10-17). */
     var q = lines.length ? lines[0].quotation_id : null;
-    var hit = q && lines.every(function (l) { return l.quotation_id === q; }) &&
-      (quotes || []).filter(function (x) { return x.id === q; })[0];
+    var hit = !renewal && q && lines.every(function (l) { return l.quotation_id === q; }) &&
+      (quotes || []).filter(function (x) {
+        return x.id === q && !x.removed_at && String(x.valid_until || '').slice(0, 10) >= window.ADspaceClock.today();
+      })[0];
     if (hit && hit.totals) {
       lines = lines.map(function (l) {
         return Object.assign({}, l, { quote_sst: client.sst_applies === false ? 0 : Number(hit.totals.sst_pct || 0) });
@@ -187,7 +190,7 @@
       then({ error: 'Add a Client ID to this client before issuing a letter.' });
       return;
     }
-    var price = quoteOf(client, use, opts.quotes);
+    var price = quoteOf(client, use, opts.quotes, opts.renewal);
     deal = deal || {};
     db.rpc('issue_letter', {
       p_client: client.id,
