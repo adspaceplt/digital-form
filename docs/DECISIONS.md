@@ -4404,6 +4404,15 @@ finding fixed at the user's word ("fix all no matter what").
   fontkit, loaded on demand by `ADspaceDocs.lib()` (the PDF suites serve
   their own copies of those).
 
+- 2026-10-17 · Mistake: the full gate on 13fc4d4 (tests c1aad16) failed
+  `work` alone, a fault in the suite. It ran at midnight in Malaysia: from
+  23:30 the first meeting slot is tomorrow's 00:00, nothing on that day
+  comes before it, so the suite's "time already gone" (00:01) was booked
+  and the sheet shut under the next field. Reproduced by holding the
+  page's clock at 23:40; the suite now holds it at 15:10 for the slot
+  checks (tests 066fd80). Every other suite, `ui`, uxaudit and matrix
+  passed.
+
 - 2026-10-17 · The portal carried weight it did not use (security audit of
   2026-10-16, finding K). `admin/drive-test/`, the page that checked Google
   would let the portal read the team's folders before Drive import was
