@@ -1930,7 +1930,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate
-    (`quote_sst` on each snapshot line; 2026-10-17), and prints each line
+    (`quote_sst` on each snapshot line; 2026-10-17), exactly as
+    `quote_adjust` totals it: a line the quotation bills by the month is
+    monthly whatever months Build quote gave it, and where they differ the
+    whole span takes the percentage and SST once, the one-off apart
+    (`quote_term` on each snapshot line; one without it redraws as
+    issued), and prints each line
     at its rate before the term with the term as one summary row
     (`6-month commitment (5%)`), so its rows add up to the subtotal.
     `issue_letter` works

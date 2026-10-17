@@ -4524,3 +4524,20 @@ finding fixed at the user's word ("fix all no matter what").
   come from `ADspaceAPI.uploadAccept`, sign-upload's own extensions with
   their types, so .avi, .3gp, .tif, .bmp and .svg are no longer offered.
   The stand-in now refuses with the non-2xx shape.
+
+- 2026-10-17 · A quoted letter totals exactly what its quotation does
+  (the review of the audit's fix batches, finding 7). `quote_adjust` lets
+  Build quote give a monthly line months of its own and `quotation_offer`
+  copies them into the line's term; `issue_letter` then read a monthly
+  line edited to one month as a one-off item without the term percentage
+  (term 12, −5%, 8% SST, a 1,000 plan and a 200 line at one month: 12,528.00
+  against the quotation's 12,517.20), and took SST once over everything
+  where lines ran different terms beside a one-off (a sen off).
+  `2026-10-17-letters-priced-as-their-quotation.sql` prices a quoted
+  letter as `quote_adjust` totals it: a line with its term ticked is
+  monthly whatever its months; all on the quotation's term, by the month;
+  otherwise the whole span with the percentage and SST taken once, the
+  one-off and its SST apart. Snapshot lines keep `quote_term`, which the
+  page's `quotePrice` reads; a letter issued before redraws as issued.
+  `tests/lettersql.js` makes the lines with the real `quotation_offer` and
+  takes each expected figure from the real `quote_adjust`.

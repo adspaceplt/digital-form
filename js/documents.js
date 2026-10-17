@@ -71,12 +71,55 @@
     var sst = lines.length ? lines[0].quote_sst : null;
     if (!q || sst == null || sst === '') return null;
     if (!lines.every(function (l) { return l.quotation_id === q && Number(l.quote_sst) === Number(sst); })) return null;
+    /* A snapshot keeping the quotation's term (2026-10-17, the review's
+       finding 7) is priced as quote_adjust totals it: a line with its term
+       ticked is monthly whatever its months, one with none one-off. One
+       issued before keeps the reading it was issued on. */
+    var term = lines[0].quote_term == null || lines[0].quote_term === '' ? null : Math.max(1, Number(lines[0].quote_term));
+    if (term != null) {
+      if (lines.some(function (l) { return l.term_adjust !== true && Math.max(1, Number(l.tenure || 1)) > 1; })) return null;
+      var mp = lines.filter(function (l) { return l.term_adjust === true; }).map(function (l) { return Number(l.term_pct || 0); })
+        .filter(function (v, i, a) { return a.indexOf(v) === i; });
+      return mp.length > 1 ? null : { pct: mp[0] || 0, sst: Number(sst), term: term };
+    }
     var longs = lines.filter(function (l) { return Math.max(1, Number(l.tenure || 1)) > 1; });
     if (longs.some(function (l) { return l.term_adjust === false; })) return null;
     var pcts = longs.map(function (l) { return Number(l.term_pct || 0); })
       .filter(function (v, i, a) { return a.indexOf(v) === i; });
     if (pcts.length > 1) return null;
     return { pct: pcts[0] || 0, sst: Number(sst) };
+  }
+  /* A quoted letter priced as quote_adjust totals it (2026-10-17): where
+     every monthly line runs the quotation's term, by the month, its SST
+     rounded once; else the whole span (each line's amount × its months)
+     with the percentage and SST taken once on it; one-off lines apart. */
+  function quotePrice(lines, qm, taxOn) {
+    var sst = taxOn === false ? 0 : qm.sst;
+    var msub = 0, span = 0, once = 0, month = false, even = true;
+    lines.forEach(function (l) {
+      var n = Math.max(1, Number(l.tenure || 1)), v = Number(l.qty || 0) * Number(l.rate || 0);
+      if (l.term_adjust === true) { month = true; msub += v; span += cents(v) * n; if (n !== qm.term) even = false; }
+      else once += v;
+    });
+    var otax = cents(once * sst / 100), r2 = function (v) { return Math.round(v * 100) / 100; };
+    var out = { sstPct: qm.sst, term: 0, each: 0, eachTax: 0, eachTotal: 0, once: once, onceTax: otax, onceTotal: r2(once + otax) };
+    if (month && even) {
+      var adj = cents(msub * qm.pct / 100), each = msub + adj, etax = cents(each * sst / 100);
+      out.term = qm.term; out.each = each; out.eachTax = etax; out.eachTotal = r2(each + etax);
+      out.quote = { pct: qm.pct, base: r2(msub), adj: adj, rest: once };
+      out.subtotal = r2(r2(each * qm.term) + once); out.tax = r2(r2(etax * qm.term) + otax);
+      out.total = r2(r2(out.eachTotal * qm.term) + out.onceTotal);
+      return out;
+    }
+    /* Whole amounts: one subtotal, the term's row on the span, one SST
+       figure, the total incl. SST. */
+    var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
+    var mtot = month ? cents(span * (1 + qm.pct / 100) * (1 + sst / 100)) : 0;
+    out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
+    out.each = r2(mex + once); out.eachTotal = r2(mtot + once + otax); out.eachTax = r2(out.eachTotal - out.each);
+    out.once = 0; out.onceTax = 0; out.onceTotal = 0;
+    out.subtotal = out.each; out.tax = out.eachTax; out.total = out.eachTotal;
+    return out;
   }
   /* To the cent, a half away from nought, as the database rounds. */
   function cents(v) {
@@ -88,6 +131,7 @@
     var term = (long.length && long.every(function (x) { return x === long[0]; })) ? long[0] : 0;
     var each = 0, once = 0, quote = null;
     var qm = quoteMode(lines);
+    if (qm && qm.term != null) return quotePrice(lines, qm, taxOn);
     if (qm) {
       var base = 0, rest = 0;
       lines.forEach(function (l) {
@@ -172,7 +216,8 @@
       })[0];
     if (hit && hit.totals) {
       lines = lines.map(function (l) {
-        return Object.assign({}, l, { quote_sst: client.sst_applies === false ? 0 : Number(hit.totals.sst_pct || 0) });
+        return Object.assign({}, l, { quote_sst: client.sst_applies === false ? 0 : Number(hit.totals.sst_pct || 0),
+                                      quote_term: Math.max(1, Number(hit.totals.term || 1)) });
       });
     }
     return priceOf(lines, client.market, client.sst_applies !== false);
