@@ -569,6 +569,19 @@ section holds only what is true of the project as a whole.
   (`sign-upload` signing any extension, type and size for a day) closed
   and live on 2026-10-17; 5 (three internal helpers open) was already
   closed by `2026-09-27-internal-helpers-stay-internal.sql`.
+- The same audit's second batch (A to N) closed and live on 2026-10-17:
+  Malaysia's day in every function (A), a team send-back holding against
+  the client's link (B), a WhatsApp send never repeated by itself (C), the
+  review settings held to their columns (D), admin made only by an admin
+  (E), a quoted letter priced as quoted (F), every AI run that reached the
+  model counted (G), the legacy bucket unlisted (H), the backup's CLI
+  pinned (I), the CDN scripts pinned by hash (J), the portal's unused
+  weight shed (K), creator codes from a strong source (L), every stored
+  link held to the web (M) and three guard suites (N). Declined by the
+  user: 6, 15, most of 20, and any change to the root pages. Left as they
+  are: `ops_due_decider` and `option_qc_count`, helpers still open to a
+  signed-in account, which answer only a colleague's id or a count of
+  checks, for a task or booking id the caller must already hold.
 - The audit of 2026-10-10 closed in five batches (the last, F3:
   a media pass per client folder). Checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
