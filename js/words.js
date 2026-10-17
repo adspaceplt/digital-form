@@ -34,6 +34,8 @@
     failText: 'Please refresh, or contact your ADspace account manager.',
     // A client's act the database did not take, said without its words.
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
+    // A file sign-upload does not take (2026-10-17).
+    uploadType: 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.',
     // The name decisions are recorded under (js/decide.js, 2026-10-08).
     decideAs: 'Deciding as',
     decideChange: 'Change',
@@ -113,6 +115,7 @@
     failTitle: '无法加载',
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
+    uploadType: '此类文件无法上传，请使用视频、图片或 PDF。',
     decideAs: '当前审批人',
     decideChange: '更改',
     decideForget: '清除',

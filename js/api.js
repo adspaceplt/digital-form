@@ -196,8 +196,44 @@
     return d;
   }
 
+  /* What an edge function refused, by its own code (2026-10-17): supabase-js
+     puts a non-2xx answer in `r.error`, its body unread on
+     `r.error.context` (the Response), so a page that looked at `r.data`
+     alone showed "Edge Function returned a non-2xx status code". A 200
+     answer carries it in `r.data`. '' where none is named. */
+  function fnRefusal(r) {
+    if (r && r.data && r.data.error) return Promise.resolve(String(r.data.error));
+    const ctx = r && r.error && r.error.context;
+    if (!ctx || typeof ctx.json !== 'function') return Promise.resolve('');
+    return Promise.resolve()
+      .then(() => (typeof ctx.clone === 'function' ? ctx.clone() : ctx).json())
+      .then((b) => (b && b.error ? String(b.error) : ''))
+      .catch(() => '');
+  }
+
+  /* The files sign-upload signs (its EXT_TYPE), as a picker's accept: each
+     extension and its type, so a phone's library offers them and nothing it
+     would refuse (2026-10-17). */
+  const UPLOAD_TYPES = {
+    video: { mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', webm: 'video/webm',
+             mkv: 'video/x-matroska', mpg: 'video/mpeg', mpeg: 'video/mpeg' },
+    image: { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
+             heic: 'image/heic', heif: 'image/heif', avif: 'image/avif' },
+    pdf: { pdf: 'application/pdf' },
+    zip: { zip: 'application/zip' }
+  };
+  function uploadAccept(kinds) {
+    const out = [];
+    kinds.forEach((k) => Object.keys(UPLOAD_TYPES[k] || {}).forEach((e) => {
+      [ '.' + e, UPLOAD_TYPES[k][e] ].forEach((x) => { if (out.indexOf(x) < 0) out.push(x); });
+    }));
+    return out.join(',');
+  }
+
   window.ADspaceAPI = {
     accessToken,
+    fnRefusal,
+    uploadAccept,
     waNumber,
     movedKey,
     configured,
