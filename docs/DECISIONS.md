@@ -4561,3 +4561,18 @@ finding fixed at the user's word ("fix all no matter what").
   `absUrl` answers nothing, the card now says Enter a web address., focuses
   the field and sends nothing (the draft link's Save and the step forward,
   the post link's Save). `tests/camp.js` and `tests/results.js` hold both.
+
+- 2026-10-17 · The Malaysia time guard reads every day taken off a moment
+  (the review of the audit's fix batches, finding 10). #529's guard in
+  `tests/sql.js` matched `current_date`, `now()::date` and
+  `date_trunc(…, now())` alone, so `p_at::date`, `current_final_due_at::date`
+  and `to_char(now(), 'YYYY-MM')` passed it: putting the fix back would not
+  have failed. It now flags, line by line, a cast, `date()`, `to_char`,
+  `date_trunc`, `extract` or `date_part` on now() and its kin, a column
+  named `*_at` or a name the function declares timestamptz, taking out only
+  what is put into Malaysia's zone (a line converting one value and casting
+  another is caught). Its exceptions are listed by line with their reason
+  (per-minute keys, stored days, an order only) and each must still be
+  there; it fails on `ops_create_task` and `ops_engagement_set_meeting` as
+  they stood before #529. It found three moments read on the UTC calendar,
+  logged in STANDARD.md for their own release.
