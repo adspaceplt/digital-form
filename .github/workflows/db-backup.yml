@@ -21,9 +21,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      # Pinned (2026-10-17, audit I): the version the nightly runs used when
+      # this was written; a new release is taken by changing this line.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0
       - name: Dump, encrypt and keep
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

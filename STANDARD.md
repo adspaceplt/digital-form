@@ -643,8 +643,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - Backups (2026-10-10): the Supabase project is on the Free plan, which
   keeps none; the nightly encrypted dump to `private/backups/db/` stands in
   (`workers/db-backup/README.md`), running since 2026-10-11 (the owner's
-  key and secrets set; the first scheduled run succeeded). Not covered:
-  Handbook files in Supabase Storage. A restore has not been rehearsed.
+  key and secrets set; the first scheduled run succeeded), its Supabase CLI
+  pinned (2.121.0, 2026-10-17). Not covered: Handbook files in Supabase
+  Storage. The user's to do (audit I, 2026-10-17): bucket versioning or
+  Object Lock on `private/backups/`, so a dump cannot be overwritten or
+  removed, and one restore rehearsal from a dump into a scratch project.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
