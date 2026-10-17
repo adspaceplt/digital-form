@@ -4339,3 +4339,17 @@ finding fixed at the user's word ("fix all no matter what").
   the last definition of every function in the schema and fails on one
   that asks the server's day without the zone, whatever zone the machine's
   Postgres runs in.
+
+- 2026-10-17 · Mistake: a Letter of Offer made from a quotation could be
+  priced differently from it (security audit of 2026-10-16, finding F).
+  `quote_price` takes the term percentage once on the monthly subtotal and
+  SST at the rate of the day it priced; `issue_letter` (and the page's
+  `priceOf`) rounded each line's rate with its percentage before adding,
+  and charged today's SST, so sen rates moved the letter by a sen or two
+  and an SST change between the quotation and the letter moved it by the
+  whole change. Where every line came from one quotation, the letter is now
+  priced as the quotation was, its SST rate kept on the snapshot so a
+  redraw prints the same (`2026-10-17-letters-priced-as-quoted.sql`,
+  `js/documents.js`); every other letter is priced as before.
+  `tests/lettersql.js` holds sen rates, an SST change, two terms and a
+  mixed letter, and runs the page's own `priceOf` against the database.

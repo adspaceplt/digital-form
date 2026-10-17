@@ -4986,7 +4986,7 @@
     var ids = pickedIds();
     var c = state.client;
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    var price = rows.length ? DOCS.quoteOf(c, rows) : null;
+    var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes) : null;
     $('pickSum').textContent = rows.length
       ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, c.market)
       : 'Nothing chosen';
@@ -5044,7 +5044,7 @@
       stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || ''
     };
     DOCS.issue('offer', c, rows, deal,
-      { idem: picking.idem, replaces: picking.replaces, renewal: renewal,
+      { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: state.quotes,
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;
