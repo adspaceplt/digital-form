@@ -5125,7 +5125,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   queue holds something. A send whose answer never came (a dropped
   connection, a timeout, Meta's 5xx, a row cut off at Sending) is Not
   confirmed (`unknown`, filed `unknown:`), never sent again by itself, and
-  counts as Sent recently (2026-10-17). The queue and its tables are
+  counts as Sent recently (2026-10-17); a request that never left (DNS,
+  connect, TLS) is filed `not sent:` and queued again. The queue is
+  claimed one row at a time (`wa_claim` gives one, five at most) and no
+  send starts after 90 seconds, so a claimed row is never left at Sending. The queue and its tables are
   closed to every page.
 - Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_WABA_ID` (the templates),
   `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`, the user's choice, 2026-10-09:
