@@ -29,7 +29,7 @@
   /* Deleting a month is an admin's alone (2026-09-27); the database asks again. */
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function msg(id, text, kind) {
     var el = $(id); if (!el) return;

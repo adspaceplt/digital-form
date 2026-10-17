@@ -1044,6 +1044,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Writes, refusals, reversibility
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
+- Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
+  value is drawn inside attributes (2026-10-17: a creator's file address
+  holding a quote ran script in the console).
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
   policy-refusable update takes `.select('id')`, and an empty answer is named
@@ -2506,7 +2509,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A file's kind falls back on its extension (`typeOf`, `kindOf`,
     `mediaKind()`).
   - Signed PUT via `sign-upload`, using `creator_may_upload` with a key built
-    from the verified option.
+    from the verified option. `creator_add_file` records only the address
+    `sign-upload` made for that booking (`bad-file`), a name of 1 to 255
+    (`bad-name`) and a kind of image, video or file (`bad-kind`;
+    `2026-10-17-creator-files-held-to-their-folder.sql`).
   - Picked files are held on the device (`held`, `.filecard.is-held`, ×
     each) and upload one by one only on Submit or Update; each row is
     written after its file is stored. A failure keeps that file held and

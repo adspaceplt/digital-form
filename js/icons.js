@@ -55,7 +55,7 @@
      think Apple would put such huge stage status"). `at` is the step in
      hand; past the last, all are done. */
   function journey(words, at) {
-    var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var esc = function (x) { return String(x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
     return '<ol class="cx-journey">' + words.map(function (w, i) {
       var cls = i < at ? 'is-done' : i === at ? 'is-now' : '';
       return '<li' + (cls ? ' class="' + cls + '"' : '') + (i === at ? ' aria-current="step"' : '') + '><span>' + esc(w) + '</span></li>';

@@ -52,7 +52,7 @@
        so a phone never squeezes it beside the state. */
     if (after && after.parentNode === host) host.insertBefore(line, after.nextSibling);
     else host.appendChild(line);
-    function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function esc(x) { return String(x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
     function paint() {
       var name = known();
       line.hidden = !name;

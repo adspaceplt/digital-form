@@ -18,7 +18,7 @@
   var $ = function (id) { return document.getElementById(id); };
   function WA() { return window.ADspaceWhatsApp; }
   var esc = function (s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var PLAT = [['meta', 'Meta'], ['tiktok', 'TikTok'], ['rednote', 'rednote'], ['linkedin', 'LinkedIn']];
