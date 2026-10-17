@@ -346,7 +346,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     Agency on `/` alone (16px/400, 14 on a phone, kept on a phone); no menu,
     no sign-in, no list of rooms;
   - the name centred: `h1.lp-title` ADspace in Optima (`ADspace Optima`,
-    `css/OPTIMA.TTF` after `local('Optima')`, preloaded), over the tagline
+    `css/OPTIMA.TTF` after `local('Optima')`, never preloaded: it swaps in), over the tagline
     `advertising | marketing | branding` in Slate Regular (`.lp-tagline`);
     never an opening status (a studio, not a shop). ADspace alone, never
     "ADspace Studio";
