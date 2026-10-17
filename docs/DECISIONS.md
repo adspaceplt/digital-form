@@ -4552,3 +4552,12 @@ finding fixed at the user's word ("fix all no matter what").
   then converts. #529's migration held the shape nowhere else;
   `tests/sql.js` now fails any last definition that takes months off a
   converted moment, and evaluates the window on a UTC server.
+
+- 2026-10-17 · A mistyped draft or post link is refused, never deleted
+  (the review of the audit's fix batches, finding 9). Since #528 `absUrl`
+  answers nothing for a scheme other than http or https, and the console
+  saved that as no link: `htps://…` in a booking's draft link or a post
+  link was stored as null under "Saved.". Where the field is not blank and
+  `absUrl` answers nothing, the card now says Enter a web address., focuses
+  the field and sends nothing (the draft link's Save and the step forward,
+  the post link's Save). `tests/camp.js` and `tests/results.js` hold both.

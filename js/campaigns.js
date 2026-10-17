@@ -4161,6 +4161,7 @@
     on('advance', function () {
       var to = nextState(o.state);
       var patch = readCard(card);
+      if (!patch) return;
       /* The gate reads what was handed in and the plan the Schedule holds. */
       var why = blockAdvance(to, Object.assign({ id: o.id, planned_publish: o.planned_publish }, patch));
       var m = card.querySelector('[data-msg]');
@@ -4176,7 +4177,9 @@
     on('sendback',  function () { sendBack(o, card); });
 
     on('save', function () {
-      db.from('campaign_options').update(readCard(card)).eq('id', o.id).select('id').then(function (r) {
+      var patch = readCard(card);
+      if (!patch) return;
+      db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
         var m = card.querySelector('[data-msg]');
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
         if (!(r.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
@@ -4187,14 +4190,27 @@
     });
   }
 
+  /* A link typed that is not a web address is refused where it was typed,
+     never saved as nothing under Saved. (2026-10-17, the review's finding
+     9: `htps://…` read as no link). Null where refused. */
   function readCard(card) {
-    var patch = {};
+    var patch = {}, bad = null;
     Array.prototype.forEach.call(card.querySelectorAll('[data-f]'), function (i) {
       var k = i.getAttribute('data-f');
       var v = i.value.trim();
-      if (k === 'draft_url') v = absUrl(v);
+      if (k === 'draft_url') {
+        var u = absUrl(v);
+        if (v && !u && !bad) bad = i;
+        v = u;
+      }
       patch[k] = v === '' ? null : v;
     });
+    if (bad) {
+      var m = card.querySelector('[data-msg]');
+      if (m) { m.textContent = 'Enter a web address.'; m.className = 'msg err'; }
+      bad.focus();
+      return null;
+    }
     return patch;
   }
 
@@ -4774,14 +4790,21 @@
           '<div class="kactions"><button class="btn btn-sm" data-p-save type="button">Save</button></div>' +
           saidHtml('post:' + p.id).replace('data-said', 'data-said data-p-msg');
         w.querySelector('[data-p-save]').addEventListener('click', function () {
-          var patch = {};
+          var patch = {}, badLink = null;
           Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
             var k = i.getAttribute('data-p');
             var v = i.value.trim();
-            if (k === 'post_url') v = absUrl(v);
+            if (k === 'post_url') {
+              var u = absUrl(v);
+              if (v && !u) badLink = i;
+              v = u;
+            }
             patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
           });
           var m = w.querySelector('[data-p-msg]');
+          /* A post link that is not a web address is refused, never saved as
+             none (2026-10-17). */
+          if (badLink) { m.textContent = 'Enter a web address.'; m.className = 'msg err'; badLink.focus(); return; }
           if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) {
             m.textContent = 'Count to comes after Count from.'; m.className = 'msg err'; return;
           }
