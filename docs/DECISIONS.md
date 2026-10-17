@@ -4498,3 +4498,14 @@ finding fixed at the user's word ("fix all no matter what").
   TLS) is filed `not sent:` and queued again, a timeout or a dropped
   connection staying Not confirmed. `tests/wafn.js` holds the claims,
   the budget and each failure; `tests/sql.js` the cap.
+
+- 2026-10-17 · Try again works after an AI draft that ended with no answer
+  (the review of the audit's fix batches, finding 5). AI RUNS COUNTED AS
+  THEY RAN made such a run `incomplete`, counted by every limit, the
+  per-report ones included: a colleague's one draft (`ai_draft_same`) or
+  one commentary check (`ai_check_claim`, `ai_check_left`) on a report a
+  day was spent by a run that gave nothing, while js/reports.js told them
+  to Try again. `2026-10-17-ai-retry-on-the-same-report.sql` leaves
+  `incomplete` out of those three; the colleague's day still counts it
+  (the user: "count every failure except rejected"). The stand-in holds
+  the same rule; `tests/sql.js` runs the three functions.
