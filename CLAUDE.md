@@ -1098,7 +1098,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   never `current_date` or `now()::date` (the database runs on UTC: yesterday
   until 8am; 2026-10-17, `tests/sql.js` reads every function's last
   definition). The database's TimeZone stays UTC: PostgREST writes timestamps
-  in it and the pages read them so.
+  in it and the pages read them so. Months are taken off Malaysia's local
+  time before it is made a moment (`(date_trunc('month', now() at time zone
+  'Asia/Kuala_Lumpur') - interval '3 months') at time zone 'Asia/Kuala_Lumpur'`):
+  `at time zone` binds before `-`, so the other order counts on UTC's
+  calendar (2026-10-17, `portal_meetings`).
 - PostgREST cannot choose between overloads a call fits, so a changed signature
   drops the old one first.
 - An embed across two foreign keys names the key
