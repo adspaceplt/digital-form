@@ -5029,7 +5029,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (name, client, template, a number as typed), Month (a view, the last
   twelve), Type and Status behind Filters, the count, New message (Work).
 - Templates (`tab=templates`, Full Access): the queue (waiting, sending, not
-  sent in 7 days), then one template a purpose (`wa_templates`: `report`,
+  sent and not confirmed in 7 days, `wa_messages` `queue`), then one template a purpose (`wa_templates`: `report`,
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
