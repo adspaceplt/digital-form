@@ -4319,3 +4319,23 @@ finding fixed at the user's word ("fix all no matter what").
   their words and draw the folder only on https, and the sheet asks for
   an https folder. `2026-10-17-links-held-to-the-web.sql` adds checks on
   the three columns; checked live first, none of the stored values fails.
+
+- 2026-10-17 · Mistake: the database read the UTC day (security audit of
+  2026-10-16, finding A; the user: "all must in MYT"). The database's
+  TimeZone is UTC, so `current_date` and `now()::date` were yesterday
+  until 8:00am in Malaysia: on the 1st the new month and quarter were
+  refused until then (`perf_today`, which every Performance rule asks), an
+  issue logged that morning read as in the future, and My Work's late
+  list counted a day late. Two ways were weighed. Setting the database's
+  zone to Malaysia (one line) was refused: PostgREST writes every
+  timestamp in the session's zone (`+00:00` today, which the pages read and
+  compare as strings in places) and every `date::timestamptz` in the
+  schema reads a day in it, so it would move stored-day arithmetic and the
+  JSON every page reads. Instead each of the ten functions whose last
+  definition read the server's day takes Malaysia's, as `health_today()`
+  and most of the schema already did, and the three columns that default
+  to today take Malaysia's day
+  (`2026-10-17-malaysia-time-in-the-database.sql`). `tests/sql.js` reads
+  the last definition of every function in the schema and fails on one
+  that asks the server's day without the zone, whatever zone the machine's
+  Postgres runs in.

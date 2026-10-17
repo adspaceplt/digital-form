@@ -1089,6 +1089,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every forward move is walked backwards before it ships.
 - PL/pgSQL: declared names never match a column, and lookups are qualified. A
   shadowed name fails at run time, not at create time.
+- A function's today is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
+  never `current_date` or `now()::date` (the database runs on UTC: yesterday
+  until 8am; 2026-10-17, `tests/sql.js` reads every function's last
+  definition). The database's TimeZone stays UTC: PostgREST writes timestamps
+  in it and the pages read them so.
 - PostgREST cannot choose between overloads a call fits, so a changed signature
   drops the old one first.
 - An embed across two foreign keys names the key
