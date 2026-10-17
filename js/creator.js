@@ -1199,13 +1199,16 @@
     // exists, so every step's failure is a failure of the whole file.
     function sendOne(file, i, n) {
       show(i, n, file, 0, false);
-      var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+      /* The name's extension where sign-upload takes it, else the one its
+         type has (a phone's file may carry no extension; 2026-10-17). */
+      var ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!EXT_TYPE[ext]) ext = Object.keys(EXT_TYPE).filter(function (k) { return EXT_TYPE[k] === typeOf(file); })[0] || ext;
       return db.functions.invoke('sign-upload', {
         body: { ext: ext || 'bin', size: file.size, creatorCode: code, optionId: b.id }
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message || 'could not be signed');
         if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
-        return putToS3(r.data.uploadUrl, file, typeOf(file), function (p) {
+        return putToS3(r.data.uploadUrl, file, r.data.contentType || typeOf(file), function (p) {
           show(i, n, file, p, p >= 1);
         }).then(function () {
           show(i, n, file, 1, true);

@@ -249,7 +249,7 @@
     }).then(function (r) {
       var d = r.data || {};
       if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || (r.error && r.error.message) || 'refused');
-      return bridge.putToS3(d.uploadUrl, new Blob([bytes], { type: 'application/pdf' }), 'application/pdf').then(function () {
+      return bridge.putToS3(d.uploadUrl, new Blob([bytes], { type: 'application/pdf' }), d.contentType || 'application/pdf').then(function () {
         return db.rpc('sm_report_keep_file', { p_version: v.id, p_key: d.key });
       });
     }).then(function (res) {

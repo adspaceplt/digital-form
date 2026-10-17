@@ -3810,14 +3810,15 @@
     }
     function sendOne(file, i, n) {
       show(i, n, file, 0, false);
-      var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+      var ext = bridge.extFor ? bridge.extFor(file.type, file.name)
+        : (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
       return db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
         body: { ext: ext, clientId: state.campaign.client_id, size: file.size, purpose: 'campaign', optionId: o.id }
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message || 'could not be signed');
         if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
         var kind = mediaKind({ name: file.name, kind: (file.type || '').split('/')[0] });
-        return putToS3(r.data.uploadUrl, file, file.type || 'application/octet-stream', function (p) {
+        return putToS3(r.data.uploadUrl, file, r.data.contentType || file.type || 'application/octet-stream', function (p) {
           show(i, n, file, p, p >= 1);
         }).then(function () {
           show(i, n, file, 1, true);
@@ -5038,7 +5039,7 @@
         }).then(function (r) {
           if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
           if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
-          return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl || r.data.key; });
+          return putToS3(r.data.uploadUrl, file, r.data.contentType || 'application/pdf').then(function () { return r.data.publicUrl || r.data.key; });
         })
       : Promise.resolve(null);
 

@@ -5179,6 +5179,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   private); the record must be the named client's and the caller's client
   scope must reach it, each asked as the caller. Work in one section signs
   nothing for another; a page that names no purpose is asked to reload.
+- `sign-upload` signs only the extensions the pages upload (`EXT_TYPE`:
+  video, picture, PDF, ZIP; never HTML, SVG or script; `bad_extension`),
+  each with its one type, and signs that type and the size claimed into
+  the PUT for fifteen minutes (`X-Amz-Expires` 900); every page PUTs with
+  the `contentType` it answers (2026-10-17, audit finding 4).
 - A client's review link and a campaign's selection link carry an
   eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
   made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in

@@ -4234,3 +4234,17 @@ finding fixed at the user's word ("fix all no matter what").
   refuses a link holding `"`, `'`, `<`, `>`, a backslash or a backtick
   (`link`); the pages escape both quotes since finding 2. Checked live:
   none of the nine stored post links holds one.
+
+- 2026-10-17 · Mistake: `sign-upload` signed any upload for a day
+  (security audit of 2026-10-16, finding 4). It took any extension of five
+  letters (html, svg and js included, served by the CDN from our domain),
+  signed the PUT with no headers so the uploader chose its Content-Type,
+  took the size on the caller's word, and left aws4fetch's own expiry of
+  86,400 seconds. It now signs only the extensions the pages upload
+  (videos, pictures, PDF, ZIP; the live store holds jpg, mov, png, mp4,
+  jpeg and pdf), each with one type, and signs that type and the size
+  claimed into the PUT (`allHeaders`, so S3 refuses another type or
+  length) for 900 seconds; every page PUTs with the `contentType` it
+  answers, and a creator's or the team's file with no extension in its
+  name takes the one its type has. `S3_PREFIX` falls back to `content`,
+  as the docs set it.
