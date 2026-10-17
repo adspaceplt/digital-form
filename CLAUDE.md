@@ -227,7 +227,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
 | `supabase/functions/brand-analysis/`, the Brand pane's analysis, the BRAND ANALYSIS section | analysis, smsql, caption, crm, then `ui` |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
-| `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass |
+| `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass, mediapassfn |
 | the Short Links route | qr, shortlinks, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 

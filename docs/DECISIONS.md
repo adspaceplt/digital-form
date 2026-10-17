@@ -4427,3 +4427,20 @@ finding fixed at the user's word ("fix all no matter what").
   a script still draws stays (`.stat`, `.tsess-mins`, `.tnext-list`).
   The comments over the rules that stay are kept; DESIGN.md no longer
   names `.camphead h1`, `.tnext-title` or `.tlink-row`.
+
+- 2026-10-17 · Three guards the audit asked for (security audit of
+  2026-10-16, finding N), each shown to fail on the fault it stands for
+  before it was kept. In `tests/sql.js`: every security definer function
+  a signed-in account may run and no public page calls must ask who is
+  calling in its last definition, and one whose earlier definition asked
+  `allowed()` or `is_team()` keeps asking (the fault behind
+  `delete_client`); and one creator's code or one client's key, asked
+  with another side's record, is refused by every function and writes
+  nothing. New, `tests/mediapassfn.js` runs the real `media-pass` with a
+  stand-in Deno and supabase-js and verifies each pass with the
+  function's own key: a portal contact is passed `content/{client}/`
+  for each client they hold live access at and never `content/`, an
+  inactive colleague is refused `not_team`, and a wrong review,
+  selection or creator key is refused with nothing signed. Breaking the
+  function three ways (a contact given `content/`, the inactive check
+  taken out, the feed's refusal ignored) fails it each time.
