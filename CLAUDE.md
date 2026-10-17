@@ -3973,8 +3973,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     brings none the same day), `check_admin` an admin's (5), both refused
     `report_check`; every refusal names the reset time. There is no team cap: the team's and a group's totals are
     their colleagues' limits added up (`team` refused `bad-scope`). A
-    failed press is marked failed by the function (`ai_draft_done`) and
-    not counted. `ai_drafts` has RLS on, no policy and no grants. A refusal
+    press the API refused before it generated keeps no tokens, is marked
+    failed and is not counted; one that reached the model and ended with
+    no answer (its length, a refusal, nothing usable) is `incomplete` and
+    counted (`ai_draft_done`, `ai_draft_tokens`; 2026-10-17, the user:
+    "count every failure except rejected"). `ai_drafts` has RLS on, no policy and no grants. A refusal
     (`ai-limit`) names the scope, the limit and when the next draft is free.
     Beside the button the count left reads `1 left` (`ai_draft_left`, the
     lesser of the report's and the colleague's, read without writing); at
