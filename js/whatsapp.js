@@ -53,7 +53,8 @@
     quotation: 'Quotation', offer: 'Letter of Offer', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
-                ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['failed', 'Failed', 'is-danger']];
+                ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['unknown', 'Not confirmed', 'is-warn'],
+                ['failed', 'Failed', 'is-danger']];
   /* The part each purpose sends under, and the record's own section. */
   var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking', approval: 'whatsapp.approval',
     quotation: 'whatsapp.documents', offer: 'whatsapp.documents' };
@@ -86,6 +87,7 @@
     'wa-recipient': 'This number is not on WhatsApp.',
     'wa-busy': 'WhatsApp is busy. Try again in a minute.',
     'wa-failed': 'Not sent. Try again.',
+    'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
     'bad-file': 'The PDF could not be attached.',
     'needs-update': 'This needs a database update.'
   };
@@ -223,6 +225,7 @@
 
   function statusOf(x) {
     var key = x.state === 'queued' ? 'queued' : x.state === 'sending' ? 'sending' : x.state === 'failed' ? 'failed'
+      : x.state === 'unknown' ? 'unknown'
       : x.read_at ? 'read' : x.delivered_at ? 'delivered' : x.failed_at ? 'failed' : 'sent';
     return STATUS.filter(function (s) { return s[0] === key; })[0];
   }
@@ -398,7 +401,8 @@
     var row = document.createElement('div');
     row.className = 'wam-row';
     row.setAttribute('data-id', x.id);
-    var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + '</small>' : '';
+    var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + '</small>'
+      : s[0] === 'unknown' ? '<small class="wam-why is-unknown">' + esc(SAID['wa-unknown']) + '</small>' : '';
     var meta = [whoOf(x), phone(x.to_number)].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="wam-to"><b>' + esc(x.to_name || phone(x.to_number)) + '</b>' +

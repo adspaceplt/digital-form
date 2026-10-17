@@ -4367,3 +4367,17 @@ finding fixed at the user's word ("fix all no matter what").
   refused before generating keeps no tokens and stays failed. No edge
   function changed: each already keeps a run's tokens whenever the model
   answered.
+
+- 2026-10-17 · Mistake: a WhatsApp message could be sent twice (security
+  audit of 2026-10-16, finding C). `wa-send` put a message back in the
+  queue whenever its request to Meta failed, a connection that dropped or
+  timed out after Meta had taken it included, and `wa_claim` took a row
+  left at Sending for five minutes and sent it again; the queues were also
+  woken only by the write that filled them. A send whose answer never came
+  is now filed `unknown:` and kept as Not confirmed (`wa_outbox.state`
+  `unknown`, trigger `wa_outbox_unknown`), never sent again by itself, and
+  counts as Sent recently so a send by hand asks first; Meta's own refusal
+  is still tried three times; each send gives up after 25 seconds so it is
+  filed rather than cut off. pg_cron `outbox-drain` wakes both queues every
+  five minutes while they hold something
+  (`2026-10-17-whatsapp-sends-never-repeated.sql`).

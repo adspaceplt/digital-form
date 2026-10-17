@@ -5002,7 +5002,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADspaceCard.phone` writes it), what it was (Report, Feedback request,
   Booking, Reminder, Message over the template and its category), who sent
   it (Automatic for the queue) and the status over when: Queued, Sending,
-  Sent, Delivered, Read, or Failed with the reason in the team's words
+  Sent, Delivered, Read, Not confirmed (check the chat before sending again), or Failed with the reason in the team's words
   (`REASON`, by Meta's code). Above it the month's templates sent by
   category (Utility, Marketing; Authentication where any; a message Meta failed left out). The bar: search
   (name, client, template, a number as typed), Month (a view, the last
@@ -5112,8 +5112,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   and cleared to post stay on the creator's page and push) go to
   `wa_outbox` with their template's category; `wa_kick` (pg_net) wakes
   `wa-send`, which claims with the service role (`wa_claim`, `wa_done`;
-  three tries, then Failed). The queue and its tables are closed to every
-  page.
+  three tries of Meta's own refusal, then Failed), and pg_cron
+  `outbox-drain` wakes it and `push-send` every five minutes while their
+  queue holds something. A send whose answer never came (a dropped
+  connection, a timeout, Meta's 5xx, a row cut off at Sending) is Not
+  confirmed (`unknown`, filed `unknown:`), never sent again by itself, and
+  counts as Sent recently (2026-10-17). The queue and its tables are
+  closed to every page.
 - Secrets: `WHATSAPP_PHONE_ID`, `WHATSAPP_WABA_ID` (the templates),
   `WHATSAPP_TOKEN` (else `META_SYSTEM_TOKEN`, the user's choice, 2026-10-09:
   one system user holds both), `META_APP_SECRET` (`appsecret_proof` on every

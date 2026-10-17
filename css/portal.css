@@ -12122,6 +12122,8 @@ button.vs-row { cursor: pointer; }
 }
 .wam-by { font-size: 13px; color: var(--ink-soft); }
 .wam-row small.wam-why, .wat-row small.wam-why { color: var(--err); white-space: normal; overflow-wrap: anywhere; }
+/* Not confirmed (2026-10-17) is a caution, never a refusal: the soft ink. */
+.wam-row small.wam-why.is-unknown { color: var(--ink-soft); }
 .wam-to .wam-why { display: none; }
 .is-narrow .crm-head.wam-row { display: none; }
 .is-narrow .wam-row {
