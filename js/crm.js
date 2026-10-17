@@ -4986,7 +4986,8 @@
     var ids = pickedIds();
     var c = state.client;
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes) : null;
+    var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
+    var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes, renewal) : null;
     $('pickSum').textContent = rows.length
       ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, c.market)
       : 'Nothing chosen';
