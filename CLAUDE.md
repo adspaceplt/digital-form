@@ -3985,7 +3985,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     failed and is not counted; one that reached the model and ended with
     no answer (its length, a refusal, nothing usable) is `incomplete` and
     counted (`ai_draft_done`, `ai_draft_tokens`; 2026-10-17, the user:
-    "count every failure except rejected"). `ai_drafts` has RLS on, no policy and no grants. A refusal
+    "count every failure except rejected") against the day, never against
+    the report's one draft or check of the day (`ai_draft_same`,
+    `ai_check_claim`), so Try again works. `ai_drafts` has RLS on, no policy and no grants. A refusal
     (`ai-limit`) names the scope, the limit and when the next draft is free.
     Beside the button the count left reads `1 left` (`ai_draft_left`, the
     lesser of the report's and the colleague's, read without writing); at
