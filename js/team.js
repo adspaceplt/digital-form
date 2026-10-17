@@ -499,12 +499,14 @@
     return [post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
+  var ADMIN_ONLY = 'Only an admin makes a colleague admin or changes an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
     if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'This is a system account.';
+    if (/admin-only/.test(t)) return ADMIN_ONLY;
     return t;
   }
   function memberRow(m) {
@@ -776,7 +778,7 @@
     }).catch(function () { msg('teamMsg', 'Saved. The work could not be handed over.', 'err'); return false; });
   }
   var REMOVE_SAID = {
-    own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.',
+    own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.', 'admin-only': ADMIN_ONLY,
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'Team Full Access is required.', 'not-found': 'This colleague is no longer on the team.'
   };
@@ -1008,7 +1010,7 @@
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
     db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
-      if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); load(); return; }
+      if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error), 'err'); load(); return; }
       if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {

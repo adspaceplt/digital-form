@@ -4288,3 +4288,19 @@ finding fixed at the user's word ("fix all no matter what").
   runs as the caller, so a function (running as its owner) is not held,
   and is named to fire before every other trigger on the table, reading
   the columns as the page sent them. The stand-in refuses the same.
+
+- 2026-10-17 · Mistake: Team Full Access was admin (security audit of
+  2026-10-16, finding E). `team_admin` and `roles_admin` let a colleague at
+  Team Full Access write any member and any group, and `team_role_defaults`
+  copies `is_admin` from the group, so they could move themselves into the
+  Admin group, tick Admin on their own group, or change an admin's email to
+  their own; only one's own admin row was guarded. Triggers
+  `team_admin_guard` and `team_roles_admin_guard`
+  (`2026-10-17-admins-made-by-admins.sql`) refuse, for a signed-in caller
+  who is not an admin, a member or group made admin and any change to an
+  admin's group, access, access date, email, standing or row
+  (`admin-only`); the expiry job and the SQL Editor (no sign-in) and a
+  group's re-stamp pass. Set access expiry for everyone skips admins for
+  such a caller, and the removal's check answers before any work moves.
+  Not covered: Team Full Access still sets any group's levels and granted
+  parts, the power of that level.
