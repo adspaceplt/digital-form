@@ -4381,3 +4381,11 @@ finding fixed at the user's word ("fix all no matter what").
   filed rather than cut off. pg_cron `outbox-drain` wakes both queues every
   five minutes while they hold something
   (`2026-10-17-whatsapp-sends-never-repeated.sql`).
+
+- 2026-10-17 · The nightly backup's Supabase CLI was `latest` (security
+  audit of 2026-10-16, finding I): a release that changed the dump's shape
+  or broke it would have reached the backups unread. It is pinned to
+  2.121.0, the version the last three nightly runs used (released 14 Oct
+  2026); `tests/dbbackup.js` holds a pinned version. STANDARD.md names what
+  stays the user's: versioning or Object Lock on `private/backups/`, and a
+  restore rehearsal.
