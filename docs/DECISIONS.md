@@ -4389,3 +4389,17 @@ finding fixed at the user's word ("fix all no matter what").
   2026); `tests/dbbackup.js` holds a pinned version. STANDARD.md names what
   stays the user's: versioning or Object Lock on `private/backups/`, and a
   restore rehearsal.
+
+- 2026-10-17 · The CDN scripts carried no integrity hash (security audit
+  of 2026-10-16, finding J): a CDN serving other bytes under the pinned
+  version would have run them in the console and on every client page.
+  Each portal page's Supabase and QR library tags now carry `integrity`
+  (sha384 of the file the CDN serves, read through the proxy twice and
+  checked in Chromium against those bytes) and `crossorigin="anonymous"`;
+  the root pages are the user's and were not touched. Every browser suite
+  answers the Supabase library with the stand-in, which no hash matches,
+  so the suites' server is now `tests/serve.js` (http-server's answers,
+  the attribute taken off a page as it is served) in gate.sh, snap.sh and
+  by hand; `tests/sql.js` holds every tag pinned. Not covered: pdf-lib and
+  fontkit, loaded on demand by `ADspaceDocs.lib()` (the PDF suites serve
+  their own copies of those).
