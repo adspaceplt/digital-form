@@ -86,7 +86,7 @@ async function graphUrl(path: string, node?: string): Promise<string> {
   return url.toString();
 }
 
-type Sent = { ok: boolean; id?: string; error?: string };
+type Sent = { ok: boolean; id?: string; error?: string; unknown?: boolean };
 type More = { names?: string[]; header?: { text: string; name?: string }; buttonIndex?: number; buttonName?: string };
 
 function clean(p: string, max: number): string {
@@ -115,15 +115,28 @@ async function sendTemplate(to: string, name: string, lang: string, params: stri
     components.push({ type: 'button', sub_type: 'url', index: String(m.buttonIndex || 0),
       parameters: [Object.assign({ type: 'text', text: String(button).slice(0, 200) }, m.buttonName ? { parameter_name: m.buttonName } : {})] });
   }
-  const res = await fetch(await graphUrl('/messages'), {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + TOKEN(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template',
-      template: { name, language: { code: lang }, components } })
-  }).catch((e) => ({ ok: false, status: 0, json: () => Promise.resolve({ error: { message: String(e) } }) } as unknown as Response));
-  const body = await res.json().catch(() => ({})) as Record<string, any>;
-  if (!res.ok || body.error) {
-    const e = body.error || {};
+  /* A send whose answer never came (the connection dropped, it timed out,
+     Meta answered 5xx) may have reached the client: it is filed `unknown:`,
+     which the database keeps as Not confirmed and never sends again
+     (audit C, 2026-10-17). Only Meta's own refusal is a failure to retry. */
+  let res: Response;
+  try {
+    res = await fetch(await graphUrl('/messages'), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + TOKEN(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template',
+        template: { name, language: { code: lang }, components } }),
+      signal: AbortSignal.timeout(25000)
+    });
+  } catch (e) {
+    return { ok: false, unknown: true, error: ('unknown: ' + String(e)).slice(0, 480) };
+  }
+  const body = await res.json().catch(() => null) as Record<string, any> | null;
+  if (res.status >= 500 || (res.ok && !body)) {
+    return { ok: false, unknown: true, error: ('unknown: ' + res.status + ' ' + ((body && body.error && body.error.message) || '')).trim().slice(0, 480) };
+  }
+  if (!res.ok || !body || body.error) {
+    const e = (body && body.error) || {};
     return { ok: false, error: [res.status, e.code, e.error_subcode, e.message].filter((x) => x != null && x !== '').join(' ').slice(0, 480) };
   }
   return { ok: true, id: (body.messages && body.messages[0] && body.messages[0].id) || '' };
@@ -311,7 +324,7 @@ Deno.serve(async (req) => {
       for (const r of rows) {
         const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[], undefined, r.button || undefined);
         await svc.rpc('wa_done', { p_id: r.id, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
-        if (out.ok) sent++; else { failed++; console.error('wa-send: refused', r.purpose, out.error); }
+        if (out.ok) sent++; else { failed++; console.error(out.unknown ? 'wa-send: not confirmed' : 'wa-send: refused', r.purpose, out.error); }
       }
     }
     return json({ ok: true, sent, failed }, 200, origin);
@@ -402,7 +415,8 @@ Deno.serve(async (req) => {
     if (!out.ok) console.error('wa-send: refused', purpose, out.error);
     const filed = await record(out.ok, out.id || null, out.error || null);
     if (filed.error) console.error('wa-send: not filed', filed.error.message);
-    return out.ok ? json({ ok: true, to: p.name || null }, 200, origin) : json({ error: named(out.error) }, 200, origin);
+    return out.ok ? json({ ok: true, to: p.name || null }, 200, origin)
+      : json({ error: out.unknown ? 'wa-unknown' : named(out.error) }, 200, origin);
   }
 
   if (action !== 'report' && action !== 'feedback') return json({ error: 'bad-request' }, 400, origin);
@@ -437,5 +451,6 @@ Deno.serve(async (req) => {
   if (!out.ok) console.error('wa-send: refused', action, out.error);
   await db.rpc('wa_record', { p_purpose: action, p_ref: action === 'report' ? id : null, p_client: p.client_id, p_number: p.number,
     p_name: p.name, p_template: p.template, p_params: values, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
-  return out.ok ? json({ ok: true, to: p.name || null }, 200, origin) : json({ error: named(out.error) }, 200, origin);
+  return out.ok ? json({ ok: true, to: p.name || null }, 200, origin)
+    : json({ error: out.unknown ? 'wa-unknown' : named(out.error) }, 200, origin);
 });
