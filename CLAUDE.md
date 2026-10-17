@@ -162,7 +162,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup node tests/serve.js 8899 >/dev/null 2>&1 &` (http-server's
   answers with the pages' script integrity taken off, so the stand-in loads;
-  2026-10-17).
+  2026-10-17). A suite that runs a server of its own (`pwa`) runs
+  `tests/serve.js` too, never http-server.
 - Every CDN script on a portal page names its version and carries its
   `integrity` hash and `crossorigin="anonymous"` (`tests/sql.js`); a new
   version is hashed from the file the CDN serves.

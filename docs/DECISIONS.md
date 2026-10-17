@@ -4576,3 +4576,24 @@ finding fixed at the user's word ("fix all no matter what").
   there; it fails on `ops_create_task` and `ops_engagement_set_meeting` as
   they stood before #529. It found three moments read on the UTC calendar,
   logged in STANDARD.md for their own release.
+
+- 2026-10-17 · Mistake: the full gate on 849f0a2 (tests 066fd80) failed
+  `pwa`. Pinning the CDN scripts by hash (finding J) moved the gate's
+  server to `tests/serve.js`, which takes the integrity off, but `pwa`
+  starts a server of its own (it takes the server away to test the
+  offline page) and still started http-server, so the stand-in library
+  was refused and the console never drew under the worker. `pwa` now
+  starts `tests/serve.js` (tests 416256e). The same gate stopped `matrix`
+  at its 1,500-second cap on its last routes, every check it reached
+  passed: run alone it took 1,505 seconds on 849f0a2 and 1,507 on
+  13fc4d4, before this batch, so the walk had outgrown its cap on this
+  machine whatever the portal's commit; uxaudit and matrix now have 2,400
+  seconds (tests 44080ee), a guard against a hung walk and never an
+  assertion. Eight later releases (#538 to #545, another session's review
+  of the audit's two batches) put right what they left: a post link held to the web where it is
+  typed, a renewal and a lapsed quotation's letter at today's rates, a
+  quoted letter's rows adding to its subtotal and its total exactly the
+  quotation's, the WhatsApp queue taken a few at a time so none is marked
+  Not confirmed unsent, Try again after an AI run with no answer, the
+  file types uploads refuse said in words, and the client portal's
+  meetings counted from Malaysia's first of the month.
