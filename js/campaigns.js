@@ -4749,8 +4749,8 @@
           w.innerHTML =
             '<div class="postrow-head"><b>' + esc(p.platform) + '</b>' +
               ((byWho || stamp) ? '<span>' + esc([byWho, stamp].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' +
-            (p.post_url ? '<div class="kfields"><div class="kfield kfield-wide"><span>Post link</span>' +
-              '<a class="plink kread-link" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></div></div>' : '') +
+            (absUrl(p.post_url) ? '<div class="kfields"><div class="kfield kfield-wide"><span>Post link</span>' +
+              '<a class="plink kread-link" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></div></div>' : '') +
             (facts.length ? '<dl class="ovfacts kplan">' + facts.map(function (f) {
               return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
             }).join('') + '</dl>' : (p.post_url ? '' : '<p class="kplan-none">Not recorded.</p>'));

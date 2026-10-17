@@ -34,6 +34,16 @@
       .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
+  /* A link with a scheme is drawn only on http or https: the team writes a
+     post link from the console, and `javascript:` there ran on a press
+     (2026-10-17, the review of the audit's fixes). */
+  function absUrl(u) {
+    u = String(u || '').trim();
+    if (!u) return '';
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return /^https?:\/\//i.test(u) ? u : '';
+    return 'https://' + u.replace(/^\/+/, '');
+  }
+
   var T = window.ADspaceWords.of({
     en: {
       preparedFor: 'Signed in as',
@@ -700,7 +710,7 @@
         return '<div class="post-entry"><div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
           /* The post as a way out, never the raw address (CREATOR-9), worded
              as the selection page words it. */
-          (p.post_url ? '<p class="post-entry-link"><a class="plink" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' +
+          (absUrl(p.post_url) ? '<p class="post-entry-link"><a class="plink" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
             esc(lang === 'zh' ? (platKeyOf(plat) === 'xhs' ? '查看小红书笔记' : '查看' + word + '帖子') : 'View post on ' + word) +
             EXT_MARK + '</a></p>' : '') +
           (period ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' : '') +
