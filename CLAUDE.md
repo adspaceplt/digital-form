@@ -1203,7 +1203,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`scopeRowOk`).
 - Columns other parts write are guarded by trigger at the part's Work level:
   `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`) and
-  `campaigns_finance_guard`.
+  `campaigns_finance_guard`; a page's write on `clients` without Clients at
+  Work changes only the review columns (`client_review_columns`,
+  `review-columns`).
 - Retired switches refuse:
   - `can_billing` → `clients.billing`;
   - `can_doc_void` → Clients Manage;
