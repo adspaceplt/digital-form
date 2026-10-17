@@ -4577,6 +4577,19 @@ finding fixed at the user's word ("fix all no matter what").
   they stood before #529. It found three moments read on the UTC calendar,
   logged in STANDARD.md for their own release.
 
+- 2026-10-17 · A WhatsApp message Not confirmed is counted where a
+  colleague looks (the review of the audit's fix batches, finding 11).
+  Since #535 a send whose answer never came is filed `unknown` and never
+  sent again by itself, but the Templates tab's queue counted only
+  waiting, sending and not sent, so a message that may already have
+  reached the client waited unseen, and Sent again called it waiting.
+  `wa_messages`' queue now counts `unknown` in the last seven days
+  (`2026-10-17-whatsapp-not-confirmed-counted.sql`), drawn as Not
+  confirmed beside Not sent in 7 days with the amber dot while any is
+  held (the shorter label keeps the cell to one line at 390), and the
+  Sent recently question says the message may already have been
+  delivered. `tests/whatsapp.js` and `tests/sql.js` hold both.
+
 - 2026-10-17 · Mistake: the full gate on 849f0a2 (tests 066fd80) failed
   `pwa`. Pinning the CDN scripts by hash (finding J) moved the gate's
   server to `tests/serve.js`, which takes the integrity off, but `pwa`

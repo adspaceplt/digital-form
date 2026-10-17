@@ -420,9 +420,13 @@
     var q = ((st.data || {}).queue) || {};
     var box = $('waQueue');
     if (!st.data) { box.hidden = true; return; }
-    box.innerHTML = [['queued', 'Waiting to send'], ['sending', 'Sending'], ['failed', 'Not sent in 7 days']].map(function (c) {
+    /* Not confirmed (sent in the last seven days, as Not sent counts)
+       beside Not sent (2026-10-17): either wants a colleague to look, the
+       first before anything is sent again. */
+    box.innerHTML = [['queued', 'Waiting to send'], ['sending', 'Sending'], ['failed', 'Not sent in 7 days'],
+                     ['unknown', 'Not confirmed']].map(function (c) {
       var n = Number(q[c[0]] || 0);
-      return '<div class="tally-cell wam-head' + (c[0] === 'failed' && n ? ' is-warn' : '') + '"><b>' + n + '</b><span>' + esc(c[1]) + '</span></div>';
+      return '<div class="tally-cell wam-head' + ((c[0] === 'failed' || c[0] === 'unknown') && n ? ' is-warn' : '') + '"><b>' + n + '</b><span>' + esc(c[1]) + '</span></div>';
     }).join('');
     box.hidden = false;
   }
@@ -938,6 +942,12 @@
       : Math.round(mins / 60) === 1 ? 'an hour ago' : Math.round(mins / 60) + ' hours ago';
     var who = rec.to || r.name;
     var by = rec.by ? ' by ' + rec.by : ' automatically';
+    /* A message Not confirmed may already have been delivered: never said
+       to be waiting (2026-10-17, the review's finding 11). */
+    if (rec.state === 'unknown') {
+      return 'Sent on WhatsApp to ' + who + by + ' on ' + whenOf(rec.at) + ', ' + ago +
+        ', and not confirmed. It may already have been delivered.';
+    }
     return (rec.state === 'sent' ? 'Sent on WhatsApp to ' + who : 'Already waiting to send on WhatsApp to ' + who) +
       by + ' on ' + whenOf(rec.at) + ', ' + ago + '.';
   }
