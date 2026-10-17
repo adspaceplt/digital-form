@@ -4258,3 +4258,11 @@ finding fixed at the user's word ("fix all no matter what").
   it. The bucket and its one file stay: a 2.5 MB PNG of 9 Sept 2026 under
   the folder of a client since deleted, named by no post, version or
   client, still served at its public address.
+
+- 2026-10-17 · Mistake: a creator's access code was drawn from `random()`
+  (security audit of 2026-10-16, finding L), a generator whose sequence
+  can be predicted from enough of its output, while the code is the
+  creator's whole sign-in. `new_creator_code` now takes
+  `gen_random_bytes` as `new_link_key` does, in the same 31-character
+  alphabet and length (`2026-10-17-creator-codes-from-strong-random.sql`);
+  codes already issued are kept.
