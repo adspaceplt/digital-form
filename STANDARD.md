@@ -558,9 +558,10 @@ section holds only what is true of the project as a whole.
   day (§9 allows it). The four client-facing pages take 16px
   (`:root[data-face="client"]`).
 - **Viewport matrix**: `uxaudit` walks every state at 1280 and 390, and the
-  console in both themes. `tests/matrix.js` adds 320, 375, 768, 1024 and 1440,
-  plus 200% browser zoom at 1280 and 1440, and a keyboard pass through every
-  dialog.
+  console in both themes. `tests/matrix.js` adds 320, 768, 1024 and 1440,
+  the iPhone Duo's three screens, 200% browser zoom at 1280 and 1440, and a
+  keyboard pass through every dialog. 375 is not measured on its own (320
+  and 390 hold both sides of it; 2026-10-18, to keep the daily gate short).
 
 ### Open security findings
 - None open from the audit of 2026-10-16's five must-fix findings: 1
@@ -610,6 +611,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - My Work's Completed list on Last month also lists work finished this
   month: the read starts at last month and nothing ends it (`periodEnd()`
   was never called and was removed as dead code, 2026-10-18).
+- A colleague's namecard on the iPhone Duo open (890 x 626, a coarse
+  pointer): Save contact is 40px high, under the 44px floor (matrix
+  `target`, 2026-10-18; front, back and My namecard, both themes).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
