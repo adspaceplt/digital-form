@@ -37,11 +37,16 @@
   /* A link with a scheme is drawn only on http or https: the team writes a
      post link from the console, and `javascript:` there ran on a press
      (2026-10-17, the review of the audit's fixes). */
+  /* A link holding a space, a quote, <, >, a backtick or a backslash is
+     not a web address either: the database's checks on a draft and a post
+     link refuse them, and the page said so in the database's words
+     (2026-10-18). */
   function absUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) return /^https?:\/\//i.test(u) ? u : '';
-    return 'https://' + u.replace(/^\/+/, '');
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) { if (!/^https?:\/\//i.test(u)) return ''; }
+    else u = 'https://' + u.replace(/^\/+/, '');
+    return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
   }
 
   var T = window.ADspaceWords.of({

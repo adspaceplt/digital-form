@@ -4704,3 +4704,13 @@ finding fixed at the user's word ("fix all no matter what").
   Only the one line break before `endstream` is now cut (a CR LF tried
   after a lone LF). `tests/wafn.js` draws a file whose stream ends in a
   line feed and sends it.
+
+- 2026-10-18 · A draft or post link holding a space or a quote is refused
+  in the team's words (review of #538 to #550, item 2). `absUrl` checked
+  only the scheme, while the columns' checks (`campaign_options` draft_url,
+  `option_posts_post_url_web`) also refuse whitespace and " ' < > ` \, so
+  pasting `instagram.com/p/abc def` showed the raw "violates check
+  constraint" message. The three copies of `absUrl` (campaigns.js,
+  creators.js, creator.js) now answer nothing for those, so Enter a web
+  address. covers it. `tests/camp.js` (draft link) and `tests/results.js`
+  (post link) hold a space and a quote.
