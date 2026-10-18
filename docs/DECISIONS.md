@@ -5285,6 +5285,77 @@ finding fixed at the user's word ("fix all no matter what").
   passcode is asked; the preview answers nothing. `tests/confirmonce.js`
   holds all five; the stand-in does the same.
 
+- 2026-10-18 · Expired access hands the open tasks back (review item 19).
+  `team_expire_access` stood a colleague down and left their open tasks
+  with them, hidden from most of the team and movable only by an admin.
+  Each open task they held now goes back to whoever created it, where that
+  colleague is active and takes tasks, who is told; otherwise it is left
+  with no owner and open to take through the existing Take flow, and the
+  active managers (My Work Manage, admins) are told. Each move is filed on
+  the task with a note, so its history says why. `tests/ops.js` holds both
+  paths and that finished work is left alone.
+
+- 2026-10-18 · Working days pass over public holidays (review item 20).
+  `ops_add_business_days` skipped weekends but counted a public holiday as
+  a working day, and a client's request for changes fell due in calendar
+  days (a Friday request was due on Saturday). The helper now passes over
+  the Public holidays list too (stable, no longer immutable, as it reads a
+  table), and the Revision (Client) push counts `revision_due_days` working
+  days through it. The setting's words read working days. `tests/ops.js`
+  holds a Friday, two holidays in a row, counting back, and the push.
+
+- 2026-10-18 · The stylesheet split kept its overrides (review item 5).
+  #592 moved the console's rules into `css/console.css`, loaded after
+  `css/portal.css`, but left some `@media` overrides in `portal.css` while
+  their base rule moved: the base, now later, won at every width. The
+  Content Review upload preview fell from 180px to 92px on a phone, and the
+  rate card's wording points lost their 4px row gap. A comparison of every
+  moved rule against the single file before the split (equal specificity,
+  a shared property, one element) found those two, and two declarations
+  that the split had brought to life (`.kplan`'s margin and `.cl-pick`'s
+  phone margin, each beaten by `.ovfacts` / `.trow-pick` before); the
+  overrides moved after their bases, and the two declarations, which never
+  applied, were removed. The rest of the pairs set the same value both
+  ways. `tests/cssguard.js` now fails a `portal.css` `@media` rule whose
+  selector `console.css` restates as a base.
+
+- **2026-10-18 · Supplier emails.** The user chose Resend from
+  `noreply-supplier@sc.adspace.me` (replies to ap@adspacestudios.com), sent
+  by hand at Suppliers Work, templates at Full Access, Copy the finance
+  email ticked, delivery and opens shown now, and a prompt after Approve to
+  send the approval email or not, the manual send kept in the ⋯. The email
+  takes the portal's sign-in email layout; the user had the "mailbox not
+  monitored" line removed and only the verify line kept. Each email is
+  filed before it goes (as a WhatsApp send is), so a send whose answer is
+  lost reads Not confirmed, never sent twice by itself; the same email
+  again inside the Sent again hours asks first. A letter goes as the PDF
+  the page draws, accepted only where its title names the letter's
+  reference (as `wa-send` holds a quotation's), so `js/letters.js` now
+  writes the title. A misreading on the way: "share one code just main as
+  the supplier code" was taken to mean a supplier takes a client's code;
+  the user meant the IDs stay separate, and they do.
+
+- 2026-10-18 · Review set counts answers every set named (review item 9).
+  `review_set_counts` kept the first 500 sets (`p_sets[1:500]`), and My
+  Work's Waiting for you names every published set of the clients a
+  colleague holds, so past 500 the rest went uncounted in silence. The user
+  asked for the cap removed. The work stays bounded by what is named: each
+  id read once, posts through their set index, and each post's standing
+  decision one index-ordered read (newest, limit 1). `tests/sql.js` holds
+  1,200 sets counted, and the same answer as the earlier definition.
+
+- 2026-10-18 · Failed jobs are named (review item 15). A repeat rule whose
+  creator and task owner had both left was never handed to the morning run
+  and never counted; one whose task its colleague could no longer see was
+  skipped in silence; a rule's `last_error` was shown nowhere; and nobody
+  was told when `jobs_watch` itself failed, or when no admin was active.
+  The morning run now keeps both kinds as the rule's error; `jobs_watch`
+  names each failing rule (client, rule or task, its number) and opens the
+  first one's task, reads back to its own last successful run so a failed
+  check is reported by the next, and tells Team Full Access when no admin
+  is active; the task card's Repeats line shows the error. `tests/ops.js`
+  holds each case.
+
 - 2026-10-18 · A wrong access code locks out the caller, not the client
   (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
   and checked the lock before the code, so anyone holding a link could

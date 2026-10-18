@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261018xh">
-<link rel="stylesheet" href="/css/console.css?v=20261018pl">
+<link rel="stylesheet" href="/css/portal.css?v=20261018zb">
+<link rel="stylesheet" href="/css/console.css?v=20261018pm">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5405,6 +5405,79 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
+<!-- Send email (2026-10-18): one email to a supplier, its words the
+     template's filled from the record, sent by supplier-mail. -->
+<div class="sheet" id="supMailSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="supMailTitle">
+    <div class="sheet-head">
+      <h3 id="supMailTitle">Send email</h3>
+      <button class="iconbtn" id="supMailClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <section class="fsec">
+        <h4 class="fsec-h">Recipient</h4>
+        <div class="row fgrid">
+          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="supMailFrom">ADspace · noreply-supplier@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="supMailReply">ap@adspacestudios.com</p></div>
+          <div class="span-all"><span class="field-label">To</span><p class="readfield" id="supMailTo"></p></div>
+        </div>
+        <label class="tickline" id="supMailCcLine"><input type="checkbox" id="supMailCc" checked> <span id="supMailCcWord">Copy the finance email</span></label>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Message</h4>
+        <div class="row fgrid">
+          <div><label class="field-label" for="supMailTpl">Template</label>
+            <select class="select" id="supMailTpl" data-nofind><option value="approved">Supplier approved</option><option value="document">Document</option></select></div>
+          <div id="supMailDocWrap"><label class="field-label" for="supMailDoc">Document</label>
+            <select class="select" id="supMailDoc" data-nofind></select></div>
+          <div class="span-all"><label class="field-label" for="supMailSubject">Subject</label>
+            <textarea class="input" id="supMailSubject" rows="1" data-oneline maxlength="200" aria-required="true"></textarea></div>
+          <div class="span-all"><label class="field-label" for="supMailBody">Body</label>
+            <textarea class="textarea" id="supMailBody" rows="8" maxlength="5000" aria-required="true"></textarea></div>
+        </div>
+        <p class="readfield sup-attach" id="supMailAttach" hidden></p>
+      </section>
+      <p class="msg warn" id="supMailRecent" hidden></p>
+      <div class="msg" id="supMailMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="supMailGo" type="button">Send</button>
+      <button class="btn btn-quiet" id="supMailCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supplier emails (Settings, Documents; Suppliers Full Access): each
+     template's subject and body, {fields} filled from the supplier. -->
+<div class="sheet" id="supTplSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="supTplTitle">
+    <div class="sheet-head">
+      <h3 id="supTplTitle">Supplier emails</h3>
+      <button class="iconbtn" id="supTplClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="row fgrid">
+        <div class="span-all"><label class="field-label" for="supTplPick">Template</label>
+          <select class="select" id="supTplPick" data-seg><option value="approved">Supplier approved</option><option value="document">Document</option></select></div>
+        <div class="span-all"><label class="field-label" for="supTplSubject">Subject</label>
+          <textarea class="input" id="supTplSubject" rows="1" data-oneline maxlength="200" aria-required="true"></textarea></div>
+        <div class="span-all"><label class="field-label" for="supTplBody">Body</label>
+          <textarea class="textarea" id="supTplBody" rows="10" maxlength="5000" aria-required="true"></textarea></div>
+      </div>
+      <div class="sup-fields" id="supTplFields" role="group" aria-label="Insert a field"></div>
+      <div class="msg" id="supTplMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="supTplGo" type="button">Save</button>
+      <button class="btn btn-quiet" id="supTplCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="regAddSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
     <div class="sheet-head">
@@ -5518,11 +5591,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/passkey.js?v=20261017"></script>
 <script src="/js/admin.js?v=20261018pl"></script>
 <script src="/js/documents.js?v=20261018f"></script>
-<script src="/js/letters.js?v=20261018"></script>
+<script src="/js/letters.js?v=20261018c"></script>
 <script src="/js/smreport.js?v=20261018d"></script>
 <script src="/js/reports.js?v=20261017a"></script>
 <script src="/js/register.js?v=20261018a"></script>
-<script src="/js/suppliers.js?v=20261018b"></script>
+<script src="/js/suppliers.js?v=20261018c"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261018f"></script>
 <script src="/js/quotepdf.js?v=20261018f"></script>
@@ -5536,11 +5609,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261018pl"></script>
-<script src="/js/ops.js?v=20261018xf"></script>
+<script src="/js/ops.js?v=20261018xh"></script>
 <script src="/js/perf.js?v=20261018xg"></script>
 <script src="/js/health.js?v=20261017"></script>
 <script src="/js/search.js?v=20261015zg"></script>
 <script src="/js/overview.js?v=20261018xa"></script>
-<script src="/js/settings.js?v=20261015zk"></script>
+<script src="/js/settings.js?v=20261018c"></script>
 </body>
 </html>

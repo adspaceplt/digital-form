@@ -224,6 +224,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
+| `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -496,7 +497,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
-  (Templates, Sent again), Documents (Document types); a group with
+  (Templates, Sent again), Documents (Document types, Supplier emails at
+  Suppliers Full Access); a group with
   no row drawn is left out. One page at every width, each group a card under
   its heading, so a setting is the account menu, Settings, then its sheet
   (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
@@ -2160,6 +2162,27 @@ Each line is a rule that broke once. Its reason is in the archive.
   supplier and under Supplier Letters (`register_may('supplier', …)`
   answers the Suppliers section); a reissue keeps the supplier. No bank
   statement upload (the Jotform field was optional).
+- Supplier emails (`2026-10-18-supplier-emails.sql`, `supplier-mail`,
+  `docs/SUPPLIER-EMAIL-SETUP.md`; the user, 2026-10-18), sent by hand
+  through Resend from `ADspace <noreply-supplier@sc.adspace.me>`, replies
+  to ap@adspacestudios.com: the record's ⋯ Send email (`#supMailSheet`,
+  Suppliers Work, a supplier with an email) offers Supplier approved (an
+  Active supplier) and Document (a letter not void, sent as its PDF, which
+  `supplier-mail` takes only where its title names the reference), the
+  words filled from the record (`supplier_email_prepare`) and editable,
+  Copy the finance email ticked where it differs; Send asks first.
+  Approve asks Send the approval email? (Send email / Not now). An email
+  is filed before it goes (`supplier_email_begin`, refused `recent` within
+  `wa_repeat_hours` unless asked again; `supplier_email_done` by its
+  sender, filed `supplier.edited`), listed under Emails on the record
+  (`supplier_emails_of`) with Resend's word on it (Sent, Delivered,
+  Opened, Bounced, Failed, Not confirmed) from its signed webhook
+  (`supplier_email_status`, the service role's alone, never stepping
+  back). The two templates (`{contact name}` … `{sender name}`) are
+  Settings, Documents: Supplier emails (`#supTplSheet`, Suppliers Full
+  Access). `supplier_email_templates` and `supplier_emails` have RLS on,
+  no policy, no grant. The email carries no unmonitored-mailbox line; a
+  document's ends Verify this document at digital.adspace.me/verify.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
@@ -2805,7 +2828,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every visit and on a period change (a page turn reads nothing again),
   never polled. Where a set's posts stand is one `review_set_counts(p_sets)`
   (invoker; posts, approved, changes, undecided, the oldest change), here
-  and in Waiting for you alike, never a read of every post and decision.
+  and in Waiting for you alike, never a read of every post and decision;
+  every set named is counted, with no cap
+  (`2026-10-18-review-set-counts-every-set.sql`).
   The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
   source alone; a tile reads Could not load with Try again; a signal Could
   not load), never nothing.
@@ -3414,7 +3439,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     and report tasks are unchanged. With several posts the button reads
     Create N tasks.
   - A move into Revision (Client) pushes the due date to today (MYT) plus
-    `revision_due_days` (1), only where that is later than the one held
+    `revision_due_days` (1) working days (weekends and public holidays passed
+    over, `ops_add_business_days`; `2026-10-18-working-days-skip-holidays.sql`),
+    only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
@@ -4998,7 +5025,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`
     stands down each active colleague whose moment has passed
     (`team_access_ends(day, time)`, MYT) (`active` false, `expired_at` stamped, filed `team.changed` by
-    `system`), never the last admin with access;
+    `system`), never the last admin with access; each open task they hold
+    goes back to its creator where the creator takes tasks (told, kind
+    `assigned`), else is left with no owner and open to take, the active
+    managers told (`tasks.unassigned`), each move filed on the task
+    (`team_expiry_hand_back`, `2026-10-18-expired-access-hands-tasks-back.sql`);
   - the row reads Access expired and its ⋯ Extend access; moving the date to
     today or later brings them back at once (`team_access_guard`), and Set
     active on a passed date is refused (`expired-date`);
@@ -5434,9 +5465,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   video's `.web.mp4` copy counts as in use while its original is.
 - Scheduled jobs are watched (`2026-10-18-scheduled-jobs-watched.sql`):
   `jobs_watch()` (pg_cron `jobs-watch`, 08:20 MYT) tells each active admin
-  once a day (kind `jobs.failed`) of the scheduled runs that failed in the
-  last 24 hours, by job, and of an S3 report filed as failed or not arrived
-  in 26 hours; `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
+  (none active: Team Full Access) once a day (kind `jobs.failed`) of the
+  scheduled runs that failed since its own last successful run (24 hours
+  to seven days, a failed check of its own named first), by job, of an S3
+  report filed as failed or not arrived in 26 hours, and of each repeat rule
+  that could not make its task, named (client, rule or task, its number;
+  five, then a count), the notice opening the first one's task; the morning
+  run keeps a rule nobody active can make, or whose task its colleague
+  cannot see, as its error, which the task card's Repeats line shows
+  (`2026-10-18-failed-jobs-named.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
   over 14 days and notices read over 90 days ago, never a colleague's
   notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,
@@ -5507,7 +5544,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
@@ -5536,7 +5573,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   rules only the console meets, loaded by `admin/` alone right after it. A
   rule moved between them keeps its place in the cascade (equal
   specificity and a shared property against a later rule of the other
-  sheet keep it in `portal.css`). One script per section, and the one-copy
+  sheet keep it in `portal.css`); a console base and its own `@media`
+  override share a sheet, the override after it (`cssguard`; 2026-10-18,
+  the upload preview). One script per section, and the one-copy
   mechanisms above.
 - Server code that is not a Supabase edge function lives in `workers/`, one
   folder per Worker, with a README.

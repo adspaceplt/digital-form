@@ -6191,6 +6191,12 @@
     if (r.ends_on) w += ' until ' + niceDate(r.ends_on);
     else if (r.max_count) w += ', ' + r.max_count + ' times';
     if (r.generated_count) w += ' · ' + r.generated_count + ' made';
+    /* The last time it could not make its task, as the morning notice
+       names it (2026-10-18). */
+    if (r.last_error) {
+      var why = /\s/.test(r.last_error) ? r.last_error : said(r.last_error, state.task);
+      w += ' · Could not be made: ' + String(why).replace(/^Refused:\s*/, '').replace(/\.+$/, '');
+    }
     return w;
   }
   function ordinal(n) {
@@ -6202,7 +6208,7 @@
     var t = state.task;
     if (!t || !may('ops', 'work')) return;
     var r = state.rule;
-    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r) + '.' : 'Creates a copy on each date with the same description, format and people.');
+    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r).replace(/\.$/, '') + '.' : 'Creates a copy on each date with the same description, format and people.');
     $('recFreq').value = (r && r.frequency) || 'monthly';
     var day = r && r.day_of_month;
     if (!day && t.publish_at) { var m = /^\d{4}-\d{2}-(\d{2})/.exec(t.publish_at); day = m ? Math.min(28, Number(m[1])) : null; }
@@ -7344,7 +7350,7 @@
            2026-10-06). */
         if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Due dates', msg: 'workMsg',
           keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-                 ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
+                 ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due'],
                  ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] }, $('workMoreBtn'));
       });
     }

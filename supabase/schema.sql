@@ -63314,6 +63314,315 @@ end $$;
 
 
 -- ===========================================================================
+-- SUPPLIER EMAILS — a supplier is emailed from its record, by hand
+-- (2026-10-18)
+-- ===========================================================================
+-- WHY (the user, 2026-10-18: "for the email yes use resend"; "dont automate
+-- first, propose me the build and mockups"; then, on the mockups: "ok build
+-- it", replies to ap@adspacestudios.com, delivery status now, and after
+-- Approve "prompt to either send or not, also keep the manual send option")
+--
+-- WHAT IT ADDS
+--   * `supplier_email_templates`: one subject and body a purpose (`approved`,
+--     Supplier approved; `document`, a supplier's document with its PDF),
+--     the team's words with {fields} the saved supplier fills; seeded once.
+--     Read at Suppliers View (`supplier_email_templates_list`), written at
+--     Suppliers Manage (`supplier_email_template_save`), filed
+--     `supplier.edited` under Supplier emails.
+--   * `supplier_emails`: every email sent, who to, by whom, its words as
+--     sent and what Resend said of it (sending, sent, failed, unknown, then
+--     delivered, opened, bounced, complained). Kept when the supplier is
+--     deleted (the link set null).
+--   * `supplier_email_prepare(p_supplier, p_purpose, p_document)` (Suppliers
+--     Work): the supplier's email and finance email, each {field} from the
+--     record as saved, the template filled, and an email of the same
+--     purpose and document sent within `wa_repeat_hours` (Settings, Sent
+--     again). `supplier_email_begin` files the send before it goes,
+--     refusing `recent` unless asked again, and `supplier_email_done` closes
+--     it; `supplier-mail` calls both as the colleague. Resend's word on a
+--     sent email reaches `supplier_email_status`, the service role's alone.
+--   * `supplier_emails_of(p_supplier)` (Suppliers View): the record's
+--     Emails.
+--
+-- ORDER: this file, then `supplier-mail`, then the pages. A page served
+-- before draws no Emails and no Send email. Safe to run twice. Rollback:
+-- drop the eight functions and the two tables.
+-- ===========================================================================
+
+create table if not exists public.supplier_email_templates (
+  purpose     text primary key check (purpose in ('approved', 'document')),
+  subject     text not null,
+  body        text not null,
+  updated_at  timestamptz not null default now(),
+  updated_by  uuid references public.team_members(id) on delete set null
+);
+alter table public.supplier_email_templates enable row level security;
+revoke all on table public.supplier_email_templates from public, anon, authenticated;
+
+insert into public.supplier_email_templates (purpose, subject, body)
+select x.purpose, x.subject, x.body from (values
+  ('approved', 'Supplier registration approved · ADspace',
+   E'Dear {contact name},\n\nThank you for completing your supplier registration. {supplier name} is now an approved supplier of ADSPACE PLT under Supplier ID {supplier id}.\n\nPayment is made on {payment term} terms in {currency}.\n\nYours sincerely,\n{sender name}\nADSPACE PLT'),
+  ('document', '{document title} {document reference} · ADspace',
+   E'Dear {contact name},\n\nPlease find attached our {document title} {document reference} for {supplier name} (Supplier ID {supplier id}), dated {document date}.\n\nYours sincerely,\n{sender name}\nADSPACE PLT')
+) as x (purpose, subject, body)
+where not exists (select 1 from public.supplier_email_templates);
+
+create table if not exists public.supplier_emails (
+  id            uuid primary key default gen_random_uuid(),
+  supplier_id   uuid references public.suppliers(id) on delete set null,
+  document_id   uuid,
+  purpose       text not null check (purpose in ('approved', 'document')),
+  to_email      text not null,
+  cc_email      text,
+  subject       text not null,
+  body          text not null,
+  sent_by       uuid references public.team_members(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  status        text not null default 'sending'
+                check (status in ('sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained')),
+  provider_id   text,
+  error         text,
+  sent_at       timestamptz,
+  delivered_at  timestamptz,
+  opened_at     timestamptz,
+  bounced_at    timestamptz
+);
+create index if not exists supplier_emails_supplier_idx on public.supplier_emails (supplier_id, created_at desc);
+create unique index if not exists supplier_emails_provider_idx on public.supplier_emails (provider_id) where provider_id is not null;
+alter table public.supplier_emails enable row level security;
+revoke all on table public.supplier_emails from public, anon, authenticated;
+
+/* Each {field} in a text, named in any case and spacing, takes its value; a
+   field nothing answers stays as typed, where the person sees it. */
+create or replace function public.supplier_email_fill(p_text text, p_values jsonb)
+returns text
+language plpgsql immutable set search_path = public as $$
+declare
+  t text := coalesce(p_text, '');
+  k text;
+begin
+  for k in select jsonb_object_keys(coalesce(p_values, '{}'::jsonb)) loop
+    if coalesce(p_values->>k, '') <> '' then
+      t := regexp_replace(t, '\{\s*' || replace(k, ' ', '\s+') || '\s*\}',
+                          replace(p_values->>k, E'\\', E'\\\\'), 'gi');
+    end if;
+  end loop;
+  return t;
+end $$;
+revoke all on function public.supplier_email_fill(text, jsonb) from public, anon, authenticated;
+
+create or replace function public.supplier_email_templates_list()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('suppliers', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('purpose', t.purpose, 'subject', t.subject, 'body', t.body,
+             'updated_at', t.updated_at, 'updated_by', m.name) order by t.purpose)
+      from public.supplier_email_templates t left join public.team_members m on m.id = t.updated_by), '[]'::jsonb));
+end $$;
+revoke all on function public.supplier_email_templates_list() from public, anon;
+grant execute on function public.supplier_email_templates_list() to authenticated;
+
+create or replace function public.supplier_email_template_save(p_purpose text, p_subject text, p_body text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  t   public.supplier_email_templates;
+  v_s text := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_b text := btrim(replace(coalesce(p_body, ''), E'\r', ''));
+  moved text[] := '{}';
+begin
+  if me.id is null or not public.allowed('suppliers', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.supplier_email_templates x where x.purpose = p_purpose for update;
+  if t.purpose is null then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  if t.subject is distinct from v_s then moved := moved || ('Subject: ' || t.subject || ' → ' || v_s); end if;
+  if t.body is distinct from v_b then moved := moved || 'Body'::text; end if;
+  if array_length(moved, 1) is null then return jsonb_build_object('ok', true); end if;
+  update public.supplier_email_templates x set subject = v_s, body = v_b, updated_at = now(), updated_by = me.id
+   where x.purpose = p_purpose;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'supplier.edited', 'Supplier emails',
+          case p_purpose when 'approved' then 'Supplier approved' else 'Document' end || ' · ' || array_to_string(moved, ' · '));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.supplier_email_template_save(text, text, text) from public, anon;
+grant execute on function public.supplier_email_template_save(text, text, text) to authenticated;
+
+/* What one email is: the supplier, its document, each {field} from the
+   record as saved, and the template filled. Asked by the page to draw the
+   sheet and by supplier-mail again at the send, as the colleague. */
+create or replace function public.supplier_email_prepare(p_supplier uuid, p_purpose text, p_document uuid default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  s     public.suppliers;
+  d     public.documents;
+  t     public.supplier_email_templates;
+  v     jsonb;
+  hours numeric;
+  r     public.supplier_emails;
+begin
+  if me.id is null or not public.allowed('suppliers', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into s from public.suppliers x where x.id = p_supplier;
+  if s.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.supplier_email_templates x where x.purpose = p_purpose;
+  if t.purpose is null then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if coalesce(s.email, '') = '' then return jsonb_build_object('error', 'no-email'); end if;
+  if p_purpose = 'approved' and s.status <> 'active' then return jsonb_build_object('error', 'not-active'); end if;
+  if p_purpose = 'document' then
+    select * into d from public.documents x where x.id = p_document and x.supplier_id = s.id;
+    if d.id is null or d.voided_at is not null then return jsonb_build_object('error', 'bad-document'); end if;
+  end if;
+  v := jsonb_build_object(
+    'supplier name', coalesce(s.name, s.code), 'supplier id', s.code,
+    'contact name', coalesce(s.contact_name, ''), 'designation', coalesce(s.designation, ''),
+    'payment term', coalesce(s.payment_term, ''),
+    'currency', case s.currency when 'SGD' then 'SGD' else 'MYR' end,
+    'document title', coalesce(d.kind, ''), 'document reference', coalesce(d.serial, ''),
+    'document date', case when d.issued_at is null then ''
+      else to_char(d.issued_at at time zone 'Asia/Kuala_Lumpur', 'FMDD FMMonth YYYY') end,
+    'sender name', coalesce(me.name, ''));
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 then
+    select * into r from public.supplier_emails x
+     where x.supplier_id = s.id and x.purpose = p_purpose and x.document_id is not distinct from d.id
+       and x.status not in ('failed') and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+  end if;
+  return jsonb_build_object('ok', true,
+    'to', jsonb_build_object('name', coalesce(s.contact_name, coalesce(s.name, s.code)), 'email', s.email),
+    'cc', nullif(coalesce(s.finance_email, ''), s.email),
+    'values', v,
+    'subject', public.supplier_email_fill(t.subject, v),
+    'body', public.supplier_email_fill(t.body, v),
+    'document', case when d.id is null then null else jsonb_build_object('id', d.id, 'serial', d.serial, 'kind', d.kind) end,
+    'recent', case when r.id is null then null else jsonb_build_object('at', r.created_at, 'to', r.to_email,
+      'by', (select m.name from public.team_members m where m.id = r.sent_by)) end);
+end $$;
+revoke all on function public.supplier_email_prepare(uuid, text, uuid) from public, anon;
+grant execute on function public.supplier_email_prepare(uuid, text, uuid) to authenticated;
+
+/* An email is filed before it goes, so a send whose answer is lost is still
+   on the record (Not confirmed); the same email sent within the window is
+   refused `recent` unless asked again. The words are the page's, every
+   {field} filled from the record as saved. */
+create or replace function public.supplier_email_begin(p_supplier uuid, p_purpose text, p_document uuid,
+  p_cc boolean, p_subject text, p_body text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  p   jsonb := public.supplier_email_prepare(p_supplier, p_purpose, p_document);
+  v_s text;
+  v_b text;
+  v_id uuid;
+begin
+  if p ? 'error' then return p; end if;
+  if (p->'recent') is not null and jsonb_typeof(p->'recent') = 'object' and not coalesce(p_again, false) then
+    return jsonb_build_object('error', 'recent', 'recent', p->'recent');
+  end if;
+  v_s := btrim(regexp_replace(public.supplier_email_fill(p_subject, p->'values'), '\s+', ' ', 'g'));
+  v_b := btrim(replace(public.supplier_email_fill(p_body, p->'values'), E'\r', ''));
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  insert into public.supplier_emails (supplier_id, document_id, purpose, to_email, cc_email, subject, body, sent_by)
+  values (p_supplier, case when p_purpose = 'document' then p_document end, p_purpose, p->'to'->>'email',
+          case when coalesce(p_cc, false) then p->>'cc' end, v_s, v_b, me.id)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to', p->'to', 'cc', case when coalesce(p_cc, false) then p->'cc' end,
+    'subject', v_s, 'body', v_b, 'values', p->'values', 'document', p->'document');
+end $$;
+revoke all on function public.supplier_email_begin(uuid, text, uuid, boolean, text, text, boolean) from public, anon;
+grant execute on function public.supplier_email_begin(uuid, text, uuid, boolean, text, text, boolean) to authenticated;
+
+create or replace function public.supplier_email_done(p_id uuid, p_status text, p_provider text, p_error text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  e  public.supplier_emails;
+  s  public.suppliers;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_status not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-status'); end if;
+  select * into e from public.supplier_emails x where x.id = p_id and x.sent_by = me.id and x.status = 'sending' for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.supplier_emails x set status = p_status, provider_id = nullif(p_provider, ''),
+    error = left(nullif(p_error, ''), 480), sent_at = case when p_status = 'sent' then now() end
+   where x.id = p_id;
+  select * into s from public.suppliers x where x.id = e.supplier_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'supplier.edited', coalesce(s.name, s.code, 'Supplier'),
+          coalesce(s.code, '') || ' · ' ||
+          case e.purpose when 'approved' then 'Supplier approved'
+            else coalesce((select d.kind || ' ' || d.serial from public.documents d where d.id = e.document_id), 'Document') end ||
+          case p_status when 'sent' then ' emailed to ' when 'unknown' then ' emailed, not confirmed, to ' else ' not emailed to ' end ||
+          e.to_email || coalesce(', cc ' || e.cc_email, ''));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.supplier_email_done(uuid, text, text, text) from public, anon;
+grant execute on function public.supplier_email_done(uuid, text, text, text) to authenticated;
+
+/* Resend's word on a sent email (supplier-mail, its webhook, the service
+   role): delivered, opened, bounced or complained. A later word never
+   steps back: an opened email is never delivered again, a bounce stays. */
+create or replace function public.supplier_email_status(p_provider text, p_event text, p_at timestamptz)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  e    public.supplier_emails;
+  rank constant jsonb := '{"sending":0,"unknown":1,"sent":1,"failed":1,"delivered":2,"opened":3,"complained":4,"bounced":4}';
+  st   text := case p_event when 'email.delivered' then 'delivered' when 'email.opened' then 'opened'
+                when 'email.clicked' then 'opened' when 'email.bounced' then 'bounced'
+                when 'email.complained' then 'complained' when 'email.sent' then 'sent' end;
+begin
+  if st is null then return jsonb_build_object('ok', true, 'ignored', true); end if;
+  select * into e from public.supplier_emails x where x.provider_id = p_provider for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.supplier_emails x set
+    status = case when (rank->>st)::int > (rank->>x.status)::int then st else x.status end,
+    sent_at = coalesce(x.sent_at, case when st <> 'bounced' then p_at end),
+    delivered_at = case when st in ('delivered', 'opened') then coalesce(x.delivered_at, p_at) else x.delivered_at end,
+    opened_at = case when st = 'opened' then coalesce(x.opened_at, p_at) else x.opened_at end,
+    bounced_at = case when st = 'bounced' then coalesce(x.bounced_at, p_at) else x.bounced_at end
+   where x.id = e.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.supplier_email_status(text, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.supplier_email_status(text, text, timestamptz) to service_role;
+
+create or replace function public.supplier_emails_of(p_supplier uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('suppliers', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('id', e.id, 'purpose', e.purpose, 'to', e.to_email, 'cc', e.cc_email,
+             'subject', e.subject, 'status', e.status, 'error', e.error, 'created_at', e.created_at,
+             'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+             'by', m.name, 'document', d.serial) order by e.created_at desc)
+      from public.supplier_emails e
+      left join public.team_members m on m.id = e.sent_by
+      left join public.documents d on d.id = e.document_id
+     where e.supplier_id = p_supplier), '[]'::jsonb));
+end $$;
+revoke all on function public.supplier_emails_of(uuid) from public, anon;
+grant execute on function public.supplier_emails_of(uuid) to authenticated;
+
+-- END OF SUPPLIER EMAILS ----------------------------------------------------
+
+
+-- ===========================================================================
 -- PAST CLIENT LINKS ACT ON NOTHING — a past client's selection link saves,
 -- confirms and decides nothing, as it already reads nothing, and its link
 -- preview names nobody. 2026-10-18. Safe to run twice. Rollback at the foot.
@@ -63675,6 +63984,427 @@ revoke all on function public.share_link_preview(text, text) from public;
 grant execute on function public.share_link_preview(text, text) to anon, authenticated;
 
 -- END OF PAST CLIENT LINKS ACT ON NOTHING -----------------------------------
+
+-- ===========================================================================
+-- EXPIRED ACCESS HANDS TASKS BACK — when a colleague's access expires, each
+-- open task they hold goes back to whoever created it, else is left open to
+-- take. 2026-10-18. Safe to run twice. Rollback at the foot. Mirrored byte
+-- for byte in supabase/schema.sql under the same banner; tests/ops.js
+-- compares the two.
+--
+-- WHAT CHANGED (review of 2026-10-18, item 19)
+--   team_expire_access stood a colleague down and left their open tasks
+--   with them: hidden from most of the team and movable only by an admin.
+--   It now calls team_expiry_hand_back for each colleague it stands down.
+--   Each open task (not finished, cancelled or archived) they hold as owner:
+--     * goes back to its creator where the creator is another active
+--       colleague who takes tasks (ops_takes_tasks), who is told (kind
+--       assigned, "Handed back to you: … access ended.");
+--     * else is left with no owner and open to take (open_at; the Take
+--       flow of OPEN TO TAKE), and each active colleague at My Work Manage
+--       or admin who takes tasks is told (kind tasks.unassigned).
+--   Each move is filed on the task (assignment_changed, detail expired and
+--   a note), so its history says why. Helpers and reviewers are left as
+--   they are (trigger team_members_leaving ends them on a removal).
+--
+-- ROLLBACK
+--   Run team_expire_access as TEAM ACCESS TIME stated it (the
+--   previous last definition in schema.sql); team_expiry_hand_back may stay.
+-- ===========================================================================
+
+create or replace function public.team_expiry_hand_back(p_member uuid)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  v_who public.team_members;
+  t public.ops_tasks;
+  v_to uuid;
+  v_title text;
+  n int := 0;
+begin
+  select * into v_who from public.team_members where id = p_member;
+  if v_who.id is null then return 0; end if;
+  for t in select k.* from public.ops_tasks k
+             join public.ops_task_assignees a on a.task_id = k.id
+            where a.team_member_id = p_member and a.responsibility = 'owner' and a.ended_at is null
+              and k.completed_at is null and k.cancelled_at is null and k.archived_at is null
+            order by k.task_no loop
+    v_to := case when t.created_by is not null and t.created_by <> p_member
+                       and public.ops_takes_tasks(t.created_by) then t.created_by end;
+    v_title := public.ops_serial(t.task_no) || ' · ' || public.ops_title(t);
+    update public.ops_task_assignees set ended_at = now()
+     where task_id = t.id and responsibility = 'owner' and ended_at is null;
+    if v_to is not null then
+      insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+      values (t.id, v_to, 'owner', null);
+      update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
+      perform public.ops_notify(v_to, t.id, 'assigned', v_title,
+        'Handed back to you: ' || v_who.name || '''s access ended.',
+        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'));
+    else
+      update public.ops_tasks set open_at = now(), open_by = null, version = version + 1, updated_at = now()
+       where id = t.id;
+      perform public.ops_notify(x.id, t.id, 'tasks.unassigned', v_title,
+        v_who.name || '''s access ended. The task is open to take.',
+        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'))
+        from public.team_members x
+       where x.active and x.id <> p_member and not coalesce(x.system, false)
+         and (coalesce(x.is_admin, false) or coalesce(x.role, '') = 'admin' or public.level_rank(x.access ->> 'ops') >= 3)
+         and public.ops_takes_tasks(x.id);
+    end if;
+    insert into public.ops_task_events (task_id, event_type, actor_id, actor_email, from_value, to_value, detail)
+    values (t.id, 'assignment_changed', null, null,
+            jsonb_build_object('owner_id', p_member), jsonb_build_object('owner_id', v_to),
+            jsonb_build_object('expired', true, 'note',
+              case when v_to is not null then 'Access ended; handed back to whoever created it.'
+                   else 'Access ended; open to take.' end));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.team_expiry_hand_back(uuid) from public, anon, authenticated;
+
+create or replace function public.team_expire_access()
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  n int := 0;
+begin
+  for m in select * from public.team_members t
+            where t.active and t.access_until is not null
+              and public.team_access_ends(t.access_until, t.access_until_time) <= now()
+            order by t.access_until, t.access_until_time nulls last, t.name loop
+    if (m.is_admin or m.role = 'admin') and not exists (
+         select 1 from public.team_members o
+          where o.id <> m.id and o.active and (o.is_admin or o.role = 'admin')
+            and (o.access_until is null
+                 or public.team_access_ends(o.access_until, o.access_until_time) > now())) then
+      continue;
+    end if;
+    update public.team_members set active = false, expired_at = now() where id = m.id;
+    perform public.team_expiry_hand_back(m.id);
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('system', 'team.changed', m.name,
+            case when m.access_until_time is null
+                 then 'Access expired after ' || public.team_access_word(m.access_until, null)
+                 else 'Access expired at ' || public.team_access_word(m.access_until, m.access_until_time) end);
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.team_expire_access() from public, anon, authenticated;
+
+-- END OF EXPIRED ACCESS HANDS TASKS BACK ------------------------------------
+
+-- ===========================================================================
+-- WORKING DAYS SKIP HOLIDAYS — a count of working days passes over weekends
+-- and public holidays, and a client's request for changes falls due in
+-- working days. 2026-10-18. Safe to run twice. Rollback at the foot.
+-- Mirrored byte for byte in supabase/schema.sql under the same banner;
+-- tests/ops.js compares the two.
+--
+-- WHAT CHANGED (review of 2026-10-18, item 20)
+--   * ops_add_business_days skipped Saturday and Sunday (Malaysia time) but
+--     counted a public holiday as a working day. It now passes over a day
+--     on the Public holidays list too (public_holidays, Settings), so a
+--     template's offsets land on working days. It reads a table, so it is
+--     stable (no longer immutable) and security definer; it stays closed to
+--     every browser.
+--   * ops_tasks_revision_due put a task back to Revision (Client) due
+--     today plus revision_due_days calendar days, so a Friday request fell
+--     due on Saturday. It now counts revision_due_days working days from
+--     today (Malaysia), through ops_add_business_days. The setting keeps its
+--     key and its value; its words on the page read working days.
+--
+-- ROLLBACK
+--   Run ops_add_business_days as THE OPERATIONS SYSTEM stated it, and
+--   ops_tasks_revision_due as THREE DATES A POST stated it.
+-- ===========================================================================
+
+create or replace function public.ops_add_business_days(p_from timestamptz, p_days integer)
+returns timestamptz
+language plpgsql stable security definer set search_path = public as $$
+declare
+  d   timestamptz := p_from;
+  n   integer := abs(coalesce(p_days, 0));
+  dir integer := case when coalesce(p_days, 0) < 0 then -1 else 1 end;
+begin
+  if p_from is null then return null; end if;
+  while n > 0 loop
+    d := d + (dir || ' day')::interval;
+    -- 0 is Sunday, 6 is Saturday in Postgres `dow`; a public holiday is no working day.
+    if extract(dow from d at time zone 'Asia/Kuala_Lumpur') not in (0, 6)
+       and not exists (select 1 from public.public_holidays h
+                        where h.day = (d at time zone 'Asia/Kuala_Lumpur')::date) then
+      n := n - 1;
+    end if;
+  end loop;
+  return d;
+end $$;
+revoke all on function public.ops_add_business_days(timestamptz, integer) from public, anon, authenticated;
+
+/* A client's request for changes sends the work back with a new due date:
+   revision_due_days working days after today in Malaysia (weekends and
+   public holidays passed over), stored as a typed date is (that day at
+   00:00 UTC), and only where it is later than the due date the task holds. */
+create or replace function public.ops_tasks_revision_due()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_day date; v_due timestamptz;
+begin
+  if new.stage_key <> 'revision_client' or old.stage_key is not distinct from new.stage_key then return null; end if;
+  v_day := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_due := ((public.ops_add_business_days(v_day::timestamp at time zone 'Asia/Kuala_Lumpur',
+              coalesce(public.app_setting('revision_due_days', v_day), 1)::integer)
+             at time zone 'Asia/Kuala_Lumpur')::date::timestamp) at time zone 'UTC';
+  if new.current_final_due_at is not null and new.current_final_due_at >= v_due then return null; end if;
+  update public.ops_tasks set current_final_due_at = v_due, updated_at = now() where id = new.id;
+  perform public.ops_log(new.id, 'due_changed',
+    jsonb_build_object('kind', 'final', 'value', new.current_final_due_at),
+    jsonb_build_object('kind', 'final', 'value', v_due),
+    jsonb_build_object('reason', 'client_request', 'note', 'The client asked for changes.', 'auto', true));
+  return null;
+end $$;
+revoke all on function public.ops_tasks_revision_due() from public, anon, authenticated;
+
+-- END OF WORKING DAYS SKIP HOLIDAYS ------------------------------------------
+
+-- ===========================================================================
+-- REVIEW SET COUNTS EVERY SET — review_set_counts answers every set it is
+-- named, with no cap. 2026-10-18. Safe to run twice. Rollback at the foot.
+-- Mirrored byte for byte in supabase/schema.sql under the same banner;
+-- tests/sql.js compares the two.
+--
+-- WHAT CHANGED (review of 2026-10-18, item 9)
+--   review_set_counts kept only the first 500 sets named (p_sets[1:500]),
+--   and My Work's Waiting for you names every published set of the clients
+--   a colleague holds, so past 500 sets the rest went uncounted without a
+--   word. The cap is removed (the user, 2026-10-18). The work stays bounded
+--   by what is named: the ids are read once each, each set's posts through
+--   posts_batch_idx, and each post's standing decision is one index-ordered
+--   read (reviews_post_round_idx, newest first, limit 1) in place of every
+--   decision sorted. The answer is the one REVIEW SET COUNTS gave: a post's
+--   decision is the newest that stands on its round on show (not undone, its
+--   round, after any re-approval request). Still security invoker.
+--
+-- ROLLBACK
+--   Run review_set_counts as REVIEW SET COUNTS stated it.
+-- ===========================================================================
+
+create or replace function public.review_set_counts(p_sets uuid[])
+returns table (set_id uuid, n_posts integer, n_approved integer, n_changes integer,
+               n_undecided integer, changes_since timestamptz)
+language sql stable security invoker set search_path = public as $$
+  with s as (
+    select distinct x as id from unnest(p_sets) x where x is not null
+  ), p as (
+    select po.id, po.batch_id, coalesce(po.round, 1) as rnd, po.review_reset_at
+      from s join public.posts po on po.batch_id = s.id
+  ), d as (
+    select p.id, p.batch_id, r.decision, r.created_at
+      from p
+      left join lateral (
+        select r.decision, r.created_at
+          from public.reviews r
+         where r.post_id = p.id and r.undone_at is null and coalesce(r.round, 1) = p.rnd
+           and (p.review_reset_at is null or r.created_at > p.review_reset_at)
+         order by r.created_at desc
+         limit 1) r on true
+  )
+  select d.batch_id,
+         count(*)::integer,
+         (count(*) filter (where d.decision = 'approved'))::integer,
+         (count(*) filter (where d.decision = 'changes'))::integer,
+         (count(*) filter (where d.decision is null))::integer,
+         min(d.created_at) filter (where d.decision = 'changes')
+    from d
+   group by d.batch_id
+$$;
+
+revoke all on function public.review_set_counts(uuid[]) from public, anon;
+grant execute on function public.review_set_counts(uuid[]) to authenticated;
+
+-- END OF REVIEW SET COUNTS EVERY SET -----------------------------------------
+
+-- ===========================================================================
+-- FAILED JOBS NAMED — the admins' morning notice names each repeating task
+-- that could not be made, counts the rules nobody can make, and reports a
+-- failed morning check of its own. 2026-10-18. Safe to run twice. Rollback
+-- at the foot. Mirrored byte for byte in supabase/schema.sql under the same
+-- banner; tests/ops.js compares the two.
+--
+-- WHAT CHANGED (review of 2026-10-18, item 15)
+--   * ops_recurring_daily passed in only the rules an active colleague
+--     could make, so a rule whose creator and task owner had both left was
+--     never made and never counted; and ops_generate_recurring skips a rule
+--     whose task its colleague can no longer see. Both are now kept as the
+--     rule's error (last_error, last_error_at) on the morning run, so the
+--     notice counts them. An error from an earlier run that did not recur
+--     is cleared once the run has passed it.
+--   * jobs_watch names the failing rules (client, else Internal; the rule or
+--     task's name; its task number), five at most then a count, and the
+--     notice opens the first one's task. It reads back to its own last
+--     successful run (at least 24 hours, at most seven days), so a morning
+--     whose check failed is reported by the next, which says so. With no
+--     active admin, the active colleagues at Team Full Access are told.
+--   * The task card's Repeats line shows the rule's error (js/ops.js).
+--
+-- ROLLBACK
+--   Run ops_recurring_daily as PIECES AND REPEATS stated it, and jobs_watch
+--   as ONE REPEAT NEVER STOPS THE OTHERS stated it.
+-- ===========================================================================
+
+/* The morning run. Each rule is made as the colleague who set it, else its
+   task's owner, with that colleague's own access. A rule neither of them can
+   make, or whose task its colleague can no longer see, is kept as an error
+   on the rule for the morning notice. Nobody calls this but the schedule. */
+create or replace function public.ops_recurring_daily()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  a   record;
+  pp  text;
+  out jsonb := '[]'::jsonb;
+  was text := current_setting('request.jwt.claims', true);
+begin
+  update public.ops_recurring_rules r
+     set last_error = 'No active colleague can make it: whoever set it and the owner of its task have left.',
+         last_error_at = now()
+   where r.active
+     and not exists (
+       select 1 from public.team_members tm
+        where tm.active and tm.email is not null
+          and tm.id in (r.created_by,
+                        (select x.team_member_id from public.ops_task_assignees x
+                          where x.task_id = r.source_task_id and x.responsibility = 'owner' and x.ended_at is null
+                          limit 1)));
+  for a in
+    select actor.email, array_agg(r.id order by r.id) as rules
+      from public.ops_recurring_rules r
+      left join public.ops_tasks s on s.id = r.source_task_id
+      cross join lateral (
+        select tm.email from public.team_members tm
+         where tm.active and tm.email is not null
+           and tm.id in (r.created_by,
+                         (select x.team_member_id from public.ops_task_assignees x
+                           where x.task_id = s.id and x.responsibility = 'owner' and x.ended_at is null
+                           limit 1))
+         order by (tm.id = r.created_by) desc nulls last
+         limit 1) actor
+     where r.active
+     group by actor.email
+  loop
+    perform set_config('request.jwt.claims',
+      jsonb_build_object('email', a.email, 'role', 'authenticated')::text, true);
+    update public.ops_recurring_rules r
+       set last_error = 'Its colleague can no longer see the task it copies.', last_error_at = now()
+     where r.id = any (a.rules) and r.source_task_id is not null
+       and not public.ops_may_see_task(r.source_task_id);
+    foreach pp in array public.ops_recurring_periods() loop
+      out := out || jsonb_build_object('period', pp, 'rules', to_jsonb(a.rules),
+                                       'result', public.ops_generate_recurring(pp, a.rules));
+    end loop;
+    update public.ops_recurring_rules r
+       set last_error = null, last_error_at = null
+     where r.id = any (a.rules) and r.last_error_at < now();
+  end loop;
+  perform set_config('request.jwt.claims', coalesce(was, ''), true);
+  return out;
+end $$;
+revoke all on function public.ops_recurring_daily() from public, anon, authenticated;
+
+create or replace function public.jobs_watch(p_now timestamptz default now())
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_jobs jsonb := '[]'::jsonb;
+  v_runs integer := 0;
+  v_self integer := 0;
+  v_sweeps integer := 0;
+  v_quiet boolean := false;
+  v_words text;
+  v_day text := to_char(p_now at time zone 'Asia/Kuala_Lumpur', 'YYYY-MM-DD');
+  v_told integer := 0;
+  v_rules integer := 0;
+  v_names text;
+  v_task uuid;
+  v_since timestamptz := p_now - interval '24 hours';
+  v_last timestamptz;
+begin
+  if to_regclass('cron.job_run_details') is not null then
+    /* Back to this check's own last successful run, so a morning whose
+       check failed is reported by the next: at least 24 hours, at most
+       seven days. */
+    select max(d.start_time) into v_last
+      from cron.job_run_details d join cron.job j on j.jobid = d.jobid
+     where j.jobname = 'jobs-watch' and d.status = 'succeeded' and d.start_time < p_now - interval '1 minute';
+    v_since := greatest(p_now - interval '7 days', least(p_now - interval '24 hours', coalesce(v_last, p_now - interval '24 hours')));
+    select coalesce(jsonb_agg(jsonb_build_object('job', x.name, 'failed', x.n) order by x.n desc, x.name), '[]'::jsonb),
+           coalesce(sum(x.n), 0)::int
+      into v_jobs, v_runs
+      from (select coalesce(j.jobname, 'job ' || d.jobid) as name, count(*)::int as n
+              from cron.job_run_details d
+              left join cron.job j on j.jobid = d.jobid
+             where d.status = 'failed' and d.start_time >= v_since and d.start_time < p_now
+             group by 1) x;
+    select coalesce(sum((e ->> 'failed')::int), 0)::int into v_self
+      from jsonb_array_elements(v_jobs) e where e ->> 'job' = 'jobs-watch';
+    /* The S3 report's job posts to its edge function and succeeds either
+       way: a report that never arrived is a failure too. */
+    v_quiet := exists (select 1 from cron.job j where j.jobname = 's3-sweep-daily' and j.active)
+           and not exists (select 1 from public.s3_sweeps s where s.ran_at >= p_now - interval '26 hours' and s.ran_at < p_now);
+  end if;
+  select count(*)::int into v_sweeps from public.s3_sweeps s
+   where s.mode = 'failed' and s.ran_at >= v_since and s.ran_at < p_now;
+
+  /* Each repeat rule that could not make its task, named: its client (else
+     Internal), the rule or its task, and the task number. */
+  select count(*)::int,
+         string_agg(w.label, '; ' order by w.at) filter (where w.n <= 5),
+         (array_agg(w.task order by w.at) filter (where w.task is not null))[1]
+    into v_rules, v_names, v_task
+    from (select coalesce(c.name, 'Internal') || ': ' || coalesce(nullif(btrim(x.name), ''), public.ops_title(t), 'Repeating task')
+                 || coalesce(' (' || public.ops_serial(t.task_no) || ')', '') as label,
+                 x.last_error_at as at, t.id as task,
+                 row_number() over (order by x.last_error_at) as n
+            from public.ops_recurring_rules x
+            left join public.ops_tasks t on t.id = x.source_task_id
+            left join public.clients c on c.id = coalesce(case when t.id is not null then case when t.scope = 'client' then t.client_id end
+                                                              else x.client_id end, x.client_id)
+           where x.active and x.last_error_at >= v_since and x.last_error_at < p_now) w;
+
+  if v_runs = 0 and v_sweeps = 0 and not v_quiet and v_rules = 0 then
+    return jsonb_build_object('failed', 0, 'told', 0);
+  end if;
+  v_words := concat_ws('; ',
+    case when v_self > 0 then 'the morning check of scheduled jobs failed ' || v_self ||
+                              case when v_self = 1 then ' time' else ' times' end end,
+    nullif((select string_agg((e ->> 'job') || ' failed ' || (e ->> 'failed') ||
+                              case when (e ->> 'failed')::int = 1 then ' time' else ' times' end, '; ')
+              from jsonb_array_elements(v_jobs) e where e ->> 'job' <> 'jobs-watch'), ''),
+    case when v_sweeps > 0 then 'the S3 report was filed as failed' end,
+    case when v_quiet then 'the S3 report did not arrive' end,
+    case when v_rules > 0 then v_rules || case when v_rules = 1 then ' repeating task could' else ' repeating tasks could' end
+                               || ' not be made: ' || v_names
+                               || case when v_rules > 5 then ' and ' || (v_rules - 5) || ' more' else '' end end) || '.';
+  insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
+  select t.id, v_task, 'jobs.failed',
+         case when v_since < p_now - interval '25 hours' then 'Scheduled jobs failed since the last check'
+              else 'Scheduled jobs failed in the last 24 hours' end,
+         v_words, 'jobs.failed.' || v_day || '.' || t.id
+    from public.team_members t
+   where t.active
+     and (t.is_admin
+          or (not exists (select 1 from public.team_members o where o.active and o.is_admin)
+              and public.level_rank(t.access ->> 'team') >= 3))
+  on conflict (dedupe_key) do nothing;
+  get diagnostics v_told = row_count;
+  return jsonb_build_object('failed', v_runs + v_sweeps + case when v_quiet then 1 else 0 end + v_rules,
+    'jobs', v_jobs, 'self', v_self, 'since', v_since, 'sweeps', v_sweeps, 'sweep_missing', v_quiet,
+    'repeats', v_rules, 'told', v_told);
+end $$;
+revoke all on function public.jobs_watch(timestamptz) from public, anon, authenticated;
+
+-- END OF FAILED JOBS NAMED ---------------------------------------------------
 
 
 -- ===========================================================================
