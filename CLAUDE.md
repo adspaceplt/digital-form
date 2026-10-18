@@ -5433,8 +5433,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
   asks `wa_compose_prepare` as the colleague (the number and the record are
-  the database's), reads the template again from Meta, sends and files
-  `wa_sent` (`wa.sent`, WhatsApp in the Activity record; a booking's under
+  the database's), reads the template again from Meta, files it as Sending
+  first (`wa_send_begin`, below), sends and closes it (`wa_send_done`, the
+  sender's own row: Sent, Not confirmed or Failed; `wa.sent`, WhatsApp in
+  the Activity record; a booking's under
   its campaign as `{creator} · Booking sent on WhatsApp`). Purpose: a
   report attached is `report`; else the record's (`feedback`, `creator`),
   else `message`. The record buttons stay where they were and open it
@@ -5465,6 +5467,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   to whom, by whom or automatically, when and how long ago; Send again),
   and `wa-send` refuses `recent` unless that question was answered
   (`again`), so a send made meanwhile asks too. A queued booking counts.
+  The check and the filing are one step (`wa_send_begin`, 2026-10-19): a
+  lock on the recipient, purpose and record, then `sending` while the same
+  message is on its way (even with `again`), then `recent`, then the row
+  filed as Sending before Meta is asked, so two presses send once.
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.
@@ -5495,8 +5501,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
 - `wa_report_prepare`, `wa_feedback_prepare`, `wa_record` and
-  `wa_creator_send` (the sends before the composer) are kept for a page
-  loaded before it and ask the same section and parts. A refusal is one
+  `wa_creator_send` (the sends before the composer) are closed to every
+  browser, and `wa-send` answers `report` and `feedback` with bad-request
+  (2026-10-19). A refusal is one
   line in the team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
   bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
