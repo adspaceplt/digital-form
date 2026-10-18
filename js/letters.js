@@ -144,7 +144,8 @@
       p_languages: a.languages && a.languages.length ? a.languages : ['en'],
       p_idem: a.idem || DOCS.idemKey(),
       p_salutation: a.salutation || null,
-      p_signed: typeof a.signed === 'boolean' ? a.signed : null
+      p_signed: typeof a.signed === 'boolean' ? a.signed : null,
+      p_supplier: a.supplier || null
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {

@@ -9108,3 +9108,8 @@ body.qs-page { background: var(--card); }
 .booking-fold-body { padding-top: 4px; }
 .booking.is-done .booking-rate { margin-top: 12px; }
 
+
+
+/* A supplier's details form (2026-10-18, js/supplierform.js): the
+   authorisation the Jotform form carried, numbered a) to f) as it was. */
+.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; }

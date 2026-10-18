@@ -58,6 +58,8 @@
   function mayFamily(family, level) {
     if (family === 'hr') return may('register.hr', level);
     if (family === 'other') return may('register.documents', level);
+    /* A supplier's letters answer to Documents: Suppliers (2026-10-18). */
+    if (family === 'supplier') return may('register.suppliers', level);
     /* A Letter of Offer is a client's document and answers to the client
        record's part alone, which is the policy on its own table. It is not
        the Register's to issue or to correct: it is issued from the record
@@ -69,6 +71,7 @@
   function needOf(family) {
     if (family === 'hr') return 'register.hr';
     if (family === 'offer') return 'clients.documents';
+    if (family === 'supplier') return 'register.suppliers';
     return 'register.documents';
   }
 
@@ -99,15 +102,16 @@
   });
 
   // ---- The list ------------------------------------------------------------
-  var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', sort: 'newest', err: null };
-  var FAMILIES = ['quote_cover', 'offer', 'client', 'hr', 'other'];
+  var state = { docs: null, clients: [], members: [], suppliers: [], types: [], me: null, find: '', sort: 'newest', err: null };
+  var FAMILIES = ['quote_cover', 'offer', 'client', 'supplier', 'hr', 'other'];
   var BAND = {
     quote_cover: 'Quotation Covers', offer: 'Letters of Offer',
-    client: 'Client Letters', hr: 'HR Letters', other: 'Other documents'
+    client: 'Client Letters', supplier: 'Supplier Letters', hr: 'HR Letters', other: 'Other documents'
   };
 
   function clientOf(id) { return state.clients.filter(function (c) { return c.id === id; })[0]; }
   function memberOf(id) { return state.members.filter(function (m) { return m.id === id; })[0]; }
+  function supplierOf(id) { return state.suppliers.filter(function (x) { return x.id === id; })[0]; }
   /* A row names the brand the team knows the client by and the entity the
      letter was addressed to, because the two differ (ADspace and ADSPACE
      PLT) and a register read by one alone is a register somebody has to
@@ -116,6 +120,7 @@
      the recipient is the name the letter was addressed to. */
   function brandOf(d) {
     if (d.family === 'hr') { var m = teamOf(d); return (m && m.name) || ''; }
+    if (d.family === 'supplier') { var sp = supplierOf(d.supplier_id); return (sp && sp.name) || ''; }
     var c = clientOf(d.client_id);
     return (c && c.name) || '';
   }
@@ -146,11 +151,14 @@
       db.from('clients').select('id, name, client_code, market, stage, created_at').order('name')
         .then(function (r) { return r.error ? r : API.withBilling(r.data || []).then(function () { return r; }); }),
       db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
-      LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([])
+      LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([]),
+      /* Suppliers (2026-10-18), read only where Documents: Suppliers is held. */
+      may('register.suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }, function () { return []; }) : Promise.resolve([])
     ]).then(function (r) {
       state.clients = (r[0] && r[0].data) || [];
       state.members = (r[1] && r[1].data) || [];
       state.types = r[2] || [];
+      state.suppliers = r[3] || [];
       var meMail = String(bridge.actor ? bridge.actor() : '').toLowerCase();
       state.me = state.members.filter(function (m) { return String(m.email || '').toLowerCase() === meMail; })[0] || null;
       then();
@@ -164,6 +172,9 @@
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
     if ($('regTypes')) $('regTypes').hidden = !may('register.types', 'work');
+    /* The Suppliers tab (js/suppliers.js) reads its own; the documents are
+       read only while their tab is on show. */
+    if (window.ADspaceSuppliers && window.ADspaceSuppliers.enter() === 'suppliers') return;
     load();
   }
 
@@ -253,7 +264,7 @@
            fold is remembered for anybody who shuts one. */
         shut: !filtered && GRP.shut('register', f, false),
         table: function () {
-          var table = GRP.table('svc-row reg-row', ['Document', f === 'hr' ? 'Team' : 'Brand', 'Recipient', 'Issued', '']);
+          var table = GRP.table('svc-row reg-row', ['Document', f === 'hr' ? 'Team' : f === 'supplier' ? 'Supplier' : 'Brand', 'Recipient', 'Issued', '']);
           GRP.more(table, mine, 30, 'documents', function (d) { return row(d, needOf(f)); });
           return table;
         }
@@ -434,9 +445,9 @@
      until somebody says otherwise) and filled in where it stands. {first
      name}, {role} and {client} fill themselves and are never asked, and on
      an HR letter {name}, the colleague's full name (2026-10-07). */
-  var GROUPS = ['quote_cover', 'client', 'hr'];
-  var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client letters', hr: 'HR letters' };
-  var SELF = { hr: ['first name', 'name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'] };
+  var GROUPS = ['quote_cover', 'client', 'supplier', 'hr'];
+  var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client letters', supplier: 'Supplier letters', hr: 'HR letters' };
+  var SELF = { hr: ['first name', 'name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'], supplier: ['first name', 'supplier'] };
   var KINDS = [['text', 'Text'], ['date', 'Date'], ['long', 'Paragraph']];
   function fieldKey(k) { return String(k || '').trim().toLowerCase().replace(/\s+/g, ' '); }
   function fieldWord(k) { return k.charAt(0).toUpperCase() + k.slice(1); }
@@ -496,6 +507,12 @@
         return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
       }).join('') + '</optgroup>';
     }).join('');
+  }
+  function fillSuppliers() {
+    var sel = $('docSupplier');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Choose a supplier</option>' + state.suppliers.filter(function (x) { return x.status !== 'inactive'; })
+      .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(F.named(x.code, x.name)) + '</option>'; }).join('');
   }
   function fillMembers() {
     var sel = $('docMember');
@@ -564,6 +581,9 @@
     if (t.family === 'hr') {
       var m = memberOf($('docMember').value);
       if (m) { vars['first name'] = firstName(m.name); vars['name'] = m.name || ''; vars['role'] = $('docRole').value.trim() || m.designation || ''; }
+    } else if (t.family === 'supplier') {
+      var sp = (issuing && issuing.supplier) || supplierOf($('docSupplier').value);
+      if (sp) { vars['supplier'] = sp.name; vars['first name'] = firstName(sp.contact_name); }
     } else {
       var c = (issuing && issuing.client) || clientOf($('docClient').value);
       if (c) { vars['client'] = c.legal_name || c.name; vars['first name'] = firstName(((issuing && issuing.contact) || {}).name); }
@@ -594,10 +614,11 @@
     /* The registered name and address follow the client chosen, and are the
        person's to change for a letter to another entity: a new client puts
        them back, a new kind keeps what was typed over them. */
-    var moved = !e || (e.target && e.target.id === 'docClient');
-    var hr = t.family === 'hr', quote = t.family === 'quote_cover';
-    $('docClientWrap').hidden = hr || Boolean(issuing.client);
+    var moved = !e || (e.target && (e.target.id === 'docClient' || e.target.id === 'docSupplier'));
+    var hr = t.family === 'hr', quote = t.family === 'quote_cover', sup = t.family === 'supplier';
+    $('docClientWrap').hidden = hr || sup || Boolean(issuing.client);
     $('docMemberWrap').hidden = !hr;
+    $('docSupplierWrap').hidden = !sup || Boolean(issuing.supplier);
     shareRow(hr, null);
     $('docToRow').hidden = hr;
     $('docAttnRow').hidden = hr;
@@ -607,9 +628,20 @@
     if (reseed) $('docSigned').checked = Boolean(t.signed);
     $('docSerial').placeholder = quote ? 'From the accounting portal' : 'Assigned on issue';
     if (reseed) $('docSerial').value = '';
-    var c = issuing.client || clientOf($('docClient').value);
+    var c = sup ? null : issuing.client || clientOf($('docClient').value);
     var m = memberOf($('docMember').value);
     var vars = {};
+    /* A supplier's letter goes to the supplier's own name and address, for
+       the attention of its person in charge. */
+    var sp = sup ? (issuing.supplier || supplierOf($('docSupplier').value)) : null;
+    if (sp) {
+      if (moved || !$('docTo').value.trim() || $('docTo').value === seeded.to) { $('docTo').value = sp.name || ''; seeded.to = $('docTo').value; }
+      if (moved || !$('docAddr').value.trim() || $('docAddr').value === seeded.addr) { $('docAddr').value = sp.address || ''; seeded.addr = $('docAddr').value; }
+      $('docAttn').value = sp.contact_name || '';
+      $('docAttnRole').value = sp.designation || '';
+      vars['supplier'] = sp.name;
+      vars['first name'] = firstName(sp.contact_name);
+    }
     if (!hr && c) {
       if (moved || !$('docTo').value.trim() || $('docTo').value === seeded.to) {
         $('docTo').value = c.legal_name || c.name || ''; seeded.to = $('docTo').value;
@@ -656,7 +688,7 @@
   function openIssue(opts) {
     opts = opts || {};
     var re = opts.reissue && opts.reissue.id ? opts.reissue : null;
-    issuing = { client: opts.client || null, contact: opts.contact || null,
+    issuing = { client: opts.client || null, contact: opts.contact || null, supplier: opts.supplier || null,
                 families: re ? [re.family] : (opts.families || null),
                 idem: null, onDone: opts.onDone || null, reissue: re };
     sayTo = opts.msg || 'regMsg';
@@ -664,15 +696,17 @@
     var go = function () {
       var allowed = fillKinds();
       if (!allowed.length) { say('You do not have permission to issue a document.', 'err'); return; }
-      fillClients(); fillMembers();
+      fillClients(); fillMembers(); fillSuppliers();
       if (issuing.client) $('docClient').value = issuing.client.id;
+      if (issuing.supplier) $('docSupplier').value = issuing.supplier.id;
       $('docSerial').value = '';
       $('docDate').value = today();
-      $('docTitle').textContent = issuing.client ? 'Issue document for ' + issuing.client.name : 'Issue document';
+      $('docTitle').textContent = issuing.client ? 'Issue document for ' + issuing.client.name
+        : issuing.supplier ? 'Issue document for ' + issuing.supplier.name : 'Issue document';
       $('docGo').textContent = re ? 'Reissue' : 'Issue';
       /* What a reissue fixes is what the document says; what it is, whose
          it is and its reference are not up for change. */
-      $('docKind').disabled = Boolean(re); $('docClient').disabled = Boolean(re); $('docMember').disabled = Boolean(re);
+      $('docKind').disabled = Boolean(re); $('docClient').disabled = Boolean(re); $('docMember').disabled = Boolean(re); $('docSupplier').disabled = Boolean(re);
       $('docSerial').readOnly = Boolean(re);
       /* A new document starts empty: the last sheet's recipient is not this
          one's. */
@@ -691,7 +725,9 @@
     $('docKind').value = d.type_id || '';
     $('docClient').value = d.client_id || '';
     $('docMember').value = d.member_id || '';
-    $('docClientWrap').hidden = hr; $('docMemberWrap').hidden = !hr;
+    $('docSupplier').value = d.supplier_id || '';
+    $('docClientWrap').hidden = hr || d.family === 'supplier'; $('docMemberWrap').hidden = !hr;
+    $('docSupplierWrap').hidden = d.family !== 'supplier';
     shareRow(hr, d);
     $('docToRow').hidden = hr; $('docAttnRow').hidden = hr; $('docHrRow').hidden = !hr;
     $('docLangRow').hidden = !quote; $('docSignRow').hidden = false;
@@ -732,7 +768,7 @@
   });
   function shutIssue() {
     $('docSheet').hidden = true; issuing = null;
-    $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false;
+    $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false; $('docSupplier').disabled = false;
     $('docSerial').readOnly = false; $('docGo').textContent = 'Issue'; $('docSigned').disabled = false;
   }
 
@@ -747,8 +783,11 @@
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     var serial = $('docSerial').value.trim();
     if (quote && !serial) { msg('docMsg', 'Type the reference from the accounting portal.', 'err'); $('docSerial').focus(); return; }
+    var sup = t.family === 'supplier';
     var client = issuing.client ? issuing.client.id : $('docClient').value;
-    if (!hr && !client) { msg('docMsg', 'Choose a client.', 'err'); $('docClient').focus(); return; }
+    var supplier = issuing.supplier ? issuing.supplier.id : $('docSupplier').value;
+    if (sup && !supplier) { msg('docMsg', 'Choose a supplier.', 'err'); $('docSupplier').focus(); return; }
+    if (!hr && !sup && !client) { msg('docMsg', 'Choose a client.', 'err'); $('docClient').focus(); return; }
     if (hr && !$('docMember').value) { msg('docMsg', 'Choose a colleague.', 'err'); $('docMember').focus(); return; }
     var languages = ['en'];
     if (quote) { if (ticked('docLangZh')) languages.push('zh'); if (ticked('docLangMs')) languages.push('ms'); }
@@ -784,7 +823,7 @@
     var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
     if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
     return { re: re, t: t, args: {
-      type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
+      type: t.id, client: hr || sup ? null : client, member: hr ? $('docMember').value : null, supplier: sup ? supplier : null,
       serial: serial || null, issued_at: $('docDate').value || null, title: title,
       salutation: salutation, recipient: recipient, body: body, signatory: signatory, languages: languages,
       signed: signed
@@ -1210,6 +1249,7 @@
     if ($('docKind')) $('docKind').addEventListener('change', seed);
     if ($('docClient')) $('docClient').addEventListener('change', seed);
     if ($('docMember')) $('docMember').addEventListener('change', seed);
+    if ($('docSupplier')) $('docSupplier').addEventListener('change', seed);
     if ($('regAddKind')) $('regAddKind').addEventListener('change', function () { this.value = nameOf(this.value); });
     if ($('regAddClient')) $('regAddClient').addEventListener('change', function () {
       var c = clientOf(this.value), who = $('regAddWho');
