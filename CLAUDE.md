@@ -224,6 +224,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
+| `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -496,7 +497,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
-  (Templates, Sent again), Documents (Document types); a group with
+  (Templates, Sent again), Documents (Document types, Supplier emails at
+  Suppliers Full Access); a group with
   no row drawn is left out. One page at every width, each group a card under
   its heading, so a setting is the account menu, Settings, then its sheet
   (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
@@ -2160,6 +2162,27 @@ Each line is a rule that broke once. Its reason is in the archive.
   supplier and under Supplier Letters (`register_may('supplier', …)`
   answers the Suppliers section); a reissue keeps the supplier. No bank
   statement upload (the Jotform field was optional).
+- Supplier emails (`2026-10-18-supplier-emails.sql`, `supplier-mail`,
+  `docs/SUPPLIER-EMAIL-SETUP.md`; the user, 2026-10-18), sent by hand
+  through Resend from `ADspace <noreply-supplier@sc.adspace.me>`, replies
+  to ap@adspacestudios.com: the record's ⋯ Send email (`#supMailSheet`,
+  Suppliers Work, a supplier with an email) offers Supplier approved (an
+  Active supplier) and Document (a letter not void, sent as its PDF, which
+  `supplier-mail` takes only where its title names the reference), the
+  words filled from the record (`supplier_email_prepare`) and editable,
+  Copy the finance email ticked where it differs; Send asks first.
+  Approve asks Send the approval email? (Send email / Not now). An email
+  is filed before it goes (`supplier_email_begin`, refused `recent` within
+  `wa_repeat_hours` unless asked again; `supplier_email_done` by its
+  sender, filed `supplier.edited`), listed under Emails on the record
+  (`supplier_emails_of`) with Resend's word on it (Sent, Delivered,
+  Opened, Bounced, Failed, Not confirmed) from its signed webhook
+  (`supplier_email_status`, the service role's alone, never stepping
+  back). The two templates (`{contact name}` … `{sender name}`) are
+  Settings, Documents: Supplier emails (`#supTplSheet`, Suppliers Full
+  Access). `supplier_email_templates` and `supplier_emails` have RLS on,
+  no policy, no grant. The email carries no unmonitored-mailbox line; a
+  document's ends Verify this document at digital.adspace.me/verify.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
@@ -5503,7 +5526,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the

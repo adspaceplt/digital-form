@@ -49,7 +49,13 @@
     'bad-finance_email': 'Enter a valid finance email.', 'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
     'bad-swift': 'Enter the SWIFT code, 8 or 11 letters or digits.', 'bad-bank_address': 'The bank address is up to 300 characters.',
-    'incomplete': 'Approve once the details, the payment term and the bank account are saved.'
+    'incomplete': 'Approve once the details, the payment term and the bank account are saved.',
+    'no-email': 'Save the supplier\'s email first.', 'not-active': 'Approve the supplier first.',
+    'bad-document': 'That letter is void or no longer this supplier\'s.', 'bad-purpose': 'Choose a template.',
+    'bad-subject': 'Enter a subject, 2 to 200 characters.', 'bad-body': 'Enter the message, 2 to 5,000 characters.',
+    'bad-file': 'The letter could not be attached. Download it to check, then try again.',
+    'mail-not-set-up': 'Email is not set up yet. Tell an admin.', 'not-sent': 'Not sent. Try again.',
+    'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -73,6 +79,7 @@
      form names it. */
   function nameOf(x) { return x.name || x.code; }
   function wire() {
+    wireMail();
     if (state.wired) return;
     state.wired = true;
     $('supFind').addEventListener('input', function () {
@@ -200,6 +207,7 @@
       state.rec = d.supplier; state.form = d.form; state.pay = d.pay;
       paintRec();
       letters(id);
+      emails(id);
     });
   }
   var GROUPS = [
@@ -253,6 +261,7 @@
     var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
+        (s.email ? '<button class="kmenu-item" type="button" data-s="mail"><b>Send email</b></button>' : '') +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
       (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
@@ -273,6 +282,8 @@
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Letters</h4>' +
           (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
+        '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4></div>' +
+          '<div id="supEmailList"><p class="muted">Loading.</p></div></section>' +
       '</div></div>';
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     wireRec();
@@ -298,6 +309,7 @@
     });
     on('copy', function (b) { if (window.ADspaceCopy) window.ADspaceCopy.to(b, $('supLink').value); });
     on('approve', function (b) { status('active', b); });
+    on('mail', function () { openMail(s.status === 'active' ? 'approved' : 'document'); });
     on('off', function () { status('inactive'); });
     on('on', function () { status('active'); });
     on('issue', function () {
@@ -347,7 +359,7 @@
       rpc('suppliers_list', {}).then(function (r2) { if (r2.data && r2.data.rows) state.rows = r2.data.rows; });
       openRec(s.id);
       setTimeout(function () {
-        if (was === 'pending') { msg('supRecMsg', 'Approved.', 'ok'); return; }
+        if (was === 'pending') { msg('supRecMsg', 'Approved.', 'ok'); offerMail(s); return; }
         if (window.ADspaceAdmin && window.ADspaceAdmin.undoBar && $('supRecMsg')) {
           window.ADspaceAdmin.undoBar(nameOf(s) + (to === 'inactive' ? ' set inactive.' : ' set active.'), function () { status(was); }, $('supRecMsg'));
         }
@@ -376,6 +388,216 @@
           });
         });
       }, function (e) { UI.failLine(box, 'the letters', String(e && e.message || e), function () { letters(id); }); });
+  }
+
+  /* Emails sent to the supplier (supplier_emails_of), newest first, with
+     what Resend last said of each. */
+  var MAIL_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
+    opened: ['Opened', 'is-ok'], failed: ['Failed', 'is-danger'], bounced: ['Bounced', 'is-danger'],
+    complained: ['Marked as spam', 'is-danger'], unknown: ['Not confirmed', 'is-warn'] };
+  function emails(id) {
+    var box = $('supEmailList');
+    if (!box) return;
+    rpc('supplier_emails_of', { p_supplier: id }).then(function (r) {
+      if (!$('supEmailList') || !state.rec || state.rec.id !== id) return;
+      var d = r.data || {};
+      if (r.error || d.error) { UI.failLine(box, 'the emails', said(r), function () { emails(id); }); return; }
+      var rows = d.rows || [];
+      if (!rows.length) { box.innerHTML = '<p class="muted">No emails.</p>'; return; }
+      box.innerHTML = '<dl class="ovfacts">' + rows.map(function (e) {
+        var st = MAIL_STATE[e.status] || [e.status, ''];
+        return '<div><dt>' + esc(day(e.created_at)) + '</dt><dd>' + esc(e.subject) +
+          ' <span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
+          '<span class="sup-mail-meta">To ' + esc(e.to) + (e.cc ? ', copy to ' + esc(e.cc) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
+      }).join('') + '</dl>';
+    });
+  }
+  function offerMail(s) {
+    if (!s.email || !may('suppliers', 'work')) return;
+    window.ADspaceConfirm.ask({ title: 'Send the approval email?', go: 'Send email', cancel: 'Not now',
+      body: (s.contact_name || nameOf(s)) + ' is told by email that the registration is approved.' }, function () { openMail('approved'); });
+  }
+
+  /* Send email (#supMailSheet): the template's words filled from the record
+     by supplier_email_prepare, changed here if need be, sent by
+     supplier-mail; a letter is drawn here and goes as its PDF. */
+  var mail = null;
+  function openMail(purpose, docId) {
+    var s = state.rec;
+    mail = { supplier: s.id, docs: [] };
+    msg('supMailMsg', ''); $('supMailRecent').hidden = true;
+    $('supMailTo').textContent = 'Loading.';
+    var tpl = $('supMailTpl');
+    tpl.querySelector('option[value="approved"]').disabled = s.status !== 'active';
+    db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, created_at')
+      .eq('supplier_id', s.id).is('voided_at', null).order('created_at', { ascending: false }).then(function (r) {
+        mail.docs = (!r.error && r.data) || [];
+        $('supMailDoc').innerHTML = mail.docs.map(function (d) {
+          return '<option value="' + esc(d.id) + '">' + esc(d.serial + ' · ' + d.kind) + '</option>';
+        }).join('');
+        tpl.querySelector('option[value="document"]').disabled = !mail.docs.length;
+        if (docId) $('supMailDoc').value = docId;
+        tpl.value = purpose === 'document' && mail.docs.length ? 'document' : (s.status === 'active' ? 'approved' : (mail.docs.length ? 'document' : 'approved'));
+        tpl.dispatchEvent(new Event('change'));
+        prepare();
+      });
+    $('supMailSheet').hidden = false;
+  }
+  function prepare() {
+    var purpose = $('supMailTpl').value, doc = purpose === 'document' ? $('supMailDoc').value : null;
+    $('supMailDocWrap').hidden = purpose !== 'document';
+    var at = mail.ask = (mail.ask || 0) + 1;
+    rpc('supplier_email_prepare', { p_supplier: mail.supplier, p_purpose: purpose, p_document: doc }).then(function (r) {
+      if (!mail || mail.ask !== at) return;
+      var d = r.data || {};
+      if (r.error || d.error) { $('supMailTo').textContent = ''; msg('supMailMsg', said(r), 'err'); return; }
+      msg('supMailMsg', '');
+      mail.prep = d;
+      $('supMailTo').textContent = (d.to.name ? d.to.name + ' · ' : '') + d.to.email;
+      $('supMailCcLine').hidden = !d.cc;
+      $('supMailCcWord').textContent = 'Copy the finance email' + (d.cc ? ' (' + d.cc + ')' : '');
+      $('supMailSubject').value = d.subject || '';
+      $('supMailBody').value = d.body || '';
+      var att = $('supMailAttach');
+      att.hidden = !d.document;
+      if (d.document) att.textContent = 'Attached: ' + window.ADspaceLetters.fileName(d.document);
+      var rc = $('supMailRecent');
+      rc.hidden = !d.recent;
+      if (d.recent) rc.textContent = 'Sent ' + window.ADspaceClock.date(d.recent.at) + (d.recent.by ? ' by ' + d.recent.by : '') + ' to ' + d.recent.to + '.';
+    });
+  }
+  function b64(bytes) {
+    var out = '', i, CH = 0x8000;
+    for (i = 0; i < bytes.length; i += CH) out += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    return btoa(out);
+  }
+  function sendMail(again) {
+    var go = $('supMailGo'), purpose = $('supMailTpl').value, p = mail.prep;
+    if (!p) return;
+    var subject = $('supMailSubject').value.trim(), body = $('supMailBody').value.trim();
+    if (subject.length < 2) { msg('supMailMsg', SAID['bad-subject'], 'err'); $('supMailSubject').focus(); return; }
+    if (body.length < 2) { msg('supMailMsg', SAID['bad-body'], 'err'); $('supMailBody').focus(); return; }
+    var cc = !$('supMailCcLine').hidden && $('supMailCc').checked;
+    var doc = purpose === 'document' ? mail.docs.filter(function (d) { return d.id === $('supMailDoc').value; })[0] : null;
+    go.disabled = true; msg('supMailMsg', '');
+    var file = doc ? window.ADspaceLetters.render(doc) : Promise.resolve(null);
+    file.then(function (bytes) {
+      return db.functions.invoke('supplier-mail', { body: { supplier: mail.supplier, purpose: purpose, document: doc ? doc.id : null,
+        cc: cc, subject: subject, body: body, again: Boolean(again),
+        pdf: bytes ? b64(new Uint8Array(bytes)) : undefined, filename: doc ? window.ADspaceLetters.fileName(doc) : undefined } });
+    }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) {
+        go.disabled = false;
+        if (!code && r.data && r.data.ok) {
+          shutMail();
+          msg('supRecMsg', 'Email sent.', 'ok');
+          emails(state.rec.id);
+          return;
+        }
+        if (code === 'recent') {
+          var rc = (r.data && r.data.recent) || {};
+          window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn', go: 'Send again',
+            body: 'This email went to ' + (rc.to || 'the supplier') + (rc.at ? ' on ' + window.ADspaceClock.date(rc.at) : '') + (rc.by ? ' by ' + rc.by : '') + '.' },
+            function () { sendMail(true); });
+          return;
+        }
+        if (code === 'not-confirmed' || code === 'not-sent') emails(state.rec.id);
+        msg('supMailMsg', SAID[code] || (r.error ? 'Not sent. Try again.' : 'Not sent.'), 'err');
+      });
+    }).catch(function (e) {
+      go.disabled = false;
+      msg('supMailMsg', 'The letter could not be drawn: ' + ((e && e.message) || e), 'err');
+    });
+  }
+  function askMail() {
+    var p = mail && mail.prep;
+    if (!p) return;
+    var cc = !$('supMailCcLine').hidden && $('supMailCc').checked;
+    window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
+      body: 'To ' + p.to.email + (cc ? ', a copy to ' + p.cc : '') + '.' }, function () { sendMail(false); });
+  }
+  function shutMail() {
+    $('supMailSheet').hidden = true;
+    mail = null;
+  }
+
+  /* Supplier emails (Settings, Documents): each template's subject and body
+     at Suppliers Full Access; {fields} are filled from the supplier. */
+  var FIELDS = ['contact name', 'supplier name', 'supplier id', 'payment term', 'currency', 'document title', 'document reference', 'document date', 'sender name'];
+  var tpls = null;
+  function openTemplates(btn) {
+    tpls = { rows: {}, opener: btn || null };
+    msg('supTplMsg', '');
+    $('supTplFields').innerHTML = FIELDS.map(function (f) {
+      return '<button class="btn btn-sm" type="button" data-f="' + esc(f) + '">{' + esc(f) + '}</button>';
+    }).join('');
+    rpc('supplier_email_templates_list', {}).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { msg('supTplMsg', said(r), 'err'); return; }
+      (d.rows || []).forEach(function (t) { tpls.rows[t.purpose] = { subject: t.subject, body: t.body, was: t.subject + '\n' + t.body }; });
+      $('supTplPick').value = 'approved';
+      $('supTplPick').dispatchEvent(new Event('change'));
+    });
+    $('supTplSheet').hidden = false;
+  }
+  function tplShow() {
+    var t = tpls && tpls.rows[$('supTplPick').value];
+    if (!t) return;
+    tpls.on = $('supTplPick').value;
+    $('supTplSubject').value = t.subject; $('supTplBody').value = t.body;
+  }
+  function tplKeep() {
+    var t = tpls && tpls.rows[tpls.on];
+    if (!t) return;
+    t.subject = $('supTplSubject').value; t.body = $('supTplBody').value;
+  }
+  function tplSave() {
+    tplKeep();
+    var changed = Object.keys(tpls.rows).filter(function (k) { var t = tpls.rows[k]; return t.subject + '\n' + t.body !== t.was; });
+    if (!changed.length) { shutTpl(); return; }
+    var go = $('supTplGo'); go.disabled = true;
+    var next = function (i) {
+      if (i >= changed.length) { go.disabled = false; shutTpl(); return; }
+      var k = changed[i], t = tpls.rows[k];
+      rpc('supplier_email_template_save', { p_purpose: k, p_subject: t.subject.trim(), p_body: t.body.trim() }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          go.disabled = false;
+          $('supTplPick').value = k; $('supTplPick').dispatchEvent(new Event('change'));
+          msg('supTplMsg', said(r), 'err'); return;
+        }
+        t.was = t.subject + '\n' + t.body;
+        next(i + 1);
+      });
+    };
+    next(0);
+  }
+  function shutTpl() {
+    $('supTplSheet').hidden = true;
+    tpls = null;
+  }
+  function wireMail() {
+    if (!$('supMailSheet') || $('supMailSheet').__wired) return;
+    $('supMailSheet').__wired = true;
+    $('supMailTpl').addEventListener('change', function () { if (mail) prepare(); });
+    $('supMailDoc').addEventListener('change', function () { if (mail) prepare(); });
+    $('supMailGo').addEventListener('click', askMail);
+    $('supMailCancel').addEventListener('click', shutMail);
+    $('supMailClose').addEventListener('click', shutMail);
+    $('supTplPick').addEventListener('change', function () { if (!tpls) return; tplKeep(); tplShow(); });
+    $('supTplGo').addEventListener('click', tplSave);
+    $('supTplCancel').addEventListener('click', shutTpl);
+    $('supTplClose').addEventListener('click', shutTpl);
+    $('supTplFields').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-f]');
+      if (!b) return;
+      var el = tpls && tpls.last === 'subject' ? $('supTplSubject') : $('supTplBody');
+      var w = '{' + b.getAttribute('data-f') + '}', at = el.selectionStart == null ? el.value.length : el.selectionStart;
+      el.value = el.value.slice(0, at) + w + el.value.slice(el.selectionEnd == null ? at : el.selectionEnd);
+      el.focus(); el.selectionStart = el.selectionEnd = at + w.length;
+    });
+    $('supTplSubject').addEventListener('focus', function () { if (tpls) tpls.last = 'subject'; });
+    $('supTplBody').addEventListener('focus', function () { if (tpls) tpls.last = 'body'; });
   }
 
   // ---- Edit, and Use details ------------------------------------------------
@@ -441,5 +663,5 @@
     });
   }
 
-  window.ADspaceSuppliers = { enter: enter, urlState: urlState, load: load };
+  window.ADspaceSuppliers = { enter: enter, urlState: urlState, load: load, openTemplates: function (btn) { wireMail(); openTemplates(btn); } };
 })();
