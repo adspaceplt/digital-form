@@ -5085,6 +5085,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   invitation first, twenty a caller in 24 hours (`team_invite_claim`,
   `team_invites`, the service role's; `too_many`;
   `2026-10-18-invitation-goes-to-a-colleague.sql`). A row with nothing it may press draws no ⋯.
+- A colleague and a group are written only over the row as read (`.eq('updated_at', …)`,
+  `team_roles_touch`, `2026-10-18-stale-team-save-refused.sql`): one changed
+  meanwhile reads "Not saved. This changed since it was opened, and has been
+  read again.", the member sheet opening again on the row as saved now.
 - Changing a member's email asks first, and is an admin's alone: the page
   offers it to an admin, and trigger `team_email_guard` refuses anybody else
   (`admin-only`; deleting a colleague's details empties it as before;

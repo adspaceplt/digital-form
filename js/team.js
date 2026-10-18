@@ -335,7 +335,7 @@
     var m = id && (state.rows || []).filter(function (x) { return x.id === id; })[0];
     if (m) openMemberBox(m, null);
   }
-  function load() {
+  function load(then) {
     state.loading = true;
     $('teamList').innerHTML = '<div class="softpanel"><div class="skel">' +
       '<div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>' +
@@ -365,6 +365,7 @@
           paintGroups();   // member counts and Delete depend on the rows
           paintRec();
           if (pendingEdit) openPending();
+          if (typeof then === 'function') then();
         });
     });
   }
@@ -654,10 +655,21 @@
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
   }
 
+  /* A colleague or a group is written only over the row as it was read
+     (2026-10-18, Team audit 9): one somebody changed meanwhile answers no
+     row, told apart from a refusal by reading its stamp again. */
+  var STALE = 'Not saved. This changed since it was opened, and has been read again.';
+  function asRead(q, row) { return row && row.updated_at ? q.eq('updated_at', row.updated_at) : q; }
+  function noRow(table, key, row, then) {
+    db.from(table).select(key + ', updated_at').eq(key, row[key]).maybeSingle().then(function (r) {
+      var now = r && r.data && r.data.updated_at;
+      then(row.updated_at && now && now !== row.updated_at ? STALE : 'Not saved. The database refused the request.');
+    }).catch(function () { then('Not saved. The database refused the request.'); });
+  }
   function saveMember(m, patch, then) {
-    db.from('team_members').update(patch).eq('id', m.id).select('id').then(function (r) {
+    asRead(db.from('team_members').update(patch).eq('id', m.id), m).select('id').then(function (r) {
       if (r.error) { msg('teamMsg', teamSaid(r.error), 'err'); load(); return; }
-      if (!(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
+      if (!(r.data || []).length) { noRow('team_members', 'id', m, function (t) { load(function () { msg('teamMsg', t, 'err'); }); }); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
@@ -1019,9 +1031,9 @@
 
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
-    db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
+    asRead(db.from('team_roles').update(patch).eq('slug', r.slug), r).select('slug').then(function (q) {
       if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error), 'err'); load(); return; }
-      if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
+      if (!(q.data || []).length) { noRow('team_roles', 'slug', r, function (t) { load(function () { msg('groupMsg', t, 'err'); }); }); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
         if (k === 'access') return accessMoves(was.access, patch.access);
@@ -1716,8 +1728,19 @@
          invited at the new address. */
       function write() {
         shutMemberBox();
-        db.from('team_members').update(fields).eq('id', m.id).select('id').then(function (r) {
-          if (!r.error && !(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        asRead(db.from('team_members').update(fields).eq('id', m.id), m).select('id').then(function (r) {
+          if (!r.error && !(r.data || []).length) {
+            /* Changed meanwhile: the sheet opens again on the colleague as
+               saved now, saying so; a refusal is said where it was. */
+            noRow('team_members', 'id', m, function (t) {
+              if (t !== STALE) { msg('teamMsg', t, 'err'); return; }
+              load(function () {
+                var fresh = (state.rows || []).filter(function (x) { return x.id === m.id; })[0];
+                if (fresh) { openMemberBox(fresh, memberOpener); msg('tmMsg', t, 'err'); } else msg('teamMsg', t, 'err');
+              });
+            });
+            return;
+          }
           if (r.error) {
             msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
               : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
@@ -1952,8 +1975,14 @@
     ['card_slug', 'Short link']];
   function patchMember(m, fields, back) {
     var write = function () {
-      db.from('team_members').update(fields).eq('id', m.id).select('id').then(function (r) {
-        if (!r.error && !(r.data || []).length) { msg('mrecMsg', 'Not saved. The database refused the request.', 'err'); back(false); return; }
+      asRead(db.from('team_members').update(fields).eq('id', m.id), m).select('id').then(function (r) {
+        if (!r.error && !(r.data || []).length) {
+          noRow('team_members', 'id', m, function (t) {
+            back(false);
+            if (t === STALE) load(function () { msg('mrecMsg', t, 'err'); }); else msg('mrecMsg', t, 'err');
+          });
+          return;
+        }
         if (r.error) {
           msg('mrecMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
             : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
