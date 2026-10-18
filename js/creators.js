@@ -1413,7 +1413,7 @@
       var e = d && d.error;
       if (e === 'closed') { msg('confirmMsg', t().selectionClosed, 'err'); load(); }
       else if (e === 'prices') { msg('confirmMsg', t().ratesChanged, 'err'); reread(); }
-      else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
+      else if (e === 'stale' || e === 'empty' || e === 'over-slots') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
       else msg('confirmMsg', t().saveFailed, 'err');
     };
     db.rpc('confirm_selection_with', {
