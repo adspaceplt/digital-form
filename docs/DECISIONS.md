@@ -4610,3 +4610,21 @@ finding fixed at the user's word ("fix all no matter what").
   Not confirmed unsent, Try again after an AI run with no answer, the
   file types uploads refuse said in words, and the client portal's
   meetings counted from Malaysia's first of the month.
+
+- 2026-10-18 · The three days the Malaysia time guard found are Malaysia's
+  (the logged defects of 2026-10-17). `ops_create_task` counted a
+  template's due offset from `date_trunc('day', base)`, and no page names a
+  base date, so `base` was always `now()` and a task made before 8am MYT
+  fell due a day early; it counts from `(base at time zone
+  'Asia/Kuala_Lumpur')::date`, held as a stored day (midnight UTC) as
+  before. `ops_generate_recurring` anchored a rule whose task has no post
+  date on `r.created_at::date`, and its skip of the first occurrence read
+  `coalesce(src.publish_at, r.created_at)::date`, a line the guard missed
+  because the cast sat on a `coalesce`; both read the rule's own moment as
+  Malaysia's day. `perf_self_open` took the month a colleague joined from
+  the UTC month, so one added before 8am MYT on the 1st could rate the
+  month before; it is Malaysia's month
+  (`2026-10-18-days-on-malaysias-calendar.sql`). The guard now also flags a
+  cast on a `coalesce` holding a moment, its allowlist no longer exempts
+  the three, and `tests/sql.js` runs each new expression at 07:30 MYT on a
+  UTC server.

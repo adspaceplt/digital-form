@@ -606,15 +606,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- Three functions read a moment on the UTC calendar, so a day taken
-  before 8am in Malaysia is yesterday's (found by the widened guard in
-  `tests/sql.js`, 2026-10-17, which lists them by line): `ops_create_task`
-  takes a template's due offset from `date_trunc('day', base)`, `base`
-  falling back on `now()` where no base date is named;
-  `ops_generate_recurring` anchors a rule with no post date on
-  `r.created_at::date`; `perf_self_open` reads the month a colleague joined
-  as `date_trunc('month', t.created_at)`. Each wants Malaysia's day, held
-  in the stored-day form.
+- None open.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
