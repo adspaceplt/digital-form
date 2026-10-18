@@ -5522,6 +5522,21 @@ nothing, which answered "how much" and never "what".
   since container queries are refused here. Every width that passed before
   measures as before (1280, 626, 390).
 
+- 2026-10-18 · Buttons sharing a row share a width under a finger wider
+  than a phone (the iPhone Duo pass, finding 2). The rule held only below
+  560, so a touch screen wider than that (a foldable opened at 890, a
+  tablet) drew each button at its words' width: a booking card's Save,
+  Release to client and Request changes at 92, 148 and 131px, Save beside
+  Pending visit, the Creators head's Bulk dates and Add creators, the
+  Documents head and the Engagements head's pair (uxaudit `row-width`,
+  twelve states at 890×626). One rule for coarse pointers above 560, in the
+  shared sheet rather than per screen: two buttons or more in those rows
+  take 220px each, one width without becoming slabs, and a row too narrow
+  wraps (sharing the row's space instead squeezed Release to client onto
+  two lines on a 626 card); a lone button and a quiet one keep their own
+  width. The
+  Engagements pair sits in its own box, which takes the head's free space
+  (css/console.css). A desk and a phone measure as before.
 - 2026-10-18 · The full gate from 88.7 to 60.4 minutes (5,324s to 3,624s
   on portal 9c45759; tests 78775e2 before, 6870828 after; the user asked
   for a tests-only session). uxaudit and matrix now run side by side, each

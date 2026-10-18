@@ -3376,6 +3376,13 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-row-end { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
 .mrec-row-end.is-late { color: var(--err); }
 .mrec-row .crm-c-go { display: block; }
+
+/* The Engagements head's pair sits in its own box: under a finger wider than
+   a phone the box takes the head's free space, so its buttons share one
+   width (css/portal.css, the iPhone Duo pass, 2026-10-18), at the right edge. */
+@media (pointer: coarse) and (min-width: 561px) {
+  .viewhead > .crm-engage-actions { flex: 1 1 auto; justify-content: flex-end; }
+}
 /* A Supplier Service Agreement's Schedule B in the Issue sheet
    (2026-10-18): a shaded card an account, its number and × at the head. */
 .sca-rows { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
