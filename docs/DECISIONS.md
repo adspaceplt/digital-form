@@ -5304,6 +5304,37 @@ finding fixed at the user's word ("fix all no matter what").
   days through it. The setting's words read working days. `tests/ops.js`
   holds a Friday, two holidays in a row, counting back, and the push.
 
+- 2026-10-18 · The stylesheet split kept its overrides (review item 5).
+  #592 moved the console's rules into `css/console.css`, loaded after
+  `css/portal.css`, but left some `@media` overrides in `portal.css` while
+  their base rule moved: the base, now later, won at every width. The
+  Content Review upload preview fell from 180px to 92px on a phone, and the
+  rate card's wording points lost their 4px row gap. A comparison of every
+  moved rule against the single file before the split (equal specificity,
+  a shared property, one element) found those two, and two declarations
+  that the split had brought to life (`.kplan`'s margin and `.cl-pick`'s
+  phone margin, each beaten by `.ovfacts` / `.trow-pick` before); the
+  overrides moved after their bases, and the two declarations, which never
+  applied, were removed. The rest of the pairs set the same value both
+  ways. `tests/cssguard.js` now fails a `portal.css` `@media` rule whose
+  selector `console.css` restates as a base.
+
+- **2026-10-18 · Supplier emails.** The user chose Resend from
+  `noreply-supplier@sc.adspace.me` (replies to ap@adspacestudios.com), sent
+  by hand at Suppliers Work, templates at Full Access, Copy the finance
+  email ticked, delivery and opens shown now, and a prompt after Approve to
+  send the approval email or not, the manual send kept in the ⋯. The email
+  takes the portal's sign-in email layout; the user had the "mailbox not
+  monitored" line removed and only the verify line kept. Each email is
+  filed before it goes (as a WhatsApp send is), so a send whose answer is
+  lost reads Not confirmed, never sent twice by itself; the same email
+  again inside the Sent again hours asks first. A letter goes as the PDF
+  the page draws, accepted only where its title names the letter's
+  reference (as `wa-send` holds a quotation's), so `js/letters.js` now
+  writes the title. A misreading on the way: "share one code just main as
+  the supplier code" was taken to mean a supplier takes a client's code;
+  the user meant the IDs stay separate, and they do.
+
 - 2026-10-18 · Review set counts answers every set named (review item 9).
   `review_set_counts` kept the first 500 sets (`p_sets[1:500]`), and My
   Work's Waiting for you names every published set of the clients a
