@@ -5284,3 +5284,20 @@ finding fixed at the user's word ("fix all no matter what").
   preview. Each now answers `not-found` for a Past client before the
   passcode is asked; the preview answers nothing. `tests/confirmonce.js`
   holds all five; the stand-in does the same.
+
+- 2026-10-18 · A wrong access code locks out the caller, not the client
+  (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
+  and checked the lock before the code, so anyone holding a link could
+  keep its client out with five guesses every 15 minutes, and the page
+  called the lock Link not recognised. A client whose code was changed
+  locked themselves out by reloading: the review page kept the old code in
+  the tab and the media pass asked again with it. Wrong codes are now
+  counted per link and caller address (PostgREST's X-Forwarded-For, which
+  media-pass and sign-download pass on for their own caller, since every
+  client shares their address), the link's own count a backstop of 100 an
+  hour that never shuts out an address that opened it in the last 30
+  days. A lock is answered `locked` with its minutes and said as such; a
+  stale stored code is let go and the media pass stops asking. The team
+  sees a lock under the review or selection link and clears it. The first
+  entry of X-Forwarded-For can be set by a caller: a guesser who rotates it
+  meets the backstop, and one who copies a client's address must know it.

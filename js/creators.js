@@ -375,6 +375,10 @@
         });
         return;
       }
+      if (d.error === 'locked') {
+        showState(t().lockedTitle, window.ADspaceWords.lockedLine(t(), d.minutes), false);
+        return;
+      }
       if (d.error === 'passcode') {
         // The gate knows whose campaign it is guarding, so say so.
         if (d.client) paintPreparedFor(d.client);
@@ -1019,7 +1023,8 @@
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) {
           lock(false);
-          say(d.error === 'closed' ? t().closedText : t().notSent, true);
+          say(d.error === 'closed' ? t().closedText
+            : d.error === 'locked' ? window.ADspaceWords.lockedLine(t(), d.minutes) : t().notSent, true);
           return;
         }
         say(t().reviewThanks);
@@ -1412,6 +1417,7 @@
     var said = function (d) {
       var e = d && d.error;
       if (e === 'closed') { msg('confirmMsg', t().selectionClosed, 'err'); load(); }
+      else if (e === 'locked') msg('confirmMsg', window.ADspaceWords.lockedLine(t(), d.minutes), 'err');
       else if (e === 'prices') { msg('confirmMsg', t().ratesChanged, 'err'); reread(); }
       else if (e === 'stale' || e === 'empty' || e === 'over-slots') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
       else msg('confirmMsg', t().saveFailed, 'err');

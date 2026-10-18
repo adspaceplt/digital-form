@@ -1507,6 +1507,7 @@
     var linkOpen = c.state !== 'draft';
     $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');
     $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
+    if (!same) window.ADspaceAdmin.linkLock($('campLinkLock'), 'selection', c.id, Boolean(c.passcode), 'campaigns.campaigns');
     showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
     // The invoice panel depends on who is confirmed, so it is painted once the

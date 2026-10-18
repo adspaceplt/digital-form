@@ -2828,6 +2828,7 @@
     }, function () {});
     msg('handleMsg', '');
     msg('profileMsg', '');
+    linkLock($('wsLinkLock'), 'review', c.id, Boolean(c.passcode), 'review.settings');
     setUrl();
     loadBatches();
     if (!pendingScroll) window.scrollTo(0, 0);
@@ -5456,12 +5457,58 @@
     });
   }
 
+  /* A link locked after wrong access codes (second audit, item 4): read once
+     as its record opens, and only while the link has an access code; said
+     under the link, with Clear for whoever may change the link. The page
+     says it to the client as a lock, never as a link unknown. */
+  var UNLOCK_SAID = {
+    denied: 'Not cleared. You need Work access to change this link.',
+    'client-scope': 'Not cleared. This client is outside the clients you hold.',
+    'not-found': 'Not cleared. The link was not found.'
+  };
+  function linkLock(box, kind, id, hasPass, need) {
+    if (!box) return;
+    var mine = kind + ':' + id;
+    box.setAttribute('data-for', mine);
+    box.hidden = true;
+    box.innerHTML = '';
+    if (!hasPass || !id || !may(need, 'view')) return;
+    db.rpc('link_lock_state', { p_kind: kind, p_id: id }).then(function (r) {
+      var d = r && r.data;
+      if (box.getAttribute('data-for') !== mine || !d || d.error || !d.locked) return;
+      var C = window.ADspaceClock;
+      var when = C.clock(d.until, { space: true }) + (C.day(d.until) === C.today() ? '' : ', ' + C.date(d.until));
+      var who = d.all ? 'new visitors' : (d.addresses === 1 ? '1 connection' : d.addresses + ' connections');
+      box.innerHTML = '<span class="msg warn">Locked for ' + who + ' until ' + esc(when) + ' after incorrect access codes.</span>' +
+        (may(need, 'work') ? '<button class="btn btn-sm" type="button">Clear</button>' : '');
+      box.hidden = false;
+      var b = box.querySelector('button');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        b.disabled = true;
+        db.rpc('link_lock_clear', { p_kind: kind, p_id: id }).then(function (x) {
+          var a = (x && x.data) || {};
+          if (box.getAttribute('data-for') !== mine) return;
+          if ((x && x.error) || !a.ok) {
+            b.disabled = false;
+            var line = box.querySelector('.msg');
+            line.className = 'msg err';
+            line.textContent = UNLOCK_SAID[a.error] || (x && x.error ? x.error.message : 'Not cleared. The database refused the request.');
+            return;
+          }
+          box.innerHTML = '<span class="msg ok">Cleared.</span>';
+        }).catch(function (e) { b.disabled = false; box.querySelector('.msg').textContent = String((e && e.message) || e); });
+      });
+    }).catch(function () {});
+  }
+
   /* Creator Campaigns lives in its own file, because this one is long enough.
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
+    linkLock: linkLock,
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
     TAX_KEYS: TAX_KEYS,
