@@ -5364,3 +5364,14 @@ finding fixed at the user's word ("fix all no matter what").
   `console.css`. A 640px `.tally-cell` padding that `portal.css`'s own base
   rule had always overridden came into force on a phone (9px 10px against
   10px 13px); it never applied before the split and is removed.
+
+- 2026-10-18 · One SST rule on every total, and client wording (review
+  item 17). A client SST does not apply to read First month and SST not
+  applicable on the Letter of Offer, but First month incl. SST and SST 0%
+  on the quotation's PDF, Build quote and `/quote/`, and the PDF's remark
+  said SST twice ("incl. SST … is inclusive of applicable 0% SST"). The
+  four now follow the letter (`ADspaceMoney.sstApplies`); the remark reads
+  "The first month's amount includes the one-off items and SST at 8%." and
+  leaves SST out at 0%. "Tell an admin." in the PDF library's refusal
+  reached clients on `/quote/` and the client portal; it reads "Please
+  contact ADspace." (DESIGN §6).

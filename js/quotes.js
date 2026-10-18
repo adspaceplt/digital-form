@@ -77,10 +77,11 @@
   function firstIncl(t) { return sum2(t.month.incl, t.once && t.once.incl); }
   function headline(q) {
     var m = monthly(q);
-    if (m != null) return ownMonths(q.lines, q.totals) ? [curOf(q) + ' ' + rm(firstIncl(q.totals)), 'First month incl. SST']
-      : [curOf(q) + ' ' + rm(m), 'Monthly incl. SST'];
+    var incl = MON.sstApplies((q.totals || {}).sst_pct) ? ' incl. SST' : '';
+    if (m != null) return ownMonths(q.lines, q.totals) ? [curOf(q) + ' ' + rm(firstIncl(q.totals)), 'First month' + incl]
+      : [curOf(q) + ' ' + rm(m), 'Monthly' + incl];
     var o = q.totals && q.totals.once;
-    return o ? [curOf(q) + ' ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
+    return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-off' + incl : 'One-off total'] : ['—', ''];
   }
   /* Every column but `billing`, which the table answers to nobody: the
      billing a prospect gave on the website is read through
@@ -517,7 +518,7 @@
     var own = t.month && ownMonths(d && d.lines, t);
     if (t.month) out.push(CUR + ' ' + acct(own ? firstIncl(t) : t.month.incl) + (own ? ' first month' : ' monthly'));
     if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
-    return out.length ? out.join(' · ') + ' incl. SST' : '';
+    return out.length ? out.join(' · ') + (MON.sstApplies(t.sst_pct) ? ' incl. SST' : '') : '';
   }
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {
@@ -541,18 +542,22 @@
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
     var tot = [], own = t.month && ownMonths(rows, t), o = t.once || {};
+    /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
+    var sstOn = MON.sstApplies(t.sst_pct), incl = sstOn ? ' incl. SST' : '', sstRow = sstOn ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE;
+    var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', acct(v)]); };
     if (t.month) {
       tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
       if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
       if (own) {
         if (t.once) tot.push(['One-off subtotal', acct(o.subtotal)]);
-        tot.push(['First month excl. SST', acct(sum2(t.month.excl, o.subtotal))], ['SST ' + t.sst_pct + '%', acct(sum2(t.month.sst, o.sst))],
-          ['First month incl. SST', CUR + ' ' + acct(firstIncl(t)), 1]);
+        excl('First month', sum2(t.month.excl, o.subtotal));
+        tot.push([sstRow, acct(sum2(t.month.sst, o.sst))], ['First month' + incl, CUR + ' ' + acct(firstIncl(t)), 1]);
       } else {
-        tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
+        excl('Monthly', t.month.excl);
+        tot.push([sstRow, acct(t.month.sst)], ['Monthly' + incl, CUR + ' ' + acct(t.month.incl), 1]);
       }
     }
-    if (t.once && !own) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', CUR + ' ' + acct(t.once.incl), 1]);
+    if (t.once && !own) tot.push(['One-off subtotal', acct(t.once.subtotal)], [sstRow, acct(t.once.sst)], [sstOn ? 'One-off incl. SST' : 'One-off total', CUR + ' ' + acct(t.once.incl), 1]);
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';

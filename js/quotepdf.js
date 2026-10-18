@@ -171,6 +171,10 @@
        so its rows add the one-off subtotal before SST and end at one figure. */
     var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
     var tot = [], sum = function (a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; };
+    /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
+    var MON = window.ADspaceMoney, sstOn = MON.sstApplies(t.sst_pct), incl = sstOn ? ' incl. SST' : '';
+    var sstRow = sstOn ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE;
+    var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', amt(v)]); };
     if (t.month) {
       tot.push(['Monthly subtotal', amt(t.month.subtotal)]);
       if (Number(t.term_pct)) {
@@ -179,14 +183,15 @@
       if (own) {
         var o = t.once || {};
         if (t.once) tot.push(['One-off subtotal', amt(o.subtotal)]);
-        tot.push(['First month excl. SST', amt(sum(t.month.excl, o.subtotal))], ['SST ' + t.sst_pct + '%', amt(sum(t.month.sst, o.sst))],
-          ['First month incl. SST', amt(sum(t.month.incl, o.incl)), 1]);
+        excl('First month', sum(t.month.excl, o.subtotal));
+        tot.push([sstRow, amt(sum(t.month.sst, o.sst))], ['First month' + incl, amt(sum(t.month.incl, o.incl)), 1]);
       } else {
-        tot.push(['Monthly excl. SST', amt(t.month.excl)], ['SST ' + t.sst_pct + '%', amt(t.month.sst)], ['Monthly incl. SST', amt(t.month.incl), 1]);
+        excl('Monthly', t.month.excl);
+        tot.push([sstRow, amt(t.month.sst)], ['Monthly' + incl, amt(t.month.incl), 1]);
       }
     }
     if (t.once && !(t.month && own)) {
-      tot.push(['One-off subtotal', amt(t.once.subtotal)], ['SST ' + t.sst_pct + '%', amt(t.once.sst)], ['One-off incl. SST', amt(t.once.incl), 1]);
+      tot.push(['One-off subtotal', amt(t.once.subtotal)], [sstRow, amt(t.once.sst)], [sstOn ? 'One-off incl. SST' : 'One-off total', amt(t.once.incl), 1]);
     }
     var tw1 = 176, tw2 = 88, tx = R - tw1 - tw2, th = 24;
     room(tot.length * th + 8);
@@ -202,7 +207,11 @@
     // Remarks / Terms.
     var days = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
     var notes = ['This quotation is valid for ' + both(days) + ' days from its date of issue.'];
-    if (t.month) notes.push((own ? 'The first month\'s amount incl. SST' + (t.once ? ' includes the one-off items and' : '') : 'The amount per month incl. SST') + ' is inclusive of applicable ' + t.sst_pct + '% SST.');
+    /* One sentence of what the figure holds; SST named only where it applies. */
+    var holds = [];
+    if (own && t.once) holds.push('the one-off items');
+    if (sstOn) holds.push('SST at ' + t.sst_pct + '%');
+    if (t.month && holds.length) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' includes ' + holds.join(' and ') + '.');
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       notes.push('The advertising budget is not included in the service fee and is billed separately.');
     }
@@ -216,7 +225,7 @@
       'form the binding contract.');
     if (t.month) {
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
-        ' is ' + ((q.totals || {}).currency === 'SGD' ? 'S$ ' : 'RM ') + amt(t.commitment) + ' incl. SST' +
+        ' is ' + ((q.totals || {}).currency === 'SGD' ? 'S$ ' : 'RM ') + amt(t.commitment) + incl +
         (t.once ? ', one-off items included.' : '.'));
     }
     room(40);

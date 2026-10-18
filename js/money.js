@@ -213,12 +213,21 @@
     return 'SST ' + (Math.round(p * 100) / 100) + '%';
   }
   function signOf(m) { return market(m).sign; }
+  /* SST said one way on every total (2026-10-18, review item 17): the
+     Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.
+     Where it does not apply (a client exempt from it, 0%), its row reads
+     SST not applicable, no figure says incl. or excl. SST, and the row
+     before SST is left out, since it is the total. */
+  function sstApplies(pct) { return Number(pct) > 0; }
+  var SST_NONE = 'SST not applicable';
 
   window.ADspaceMoney = {
     money: money,
     money2: money2,
     taxOf: taxOf,
     taxLabel: taxLabel,
+    sstApplies: sstApplies,
+    SST_NONE: SST_NONE,
     termFactor: termFactor,
     termWord: termWord,
     termAdj: termAdj,
