@@ -5073,3 +5073,13 @@ finding fixed at the user's word ("fix all no matter what").
   #566, and named a function closed to every browser in #568; nothing in
   the tree called it (pages, suites, functions). Reopen works through
   `ops_transition_task` as before.
+
+- 2026-10-18 · `wa-send` inflates a PDF's streams to 20 MB at most. A
+  quotation's or letter's PDF is searched for its reference stream by
+  stream, and the inflated output had no cap, so a crafted 4 MB stream
+  could inflate to gigabytes and end the function. Reading now stops once
+  a file's streams together pass 20 MB (`INFLATE_CAP`, the reader
+  cancelled), and the file reads as not naming its reference
+  (`bad-file`). A drawn quotation inflates to well under a megabyte.
+  `tests/wafn.js` refuses a 30 MB bomb in a fraction of a second and still
+  finds a reference past a 5 MB stream; the old code took the bomb.
