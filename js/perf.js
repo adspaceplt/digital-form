@@ -244,8 +244,9 @@
       }
     }
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
-    /* Team: Health is a granted part of its own (2026-10-07). */
-    var canHealth = may('team.health', 'work');
+    /* Team: Health is an admin's alone, behind the master code
+       (2026-10-18, Team audit 11). */
+    var canHealth = Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin());
     if (!canPerf && st.tab === 'performance') st.tab = 'members';
     if (!canHealth && st.tab === 'health') st.tab = 'members';
     if (!canMembers && (st.tab === 'members' || st.tab === 'groups')) st.tab = canPerf ? 'performance' : 'health';
@@ -3501,6 +3502,11 @@
     enterTeam: enterTeam,
     enterMine: enterMine,
     lock: function (then) { lock(then); },
+    /* Team: Health asks the same unlock (2026-10-18): one master code, one
+       15 minutes, whichever page took it. */
+    token: function () { return token || readToken(); },
+    keepToken: function (t) { keepToken(t); },
+    said: said,
     urlState: function () {
       if (st.tab === 'groups') return { tab: 'groups' };
       if (st.tab === 'health') return { tab: 'health' };

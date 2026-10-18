@@ -2583,6 +2583,15 @@ button.aiu-row:first-child::before { content: none; }
    directory's own margin never adds to it (it made 24 and 36). */
 #mineHealthBox, #teamHealthBox { display: grid; gap: 12px; }
 #mineHealthBox > *, #teamHealthBox > * { margin: 0; }
+/* Team: Health's lock (2026-10-18) stands where Performance's does; on a
+   colleague's record it is the record card's own contents, never a card
+   in a card. */
+#teamHealthBox > .lockcard { justify-self: center; width: 100%; margin-top: 36px; }
+.mrec-card .lockcard { margin: 0 auto; padding: 12px 0 4px; background: none; box-shadow: none; }
+@media (max-width: 640px) {
+  #teamHealthBox > .lockcard { margin-top: 4px; }
+  .mrec-card .lockcard { padding: 8px 0 0; }
+}
 /* The card's title with a mute line under it (when it was checked in). */
 .health-hd { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .health-meta { font-size: 12.5px; color: var(--ink-mute); }

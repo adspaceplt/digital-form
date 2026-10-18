@@ -1218,12 +1218,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (the four functions and the bucket's add and remove policies),
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
   2026-10-07), `register.types` (Document types, 2026-10-07) and
-  `team.health` (Health check-ins, every colleague's answers by name,
-  2026-10-07) and `team.notice` (Notices, 2026-10-09) and `reports.meta`
+  `team.notice` (Notices, 2026-10-09) and `reports.meta`
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
   2026-10-15); each offers Manage
-  alone (on or off). `suppliers.pay` (Supplier bank details,
+  alone (on or off). Team: Health (every colleague's answers by name) is
+  no part: an admin's alone, never offered to a group (2026-10-18, below).
+  `suppliers.pay` (Supplier bank details,
   2026-10-18) is granted too, at View (read) or Work (write). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -1316,7 +1317,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`2026-10-10-letters-held-to-their-lines.sql`).
   - No preset below Admin opens Team, HR letters or performance reviews.
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
-  Members, Performance and Health (`tab=health`, `team.health` alone); the
+  Members, Performance and Health (`tab=health`, an admin's alone); the
   strip is drawn only where two tabs show.
 - The Admin group has no ⋯ and cannot be deleted. A group delete takes
   `.select('slug')` and names a refusal.
@@ -3794,7 +3795,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `already-asked`, `bad-colleague`) tells the colleague asked (`health.talk`,
   the asker's name, never the note); the asker withdraws it and asks again,
   the colleague asked marks it done and reopens it (`health_talk_set`).
-- Team: Health (`tab=health`, `team.health`): the half month's averages as
+- Team: Health (`tab=health`) is an admin's alone, behind the Performance
+  master code with its 15-minute unlock (`health_check(p_token)`,
+  `health_team(p_token)`, `2026-10-18-team-health-is-an-admins.sql`; the
+  same unlock either page takes; never a granted part, never offered to a
+  group): the half month's averages as
   bars (warn under 3) with `n of m checked in` (with nobody agreed, the one
   line No colleague has agreed to check-ins.), Colleagues (every active
   colleague: this half's five answers, Checked in, or Not agreed /
@@ -5039,7 +5044,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-18-hr-letters-find-their-colleague.sql`; Issue document and
   Add entry open on them), Performance (Open reviews: the months searched for their name,
   behind its own lock) and Health (their check-ins and talks from
-  `health_team`, `team.health`), each drawn only where readable
+  `health_team`, an admin's behind the master code), each drawn only where readable
   (`tests/teamrec.js`).
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.

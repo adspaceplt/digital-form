@@ -931,7 +931,7 @@
     if (name === 'work') return may('ops', 'view');
     /* Team is two jobs gated apart: members and groups, and the monthly
        reviews. Either opens the route; the tab strip shows what is held. */
-    if (name === 'team') return may('team', 'view') || may('team.performance', 'view') || may('team.health', 'work');
+    if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
     /* Settings (2026-10-10): any colleague holding one of its granted parts. */
