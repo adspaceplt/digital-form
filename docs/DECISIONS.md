@@ -5057,3 +5057,13 @@ finding fixed at the user's word ("fix all no matter what").
   `perf_period` names the reviews it waits on (`open_reviews`) and Bonus
   and trip's chip reads them. The quarter's own check counts the same way
   and was not asked to change. `tests/perf.js` holds it.
+
+- 2026-10-18 · The PDF library's failure is named for what it is. pdf-lib
+  and fontkit are pinned by their hash (audit J), and a script refused for
+  its hash fires the same `onerror` as one that never arrived, so a file
+  changed at the CDN read "Check the connection and try again." and every
+  retry failed the same way. `js/documents.js` now fetches the file once
+  more and hashes it: one that arrives and does not match reads "The PDF
+  library has changed at its source and was not loaded. Tell an admin.";
+  anything it cannot tell reads as the connection. `tests/pdflibhash.js`
+  serves the page as committed (the suites' server takes hashes off).

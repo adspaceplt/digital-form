@@ -555,6 +555,25 @@
     ['fontkit', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js', 'sha384-2p6U+1mmqF10USehFeRiyG2ESG9FwIqN+jxULn5w9jjQIihSn9Pt13dVCn/Hawjn']
   ];
   var libWait = null;
+  /* A script refused for its hash and one that never arrived both fire
+     onerror alone. The file is fetched once more and hashed: one that
+     arrives and does not match has changed at the CDN, which no retry
+     mends (2026-10-18). Anything that cannot be told reads as the
+     connection. */
+  function whyNot(l) {
+    if (!l[2] || !window.fetch || !window.crypto || !crypto.subtle) return Promise.resolve(false);
+    var alg = l[2].split('-')[0], want = l[2].slice(alg.length + 1);
+    var name = { sha256: 'SHA-256', sha384: 'SHA-384', sha512: 'SHA-512' }[alg];
+    if (!name) return Promise.resolve(false);
+    return fetch(l[1], { mode: 'cors', cache: 'no-store', credentials: 'omit' }).then(function (r) {
+      if (!r.ok) return false;
+      return r.arrayBuffer().then(function (buf) { return crypto.subtle.digest(name, buf); }).then(function (d) {
+        var bin = '', b = new Uint8Array(d);
+        for (var i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+        return btoa(bin) !== want;
+      });
+    }).catch(function () { return false; });
+  }
   function lib() {
     if (window.PDFLib) return Promise.resolve(window.PDFLib);
     if (libWait) return libWait;
@@ -565,7 +584,14 @@
         if (l[2]) { s.integrity = l[2]; s.crossOrigin = 'anonymous'; }
         s.src = l[1];
         s.onload = ok;
-        s.onerror = function () { bad(new Error('The PDF library could not be loaded. Check the connection and try again.')); };
+        s.onerror = function () {
+          s.remove();
+          whyNot(l).then(function (changed) {
+            bad(new Error(changed
+              ? 'The PDF library has changed at its source and was not loaded. Tell an admin.'
+              : 'The PDF library could not be loaded. Check the connection and try again.'));
+          });
+        };
         document.head.appendChild(s);
       });
     })).then(function () {
