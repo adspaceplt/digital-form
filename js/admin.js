@@ -3002,6 +3002,8 @@
     $('wsLock').hidden = !state.client.passcode;
   }
 
+  var PASS_SHORT = 'The access code needs at least 6 characters.';
+
   /* Logo and access code were set once at creation and then stuck. Both are
      editable here, and clearing either field removes it. */
   function saveProfile(done) {
@@ -3012,10 +3014,22 @@
       done(false);
       return;
     }
+    /* A new code is six characters at least; one already set keeps working
+       until it is changed (passcode_long_enough). */
+    if (pass && pass !== (state.client.passcode || '') && pass.length < 6) {
+      msg('profileMsg', PASS_SHORT, 'err');
+      $('ePass').focus();
+      done(false);
+      return;
+    }
     var had = Boolean(state.client.passcode);
     db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
       .eq('id', state.client.id).select('id').then(function (r) {
-        if (r.error) { msg('profileMsg', r.error.message, 'err'); done(false); return; }
+        if (r.error) {
+          msg('profileMsg', /passcode-short/.test(r.error.message || '') ? PASS_SHORT : r.error.message, 'err');
+          done(false);
+          return;
+        }
         if (!(r.data || []).length) { msg('profileMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
         logAction('client.profile', state.client.name,
           [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
