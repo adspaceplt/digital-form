@@ -52,6 +52,7 @@
     'not-agreed': 'There is no agreement to withdraw.',
     'stale-wording': 'These terms have changed. Read them again before agreeing.',
     'incomplete': 'Answer all five.',
+    'stale-half': 'That half month has ended, so nothing was saved. Your answers are kept: save them for the half month now open.',
     'bad-score': 'Each answer is 1 to 5.',
     'too-long': 'Keep the note to 1,000 characters.',
     'bad-colleague': 'Choose a colleague.',
@@ -282,6 +283,8 @@
   function openCheckin(opener) {
     var d = st.mine || {};
     var cur = (d.history || []).filter(function (c) { return c.half === d.half; })[0];
+    /* The half month the sheet shows is the one it saves into (2026-10-18). */
+    st.sheetHalf = d.half;
     $('healthSheetTitle').textContent = 'Check-in, ' + halfWord(d.half, d.half_end);
     SCALES.forEach(function (s) {
       var sel = $('hcS_' + s[0]);
@@ -317,8 +320,18 @@
         return;
       }
       b.disabled = true;
-      mineCall('health_checkin_save', { p_scores: scores, p_note: $('hcNote').value }, function (d) {
+      mineCall('health_checkin_save', { p_scores: scores, p_note: $('hcNote').value, p_half: st.sheetHalf }, function (d) {
         b.disabled = false;
+        if (d.error === 'stale-half') {
+          /* The half month ended while the sheet was open: nothing was kept,
+             the answers stay, and the sheet now names the half open. */
+          st.sheetHalf = d.half;
+          $('healthSheetTitle').textContent = 'Check-in, ' + halfWord(d.half, d.half_end);
+          msg('hcMsg', said(d), 'err');
+          if ($('hcMsg').scrollIntoView) $('hcMsg').scrollIntoView({ block: 'nearest' });
+          mineCall('health_mine', {}, function (m) { if (!m.error) { st.mine = m; paintMine(); } });
+          return;
+        }
         if (d.error) { msg('hcMsg', said(d), 'err'); return; }
         window.ADspaceSheet.clean();
         window.ADspaceSheet.close();

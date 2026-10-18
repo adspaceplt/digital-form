@@ -5627,3 +5627,5 @@ stand-down may be undone. Live, 13 colleagues, none removed, so the first run
 removes nothing.
 
 - 2026-10-18 — Health terms are versioned (Team audit 17). The agreement card's words lived in `js/health.js` and every agreement was stored as wording 1, so changed words would have stood on agreements given to other words. The words moved to `health_wordings` (version 1 seeded with the words shown since 2026-10-07); `health_consent(p_on, p_wording)` refuses a version that is not the latest and `health_agreed` stands only on the latest. The old one-argument call stays for an open page and agrees to version 1 alone (no drop).
+
+- 2026-10-18 — A check-in keeps its half month (Team audit 18). `health_checkin_save` filed answers under the half month of the moment they arrived, so a sheet opened on the 15th and saved after midnight went, unseen, into the next half. The page now names the half its sheet showed (`p_half`); an ended one is refused `stale-half` and the sheet names the half open. The two-argument call stays for an open page.
