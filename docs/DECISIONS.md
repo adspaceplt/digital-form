@@ -5045,3 +5045,15 @@ finding fixed at the user's word ("fix all no matter what").
   a try. Giving the try back in `wa_done` was chosen over `wa_claim` not
   counting it: the claim cannot know how the send will end. `tests/sql.js`
   holds five outage wakes failing nothing; `tests/wafn.js` the drain.
+
+- 2026-10-18 · A left colleague's draft never holds the half (follow-up to
+  #567). A draft review started and never scored, of a colleague who has
+  since left, can never become final (`perf_release` refuses an incomplete
+  month, `perf_close_windows` skips a draft), so the open-month check of
+  #567 held the whole half for good.
+  `2026-10-18-left-colleagues-draft-never-holds-the-half.sql` leaves such a
+  draft out (an inactive colleague earns no share); a released, queried or
+  acknowledged month of theirs still waits, as it closes by itself.
+  `perf_period` names the reviews it waits on (`open_reviews`) and Bonus
+  and trip's chip reads them. The quarter's own check counts the same way
+  and was not asked to change. `tests/perf.js` holds it.

@@ -2527,8 +2527,14 @@
        it divides. */
     var fig = document.createElement('section');
     fig.className = 'crm-group rw-figs';
+    /* The reviews that still hold Confirm, by name and month (a left
+       colleague's draft never does, 2026-10-18); the count where the
+       database answers no list. */
+    var open = (d.open_reviews || []).map(function (x) { return x.name + ' ' + ADspaceClock.month(String(x.period).slice(0, 7)); });
+    var openWord = open.length ? 'Not final: ' + (open.length > 3 ? open.slice(0, 3).join(', ') + ' and ' + (open.length - 3) + ' more' : open.join(', '))
+      : reviewsWord(Number(d.open_months)) + ' not final';
     fig.innerHTML = '<div class="crm-group-head"><h3>Company figures</h3>' + confirmedChip(d) +
-      (!d.confirmed && Number(d.open_months) > 0 ? chip(reviewsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') + '</div>';
+      (!d.confirmed && Number(d.open_months) > 0 ? chip(openWord, 'is-warn') : '') + '</div>';
     var t = document.createElement('div');
     t.className = 'crm-table softpanel rw-facts';
     var outcome = function (x, amount, open) {
