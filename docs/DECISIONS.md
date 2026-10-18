@@ -4949,3 +4949,13 @@ finding fixed at the user's word ("fix all no matter what").
   way). The same file prunes job history after 14 days and read notices
   after 90 (5,532 runs kept since 27 Sept on 2026-10-18), leaving a
   colleague's notice, whose copies Notices count. `tests/sql.js` holds it.
+
+- 2026-10-18 · One repeating task never stops the others (second audit,
+  item 15). `ops_generate_recurring` returned at the first refusal, and a
+  raised error ended the call, so one rule that could no longer make its
+  task stopped every rule after it for that colleague, every night,
+  silently. `2026-10-18-one-repeat-never-stops-the-others.sql` makes each
+  task in its own block: the failed attempt is undone, the error kept on the
+  rule, its other dates left for the next run, and the run goes on; the
+  admins' morning notice counts the rules that failed. `tests/ops.js` holds
+  a broken rule beside a sound one.

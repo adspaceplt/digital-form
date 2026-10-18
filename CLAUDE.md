@@ -2955,6 +2955,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     on again makes no date twice.
   - A task deleted stops its repeat (trigger `ops_tasks_stop_repeat`): a rule
     is seen and turned off only from its task.
+  - One rule never stops the others: a make refused or failing is undone
+    alone, kept on the rule (`last_error`, `last_error_at`, cleared by its
+    next task), answered in `errors`, and named in the admins' morning
+    notice (`jobs_watch`); the run goes on to the next rule.
 - Repeats run themselves; nobody presses Run:
   - a client's month confirmed (its meeting set or marked not applicable)
     makes that client's repeats for it at once, as the person confirming
