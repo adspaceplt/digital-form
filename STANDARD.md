@@ -578,10 +578,11 @@ section holds only what is true of the project as a whole.
   pinned (I), the CDN scripts pinned by hash (J), the portal's unused
   weight shed (K), creator codes from a strong source (L), every stored
   link held to the web (M) and three guard suites (N). Declined by the
-  user: 6, 15, most of 20, and any change to the root pages. Left as they
-  are: `ops_due_decider` and `option_qc_count`, helpers still open to a
-  signed-in account, which answer only a colleague's id or a count of
-  checks, for a task or booking id the caller must already hold.
+  user: 6, 15, most of 20, and any change to the root pages. The three
+  helpers restated with a grant after INTERNAL HELPERS STAY INTERNAL
+  (`ops_due_decider`, `option_qc_count`, `ops_owner_may_move`) closed again
+  on 2026-10-18 (`2026-10-18-internal-helpers-closed-again.sql`);
+  `tests/sql.js` holds every helper's last word in the schema a revoke.
 - The audit of 2026-10-10 closed in five batches (the last, F3:
   a media pass per client folder). Checked live on 2026-09-27: every public table has row level
   security on, no policy reads `true`, and every policy asks `allowed()`,
