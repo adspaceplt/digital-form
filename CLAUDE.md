@@ -673,7 +673,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   adjusted.
   - RM for MY, S$ for SG.
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
-    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`)
+    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
+    campaign's booked creators the client's last confirmation (`kind`
+    client), a selection still to confirm none)
     unless `sst_applies` is false.
   - Two decimals on every total, each charged figure (`rateFor`, `taxOf`)
     rounded by `cents()`, a half away from nought as Postgres rounds, the
