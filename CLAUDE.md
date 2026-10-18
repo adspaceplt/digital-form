@@ -3040,6 +3040,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   task, so the client back at Active clears it.
 - Reopen works on every cancelled task, back to the stage it was cancelled
   from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
+  A task finishes and reopens through `ops_transition_task` alone: the first
+  model's `ops_complete_task` and `ops_reopen_task` are closed to every
+  browser (`2026-10-18-unused-task-shortcuts-closed.sql`).
 - A task read that finds no row (deleted, or out of reach) closes its sheet
   or record and lands on the list with "That task is no longer available."
   (`taskGone`, `.maybeSingle()`); never the database's words.
