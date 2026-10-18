@@ -5444,7 +5444,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `save_selection`, `confirm_selection`, `confirm_selection_with` and
   `review_draft`, before the passcode, and `share_link_preview` names no
   Past client (`2026-10-18-past-client-links-act-on-nothing.sql`); a
-  completed campaign of a current client stays readable for its results.
+  completed campaign stays readable for its results, a Past client's too,
+  read only (`selection_closed`, no backups; every write above still
+  refuses; `2026-10-18-completed-campaigns-stay-readable.sql`, the user:
+  988's results were never read).
   A link's passcode is asked through `link_passcode(kind, token, stored,
   given)` by `get_review_feed`, `get_campaign`, `save_selection`,
   `confirm_selection`, `confirm_selection_with` and `review_draft`
