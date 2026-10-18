@@ -5155,3 +5155,15 @@ finding fixed at the user's word ("fix all no matter what").
   (Bonus and trip, its figures sheet and Reward settings, both themes). The
   chip counts them again (3 reviews not final) and the names follow under
   the head as one warn line, which wraps.
+
+- 2026-10-18 · A held task resumes where it left (review of PRs #569 to
+  #596, item 1). On hold, Blocked and Cancelled offered every open stage on
+  the line, so a task put on hold at In progress could be resumed at
+  Approved or Scheduled, past AQC and client review, on the page as a plain
+  step and in the database. The user: AQC happens on WhatsApp and the stage
+  is a convenience record, so keep it light and add no AQC rule. The task
+  now remembers the stage it left (`ops_tasks.held_from`, a trigger, the
+  held tasks backfilled from their history); On hold and Blocked go back
+  only there, Cancelled there or to the start of the line, and moving
+  between the three is unchanged. `tests/ops.js` holds it against
+  Postgres; the stand-in holds the same rule.
