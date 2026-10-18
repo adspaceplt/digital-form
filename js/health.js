@@ -328,6 +328,7 @@
           st.sheetHalf = d.half;
           $('healthSheetTitle').textContent = 'Check-in, ' + halfWord(d.half, d.half_end);
           msg('hcMsg', said(d), 'err');
+          if ($('hcMsg').scrollIntoView) $('hcMsg').scrollIntoView({ block: 'nearest' });
           mineCall('health_mine', {}, function (m) { if (!m.error) { st.mine = m; paintMine(); } });
           return;
         }
