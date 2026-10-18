@@ -52047,7 +52047,8 @@ revoke all on function public.contact_greeting(text, text) from public, anon, au
 
 
 -- END OF DATA HELD TO ITS LEVEL ---------------------------------------------
-=======
+
+-- ===========================================================================
 -- ANALYSIS FILLS THE BRIEF — a confirmed Brand analysis writes the Content
 -- brief's empty parts (2026-10-15)
 -- ===========================================================================

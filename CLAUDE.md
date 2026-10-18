@@ -1160,6 +1160,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   line per table, never in a `do $$` loop.
 - A comparison of two copies (a migration and its schema section; the
   `ACTION_LABEL` map and `activity_section()`) is enforced by a suite.
+- A merge leaves no conflict marker in the schema or a migration
+  (2026-10-18: a `=======` line from #491 stood in `schema.sql`;
+  `tests/sql.js`).
 
 ### Access
 - Access is a level per section, **none < view < work < manage**, in

@@ -4799,3 +4799,12 @@ finding fixed at the user's word ("fix all no matter what").
   `ops_engagements_drive_url_web` refuses (another scheme, http, a space, a
   quote, <, >, a backtick, a backslash). `tests/work.js` holds a bare
   address saved as https and three refused.
+
+- 2026-10-18 · A merge conflict marker left in the schema is removed. A
+  `=======` line from resolving a conflict in #491 stood between DATA HELD
+  TO ITS LEVEL and ANALYSIS FILLS THE BRIEF, outside any comment, in place
+  of the banner's opening line: `schema.sql` (re-runnable by design) could
+  not be run whole. No suite runs the file whole (each cuts its sections),
+  so nothing failed; found while resolving a conflict beside it. The line
+  is the banner's opening rule again, and `tests/sql.js` now refuses a
+  conflict marker in the schema or any migration. No database change.
