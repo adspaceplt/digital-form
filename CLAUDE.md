@@ -1446,8 +1446,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A refused read is left out.
   - A future date never counts.
   - Nothing reads as a mute em dash.
-- The Client ID is typed by hand (`^[A-Z0-9]{2,12}$`, unique) and is load
-  bearing: the letter serial uses it.
+- The Client ID (`^[A-Z0-9]{2,12}$`, unique) is load bearing: the letter
+  serial uses it. A client becomes Active only holding one (the user,
+  2026-10-18: a lead may come to no deal): the move asks for it, the next
+  AC number offered (`client_code_next()`, one past the highest across
+  every client, as wide as it), and both go in one write; trigger
+  `clients_active_code` refuses Active with none (`active-needs-code`;
+  `2026-10-18-client-id-at-active.sql`). A Letter of Offer before Active
+  still asks for one at its Reference.
 - The slug is set once from the name, never follows a rename, and a clash is
   numbered. It lives only in the console address (`clientByKey()` resolves a
   slug or a UUID by shape) and never grants access.
