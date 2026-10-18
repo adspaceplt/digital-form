@@ -5380,14 +5380,6 @@
   }
 
 
-  /* `ops_reopen_task` puts a task back at its workflow's Revision stage, so it
-     is offered only where the workflow has one. A content task goes back the
-     way its own workflow allows (a finished post to its performance review,
-     a post taken down back to live), through Move to another stage; an
-     everyday task is reopened by its own tick. */
-  function reopens(t) {
-    return Boolean(state.stages[t.workflow_id + '|revision']);
-  }
   /* Where a finished task goes back to when it is reopened: the stage it
      finished from, where the workflow still allows that move, else the
      first stage the workflow allows out of where it stands. Cancelled is
