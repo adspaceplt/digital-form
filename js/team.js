@@ -992,7 +992,7 @@
            row gone, so ask for the row back: an empty answer is a refusal,
            not a success, and the group stays in the list saying so. */
         db.from('team_roles').delete().eq('slug', r.slug).select('slug').then(function (q) {
-          if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
+          if (q.error) { msg('groupMsg', teamSaid(q.error), 'err'); return; }
           if (!q.data || !q.data.length) {
             msg('groupMsg', 'Not deleted. The database refused the request.', 'err');
             load();
@@ -1549,7 +1549,7 @@
     var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope() };
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
-      if (q.error) { msg('grMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : q.error.message, 'err'); return; }
+      if (q.error) { msg('grMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error), 'err'); return; }
       log('team.group_added', name, '');
       shutGroupBox();
       msg('groupMsg', name + ' added.', 'ok');
@@ -1754,7 +1754,7 @@
           msg('tmMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
             : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
             : /duplicate|unique/i.test(r.error.message)
-            ? 'That email is already on the list.' : r.error.message, 'err');
+            ? 'That email is already on the list.' : teamSaid(r.error), 'err');
           return;
         }
         log('team.added', name, email + ' · ' + roleName(role));

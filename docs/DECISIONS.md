@@ -4628,3 +4628,17 @@ finding fixed at the user's word ("fix all no matter what").
   cast on a `coalesce` holding a moment, its allowlist no longer exempts
   the three, and `tests/sql.js` runs each new expression at 07:30 MYT on a
   UTC server.
+
+- 2026-10-18 · Team's admin-only refusals are said in the team's words
+  (review finding 12). Since `team_admin_guard` and `team_roles_admin_guard`
+  (2026-10-17, audit E), a colleague with Team Full Access who is not an
+  admin is refused `admin-only` on a write that would make or change an
+  admin, and the page offers them Admin everywhere it lists groups
+  (`amAdmin()` is defined and unused). Three of team.js's writes showed the
+  database's words: a group's Delete, Add group and Add member. Each now
+  goes through `teamSaid`, which reads `admin-only` as "Only an admin makes
+  a colleague admin or changes an admin.". The stand-in held none of either
+  guard, so it was more generous than the database; it now refuses an
+  insert, update or delete the guards refuse (`adminGuard` in
+  `tests/stub2.js`), and `tests/team.js` walks the three as such a
+  colleague.
