@@ -1583,6 +1583,7 @@
     editingMember = null;
     memberOpener = null;
   }
+  function amAdmin() { return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin()); }
   function openMemberBox(m, opener) {
     shutMenus();
     editingMember = m || null;
@@ -1591,6 +1592,8 @@
     $('tmSave').textContent = m ? 'Save' : 'Add';
     $('tmName').value = m ? (m.name || '') : '';
     $('tmEmail').value = m ? (m.email || '') : '';
+    /* A colleague's sign-in email is changed by an admin alone (2026-10-18). */
+    $('tmEmail').readOnly = !!(m && !amAdmin());
     $('tmStaff').value = m ? (m.staff_code || '') : '';
     $('tmDesig').value = m ? (m.designation || '') : '';
     $('tmDept').value = m ? (m.department || '') : '';
@@ -1692,6 +1695,8 @@
                    card_mobile: $('tmCardMobile').value !== 'hide' };
     /* Empty makes it again from the name; unchanged is not sent. */
     if (!editingMember || cardSlug !== (editingMember.card_slug || '')) fields.card_slug = cardSlug || null;
+    /* An email not changed is not sent: only an admin moves one. */
+    if (editingMember && email === String(editingMember.email || '').toLowerCase()) delete fields.email;
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
       var untilTime = until ? ($('tmUntilTime').value || null) : null;
@@ -2018,7 +2023,7 @@
     var roles = state.roles.map(function (r) { return [r.slug, r.name]; });
     host.innerHTML = '<div class="panel mrec-card mrec-ov"><div class="readgroups">' +
       group('Sign-in and access', '<dl class="ovfacts">' +
-        word('name', 'Name', m.name) + word('email', 'Sign-in email', m.email) +
+        word('name', 'Name', m.name) + word('email', 'Sign-in email', m.email, amAdmin()) +
         (edit && !(m.system) ? pick('role', 'User group', roles, m.role, roleName(m.role)) : fact('User group', roleName(m.role))) +
         word('access_until', 'Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
       group('Employment', '<dl class="ovfacts">' +
