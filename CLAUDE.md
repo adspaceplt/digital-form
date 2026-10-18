@@ -2805,7 +2805,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every visit and on a period change (a page turn reads nothing again),
   never polled. Where a set's posts stand is one `review_set_counts(p_sets)`
   (invoker; posts, approved, changes, undecided, the oldest change), here
-  and in Waiting for you alike, never a read of every post and decision.
+  and in Waiting for you alike, never a read of every post and decision;
+  every set named is counted, with no cap
+  (`2026-10-18-review-set-counts-every-set.sql`).
   The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
   source alone; a tile reads Could not load with Try again; a signal Could
   not load), never nothing.

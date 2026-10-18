@@ -5303,3 +5303,12 @@ finding fixed at the user's word ("fix all no matter what").
   table), and the Revision (Client) push counts `revision_due_days` working
   days through it. The setting's words read working days. `tests/ops.js`
   holds a Friday, two holidays in a row, counting back, and the push.
+
+- 2026-10-18 · Review set counts answers every set named (review item 9).
+  `review_set_counts` kept the first 500 sets (`p_sets[1:500]`), and My
+  Work's Waiting for you names every published set of the clients a
+  colleague holds, so past 500 the rest went uncounted in silence. The user
+  asked for the cap removed. The work stays bounded by what is named: each
+  id read once, posts through their set index, and each post's standing
+  decision one index-ordered read (newest, limit 1). `tests/sql.js` holds
+  1,200 sets counted, and the same answer as the earlier definition.
