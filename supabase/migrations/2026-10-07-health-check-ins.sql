@@ -4,7 +4,7 @@
 -- talk to the colleague of their choice, and every colleague's check-ins for
 -- the holders of Team: Health.
 -- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
--- in supabase/schema.sql under the same banner; tests/health.js compares the
+-- in supabase/schema.sql under the same banner; tests/perf.js compares the
 -- two.
 --
 -- WHAT CHANGED (the user, 2026-10-07: "a health section (company concerns

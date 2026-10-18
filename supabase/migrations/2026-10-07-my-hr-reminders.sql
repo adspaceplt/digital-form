@@ -4,7 +4,7 @@
 -- and again a few days on, and the health check-in before each half month
 -- ends.
 -- 2026-10-07. Safe to run twice. Rollback at the foot. Mirrored byte for byte
--- in supabase/schema.sql under the same banner; tests/health.js compares the
+-- in supabase/schema.sql under the same banner; tests/perf.js compares the
 -- two. Runs after PERFORMANCE SELF-RATING and HEALTH CHECK-INS.
 --
 -- WHAT CHANGED (the user, 2026-10-07: "send periodic u suggest reminder for
