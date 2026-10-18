@@ -671,6 +671,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   `private/backups/db/`, set by the user 2026-10-18, PDPA), since it keeps
   the personal data the database has since cleared (`privacy_retention`);
   an Object Lock added later must hold a dump for less than 90 days.
+- Retention (2026-10-18, Team audit 12, PDPA 2010): health check-ins are
+  kept 24 months and a leaver's health data 6 months after they left, each
+  a Business setting the monthly `privacy_retention` reads; WhatsApp
+  messages' personal fields 12 months; the Activity record three years.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);

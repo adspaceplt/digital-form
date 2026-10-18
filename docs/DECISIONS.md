@@ -5614,3 +5614,14 @@ pages), and the group panel no longer offers the part; it was held by no group
 or colleague live, and the migration takes it off any map that holds it. The
 old zero-argument `health_team()` stays, answering `code-needed`, so the
 connector needs no drop.
+
+### 2026-10-18 · Health data is kept for a time
+Team audit, item 12. Health check-ins, agreements, their log and talks were
+kept for ever; only an admin's Delete their data on a removal erased them.
+The user decided the periods are settings: check-ins are kept 24 months
+(`health_keep_months`), and a colleague's whole health record 6 months after
+they were removed or their access expired (`health_leaver_months`). The
+monthly `privacy_retention` job applies both; Settings, Portal: Health data
+kept edits them. A colleague merely set inactive keeps theirs, since a
+stand-down may be undone. Live, 13 colleagues, none removed, so the first run
+removes nothing.

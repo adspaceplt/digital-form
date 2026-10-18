@@ -501,7 +501,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`; its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays), Clients (Follow-up limits, Details form), My
+  (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details form), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
@@ -3810,6 +3810,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   which only the two colleagues in it read
   (`2026-10-18-health-talk-notes-stay-private.sql`). The
   answers never reach a review, the Activity record or a notification.
+- Health data is kept for a time (`2026-10-18-health-data-kept-for-a-time.sql`,
+  PDPA 2010): `privacy_retention` removes a check-in for a half month that
+  began more than `health_keep_months` (24) ago, and the check-ins,
+  agreement, log and talks of a colleague no longer active who was removed
+  or whose access expired more than `health_leaver_months` (6) ago; both
+  Business settings (Settings, Portal: Health data kept, `team.settings`;
+  6 to 120 and 1 to 60 months).
 
 ### Reports (`js/reports.js`, `js/smreport.js`, `?s=reports`)
 - Reports is its own section (`reports` View / Work / Manage), not a part of
