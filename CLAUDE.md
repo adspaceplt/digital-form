@@ -105,8 +105,14 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   function, in the order the release states, and starting or messaging a
   session and adding a repository it needs; any other write still asks.
 - It runs browser suites three at a time, the Postgres suites in their own
-  lane, then uxaudit and matrix.
-- It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
+  lane, then uxaudit and matrix side by side (each its own browser, output
+  and server).
+- The slowest suites wait for what the page shows, never for time
+  (`tests/settle.js`: `settle(p)` after an act, `ready(p)` after a load or a
+  sign-in, ten seconds at most); a fixed sleep stays only where the thing
+  measured is time itself.
+- It prints one line per suite, ending in its wall time, then the total,
+  and ends `gate: ok` or `gate: PROBLEM (n)`
   (also written to `$OUT`, default `/tmp/gate.txt`).
 - Run it as **one background command and wait for its completion notice**.
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
@@ -266,10 +272,12 @@ baseline only shrinks (`--write` refuses to add).
     and a report's steps at every width), a strip that scrolls with no faded
     edge, or a sliding surface off its chosen option, segments included
     (`strip`); every strip on its list met at 1280 and 390.
-- **matrix** takes one screen per route at 320, 375, 390, 768, 1024, 1280 and
-  1440, then 1280 and 1440 at 200% browser zoom (the viewport halved). It runs
-  uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
-  opens, the dialog is named, Escape closes, focus returns).
+- **matrix** takes one screen per route at 320, 768, 1024 and 1440, the
+  iPhone Duo's three screens under a finger, then 1280 and 1440 at 200%
+  browser zoom (the viewport halved); at 1280 and 390, where uxaudit walks,
+  only the screens uxaudit never reaches there (`OWN`). It runs uxaudit's
+  own `inPage()` and focus walk, and drives the keyboard through every
+  dialog (Enter opens, the dialog is named, Escape closes, focus returns).
 
 **A section's UI and UX audit** is the `/ux-audit <section | all | changed>`
 skill (`.claude/skills/ux-audit/SKILL.md`, the user, 2026-10-07): it reports

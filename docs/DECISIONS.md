@@ -5496,6 +5496,7 @@ Register's Issue document and Add entry take `member` as they took
   that held one placement (445 against 376). 640 is the phone line, so the
   phone's layout now starts there and the in-between layout is gone; 560
   and under, and every width over 640, measure as before.
+
 ### 2026-10-18 · The Team list reads as the Clients list; Work lists the work
 The user, on the colleague record: "the outer of the team section is
 different than the client section and still have the ..., it should be the
@@ -5511,6 +5512,33 @@ does not route Back between sections); the kinds that are not records here
 stay counted on one line. The first version counted everything and named
 nothing, which answered "how much" and never "what".
 
+- 2026-10-18 · A tally never leaves one cell alone on a desk (the iPhone
+  Duo pass, finding 3). The tally's tracks were `auto-fit` at 140px, so
+  the campaign's results (six cells) ran five across when the card was
+  792px wide (890×626) and left Cost per engagement on its own row; five
+  cells did the same between 590 and 740. While all the cells do not fit
+  one row, a cell's least width is now a third of the row (three over two,
+  three over three), worked out in CSS with the `(W - 100%) * 999` step,
+  since container queries are refused here. Every width that passed before
+  measures as before (1280, 626, 390).
+
+- 2026-10-18 · The full gate from 88.7 to 60.4 minutes (5,324s to 3,624s
+  on portal 9c45759; tests 78775e2 before, 6870828 after; the user asked
+  for a tests-only session). uxaudit and matrix now run side by side, each
+  its own browser, output and server (matrix reads a second local server
+  the gate starts and stops); the fifteen suites holding the most fixed
+  sleep wait for what the page shows (`tests/settle.js`), reaching the same
+  checks with the same outcomes; matrix leaves 1280 and 390 to uxaudit but
+  for the four screens uxaudit never reaches there, drops 375, and now runs
+  uxaudit's focus walk on every screen it measures (its head had claimed
+  focus rings it never checked); qr.js, which printed values and asserted
+  nothing, reads each code back with jsQR. Each suite's line ends in its
+  wall time. Two mistakes on the way, both caught before a merge: the first
+  side-by-side gate hung after both walks ended (a bare `wait` also waited
+  on matrix's server; it now waits on the walks' own ids), and two "before"
+  gates stopped part way left a Postgres cluster that killed sql and smsql
+  in the next run (they pass alone and in the "after" run). The iPhone Duo
+  sizes surfaced a namecard finding, logged under Logged defects.
 ### 2026-10-18 · The Supplier Service Agreement is the supplier's document
 The user handed over the team's Supplier Service Agreement (Ads Campaign
 Management) as a Word file and asked for it to be the supplier document. The
