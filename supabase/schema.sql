@@ -201,7 +201,13 @@ create table if not exists public.team_members (
   active     boolean not null default true,
   created_at timestamptz not null default now()
 );
-create unique index if not exists team_members_name_idx on public.team_members(lower(name));
+-- Taken over by team_members_name_live_idx (REMOVED COLLEAGUES FREE THEIR
+-- DETAILS); made only where that one is not, so a run again never rebuilds it.
+do $$ begin
+  if to_regclass('public.team_members_name_live_idx') is null then
+    create unique index if not exists team_members_name_idx on public.team_members(lower(name));
+  end if;
+end $$;
 
 alter table public.client_contacts enable row level security;
 alter table public.team_members enable row level security;
@@ -1437,8 +1443,12 @@ alter table public.team_members add column if not exists can_doc_void boolean no
    does — and this console already removed one permission matrix for exactly
    that reason. */
 alter table public.team_members add column if not exists access jsonb not null default '{}'::jsonb;
-create unique index if not exists team_members_email_idx
-  on public.team_members(lower(email)) where email is not null;
+do $$ begin
+  if to_regclass('public.team_members_email_live_idx') is null then
+    create unique index if not exists team_members_email_idx
+      on public.team_members(lower(email)) where email is not null;
+  end if;
+end $$;
 
 /* The cutover, and only the cutover: when this file first ran, everyone who
    could already sign in became an Account so nobody was locked out.
@@ -3692,8 +3702,12 @@ do $$ begin
       check (staff_code is null or staff_code ~ '^[A-Z0-9]{3,8}$');
   end if;
 end $$;
-create unique index if not exists team_members_staff_code_idx
-  on public.team_members (upper(staff_code)) where staff_code is not null and staff_code <> '';
+do $$ begin
+  if to_regclass('public.team_members_staff_code_live_idx') is null then
+    create unique index if not exists team_members_staff_code_idx
+      on public.team_members (upper(staff_code)) where staff_code is not null and staff_code <> '';
+  end if;
+end $$;
 
 -- 2. The kinds. One row per letter type: which family it belongs to, the
 --    segment it puts in the serial, and the words it starts with. The seed is
@@ -67573,4 +67587,46 @@ create or replace trigger team_roles_touch before update on public.team_roles
   for each row execute function public.team_roles_touch();
 
 -- END OF A STALE TEAM SAVE IS REFUSED ---------------------------------------
+select public.functions_tidy();
+
+-- ===========================================================================
+-- REMOVED COLLEAGUES FREE THEIR DETAILS — a removed colleague's name, sign-in
+-- email and Employee ID may be given to a colleague added again (2026-10-18)
+-- ===========================================================================
+-- WHY (Team audit, item 10): a removed colleague is never made active again
+-- (`team_access_guard`, `removed`), so one who returns is added again. The
+-- name, email and Employee ID indexes counted the removed row, so the new
+-- row was refused, and the page read every refusal as "That email is
+-- already on the list.".
+--
+-- WHAT IT CHANGES
+--   * Three unique indexes that leave out a removed colleague
+--     (`removed_at is null`): `team_members_name_live_idx`,
+--     `team_members_email_live_idx`, `team_members_staff_code_live_idx`.
+--     Every function that finds a colleague by email already asks an active
+--     one (`ops_me`, `allowed`, `is_team`), and an HR reference naming an
+--     Employee ID two rows hold names nobody (`hr_member_of`).
+--   * The three indexes they replace are dropped. Each `drop` is held by
+--     the connector: run the last three lines in the SQL Editor. Until then
+--     the old indexes still refuse, and nothing else changes.
+--
+-- ORDER: the pages (they name the field that clashes) and the edge
+-- functions (each asks an active colleague by email), then this file, then
+-- the three drops. Safe to run twice.
+-- Rollback: create the three old indexes again (it fails while two rows
+-- share a value), then drop these three.
+-- ===========================================================================
+
+create unique index if not exists team_members_name_live_idx
+  on public.team_members (lower(name)) where removed_at is null;
+create unique index if not exists team_members_email_live_idx
+  on public.team_members (lower(email)) where email is not null and removed_at is null;
+create unique index if not exists team_members_staff_code_live_idx
+  on public.team_members (upper(staff_code))
+  where staff_code is not null and staff_code <> '' and removed_at is null;
+
+drop index if exists public.team_members_name_idx;
+drop index if exists public.team_members_email_idx;
+drop index if exists public.team_members_staff_code_idx;
+-- END OF REMOVED COLLEAGUES FREE THEIR DETAILS ------------------------------
 select public.functions_tidy();

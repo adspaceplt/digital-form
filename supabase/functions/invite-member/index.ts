@@ -67,8 +67,11 @@ Deno.serve(async (req) => {
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
+  // A removed colleague may share the address with one added again: the
+  // active row answers (Team audit, item 10).
   const { data: caller } = await admin.from('team_members')
-    .select('id, role, is_admin, active').ilike('email', exactEmail(user.email)).maybeSingle();
+    .select('id, role, is_admin, active').ilike('email', exactEmail(user.email))
+      .order('active', { ascending: false }).limit(1).maybeSingle();
   if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
   // 3. What they want. kind "client" invites a client contact to /client/

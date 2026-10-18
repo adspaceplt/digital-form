@@ -173,8 +173,11 @@ Deno.serve(async (req) => {
     if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    // A removed colleague may share the address with one added again: the
+    // active row answers (Team audit, item 10).
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', exactEmail(user.email)).maybeSingle();
+      .select('active').ilike('email', exactEmail(user.email))
+      .order('active', { ascending: false }).limit(1).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
     const campaignId = String(body.campaignId ?? '');
