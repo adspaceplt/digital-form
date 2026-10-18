@@ -4867,3 +4867,13 @@ finding fixed at the user's word ("fix all no matter what").
   after any re-approval request. Both pages ask it once. Content Review's
   own list keeps its paged reads (`readIn`). `tests/sql.js` holds the
   rule; the stand-in answers it alike.
+
+- 2026-10-18 · Nobody scores their own department (second audit, item 9).
+  The department prize goes whole to the winning department's active
+  members, but `perf_dept_save` asked only the performance part and the
+  master code, so a Creative member holding `team.performance` could score
+  Creative 100 and win RM 600 for themselves.
+  `2026-10-18-nobody-scores-their-own-department.sql` refuses
+  `own-department` where the caller's department is the one scored; the
+  admins hold no department (live, 2026-10-18) and score both.
+  `tests/perf.js` holds it.

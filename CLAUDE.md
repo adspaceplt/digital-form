@@ -3548,7 +3548,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The department prize goes to the winning department whole (`share`,
     named "{Department} won"); its team leader decides the split, so no
     member's row carries a figure for it. Tied departments are joint winners
-    and one that does not qualify drops out.
+    and one that does not qualify drops out. Nobody scores their own department
+    (`perf_dept_save` refuses `own-department` by `team_members.department`);
+    an admin, who holds none, scores both.
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
