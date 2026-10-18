@@ -2981,7 +2981,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ops_tasks.priority_at`, stamped by trigger `ops_tasks_priority_at` on
     creation and on every change of level): Urgent 24 hours, High 48,
     Medium 72 (Business settings `priority_{urgent,high,medium}_hours`, as
-    at the day it was set; the Settings page's Priority deadlines); Normal
+    at the day it was set; the Settings page's Priority deadlines). Only
+    whoever created the task, My Work Manage or an admin changes it
+    (`ops_update_task`, `priority-not-yours`;
+    `2026-10-18-priority-set-by-whoever-set-the-task.sql`); Normal
     has none (the user, 2026-10-11: a task due the 29th raised to High on
     the 12th at 9am is owed by the 14th at 9am). Worked out on every read
     (`deadlineOf`, `ops_priority_by`), never written; the due date is never

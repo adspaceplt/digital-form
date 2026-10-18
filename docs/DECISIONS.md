@@ -5215,6 +5215,17 @@ finding fixed at the user's word ("fix all no matter what").
   task read by a colleague seeing all clients and by none whose scope
   leaves it out; the stand-in filters the same way.
 
+- 2026-10-18 · A priority is changed by whoever set the task (review item
+  11). A priority is a deadline from when it is set, and anybody at My Work
+  Work could change it, so the person it binds could restart it (Urgent,
+  High, Urgent again) or drop it to Normal. Of the two ways the review
+  offered, remembering the stamp a level held in the last 24 hours needs a
+  history of levels and leaves the drop to Normal open; limiting who
+  changes it needs one check and closes both. `ops_update_task` refuses
+  (`priority-not-yours`) unless the caller created the task, holds My Work
+  at Manage, or is an admin; the task card shows Priority as a value to
+  anyone else. `tests/ops.js` holds it; the stand-in refuses the same.
+
 - 2026-10-18 · Suppliers became a section of their own, and New supplier
   asks the Supplier ID alone. The first release placed Suppliers as a
   second tab inside Documents without asking; the user found it there
