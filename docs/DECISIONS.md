@@ -5273,3 +5273,14 @@ finding fixed at the user's word ("fix all no matter what").
   forwards with its key, so a link sent earlier the same day still opens.
   `3pform.html` still points at `/supplier`, which now reads the form's
   Link not recognised cover without a key.
+
+- 2026-10-18 · A Past client's selection link acts on nothing (second
+  audit, item 7). SELECTION LINK CLOSES made `get_campaign` answer a Past
+  client's link as an unknown key, but the functions that act through the
+  same link (`save_selection`, `confirm_selection`,
+  `confirm_selection_with`, `review_draft`) did not ask, so a saved link
+  could still save a selection, confirm it or decide on a draft, and
+  `share_link_preview('campaign')` still named the client in a chat
+  preview. Each now answers `not-found` for a Past client before the
+  passcode is asked; the preview answers nothing. `tests/confirmonce.js`
+  holds all five; the stand-in does the same.
