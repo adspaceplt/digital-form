@@ -56,7 +56,8 @@
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
     'mail-not-set-up': 'Email is not set up yet. Tell an admin.', 'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.',
-    'no-client': 'That client is no longer there or is outside your clients.'
+    'no-client': 'That client is no longer there or is outside your clients.',
+    'no-link': 'No link is open.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -246,7 +247,7 @@
     if (f && f.state === 'open') {
       var url = f.key ? linkOf(f.key) : '';
       return head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-s="fmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-s-menu="form" hidden><button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button></div></span>' : '') +
+          '<div class="kmenu" data-s-menu="form" hidden><button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="supLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
@@ -302,7 +303,7 @@
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
         (s.email ? '<button class="kmenu-item" type="button" data-s="mail"><b>Send email</b></button>' : '') +
-        '<button class="kmenu-item" type="button" data-s="add"><b>Add entry</b></button>' +
+        '<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
       (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
@@ -348,6 +349,18 @@
     on('reset', function () {
       window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The link sent before stops opening. A new link is made.', go: 'Reset link', tone: 'warn' },
         function () { link(true); });
+    });
+    /* Close link (2026-10-18): the link stops opening and no new one is
+       made; Create link makes one again. */
+    on('close', function () {
+      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent stops opening. A new link can be made later.', go: 'Close link', tone: 'warn', wait: true },
+        function () {
+          return rpc('supplier_link_close', { p_id: state.open }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return said(r);
+            load(); return '';
+          });
+        });
     });
     on('copy', function (b) { if (window.ADspaceCopy) window.ADspaceCopy.to(b, $('supLink').value); });
     on('approve', function (b) { status('active', b); });

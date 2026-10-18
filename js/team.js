@@ -2260,7 +2260,7 @@
   function paneDocs(m, host, live) {
     var R = window.ADspaceRegister;
     var work = may('register.hr', 'work') && R;
-    var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add entry</button>' +
+    var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add existing document</button>' +
       '<button class="btn btn-sm" type="button" data-r="issue">Issue document</button></span>' : '';
     host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR letters', '<div id="mrecDocs"></div>', act) + '</div></div>';
     var box = host.querySelector('#mrecDocs');
