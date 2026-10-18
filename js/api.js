@@ -85,7 +85,9 @@
     not_admin: 'Not allowed for this group.',
     not_team: 'Not a team login.',
     bad_email: 'The email is not valid.',
-    not_portal_contact: 'The deployed function predates portal access. Redeploy invite-member.'
+    not_portal_contact: 'The deployed function predates portal access. Redeploy invite-member.',
+    not_team_member: 'Only a colleague on the team list can be invited.',
+    too_many: 'Twenty invitations a day is the limit. Try again tomorrow.'
   };
   function invokeFn(name, body) {
     if (!client) return Promise.resolve({ data: {}, error: { message: 'Not configured' }, why: 'Not configured.' });
