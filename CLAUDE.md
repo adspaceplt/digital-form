@@ -2168,6 +2168,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   supplier and under Supplier Letters (`register_may('supplier', …)`
   answers the Suppliers section); a reissue keeps the supplier. No bank
   statement upload (the Jotform field was optional).
+- A supplier that is also a client is linked to it
+  (`2026-10-18-supplier-client-link.sql`, `suppliers.client_id`; the user,
+  2026-10-18: the Supplier ID and the Client ID stay apart): the record's
+  Client group, Link client or Edit (`supplier_client_set`, Suppliers Work
+  and Clients View, the client in scope; `no-client`; filed
+  `supplier.edited` from and to), the client opening its record; while none
+  is linked `supplier_get` names the clients whose BRN, digits alone, is the
+  supplier's (Same BRN; `match`, never the BRN itself) and the question
+  opens on it. The client's Details name its supplier
+  (`client_suppliers`, Suppliers View), opening it.
 - Supplier emails (`2026-10-18-supplier-emails.sql`, `supplier-mail`,
   `docs/SUPPLIER-EMAIL-SETUP.md`; the user, 2026-10-18), sent by hand
   through Resend from `ADspace <noreply-supplier@sc.adspace.me>`, replies

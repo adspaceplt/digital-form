@@ -1502,6 +1502,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .linkbtn.is-danger { color: var(--err); }
 @media (hover: hover) { .linkbtn.is-danger:hover { color: var(--err-hi); } .linkbtn.is-danger:hover::before { background: var(--err-bg); } }
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
+/* A fact's value that opens its record (a supplier's client, a client's
+   supplier): the value's own size, its words on the value column's edge. */
+dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 /* Who this device decides as, under a client page's name card, with Change
    and Forget (js/decide.js, 2026-10-08). */
 .decide-as {
