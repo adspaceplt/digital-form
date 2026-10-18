@@ -4984,3 +4984,15 @@ finding fixed at the user's word ("fix all no matter what").
   once for its values holding it, joined by chr(1), which no key holds, and
   each key is sought in that text by the same `strpos`. `tests/s3sql.js`
   answers seven asks beside the first definition and finds the same keys.
+
+- 2026-10-18 · Personal data is kept for a stated time (second audit, item
+  17; PDPA 2010 and 2012). Nothing ever left `wa_outbox` or `activity_log`.
+  The periods: a WhatsApp message's number, name, variables and link code
+  are cleared twelve months after it was queued (what was sent, when, to
+  which record and how it went stay; the WhatsApp section lists twelve
+  months alone); an Activity record row is removed after three years; the
+  nightly dump in `private/backups/db/` keeps what it held on its day until
+  an S3 lifecycle rule expires it (for example 90 days), the user's to set
+  (STANDARD.md). Performance's own trail, HR letters and documents keep
+  their own rules. `privacy_retention()` runs on the 2nd of each month.
+  `tests/sql.js` holds it.
