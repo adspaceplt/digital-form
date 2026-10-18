@@ -5033,3 +5033,15 @@ finding fixed at the user's word ("fix all no matter what").
   to run while any does), and the sheet refuses one in words. The sheet's
   message line sits at the foot of its body, below the fold on a phone, so
   the refusal brings it into view with the field keeping focus.
+
+- 2026-10-18 · A WhatsApp outage spends no try. The drain stopped at a
+  request that never left, so each wake spent one try, but `wa_done` still
+  counted it: an outage longer than three wakes (about ten minutes) failed
+  the oldest waiting message, then the next. Meta's throughput limit
+  (130429) counted a try too, though it sent nothing.
+  `2026-10-18-whatsapp-outage-spends-no-try.sql` gives a `not sent:` try
+  back (the message queued, tries less one), and `wa-send`'s drain files
+  130429 as `not sent:` and stops; only Meta's refusal of the message spends
+  a try. Giving the try back in `wa_done` was chosen over `wa_claim` not
+  counting it: the claim cannot know how the send will end. `tests/sql.js`
+  holds five outage wakes failing nothing; `tests/wafn.js` the drain.

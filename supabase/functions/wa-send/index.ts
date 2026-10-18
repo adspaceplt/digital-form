@@ -349,7 +349,8 @@ Deno.serve(async (req) => {
        stops the drain: the row goes back to the queue as its oldest, and
        claiming again at once spent its three tries in a moment, so a short
        outage failed every message waiting (2026-10-18). The next wake, five
-       minutes on, tries again. */
+       minutes on, tries again, and such a try is not counted, so an outage
+       of any length fails nothing. */
     let sent = 0, failed = 0, held = false;
     const started = Date.now();
     for (let n = 0; n < 40 && !held && Date.now() - started < DRAIN_BUDGET_MS; n++) {
@@ -358,6 +359,10 @@ Deno.serve(async (req) => {
       if (got.error || !rows.length) break;
       for (const r of rows) {
         const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[], undefined, r.button || undefined);
+        /* Meta's throughput limit (130429) sent nothing either: it is filed
+           as not sent, which wa_done neither counts as a try nor fails, and
+           the drain stops until the next wake (2026-10-18). */
+        if (!out.ok && !out.unknown && /\b130429\b/.test(out.error || '')) out.error = ('not sent: ' + out.error).slice(0, 480);
         await svc.rpc('wa_done', { p_id: r.id, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
         if (out.ok) sent++; else { failed++; console.error(out.unknown ? 'wa-send: not confirmed' : 'wa-send: refused', r.purpose, out.error); }
         if (!out.ok && /^not sent:/.test(out.error || '')) held = true;
