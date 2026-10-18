@@ -229,7 +229,6 @@ whether they are run: a portal this size cannot be checked by reading it.
 7. Version stamp: every stylesheet and script tag carries `?v=YYYYMMDD` (`20260920a`, `b`… for further pushes the same day). Bump on every push that changes CSS or JS with one `sed` over every HTML file that carries one.
 8. The deploy is confirmed from the GitHub Pages workflow run for the merge commit (`pages build and deployment`, conclusion success). `curl` to digital.adspace.me returns 403 from the sandbox and proves nothing.
 
-
 ## 4. Workflow and constraints
 
 ### Git and delivery
@@ -410,7 +409,6 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-21** — The client rail's Recent activity glyph map covers `register` (Documents) and `ops` (My Work), and its document test reads `/^document\.|^register\./` rather than `/^doc\./`, which matched no tag this portal writes. A letter issued against a client therefore drew the bare `dot` fallback in the rail, next to rows that had a real glyph. Found by reading the walk screenshot after the Activity pane was seeded with rows for the first time — the fault had been on the screen since the block shipped and no screenshot had ever contained a row to show it.
 - **2026-09-21** — `.log-avatar` (the Activity panes' actor disc) and `.bcard-face` (the board card's owner disc, with its dashed empty state) are gone, with `actorInitial()` in `js/crm.js` and `js/campaigns.js`. They were placeholders for a profile picture this portal holds none of and is not going to, so each drew the same grey circle down every row. The standing test, extended from the creators list: **a mark holds real artwork or makes rows findable by eye, and one letter in one column does neither**. `.rec-mark` (the client's `logo_url`, initials only while we wait for one) and `.mk-avatar` (that logo inside a platform's own UI) stay for the first reason; every other circle in the stylesheet was checked in the same pass and is a logo, a glyph, a control or mockup furniture. Asked for by the user on 2026-09-21.
 - **2026-09-21** — An `.iconbtn`-sized control in a rail is `--ctl-h` (38px), not `--ctl-h-sm`: the audit's control floor allows 32px for `.btn-sm`, `.input-sm` and `.select-sm` only. A 32px pen failed `target` on the first walk. It takes the rate card's negative block margin so its footprint stays the row's own line.
-
 
 - **2026-09-15** — Tokens live in `css/portal.css` `:root`: colour, `--radius`, `--head-h`, `--ctl-h`, `--ctl-h-sm`, `--state-w`, `--ctl-text`, `--field-text`, `--shadow`, `--shadow-lift`, and the motion set `--t-fast` / `--t` / `--t-slow` / `--ease` / `--ease-out`. The full table and the reasoning are in `DESIGN.md`.
 - **2026-09-15** — **Differs from §8 of this file.** The spacing scale is 4, 8, 12, 16, 24, 32 and stops there. 40, 64 and 104 are editorial rhythms for a landing page; this is a dense operations console where a 64px gap between two tables reads as a missing section. `uxaudit` fails a section whose sibling gaps differ.
@@ -720,7 +718,6 @@ The user asked for Results by objective to be filled after an import, as reach, 
 On a report in review the read-only Figures and Commentary drew every label over its value at the card's edge: the facts were not wrapped in their rows and the card had no section padding. They now use the record's facts card, one section a group, label beside value, a written point a line.
 The walk then caught the picker's edge as a card outline (it is a menu, which keeps its edge) and showed Escape closing the sheet under the picker once focus had left its field; Escape now shuts the picker first wherever focus is.
 
-
 ### 2026-10-02 · The report PDF's tables read lighter
 The user set a page of the portal's PDF beside one of their own hand-made reports and found theirs more premium. The difference was the furniture: grey header rows and label columns, bold figures, bars in the Share of spend column and a second heading over the objectives table. Tables are now white cells on a lighter hairline, heads in Slate Regular, every figure at one weight; Results by objective is one table under an italic band naming it, its share a percentage. The taller row of the hand-made report is kept for the summary tables only (`roomy`): set on every table, it pushed a platform's third top post onto a page of its own. The total row, the reading note and the image frame keep their shade, as the one emphasis on their page. A platform page whose top three posts carry no images already spilled the third post before this change; it is left as it was.
 
@@ -891,7 +888,6 @@ The user's iPhone screenshot: the date field ran across the row, its calendar gl
 ### 2026-10-04 · One way to edit a value in place
 The user: a date field should not be a box dropped into a line; Apple, Aesop and Shopify edit the value where it reads. Every `ADspaceAsk.rename` field now takes the value's own type and box height from the value and is drawn by one rule: a quiet tonal ground, no box line, no glyph, pulled back so the words keep their place; a date is a date's width and opens the system's picker under a finger. The per-screen overrides (the record head, the queue head, the Timeline) are gone. `tests/inplace.js` opens each one at a desk and on a phone and measured two real faults on the way: the task description's field ran under its tick, and Escape in the task sheet closed the sheet instead of the edit.
 
-
 ### 2026-10-04 · Safari crashed on a picked day
 The user's screen recording: turning upgrade mode back on, a day picked in the Ends calendar turned the page white and Safari reloaded it ("This web page was reloaded because a problem occurred"). The calendar's hidden field had its type cycled (to take Safari's calendar down, 2026-10-02) inside its own `change` event, which Safari fires while it is still handing the day over; the page's process crashed. The day is now read there and everything else, the type cycled included, waits a tick. Every desk date box shared the path (upgrade mode, the Timeline, Documents, My Work). `tests/picker.js` holds that the type never changes inside that event. Safari cannot run in the sandbox; the user confirms on the Mac.
 
@@ -924,7 +920,6 @@ Asked whether the first Sales view was the best summary, the honest answer was n
 
 ### 2026-10-05 · One draft a report, one figures check a version
 The user found the figures check could run twenty times a day on one report: it counted only against the colleague's day. The rule is now the report's own: one draft a report from colleagues, its revisions drafted inside that one, and one figures check a version, so each revision earns one more check. A colleague has ten AI uses a day, drafts and checks together, so five reports set up with a draft and a check each; an admin twenty, with five drafts and five checks a report a day. Every number is a setting under AI usage, as before.
-
 
 ### 2026-10-05 · Reward figures are settings; the individual prize has no minimum
 Asked where the quarter's individual and department amounts are entered, then: "please do not make the figures hard coded. what if i need changes the next quarter. do you remember agile?" Every figure the rewards use (both prizes, the department's qualifying total, flexible hours' share and month, the bonus pool and trip revenue gates, the pool's share of profit, months at B, units by grade, the commission floor) moved into `perf_settings`, each from a quarter on, seeded as the rules stood from Q3 2026. An admin changes them in Reward settings (Quarters and Bonus bars) behind the master code; a change never reaches into a confirmed quarter or half, is filed from and to, and every calculation returns the rules it used so a confirmed snapshot keeps its own. While it was being built the user set the prize rules: the individual prize (RM 400) has no minimum average, the highest eligible average takes it whole; the department prize (RM 600, variable) goes to the winning department's leader, who splits it, as already built on 2026-10-01; everything else stays. The minimum-average setting was dropped, so a quarter now reads 13 settings. The standing rule went into `CLAUDE.md`: no business figure the team may change is typed into code; the remaining fixed figures are swept and listed for the user next.
@@ -1051,7 +1046,6 @@ The fix: a view strip standing on its own row (`.actstrip`) is the column's widt
 ### 2026-10-06 · A letter's Preview is marked draft; the foot is one row; the verify address is the portal's own
 The user, on an Issue document Preview: a watermark like the report's on the preview, the footer's verify sentence on the same row as Page x of x, and every go.adspace.me/verify changed to digital.adspace.me/verify. The Preview now carries DRAFT (INTERNAL USE ONLY) over every page, the report's own wording (the user wrote "DRAFT (FOR INTERNAL USE ONLY)"; one vocabulary was kept and the choice reported), drawn by one function both PDFs now share (`ADspaceDocs.watermark`, moved out of `js/smreport.js`). The foot is one row: the reference on the left, the page count on the right, the verify line centred where it clears both, else in the room between; measured in Slate Book, the unsigned line (358pt at 7.5pt) beside the longest HR reference (74pt) and the page count does not clear both with 12pt gaps on a 487pt line, so that row alone drops to 7pt, the same on every page. The address is `ADSPACE_ORG.verifyUrl` (now digital.adspace.me/verify) in the letters and in the performance record, which had its own typed copy. Letters already issued are redrawn on download, so they take the new foot at once; copies already printed or sent still carry go.adspace.me/verify, which stays a live short link. The body's bottom limit was left where it was, so no letter's pages break differently.
 
-
 ### 2026-10-06 · Sent to the client? asked where the PDF is drawn; Select on the Reports list
 The user: Mark as sent sat inside the report's ⋯, out of sight; could a quick button follow the PDF, or one that opens WhatsApp with the PDF and a chosen group? Then: "go but no need the share button just mark as sent line". A web page cannot hand a file to a chosen WhatsApp group (WhatsApp's links carry text only, and the phone's share sheet is the person's own), so no Share button was built. Once a published report not yet marked sent has its PDF drawn (Preview PDF or Download), a line under the head asks Sent to the client?, one press marking it sent today, with Undo where it happened; the ⋯ keeps Mark as sent for any other day. The line stays through the report's own repaints until it is answered or closed, so returning to the tab after sending finds it waiting.
 The same message asked where Select is worth adding ("esp Report"). The Reports list gains Select reports in its ⋯: each row of the tab becomes its tick under a bar offering what the tab's reports can take together (Download on every tab, Mark as sent on Published, Publish to client on Confirmed), each through the function one report uses, so every check a report has still applies and a refusal is named against its report. Mark as sent asks one day for all, and Undo puts back each report's own day. The user also confirmed the draft mark's wording, DRAFT (INTERNAL USE ONLY). Content Review sets and Clients follow in their own batch.
@@ -1070,7 +1064,6 @@ A content set's posts sit beside their rail, about 550px wide at a desk, and the
 
 ### 2026-10-07 · Document types, each asking for the fields its wording names
 The user approved the Document types page with fields per type ("go on the Document types page with fields per type"), to add their next letters (Engagement Cover Letter, Client Profile Cover, Internship Completion Letter) themselves rather than through a change to the code. A type is edited in a sheet from the Documents bar, as My Work's templates are; it is a granted part (`register.types`), an admin's by itself, because a type's wording goes out on every letter of that kind. The fields are not listed separately: they are the words the wording holds in braces, the convention the user was already asked to mark in their files ({intern name}, {from}, {to}), so writing the letter is declaring its fields and the two cannot drift. Each field is asked as text, a date or a paragraph (a name holding "date" starts as a date), and is written into the letter as it is typed, a date in the agreement's own form (16 September 2026). Issue refuses a field still in braces; Preview draws what stands, so a half-filled draft can still be read. A type is never removed, only no longer offered, because every issued document names its type; the Activity record files each change under Document types, as settings are filed. The checklists the user will send are forms, not letters, and are left for their own design.
-
 
 ### 2026-10-07 · Every screen's words brought to the current vocabulary
 The user asked that every old term, word and tone be brought to the latest specs ("Remember to also change / update all old terms vocabs tone used to the latest specs given"). A sweep read every string a page shows (each script's string literals, every page's text and labelled attributes) against the vocabulary and the rules, and changed only words, never a stored key. My Work said publish where the vocabulary has said Post date since the three dates a post: the calendar's key now reads Due / Post, and the step, the facts, the history and every refusal say post. The service line sheet still offered Quoted, though the state has read To quote everywhere else. Lines that ended in "yet" lost the word (Not issued, Not connected, No file, No reviews.), as an empty list has never said it. A filter's option for all reads All months and All tasks, and the Months view's finished work reads Completed, as My Work's Show does. The overdue report heads its column Assigned to, never Owner or Task owner. The month sheet asks for Posts planned and a task links to its month as View month, the word engagement staying a key. A missing function reads This needs a database update, as every other one does. Three lines that spoke as "we" read neutrally, and a reopened selection counts the creators still to choose, never the slots. The rules that named the old words (the calendar's key, Dispute until, Draft with AI?, Task / Content deliverable) were replaced with what the screens say.
@@ -1137,7 +1130,6 @@ The gate on the named-address change caught that Chrome sends an `<a download>` 
 
 ### 2026-10-07 · Drafts name the client by its brand, never 贵公司 or "your company"
 The user: "for chinese version needs to avoid using 贵公司 / 貴司 all these very strong chinese wordings. use brand name to mention our client straight. also applies into english." The prompts had told the model the client is 贵品牌 or 您 (and "your" or the brand in English), because the client's name is masked before anything reaches Anthropic. The mask now reads `{brand}` rather than "the brand", the prompts tell the model to name the client by `{brand}` and never by a Chinese honorific or "your company", and the function fills `{brand}` with the name the report is for (a white-label report's brand, else the client) once the answer is back, so the name still never leaves. As a net, `brandIn` also turns 贵公司, 贵司, 贵品牌, 贵方, 贵企业 and 您公司 into the name. The check's quotes and fixes are filled the same way, so a quote still matches the text on the page.
-
 
 ### 2026-10-07 · Drafts never blame our own work, in words a partner would use
 The user: "how would you make the creative agency for marketing and advertising reports analysis and evaluation claude drafting instructions? (cannot say things like Creative is bad, since we're the one providing creatives etc.)", then "go ahead". The rule already stood in one line (never call our work weak; read a shortfall as an audience finding); it now reads as a partner's report: a win credits the choice behind it (the offer, the hook, the format, the audience), a shortfall is written in three steps (the figure, what it shows about the audience or platform, what we will test), nobody is blamed (the client's product, price or reply time, the platform, the season) unless the team's notes give the reason, a fall is stated with its number and never dressed as a rise, and no result is promised. One list (`AVOID` in `report-draft`), in English and Chinese, names the words never used (weak, underperformed, failed, wasted, unfortunately, "only 3 leads"; 失败, 表现差, 不理想, 浪费, 遗憾…) with what to say instead (room to grow, a clear signal for the next test, 仍有提升空间, 有待优化…); the draft keeps to it and the figures check finds it, even in commentary typed by hand, giving the replacement as its fix, and flags a result blamed on the client's own business. Not replaced after the answer (as `brandIn` does for 贵公司): swapping a word without its sentence can change the meaning, so the colleague reads the check's finding and uses its fix.
@@ -1221,7 +1213,6 @@ The user sent a phone screenshot of a food-ordering app's bottom bar: "Do you th
 
 ### 2026-10-09 · A button's glyph takes the button's ink
 "My blue button with plus icon is still blue background and grey plus icon", then a screenshot of Issue letter and "most of the blue buttons are like this in light mode". The record heads' rule for their own mark (`.viewhead svg`, mute ink at 18px, and `.panelhead svg`) reached every button placed in the head, so on a client's record Add contact, Add service, Issue letter, Issue document, New campaign and Open Content Review drew a grey glyph on blue, and Billing's and Brand's Edit a faded one. No head draws a mark of its own any more, so the rules now name only a head's own mark (`.viewhead .headmark > svg`, `.panelhead > svg`) and a button keeps `.btn svg`. The colour audit of 2026-10-07 measured contrast on words, never on a glyph, which is why it passed; `uxaudit` now fails a button whose glyph is drawn in another ink than its words (`glyphink`), on every page, in both themes and at both widths.
-
 
 ### 2026-10-09 · A list reads its rows in one request
 Supabase's usage page showed log ingestion at 0.73 GB of the 1 GB included ("why is it using so much"). Read live over a day: about 41 MB, two thirds of it API requests (every request is a logged line of about 2.8 KB), a quarter Supabase's own connection checks. The largest single source was the Content Review list: it read each client's sets with a request of its own, and painted again on every key typed in its search, 1,497 requests a day, a sixth of the API's. It now reads every listed client's sets in one request (`.in()`, paged by the thousand) once a visit, and a repaint reads nothing. The once-a-minute checks (the bell, upgrade mode, announcements: 2,063 requests a day) were put to the user as merging them into one request, or one every two minutes.
@@ -1441,7 +1432,6 @@ them. Tasks made before keep their dates as they are. Add task (an everyday
 task), templates, copies, repeats and a month's report tasks are untouched:
 a report task has one date by the user's choice of 2026-10-05, and a repeat
 counts from its first piece, which now always has a post date.
-
 
 ### 2026-10-10 · Words written by AI are declared read before they are saved
 The user, 2026-10-09: "Write caption, Write draft is not clear that this is
@@ -1691,7 +1681,6 @@ one reaches Write with AI, in compact form. Web searches cost US$10 a
 thousand, kept per press and priced as a Business setting beside the token
 prices. Defaults: 3 analyses a colleague a day, 10 an admin.
 
-
 ### 2026-10-10 · Creator Campaigns by stage tab, and stage days by the calendar
 
 The user asked the Work sections to read alike. Creator Campaigns now opens
@@ -1708,7 +1697,6 @@ Days now count Malaysian calendar days (`myDay`, `daysBetween` in
 `js/crm.js`), so a stage begun late yesterday reads 1 day at any hour, and a
 stage left the day it began is filed "after the same day" rather than
 "after Today". Entries filed before keep their words.
-
 
 ### 2026-10-10 · One order for the rail and the tab bar; WhatsApp last in Work
 
@@ -1815,7 +1803,6 @@ section or part at Work and the client scope. A report's PDF is always
 private and a logo never. P2 in the same release: an email is matched as
 itself in every edge function, so an address holding `_` or `%` never stands
 for another's (`portal-login` had made logins on such a match).
-
 
 ### 2026-10-10 · The account menu holds the workspace and the theme
 
@@ -2650,7 +2637,6 @@ on a phone its date and time ("Sun 4 Oct 2026, 10:30pm – 11:15pm") was cut:
 the row now ends the agenda's line with the state and the ⋯, and the date
 and time take the second line whole.
 
-
 ### 2026-10-12 · The Report audit counts nothing while the period runs
 The user showed an audit of 101 differences on an Advertising Report whose
 period (16 Sep to 12 Oct) ended that day. Read from the live database: the
@@ -2808,7 +2794,6 @@ never show a half-edited price; the card's own words are blocks seeded
 from that PDF; each line says what a quote reads of it (`services.spec`);
 a client's new line takes the live version's price.
 
-
 ### 2026-10-13 · Client-facing words, extra content and languages
 Reviewing the quotation mockups, the user found the words "broken and not
 fit in our Malaysia culture" ("a month", "billed apart", "See my price") and
@@ -2843,7 +2828,6 @@ tells the team it is ready for a Letter of Offer.
 - Line names print as the price list holds them (Static graphic, Minor
   revision); the team renames a line in Services and publishes to change the
   card.
-
 
 ### 2026-10-13 · The quotation website, as approved in the mockups (not built yet)
 - Approved by the user on the canvas: a quotation is Pending approval until
@@ -2888,7 +2872,6 @@ tells the team it is ready for a Letter of Offer.
   ugly and untidy unstructured". A block now opens as the card prints it:
   numbered points, a table's rows under its columns, or one sentence. The
   stored value is unchanged (one point a line, `|` between columns).
-
 
 ### 2026-10-13 · A wrapped segment is separate pills
 - Reported with a photograph of Apple's in-store pricing choices: "your
@@ -3301,7 +3284,6 @@ joined AI usage in the AI group, and the details form's days left Tax and
 terms for their own row, Details form, in the Clients group (Tax and terms
 is eight figures).
 
-
 ### 2026-10-15 · The calendar's post date is pastel blue
 The user, with the dark calendar: "can the purple be replaced to blue
 instead, pantone pastel would look good?". `--pub` / `--pub-bg` are a pastel
@@ -3685,7 +3667,6 @@ finding fixed at the user's word ("fix all no matter what").
 - Template editing in Settings is deferred; the template lives in the
   migration (`checklist_template`) and a row keeps the copy it began with.
 
-
 ### 2026-10-15 — Brand analysis follows the team's client analysis playbook
 - The user shared the playbook from their own analysis sessions and asked
   for its thinking in the Brand analysis, adapted to the portal ("1 yes").
@@ -3909,7 +3890,6 @@ finding fixed at the user's word ("fix all no matter what").
   a desk because the Download track was `auto` (now fixed at 112px).
 - I13 (the stand-in answering a quotation key before client scope, and
   asking billing at Work) had already shipped with the quotation guards.
-
 
 ### 2026-10-15 — No Meta Advertising Proposal PDF
 - A client-facing PDF of the Meta plan (objective, ad sets, budget, lead
@@ -5478,7 +5458,6 @@ opens the reviews filtered for the colleague rather than reading them.
 Register's Issue document and Add entry take `member` as they took
 `supplier`.
 
-
 - 2026-10-18 · The namecard's Save contact under a finger (the iPhone Duo
   pass, finding 1). The landscape card (`is-land`, a window at 760 and
   over) set its pair to 40px for a desk, and a foldable opened like a book
@@ -5677,3 +5656,5 @@ removes nothing.
 - 2026-10-18 — A client's device follows only a link that opens (audit 2026-10-18, item 5). `push_target`'s client branch matched the campaign's key alone, so anyone holding the key could have a device told of a campaign's drafts and posts without the passcode `get_campaign` asks for, and after its client went Past. It now finds the campaign only where it has no passcode and its client is not Past; `push_subscribe` answers `not-found` otherwise. Checking the passcode instead was not done: `push_subscribe` takes no passcode and the page that would send it (`js/creators.js`) is another session's file, and no campaign held a passcode on the day. A device that followed a campaign before it took a passcode stays until it is turned off in the browser or the push service lets it go. `tests/sql.js` holds both refusals.
 
 - 2026-10-18 — An invoice is signed only under its campaign's own client (audit 2026-10-18, item 3). `sign-download` signed any stored `private/{uuid}/{uuid}.pdf` a campaign's `invoice_url` named, so a key written under another client's folder (a report's kept PDF, say) would have been handed to that campaign's console reader and its selection page. Both paths now read the campaign's `client_id` (the console as the colleague, the selection page with the service role by its key, after `get_campaign` has proved the link) and refuse `bad_key` unless the key begins `private/{that client id}/`. Live on the day: both private invoices sat under their own client's folder. `tests/signdownloadfn.js` runs the function as deployed and failed on the old code.
+
+- 2026-10-18 — Bukku, phase 1: contacts (the user: "build API that push the client or supplier details over to Bukku"; approved with the rule that a company's name is in capitals and a person's each word capitalised). The portal never makes a quotation or an invoice in Bukku yet; it sends the contact by hand, so the team's Bukku keeps one contact a company. Many clients already stand in Bukku under codes the team made, so a send first offers the contacts with the same registration number, then the same or a similar name, and links one rather than making a second; a new contact takes Bukku's own next code for the name's first letter (C-L0012), as the team's codes run. The Client ID and Supplier ID ride in custom fields the team made in Bukku, chosen once on the Settings page, never typed. An update reads the contact first and sends back what Bukku holds (code, terms, accounts, groups, other people and addresses) with the portal's fields set over it, so a send never undoes what accounts set in Bukku; the types only gain. A supplier that is also a client is the same contact. The NRIC and bank details stay in the portal (the NRIC goes as the registration number of an individual only to a colleague holding Supplier bank details). Sending is by hand because a send changes another system's records; nothing is sent on a save. The token and subdomain are Supabase secrets alone. The live Bukku was never written to while it was built: `bukkufn` runs the function's own code against a stand-in.

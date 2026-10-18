@@ -322,6 +322,7 @@
         (formBlock() ? '<section class="readgroup sup-form">' + formBlock() + '</section>' : '') +
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
+        (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
@@ -329,6 +330,10 @@
           '<div id="supEmailList"><p class="muted">Loading.</p></div></section>' +
       '</div></div>';
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
+    /* Bukku (2026-10-18): an approved supplier sent as a Bukku contact; one
+       linked to a client is that client's contact, typed Supplier too. */
+    if (window.ADspaceBukku && $('supBukku')) window.ADspaceBukku.group($('supBukku'), 'supplier', s.id,
+      { note: s.client_id ? 'Sent as the linked client\'s contact in Bukku.' : '' });
     wireRec();
   }
   function wireRec() {

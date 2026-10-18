@@ -231,6 +231,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
+| `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -504,7 +505,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details form), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
-  Money (Tax and terms), AI (AI usage and limits, AI prices), WhatsApp
+  Money (Tax and terms, Bukku), AI (AI usage and limits, AI prices), WhatsApp
   (Templates, Sent again), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
   no row drawn is left out. One page at every width, each group a card under
@@ -2265,6 +2266,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   Access). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
+
+### Bukku (`js/bukku.js`, `bukku-sync`, `2026-10-18-bukku-contacts.sql`, `docs/BUKKU-SETUP.md`)
+- Phase 1 (the user, 2026-10-18: quotations, invoices and purchase orders
+  are made in Bukku): a client's billing and an approved supplier's details
+  are sent by hand as one Bukku contact. Billing's Bukku group and the
+  supplier record's (`ADspaceBukku.group`: Contact, Last sent, Since then;
+  Send to Bukku at Clients: Billing Work, Suppliers Work) open `#bkSheet`:
+  the linked contact, else the contacts with the same registration number,
+  then the same or a similar name (`find`, every page read), and New
+  contact under Bukku's own next code (`C-{first letter}{nnnn}`); what
+  changes field by field (`preview`); Send, Link and send where it links.
+  What goes is `bukku_prepare`'s answer as the colleague (a company's name in
+  capitals, a person's each word capitalised, `bukku_name_case`; the NRIC
+  at `suppliers.pay` alone, the bank details never), the Client ID or
+  Supplier ID in the Bukku custom field chosen on Settings, Money, Bukku
+  (`bukku_config_set`, `team.settings`; `no-field` until chosen). An update
+  reads the contact first and keeps Bukku's code, terms, accounts, groups,
+  other people and addresses; its types gain Customer or Supplier and never
+  lose one; nothing is deleted or archived in Bukku (`tests/bukkufn.js`).
+  The link is filed by `bukku_linked` (`bukku_links`, `bukku_settings`: RLS
+  on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
+  to Bukku · code); a supplier linked to a client is that client's contact.
+  Since then reads Details changed once a sent field moves (`bukku_print`).
+  Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
@@ -5738,7 +5763,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
