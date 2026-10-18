@@ -5225,3 +5225,11 @@ finding fixed at the user's word ("fix all no matter what").
   (`priority-not-yours`) unless the caller created the task, holds My Work
   at Manage, or is an admin; the task card shows Priority as a value to
   anyone else. `tests/ops.js` holds it; the stand-in refuses the same.
+
+- 2026-10-18 · Tasks go only to a colleague at My Work Work or above
+  (review item 12). `ops_takes_tasks` and the page's `takesTasks` let in any
+  level above No Access, and the page offered a colleague whose row held no
+  access map at all; a colleague at View could be handed a task they could
+  not move, take or pass on. Both now ask Work or above (an admin always);
+  the triggers and the noon reminder follow, and the stand-in holds the
+  same. Nobody at View held a live task when it shipped.

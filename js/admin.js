@@ -687,15 +687,16 @@
     return Boolean(m.system || SYSTEM.ids[m.id || m.team_member_id] || (m.name && SYSTEM.names[m.name] && !m.id));
   }
   /* Who is offered for My Work (2026-10-15, the user: contract staff on
-     sales take no tasks). A colleague whose group holds My Work at No
-     Access is never offered for a task, a month, a meeting or a hand-off of
-     work; an admin always is. The database holds the same rule
-     (`ops_takes_tasks`). A row read without its access map is offered. */
+     sales take no tasks; 2026-10-18: a colleague at View can do nothing
+     with a task). Only a colleague whose group holds My Work at Work or
+     above is offered for a task, a month, a meeting or a hand-off of work;
+     an admin always is. The database holds the same rule
+     (`ops_takes_tasks`). A colleague with no access map holds no access. */
   function takesTasks(m) {
     if (!m || isSystem(m)) return false;
-    if (m.is_admin || m.role === 'admin' || !m.access) return true;
-    var lv = m.access.ops;
-    return Boolean(lv) && lv !== 'none';
+    if (m.is_admin || m.role === 'admin') return true;
+    var lv = (m.access || {}).ops;
+    return lv === 'work' || lv === 'manage';
   }
   /* VERY IMPORTANT CLIENTS (2026-10-15, the user). Which clients are VIC is
      read once beside me() (`vic_clients()`: the client, since when, who set

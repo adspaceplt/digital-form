@@ -3064,9 +3064,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   the new row says Added. (`state.rowSaid`).
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
-- A colleague whose group holds My Work at No Access takes no tasks (the
-  user, 2026-10-15, option A: contract staff on sales; no setting of its
-  own): every My Work picker leaves them out (`ADspaceAdmin.takesTasks`,
+- A colleague whose group holds My Work below Work (No Access or View)
+  takes no tasks (the user, 2026-10-15, option A: contract staff on sales;
+  no setting of its own; View since 2026-10-18,
+  `2026-10-18-tasks-need-my-work-at-work.sql`: a task asks Work to move):
+  every My Work picker leaves them out (`ADspaceAdmin.takesTasks`,
   an admin always offered), Team's hand-over offers them for clients,
   campaigns and reviews alone (`TASK_KINDS`), the noon reminder skips them,
   and the database refuses them a live assignment or a month to manage

@@ -690,7 +690,7 @@
   var HAND_KEEP = '__keep';
   function handKinds() { return ['clients', 'campaigns'].concat(HELD_KINDS.map(function (k) { return k[0]; })); }
   /* The kinds that are My Work's go only to a colleague who takes tasks
-     (`ADspaceAdmin.takesTasks`): a group at My Work No Access is offered for
+     (`ADspaceAdmin.takesTasks`): a group below My Work Work is offered for
      clients, campaigns and reviews alone (2026-10-15). */
   var TASK_KINDS = ['tasks', 'months', 'meetings', 'repeats', 'extensions', 'templates'];
   function handFields(m, own, held) {
