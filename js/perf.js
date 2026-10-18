@@ -2060,7 +2060,6 @@
     'bad-department': 'Pick a department.',
     'figures-needed': 'Enter the company figures first.'
   };
-  function monthsWord(n) { return n + (n === 1 ? ' month' : ' months'); }
   /* The quarter waits on reviews, one a person a month (6 people over July
      to September are 18): never "months", which read as calendar months. */
   function reviewsWord(n) { return n + (n === 1 ? ' review' : ' reviews'); }

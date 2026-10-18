@@ -2763,8 +2763,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     has got to is Group by's question (stage, status), never a Show option.
   - The period select (`#workPeriod`): This week, This month, Last month,
     Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
-    now but Last month, which ends where this month begins (`periodEnd()`,
-    and the report states its last day).
+    now but Last month, which ends where this month begins.
   - Group by day / stage / status / assignee / client / month; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).

@@ -46,7 +46,6 @@
      device's clock. */
   var CK = window.ADspaceClock;
   function pad2(n) { return String(n).padStart(2, '0'); }
-  function dayStart(d) { return CK.start(CK.day(d)); }
   function today() { return CK.start(CK.today()); }
   // Whole days from a date to today; a future date is 0.
   function daysSince(v) {

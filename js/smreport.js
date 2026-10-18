@@ -336,12 +336,6 @@
     return da.getDate() + ' ' + MONTHS[da.getMonth()] + (da.getFullYear() !== db.getFullYear() ? ' ' + da.getFullYear() : '') +
       ' to ' + db.getDate() + ' ' + MONTHS[db.getMonth()] + ' ' + db.getFullYear();
   }
-  function hexRgb(PDF, hex, fallback) {
-    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
-    if (!m) return fallback;
-    var v = parseInt(m[1], 16);
-    return PDF.rgb(((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255);
-  }
   function mix(PDF, c, white) {
     return PDF.rgb(c.red + (1 - c.red) * white, c.green + (1 - c.green) * white, c.blue + (1 - c.blue) * white);
   }

@@ -18,7 +18,6 @@
      invitation is an admin's alone (`invite-member`). A control the database
      would refuse is not drawn (audit, 2026-10-03). */
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
-  function amAdmin() { var m = bridge.me && bridge.me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
   /* Department and role standard are said once, in js/words.js; the sheet's
