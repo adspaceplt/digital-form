@@ -1056,7 +1056,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A stored address drawn as a link is held to the web twice: a check on its
   column (`^https?://`, an invoice `https://` or `private/`) and the page
   drawing it only on http or https (`absUrl` answers nothing for another
-  scheme; 2026-10-17: `javascript://` passed the scheme test). A link typed
+  scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
+  column's check refuses; 2026-10-17: `javascript://` passed the scheme test). A link typed
   that `absUrl` answers nothing for is refused where it was typed (Enter a
   web address.), never saved as none. A value
   drawn as HTML is escaped where it is put in, never where it is joined.
