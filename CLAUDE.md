@@ -5314,6 +5314,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   `get_campaign` answers `not-found` once the client is Past (2026-10-18),
   so `sign-download` and `media-pass` close with it; a completed campaign
   of a current client stays readable for its results.
+  A link's passcode is asked through `link_passcode(kind, token, stored,
+  given)` (`2026-10-18-passcode-attempts.sql`; `link_attempts`, RLS on, no
+  policy, no grant) by `get_review_feed`, `get_campaign`, `save_selection`,
+  `confirm_selection`, `confirm_selection_with` and `review_draft`: asked
+  without one is never counted; five wrong within 15 minutes lock the link
+  for 15 minutes, the right one included, answered as an unknown key
+  (`not_found` / `not-found`); a passcode asked for names nobody.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token, the Meta system user's
