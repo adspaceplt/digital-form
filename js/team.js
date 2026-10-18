@@ -304,7 +304,6 @@
       '<div class="kmenu" data-menu hidden>' + items + '</div></span>';
   }
   /* A row whose ⋯ would hold nothing keeps its cell and draws no ⋯. */
-  function rowMenu(items) { return items ? menuBtn(items) : '<span class="team-act"></span>'; }
   function shutMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -515,46 +514,39 @@
   }
   function memberRow(m) {
     var self = me() && me().id === m.id;
-    /* A system account (2026-10-08) is IT's: shown with its tag, and only the
-       account itself may change it (the database refuses anyone else), so
-       nobody else is offered a control that would be refused. */
-    var sysRow = Boolean(m.system) && !self;
-    var manage = may('team', 'manage') && !sysRow;
-    var el = document.createElement('div');
-    el.className = 'team-row' + (m.active ? '' : ' is-off');
+    /* The row is the colleague, as a client's row is the client (the user,
+       2026-10-18: "it should be the same as client"): one button opening
+       their record, the initials before the name and the chevron last. What
+       is done to a colleague (Edit, Set inactive, Delete) is in the record's
+       own ⋯, never on the list. */
+    var el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'crm-row team-row' + (m.active ? '' : ' is-off');
     el.innerHTML =
-      /* Everyone on this list is active, so a green Active on every row spends
-         the one accent on the ordinary case and leaves the exception looking
-         like everything else. The row says nothing when a person is working
-         and names it when they are not. */
-      /* You is a designation, not a live state, so it is the neutral chip the
-         rate card gives Inactive and not a word in the accent green. */
-      /* The name with its Employee ID beside it (the user, 2026-10-03), then
-         where they sit: "Creative, Production Executive". The HR serial and
-         the signature on a letter are built from these, and the department
-         is chosen from a list, so the line reads the same on every row
-         whoever typed it. */
-      '<button class="team-who team-open" type="button" data-a="open"><b>' + esc(m.name) +
-        (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
-        (self ? ' <span class="tone">You</span>' : '') +
-        (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
-        /* A line of parts wraps between its parts, never inside one, so Until
-           and its time are read whole (the user, 2026-10-15). */
-        (whoLine(m) ? '<small>' + whoLine(m).split(' · ').map(function (x) { return /^Until /.test(x) ? '<span class="team-part">' + esc(x) + '</span>' : esc(x); }).join(' · ') + '</small>' : '') +
-      '</button>' +
+      /* Everyone on this list is active, so the row says nothing when a
+         person is working and names it when they are not. You is a
+         designation, the neutral chip. The name with its Employee ID beside
+         it (the user, 2026-10-03), then where they sit. */
+      '<span class="team-who">' +
+        '<span class="cl-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(m.name || '')) + '</span>' +
+        '<span class="cl-who"><b>' + esc(m.name) +
+          (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
+          (self ? ' <span class="tone">You</span>' : '') +
+          (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
+          /* A line of parts wraps between its parts, never inside one, so
+             Until and its time are read whole (the user, 2026-10-15). */
+          (whoLine(m) ? '<small>' + whoLine(m).split(' · ').map(function (x) { return /^Until /.test(x) ? '<span class="team-part">' + esc(x) + '</span>' : esc(x); }).join(' · ') + '</small>' : '') +
+        '</span>' +
+      '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       /* The exception only: Inactive, Access expired, or a card turned off
-         for somebody still working; an ordinary row says nothing. */
+         for somebody still working. */
       '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.removed_at ? 'Removed' : m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
         : m.card_on === false ? '<span class="tone is-off">Card off</span>' : '') + '</span>' +
-      /* Mail leaves the building and cannot be recalled, so Send invitation
-         sits one place from Edit and asks first, as it does on a contact.
-         Standing somebody down happens once in a job, so it is here rather
-         than a select on every row. A person cannot switch themselves off. */
-      rowMenu(memberMenu(m));
-    wireActs(el, m);
-    var op = el.querySelector('[data-a="open"]');
-    if (op) op.addEventListener('click', function () { openRec(m.id); });
+      '<svg class="crm-c-go team-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M9 18l6-6-6-6"/></svg>';
+    el.addEventListener('click', function () { openRec(m.id); });
     return el;
   }
 
@@ -862,7 +854,7 @@
       });
     }
     Promise.all([
-      db.from('clients').select('id, name, owner'),
+      db.from('clients').select('id, name, owner, slug, client_code, stage'),
       db.from('campaigns').select('id, title, owner, state')
     ]).then(function (res) {
       then({
@@ -1957,32 +1949,111 @@
   }
   /* What the colleague holds now, kind by kind, with Hand over (Team Full
      Access): the same reads and the same sheet Set inactive and Delete use. */
+  /* Their work as the work itself (the user, 2026-10-18: "the tasks just
+     shown its total number"): each open task they own, each client they are
+     person in charge of and each open campaign they run, a row a record
+     opening it, the latest due first and an overdue one in red. What is not
+     a record of its own here (months, meetings, repeats, reviews, extension
+     requests, templates) is counted in one line under them. Hand over sits
+     at the head. */
+  function openTasksOf(m, then) {
+    if (!may('ops', 'view')) { then(null); return; }
+    db.from('ops_task_assignees').select('task_id').eq('team_member_id', m.id).eq('responsibility', 'owner').is('ended_at', null)
+      .then(function (r) {
+        if (r.error) { then(null, r.error); return; }
+        var ids = (r.data || []).map(function (x) { return x.task_id; });
+        if (!ids.length) { then([]); return; }
+        return db.from('ops_tasks').select('id, task_no, code, title, content_desc, current_final_due_at, client_id, clients(name)')
+          .in('id', ids).is('completed_at', null).is('cancelled_at', null).is('archived_at', null)
+          .then(function (t) { if (t.error) then(null, t.error); else then(t.data || []); });
+      }).catch(function (e) { then(null, e); });
+  }
+  var STAGE_WORD = window.ADspaceWords.en.stage, CAMP_WORD = window.ADspaceWords.en.campState;
+  var CHEV = '<svg class="crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  function workRow(i, name, meta, end, late) {
+    return '<button class="mrec-row" type="button" data-w="' + i + '"><span class="mrec-row-who"><b>' + esc(name) + '</b>' +
+      (meta ? '<small>' + esc(meta) + '</small>' : '') + '</span>' +
+      '<span class="mrec-row-end' + (late ? ' is-late' : '') + '">' + esc(end || '') + '</span>' + CHEV + '</button>';
+  }
+  /* As search opens a record: the address written first, then the section. */
+  function goTo(url, section) {
+    history.replaceState(null, '', url);
+    if (bridge.show) bridge.show(section);
+  }
   function paneWork(m, host, live) {
-    UI().skeleton(host, 2);
+    UI().skeleton(host, 3);
     heldBy(m, function (own, held) {
       if (!live()) return;
-      var rows = [];
-      if (own.clients.length) rows.push(['Clients they are person in charge of', own.clients.length, own.clients.map(function (c) { return c.name; })]);
-      if (own.campaigns.length) rows.push(['Open campaigns they run', own.campaigns.length, own.campaigns.map(function (c) { return c.title; })]);
-      HELD_KINDS.forEach(function (k) { var n = Number(held[k[0]] || 0); if (n) rows.push([k[1], n, null]); });
-      var self = me() && me().id === m.id;
-      var act = rows.length && !self && !m.system ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over</button>' : '';
-      host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('Their work',
-        rows.length ? '<dl class="ovfacts mrec-work">' + rows.map(function (r) {
-          return '<div><dt>' + esc(r[0]) + '</dt><dd><b>' + esc(String(r[1])) + '</b>' +
-            (r[2] ? '<small>' + esc(r[2].slice(0, 5).join(', ') + (r[2].length > 5 ? ' and ' + (r[2].length - 5) + ' more' : '')) + '</small>' : '') + '</dd></div>';
-        }).join('') + '</dl>' : '<p class="muted">Nothing is assigned to ' + esc(m.name) + '.</p>', act) + '</div></div>';
-      var h = host.querySelector('[data-r="hand"]');
-      if (h) h.addEventListener('click', function () {
-        var fields = handFields(m, own, held);
-        window.ADspaceConfirm.ask({
-          title: 'Hand over work', go: 'Hand over',
-          body: 'Choose who takes each kind of ' + m.name + '\'s work.',
-          fields: fields
-        }, function (v) {
-          v = v && typeof v === 'object' ? v : {};
-          msg('teamMsg', '');
-          Promise.resolve(handTo(m, own, v)).then(function () { if (rec.id === m.id && rec.pane === 'work') paintPane(m); });
+      openTasksOf(m, function (tasks, err) {
+        if (!live()) return;
+        var today = window.ADspaceClock.today();
+        var opens = [], html = '';
+        var self = me() && me().id === m.id;
+        var anyHeld = own.clients.length || own.campaigns.length || HELD_KINDS.some(function (k) { return Number(held[k[0]] || 0) > 0; });
+        var act = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over</button>' : '';
+        var section = function (title, rows, act2) {
+          return group(title, '<div class="mrec-rows">' + rows.join('') + '</div>', act2);
+        };
+        if (tasks === null && err) {
+          html += group('Open tasks', '<p class="msg err">Could not load their tasks.</p>', act); act = '';
+        } else if (tasks && tasks.length) {
+          var day = function (t) { return t.current_final_due_at ? window.ADspaceClock.day(t.current_final_due_at) : ''; };
+          tasks.sort(function (x, y) {
+            var a = day(x) || '9999', b2 = day(y) || '9999';
+            return a < b2 ? -1 : a > b2 ? 1 : (x.task_no || 0) - (y.task_no || 0);
+          });
+          html += section('Open tasks · ' + tasks.length, tasks.map(function (t) {
+            opens.push(function () { goTo('/admin/?s=work&open=' + encodeURIComponent(t.id), 'work'); });
+            var d = day(t), late = d && d < today;
+            var meta = [(t.clients && t.clients.name) || (t.client_id ? '' : 'Internal'), t.code || '', t.task_no ? '#WT' + String(t.task_no).padStart(5, '0') : '']
+              .filter(Boolean).join(' · ');
+            return workRow(opens.length - 1, t.content_desc || t.title || 'Untitled task', meta,
+              d ? (late ? 'Overdue · ' : '') + window.ADspaceClock.date(d) : 'No due date', late);
+          }), act);
+          act = '';
+        }
+        if (own.clients.length) {
+          html += section('Clients they are person in charge of · ' + own.clients.length, own.clients.slice().sort(function (x, y) {
+            return String(x.name || '').localeCompare(String(y.name || ''));
+          }).map(function (c) {
+            opens.push(function () { goTo('/admin/?client=' + encodeURIComponent(c.slug || c.id), 'clients'); });
+            return workRow(opens.length - 1, c.name || '', c.client_code || '', STAGE_WORD[c.stage] || '', false);
+          }), act);
+          act = '';
+        }
+        if (own.campaigns.length) {
+          html += section('Open campaigns they run · ' + own.campaigns.length, own.campaigns.map(function (c) {
+            opens.push(function () { goTo('/admin/?s=campaigns&campaign=' + encodeURIComponent(c.id), 'campaigns'); });
+            return workRow(opens.length - 1, c.title || 'Untitled campaign', '', CAMP_WORD[c.state] || '', false);
+          }), act);
+          act = '';
+        }
+        /* Tasks are listed above once they could be read; else counted here. */
+        var rest = HELD_KINDS.filter(function (k) { return k[0] !== 'tasks' || tasks === null; })
+          .map(function (k) { return [k[1], Number(held[k[0]] || 0)]; }).filter(function (x) { return x[1] > 0; });
+        if (rest.length) {
+          html += group('Also held', '<dl class="ovfacts">' + rest.map(function (x) {
+            return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(String(x[1])) + '</dd></div>';
+          }).join('') + '</dl>', act);
+          act = '';
+        }
+        if (!html) html = group('Their work', '<p class="muted">Nothing is assigned to ' + esc(m.name) + '.</p>');
+        host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + html + '</div></div>';
+        Array.prototype.forEach.call(host.querySelectorAll('[data-w]'), function (b) {
+          b.addEventListener('click', function () { opens[Number(b.getAttribute('data-w'))](); });
+        });
+        var h = host.querySelector('[data-r="hand"]');
+        if (h) h.addEventListener('click', function () {
+          var fields = handFields(m, own, held);
+          window.ADspaceConfirm.ask({
+            title: 'Hand over work', go: 'Hand over',
+            body: 'Choose who takes each kind of ' + m.name + '\'s work.',
+            fields: fields
+          }, function (v) {
+            v = v && typeof v === 'object' ? v : {};
+            msg('teamMsg', '');
+            Promise.resolve(handTo(m, own, v)).then(function () { if (rec.id === m.id && rec.pane === 'work') paintPane(m); });
+          });
         });
       });
     });
