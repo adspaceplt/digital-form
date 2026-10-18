@@ -2,10 +2,12 @@
  * push-send — delivers the queued notifications (`push_outbox`) to the
  * devices that follow them, and makes the sender's keys on its first run.
  *
- * The database wakes it after a write commits (`push_kick`, through pg_net),
- * so a call carries nothing and needs nothing: it takes what is queued and
- * sends it. A call with nothing queued does nothing. Anybody may call it,
- * because all it can do is send what the database already queued.
+ * The database wakes it after a write commits (`push_kick`, through pg_net,
+ * once a transaction), carrying the wake secret kept in `app_secrets` as
+ * `x-adspace-wake`; the function asks the database whether it is
+ * (`wake_secret_ok`) and refuses any other caller before the queue is
+ * touched (the third audit, item 17). It takes what is queued and sends it.
+ * A call with nothing queued does nothing.
  *
  * Keys: the first run makes the VAPID pair and keeps it in `app_secrets`
  * (`push_set_keys`); only the public half ever leaves the database. The
@@ -37,6 +39,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     { auth: { persistSession: false } });
+  const given = req.headers.get('x-adspace-wake') || '';
+  const woken = given.length >= 32 ? await db.rpc('wake_secret_ok', { p_given: given }) : null;
+  if (!woken || woken.error || woken.data !== true) return json({ error: 'denied' }, 401);
 
   let { data: keys, error } = await db.rpc('push_keys');
   if (error) return json({ error: 'push-not-set-up', reason: error.message });

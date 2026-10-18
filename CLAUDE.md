@@ -5537,6 +5537,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   call, as `meta-import`; `wa-hook`'s signature), `WHATSAPP_VERIFY_TOKEN`
   (`wa-hook`), `META_GRAPH_VERSION`; Verify JWT off on both (pg_net and Meta
   call with no session).
+- A wake of `wa-send`'s `drain` or of `push-send` carries the database's
+  wake secret (`app_secrets` `wake_secret`, made once, never shown) as
+  `x-adspace-wake`, which each function asks of `wake_secret_ok` (the
+  service role's alone) before touching a queue, else 401; `wa_kick` and
+  `push_kick` send it, once a transaction, so a statement queueing forty
+  rows wakes each sender once (`2026-10-19-wake-calls-carry-a-secret.sql`).
 
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
@@ -5561,7 +5567,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     device's language (`title_zh` for a Chinese device).
   - A notification never fails the write that caused it (the triggers
     swallow their own errors).
-- `pg_net` wakes `push-send` after the commit (`push_kick`). It claims 50 at
+- `pg_net` wakes `push-send` after the commit (`push_kick`, once a
+  transaction, with the wake secret; WhatsApp, above). It claims 50 at
   a time for five minutes (`push_claim`, skip locked), sends a day's TTL, drops
   a device the service answers 404/410 for (`push_done`) and keeps a month.
 - The VAPID pair is made by `push-send`'s first run and kept in `app_secrets`;

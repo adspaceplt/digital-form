@@ -5,7 +5,8 @@
  *
  * Ways in:
  *   { action: 'drain' }        pg_net after a queued message commits
- *                              (`wa_kick`): the team's reminders and a
+ *                              (`wa_kick`, carrying the wake secret as
+ *                              `x-adspace-wake`; nobody else): the team's reminders and a
  *                              creator's booking confirmed (with the code
  *                              for the template's link button), claimed with the
  *                              service role (`wa_claim`) and closed
@@ -40,7 +41,8 @@
  *          SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY.
  *          docs/WHATSAPP-SETUP.md.
  *
- * Verify JWT is off: pg_net calls with no session. A refusal the person can
+ * Verify JWT is off: pg_net calls with no session, so `drain` answers only
+ * the database's wake secret (`wake_secret_ok`). A refusal the person can
  * act on answers 200 with { error }.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -287,6 +289,16 @@ function linkOf(t: Shape, p: Record<string, any>): string {
   return base && full.indexOf(base) === 0 && full.length > base.length ? full.slice(base.length) : '';
 }
 
+/* The database's own wake alone (the third audit, item 17): wa_kick and the
+   outbox-drain job send the wake secret kept in app_secrets, asked of the
+   database here; any other caller is refused before the queue is touched. */
+async function woken(svc: any, req: Request): Promise<boolean> {
+  const given = req.headers.get('x-adspace-wake') || '';
+  if (given.length < 32) return false;
+  const r = await svc.rpc('wake_secret_ok', { p_given: given });
+  return !r.error && r.data === true;
+}
+
 /* ---- Templates ---------------------------------------------------------------
    A template as Meta holds it, read into what a send asks for: its header (a
    Document, or text with one variable), its body's variables in order
@@ -370,8 +382,9 @@ Deno.serve(async (req) => {
   const missing = [!PHONE() && 'WHATSAPP_PHONE_ID', !TOKEN() && 'WHATSAPP_TOKEN'].filter(Boolean) as string[];
 
   if (action === 'drain') {
-    if (missing.length) return json({ ok: false, missing }, 200, origin);
     const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    if (!(await woken(svc, req))) return json({ error: 'denied' }, 401, origin);
+    if (missing.length) return json({ ok: false, missing }, 200, origin);
     /* One row claimed at a time, and none after the budget: twenty claimed
        at once outran the function's time, and the rows never tried were
        left at Sending, which the queue then marks Not confirmed, never sent
