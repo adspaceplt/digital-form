@@ -105,8 +105,14 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   function, in the order the release states, and starting or messaging a
   session and adding a repository it needs; any other write still asks.
 - It runs browser suites three at a time, the Postgres suites in their own
-  lane, then uxaudit and matrix.
-- It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
+  lane, then uxaudit and matrix side by side (each its own browser, output
+  and server).
+- The slowest suites wait for what the page shows, never for time
+  (`tests/settle.js`: `settle(p)` after an act, `ready(p)` after a load or a
+  sign-in, ten seconds at most); a fixed sleep stays only where the thing
+  measured is time itself.
+- It prints one line per suite, ending in its wall time, then the total,
+  and ends `gate: ok` or `gate: PROBLEM (n)`
   (also written to `$OUT`, default `/tmp/gate.txt`).
 - Run it as **one background command and wait for its completion notice**.
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
@@ -266,10 +272,12 @@ baseline only shrinks (`--write` refuses to add).
     and a report's steps at every width), a strip that scrolls with no faded
     edge, or a sliding surface off its chosen option, segments included
     (`strip`); every strip on its list met at 1280 and 390.
-- **matrix** takes one screen per route at 320, 375, 390, 768, 1024, 1280 and
-  1440, then 1280 and 1440 at 200% browser zoom (the viewport halved). It runs
-  uxaudit's own `inPage()` and drives the keyboard through every dialog (Enter
-  opens, the dialog is named, Escape closes, focus returns).
+- **matrix** takes one screen per route at 320, 768, 1024 and 1440, the
+  iPhone Duo's three screens under a finger, then 1280 and 1440 at 200%
+  browser zoom (the viewport halved); at 1280 and 390, where uxaudit walks,
+  only the screens uxaudit never reaches there (`OWN`). It runs uxaudit's
+  own `inPage()` and focus walk, and drives the keyboard through every
+  dialog (Enter opens, the dialog is named, Escape closes, focus returns).
 
 **A section's UI and UX audit** is the `/ux-audit <section | all | changed>`
 skill (`.claude/skills/ux-audit/SKILL.md`, the user, 2026-10-07): it reports
@@ -2163,11 +2171,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
   (letters keep their words). The NRIC and the bank details are sent and
   saved only at `suppliers.pay` (granted), filed by name, never by value.
-- A supplier's letter is the Documents family `supplier` (Letter to
-  Supplier), `ASL/{Supplier ID}/{YYMMDD}{NN}`, `documents.supplier_id`,
-  issued from the supplier (Issue document) or the Register, listed on the
-  supplier and under Supplier Letters (`register_may('supplier', …)`
-  answers the Suppliers section); a reissue keeps the supplier. No bank
+- A supplier's document is the Documents family `supplier`,
+  `documents.supplier_id`, issued from the supplier (Issue document) or the
+  Register, listed on the supplier and under Supplier Letters
+  (`register_may('supplier', …)` answers the Suppliers section); a reissue
+  keeps the supplier. The one offered is the Supplier Service Agreement
+  (`supplier_sca`, `2026-10-18-supplier-service-agreement.sql`; the user,
+  2026-10-18; Letter to Supplier, `ASL/{Supplier ID}/{YYMMDD}{NN}`, no
+  longer offered, its letters kept): `AD/SCA/{Supplier ID}/{YYMM}{NN}`,
+  signed by both parties; its clauses are the type's wording (`# Heading`
+  a clause, `1.` a numbered point, `a.` a lettered item; Document types);
+  the Issue sheet asks its schedules in place of a recipient
+  (`#docScaSec`): Schedule A Part 1 from the supplier (legal name, BRN /
+  NRIC / Passport, registered address, contact, Start date), Part 2 from
+  `doc_types.schedule` (platforms, tasks, reporting, response time, spend
+  approval limit, budget tolerance; the Fee typed), Schedule B an account
+  a row (the client from Clients, the ad account offered from its Meta
+  links, the spend a month in the client's currency, start and end) with
+  its notes, kept as `body.agreement` and refused without the legal name,
+  start, fee and an account (`agreement-incomplete`, `sca_complete`). The
+  PDF (`drawAgreement`, js/letters.js) prints the clauses numbered, both
+  signing blocks, then Schedule A and Schedule B (as at its date) as
+  tables. A new Schedule B is a Reissue: the same reference, as at the new
+  date. No bank
   statement upload (the Jotform field was optional). A document kept
   outside the portal (an agreement, an NDA) is Add entry's Supplier Letter
   (the record's ⋯, or the Register), naming its supplier and no client
@@ -4992,14 +5018,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   place of the list and the Team strip, Back returns; the head is the
   mark, the name, Employee ID, group and post, the state and the one ⋯
   of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
-  (Sign-in and access, Employment, Namecard, read first, Edit at Team
-  Full Access), Work (each open task they own, each client they are
+  (Sign-in and access, Employment, Namecard, each value changed where it
+  is read at Team Full Access: a word or a date its pen, a choice a
+  select drawn as the value, saved alone through `patchMember`, refused
+  in place as the sheet refuses, filed from and to; no Edit button; the
+  user, 2026-10-18), Work (each open task they own, each client they are
   person in charge of, each open campaign they run, a row a record opening
-  it as search does, an overdue task's date in red; the other kinds
-  `team_work_held` counts on one line; Hand over at Team Full Access;
-  the user: "the tasks just shown its total number"), Documents (their
-  HR letters at HR Letters View; Issue document and Add entry open on
-  them), Performance (Open reviews: the months searched for their name,
+  it as search does, one line at a desk, an overdue task's date in red;
+  the tasks' counts first (overdue, due within 7 days, later, no due
+  date), ten rows of a list, the rest behind Show all; the other kinds
+  `team_work_held` counts on one line; Hand over at Team Full Access),
+  Documents (every HR letter that is theirs in the register's own rows
+  (`ADspaceRegister.paintForMember`): naming them, or carrying their
+  Employee ID in its reference, and their downloaded performance records;
+  an HR letter naming nobody takes the one colleague whose Employee ID its
+  reference carries, trigger `documents_hr_member`,
+  `2026-10-18-hr-letters-find-their-colleague.sql`; Issue document and
+  Add entry open on them), Performance (Open reviews: the months searched for their name,
   behind its own lock) and Health (their check-ins and talks from
   `health_team`, `team.health`), each drawn only where readable
   (`tests/teamrec.js`).

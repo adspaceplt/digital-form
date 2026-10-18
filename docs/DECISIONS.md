@@ -5537,3 +5537,52 @@ nothing, which answered "how much" and never "what".
   width. The
   Engagements pair sits in its own box, which takes the head's free space
   (css/console.css). A desk and a phone measure as before.
+- 2026-10-18 · The full gate from 88.7 to 60.4 minutes (5,324s to 3,624s
+  on portal 9c45759; tests 78775e2 before, 6870828 after; the user asked
+  for a tests-only session). uxaudit and matrix now run side by side, each
+  its own browser, output and server (matrix reads a second local server
+  the gate starts and stops); the fifteen suites holding the most fixed
+  sleep wait for what the page shows (`tests/settle.js`), reaching the same
+  checks with the same outcomes; matrix leaves 1280 and 390 to uxaudit but
+  for the four screens uxaudit never reaches there, drops 375, and now runs
+  uxaudit's focus walk on every screen it measures (its head had claimed
+  focus rings it never checked); qr.js, which printed values and asserted
+  nothing, reads each code back with jsQR. Each suite's line ends in its
+  wall time. Two mistakes on the way, both caught before a merge: the first
+  side-by-side gate hung after both walks ended (a bare `wait` also waited
+  on matrix's server; it now waits on the walks' own ids), and two "before"
+  gates stopped part way left a Postgres cluster that killed sql and smsql
+  in the next run (they pass alone and in the "after" run). The iPhone Duo
+  sizes surfaced a namecard finding, logged under Logged defects.
+### 2026-10-18 · The Supplier Service Agreement is the supplier's document
+The user handed over the team's Supplier Service Agreement (Ads Campaign
+Management) as a Word file and asked for it to be the supplier document. The
+clauses became the type's wording, in a light markup the Document types sheet
+can edit (`# Heading`, `1.`, `a.`), numbered on the PDF as in the Word file.
+Schedule A and Schedule B are asked in the Issue sheet and kept as the
+document's snapshot, Schedule B's accounts picked from Clients with the ad
+accounts each client links to Meta offered. Schedule B changes by a new copy,
+so a new copy is a Reissue (the same reference, as at its new day). The
+reference is `AD/SCA/{Supplier ID}/{YYMM}{NN}` as the team numbered it. Letter
+to Supplier is stood down on the run that makes the agreement, so a team
+that turns it back on is not overruled by a re-run. The Word file's names and
+figures are a real client's and supplier's and were not committed; only the
+wording was. Its clause 10.3 points at Clause 6.7 for returning information,
+which in the numbered text is 6.8; the wording is kept as given, and the
+team corrects it in Document types.
+
+### 2026-10-18 · A colleague's record holds what is theirs, compactly, and edits in place
+The user, with screenshots of a colleague whose Documents showed one letter
+where the register's HR Letters listed five under their name: "when its
+linked to a team member, shouldnt all letters or documents go into their
+respective accounts", then of Work: "imaging u need to fit in 100+ tasks",
+and of Overview: "why you wouldnt just let it edit on each fields". The
+pane read `member_id` alone, while the register's Team column also reads the
+Employee ID in a reference (the letters imported from the old list name
+nobody). The pane now draws the register's own rows for both, with the
+colleague's performance records, and the database files such a letter under
+its colleague (eleven live rows, and every new one by trigger); a reference
+carrying no Employee ID (a candidate's offer, an NDA) is left as it is.
+Work now opens on counts and ten rows, one line a row, with Show all. Overview
+lost its Edit button: each value is changed where it is read, saved alone
+through the same write and the same refusals as the sheet.

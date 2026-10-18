@@ -421,6 +421,43 @@
     });
   }
 
+  /* A colleague's record lists every HR letter that is theirs (the user,
+     2026-10-18: "when its linked to a team member, shouldnt all letters or
+     documents go into their respective accounts"): the ones naming them,
+     the ones whose reference carries their Employee ID (as the register's
+     Team column finds them, `teamOf`), and their downloaded performance
+     records, in the register's own rows, newest first. */
+  function paintForMember(m, box, then) {
+    if (!box) return;
+    loadPeople(function () {
+      var code = String(m.staff_code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var q = db.from('documents').select('*').eq('family', 'hr');
+      q = code ? q.or('member_id.eq.' + m.id + ',serial.ilike."%' + code + '%"') : q.eq('member_id', m.id);
+      Promise.all([
+        q.then(function (r) { return r; }, function (e) { return { error: e }; }),
+        new Promise(function (res) { perfRows(res); })
+      ]).then(function (got) {
+        var r = got[0];
+        if (r.error) { if (then) then(null, r.error); return; }
+        var rows = (r.data || []).filter(function (d) { var t = teamOf(d); return t && t.id === m.id; })
+          .concat((got[1] || []).filter(function (d) { return d.member_id === m.id; }))
+          .sort(sorter());
+        var old = box.querySelector('.reg-table');
+        if (old) old.remove();
+        if (rows.length) {
+          var table = document.createElement('div');
+          table.className = 'crm-table reg-table';
+          table.innerHTML = '<div class="crm-head svc-row reg-row is-own"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
+          rows.forEach(function (d) {
+            table.appendChild(row(d, 'register.hr', function () { paintForMember(m, box, then); }, true));
+          });
+          box.appendChild(table);
+        }
+        if (then) then(rows, null);
+      });
+    });
+  }
+
   if ($('regFind')) $('regFind').addEventListener('input', function () {
     var v = this.value.trim().toLowerCase();
     if (v === state.find) return;
@@ -631,6 +668,8 @@
     /* A supplier's letter goes to the supplier's own name and address, for
        the attention of its person in charge. */
     var sp = sup ? (issuing.supplier || supplierOf($('docSupplier').value)) : null;
+    scaMode(isSca(t));
+    if (isSca(t) && (reseed || moved)) scaSeed(t, sp);
     if (sp) {
       if (moved || !$('docTo').value.trim() || $('docTo').value === seeded.to) { $('docTo').value = sp.name || ''; seeded.to = $('docTo').value; }
       if (moved || !$('docAddr').value.trim() || $('docAddr').value === seeded.addr) { $('docAddr').value = sp.address || ''; seeded.addr = $('docAddr').value; }
@@ -680,6 +719,164 @@
   function langBodies() {
     $('docBodyZhWrap').hidden = !$('docLangZh').checked || $('docLangRow').hidden;
     $('docBodyMsWrap').hidden = !$('docLangMs').checked || $('docLangRow').hidden;
+  }
+
+  // ---- The Supplier Service Agreement (2026-10-18) ---------------------------
+  /* The supplier's one document: the clauses are the type's wording, and
+     the sheet adds its schedules. Schedule A names the supplier (from its
+     record), the services and the fee (prefilled from the type's schedule,
+     the person's to change); Schedule B is the client accounts it runs, a
+     row an account, the client picked from Clients and its ad account
+     offered from the accounts the client links to Meta. A new copy of
+     Schedule B is a Reissue: the same reference, as at its new date. */
+  var SCA = 'supplier_sca';
+  function isSca(t) { return Boolean(t && t.id === SCA); }
+  var sca = { rows: [], accts: {} };
+  var SCA_FIELDS = [['docScaPlat', 'platforms'], ['docScaTasks', 'tasks'], ['docScaReport', 'reporting'],
+    ['docScaResp', 'response'], ['docScaLimit', 'spend_limit'], ['docScaTol', 'tolerance'], ['docScaFee', 'fee']];
+  function scaMode(on) {
+    $('docScaSec').hidden = !on;
+    $('docRecipSec').hidden = on;
+    $('docSalRow').hidden = on;
+    $('docLetterH').textContent = on ? 'Clauses' : 'Letter';
+    $('docBodyLabel').textContent = on ? 'Clauses' : 'Body';
+    /* An agreement is signed by both parties, always. */
+    if (on) $('docSigned').checked = true;
+    $('docSigned').disabled = on || Boolean(issuing && issuing.reissue);
+  }
+  function scaSeed(t, sp) {
+    var d = (t && t.schedule) || {};
+    $('docScaName').value = sp ? String(sp.name || '').toUpperCase() : '';
+    $('docScaId').value = sp ? (sp.brn || sp.nric || '') : '';
+    $('docScaAddr').value = sp ? (sp.address || '') : '';
+    $('docScaContact').value = sp ? (sp.contact_name || '') : '';
+    $('docScaStart').value = '';
+    SCA_FIELDS.forEach(function (f) { $(f[0]).value = d[f[1]] || ''; });
+    $('docScaNotes').value = d.notes || '';
+    sca.rows = [{}];
+    scaPaint();
+  }
+  function scaFill(a) {
+    var p1 = a.part1 || {}, p2 = a.part2 || {};
+    $('docScaName').value = p1.legal_name || ''; $('docScaId').value = p1.id_no || '';
+    $('docScaAddr').value = p1.address || ''; $('docScaContact').value = p1.contact || '';
+    $('docScaStart').value = p1.start || '';
+    SCA_FIELDS.forEach(function (f) { $(f[0]).value = p2[f[1]] || ''; });
+    $('docScaNotes').value = a.notes || '';
+    sca.rows = (a.accounts || []).map(function (r) { return Object.assign({}, r); });
+    if (!sca.rows.length) sca.rows = [{}];
+    scaPaint();
+  }
+  function scaClients() {
+    return state.clients.slice().sort(F.byClient || function () { return 0; });
+  }
+  function marketOf(id) { var c = clientOf(id); return c && c.market === 'SG' ? 'SG' : 'MY'; }
+  /* A row a card: Client and Ad account, then the spend a month, Start and
+     End (empty is ongoing), the × at the head once there are two. */
+  function scaPaint() {
+    var box = $('docScaRows');
+    var opts = '<option value="">Choose a client</option>' + scaClients().map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
+    }).join('');
+    box.innerHTML = sca.rows.map(function (r, i) {
+      var k = 'docSca' + i;
+      return '<div class="sca-row" data-i="' + i + '">' +
+        '<div class="sca-row-head"><span class="fsec-h">Account ' + (i + 1) + '</span>' +
+          (sca.rows.length > 1 ? '<button class="iconbtn" type="button" data-x="' + i + '" aria-label="Remove account ' + (i + 1) + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>' : '') + '</div>' +
+        '<div class="row fgrid">' +
+          '<div><label class="field-label" for="' + k + 'c">Client</label><select class="select" id="' + k + 'c" data-f="client_id" aria-required="true">' + opts + '</select></div>' +
+          '<div><label class="field-label" for="' + k + 'a">Ad account</label><input class="input" id="' + k + 'a" data-f="account" list="docScaAccts" aria-required="true" placeholder="Account name or ID"></div>' +
+        '</div>' +
+        '<div class="row fgrid-3">' +
+          '<div><label class="field-label" for="' + k + 's">Ad spend per month (' + (marketOf(r.client_id) === 'SG' ? 'S$' : 'RM') + ')</label><input class="input" id="' + k + 's" data-f="spend" inputmode="decimal" aria-required="true" placeholder="2,500.00"></div>' +
+          '<div><label class="field-label" for="' + k + 'b">Start date</label><input class="input" id="' + k + 'b" data-f="start" type="date"></div>' +
+          '<div><label class="field-label" for="' + k + 'e">End date</label><input class="input" id="' + k + 'e" data-f="end" type="date"></div>' +
+        '</div></div>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.sca-row'), function (el) {
+      var r = sca.rows[Number(el.getAttribute('data-i'))];
+      Array.prototype.forEach.call(el.querySelectorAll('[data-f]'), function (f) {
+        var k = f.getAttribute('data-f');
+        f.value = r[k] == null ? '' : (k === 'spend' && r[k] !== '' ? Number(r[k]).toFixed(2) : r[k]);
+        f.addEventListener('input', function () { scaRead(); });
+        f.addEventListener('change', function () {
+          scaRead();
+          if (k === 'client_id') { scaPaint(); scaAccounts(r.client_id); }
+        });
+        if (k === 'account') f.addEventListener('focus', function () { scaAccounts(r.client_id); });
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-x]'), function (b) {
+      b.addEventListener('click', function () { scaRead(); sca.rows.splice(Number(b.getAttribute('data-x')), 1); scaPaint(); });
+    });
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+  }
+  function scaRead() {
+    Array.prototype.forEach.call($('docScaRows').querySelectorAll('.sca-row'), function (el) {
+      var r = sca.rows[Number(el.getAttribute('data-i'))];
+      Array.prototype.forEach.call(el.querySelectorAll('[data-f]'), function (f) { r[f.getAttribute('data-f')] = f.value.trim(); });
+    });
+  }
+  /* The ad accounts a client links to Meta, offered under the field; one
+     read a client a sheet. Typed freely where none is linked. */
+  function scaAccounts(id) {
+    var list = $('docScaAccts');
+    var fill = function (names) { list.innerHTML = names.map(function (n) { return '<option value="' + esc(n) + '">'; }).join(''); };
+    if (!id) { fill([]); return; }
+    if (sca.accts[id]) { fill(sca.accts[id]); return; }
+    db.rpc('meta_links_list', { p_client: id }).then(function (q) {
+      var d = (q && q.data) || {}, names = [];
+      (d.links || []).forEach(function (l) {
+        (l.ad_accounts || []).forEach(function (a) { var n = a.name || a.id; if (n && names.indexOf(n) < 0) names.push(n); });
+      });
+      sca.accts[id] = names; fill(names);
+    }).catch(function () { fill([]); });
+  }
+  if ($('docScaAdd')) $('docScaAdd').addEventListener('click', function () {
+    scaRead();
+    var last = sca.rows[sca.rows.length - 1] || {};
+    sca.rows.push({ start: last.start || $('docScaStart').value || '' });
+    scaPaint();
+    var sel = $('docSca' + (sca.rows.length - 1) + 'c'); if (sel) sel.focus();
+  });
+  if ($('docScaStart')) $('docScaStart').addEventListener('change', function () {
+    /* An account with no start yet takes the agreement's. */
+    scaRead();
+    msg('docMsg', '');
+    var v = $('docScaStart').value, moved = false;
+    sca.rows.forEach(function (r) { if (!r.start) { r.start = v; moved = true; } });
+    if (moved) scaPaint();
+  });
+  /* The schedules read back, or null after naming the first gap. */
+  function scaGather(forIssue, asAt) {
+    scaRead();
+    var need = function (id, word) { msg('docMsg', word, 'err'); var el = $(id); if (el) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(el); el.focus(); } return null; };
+    var p1 = { legal_name: $('docScaName').value.trim(), id_no: $('docScaId').value.trim(), address: $('docScaAddr').value.trim(),
+      contact: $('docScaContact').value.trim(), start: $('docScaStart').value };
+    var p2 = {};
+    SCA_FIELDS.forEach(function (f) { p2[f[1]] = $(f[0]).value.trim(); });
+    var rows = sca.rows.filter(function (r) { return r.client_id || r.account || r.spend; });
+    if (forIssue) {
+      if (!p1.legal_name) return need('docScaName', 'Enter the supplier\'s legal name.');
+      if (!p1.start) return need('docScaStart', 'Choose the start date.');
+      if (!p2.fee) return need('docScaFee', 'Enter the fee.');
+      if (!rows.length) return need('docSca0c', 'Add at least one account.');
+    }
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], k = 'docSca' + sca.rows.indexOf(r);
+      var spend = Number(String(r.spend || '').replace(/[^0-9.]/g, ''));
+      if (forIssue && !r.client_id) return need(k + 'c', 'Choose the client for account ' + (i + 1) + '.');
+      if (forIssue && !r.account) return need(k + 'a', 'Enter the ad account for account ' + (i + 1) + '.');
+      if (forIssue && !(spend > 0)) return need(k + 's', 'Enter the ad spend per month for account ' + (i + 1) + '.');
+      if (r.start && r.end && r.end < r.start) return need(k + 'e', 'The end date is before the start date.');
+      var c = clientOf(r.client_id);
+      out.push({ client_id: r.client_id || null, client: c ? c.name : '', account: r.account || '',
+        spend: spend > 0 ? Math.round(spend * 100) / 100 : null, currency: marketOf(r.client_id) === 'SG' ? 'SGD' : 'MYR',
+        start: r.start || '', end: r.end || '' });
+    }
+    return { part1: p1, part2: p2, as_at: asAt, notes: $('docScaNotes').value.trim(), accounts: out };
   }
 
   function openIssue(opts) {
@@ -747,6 +944,10 @@
     /* A reissue's words already hold what its fields said. */
     $('docFieldsSec').hidden = true; $('docFields').innerHTML = '';
     seeded.title = null; seeded.sal = null; seeded.body = null; seeded.zh = null; seeded.ms = null; seeded.to = null; seeded.addr = null;
+    /* An agreement's schedules come back as issued; Reissue is a new copy
+       of Schedule B, as at the new date. */
+    scaMode(Boolean(body.agreement));
+    if (body.agreement) scaFill(body.agreement);
   }
   /* An HR letter is shared with the colleague it names by default (the user,
      2026-10-06), the tick turned off for one not yet theirs; a reissue keeps
@@ -812,12 +1013,20 @@
       if (keys.length) body.fields = fieldValues();
     }
     if (!body.en) { msg('docMsg', 'The letter needs a body.', 'err'); $('docBodyEn').focus(); return; }
-    var recipient = hr
+    var agreeing = isSca(t) || Boolean(re && re.body && re.body.agreement);
+    if (agreeing) {
+      var ag = scaGather(forIssue, $('docDate').value || today());
+      if (!ag) return;
+      body.agreement = ag;
+    }
+    var recipient = agreeing
+      ? { name: body.agreement.part1.legal_name, address: body.agreement.part1.address, attn: body.agreement.part1.contact }
+      : hr
       ? { name: (memberOf($('docMember').value) || {}).name || '', role: $('docRole').value.trim(),
           staff_code: (memberOf($('docMember').value) || {}).staff_code || '', ic: $('docIc').value.trim() }
       : { name: $('docTo').value.trim(), address: $('docAddr').value.trim(),
           attn: $('docAttn').value.trim(), attn_role: $('docAttnRole').value.trim() };
-    if (!hr && !recipient.name) { msg('docMsg', 'Say who the letter is to.', 'err'); $('docTo').focus(); return; }
+    if (!hr && !agreeing && !recipient.name) { msg('docMsg', 'Say who the letter is to.', 'err'); $('docTo').focus(); return; }
     var signed = $('docSigned').checked;
     var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
     if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
@@ -840,7 +1049,7 @@
     msg('docMsg', '');
     var a = g.args, t = g.t;
     var doc = {
-      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed, draft: true,
+      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed, draft: true, kind: t.name || (g.re && g.re.kind) || '',
       closing: t.closing != null ? t.closing : (g.re ? g.re.closing : 'Yours sincerely,'),
       issued_at: a.issued_at || today(), title: a.title, salutation: a.salutation,
       recipient: a.recipient, body: a.body, signatory: a.signatory, languages: a.languages
@@ -1355,5 +1564,5 @@
   wire();
 
   window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue,
-    openAdd: function (opts) { openAdd(null, null, opts); }, paintFor: paintFor, openTypes: function (opener) { openTypes(opener); } };
+    openAdd: function (opts) { openAdd(null, null, opts); }, paintFor: paintFor, paintForMember: paintForMember, openTypes: function (opener) { openTypes(opener); } };
 })();

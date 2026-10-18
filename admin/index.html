@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261018zz">
-<link rel="stylesheet" href="/css/console.css?v=20261018zz">
+<link rel="stylesheet" href="/css/console.css?v=20261018zz3">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5130,7 +5130,7 @@ raya-2026        https://example.com/raya"></textarea>
           <input class="input" id="docDate" type="date"></div>
       </div>
       </section>
-      <section class="fsec">
+      <section class="fsec" id="docRecipSec">
       <h4 class="fsec-h">Recipient</h4>
       <div class="row fgrid" id="docToRow">
         <div><label class="field-label" for="docTo">To</label>
@@ -5151,6 +5151,67 @@ raya-2026        https://example.com/raya"></textarea>
           <input class="input" id="docIc" placeholder="000214-01-XXXX"></div>
       </div>
       </section>
+      <!-- A Supplier Service Agreement's schedules (2026-10-18): Schedule A
+           names the supplier and the services and fee, Schedule B the client
+           accounts it runs, a row an account. -->
+      <div id="docScaSec" hidden>
+      <section class="fsec">
+      <h4 class="fsec-h">Schedule A, Part 1: Supplier</h4>
+      <div class="row fgrid">
+        <div><label class="field-label" for="docScaName">Supplier legal name</label>
+          <textarea class="input" id="docScaName" rows="1" data-oneline aria-required="true" placeholder="COMPANY NAME SDN BHD"></textarea></div>
+        <div><label class="field-label" for="docScaId">BRN / NRIC / Passport</label>
+          <input class="input" id="docScaId" placeholder="202301000001"></div>
+      </div>
+      <div class="row">
+        <div><label class="field-label" for="docScaAddr">Registered address</label>
+          <textarea class="input" id="docScaAddr" rows="2" placeholder="No. 1, Jalan Example, 81100 Johor Bahru, Johor"></textarea></div>
+      </div>
+      <div class="row fgrid">
+        <div><label class="field-label" for="docScaContact">Contact person</label>
+          <input class="input" id="docScaContact" placeholder="Ms Jane Doe"></div>
+        <div><label class="field-label" for="docScaStart">Start date</label>
+          <input class="input" id="docScaStart" type="date" aria-required="true"></div>
+      </div>
+      </section>
+      <section class="fsec">
+      <h4 class="fsec-h">Schedule A, Part 2: Services and fees</h4>
+      <div class="row fgrid">
+        <div><label class="field-label" for="docScaPlat">Platforms</label>
+          <textarea class="input" id="docScaPlat" rows="1" data-oneline placeholder="Meta"></textarea></div>
+        <div><label class="field-label" for="docScaFee">Fee</label>
+          <textarea class="input" id="docScaFee" rows="1" data-oneline aria-required="true" placeholder="RM 2,000 per 30/31 calendar days"></textarea></div>
+      </div>
+      <div class="row">
+        <div><label class="field-label" for="docScaTasks">Tasks</label>
+          <textarea class="input" id="docScaTasks" rows="2"></textarea></div>
+      </div>
+      <div class="row">
+        <div><label class="field-label" for="docScaReport">Reporting</label>
+          <textarea class="input" id="docScaReport" rows="1" data-oneline></textarea></div>
+      </div>
+      <div class="row fgrid">
+        <div><label class="field-label" for="docScaResp">Response time</label>
+          <textarea class="input" id="docScaResp" rows="1" data-oneline></textarea></div>
+        <div><label class="field-label" for="docScaLimit">Spend approval limit</label>
+          <textarea class="input" id="docScaLimit" rows="1" data-oneline></textarea></div>
+      </div>
+      <div class="row">
+        <div><label class="field-label" for="docScaTol">Budget tolerance</label>
+          <textarea class="input" id="docScaTol" rows="1" data-oneline></textarea></div>
+      </div>
+      </section>
+      <section class="fsec">
+      <div class="readgroup-head"><h4 class="fsec-h">Schedule B: Accounts</h4>
+        <button class="btn btn-sm" id="docScaAdd" type="button">Add account</button></div>
+      <div id="docScaRows" class="sca-rows" data-narrow="560"></div>
+      <datalist id="docScaAccts"></datalist>
+      <div class="row">
+        <div><label class="field-label" for="docScaNotes">Notes</label>
+          <textarea class="input" id="docScaNotes" rows="3"></textarea></div>
+      </div>
+      </section>
+      </div>
       <!-- The fields the type's wording names in braces ({intern name},
            {from}), each filled into the title, salutation and body. -->
       <section class="fsec" id="docFieldsSec" hidden>
@@ -5158,12 +5219,12 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="row fgrid" id="docFields"></div>
       </section>
       <section class="fsec">
-      <h4 class="fsec-h">Letter</h4>
+      <h4 class="fsec-h" id="docLetterH">Letter</h4>
       <div class="row">
         <div><label class="field-label" for="docTitleIn">Title</label>
           <textarea class="input" id="docTitleIn" placeholder="Title" rows="1" data-oneline></textarea></div>
       </div>
-      <div class="row">
+      <div class="row" id="docSalRow">
         <div><label class="field-label" for="docSal">Salutation</label>
           <input class="input" id="docSal" placeholder="Dear Sir/Madam,"></div>
         <div id="docLangRow" hidden><span class="field-label">Languages</span>
@@ -5174,7 +5235,7 @@ raya-2026        https://example.com/raya"></textarea>
           </span></div>
       </div>
       <div class="row">
-        <div><label class="field-label" for="docBodyEn">Body</label>
+        <div><label class="field-label" for="docBodyEn" id="docBodyLabel">Body</label>
           <textarea class="input" id="docBodyEn" aria-required="true" rows="9" placeholder="Body"></textarea></div>
       </div>
       <div class="row" id="docBodyZhWrap" hidden>
@@ -5596,10 +5657,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/passkey.js?v=20261017"></script>
 <script src="/js/admin.js?v=20261018pq"></script>
 <script src="/js/documents.js?v=20261018zs"></script>
-<script src="/js/letters.js?v=20261018zt"></script>
+<script src="/js/letters.js?v=20261018zy"></script>
 <script src="/js/smreport.js?v=20261018d"></script>
 <script src="/js/reports.js?v=20261017a"></script>
-<script src="/js/register.js?v=20261018zu"></script>
+<script src="/js/register.js?v=20261018zz2"></script>
 <script src="/js/suppliers.js?v=20261018zt"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261018zs"></script>
@@ -5607,7 +5668,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261017"></script>
 <script src="/js/crm.js?v=20261018zs"></script>
 <script src="/js/sales.js?v=20261015zh"></script>
-<script src="/js/team.js?v=20261018zx"></script>
+<script src="/js/team.js?v=20261018zz2"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
 <script src="/js/scripts.js?v=20261015zm"></script>

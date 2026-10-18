@@ -3383,3 +3383,29 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 @media (pointer: coarse) and (min-width: 561px) {
   .viewhead > .crm-engage-actions { flex: 1 1 auto; justify-content: flex-end; }
 }
+/* A Supplier Service Agreement's Schedule B in the Issue sheet
+   (2026-10-18): a shaded card an account, its number and × at the head. */
+.sca-rows { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.sca-row { background: var(--sunk); border-radius: var(--radius-sm); padding: 12px 14px 14px; }
+.sca-row-head { display: flex; align-items: center; justify-content: space-between; min-height: var(--ctl-h); margin: -6px 0 4px; }
+.sca-row-head .fsec-h { margin: 0; }
+#docScaSec .readgroup-head { margin-bottom: 12px; }
+/* A colleague's work at a desk is one line a row: the name, its facts after
+   it in the mute ink, the date at the right (2026-10-18: a hundred tasks). */
+.mrec-sum { margin: -4px 0 8px; font-size: 13px; color: var(--ink-soft); }
+.mrec-sum .is-late { color: var(--err); }
+.mrec-rest { display: contents; }
+.mrec-rest[hidden] { display: none; }
+.mrec-all { margin-top: 12px; }
+#mrecPane:not(.is-narrow) .mrec-row { padding-block: 8px; }
+#mrecPane:not(.is-narrow) .mrec-row-who { flex-direction: row; align-items: baseline; gap: 10px; }
+#mrecPane:not(.is-narrow) .mrec-row-who b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+#mrecPane:not(.is-narrow) .mrec-row-who small { flex: 0 0 auto; white-space: nowrap; }
+/* A colleague's Overview, changed where it is read (2026-10-18): the value,
+   its pen at the facts' one right edge; a choice is its select. */
+.mrec-ov dd.mfield { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.mrec-ov dd.mfield > .mval { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.mrec-ov dd.mfield.is-empty > .mval { color: var(--ink-mute); }
+.mrec-ov dd.mfield > .tl-pen { flex: 0 0 auto; }
+.mrec-ov dd.mfield > .select.tdetail { width: calc(100% + 9px); max-width: none; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.mrec-ov .ovfacts > div:has(> dd > .tdetail) { align-items: baseline; }

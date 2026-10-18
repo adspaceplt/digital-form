@@ -1928,24 +1928,146 @@
   function group(title, inner, act) {
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>' + inner + '</section>';
   }
+  /* Overview is changed where it is read (the user, 2026-10-18: "why you
+     wouldnt just let it edit on each fields"): a word or a date is its pen
+     (ADspaceAsk.rename), a choice a select drawn as the value; each saved on
+     its own through `patchMember`, filed from and to, put back on a
+     refusal. Nobody changes their own access date (`own-expiry`). */
+  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var MEMBER_LOG = [
+    ['name', 'Name'], ['email', 'Email'], ['role', 'User group', function (v) { return roleName(v); }], ['staff_code', 'Employee ID'],
+    ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
+    ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
+    ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
+    ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
+    ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
+    ['card_on', 'Namecard', function (v) { return off(v) ? 'Off' : 'On'; }],
+    ['card_slug', 'Short link']];
+  function patchMember(m, fields, back) {
+    var write = function () {
+      db.from('team_members').update(fields).eq('id', m.id).select('id').then(function (r) {
+        if (!r.error && !(r.data || []).length) { msg('mrecMsg', 'Not saved. The database refused the request.', 'err'); back(false); return; }
+        if (r.error) {
+          msg('mrecMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
+            : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+            : /duplicate|unique/i.test(r.error.message) ? 'That email is already on the list.' : teamSaid(r.error), 'err');
+          back(false); return;
+        }
+        var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
+        var moved = window.ADspaceRecords.changes(m, filed, MEMBER_LOG);
+        var name = fields.name || m.name;
+        if (moved) log('team.edited', name, moved);
+        msg('mrecMsg', 'Saved.', 'ok');
+        if (fields.name && fields.name !== String(m.name || '').trim()) {
+          ownedBy(m.name, true, function (own) {
+            if (own.clients.length + own.campaigns.length) handOver(m.name, fields.name, own, [
+              own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
+              own.campaigns.length ? plural(own.campaigns.length, 'campaign', 'campaigns') : ''
+            ].filter(Boolean).join(' and ').replace(/^./, function (x) { return x.toUpperCase(); }));
+          });
+        }
+        back(true);
+        load();
+      }).catch(function () { msg('mrecMsg', 'Not saved. Please try again.', 'err'); back(false); });
+    };
+    if (fields.email != null && fields.email !== String(m.email || '').toLowerCase()) {
+      /* The value goes back until the question is answered: Cancel leaves it. */
+      back(false);
+      window.ADspaceConfirm.ask({
+        title: 'Change the sign-in address',
+        body: m.name + ' signs in with ' + fields.email + ' from now on. The login itself '
+            + 'stays at the old address until they are invited at the new one.',
+        go: 'Change address', tone: 'warn'
+      }, function () { back = function () {}; write(); });
+      return;
+    }
+    write();
+  }
+  /* What a typed value must be, in the sheet's own words; null when fine. */
+  function badValue(k, v) {
+    if (k === 'name' && !v) return 'A name is required.';
+    if (k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return 'A valid email is required.';
+    if (k === 'staff_code' && v && !/^[A-Z0-9]{3,8}$/.test(v)) return 'An Employee ID is 3 to 8 letters or digits.';
+    if (k === 'capacity_minutes_week' && v !== '' && !(parseFloat(v) >= 0 && parseFloat(v) <= 80)) return 'Weekly capacity is 0 to 80 hours.';
+    if (k === 'mobile' && v) { var n = v.replace(/\D/g, '').length; if (n < 8 || n > 15) return 'Enter a mobile number of 8 to 15 digits.'; }
+    if (k === 'card_slug' && v && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(v)) return 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.';
+    if (k === 'access_until' && v && v < todayMy()) return 'Choose today or a later date.';
+    return null;
+  }
   function paneOverview(m, host) {
-    var edit = may('team', 'manage') && !(m.system && !(me() && me().id === m.id)) && !m.removed_at;
-    var editBtn = edit ? '<button class="btn btn-sm" type="button" data-r="edit">Edit</button>' : '';
+    var self = me() && me().id === m.id;
+    var edit = may('team', 'manage') && !(m.system && !self) && !m.removed_at;
     var link = m.card_slug && window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost ? window.ADSPACE_CONFIG.linkHost.replace(/^https?:\/\//, '') + '/' + m.card_slug : (m.card_slug || '');
-    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' +
+    /* A word: the value, its pen at the facts' right edge. */
+    var word = function (k, label, shown, can) {
+      var on = edit && can !== false;
+      return '<div><dt>' + esc(label) + '</dt><dd class="mfield' + (shown ? '' : ' is-empty') + '"><span class="mval" data-k="' + k + '">' +
+        esc(shown || 'Not set') + '</span>' +
+        (on ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(label.toLowerCase()) + '">' + PEN_SVG + '</button>' : '') + '</dd></div>';
+    };
+    /* A choice: a select drawn as the value. */
+    var pick = function (k, label, opts, value, shown) {
+      if (!edit) return fact(label, shown);
+      return '<div><dt>' + esc(label) + '</dt><dd class="mfield"><select class="select select-sm tdetail" data-sel="' + k + '" aria-label="' + esc(label) + '">' +
+        opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') +
+        '</select></dd></div>';
+    };
+    var map = function (o, none) { return [['', none || 'Not set']].concat(Object.keys(o).map(function (k) { return [k, o[k]]; })); };
+    var roles = state.roles.map(function (r) { return [r.slug, r.name]; });
+    host.innerHTML = '<div class="panel mrec-card mrec-ov"><div class="readgroups">' +
       group('Sign-in and access', '<dl class="ovfacts">' +
-        fact('Sign-in email', m.email) + fact('User group', roleName(m.role)) +
-        fact('Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end') + '</dl>', editBtn) +
+        word('name', 'Name', m.name) + word('email', 'Sign-in email', m.email) +
+        (edit && !(m.system) ? pick('role', 'User group', roles, m.role, roleName(m.role)) : fact('User group', roleName(m.role))) +
+        word('access_until', 'Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
       group('Employment', '<dl class="ovfacts">' +
-        fact('Employee ID', m.staff_code) + fact('Department', DEPT[m.department]) + fact('Position', m.designation) +
-        fact('Role standard', ROLE_STD[m.role_family]) + fact('Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
+        word('staff_code', 'Employee ID', m.staff_code) +
+        pick('department', 'Department', map(DEPT), m.department || '', DEPT[m.department]) +
+        word('designation', 'Position', m.designation) +
+        pick('role_family', 'Role standard', map(ROLE_STD), m.role_family || '', ROLE_STD[m.role_family]) +
+        word('capacity_minutes_week', 'Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
       group('Namecard', '<dl class="ovfacts">' +
-        fact('Mobile', m.mobile ? (window.ADspaceCard && window.ADspaceCard.phone ? window.ADspaceCard.phone(m.mobile) : m.mobile) : '') +
-        fact('Mobile on card', m.card_mobile === false ? 'Hide' : 'Show') +
-        fact('Short link', link) + fact('Card', m.card_on === false ? 'Off' : 'On') + '</dl>') +
+        word('mobile', 'Mobile', m.mobile ? (window.ADspaceCard && window.ADspaceCard.phone ? window.ADspaceCard.phone(m.mobile) : m.mobile) : '') +
+        pick('card_mobile', 'Mobile on card', [['show', 'Show'], ['hide', 'Hide']], m.card_mobile === false ? 'hide' : 'show', m.card_mobile === false ? 'Hide' : 'Show') +
+        word('card_slug', 'Short link', link) +
+        pick('card_on', 'Card', [['on', 'On'], ['off', 'Off']], m.card_on === false ? 'off' : 'on', m.card_on === false ? 'Off' : 'On') + '</dl>') +
       '</div></div>';
-    var ed = host.querySelector('[data-r="edit"]');
-    if (ed) ed.addEventListener('click', function () { openMemberBox(m, ed); });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
+      var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
+      pen.addEventListener('click', function () {
+        var raw = k === 'capacity_minutes_week' ? (m[k] == null ? '' : String(Math.round(m[k] / 6) / 10))
+          : k === 'access_until' ? (m.access_until || '') : String(m[k] == null ? '' : m[k]);
+        val.textContent = raw;
+        window.ADspaceAsk.rename(val, pen, {
+          value: raw, type: k === 'access_until' ? 'date' : k === 'capacity_minutes_week' ? 'number' : 'text',
+          code: k === 'staff_code', label: pen.getAttribute('aria-label').replace(/^Edit /, ''),
+          allowEmpty: ['name', 'email'].indexOf(k) < 0,
+          save: function (v) {
+            v = String(v == null ? '' : v).trim();
+            if (k === 'staff_code') v = v.toUpperCase();
+            if (k === 'email' || k === 'card_slug') v = v.toLowerCase();
+            if (k === 'card_slug') v = v.replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+            var bad = badValue(k, v);
+            if (bad) { msg('mrecMsg', bad, 'err'); paneOverview(m, host); return; }
+            var f = {};
+            if (k === 'capacity_minutes_week') f[k] = v === '' ? null : Math.round(parseFloat(v) * 60);
+            else if (k === 'access_until') { f.access_until = v || null; if (!v) f.access_until_time = null; }
+            else f[k] = v || null;
+            if (String(f[k] == null ? '' : f[k]) === String(m[k] == null ? '' : m[k])) { paneOverview(m, host); return; }
+            patchMember(m, f, function (ok) { if (!ok) paneOverview(m, host); });
+          }
+        });
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('select[data-sel]'), function (sel) {
+      var was = sel.value;
+      sel.addEventListener('change', function () {
+        var k = sel.getAttribute('data-sel'), f = {};
+        if (k === 'card_mobile') f[k] = sel.value !== 'hide';
+        else if (k === 'card_on') f[k] = sel.value !== 'off';
+        else f[k] = sel.value || null;
+        patchMember(m, f, function (ok) { if (!ok) sel.value = was; else was = sel.value; });
+      });
+    });
   }
   /* What the colleague holds now, kind by kind, with Hand over (Team Full
      Access): the same reads and the same sheet Set inactive and Delete use. */
@@ -1991,8 +2113,14 @@
         var self = me() && me().id === m.id;
         var anyHeld = own.clients.length || own.campaigns.length || HELD_KINDS.some(function (k) { return Number(held[k[0]] || 0) > 0; });
         var act = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over</button>' : '';
-        var section = function (title, rows, act2) {
-          return group(title, '<div class="mrec-rows">' + rows.join('') + '</div>', act2);
+        /* A long list shows its first rows and the rest behind Show all
+           (the user, 2026-10-18: "imaging u need to fit in 100+ tasks"). */
+        var FIRST = 10;
+        var section = function (title, rows, act2, lead) {
+          var more = rows.length > FIRST + 2;
+          return group(title, (lead || '') + '<div class="mrec-rows">' + (more ? rows.slice(0, FIRST) : rows).join('') +
+            (more ? '<div class="mrec-rest" hidden>' + rows.slice(FIRST).join('') + '</div>' : '') + '</div>' +
+            (more ? '<button class="btn btn-sm mrec-all" type="button" data-all>Show all ' + rows.length + '</button>' : ''), act2);
         };
         if (tasks === null && err) {
           html += group('Open tasks', '<p class="msg err">Could not load their tasks.</p>', act); act = '';
@@ -2002,6 +2130,12 @@
             var a = day(x) || '9999', b2 = day(y) || '9999';
             return a < b2 ? -1 : a > b2 ? 1 : (x.task_no || 0) - (y.task_no || 0);
           });
+          var wk = window.ADspaceClock.addDays(today, 7);
+          var cnt = { late: 0, week: 0, later: 0, none: 0 };
+          tasks.forEach(function (t) { var d = day(t); cnt[!d ? 'none' : d < today ? 'late' : d <= wk ? 'week' : 'later']++; });
+          var lead = '<p class="mrec-sum">' + [cnt.late ? '<span class="is-late">' + cnt.late + ' overdue</span>' : '',
+            cnt.week ? cnt.week + ' due within 7 days' : '', cnt.later ? cnt.later + ' later' : '', cnt.none ? cnt.none + ' with no due date' : '']
+            .filter(Boolean).join(' · ') + '</p>';
           html += section('Open tasks · ' + tasks.length, tasks.map(function (t) {
             opens.push(function () { goTo('/admin/?s=work&open=' + encodeURIComponent(t.id), 'work'); });
             var d = day(t), late = d && d < today;
@@ -2009,7 +2143,7 @@
               .filter(Boolean).join(' · ');
             return workRow(opens.length - 1, t.content_desc || t.title || 'Untitled task', meta,
               d ? (late ? 'Overdue · ' : '') + window.ADspaceClock.date(d) : 'No due date', late);
-          }), act);
+          }), act, lead);
           act = '';
         }
         if (own.clients.length) {
@@ -2039,6 +2173,13 @@
         }
         if (!html) html = group('Their work', '<p class="muted">Nothing is assigned to ' + esc(m.name) + '.</p>');
         host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + html + '</div></div>';
+        Array.prototype.forEach.call(host.querySelectorAll('[data-all]'), function (b) {
+          b.addEventListener('click', function () {
+            var rest = b.parentNode.querySelector('.mrec-rest');
+            if (rest) rest.hidden = false;
+            b.remove();
+          });
+        });
         Array.prototype.forEach.call(host.querySelectorAll('[data-w]'), function (b) {
           b.addEventListener('click', function () { opens[Number(b.getAttribute('data-w'))](); });
         });
@@ -2062,40 +2203,28 @@
      issued opens as its PDF, one added by hand its file link; Issue document
      and Add entry open on this colleague. */
   function paneDocs(m, host, live) {
-    UI().skeleton(host, 2);
-    db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, file_url, shared_at, created_at')
-      .eq('member_id', m.id).eq('family', 'hr').order('created_at', { ascending: false }).then(function (r) {
-        if (!live()) return;
-        if (r.error) { UI().failLine(host, 'their letters', r.error.message || '', function () { paneDocs(m, host, live); }); return; }
-        var rows = r.data || [];
-        var work = may('register.hr', 'work') && window.ADspaceRegister;
-        var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add entry</button>' +
-          '<button class="btn btn-sm" type="button" data-r="issue">Issue document</button></span>' : '';
-        host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR letters',
-          rows.length ? '<dl class="ovfacts">' + rows.map(function (d, i) {
-            var words = esc(d.serial) + ' · ' + esc(d.kind) + (d.voided_at ? ' · ' + esc(d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : '') +
-              (d.shared_at && !d.voided_at ? ' · Shared' : '');
-            var hand = d.source === 'manual';
-            return '<div><dt>' + esc(dayWord(d.issued_at)) + '</dt><dd>' + (hand && !d.file_url ? words :
-              '<button class="linkbtn" type="button" data-l="' + i + '">' + words + '</button>') + '</dd></div>';
-          }).join('') + '</dl>' : '<p class="muted">No letters.</p>', act) + '</div></div>';
-        Array.prototype.forEach.call(host.querySelectorAll('[data-l]'), function (b) {
-          b.addEventListener('click', function () {
-            var d = rows[Number(b.getAttribute('data-l'))];
-            if (d.source === 'manual') { window.open(d.file_url, '_blank', 'noopener'); return; }
-            if (window.ADspaceLetters) window.ADspaceLetters.download(d, function (warn) { if (warn) msg('mrecMsg', warn, 'err'); });
-          });
-        });
-        var again = function () { if (rec.id === m.id && rec.pane === 'documents') paintPane(m); };
-        var is = host.querySelector('[data-r="issue"]');
-        if (is) is.addEventListener('click', function () {
-          window.ADspaceRegister.openIssue({ member: m, families: ['hr'], msg: 'mrecMsg', onDone: again });
-        });
-        var ad = host.querySelector('[data-r="add"]');
-        if (ad) ad.addEventListener('click', function () {
-          window.ADspaceRegister.openAdd({ member: m, msg: 'mrecMsg', onDone: again });
-        });
-      });
+    var R = window.ADspaceRegister;
+    var work = may('register.hr', 'work') && R;
+    var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add entry</button>' +
+      '<button class="btn btn-sm" type="button" data-r="issue">Issue document</button></span>' : '';
+    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR letters', '<div id="mrecDocs"></div>', act) + '</div></div>';
+    var box = host.querySelector('#mrecDocs');
+    UI().skeleton(box, 2);
+    var again = function () { if (rec.id === m.id && rec.pane === 'documents') paintPane(m); };
+    if (R && R.paintForMember) R.paintForMember(m, box, function (rows, err) {
+      if (!live()) return;
+      var sk = box.querySelector('.skel'); if (sk && sk.parentNode) sk.parentNode.remove();
+      if (err) { UI().failLine(box, 'their letters', (err && err.message) || '', function () { paneDocs(m, host, live); }); return; }
+      if (!rows.length) box.innerHTML = '<p class="muted">No letters.</p>';
+    });
+    var is = host.querySelector('[data-r="issue"]');
+    if (is) is.addEventListener('click', function () {
+      R.openIssue({ member: m, families: ['hr'], msg: 'mrecMsg', onDone: again });
+    });
+    var ad = host.querySelector('[data-r="add"]');
+    if (ad) ad.addEventListener('click', function () {
+      R.openAdd({ member: m, msg: 'mrecMsg', onDone: again });
+    });
   }
   /* Reviews sit behind Performance's own lock, so the record opens them
      there, the list searched for this colleague. */
