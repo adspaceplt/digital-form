@@ -1957,10 +1957,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     minimum term with the total over the months stated for each line, and
     the acceptance's First month incl. SST, Minimum term and Total for the
     term. Wherever a monthly line runs months other than the term, the
-    month's figures are the first month's, named First month (subtotal,
-    excl. SST, incl. SST; 首月 on `/quote/`), on the letter, the quotation's
-    PDF, `/quote/` and Build quote alike; Monthly where every line runs the
-    term (the user, 2026-10-18).
+    month's figures are the first month's, named First month (excl. SST,
+    incl. SST; 首月 on `/quote/`), and the first month holds the one-off
+    items (the one-off subtotal before SST, one First month incl. SST, no
+    One-off incl. SST of its own), on the letter, the quotation's PDF,
+    `/quote/` and Build quote alike; Monthly where every line runs the term
+    (the user, 2026-10-18).
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate

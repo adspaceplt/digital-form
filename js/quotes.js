@@ -72,9 +72,13 @@
   function ownMonths(lines, t) {
     return (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number((t || {}).term); });
   }
+  /* The first month holds the one-off items too (the user, 2026-10-18). */
+  function sum2(a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; }
+  function firstIncl(t) { return sum2(t.month.incl, t.once && t.once.incl); }
   function headline(q) {
     var m = monthly(q);
-    if (m != null) return [curOf(q) + ' ' + rm(m), ownMonths(q.lines, q.totals) ? 'First month incl. SST' : 'Monthly incl. SST'];
+    if (m != null) return ownMonths(q.lines, q.totals) ? [curOf(q) + ' ' + rm(firstIncl(q.totals)), 'First month incl. SST']
+      : [curOf(q) + ' ' + rm(m), 'Monthly incl. SST'];
     var o = q.totals && q.totals.once;
     return o ? [curOf(q) + ' ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
   }
@@ -510,8 +514,9 @@
      while the lines and totals sit at the sheet's end (2026-10-15). */
   function sumOf(d) {
     var t = (d && d.totals) || {}, out = [];
-    if (t.month) out.push(CUR + ' ' + acct(t.month.incl) + (ownMonths(d && d.lines, t) ? ' first month' : ' monthly'));
-    if (t.once) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
+    var own = t.month && ownMonths(d && d.lines, t);
+    if (t.month) out.push(CUR + ' ' + acct(own ? firstIncl(t) : t.month.incl) + (own ? ' first month' : ' monthly'));
+    if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
     return out.length ? out.join(' · ') + ' incl. SST' : '';
   }
   /* The lines and the totals as the quotation will keep them. */
@@ -535,13 +540,19 @@
             '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
-    var tot = [], mo = ownMonths(rows, t) ? 'First month' : 'Monthly';
+    var tot = [], own = t.month && ownMonths(rows, t), o = t.once || {};
     if (t.month) {
-      tot.push([mo + ' subtotal', acct(t.month.subtotal)]);
+      tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
       if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
-      tot.push([mo + ' excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], [mo + ' incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
+      if (own) {
+        if (t.once) tot.push(['One-off subtotal', acct(o.subtotal)]);
+        tot.push(['First month excl. SST', acct(sum2(t.month.excl, o.subtotal))], ['SST ' + t.sst_pct + '%', acct(sum2(t.month.sst, o.sst))],
+          ['First month incl. SST', CUR + ' ' + acct(firstIncl(t)), 1]);
+      } else {
+        tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
+      }
     }
-    if (t.once) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', CUR + ' ' + acct(t.once.incl), 1]);
+    if (t.once && !own) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', CUR + ' ' + acct(t.once.incl), 1]);
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
