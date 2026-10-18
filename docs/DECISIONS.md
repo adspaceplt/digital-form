@@ -5226,6 +5226,21 @@ finding fixed at the user's word ("fix all no matter what").
   at Manage, or is an admin; the task card shows Priority as a value to
   anyone else. `tests/ops.js` holds it; the stand-in refuses the same.
 
+- 2026-10-18 · Suppliers became a section of their own, and New supplier
+  asks the Supplier ID alone. The first release placed Suppliers as a
+  second tab inside Documents without asking; the user found it there
+  ("im surprised to see the Suppliers live inside Documents") and asked
+  for its own section. A placement in the rail is the user's call and is
+  asked before it is built. New supplier had asked the name, which the
+  team does not know before the supplier's form comes back ("i wont know
+  the company name first"): the name is now optional until the form gives
+  it, and Approve waits for one. The access keys moved from
+  `register.suppliers` / `register.supplier_pay` to `suppliers` /
+  `suppliers.pay`, each group keeping its level. The same push added
+  NET 14 (the imported AS0125 asked for it) and held phone numbers to
+  Malaysia's and Singapore's forms; the BRN, NRIC and SST shapes already
+  held.
+
 - 2026-10-18 · Tasks go only to a colleague at My Work Work or above
   (review item 12). `ops_takes_tasks` and the page's `takesTasks` let in any
   level above No Access, and the page offered a colleague whose row held no

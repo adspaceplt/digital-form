@@ -109,6 +109,7 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
+    ['suppliers', 'Suppliers',         ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
@@ -144,10 +145,10 @@
                 /* A file the client approved, hidden and then deleted for good
                    (audit S6, 2026-10-10): granted, an admin's by itself. */
                 ['files_delete', 'Delete approved files']],
-    register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types'],
-                /* Suppliers (2026-10-18) follow Documents; their NRIC and bank
-                   details are granted, an admin's by itself. */
-                ['suppliers', 'Suppliers'], ['supplier_pay', 'Supplier bank details']],
+    register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
+    /* A supplier's NRIC and bank details (2026-10-18): granted, an admin's by
+       itself, read at View and written at Work. */
+    suppliers: [['pay', 'Supplier bank details']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
        campaigns log to the team opened every client's billing change and
@@ -156,7 +157,7 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'], ['whatsapp', 'WhatsApp'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['register', 'Documents'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['register', 'Documents'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -206,7 +207,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'register.supplier_pay': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -236,7 +237,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'register.supplier_pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'suppliers.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -1047,6 +1048,8 @@
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
                 work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
+    suppliers: { none: 'Suppliers is hidden.', view: 'Read suppliers and their letters.',
+                 work: 'Add suppliers, send their details form, take it in and approve them.', manage: 'Also delete suppliers.' },
     reports: { none: 'Reports is hidden.', view: 'Read reports and preview their PDFs.',
                work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
@@ -1062,13 +1065,13 @@
      letters, performance reviews, Team) are never in a preset below Admin:
      they are opened deliberately, in Customise. */
   var PRESETS = {
-    manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
+    manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', suppliers: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                'register.hr': 'none' },
-    staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', reports: 'work',
+    staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', suppliers: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
-    viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', reports: 'view',
+    viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', suppliers: 'view', reports: 'view',
                links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
   };
 
@@ -1082,7 +1085,7 @@
      `PART_LEVELS` and every database check are as they were. */
   var CHUNKS = [
     ['Work', ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp']],
-    ['Internal', ['register', 'links', 'services', 'team', 'activity']]
+    ['Internal', ['register', 'suppliers', 'links', 'services', 'team', 'activity']]
   ];
   /* Each is on or off, and each is an admin's alone until a group is given
      it. Portal first (what changes the portal for everybody), then each
