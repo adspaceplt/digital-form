@@ -1189,59 +1189,30 @@
               if (!sets || !sets.length) return;
               var setById = {};
               sets.forEach(function (b) { setById[b.id] = b; });
-              return settled(db.from('posts').select('id, batch_id, round, review_reset_at').in('batch_id', sets.map(function (b) { return b.id; })))
-                .then(function (posts) {
-                  if (!posts || !posts.length) return;
-                  var postById = {};
-                  posts.forEach(function (x) { postById[x.id] = x; });
-                  return settled(db.from('reviews').select('post_id, decision, round, created_at, undone_at')
-                    .in('post_id', posts.map(function (x) { return x.id; })).order('created_at', { ascending: false }))
-                    .then(function (revs) {
-                      /* A post's decision is the newest that stands on its
-                         round on show, the way the set's own page reads it. */
-                      var latest = {};
-                      (revs || []).forEach(function (x) {
-                        var po = postById[x.post_id];
-                        if (!po || x.undone_at || latest[x.post_id]) return;
-                        if ((x.round || 1) !== (po.round || 1)) return;
-                        if (po.review_reset_at && x.created_at <= po.review_reset_at) return;
-                        latest[x.post_id] = x;
-                      });
-                      var perSet = {};
-                      Object.keys(latest).forEach(function (pid) {
-                        var x = latest[pid];
-                        if (x.decision !== 'changes') return;
-                        var b = postById[pid].batch_id;
-                        var cur = perSet[b] || (perSet[b] = { n: 0, at: x.created_at });
-                        cur.n++;
-                        if (x.created_at < cur.at) cur.at = x.created_at;
-                      });
-                      Object.keys(perSet).forEach(function (bid) {
-                        var b = setById[bid], c0 = byId[b.client_id] || {};
-                        rows.push({ key: 'cr:' + bid, section: 'review', at: perSet[bid].at, client: b.client_id,
-                          title: 'Client changes · ' + (c0.name || 'Client'),
-                          meta: [perSet[bid].n + (perSet[bid].n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
-                          url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid) });
-                      });
-                      /* A published set with posts the client has not decided,
-                         waiting from its publishing. */
-                      var pending = {};
-                      posts.forEach(function (po) {
-                        if (latest[po.id]) return;
-                        pending[po.batch_id] = (pending[po.batch_id] || 0) + 1;
-                      });
-                      Object.keys(pending).forEach(function (bid) {
-                        var b = setById[bid], c0 = byId[b.client_id] || {}, n = pending[bid];
-                        if (!overdue(b.published_at)) return;
-                        rows.push({ key: 'ap:' + bid, section: 'review', at: b.published_at, client: b.client_id,
-                          title: 'Awaiting approval · ' + (c0.name || 'Client'),
-                          meta: [n + (n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
-                          url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(bid),
-                          remind: { clientId: b.client_id, ref: bid,
-                            what: n + (n === 1 ? ' post' : ' posts') + (b.title ? ' in ' + b.title : ''),
-                            link: c0.access_token ? location.origin + '/review/?k=' + encodeURIComponent(c0.access_token) : '' } });
-                      });
-                    });
+              /* Counted by the database in one request (`review_set_counts`):
+                 a read of every post and decision stopped at a thousand rows. */
+              return settled(db.rpc('review_set_counts', { p_sets: sets.map(function (b) { return b.id; }) }))
+                .then(function (counts) {
+                  (counts || []).forEach(function (k) {
+                    var b = setById[k.set_id];
+                    if (!b) return;
+                    var c0 = byId[b.client_id] || {};
+                    if (k.n_changes) rows.push({ key: 'cr:' + b.id, section: 'review', at: k.changes_since, client: b.client_id,
+                      title: 'Client changes · ' + (c0.name || 'Client'),
+                      meta: [k.n_changes + (k.n_changes === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
+                      url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(b.id) });
+                    /* A published set with posts the client has not decided,
+                       waiting from its publishing. */
+                    var n = k.n_undecided;
+                    if (!n || !overdue(b.published_at)) return;
+                    rows.push({ key: 'ap:' + b.id, section: 'review', at: b.published_at, client: b.client_id,
+                      title: 'Awaiting approval · ' + (c0.name || 'Client'),
+                      meta: [n + (n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
+                      url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(b.id),
+                      remind: { clientId: b.client_id, ref: b.id,
+                        what: n + (n === 1 ? ' post' : ' posts') + (b.title ? ' in ' + b.title : ''),
+                        link: c0.access_token ? location.origin + '/review/?k=' + encodeURIComponent(c0.access_token) : '' } });
+                  });
                 });
             }));
           return Promise.all(sub);

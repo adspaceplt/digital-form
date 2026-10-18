@@ -4852,3 +4852,18 @@ finding fixed at the user's word ("fix all no matter what").
   (`period-confirmed`, with the quarter or the period named) until the
   period is reopened under Quarters or Bonus and trip, as the department
   scores and the company figures already are. `tests/perf.js` holds it.
+
+- 2026-10-18 · Where a set's posts stand is counted by the database
+  (second audit, item 14). The Dashboard's Sets waiting on clients and My
+  Work's Waiting for you (Client changes, Awaiting approval) read every
+  post of the sets shown with `select('*')`, then every decision on them,
+  passing up to a thousand ids in the address; PostgREST answers at most a
+  thousand rows a read, so past that the counts stopped short silently
+  (live held 51 posts). `2026-10-18-review-set-counts.sql` adds
+  `review_set_counts(p_sets)`, security invoker so the posts' and
+  decisions' own policies and client scope hold: a row a set with its
+  posts, approved, changes requested, undecided and the oldest standing
+  change, the decision being the newest standing on the round on show
+  after any re-approval request. Both pages ask it once. Content Review's
+  own list keeps its paged reads (`readIn`). `tests/sql.js` holds the
+  rule; the stand-in answers it alike.

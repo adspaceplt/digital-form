@@ -222,31 +222,16 @@
           .eq('published', true).order('created_at', { ascending: false }).limit(200).then(rows).then(function (sets) {
             sets = sets || [];
             if (!sets.length) return [];
-            return db.from('posts').select('*').in('batch_id', sets.map(function (s) { return s.id; })).then(rows).then(function (posts) {
-              posts = posts || [];
-              var pids = posts.map(function (p) { return p.id; });
-              var reviews = pids.length
-                ? db.from('reviews').select('*').in('post_id', pids).order('created_at', { ascending: false }).then(rows)
-                : Promise.resolve([]);
-              return reviews.then(function (revs) {
-                var latest = {}, reset = {}, round = {};
-                posts.forEach(function (p) { reset[p.id] = p.review_reset_at; round[p.id] = p.round || 1; });
-                (revs || []).forEach(function (r) {
-                  if (latest[r.post_id] || r.undone_at) return;
-                  if ((r.round || 1) !== round[r.post_id]) return;
-                  if (reset[r.post_id] && new Date(r.created_at) < new Date(reset[r.post_id])) return;
-                  latest[r.post_id] = r;
-                });
-                return sets.map(function (s) {
-                  var mine = posts.filter(function (p) { return p.batch_id === s.id; });
-                  var ok = 0, ch = 0;
-                  mine.forEach(function (p) {
-                    var d = latest[p.id];
-                    if (d && d.decision === 'approved') ok++; else if (d) ch++;
-                  });
-                  return { s: s, n: mine.length, ok: ok, ch: ch };
-                }).filter(function (x) { return x.n && x.ok < x.n; });
-              });
+            /* Counted by the database for every set in one request
+               (`review_set_counts`): a read of every post and decision passed
+               a thousand ids in the address and stopped at a thousand rows. */
+            return db.rpc('review_set_counts', { p_sets: sets.map(function (s) { return s.id; }) }).then(rows).then(function (counts) {
+              var by = {};
+              (counts || []).forEach(function (c) { by[c.set_id] = c; });
+              return sets.map(function (s) {
+                var c = by[s.id] || {};
+                return { s: s, n: c.n_posts || 0, ok: c.n_approved || 0, ch: c.n_changes || 0 };
+              }).filter(function (x) { return x.n && x.ok < x.n; });
             });
           });
       });
