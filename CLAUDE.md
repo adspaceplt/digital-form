@@ -5349,7 +5349,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `privacy-retention`, the 2nd of each month) removes older rows, and
   clears a WhatsApp message's number, name, variables and link code twelve
   months after it was queued, never one still queued or sending
-  (`2026-10-18-personal-data-kept-for-a-time.sql`).
+  (`2026-10-18-personal-data-kept-for-a-time.sql`), and removes a caller's
+  address against a link's passcode (`link_tries`) once its last try and
+  last opening are 30 days old and no lock stands
+  (`2026-10-18-passcode-tries-kept-for-a-time.sql`).
 
 ### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `2026-10-10-whatsapp-approval-reminder.sql`, `docs/WHATSAPP-SETUP.md`)
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
