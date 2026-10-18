@@ -3800,7 +3800,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   colleague: this half's five answers, Checked in, or Not agreed /
   Withdrawn as a chip), each opening their history, and the last 90 days'
   talks. `health_team()` sends a colleague's answers only while their
-  agreement stands, and a talk's names, state and dates, never its note,
+  agreement stands and only those saved since it was made
+  (`2026-10-18-health-answers-follow-the-agreement.sql`), and a talk's names, state and dates, never its note,
   which only the two colleagues in it read
   (`2026-10-18-health-talk-notes-stay-private.sql`). The
   answers never reach a review, the Activity record or a notification.
