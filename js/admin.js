@@ -5395,7 +5395,7 @@
      days) and week (0 to 168 hours), where 0 sends or asks none; fx (the
      ringgit to one Singapore dollar, four decimals) may stay unset. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
-    every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true],
+    every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true] };
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The

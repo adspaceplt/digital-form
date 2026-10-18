@@ -97,6 +97,9 @@
       ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
       ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
       ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
+    /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
+    healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
+      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'A leaver\'s', per('month')]] },
     resend: { title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
   };
   /* The earliest change set from a later day, in the row's words: "From
@@ -189,7 +192,10 @@
         meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' },
       may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce') },
       may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice') },
-      biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() }]);
+      biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() },
+      biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
+        meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
+          'A leaver\'s ' + plural(num('health_leaver_months'), 'month', 'months') + ' after they left']) }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
