@@ -5138,3 +5138,12 @@ finding fixed at the user's word ("fix all no matter what").
   acceptance takes the one-off items with their SST. Every line on the term
   is unchanged (Monthly incl. SST and One-off incl. SST apart, or the
   letter's First month due). `tests/pdfcases.js` and `tests/quotes.js` hold it.
+
+- 2026-10-18 · The nightly dumps expire after 90 days, and the bucket is
+  closed to the public. Each dump keeps the personal data the database
+  clears later (`privacy_retention`), so a dump kept for ever kept it too.
+  The user set S3 rule `backups-expire` on `private/backups/db/` (current
+  versions expire 90 days after creation, a noncurrent version a day
+  after), and closed the bucket's public read (the second audit's finding
+  1), so files reach the web through CloudFront alone. Set in the AWS
+  console; nothing in the repo checks either.
