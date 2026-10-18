@@ -5127,7 +5127,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     its leader while active, else the month's manager; trigger
     `team_members_leaving` takes a colleague's notification devices on Set
     inactive, an expiry or a removal, and on a removal ends their helper and
-    reviewer places on tasks and withdraws the open talks asked of them.
+    reviewer places on tasks; trigger `team_members_talks_closed`
+    withdraws every open health talk they asked or were asked the moment
+    they stop being active (`2026-10-18-leavers-talks-closed.sql`).
 - Access expiry (`2026-10-01-team-access-expiry.sql`,
   `2026-10-03-team-access-time.sql`):
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`
