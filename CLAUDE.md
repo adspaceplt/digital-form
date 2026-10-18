@@ -3787,7 +3787,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   a word for every step) as segments, and an optional note of 1,000
   characters, once a half month (the 1st to the 15th, the 16th to the month's
   end, MYT), edited until it ends (`health_checkin_save`: `no-consent`,
-  `incomplete`, `bad-score`, `too-long`); the sheet opens on There are no
+  `incomplete`, `bad-score`, `too-long`; the page names the half its sheet
+  showed, one ended refused `stale-half`, the answers kept and the sheet
+  naming the half open, `2026-10-18-checkin-keeps-its-half.sql`); the sheet opens on There are no
   right or wrong answers. Answer as you truly feel today.
 - The view: the half month's card (Checked in on {day} under its title; the
   five answers across it, two across in a narrow pane with the fifth taking
