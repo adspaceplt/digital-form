@@ -1205,7 +1205,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   itself, no other group given any): `ops.numbering` (Task numbering),
   `ops.override` (move anybody's task and its final date), `team.perfadmin`
   (`perf_is_admin()`: revenue and profit, Performance settings, a month's
-  record removed), `team.settings` (Business settings), `team.upgrade`,
+  record removed, the department scores), `team.settings` (Business settings), `team.upgrade`,
   `team.invite` (asked by `invite-member` as the caller), `team.handbook`
   (the four functions and the bucket's add and remove policies),
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
@@ -3689,9 +3689,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The department prize goes to the winning department whole (`share`,
     named "{Department} won"); its team leader decides the split, so no
     member's row carries a figure for it. Tied departments are joint winners
-    and one that does not qualify drops out. Nobody scores their own department
-    (`perf_dept_save` refuses `own-department` by `team_members.department`);
-    an admin, who holds none, scores both.
+    and one that does not qualify drops out. The department scores are
+    `team.perfadmin`'s alone (`perf_dept_save` refuses `admin-only`, the page
+    offers Department scores to that part alone; 2026-10-18), never of the
+    scorer's own department (`own-department`, by `team_members.department`).
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
