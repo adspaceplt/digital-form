@@ -197,7 +197,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql, pdflibhash |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly, lettersql |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
@@ -1923,7 +1923,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   only when Safari refuses a stale press (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
-  loads them in its head (1.1 MB, about 600 ms of a phone's load).
+  loads them in its head (1.1 MB, about 600 ms of a phone's load). A
+  refusal names what failed: a file that arrives and fails its hash has
+  changed at its source (Tell an admin), anything else is the connection
+  (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
