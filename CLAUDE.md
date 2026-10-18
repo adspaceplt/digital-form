@@ -1455,7 +1455,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - On a phone the row is two columns: name over meta, and the chip over the
     age in a fixed 120px track, top aligned. The meta omits what is not known,
     never showing a bare currency sign.
-- Last activity (`loadLastSeen()`): the newest of a logged call or visit, a
+- Last activity (`loadLastSeen()`, one read: `client_last_activity()`,
+  invoker, the newest of each kind a client): the newest of a logged call or visit, a
   stage move (`stage_since`; `Added` while it has never moved), or a document
   issued. The date sits over a mute word for which one.
   - A refused read is left out.

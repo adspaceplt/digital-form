@@ -435,8 +435,7 @@
      of this list, after "who is overdue". It is the newest of three facts the
      team already records (the user chose this on 2026-09-26): a call or visit
      logged, the stage moving, and a document issued, the Letter of Offer or
-     one from Documents. Each read is one the record already makes, and a read
-     that is refused or slow is left out rather than failing the column, so
+     one from Documents. Each table answers under its own read policy, so
      somebody without Documents still sees their calls and stage moves. The
      word under the date says which of the three it was. */
   function loadLastSeen() {
@@ -455,18 +454,15 @@
       var added = !c.created_at || Math.abs(Date.parse(c.stage_since) - Date.parse(c.created_at)) < 60000;
       take(c.id, c.stage_since, added ? 'Added' : 'Stage moved');
     });
-    function rows(q) {
-      return q.then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; });
-    }
     var title = (window.ADspaceForm && window.ADspaceForm.title) || function (s) { return s; };
-    Promise.all([
-      rows(db.from('client_touches').select('client_id, happened_at, kind').is('archived_at', null)),
-      rows(db.from('client_documents').select('client_id, created_at')),
-      rows(db.from('documents').select('client_id, kind, created_at').not('client_id', 'is', null))
-    ]).then(function (all) {
-      all[0].forEach(function (t) { take(t.client_id, t.happened_at, KIND_WORD[t.kind] || 'Call'); });
-      all[1].forEach(function (d) { take(d.client_id, d.created_at, 'Letter of Offer'); });
-      all[2].forEach(function (d) { take(d.client_id, d.created_at, d.kind ? title(d.kind) : 'Document'); });
+    /* The newest of each per client in one read (`client_last_activity`,
+       2026-10-19), never every row: three unpaged reads lost the newest
+       past a thousand. A refused read leaves the stage moves alone. */
+    db.rpc('client_last_activity').then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; }).then(function (all) {
+      all.forEach(function (x) {
+        take(x.client_id, x.at, x.source === 'touch' ? (KIND_WORD[x.kind] || 'Call')
+          : x.source === 'letter' ? 'Letter of Offer' : (x.kind ? title(x.kind) : 'Document'));
+      });
       state.lastSeen = seen;
       if (!$('crmListView').hidden) paintList();
     });
