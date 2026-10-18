@@ -5067,3 +5067,9 @@ finding fixed at the user's word ("fix all no matter what").
   library has changed at its source and was not loaded. Tell an admin.";
   anything it cannot tell reads as the connection. `tests/pdflibhash.js`
   serves the page as committed (the suites' server takes hashes off).
+
+- 2026-10-18 · `reopens()` leaves My Work. It answered whether a task's
+  workflow held a Revision stage for `ops_reopen_task`, had no caller since
+  #566, and named a function closed to every browser in #568; nothing in
+  the tree called it (pages, suites, functions). Reopen works through
+  `ops_transition_task` as before.
