@@ -1104,10 +1104,11 @@
     ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Documents', ['register.types']],
-    ['Team', ['team.invite', 'team.handbook', 'team.health', 'team.perfadmin']]
+    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin']]
   ];
-  /* The three My Work views follow My Work and are not offered here. */
-  var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
+  /* The three My Work views follow My Work and are not offered here, nor
+     is Team: Health, an admin's alone (2026-10-18, Team audit 11). */
+  var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1, 'team.health': 1 };
   var TOOL = {};
   ADMIN_TOOLS.forEach(function (g) { g[1].forEach(function (k) { TOOL[k] = 1; }); });
   function secOf(key) { return SECTIONS.filter(function (s) { return s[0] === key; })[0]; }
@@ -1831,7 +1832,7 @@
     if (k === 'work') return may('team', 'manage');
     if (k === 'documents') return may('register.hr', 'view');
     if (k === 'performance') return may('team.performance', 'view');
-    if (k === 'health') return may('team.health', 'manage');
+    if (k === 'health') return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin());
     return true;
   }
   (function () {

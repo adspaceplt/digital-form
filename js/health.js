@@ -6,8 +6,8 @@
  * before the colleague agrees, in My records, Health, and withdrawing takes their
  * answers out of Team: Health. What each reader is sent is the database's
  * decision (`health_*` functions; no table is readable directly): the
- * colleague their own, Team: Health (`team.health`, a granted part, an
- * admin's by itself) everybody's by name while their agreement stands. The
+ * colleague their own, Team: Health (an admin's alone, behind the
+ * Performance master code) everybody's by name while their agreement stands. The
  * answers never reach a performance review, the Activity record or the
  * words of a notification.
  *
@@ -57,7 +57,7 @@
     'already-asked': 'You have already asked them. Withdraw that request first.',
     'bad-status': 'That cannot be changed from here.',
     'not-found': 'Not found.',
-    'denied': 'Your group cannot open health check-ins.',
+    'denied': 'Health check-ins are open to an admin alone.',
     'not-team': 'Only a team member can open this.'
   };
   function said(d) {
@@ -352,15 +352,55 @@
   }
 
   // ---- Team: Health ----------------------------------------------------------------------
+  /* Team: Health is an admin's, behind the Performance master code
+     (2026-10-18, Team audit 11): the same unlock, the same 15 minutes. */
+  var P = function () { return window.ADspacePerf || {}; };
+  var LOCKED = { 'code-needed': 1, 'no-code': 1, 'locked': 1 };
+  function teamRead(host, then, again) {
+    var tok = P().token ? P().token() : null;
+    if (!tok) { lockCard(host, null, again); return; }
+    call('health_team', { p_token: tok }, function (d) {
+      if (d.error && LOCKED[d.error]) { if (P().keepToken) P().keepToken(null); lockCard(host, d, again); return; }
+      then(d);
+    });
+  }
+  function lockCard(host, why, again) {
+    st.team = null;
+    var said2 = P().said || said, blocked = why && why.error === 'no-code';
+    host.innerHTML = '<div class="lockcard">' +
+      '<span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h3 class="lockcard-title">Health check-ins are locked</h3>' +
+      (blocked ? '' : '<form class="lockcard-form" autocomplete="off">' +
+        '<p class="lockcard-line">Unlocks for 15 minutes.</p>' +
+        '<label class="field-label" for="healthCode">Master code</label>' +
+        '<input class="input" id="healthCode" type="password" autocomplete="off" spellcheck="false" autocapitalize="off">' +
+        '<button class="btn btn-primary" id="healthUnlock" type="submit">Unlock</button></form>') +
+      '<div class="msg' + (why && why.error !== 'code-needed' ? ' err' : '') + '" id="healthLockMsg">' + esc(why ? said2(why) : '') + '</div></div>';
+    var f = host.querySelector('form');
+    if (!f) return;
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var code = $('healthCode').value, m = $('healthLockMsg');
+      if (!code) { m.className = 'msg err'; m.textContent = 'Enter the master code.'; return; }
+      $('healthUnlock').disabled = true;
+      call('perf_unlock', { p_code: code }, function (d) {
+        $('healthUnlock').disabled = false;
+        $('healthCode').value = '';
+        if (d.error) { m.className = 'msg err'; m.textContent = said2(d); return; }
+        if (P().keepToken) P().keepToken(d.token);
+        again();
+      });
+    });
+  }
   function enterTeam() {
     var box = $('teamHealthBox');
     if (!box) return;
     if (!st.team) UI.skeleton(box, 3);
-    call('health_team', {}, function (d) {
+    teamRead(box, function (d) {
       if (d.error) { UI.failLine(box, 'Health check-ins', said(d), enterTeam); return; }
       st.team = d;
       paintTeam();
-    });
+    }, enterTeam);
   }
   function thisHalf(p) { var h = st.team && st.team.half; return (p.checkins || []).filter(function (c) { return c.half === h; })[0]; }
   function paintTeam() {
@@ -469,13 +509,13 @@
   function paintPerson(id, host, live) {
     if (!host) return;
     UI.skeleton(host, 2);
-    call('health_team', {}, function (d) {
+    teamRead(host, function (d) {
       if (live && !live()) return;
       if (d.error) { UI.failLine(host, 'Health check-ins', said(d), function () { paintPerson(id, host, live); }); return; }
       st.team = d;
       var p = (d.people || []).filter(function (x) { return (x.team_member_id || x.id) === id; })[0];
       host.innerHTML = p ? '<div class="mrec-health">' + personBody(p) + '</div>' : '<p class="perf-quiet">Has not agreed to the check-ins.</p>';
-    });
+    }, function () { paintPerson(id, host, live); });
   }
   if ($('healthPersonSheet')) $('hpClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 

@@ -5602,3 +5602,15 @@ withdrawal included. Those were given under an agreement the colleague ended.
 `health_team()` now reads only check-ins saved on or after the agreement now
 standing; the colleague still reads all of their own. Live, no colleague had
 withdrawn, so nothing had been shown again.
+
+### 2026-10-18 · Team: Health is an admin's alone, behind the master code
+Team audit, item 11. `health_team()` asked only the granted part
+`team.health`, which the group panel could give any group, and asked no code,
+while the Performance reviews, less sensitive, sit behind the master code.
+The user had said "only admin can view everyone else health data". Team:
+Health now answers an active admin alone holding a live Performance unlock
+(`perf_unlock`, the same 15 minutes, extended by use; one unlock serves both
+pages), and the group panel no longer offers the part; it was held by no group
+or colleague live, and the migration takes it off any map that holds it. The
+old zero-argument `health_team()` stays, answering `code-needed`, so the
+connector needs no drop.
