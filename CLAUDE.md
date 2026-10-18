@@ -1058,8 +1058,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   drawing it only on http or https (`absUrl` answers nothing for another
   scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
   column's check refuses; 2026-10-17: `javascript://` passed the scheme test). A link typed
-  that `absUrl` answers nothing for is refused where it was typed (Enter a
-  web address.), never saved as none. A value
+  bare takes `https://` (a month's Drive folder too, its column https
+  alone); one `absUrl` answers nothing for is refused where it was typed
+  (Enter a web address.), never saved as none. A value
   drawn as HTML is escaped where it is put in, never where it is joined.
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
