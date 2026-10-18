@@ -5497,6 +5497,21 @@ Register's Issue document and Add entry take `member` as they took
   phone's layout now starts there and the in-between layout is gone; 560
   and under, and every width over 640, measure as before.
 
+### 2026-10-18 · The Team list reads as the Clients list; Work lists the work
+The user, on the colleague record: "the outer of the team section is
+different than the client section and still have the ..., it should be the
+same as client. edit or delete after clicking inside", then of its Work pane:
+"the tasks just shown its total number of tasks involved and thats all.
+seriously whats the purposes?". The list row is now one button (initials,
+name, email, the exception, the chevron), with every act in the record's ⋯.
+Work lists each open task the colleague owns (read from
+`ops_task_assignees` then `ops_tasks`, as My Work reads them), each client
+they are person in charge of and each open campaign, a row a record opening
+it the way search does (the address replaced, then the section: the console
+does not route Back between sections); the kinds that are not records here
+stay counted on one line. The first version counted everything and named
+nothing, which answered "how much" and never "what".
+
 - 2026-10-18 · A tally never leaves one cell alone on a desk (the iPhone
   Duo pass, finding 3). The tally's tracks were `auto-fit` at 140px, so
   the campaign's results (six cells) ran five across when the card was

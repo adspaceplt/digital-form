@@ -1102,22 +1102,26 @@ button.appver {
    took the whole width, so a four hundred pixel column held two short lines
    and the ⋯ was marooned at the far edge. It is a column of its own now. */
 .team-row {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px var(--ctl-h);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px 18px;
 }
+/* The row is the colleague, as a client's row is the client (2026-10-18):
+   the initials' disc before the name, the chevron last, no ⋯. */
+button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.team-row > .team-who { flex-direction: row; align-items: center; gap: 12px; }
 .team-mail {
   font-size: 13px; color: var(--ink-mute);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-@media (max-width: 640px) {/* Two lines: who they are and where they stand, then the address. */
+@media (max-width: 640px) {/* Two lines: who they are and where they stand, then the address under
+     the name. */
   .team-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: "who state act" "mail mail mail";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "who state" "mail mail";
     gap: 2px 10px;
   }
-  .team-row > .team-who   { grid-area: who; }
-  .team-row > .team-state { grid-area: state; }
-  .team-row > .team-act   { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
-  .team-row > .team-mail  { grid-area: mail; }
+  .team-row > .team-who   { grid-area: who; gap: 10px; }
+  .team-row > .team-state { grid-area: state; align-self: center; }
+  .team-row > .team-mail  { grid-area: mail; padding-left: 38px; }
   }
 
 #crmListMsg { margin: 0 0 12px; }
@@ -3343,7 +3347,6 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #sectionTeam.is-member .tabline,
 #sectionTeam.is-member #teamMembersPane > .cmdbar,
 #sectionTeam.is-member #teamList { display: none; }
-button.team-open { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .mrec-back { margin-bottom: 12px; }
 .mrec-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
 .mrec-tabs { margin-bottom: 12px; }
@@ -3355,3 +3358,21 @@ button.team-open { appearance: none; background: none; border: 0; padding: 0; ma
 #mrecPane.is-narrow .mrec-acts { flex: 1 0 100%; flex-wrap: nowrap; }
 #mrecPane.is-narrow .mrec-acts .btn { flex: 1 1 0; min-width: 0; }
 #mrecMsg { margin: 0 0 12px; }
+.team-head.team-row > :first-child { padding-left: 44px; }
+/* A colleague's work, a row a record (2026-10-18): the name over its facts,
+   the date at the right (red once late), the chevron last. */
+.mrec-rows { display: flex; flex-direction: column; }
+.mrec-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 15px; align-items: center; gap: 12px;
+  width: calc(100% + 16px); margin-inline: -8px; padding: 10px 8px; border: 0; border-bottom: 1px solid var(--line-soft); background: none; border-radius: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.mrec-row:last-child { border-bottom: 0; }
+@media (hover: hover) { .mrec-row:hover { background: var(--sunk); } }
+.mrec-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+.mrec-row-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.mrec-row-who b { font-size: 14px; font-weight: 500; }
+.mrec-row-who small { font-size: 12.5px; color: var(--ink-mute); }
+.mrec-row-end { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.mrec-row-end.is-late { color: var(--err); }
+.mrec-row .crm-c-go { display: block; }
