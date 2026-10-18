@@ -1446,8 +1446,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A refused read is left out.
   - A future date never counts.
   - Nothing reads as a mute em dash.
-- The Client ID is typed by hand (`^[A-Z0-9]{2,12}$`, unique) and is load
-  bearing: the letter serial uses it.
+- The Client ID (`^[A-Z0-9]{2,12}$`, unique) is load bearing: the letter
+  serial uses it. A client becomes Active only holding one (the user,
+  2026-10-18: a lead may come to no deal): the move asks for it, the next
+  AC number offered (`client_code_next()`, one past the highest across
+  every client, as wide as it), and both go in one write; trigger
+  `clients_active_code` refuses Active with none (`active-needs-code`;
+  `2026-10-18-client-id-at-active.sql`). A Letter of Offer before Active
+  still asks for one at its Reference.
 - The slug is set once from the name, never follows a rename, and a clash is
   numbered. It lives only in the console address (`clientByKey()` resolves a
   slug or a UUID by shape) and never grants access.
@@ -2075,7 +2081,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `perf_mine_gate()`, their own alone, a replaced version left out, a voided
   one marked Void), its PDF drawn in their browser: no Documents access is
   needed. Filed under HR with the kind alone.
-- Add entry (`register_add` / `register_update`, ten arguments with
+- Add existing document (`register_add` / `register_update`, ten arguments with
   `p_member` and `p_supplier`; opened on a colleague or a supplier from
   their record):
   - an HR entry names a team member and no client;
@@ -2169,7 +2175,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the width in use, unique, `code-taken`; the user: "i wont know the
   company name first"), makes it Pending and its link
   (`/supplier/?k=`, open `details_form_days`; Copy link, Preview,
-  the ⋯ Reset link, asked). Until its form names it a supplier reads its
+  the ⋯ Reset link and Close link, each asked; `supplier_link_close`
+  ends the open form now, filed, `2026-10-18-supplier-link-closed.sql`). Until its form names it a supplier reads its
   Supplier ID, Waiting for their details.
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
   reads the Supplier ID (and the name once held) and checks as the Jotform
@@ -2212,7 +2219,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   tables. A new Schedule B is a Reissue: the same reference, as at the new
   date. No bank
   statement upload (the Jotform field was optional). A document kept
-  outside the portal (an agreement, an NDA) is Add entry's Supplier Letter
+  outside the portal (an agreement, an NDA) is Add existing document's Supplier Letter
   (the record's ⋯, or the Register), naming its supplier and no client
   (`register_add` / `register_update` `p_supplier`, `no-supplier`;
   `2026-10-18-supplier-entries.sql`, which filed the entries whose
@@ -5075,7 +5082,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   an HR letter naming nobody takes the one colleague whose Employee ID its
   reference carries, trigger `documents_hr_member`,
   `2026-10-18-hr-letters-find-their-colleague.sql`; Issue document and
-  Add entry open on them), Performance (Open reviews: the months searched for their name,
+  Add existing document open on them), Performance (Open reviews: the months searched for their name,
   behind its own lock) and Health (their check-ins and talks from
   `health_team`, an admin's behind the master code), each drawn only where readable
   (`tests/teamrec.js`).
@@ -5806,6 +5813,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   (refused without, served with, is a browser fault). The media pass broke
   this way twice (2026-10-12, 2026-10-15).
 - Partial work is labelled partial, never reported as done.
+- A value only read is drawn as words at the field's height with no box
+  (`.readfield` on a `p` or `div` is that, on an `.input` the shaded copy
+  field): a shaded slab with its words on the edge, out of line with the
+  fields under it, reached the user twice (Reports' Amount spent; Send
+  email's From, Replies go to and To; 2026-10-18), so a sheet's screenshot
+  is read for every value only read, and `tests/suppliers.js` measures it.
 - Every mistake that reaches the user or the gate is written in the push
   that fixes it (the user, 2026-10-16: "note down all mistakes"): the rule,
   one line, in its loaded file; the story in `docs/DECISIONS.md` Part 3
