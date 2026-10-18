@@ -5284,3 +5284,13 @@ finding fixed at the user's word ("fix all no matter what").
   preview. Each now answers `not-found` for a Past client before the
   passcode is asked; the preview answers nothing. `tests/confirmonce.js`
   holds all five; the stand-in does the same.
+
+- 2026-10-18 · Expired access hands the open tasks back (review item 19).
+  `team_expire_access` stood a colleague down and left their open tasks
+  with them, hidden from most of the team and movable only by an admin.
+  Each open task they held now goes back to whoever created it, where that
+  colleague is active and takes tasks, who is told; otherwise it is left
+  with no owner and open to take through the existing Take flow, and the
+  active managers (My Work Manage, admins) are told. Each move is filed on
+  the task with a note, so its history says why. `tests/ops.js` holds both
+  paths and that finished work is left alone.

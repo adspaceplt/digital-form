@@ -4998,7 +4998,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`
     stands down each active colleague whose moment has passed
     (`team_access_ends(day, time)`, MYT) (`active` false, `expired_at` stamped, filed `team.changed` by
-    `system`), never the last admin with access;
+    `system`), never the last admin with access; each open task they hold
+    goes back to its creator where the creator takes tasks (told, kind
+    `assigned`), else is left with no owner and open to take, the active
+    managers told (`tasks.unassigned`), each move filed on the task
+    (`team_expiry_hand_back`, `2026-10-18-expired-access-hands-tasks-back.sql`);
   - the row reads Access expired and its ⋯ Extend access; moving the date to
     today or later brings them back at once (`team_access_guard`), and Set
     active on a passed date is refused (`expired-date`);
