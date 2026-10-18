@@ -38,7 +38,7 @@ The portal does not hold these. Each is closed by its owner the same day:
 |---|---|---|
 | 1 | Revoke their portal access. Undo stays in place for a moment. | Clients › the record › Contacts › the contact's ⋯ › Revoke portal access |
 | 2 | If they were the main contact, make another contact the main one, and change the billing contact if it was them. | Contacts › the other contact's ⋯ › Main contact; Billing › Edit |
-| 3 | If they held the review or script link, reset it and send the new one to whoever takes over. The old link stops at once. A campaign's selection link has no reset; it closes with the selection. | Content Review › the client's ⋯ › Reset access link; Video Scripts › the month's ⋯ › Reset client link |
+| 3 | If they held the review or script link, reset it and send the new one to whoever takes over. The old link stops at once. A campaign's selection link is reset the same way, and every selection link closes once the client is moved to Past. | Content Review › the client's ⋯ › Reset access link; Video Scripts › the month's ⋯ › Reset client link; Creator Campaigns › the campaign's ⋯ › Reset access link |
 | 4 | Remove the contact. It is kept, hidden, and can be restored. | Contacts › ⋯ › Remove |
 | 5 | Only where the person asks for their data to be erased (PDPA 2010, PDPA 2012 in Singapore): Delete. Records that named them keep their own words. | Contacts › Show removed contacts › the contact's ⋯ › Delete (Clients: Contacts at Full Access) |
 

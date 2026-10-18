@@ -1667,6 +1667,33 @@
     window.ADspaceConfirm.ask(move.ask, save);
   });
 
+  /* Reset access link (second audit, item 5): a new key from the database
+     (`campaign_reset_link`); the earlier link stops at once and the new one
+     has to be sent to the client. */
+  $('campResetLink').addEventListener('click', function () {
+    shutMenus();
+    var c = state.campaign;
+    window.ADspaceConfirm.ask({
+      title: 'Reset the selection link',
+      body: 'The current link for ' + campName(c) + ' stops working immediately. The new one has to be sent to the client.',
+      go: 'Reset link',
+      tone: 'warn'
+    }, function () {
+      db.rpc('campaign_reset_link', { p_campaign: c.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          msg('campWorkMsg', r.error ? r.error.message : (LOCK_SAID[d.error] ? LOCK_SAID[d.error](d).replace('Not confirmed.', 'Not reset.') : 'Not reset. The database refused the request.'), 'err');
+          return;
+        }
+        c.access_token = d.key;
+        c.moved_token = null;
+        $('campLink').value = campaignShare(c);
+        $('campOpen').href = campaignUrl(c);
+        msg('campWorkMsg', 'New link issued. The previous link is no longer valid.', 'ok');
+      }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
+    });
+  });
+
   $('campDelete').addEventListener('click', function () {
     shutMenus();
     var c = state.campaign;

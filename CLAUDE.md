@@ -5303,7 +5303,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   before is kept as `moved_token`: it opens nothing itself, and
   `link_moved(kind, token)` answers it with the current key, which the page
   puts in the address and loads. Changing a key (Reset access link) clears
-  the moved key by trigger, so a reset retires every earlier link.
+  the moved key by trigger, so a reset retires every earlier link. A
+  campaign's is reset from its ⋯ (`campaign_reset_link`, Creator
+  Campaigns: Campaigns at Work, a key from `new_link_key()`), and
+  `get_campaign` answers `not-found` once the client is Past (2026-10-18),
+  so `sign-download` and `media-pass` close with it; a completed campaign
+  of a current client stays readable for its results.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token, the Meta system user's
