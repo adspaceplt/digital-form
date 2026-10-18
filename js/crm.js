@@ -4043,13 +4043,19 @@
      removed contact or call is (the user's delete audit, 2026-10-07). */
   var showRemovedServices = false;
 
-  function loadServices(after) {
+  /* `failed` hears a read that failed, so a caller waiting on the lines
+     (Issue letter read again after `stale`) says so where it is. */
+  function loadServices(after, failed) {
     var box = $('crmServices');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
+    var fail = function (m) {
+      failLine(box, 'Services', m, loadServices); ovFailed('services', true);
+      if (failed) failed(m);
+    };
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .order('created_at').then(function (r) {
-          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); ovFailed('services', true); return; }
+          if (r.error) { fail(r.error.message); return; }
           ovFailed('services', false);
           var all = r.data || [];
           state.services = all.filter(function (l) { return !l.archived_at; });
@@ -4060,7 +4066,7 @@
           quotedLines();
           loadQuotes();
           if (after) after();
-        });
+        }).catch(function (e) { fail((e && e.message) || 'The connection was lost.'); });
     });
   }
 
@@ -5003,6 +5009,12 @@
         msg('pickMsg', said, 'warn');
       };
       if (window.ADspaceQuotes && mayPart('clients.services', 'view')) loadQuotes(reopen, true); else reopen();
+    }, function (m) {
+      /* The lines could not be read again: the refusal stands, said with
+         why, and the next press would be refused the same way. */
+      if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
+      msg('pickMsg', 'The services or their quotation changed since this sheet was opened, and could not be read again: ' +
+        String(m).replace(/\.$/, '') + '. Close this sheet and open it again.', 'err');
     });
   }
 
