@@ -5257,6 +5257,23 @@ finding fixed at the user's word ("fix all no matter what").
   reassignment are told as before. `tests/ops.js` holds both; the stand-in
   does the same.
 
+- 2026-10-18 · Undo after ticking an everyday task Done works from any
+  stage (review item 14). Done leads only to To do or In progress, so the
+  Undo from a task ticked at Waiting or Review asked for a move the
+  database refused, and the page dropped the refusal in silence. Undo now
+  brings such a task back In progress (To do and In progress go back where
+  they were), and any refusal is said on the list. `tests/work.js` holds it.
+
+- **2026-10-18 · The supplier form moves to /supplier/.** The user: "can you
+  use the /supplier-details back to /supplier instead?" and "the
+  /supplier.html alr no longer in use". The old Jotform page `supplier.html`
+  (a root file, never edited until now) is removed at the user's word, and
+  the portal's form takes its address: `supplier/index.html`, the link the
+  console makes `/supplier/?k=`. `/supplier-details/` stays as a page that
+  forwards with its key, so a link sent earlier the same day still opens.
+  `3pform.html` still points at `/supplier`, which now reads the form's
+  Link not recognised cover without a key.
+
 - 2026-10-18 · A Past client's selection link acts on nothing (second
   audit, item 7). SELECTION LINK CLOSES made `get_campaign` answer a Past
   client's link as an unknown key, but the functions that act through the
