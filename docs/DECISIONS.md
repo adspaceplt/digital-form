@@ -5248,3 +5248,11 @@ finding fixed at the user's word ("fix all no matter what").
   not move, take or pass on. Both now ask Work or above (an admin always);
   the triggers and the noon reminder follow, and the stand-in holds the
   same. Nobody at View held a live task when it shipped.
+
+- 2026-10-18 · One press, one notice (review item 13). A step that handed
+  a task on filed `assignment_changed` (Handed to you by … at …) and then
+  `stage_changed` (Moved to … by …), and `ops_log` told the new owner of
+  both, each with a push. The stage notice is now left out when the same
+  transaction handed the task to that owner; a plain move and a plain
+  reassignment are told as before. `tests/ops.js` holds both; the stand-in
+  does the same.

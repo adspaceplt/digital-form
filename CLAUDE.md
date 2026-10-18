@@ -3263,7 +3263,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A notification is written by `ops_log` / `ops_notify`, deduplicated per
   minute (a comment by its words).
   - The owner is told about another person's change.
-  - A new owner is told they were assigned.
+  - A new owner is told they were assigned; a step that hands the task on
+    tells them once (Handed to you … at …), never again for the move
+    (`ops_log`, `2026-10-18-one-press-one-notice.sql`).
   - Nobody is told about their own act.
   - The bell is drawn for every colleague (a row is its reader's own), and
     re-reads every minute while visible, and on return, in the page's one
