@@ -2728,6 +2728,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The detail card is folded and shut by default. The purpose and brief sit
     inside it; the due date (else the count) is on the head.
   - When the slots fill, the unpicked leave.
+  - At 640 and under (the phone line, a folded-open phone at 626 too) a
+    creator's row is the phone's: no column heads, the name over its
+    placements (Posting on), the profiles and Backup under them, the fee
+    at the right of the first line on every row (the iPhone Duo pass,
+    2026-10-18).
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
@@ -5096,6 +5101,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`fitMail`), else breaks only before the @;
   - the pair under the card (turn, QR code) is two equal halves of the
     portrait card's width on every face, so a turn never moves them;
+  - every pill on the card (Save contact, WhatsApp, the turn and QR pair)
+    is 44px under a finger, the landscape card's too (the iPhone Duo pass,
+    2026-10-18);
   - every card has a short link on the links host (`card_slug`,
     `2026-10-03-namecard-short-links.sql`): made as the colleague is added
     from the name's letters and digits run together (Xue Yi `xueyi`; a
