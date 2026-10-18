@@ -5126,3 +5126,15 @@ finding fixed at the user's word ("fix all no matter what").
   quotation's PDF also read "1 months"; it reads "1 month". Found by the
   review of #559; `tests/pdfcases.js` (both PDFs, both cases) and
   `tests/quotes.js` hold it.
+
+- 2026-10-18 · The first month holds the one-off items. Where a monthly line
+  runs months other than the term, First month incl. SST counted the monthly
+  lines alone and the quotation listed One-off incl. SST apart, so the
+  figure a client pays first was nowhere on the page. The user's decision:
+  include the one-off items in the first month. The quotation's PDF,
+  `/quote/` and Build quote now read Monthly subtotal, the commitment row,
+  One-off subtotal, First month excl. SST, SST and one First month incl.
+  SST; the letter's First month incl. SST under the total and in the
+  acceptance takes the one-off items with their SST. Every line on the term
+  is unchanged (Monthly incl. SST and One-off incl. SST apart, or the
+  letter's First month due). `tests/pdfcases.js` and `tests/quotes.js` hold it.

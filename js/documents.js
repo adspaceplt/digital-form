@@ -119,7 +119,9 @@
        wording. */
     if (month) {
       var pex = msub + cents(msub * qm.pct / 100);
-      out.plan = qm.term; out.planMonth = r2(pex + cents(pex * sst / 100)); out.planOnce = once > 0;
+      /* The first month holds the one-off items too (the user, 2026-10-18),
+         as the quotation's First month incl. SST does. */
+      out.plan = qm.term; out.planMonth = r2(pex + cents(pex * sst / 100) + once + otax); out.planOnce = once > 0;
     }
     var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
     var mtot = month ? cents(span * (1 + qm.pct / 100) * (1 + sst / 100)) : 0;
