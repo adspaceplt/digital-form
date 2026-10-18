@@ -5555,3 +5555,19 @@ figures are a real client's and supplier's and were not committed; only the
 wording was. Its clause 10.3 points at Clause 6.7 for returning information,
 which in the numbered text is 6.8; the wording is kept as given, and the
 team corrects it in Document types.
+
+### 2026-10-18 · A colleague's record holds what is theirs, compactly, and edits in place
+The user, with screenshots of a colleague whose Documents showed one letter
+where the register's HR Letters listed five under their name: "when its
+linked to a team member, shouldnt all letters or documents go into their
+respective accounts", then of Work: "imaging u need to fit in 100+ tasks",
+and of Overview: "why you wouldnt just let it edit on each fields". The
+pane read `member_id` alone, while the register's Team column also reads the
+Employee ID in a reference (the letters imported from the old list name
+nobody). The pane now draws the register's own rows for both, with the
+colleague's performance records, and the database files such a letter under
+its colleague (eleven live rows, and every new one by trigger); a reference
+carrying no Employee ID (a candidate's offer, an NDA) is left as it is.
+Work now opens on counts and ten rows, one line a row, with Show all. Overview
+lost its Edit button: each value is changed where it is read, saved alone
+through the same write and the same refusals as the sheet.

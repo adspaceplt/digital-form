@@ -5018,14 +5018,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   place of the list and the Team strip, Back returns; the head is the
   mark, the name, Employee ID, group and post, the state and the one ⋯
   of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
-  (Sign-in and access, Employment, Namecard, read first, Edit at Team
-  Full Access), Work (each open task they own, each client they are
+  (Sign-in and access, Employment, Namecard, each value changed where it
+  is read at Team Full Access: a word or a date its pen, a choice a
+  select drawn as the value, saved alone through `patchMember`, refused
+  in place as the sheet refuses, filed from and to; no Edit button; the
+  user, 2026-10-18), Work (each open task they own, each client they are
   person in charge of, each open campaign they run, a row a record opening
-  it as search does, an overdue task's date in red; the other kinds
-  `team_work_held` counts on one line; Hand over at Team Full Access;
-  the user: "the tasks just shown its total number"), Documents (their
-  HR letters at HR Letters View; Issue document and Add entry open on
-  them), Performance (Open reviews: the months searched for their name,
+  it as search does, one line at a desk, an overdue task's date in red;
+  the tasks' counts first (overdue, due within 7 days, later, no due
+  date), ten rows of a list, the rest behind Show all; the other kinds
+  `team_work_held` counts on one line; Hand over at Team Full Access),
+  Documents (every HR letter that is theirs in the register's own rows
+  (`ADspaceRegister.paintForMember`): naming them, or carrying their
+  Employee ID in its reference, and their downloaded performance records;
+  an HR letter naming nobody takes the one colleague whose Employee ID its
+  reference carries, trigger `documents_hr_member`,
+  `2026-10-18-hr-letters-find-their-colleague.sql`; Issue document and
+  Add entry open on them), Performance (Open reviews: the months searched for their name,
   behind its own lock) and Health (their check-ins and talks from
   `health_team`, `team.health`), each drawn only where readable
   (`tests/teamrec.js`).
