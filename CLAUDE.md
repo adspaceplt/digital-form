@@ -1936,7 +1936,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     acceptance lists Monthly incl. SST, Minimum term, First month due (with
     a one-off item) and Total for the term incl. SST, under no Item / Value
     head and never "including SST" after a figure. Lines on two terms of
-    more than a month: Total incl. SST.
+    more than a month: Total incl. SST; a quoted letter so keeps its
+    quotation's term (2026-10-18): the row `12-month commitment (5%)`,
+    Monthly incl. SST under the total as the quotation gives it, TERMS's
+    minimum term with the total over the months stated for each line, and
+    the acceptance's Monthly incl. SST, Minimum term and Total for the term.
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate

@@ -113,6 +113,14 @@
     }
     /* Whole amounts: one subtotal, the term's row on the span, one SST
        figure, the total incl. SST. */
+    /* The quotation's own month and term stay on the letter (2026-10-18):
+       its Monthly incl. SST, as quote_adjust gives it (every monthly line
+       at the percentage, SST rounded once), and its term for the commitment
+       wording. */
+    if (month) {
+      var pex = msub + cents(msub * qm.pct / 100);
+      out.plan = qm.term; out.planMonth = r2(pex + cents(pex * sst / 100)); out.planOnce = once > 0;
+    }
     var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
     var mtot = month ? cents(span * (1 + qm.pct / 100) * (1 + sst / 100)) : 0;
     out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
@@ -738,7 +746,7 @@
       /* The one-off summary is five rows and a rule, about 85pt: kept whole
          on its page (audit I11, 2026-10-15). */
       var qd = price.quote, qadj = qd && Number(qd.pct) ? 1 : 0;
-      need((price.term && price.once > 0 ? 90 : 66) + qadj * 15);
+      need((price.term && price.once > 0 ? 90 : 66) + qadj * 15 + (price.plan ? 15 : 0));
       var lx = R - 230;
       var trow = function (label, value, kind) {
         var strong = kind === 'strong';
@@ -765,9 +773,9 @@
       var signed = function (v) { return v < 0 ? '(' + MON.money2(-v, doc.market) + ')' : MON.money2(v, doc.market); };
       var termRow = function () {
         if (!qadj) return;
-        var pc = Math.round(Math.abs(qd.pct) * 100) / 100;
-        trow((price.term ? price.term + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
-          .replace(/^./, function (c) { return price.term ? c : c.toUpperCase(); }), signed(qd.adj));
+        var pc = Math.round(Math.abs(qd.pct) * 100) / 100, tn = price.term || price.plan;
+        trow((tn ? tn + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
+          .replace(/^./, function (c) { return tn ? c : c.toUpperCase(); }), signed(qd.adj));
       };
       if (oneOff) {
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
@@ -783,6 +791,7 @@
         trow(taxWord, MON.money2(price.eachTax, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');
+        if (price.plan) trow('Monthly' + incl, MON.money2(price.planMonth, doc.market));
       }
       y -= 12;
 
@@ -795,6 +804,13 @@
         /* The term is stated once (the user, 2026-10-15). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months, a total of ' +
                    MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ' with the one-off items' : '') + '.');
+      } else if (price.plan) {
+        /* A quoted letter whose lines run months of their own: the
+           quotation's term, and the total over the months stated for each
+           line, as the quotation says it (2026-10-18). */
+        terms.push('Fees are billed monthly in advance for a minimum term of ' + price.plan + ' months, a total of ' +
+                   MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
+                   (price.planOnce ? ', with the one-off items' : '') + '.');
       }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       need(24 + terms.length * 26);
@@ -839,7 +855,10 @@
            ['Minimum term', price.term + ' months']]
             .concat(price.once > 0 ? [['First month due', MON.money2(firstDue, doc.market)]] : [])
             .concat([['Total for the term' + incl, MON.money2(price.total, doc.market)]])
-        : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
+        : price.plan
+          ? [['Monthly' + incl, MON.money2(price.planMonth, doc.market)], ['Minimum term', price.plan + ' months'],
+             ['Total for the term' + incl, MON.money2(price.total, doc.market)]]
+          : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
 
       var SIGH = 91;          // 32mm of signing room, not a ruled line
       var FIELDH = 29;        // 10mm for each of the three fields
