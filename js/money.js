@@ -93,7 +93,15 @@
   // displayed, so a total and the sum of its lines cannot disagree.
   function taxOf(subtotal, m, applies, at) {
     if (applies === false) return 0;
-    return Math.round(Number(subtotal || 0) * setting('sst_pct', at)) / 100;
+    return cents(Number(subtotal || 0) * setting('sst_pct', at) / 100);
+  }
+  /* To the cent, a half away from nought, as the database rounds: a float
+     product lands a hair under the half (1,234.50 x 0.95 is 1,172.7749…), so
+     it is nudged before it is rounded, else the page charges a sen less than
+     issue_letter works and the letter is refused as stale. */
+  function cents(v) {
+    var a = Math.round(Math.abs(v) * 100 + 1e-7) / 100;
+    return v < 0 ? -a : a;
   }
 
   /* Term. Six months is the minimum a monthly service is sold on, so it is the
@@ -192,9 +200,9 @@
      with the total by a fraction of a sen. With a percentage on the line the
      rate carries it; without one the older factor table prices the term. */
   function rateFor(rate, months, adjust, pct) {
-    if (!adjusts(adjust)) return Math.round(Number(rate || 0) * 100) / 100;
+    if (!adjusts(adjust)) return cents(Number(rate || 0));
     var f = hasPct(pct) ? 1 + Number(pct) / 100 : termFactor(months);
-    return Math.round(Number(rate || 0) * f * 100) / 100;
+    return cents(Number(rate || 0) * f);
   }
   /* The word beside the figure, which is only true where the tick is on: a
      line billed at the rate that was typed has nothing to explain. */
