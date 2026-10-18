@@ -5273,3 +5273,19 @@ finding fixed at the user's word ("fix all no matter what").
   forwards with its key, so a link sent earlier the same day still opens.
   `3pform.html` still points at `/supplier`, which now reads the form's
   Link not recognised cover without a key.
+
+- **2026-10-18 · Supplier emails.** The user chose Resend from
+  `noreply-supplier@sc.adspace.me` (replies to ap@adspacestudios.com), sent
+  by hand at Suppliers Work, templates at Full Access, Copy the finance
+  email ticked, delivery and opens shown now, and a prompt after Approve to
+  send the approval email or not, the manual send kept in the ⋯. The email
+  takes the portal's sign-in email layout; the user had the "mailbox not
+  monitored" line removed and only the verify line kept. Each email is
+  filed before it goes (as a WhatsApp send is), so a send whose answer is
+  lost reads Not confirmed, never sent twice by itself; the same email
+  again inside the Sent again hours asks first. A letter goes as the PDF
+  the page draws, accepted only where its title names the letter's
+  reference (as `wa-send` holds a quotation's), so `js/letters.js` now
+  writes the title. A misreading on the way: "share one code just main as
+  the supplier code" was taken to mean a supplier takes a client's code;
+  the user meant the IDs stay separate, and they do.

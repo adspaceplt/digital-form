@@ -26,7 +26,7 @@
      colleague holding any of them (`ADspaceSettings.allowed`). */
   var KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering'];
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
-  function allowed() { return KEYS.some(may); }
+  function allowed() { return KEYS.some(may) || Boolean(bridge.may && bridge.may('suppliers', 'manage')); }
   function say(text, tone) {
     var m = $('settingsMsg');
     if (!m) return;
@@ -240,7 +240,8 @@
          asks again before it goes. */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
         meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Within ' + plural(rep2, 'hour', 'hours') }]);
-    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') }]);
+    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
+      bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: '2 templates' }]);
     return out;
   }
 
@@ -419,6 +420,7 @@
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
+    if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
