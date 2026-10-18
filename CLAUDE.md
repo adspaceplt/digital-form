@@ -1196,7 +1196,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no
-  per-person switches. A policy on `team_members` never queries itself.
+  per-person switches. A policy on `team_members` never queries itself; it
+  takes inserts and updates at Team Full Access (`team_insert`,
+  `team_update`) and no delete from anybody
+  (`2026-10-18-colleague-row-never-deleted.sql`).
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `whatsapp`, `review`, `scripts` (Video Scripts),
