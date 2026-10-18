@@ -4746,3 +4746,11 @@ finding fixed at the user's word ("fix all no matter what").
   minimum term with the total over the months stated for each line, and
   the acceptance names the month, the term and the total. No figure moves.
   `tests/pdfcases.js` (quotedmonths) holds the wording.
+
+- 2026-10-18 · The letter's rate comment says what a quoted letter prints
+  (review of #538 to #550, item 9). The comment on the Rate column read
+  "the rate the client is billed, term adjustment included", which since
+  #540 is true only of a letter priced line by line: a quoted letter
+  prints the rate before the term, the term one summary row taken once on
+  the subtotal, SST on what it leaves. The comment now states both. No
+  code changed.

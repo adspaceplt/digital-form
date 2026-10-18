@@ -721,9 +721,13 @@
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
         text(names[0] || '', cols.desc, y, 10, bold);
-        // The rate the client is billed, term adjustment included, because that
-        // is the figure they are accepting. Why it differs from the rate card
-        // is named on the mute line below, never left to be discovered.
+        // A letter priced line by line prints the rate the client is billed,
+        // term adjustment included, because that is the figure they are
+        // accepting, and names why it differs from the rate card on the mute
+        // line below. A quoted letter prints the rate before the term: the
+        // term is one row of the summary, taken once on the subtotal with
+        // SST on what it leaves, as the quotation prints it (2026-10-18).
+        // SST is never part of a line's rate.
         right(q === 1 ? MON.money2(shownRate, doc.market)
                       : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(shownRate, doc.market),
               cols.rate, y, 10);
