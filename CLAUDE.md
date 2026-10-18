@@ -3224,7 +3224,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ops_change_due_date`).
   - The final date moves only through the creator's approval
     (`ops_request_due_change` → `ops_decide_due_change`), except for its
-    creator or an admin, who move it directly.
+    creator or an admin, who move it directly; `ops_change_due_date`, which
+    both reach as definers, is closed to every browser
+    (`2026-10-18-due-date-moves-through-its-ask.sql`).
   - Late = past whichever deadline comes first (the user, 2026-10-11): the
     final date, short of client review (`isLate()`, `reviewFloor()`), or a
     priority's, short of its review (`deadlineOf`). The Overdue band, the
