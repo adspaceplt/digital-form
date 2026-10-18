@@ -8779,12 +8779,6 @@ body.is-maint { overflow: hidden; }
    the day each scene's clip number (VC#) and Shot tick; the shoot's other
    videos in the rail.
    ========================================================================= */
-.vs-row, .crm-head.vs-row {
-  display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 240px) var(--state-w);
-  width: 100%; padding: 10px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
-  background: none; text-align: left; font: inherit; color: inherit;
-}
 .vs-c-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vs-c-name small { font-size: 12.5px; color: var(--ink-mute); }
 .vs-head .msg { margin: 0; }
