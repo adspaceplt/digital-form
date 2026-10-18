@@ -17,14 +17,15 @@
  *                              a send asks for (its header, its body's
  *                              variables, a link button's variable).
  *   { action: 'compose', to_kind, to_id, purpose, ref, template: { name,
- *     language }, values, header_value, button_value, pdf, filename }
+ *     language }, values, header_value, pdf, filename }
  *                              a colleague, from the composer: the recipient
  *                              and the record asked of the database as the
  *                              caller (`wa_compose_prepare`), the template
  *                              read again from Meta (approved, as it stands
  *                              now), a record's PDF (a report, a quotation,
  *                              a Letter of Offer) uploaded as its Document
- *                              header, sent, and filed (`wa_sent`); the same
+ *                              header, its link button filled from the
+ *                              record alone, sent, and filed (`wa_sent`); the same
  *                              message sent recently (`wa_sent_recently`) answers
  *                              `recent` unless `again` is true.
  *   { action: 'report' | 'feedback', … }
@@ -49,6 +50,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
+/* The portal's own address: an approval reminder's link button opens a page
+   under it. */
+const SITE = ALLOWED_ORIGINS[0];
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
@@ -274,6 +278,19 @@ function named(err?: string): string {
   return 'wa-failed';
 }
 
+/* A template's link button is the record's own (the third audit, item 2):
+   a creator's code, or the page an approval reminder names past the
+   button's fixed base, each as the database answered it for the record
+   being messaged; never a value the page sent, which a stale prefill had
+   pointed at another person's page. Nothing where the record holds none. */
+function linkOf(t: Shape, p: Record<string, any>): string {
+  if (!t.button_var) return '';
+  if (p.code) return String(p.code);
+  if (!p.link) return '';
+  const base = t.button_var.url.split('{{')[0], full = SITE + '/' + String(p.link);
+  return base && full.indexOf(base) === 0 && full.length > base.length ? full.slice(base.length) : '';
+}
+
 /* ---- Templates ---------------------------------------------------------------
    A template as Meta holds it, read into what a send asks for: its header (a
    Document, or text with one variable), its body's variables in order
@@ -440,10 +457,9 @@ Deno.serve(async (req) => {
     const given = (body.values || {}) as Record<string, any>;
     const values = t.body_vars.map((v) => String(given[v] == null ? '' : given[v]).trim());
     const headerValue = String(body.header_value || '').trim();
-    const buttonValue = String(body.button_value || '').trim();
-    if (values.some((v) => !v) || (t.header_var && !headerValue) || (t.button_var && !buttonValue)) {
-      return json({ error: 'wa-params-missing' }, 200, origin);
-    }
+    if (values.some((v) => !v) || (t.header_var && !headerValue)) return json({ error: 'wa-params-missing' }, 200, origin);
+    const buttonValue = linkOf(t, p);
+    if (t.button_var && !buttonValue) return json({ error: 'wa-no-link' }, 200, origin);
     const isNamed = t.format === 'NAMED';
     const record = (ok: boolean, waId: string | null, error: string | null) => db.rpc('wa_sent', {
       p_to_kind: toKind, p_to: toId, p_purpose: purpose, p_ref: ref, p_template: t.name, p_lang: t.language,

@@ -44,10 +44,11 @@
   /* A purpose whose message carries a record's PDF as its Document header. */
   var DOC = { report: 1, quotation: 1, offer: 1 };
   /* What each message in the list was. */
-  /* A link button's variable is filled where the purpose can fill it: a
-     creator's code, the approval link, or typed in the composer. Only a
-     purpose the portal sends by itself with nothing to put there refuses
-     one (the user, 2026-10-10: not a list of the purposes allowed). */
+  /* A link button's variable is filled from the record alone: a creator's
+     code, or the approval link (wa-send takes it from the database, never
+     from the page; the third audit, item 2). Only a purpose the portal
+     sends by itself with nothing to put there refuses one (the user,
+     2026-10-10: not a list of the purposes allowed). */
   var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
     quotation: 'Quotation', offer: 'Letter of Offer', message: 'Message' };
@@ -80,6 +81,7 @@
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
     'wa-params-missing': 'Fill in every variable.',
     'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
+    'wa-no-link': 'This template\'s link button has no page for this recipient. Choose another template.',
     'wa-not-set-up': 'WhatsApp needs its Phone number ID, Business Account ID and token in Supabase.',
     'wa-token': 'The WhatsApp token was refused. Check it in Supabase.',
     'wa-template': 'Meta does not hold this template as approved.',
@@ -684,12 +686,17 @@
     t.body_vars.forEach(function (v) { fields.push(['b:' + v, /^\d+$/.test(v) ? numbered(v, t, r) : human(v)]); });
     if (t.button_var) fields.push(['u:' + t.button_var.name, 'Link button']);
     $('waFillSec').hidden = !fields.length;
+    /* The link button is the record's: shown, never typed. */
     box.innerHTML = fields.map(function (f, i) {
       return '<div class="row"><div><label class="field-label" for="waVar' + i + '">' + esc(f[1]) + '</label>' +
-        '<textarea class="input" id="waVar' + i + '" rows="1" data-oneline data-nodraft aria-required="true" data-var="' + esc(f[0]) + '"></textarea></div></div>';
+        (f[0].charAt(0) === 'u'
+          ? '<input class="input readfield" id="waVar' + i + '" readonly data-nodraft data-var="' + esc(f[0]) + '">'
+          : '<textarea class="input" id="waVar' + i + '" rows="1" data-oneline data-nodraft aria-required="true" data-var="' + esc(f[0]) + '"></textarea>') +
+        '</div></div>';
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('[data-var]'), function (f) {
       var key = f.getAttribute('data-var');
+      if (key.charAt(0) === 'u') { f.value = prefill(key, t, r); return; }
       if (Object.prototype.hasOwnProperty.call(typed, key)) { f.value = typed[key]; f.setAttribute('data-typed', '1'); }
       else f.value = prefill(key, t, r);
       f.addEventListener('input', function () { f.setAttribute('data-typed', '1'); preview(); });
@@ -858,6 +865,8 @@
     /* A document the composer was not opened on is a report; one it was
        opened on is that quotation or letter, sent under its own purpose. */
     var docOf = isDoc && rep.doc ? o.purpose : isDoc ? 'report' : null;
+    var link = $('waFields').querySelector('[data-var^="u:"]');
+    if (link && !String(link.value || '').trim()) { say(m, SAID['wa-no-link'], 'err'); return; }
     var empty = Array.prototype.filter.call($('waFields').querySelectorAll('[data-var]'), function (f) { return !String(f.value || '').trim(); })[0];
     if (empty) {
       var lab = $('waFields').querySelector('label[for="' + empty.id + '"]');
@@ -868,12 +877,11 @@
     var purpose = docOf || ((o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message');
     if (!maySend(purpose)) { say(m, SAID.denied, 'err'); return; }
     var ref = DOC[purpose] ? rep.id : purpose === 'creator' ? o.optionId : purpose === 'approval' ? o.ref : null;
-    var values = {}, header = '', button = '';
+    var values = {}, header = '';
     Array.prototype.forEach.call($('waFields').querySelectorAll('[data-var]'), function (f) {
       var key = f.getAttribute('data-var'), v = String(f.value || '').trim();
       if (key.charAt(0) === 'b') values[key.slice(2)] = v;
       else if (key.charAt(0) === 'h') header = v;
-      else button = v;
     });
     var cat = CATEGORY[t.category] || 'template';
     var costLine = 'Meta charges it as a ' + cat + ' message.';
@@ -908,7 +916,7 @@
       pdf.then(function (file) {
         if (file) say(m, 'Sending…');
         return invoke({ action: 'compose', to_kind: r.kind, to_id: r.id, purpose: purpose, ref: ref,
-          template: { name: t.name, language: t.language }, values: values, header_value: header, button_value: button,
+          template: { name: t.name, language: t.language }, values: values, header_value: header,
           pdf: file ? file.b64 : undefined, filename: file ? file.name : undefined, again: again || undefined });
       }).then(function (d) {
         if (cx !== mine) return;
