@@ -2672,7 +2672,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps the key, never an address; View invoice and the client's PDF link
     ask `sign-download` for a five-minute link, the file found from what the
     caller may read (the campaign row; `get_campaign` for the client's key),
-    never from a path the browser sends. The link is a CloudFront signed URL on
+    never from a path the browser sends, and only a key under the campaign's
+    own client's folder (`private/{client id}/`; `tests/signdownloadfn.js`).
+    The link is a CloudFront signed URL on
     mycdn.adspace.me while `cf_private_ready` is `on` in `app_secrets` (on
     since 2026-10-03, `docs/S3-STORAGE.md` §5d), else an S3 presigned one. An older invoice keeps its public
     address. A refused open on the client's page is one line in its
@@ -5523,7 +5525,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
   signed-in colleague (`team`), the selection page a campaign by its token
-  (`client`), the creator's page the creator by their code (`creator`).
+  (`client`; never a campaign behind a passcode or a Past client's,
+  `push_target`, `2026-10-18-a-clients-device-follows-only-a-link-that-opens.sql`),
+  the creator's page the creator by their code (`creator`).
   - One colleague and one creator a device; a client's device any number of
     campaigns (`push_subscriptions`, unique `(endpoint, target)`).
   - Only a push service's address is stored (`push_endpoint_ok`: Google,

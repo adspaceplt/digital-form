@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
   const url = Deno.env.get('SUPABASE_URL')!;
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
   let stored = '';
+  let owner = '';
 
   if (body.reportVersion) {
     // A report's kept PDF: the database answers the caller as themselves.
@@ -173,6 +174,8 @@ Deno.serve(async (req) => {
     });
     if (error || !data || data.error) return json({ error: 'not_allowed' }, 403, origin);
     stored = String((data.campaign && data.campaign.invoice_url) || '');
+    const { data: own } = await relay.from('campaigns').select('client_id').eq('access_token', token).maybeSingle();
+    owner = String((own && own.client_id) || '');
   } else {
     // The console: a signed-in, active colleague, reading the row as themselves.
     const auth = req.headers.get('Authorization') ?? '';
@@ -192,15 +195,19 @@ Deno.serve(async (req) => {
     const campaignId = String(body.campaignId ?? '');
     if (!UUID.test(campaignId)) return json({ error: 'bad_campaign' }, 400, origin);
     const { data: row, error } = await supa.from('campaigns')
-      .select('invoice_url').eq('id', campaignId).maybeSingle();
+      .select('invoice_url, client_id').eq('id', campaignId).maybeSingle();
     if (error || !row) return json({ error: 'not_allowed' }, 403, origin);
     stored = String(row.invoice_url || '');
+    owner = String(row.client_id || '');
   }
 
   if (!stored) return json({ error: 'none' }, 404, origin);
   // An invoice from before is a public address; it opens as it always has.
   if (/^https:\/\//.test(stored)) return json({ url: stored }, 200, origin);
   if (!PRIVATE_KEY.test(stored)) return json({ error: 'bad_key' }, 400, origin);
+  // The file is the campaign's own client's: a key written under another
+  // client's folder is never signed (audit 2026-10-18, item 3).
+  if (!owner || !stored.startsWith(`private/${owner}/`)) return json({ error: 'bad_key' }, 400, origin);
 
   const cdn = await cdnLink(stored);
   if (cdn) return json({ url: cdn, expires_in: EXPIRES }, 200, origin);
