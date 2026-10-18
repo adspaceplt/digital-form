@@ -1721,7 +1721,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   .panel { padding: 18px; }
   .cards { grid-template-columns: 1fr; }
   .draft { flex-direction: column; }
-  .draft-media { flex: 0 0 auto; width: 100%; height: 180px; }
 }
 
 /* =========================================================================
@@ -4110,19 +4109,9 @@ body > .shell { width: 100%; }
 }
 .svc-live-now > * { white-space: nowrap; }
 .svc-live b { color: var(--ink); font-weight: 600; }
-.rcw-pt:has(> .rcw-no:not(.rcw-rowno)) { grid-template-columns: 24px minmax(0, 1fr) auto; }
-.rcw-pt.is-one { grid-template-columns: minmax(0, 1fr); }
 .rcw-head.is-fixed { padding-right: 0; }
 .rcw-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .sheet-body:has(> .rcw-rows) { display: flex; flex-direction: column; }
-@media (max-width: 560px) {
-  .rcw-pt.is-cols { padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
-  /* On a phone a point's number and its acts share its first line, and the
-     field takes the whole width under them. */
-  .rcw-pt, .rcw-pt:has(> .rcw-no:not(.rcw-rowno)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "no acts" "field field"; row-gap: 4px; }
-  .rcw-pt.is-one { grid-template-areas: "field"; grid-template-columns: minmax(0, 1fr); }
-  .rcw-pt > .rcw-no { grid-area: no; padding-top: 0; align-self: center; text-align: left; }
-  }
 .cr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
 .cr-record {
   font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums;

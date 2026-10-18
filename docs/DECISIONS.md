@@ -5295,6 +5295,30 @@ finding fixed at the user's word ("fix all no matter what").
   the task with a note, so its history says why. `tests/ops.js` holds both
   paths and that finished work is left alone.
 
+- 2026-10-18 · Working days pass over public holidays (review item 20).
+  `ops_add_business_days` skipped weekends but counted a public holiday as
+  a working day, and a client's request for changes fell due in calendar
+  days (a Friday request was due on Saturday). The helper now passes over
+  the Public holidays list too (stable, no longer immutable, as it reads a
+  table), and the Revision (Client) push counts `revision_due_days` working
+  days through it. The setting's words read working days. `tests/ops.js`
+  holds a Friday, two holidays in a row, counting back, and the push.
+
+- 2026-10-18 · The stylesheet split kept its overrides (review item 5).
+  #592 moved the console's rules into `css/console.css`, loaded after
+  `css/portal.css`, but left some `@media` overrides in `portal.css` while
+  their base rule moved: the base, now later, won at every width. The
+  Content Review upload preview fell from 180px to 92px on a phone, and the
+  rate card's wording points lost their 4px row gap. A comparison of every
+  moved rule against the single file before the split (equal specificity,
+  a shared property, one element) found those two, and two declarations
+  that the split had brought to life (`.kplan`'s margin and `.cl-pick`'s
+  phone margin, each beaten by `.ovfacts` / `.trow-pick` before); the
+  overrides moved after their bases, and the two declarations, which never
+  applied, were removed. The rest of the pairs set the same value both
+  ways. `tests/cssguard.js` now fails a `portal.css` `@media` rule whose
+  selector `console.css` restates as a base.
+
 - **2026-10-18 · Supplier emails.** The user chose Resend from
   `noreply-supplier@sc.adspace.me` (replies to ap@adspacestudios.com), sent
   by hand at Suppliers Work, templates at Full Access, Copy the finance
