@@ -25,14 +25,10 @@
  *                              now), a record's PDF (a report, a quotation,
  *                              a Letter of Offer) uploaded as its Document
  *                              header, its link button filled from the
- *                              record alone, sent, and filed (`wa_sent`); the same
- *                              message sent recently (`wa_sent_recently`) answers
- *                              `recent` unless `again` is true.
- *   { action: 'report' | 'feedback', … }
- *                              the sends by hand from before the composer,
- *                              kept for a page loaded before it
- *                              (`wa_report_prepare`, `wa_feedback_prepare`,
- *                              `wa_record`).
+ *                              record alone, filed as Sending under a lock
+ *                              (`wa_send_begin`: `sending` while the same
+ *                              message is on its way, `recent` unless `again`
+ *                              is true), sent, and closed (`wa_send_done`).
  *
  * Secrets: WHATSAPP_PHONE_ID (the Phone number ID), WHATSAPP_WABA_ID (the
  *          WhatsApp Business Account ID, whose templates are read),
@@ -436,14 +432,6 @@ Deno.serve(async (req) => {
     const want = (body.template || {}) as Record<string, any>;
     const tname = String(want.name || ''), tlang = String(want.language || '');
     if (!/^[a-z0-9_]{1,512}$/.test(tname)) return json({ error: 'wa-template' }, 200, origin);
-    /* Sent recently (2026-10-14): the same message to the same person about
-       the same record within the window goes again only once the colleague
-       answered Send again (`again`). A database without the function sends. */
-    if (body.again !== true) {
-      const rc = await db.rpc('wa_sent_recently', { p_to_kind: toKind, p_to: toId, p_purpose: purpose, p_ref: ref, p_template: tname });
-      const rd = (rc.data || {}) as Record<string, any>;
-      if (!rc.error && rd.recent === true) return json({ error: 'recent', recent: rd }, 200, origin);
-    }
     const found = await readTemplates(tname);
     if (found.error) return json({ error: found.error }, 200, origin);
     const t = (found.list || []).filter((x) => x.name === tname && x.language === tlang && x.status === 'APPROVED')[0];
@@ -461,18 +449,30 @@ Deno.serve(async (req) => {
     const buttonValue = linkOf(t, p);
     if (t.button_var && !buttonValue) return json({ error: 'wa-no-link' }, 200, origin);
     const isNamed = t.format === 'NAMED';
-    const record = (ok: boolean, waId: string | null, error: string | null) => db.rpc('wa_sent', {
-      p_to_kind: toKind, p_to: toId, p_purpose: purpose, p_ref: ref, p_template: t.name, p_lang: t.language,
-      p_category: t.category, p_params: values, p_ok: ok, p_wa_id: waId, p_error: error });
-
-    let doc: { id: string; filename: string } | undefined;
+    let bytes: Uint8Array | null = null;
     if (t.header === 'DOCUMENT') {
-      const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
-      const bytes = purpose === 'report' ? await keptReport(db, auth, String(ref)) : pdfFrom(String(body.pdf || ''));
+      bytes = purpose === 'report' ? await keptReport(db, auth, String(ref)) : pdfFrom(String(body.pdf || ''));
       if (!bytes) return json({ error: 'bad-file' }, 200, origin);
       if (purpose !== 'report' && !(await namesRef(bytes, await refOf(db, purpose, String(ref))))) {
         return json({ error: 'bad-file' }, 200, origin);
       }
+    }
+    /* Filed as Sending before anything goes, under a lock on the person and
+       the record (the third audit, item 9): a second press waits for the
+       first to be filed, then reads it, so the same message is refused while
+       it is on its way (`sending`) and, unless the colleague answered Send
+       again (`again`), once sent (`recent`, as wa_sent_recently answers). */
+    const begun = await db.rpc('wa_send_begin', { p_to_kind: toKind, p_to: toId, p_purpose: purpose, p_ref: ref, p_template: t.name,
+      p_lang: t.language, p_category: t.category, p_params: values, p_again: body.again === true });
+    if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+    const b = (begun.data || {}) as Record<string, any>;
+    if (b.error) return json(b.error === 'recent' ? { error: 'recent', recent: b.recent } : { error: b.error }, 200, origin);
+    const record = (ok: boolean, waId: string | null, error: string | null) =>
+      db.rpc('wa_send_done', { p_id: b.id, p_ok: ok, p_wa_id: waId, p_error: error });
+
+    let doc: { id: string; filename: string } | undefined;
+    if (bytes) {
+      const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
       const up = await uploadPdf(bytes, filename);
       if (!up.id) {
         console.error('wa-send: upload refused', up.error);
@@ -494,38 +494,7 @@ Deno.serve(async (req) => {
       : json({ error: out.unknown ? 'wa-unknown' : named(out.error) }, 200, origin);
   }
 
-  if (action !== 'report' && action !== 'feedback') return json({ error: 'bad-request' }, 400, origin);
-  if (missing.length) return json({ error: 'wa-not-set-up', missing }, 200, origin);
-
-  const id = String(action === 'report' ? body.report_id || '' : body.client_id || '');
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
-  const prep = await db.rpc(action === 'report' ? 'wa_report_prepare' : 'wa_feedback_prepare',
-    action === 'report' ? { p_id: id } : { p_client: id });
-  if (prep.error) return json({ error: 'needs-update' }, 200, origin);
-  const p = (prep.data || {}) as Record<string, any>;
-  if (p.error) return json({ error: p.error }, 200, origin);
-
-  /* The body's variables, as many as the template takes: the contact's first
-     name, then the client (a report's brand), then for a report its title. */
-  const values = [p.first || p.name || 'there', p.client || '', String(body.title || '').slice(0, 200)].slice(0, Number(p.params) || 0);
-  let doc: { id: string; filename: string } | undefined;
-  if (action === 'report') {
-    const filename = String(body.filename || 'Report.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
-    const bytes = await keptReport(db, auth, id);
-    if (!bytes) return json({ error: 'bad-file' }, 200, origin);
-    const up = await uploadPdf(bytes, filename);
-    if (!up.id) {
-      console.error('wa-send: upload refused', up.error);
-      await db.rpc('wa_record', { p_purpose: 'report', p_ref: id, p_client: p.client_id, p_number: p.number, p_name: p.name,
-        p_template: p.template, p_params: values, p_ok: false, p_wa_id: null, p_error: 'upload: ' + (up.error || '') });
-      return json({ error: named(up.error) }, 200, origin);
-    }
-    doc = { id: up.id, filename };
-  }
-  const out = await sendTemplate(p.number, p.template, p.lang, values, doc);
-  if (!out.ok) console.error('wa-send: refused', action, out.error);
-  await db.rpc('wa_record', { p_purpose: action, p_ref: action === 'report' ? id : null, p_client: p.client_id, p_number: p.number,
-    p_name: p.name, p_template: p.template, p_params: values, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
-  return out.ok ? json({ ok: true, to: p.name || null }, 200, origin)
-    : json({ error: out.unknown ? 'wa-unknown' : named(out.error) }, 200, origin);
+  /* The sends from before the composer (`report`, `feedback`) are retired
+     (the third audit, item 9): they asked nothing before sending. */
+  return json({ error: 'bad-request' }, 400, origin);
 });
