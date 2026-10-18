@@ -5387,6 +5387,18 @@ finding fixed at the user's word ("fix all no matter what").
   question first read Client over a field labelled Client; it reads Linked
   client.
 
+### 2026-10-18 · A supplier's documents added by hand reach the supplier
+The user: "AS125 supplier documents not linked?". Add entry offered no
+Supplier Letter, so AS125's agreement, NDA and incident report were filed
+as Other or Client Letter under a client record made to hold them, and
+AS130's agreement as Other: none carried `supplier_id`, so the supplier's
+record listed nothing. Add entry now takes the kind (a select: five kinds)
+and a Supplier; the record's ⋯ opens it preset. The migration moved the
+four rows whose reference names a supplier's ID onto the supplier (AS110's
+has no supplier record and stays). The stand-in client coded AS125 is left
+for the team to set Past or delete. Issue document takes the plus through
+`js/acts.js`, closing the logged glyph defect.
+
 - 2026-10-18 · Department scores are an admin's (review item 6). NOBODY
   SCORES THEIR OWN DEPARTMENT kept a member from scoring their own
   department, but with two departments and the prize going whole to the

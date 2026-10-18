@@ -27,7 +27,7 @@
     [/^Download$/, 'file'],
     [/^Copy( link| text| title)?$/, 'copy'],
     [/^(Preview|Preview PDF)$/, 'out', true],
-    [/^(Add|New) \S/, 'plus']
+    [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus']
   ];
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {
