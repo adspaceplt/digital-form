@@ -5192,6 +5192,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     for every active colleague but the caller, refusing a moment passed;
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
+  - the moment passes before the run comes: `is_team()`, `allowed()`,
+    `ops_me()` and `me()` count a colleague only while
+    `team_access_ends(access_until, access_until_time)` is ahead (an admin
+    is the run's, which keeps the last admin with access), so nothing waits
+    for the five minutes (`2026-10-18-access-ends-on-the-minute.sql`).
 - Digital namecards (`js/namecard.js`, `/card/?k=`, `2026-10-03-team-namecards.sql`):
   - every colleague has a `card_key` (eight characters from the link keys'
     alphabet), made by trigger and never changed, so a printed QR keeps
