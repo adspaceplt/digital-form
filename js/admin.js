@@ -510,7 +510,18 @@
       P.off(true).then(once, once);
       setTimeout(once, 1500);
     };
-    var forget = function () { var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve(); };
+    /* The media pass and what this browser kept of the colleague's work
+       (the notes for Write with AI, the inputs asked up front and the
+       uploaded drafts) go with the session (second audit, item 7). */
+    var forget = function () {
+      if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget();
+      try {
+        Object.keys(localStorage).forEach(function (k) {
+          if (/^adspace-[a-z]+-(notes|inputs):|^adspace_drafts_/.test(k)) localStorage.removeItem(k);
+        });
+      } catch (e) { /* private mode */ }
+      var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve();
+    };
     var out = function () { quiet(function () { forget().then(function () { return db.auth.signOut(); }).then(function () { location.reload(); }); }); };
     if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });

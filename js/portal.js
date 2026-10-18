@@ -465,6 +465,8 @@
   $('codeBack').addEventListener('click', function () { msg('stateMsg', ''); showState('sign'); });
   $('portalOut').addEventListener('click', function () {
     var D = window.ADspaceDocs;
+    // The media pass goes with the session (second audit, item 7).
+    if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget();
     (D && D.forgetFiles ? D.forgetFiles() : Promise.resolve()).then(function () { return db.auth.signOut(); })
       .then(function () { location.reload(); });
   });

@@ -827,6 +827,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   again once and reloads (a video at its second), the page's own `onerror`
   held until the answer; a `.web.mp4` copy not made yet never asks. Stored
   addresses never change. A refused or slow pass (6s) never holds a page.
+  Signing out takes the pass with it (`ADspaceMedia.forget()`: the three
+  cookies on the root, content/ and every remembered folder, and the
+  pass's marks): the console's Sign out, which also removes the browser's
+  `adspace-*-notes:`, `adspace-*-inputs:` and `adspace_drafts_` keys, the
+  client portal's, and the creator's Forget this device (`{ client: true }`,
+  leaving a colleague's live pass alone).
 - `js/acts.js` (`ADspaceActs`) is the one table of act glyphs and the one
   pending state (the user, 2026-10-10): every console `.btn` whose words are
   an act carries its mark (Publish the plane, Unpublish the struck eye,
