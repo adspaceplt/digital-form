@@ -5498,7 +5498,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
 - A device follows what the page it turned on from proves: the console the
   signed-in colleague (`team`), the selection page a campaign by its token
-  (`client`), the creator's page the creator by their code (`creator`).
+  (`client`; never a campaign behind a passcode or a Past client's,
+  `push_target`, `2026-10-18-a-clients-device-follows-only-a-link-that-opens.sql`),
+  the creator's page the creator by their code (`creator`).
   - One colleague and one creator a device; a client's device any number of
     campaigns (`push_subscriptions`, unique `(endpoint, target)`).
   - Only a push service's address is stored (`push_endpoint_ok`: Google,
