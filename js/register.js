@@ -421,6 +421,43 @@
     });
   }
 
+  /* A colleague's record lists every HR letter that is theirs (the user,
+     2026-10-18: "when its linked to a team member, shouldnt all letters or
+     documents go into their respective accounts"): the ones naming them,
+     the ones whose reference carries their Employee ID (as the register's
+     Team column finds them, `teamOf`), and their downloaded performance
+     records, in the register's own rows, newest first. */
+  function paintForMember(m, box, then) {
+    if (!box) return;
+    loadPeople(function () {
+      var code = String(m.staff_code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var q = db.from('documents').select('*').eq('family', 'hr');
+      q = code ? q.or('member_id.eq.' + m.id + ',serial.ilike."%' + code + '%"') : q.eq('member_id', m.id);
+      Promise.all([
+        q.then(function (r) { return r; }, function (e) { return { error: e }; }),
+        new Promise(function (res) { perfRows(res); })
+      ]).then(function (got) {
+        var r = got[0];
+        if (r.error) { if (then) then(null, r.error); return; }
+        var rows = (r.data || []).filter(function (d) { var t = teamOf(d); return t && t.id === m.id; })
+          .concat((got[1] || []).filter(function (d) { return d.member_id === m.id; }))
+          .sort(sorter());
+        var old = box.querySelector('.reg-table');
+        if (old) old.remove();
+        if (rows.length) {
+          var table = document.createElement('div');
+          table.className = 'crm-table reg-table';
+          table.innerHTML = '<div class="crm-head svc-row reg-row is-own"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
+          rows.forEach(function (d) {
+            table.appendChild(row(d, 'register.hr', function () { paintForMember(m, box, then); }, true));
+          });
+          box.appendChild(table);
+        }
+        if (then) then(rows, null);
+      });
+    });
+  }
+
   if ($('regFind')) $('regFind').addEventListener('input', function () {
     var v = this.value.trim().toLowerCase();
     if (v === state.find) return;
@@ -1527,5 +1564,5 @@
   wire();
 
   window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue,
-    openAdd: function (opts) { openAdd(null, null, opts); }, paintFor: paintFor, openTypes: function (opener) { openTypes(opener); } };
+    openAdd: function (opts) { openAdd(null, null, opts); }, paintFor: paintFor, paintForMember: paintForMember, openTypes: function (opener) { openTypes(opener); } };
 })();
