@@ -512,7 +512,34 @@
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'This is a system account.';
     if (/admin-only/.test(t)) return ADMIN_ONLY;
+    if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
+  }
+  /* A save refused because a value is another colleague's names the field
+     (Team audit, item 10): the database's index says which. A removed
+     colleague's values are free again (REMOVED COLLEAGUES FREE THEIR
+     DETAILS), so a colleague who returns is added again. */
+  function clashSaid(e) {
+    var t = String(e && e.message || '') + ' ' + String(e && e.details || '');
+    if (/slug-taken|card_slug/.test(t)) return 'That short link is already in use.';
+    if (!/duplicate|unique/i.test(t)) return teamSaid(e);
+    if (/staff_code/i.test(t)) return 'That Employee ID is already on the list.';
+    if (/email/i.test(t)) return 'That email is already on the list.';
+    if (/name/i.test(t)) return 'That name is already on the list.';
+    return 'That colleague is already on the list.';
+  }
+  /* In the member sheet the refusal is the sheet's last line, under its
+     fields: it is brought into view and the field that clashes takes the
+     caret, the way a failed save focuses its first invalid field. */
+  function sheetClash(e) {
+    msg('tmMsg', clashSaid(e), 'err');
+    var t = String(e && e.message || '') + ' ' + String(e && e.details || '');
+    var id = !/duplicate|unique/i.test(t) ? null : /staff_code/i.test(t) ? 'tmStaff'
+      : /email/i.test(t) ? 'tmEmail' : /name/i.test(t) ? 'tmName' : null;
+    var f = id && $(id);
+    if (f) { try { f.focus({ preventScroll: true }); } catch (x) { f.focus(); } }
+    var m = $('tmMsg');
+    if (m && m.scrollIntoView) m.scrollIntoView({ block: 'nearest' });
   }
   function memberRow(m) {
     var self = me() && me().id === m.id;
@@ -1742,10 +1769,7 @@
             return;
           }
           if (r.error) {
-            msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
-              : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
-              : /duplicate|unique/i.test(r.error.message)
-              ? 'That email is already on the list.' : teamSaid(r.error), 'err');
+            msg('teamMsg', clashSaid(r.error), 'err');
             return;
           }
           /* A save that changed nothing files nothing. */
@@ -1792,10 +1816,7 @@
     db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
         if (r.error) {
-          msg('tmMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
-            : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
-            : /duplicate|unique/i.test(r.error.message)
-            ? 'That email is already on the list.' : teamSaid(r.error), 'err');
+          sheetClash(r.error);
           return;
         }
         log('team.added', name, email + ' · ' + roleName(role));
@@ -1984,9 +2005,7 @@
           return;
         }
         if (r.error) {
-          msg('mrecMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
-            : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
-            : /duplicate|unique/i.test(r.error.message) ? 'That email is already on the list.' : teamSaid(r.error), 'err');
+          msg('mrecMsg', clashSaid(r.error), 'err');
           back(false); return;
         }
         var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
