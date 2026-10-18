@@ -1141,6 +1141,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   'Asia/Kuala_Lumpur') - interval '3 months') at time zone 'Asia/Kuala_Lumpur'`):
   `at time zone` binds before `-`, so the other order counts on UTC's
   calendar (2026-10-17, `portal_meetings`).
+- A day a function writes in words is `register_day` of its Malaysian day
+  (`5 Sept 2026`), never `to_char(…, 'Mon')` (`Sep`, and the UTC day;
+  2026-10-19, a moved date's notice).
 - PostgREST cannot choose between overloads a call fits, so a changed signature
   drops the old one first.
 - An embed across two foreign keys names the key
