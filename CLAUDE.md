@@ -5465,9 +5465,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   video's `.web.mp4` copy counts as in use while its original is.
 - Scheduled jobs are watched (`2026-10-18-scheduled-jobs-watched.sql`):
   `jobs_watch()` (pg_cron `jobs-watch`, 08:20 MYT) tells each active admin
-  once a day (kind `jobs.failed`) of the scheduled runs that failed in the
-  last 24 hours, by job, and of an S3 report filed as failed or not arrived
-  in 26 hours; `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
+  (none active: Team Full Access) once a day (kind `jobs.failed`) of the
+  scheduled runs that failed since its own last successful run (24 hours
+  to seven days, a failed check of its own named first), by job, of an S3
+  report filed as failed or not arrived in 26 hours, and of each repeat rule
+  that could not make its task, named (client, rule or task, its number;
+  five, then a count), the notice opening the first one's task; the morning
+  run keeps a rule nobody active can make, or whose task its colleague
+  cannot see, as its error, which the task card's Repeats line shows
+  (`2026-10-18-failed-jobs-named.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
   over 14 days and notices read over 90 days ago, never a colleague's
   notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,

@@ -5344,6 +5344,17 @@ finding fixed at the user's word ("fix all no matter what").
   decision one index-ordered read (newest, limit 1). `tests/sql.js` holds
   1,200 sets counted, and the same answer as the earlier definition.
 
+- 2026-10-18 · Failed jobs are named (review item 15). A repeat rule whose
+  creator and task owner had both left was never handed to the morning run
+  and never counted; one whose task its colleague could no longer see was
+  skipped in silence; a rule's `last_error` was shown nowhere; and nobody
+  was told when `jobs_watch` itself failed, or when no admin was active.
+  The morning run now keeps both kinds as the rule's error; `jobs_watch`
+  names each failing rule (client, rule or task, its number) and opens the
+  first one's task, reads back to its own last successful run so a failed
+  check is reported by the next, and tells Team Full Access when no admin
+  is active; the task card's Repeats line shows the error. `tests/ops.js`
+  holds each case.
 - **2026-10-18 · A supplier linked to its client.** Some suppliers are also
   clients; the user asked that the two IDs stay apart ("u can leave the
   supplier and client id separate"), so the link is a column on the
@@ -5354,4 +5365,3 @@ finding fixed at the user's word ("fix all no matter what").
   from Clients View, is compared inside the function and never sent. The
   question first read Client over a field labelled Client; it reads Linked
   client.
-
