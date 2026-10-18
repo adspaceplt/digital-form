@@ -826,7 +826,7 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -844,14 +844,15 @@
     campaigns: ['campaigns', 'creators', 'finance', 'files_delete'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any
        other group's once set. */
-    /* Suppliers (2026-10-18) follow Documents; their bank details and NRIC
-       are granted (`supplier_pay`), an admin's by itself. */
-    register:  ['documents', 'hr', 'types', 'suppliers', 'supplier_pay'],
+    register:  ['documents', 'hr', 'types'],
+    /* A supplier's NRIC and bank details (2026-10-18) are granted (`pay`),
+       an admin's by itself. */
+    suppliers: ['pay'],
     /* The record is read a tab at a time, so its access is a part per tab.
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -877,7 +878,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'register.supplier_pay': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -920,7 +921,7 @@
      permission for what it governs, and the mapping lives here rather than
      being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
-    if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view') || may('register.suppliers', 'view');
+    if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
     if (name === 'activity') {
       return may('activity', 'view') || PARTS.activity.some(function (k) {
         return may('activity.' + k, 'view');
@@ -1047,7 +1048,7 @@
      so it never sits on what is typed. */
   var TAB_WORD = {
     overview: 'Dashboard', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
-    scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', reports: 'Reports', links: 'Links',
+    scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
@@ -1497,6 +1498,7 @@
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
     register: 'Documents',
+    suppliers: 'Suppliers',
     reports: 'Reports',
     services: 'Services',
     team: 'Team',
@@ -1527,6 +1529,7 @@
     campaigns: 'Creator campaigns, from selection through to posting.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
+    suppliers: 'The suppliers ADspace pays, each with the details its own form sent.',
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
@@ -1569,6 +1572,9 @@
     register: { name: 'Documents', steps: [
       { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference is numbered for you.' },
       { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at digital.adspace.me/verify.' }] },
+    suppliers: { name: 'Suppliers', steps: [
+      { at: '#supNew', text: 'New supplier gives a Supplier ID and a link. The supplier fills in their own details.' },
+      { at: '#supList button.sup-row', text: 'Open a supplier to take in what they sent, approve them and issue them a letter.' }] },
     reports: { name: 'Reports', steps: [
       { at: '#rhNew', text: 'New report starts an Accounts or Advertising Report for an active client.' },
       { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published, where the client reads it.' },
@@ -1763,7 +1769,7 @@
      Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
      Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'handbook';
   }
@@ -1783,6 +1789,7 @@
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
     $('sectionRegister').hidden  = name !== 'register';
+    $('sectionSuppliers').hidden = name !== 'suppliers';
     $('sectionReports').hidden   = name !== 'reports';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
@@ -1846,6 +1853,12 @@
     if (name === 'register') {
       if (!window.ADspaceRegister) { enterLater = 'register'; return; }
       window.ADspaceRegister.enter();
+      setUrl();
+      return;
+    }
+    if (name === 'suppliers') {
+      if (!window.ADspaceSuppliers) { enterLater = 'suppliers'; return; }
+      window.ADspaceSuppliers.enter();
       setUrl();
       return;
     }
@@ -2022,7 +2035,7 @@
     } else if (section === 'services' && window.ADspaceCRM && window.ADspaceCRM.svcState) {
       var sv = window.ADspaceCRM.svcState();
       Object.keys(sv).forEach(function (k) { if (sv[k]) q.push(k + '=' + encodeURIComponent(sv[k])); });
-    } else if (section === 'register' && window.ADspaceSuppliers) {
+    } else if (section === 'suppliers' && window.ADspaceSuppliers) {
       var spl = window.ADspaceSuppliers.urlState();
       Object.keys(spl).forEach(function (k) { if (spl[k]) q.push(k + '=' + encodeURIComponent(spl[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
@@ -2402,11 +2415,11 @@
     'document.reissued':     ['Document reissued', '', 'register'],
     'register.added':        ['Document added', 'is-ok', 'register'],
     'register.edited':       ['Document edited', '', 'register'],
-    /* A supplier (2026-10-18), filed by the database under Documents. */
-    'supplier.added':        ['Supplier added', 'is-ok', 'register'],
-    'supplier.edited':       ['Supplier edited', '', 'register'],
-    'supplier.approved':     ['Supplier approved', 'is-ok', 'register'],
-    'supplier.deleted':      ['Supplier deleted', 'is-danger', 'register'],
+    /* A supplier (2026-10-18), filed by the database under Suppliers. */
+    'supplier.added':        ['Supplier added', 'is-ok', 'suppliers'],
+    'supplier.edited':       ['Supplier edited', '', 'suppliers'],
+    'supplier.approved':     ['Supplier approved', 'is-ok', 'suppliers'],
+    'supplier.deleted':      ['Supplier deleted', 'is-danger', 'suppliers'],
     'service.added':         ['Rate line added', 'is-ok', 'services'],
     'service.changed':       ['Rate line changed', '', 'services'],
     'service.off':           ['Rate line inactive', 'is-warn', 'services'],
@@ -2532,7 +2545,7 @@
   var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', links: 'Short Links',
+                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', suppliers: 'Suppliers', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */

@@ -664,7 +664,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     work; 2026-10-10: WhatsApp last). A colleague may arrange their own
     order within each chunk (Arrange sections), which the tab bar follows;
     everything else keeps this one.
-  - **Internal**: Documents, Short Links, Services, Team, Handbook.
+  - **Internal**: Documents, Suppliers, Short Links, Services, Team, Handbook.
   - The Activity record is a mark at the rail's foot, at the right edge of
     the build's line, Arrange sections' and Settings' marks before it (`.sidebar-foot`, each a
     `.railrow`, not a section).

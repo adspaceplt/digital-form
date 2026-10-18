@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261018xg">
+<link rel="stylesheet" href="/css/portal.css?v=20261018xh">
 <link rel="stylesheet" href="/css/console.css?v=20261018xg">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -223,6 +223,9 @@
         <span class="sidebar-label">Internal</span>
         <button class="navitem" data-section="register" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
+        </button>
+        <button class="navitem" data-section="suppliers" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 4l9 5.5"/><path d="M5 9v10h14V9"/><path d="M9.5 19v-5h5v5"/></svg><span>Suppliers</span>
         </button>
         <button class="navitem" data-section="links" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
@@ -3365,13 +3368,7 @@
     <!-- ---- Register: every document issued, and every serial the verify
          page answers. HR rows reach this list only where the database's own
          policy lets them. ---- -->
-    <div class="console-body" id="sectionRegister" data-swipe="regTabs" hidden>
-      <!-- Documents and its suppliers (2026-10-18), each a tab; the strip is
-           drawn only where both are open (js/suppliers.js). -->
-      <div class="tabrow" id="regTabs" role="tablist" aria-label="Documents" hidden>
-        <button class="tab is-on" data-tab="documents" type="button" role="tab">Documents</button>
-        <button class="tab" data-tab="suppliers" type="button" role="tab">Suppliers</button>
-      </div>
+    <div class="console-body" id="sectionRegister" hidden>
       <div id="regDocsPane">
       <div class="cmdbar">
         <span class="cmdbar-find">
@@ -3400,7 +3397,12 @@
            "is this real" knows where to send the person asking. -->
       <p class="routenote">Anyone can check a reference at <a class="plink" href="/verify/" target="_blank" rel="noopener" id="regVerifyLink">/verify</a>.</p>
       </div>
-      <div id="regSupPane" hidden>
+    </div>
+
+
+    <!-- Suppliers (2026-10-18, js/suppliers.js): a section of its own, after
+         Documents, which issues their letters. -->
+    <div class="console-body" id="sectionSuppliers" hidden>
         <div class="cmdbar" id="supBar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3409,14 +3411,13 @@
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="register.suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
+              <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
             </span>
           </span>
         </div>
         <div class="msg" id="supMsg"></div>
         <div id="supList"></div>
         <div id="supRec" hidden></div>
-      </div>
     </div>
 
     <div class="console-body" id="sectionTeam" data-swipe="teamTabs" hidden>
@@ -5513,20 +5514,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261018xc"></script>
+<script src="/js/admin.js?v=20261018xd"></script>
 <script src="/js/documents.js?v=20261018f"></script>
 <script src="/js/letters.js?v=20261018"></script>
 <script src="/js/smreport.js?v=20261018d"></script>
 <script src="/js/reports.js?v=20261017a"></script>
-<script src="/js/register.js?v=20261018"></script>
-<script src="/js/suppliers.js?v=20261018"></script>
+<script src="/js/register.js?v=20261018a"></script>
+<script src="/js/suppliers.js?v=20261018a"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261018f"></script>
 <script src="/js/quotepdf.js?v=20261018f"></script>
 <script src="/js/checklists.js?v=20261017"></script>
 <script src="/js/crm.js?v=20261018b"></script>
 <script src="/js/sales.js?v=20261015zh"></script>
-<script src="/js/team.js?v=20261018e"></script>
+<script src="/js/team.js?v=20261018f"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
 <script src="/js/scripts.js?v=20261015zm"></script>

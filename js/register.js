@@ -58,8 +58,8 @@
   function mayFamily(family, level) {
     if (family === 'hr') return may('register.hr', level);
     if (family === 'other') return may('register.documents', level);
-    /* A supplier's letters answer to Documents: Suppliers (2026-10-18). */
-    if (family === 'supplier') return may('register.suppliers', level);
+    /* A supplier's letters answer to Suppliers (2026-10-18). */
+    if (family === 'supplier') return may('suppliers', level);
     /* A Letter of Offer is a client's document and answers to the client
        record's part alone, which is the policy on its own table. It is not
        the Register's to issue or to correct: it is issued from the record
@@ -71,7 +71,7 @@
   function needOf(family) {
     if (family === 'hr') return 'register.hr';
     if (family === 'offer') return 'clients.documents';
-    if (family === 'supplier') return 'register.suppliers';
+    if (family === 'supplier') return 'suppliers';
     return 'register.documents';
   }
 
@@ -152,8 +152,8 @@
         .then(function (r) { return r.error ? r : API.withBilling(r.data || []).then(function () { return r; }); }),
       db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
       LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([]),
-      /* Suppliers (2026-10-18), read only where Documents: Suppliers is held. */
-      may('register.suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }, function () { return []; }) : Promise.resolve([])
+      /* Suppliers (2026-10-18), read only where Suppliers is held. */
+      may('suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }, function () { return []; }) : Promise.resolve([])
     ]).then(function (r) {
       state.clients = (r[0] && r[0].data) || [];
       state.members = (r[1] && r[1].data) || [];
@@ -172,9 +172,6 @@
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
     if ($('regTypes')) $('regTypes').hidden = !may('register.types', 'work');
-    /* The Suppliers tab (js/suppliers.js) reads its own; the documents are
-       read only while their tab is on show. */
-    if (window.ADspaceSuppliers && window.ADspaceSuppliers.enter() === 'suppliers') return;
     load();
   }
 
@@ -512,7 +509,7 @@
     var sel = $('docSupplier');
     if (!sel) return;
     sel.innerHTML = '<option value="">Choose a supplier</option>' + state.suppliers.filter(function (x) { return x.status !== 'inactive'; })
-      .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(F.named(x.code, x.name)) + '</option>'; }).join('');
+      .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name ? F.named(x.code, x.name) : x.code) + '</option>'; }).join('');
   }
   function fillMembers() {
     var sel = $('docMember');
