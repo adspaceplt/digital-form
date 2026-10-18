@@ -420,11 +420,11 @@
     var q = ((st.data || {}).queue) || {};
     var box = $('waQueue');
     if (!st.data) { box.hidden = true; return; }
-    /* Not confirmed (sent in the last seven days, as Not sent counts)
-       beside Not sent (2026-10-17): either wants a colleague to look, the
-       first before anything is sent again. */
-    box.innerHTML = [['queued', 'Waiting to send'], ['sending', 'Sending'], ['failed', 'Not sent in 7 days'],
-                     ['unknown', 'Not confirmed']].map(function (c) {
+    /* Not confirmed (sent in the last seven days, as Not sent counts, and
+       labelled so, the days kept on one line; 2026-10-18) beside Not sent (2026-10-17): either wants a
+       colleague to look, the first before anything is sent again. */
+    box.innerHTML = [['queued', 'Waiting to send'], ['sending', 'Sending'], ['failed', 'Not sent in\u00a07\u00a0days'],
+                     ['unknown', 'Not confirmed in\u00a07\u00a0days']].map(function (c) {
       var n = Number(q[c[0]] || 0);
       return '<div class="tally-cell wam-head' + ((c[0] === 'failed' || c[0] === 'unknown') && n ? ' is-warn' : '') + '"><b>' + n + '</b><span>' + esc(c[1]) + '</span></div>';
     }).join('');

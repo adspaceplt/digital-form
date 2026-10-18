@@ -4714,3 +4714,10 @@ finding fixed at the user's word ("fix all no matter what").
   creators.js, creator.js) now answer nothing for those, so Enter a web
   address. covers it. `tests/camp.js` (draft link) and `tests/results.js`
   (post link) hold a space and a quote.
+
+- 2026-10-18 · The WhatsApp queue's Not confirmed tally says it counts
+  seven days (review of #538 to #550, item 3). `wa_messages`' queue counts
+  `unknown` messages from the last seven days, as it does `failed`, but the
+  cell read Not confirmed beside Not sent in 7 days. It now reads Not
+  confirmed in 7 days, with "in 7 days" held on one line on a phone.
+  `tests/whatsapp.js` holds the label.
