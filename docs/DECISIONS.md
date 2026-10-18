@@ -4959,3 +4959,13 @@ finding fixed at the user's word ("fix all no matter what").
   rule, its other dates left for the next run, and the run goes on; the
   admins' morning notice counts the rules that failed. `tests/ops.js` holds
   a broken rule beside a sound one.
+
+- 2026-10-18 · The S3 report reads each column once (second audit, item
+  16). `s3_keys_in_use` scanned every text, json and array column (586 live,
+  about 20 MB) once for every key still unresolved, so a night with
+  thousands of listed files read the database thousands of times over.
+  `2026-10-18-s3-keys-read-once.sql` keeps the rule and changes the
+  reading: every key shares the listing's prefix, so each column is read
+  once for its values holding it, joined by chr(1), which no key holds, and
+  each key is sought in that text by the same `strpos`. `tests/s3sql.js`
+  answers seven asks beside the first definition and finds the same keys.
