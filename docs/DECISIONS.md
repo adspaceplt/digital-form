@@ -4714,3 +4714,19 @@ finding fixed at the user's word ("fix all no matter what").
   creators.js, creator.js) now answer nothing for those, so Enter a web
   address. covers it. `tests/camp.js` (draft link) and `tests/results.js`
   (post link) hold a space and a quote.
+
+- 2026-10-18 · Issue letter reads the services and their quotation again
+  when the database finds them changed (review of #538 to #550, item 2).
+  `issue_letter` works the price from the stored lines (and the quotation
+  they came from, while it stands) and refuses page figures off by a sen
+  (`stale`). The page kept the lines and quotations it read when the
+  record opened, and a refused quotation read left `state.quotes` null, so
+  a quoted letter was priced without its quotation's rate: every press
+  after a change, or after that failed read, was refused again, and the
+  sheet only said to close it. On `stale` the page now reads the service
+  lines and the quotations again and opens the sheet on the same ticks
+  and reference, saying they were read again, so the next press prices
+  what the database holds. The stand-in was more generous than the
+  database (it took any figures); it now prices the stored rows as the
+  page does and refuses `stale` the same way, and `tests/letter.js`
+  changes a rate while the sheet is open.
