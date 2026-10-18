@@ -5386,3 +5386,13 @@ finding fixed at the user's word ("fix all no matter what").
   from Clients View, is compared inside the function and never sent. The
   question first read Client over a field labelled Client; it reads Linked
   client.
+
+- 2026-10-18 · Department scores are an admin's (review item 6). NOBODY
+  SCORES THEIR OWN DEPARTMENT kept a member from scoring their own
+  department, but with two departments and the prize going whole to the
+  higher, a member of Creative at Performance Work could still mark
+  Marketing down and win it. `perf_dept_save` now refuses `admin-only`
+  unless the caller holds `team.perfadmin` (an admin's by itself), and the
+  Quarters view offers Department scores to that part alone. The
+  own-department refusal stays for an admin who holds a department.
+  `tests/perf.js` and `tests/perfui.js` hold both; the stand-in the same.
