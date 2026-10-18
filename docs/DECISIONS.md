@@ -4831,3 +4831,14 @@ finding fixed at the user's word ("fix all no matter what").
   and `perf_period` answers `open_months`, so Bonus and trip draws Confirm
   only once it can be pressed and names the reviews still open.
   `tests/perf.js` holds it.
+
+- 2026-10-18 · The first model's Finish and Reopen are closed (second
+  audit, item 3). `ops_complete_task` and `ops_reopen_task` (2026-09-19)
+  were executable by every signed-in account, a client contact included,
+  though nothing called them: they write stage keys no workflow holds
+  (`done`, `revision`), pass by the owner, AQC review, client review and
+  draft gates, and the reopen asks no client scope. No page, function,
+  policy, cron job or edge function names either (the repo and the live
+  database, 2026-10-18), so `2026-10-18-unused-task-shortcuts-closed.sql`
+  revokes both from public, anon and authenticated, and the stand-in
+  answers them 42501. `tests/sql.js` holds the revoke as their last word.
