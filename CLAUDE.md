@@ -2167,7 +2167,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   issued from the supplier (Issue document) or the Register, listed on the
   supplier and under Supplier Letters (`register_may('supplier', …)`
   answers the Suppliers section); a reissue keeps the supplier. No bank
-  statement upload (the Jotform field was optional).
+  statement upload (the Jotform field was optional). A document kept
+  outside the portal (an agreement, an NDA) is Add entry's Supplier Letter
+  (the record's ⋯, or the Register), naming its supplier and no client
+  (`register_add` / `register_update` `p_supplier`, `no-supplier`;
+  `2026-10-18-supplier-entries.sql`, which filed the entries whose
+  reference named a supplier's ID under it); on the record it opens its
+  file link, and it is never offered as an email's document.
 - A supplier that is also a client is linked to it
   (`2026-10-18-supplier-client-link.sql`, `suppliers.client_id`; the user,
   2026-10-18: the Supplier ID and the Client ID stay apart): the record's

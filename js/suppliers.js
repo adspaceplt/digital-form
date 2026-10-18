@@ -302,6 +302,7 @@
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
         (s.email ? '<button class="kmenu-item" type="button" data-s="mail"><b>Send email</b></button>' : '') +
+        '<button class="kmenu-item" type="button" data-s="add"><b>Add entry</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
       (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
@@ -320,7 +321,7 @@
         (formBlock() ? '<section class="readgroup sup-form">' + formBlock() + '</section>' : '') +
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
-        '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Letters</h4>' +
+        '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
         '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4></div>' +
@@ -361,6 +362,12 @@
     on('issue', function () {
       if (!window.ADspaceRegister) return;
       window.ADspaceRegister.openIssue({ supplier: s, families: ['supplier'], msg: 'supRecMsg', onDone: function () { letters(s.id); } });
+    });
+    /* A document kept outside the portal (an agreement, an NDA) is filed
+       under the supplier by hand (2026-10-18). */
+    on('add', function () {
+      if (!window.ADspaceRegister || !window.ADspaceRegister.openAdd) return;
+      window.ADspaceRegister.openAdd({ supplier: s, msg: 'supRecMsg', onDone: function () { letters(s.id); } });
     });
     on('del', function () {
       window.ADspaceConfirm.ask({
@@ -417,23 +424,28 @@
   function letters(id) {
     var box = $('supLetterList');
     if (!box) return;
-    db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, created_at')
+    db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, file_url, created_at')
       .eq('supplier_id', id).order('created_at', { ascending: false }).then(function (r) {
         if (!$('supLetterList')) return;
-        if (r.error) { UI.failLine(box, 'the letters', r.error.message || '', function () { letters(id); }); return; }
+        if (r.error) { UI.failLine(box, 'the documents', r.error.message || '', function () { letters(id); }); return; }
         var rows = r.data || [];
-        if (!rows.length) { box.innerHTML = '<p class="muted">No letters.</p>'; return; }
+        if (!rows.length) { box.innerHTML = '<p class="muted">No documents.</p>'; return; }
         box.innerHTML = '<dl class="ovfacts">' + rows.map(function (d, i) {
-          return '<div><dt>' + esc(day(d.issued_at)) + '</dt><dd><button class="linkbtn" type="button" data-l="' + i + '">' +
-            esc(d.serial) + ' · ' + esc(d.kind) + (d.voided_at ? ' · ' + esc(d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : '') + '</button></dd></div>';
+          var words = esc(d.serial) + ' · ' + esc(d.kind) + (d.voided_at ? ' · ' + esc(d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : '');
+          /* An entry added by hand is not drawn: it opens its file where one
+             is linked, else it is read as it stands. */
+          var hand = d.source === 'manual';
+          return '<div><dt>' + esc(day(d.issued_at)) + '</dt><dd>' + (hand && !d.file_url ? words :
+            '<button class="linkbtn" type="button" data-l="' + i + '">' + words + '</button>') + '</dd></div>';
         }).join('') + '</dl>';
         Array.prototype.forEach.call(box.querySelectorAll('[data-l]'), function (b) {
           b.addEventListener('click', function () {
             var d = rows[Number(b.getAttribute('data-l'))];
+            if (d.source === 'manual') { window.open(d.file_url, '_blank', 'noopener'); return; }
             if (window.ADspaceLetters) window.ADspaceLetters.download(d, function (warn) { if (warn) msg('supRecMsg', warn, 'err'); });
           });
         });
-      }, function (e) { UI.failLine(box, 'the letters', String(e && e.message || e), function () { letters(id); }); });
+      }, function (e) { UI.failLine(box, 'the documents', String(e && e.message || e), function () { letters(id); }); });
   }
 
   /* Emails sent to the supplier (supplier_emails_of), newest first, with
@@ -477,7 +489,8 @@
     tpl.querySelector('option[value="approved"]').disabled = s.status !== 'active';
     db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, created_at')
       .eq('supplier_id', s.id).is('voided_at', null).order('created_at', { ascending: false }).then(function (r) {
-        mail.docs = (!r.error && r.data) || [];
+        /* An entry added by hand has no letter to send. */
+        mail.docs = ((!r.error && r.data) || []).filter(function (d) { return d.source !== 'manual'; });
         $('supMailDoc').innerHTML = mail.docs.map(function (d) {
           return '<option value="' + esc(d.id) + '">' + esc(d.serial + ' · ' + d.kind) + '</option>';
         }).join('');

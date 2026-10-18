@@ -1089,11 +1089,13 @@
   /* The recipient a client pick last wrote, so a name somebody typed over
      it is never replaced by the next pick. */
   var addSeed = null;
-  function openAdd(d, onChange) {
-    if (!(may('register.documents', 'work') || mayFamily('client', 'work'))) return;
+  function openAdd(d, onChange, opts) {
+    opts = opts || {};
+    var forSup = opts.supplier || null;
+    if (!(may('register.documents', 'work') || mayFamily('client', 'work') || mayFamily('supplier', 'work'))) return;
     if (!(d && d.id)) d = null;
-    editing = d ? { d: d, then: onChange } : null;
-    if (!d) sayTo = 'regMsg';
+    editing = d ? { d: d, then: onChange } : (forSup ? { then: opts.onDone } : null);
+    if (!d) sayTo = opts.msg || 'regMsg';
     msg('regAddMsg', '');
     var go = function () {
       fillClients(); fillMembers();
@@ -1107,6 +1109,19 @@
         ms.add(new Option(F.named(tm.staff_code, tm.name), tm.id));
       }
       ms.value = tm ? tm.id : '';
+      /* A supplier's entry names its supplier (2026-10-18), kept on the list
+         once inactive. */
+      var ss = $('regAddSupplier'), spId = (d && d.supplier_id) || (forSup && forSup.id) || '';
+      ss.innerHTML = '<option value="">Choose a supplier</option>' + state.suppliers.filter(function (x) {
+        return x.status !== 'inactive' || x.id === spId;
+      }).map(function (x) {
+        return '<option value="' + esc(x.id) + '">' + esc(F.named(x.code, x.name || x.code)) + '</option>';
+      }).join('');
+      if (forSup && !ss.querySelector('option[value="' + forSup.id + '"]')) ss.add(new Option(F.named(forSup.code, forSup.name || forSup.code), forSup.id));
+      ss.value = spId;
+      Array.prototype.forEach.call($('regAddFam').options, function (o) {
+        o.hidden = o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
+      });
       var rc = (d && d.recipient) || {};
       $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add entry';
       $('regAddGo').textContent = d ? 'Save' : 'Add';
@@ -1116,11 +1131,13 @@
       $('regAddNote').value = d ? (d.note || '') : '';
       $('regAddUrl').value = d ? (d.file_url || '') : '';
       $('regAddDate').value = d ? String(d.issued_at || '').slice(0, 10) : today();
-      $('regAddFam').value = d ? d.family : (may('register.documents', 'work') ? 'other' : 'client');
+      $('regAddFam').value = d ? d.family : forSup ? 'supplier' : (may('register.documents', 'work') ? 'other' : 'client');
       sel.value = d ? (d.client_id || '') : '';
       var was = d && clientOf(d.client_id);
+      var wsp = supplierOf(spId) || forSup;
       addSeed = was && rc.name === (was.legal_name || was.name) ? rc.name
-        : (tm && rc.name === tm.name ? rc.name : null);
+        : (tm && rc.name === tm.name ? rc.name : (wsp && rc.name === wsp.name ? rc.name : null));
+      if (!d && wsp && wsp.name) { $('regAddWho').value = wsp.name; addSeed = wsp.name; }
       fillKindPick(d ? d.kind : '');
       regAddFit();
       $('regAddSheet').hidden = false;
@@ -1161,9 +1178,10 @@
   /* An HR letter is addressed to a colleague, never to a client (the user,
      2026-09-26): the kind decides which picker the sheet draws. */
   function regAddFit() {
-    var hr = $('regAddFam').value === 'hr';
-    $('regAddClientWrap').hidden = hr;
+    var hr = $('regAddFam').value === 'hr', sup = $('regAddFam').value === 'supplier';
+    $('regAddClientWrap').hidden = hr || sup;
     $('regAddMemberWrap').hidden = !hr;
+    $('regAddSupplierWrap').hidden = !sup;
     $('regAddWho').placeholder = hr ? 'John Doe' : 'COMPANY NAME SDN BHD';
   }
   function shutAdd() { $('regAddSheet').hidden = true; editing = null; }
@@ -1176,14 +1194,17 @@
       msg('regAddMsg', typed ? 'Type the new document type.' : 'Choose a document type.', 'err');
       $(typed ? 'regAddKind' : 'regAddKindPick').focus(); return;
     }
+    var sup = $('regAddFam').value === 'supplier';
+    if (sup && !$('regAddSupplier').value) { msg('regAddMsg', 'Choose a supplier.', 'err'); $('regAddSupplier').focus(); return; }
     var go = $('regAddGo');
     go.disabled = true;
     var hr = $('regAddFam').value === 'hr';
     var fields = {
       serial: serial, family: $('regAddFam').value, kind: kind, issued_at: $('regAddDate').value || null,
       recipient: $('regAddWho').value.trim(),
-      client: hr ? null : ($('regAddClient').value || null),
+      client: hr || sup ? null : ($('regAddClient').value || null),
       member: hr ? ($('regAddMember').value || null) : null,
+      supplier: sup ? $('regAddSupplier').value : null,
       note: $('regAddNote').value.trim(), file_url: $('regAddUrl').value.trim()
     };
     var was = editing;
@@ -1191,10 +1212,10 @@
       go.disabled = false;
       if (err) { msg('regAddMsg', err, 'err'); return; }
       shutAdd();
-      say(out.serial + (was ? ' saved.' : ' added.'), 'ok');
+      say(out.serial + (was && was.d ? ' saved.' : ' added.'), 'ok');
       if (was && was.then) was.then(); else load();
     };
-    if (was) LET.updateManual(was.d, fields, done); else LET.addManual(fields, done);
+    if (was && was.d) LET.updateManual(was.d, fields, done); else LET.addManual(fields, done);
   }
 
   // ---- Void and delete -------------------------------------------------------
@@ -1255,6 +1276,11 @@
     });
     /* A colleague's name fills the recipient the way a client's does, and
        never replaces a name somebody typed. */
+    if ($('regAddSupplier')) $('regAddSupplier').addEventListener('change', function () {
+      var sp = supplierOf(this.value), who = $('regAddWho');
+      if (!sp || !sp.name) return;
+      if (!who.value.trim() || who.value === addSeed) { who.value = sp.name; addSeed = who.value; }
+    });
     if ($('regAddMember')) $('regAddMember').addEventListener('change', function () {
       var m = memberOf(this.value), who = $('regAddWho');
       if (!m) return;
@@ -1325,5 +1351,6 @@
   }
   wire();
 
-  window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue, paintFor: paintFor, openTypes: function (opener) { openTypes(opener); } };
+  window.ADspaceRegister = { enter: enter, load: load, openIssue: openIssue,
+    openAdd: function (opts) { openAdd(null, null, opts); }, paintFor: paintFor, openTypes: function (opener) { openTypes(opener); } };
 })();
