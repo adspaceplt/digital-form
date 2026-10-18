@@ -1272,6 +1272,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   names its part (`data-need="clients.documents:manage"`, listed in
   `css/portal.css`). A tab with `data-part` draws only where readable, and the
   address falls back to Overview.
+- The team table answers a browser only the columns every page reads
+  (`2026-10-18-team-list-holds-what-colleagues-need.sql`): the mobile, the
+  access map, the access dates, the expiry, the removal, the erasure and
+  `card_email` are withheld; every column of every colleague is Team's at
+  View through `team_rows()`, and who takes tasks is `team_task_takers()`
+  (My Work's pickers). A read of `team_members` names its columns, never
+  `*` (refused); a new column is granted by running that file's part 3
+  again with it named. The stand-in refuses the same.
 - `is_team()` gates every team table and edge function. `authenticated` is not
   the team, because clients hold logins.
 - A system account (`team_members.system`, `2026-10-08-system-account.sql`;

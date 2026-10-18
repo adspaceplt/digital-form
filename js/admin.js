@@ -695,6 +695,8 @@
   function takesTasks(m) {
     if (!m || isSystem(m)) return false;
     if (m.is_admin || m.role === 'admin') return true;
+    /* My Work's list carries the database's answer (`team_task_takers`). */
+    if (typeof m.takes_tasks === 'boolean') return m.takes_tasks;
     var lv = (m.access || {}).ops;
     return lv === 'work' || lv === 'manage';
   }

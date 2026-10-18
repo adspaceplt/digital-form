@@ -530,10 +530,13 @@
       db.from('ops_workflows').select('id, key, name, active').order('key'),
       db.from('ops_workflow_stages').select('*').order('position'),
       db.from('ops_task_templates').select('*').eq('active', true).order('name'),
-      db.from('team_members').select('id, name, email, active, capacity_minutes_week, staff_code, access, is_admin, role').eq('active', true).order('name'),
+      db.from('team_members').select('id, name, email, active, capacity_minutes_week, staff_code, is_admin, role').eq('active', true).order('name'),
       /* The stage decides which list a client is offered on: Client is the
          clients engaged now, Lead the records not yet one. */
-      db.from('clients').select('id, name, stage, slug, client_code').order('name')
+      db.from('clients').select('id, name, stage, slug, client_code').order('name'),
+      /* Who takes tasks, as the database decides it (2026-10-18): the access
+         map is no longer read from the team table. */
+      db.rpc('team_task_takers')
     ]).then(function (r) {
       state.workflows = (r[0] && r[0].data) || [];
       state.stages = {};
@@ -541,7 +544,9 @@
         state.stages[s.workflow_id + '|' + s.key] = s;
       });
       state.templates = (r[2] && r[2].data) || [];
+      var takers = (r[5] && !r[5].error && Array.isArray(r[5].data)) ? r[5].data : null;
       state.members = ((r[3] && r[3].data) || []).sort(F.byStaff);
+      if (takers) state.members.forEach(function (m) { m.takes_tasks = takers.indexOf(m.id) > -1; });
       state.clients = (r[4] && r[4].data) || [];
       /* A refused read of the clients is not an empty book: the New sheet
          names it where the client is picked (audit, 2026-10-03). */

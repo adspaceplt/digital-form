@@ -395,7 +395,7 @@
   }
 
   function loadTeam(then) {
-    db.from('team_members').select('*').eq('active', true).order('name').then(function (r) {
+    db.from('team_members').select('id, name, email, staff_code, designation, department, role, is_admin, system, active').eq('active', true).order('name').then(function (r) {
       /* A system account (2026-10-08) holds no clients and is never offered. */
       var S = window.ADspaceAdmin;
       state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });

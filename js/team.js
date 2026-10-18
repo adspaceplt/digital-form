@@ -350,8 +350,9 @@
       state.roles = r.data || [];
       paintGroups();
       fillRolePick();
-      db.from('team_members').select('*').order('active', { ascending: false })
-        .order('role').order('name').then(function (q) {
+      /* Every column of every colleague is Team's alone (2026-10-18):
+         `team_rows()` answers Team at View, the table the rest. */
+      db.rpc('team_rows').then(function (q) {
           if (q.error) {
             state.loading = false;
             $('teamList').innerHTML = '<div class="softpanel"><div class="errline">' +
