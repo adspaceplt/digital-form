@@ -4426,9 +4426,19 @@
     var s = pickById(slug);
     var label = slug === 'custom' ? val('svLabel') : (s ? s.name : '');
     if (!label) { msg('svMsg', 'A name is required.', 'err'); $('svLabel').focus(); return; }
+    /* Never below zero (client_services_rate_check, _qty_check): a negative
+       line made every Letter of Offer holding it refused as changed. */
+    var svQ = Number(val('svQty') || 1), svR = Number(val('svRate') || 0);
+    var svBelow = function (id, text) {
+      msg('svMsg', text, 'err');
+      $(id).focus({ preventScroll: true });
+      $('svMsg').scrollIntoView({ block: 'nearest' });
+    };
+    if (!isFinite(svQ) || svQ < 0) { svBelow('svQty', 'The quantity cannot be below zero.'); return; }
+    if (!isFinite(svR) || svR < 0) { svBelow('svRate', 'The rate cannot be below zero.'); return; }
     var row = {
       service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
-      qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
+      qty: svQ, rate: svR,
       tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
       note: val('svNote') || null,
       detail: val('svDetail') || null,
@@ -4453,7 +4463,10 @@
   /* A line moved into Confirmed by hand is refused by the database
      (client_services_confirm_guard): said in the team's words. */
   function svSaid(e) {
-    return /confirm-needs-letter/.test((e && e.message) || '') ? 'A service is confirmed when its signed letter is verified.' : ((e && e.message) || 'Not saved.');
+    var m = (e && e.message) || '';
+    if (/client_services_rate_check/.test(m)) return 'The rate cannot be below zero.';
+    if (/client_services_qty_check/.test(m)) return 'The quantity cannot be below zero.';
+    return /confirm-needs-letter/.test(m) ? 'A service is confirmed when its signed letter is verified.' : (m || 'Not saved.');
   }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */

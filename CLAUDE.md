@@ -1783,7 +1783,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Enabling opens a sheet with **Send invitation email unticked**.
   - Send invitation stays in the ⋯. Undo emails nobody.
 - Services:
-  - Quantity × rate × months from a start date.
+  - Quantity × rate × months from a start date; neither below zero
+    (`client_services_rate_check`, `client_services_qty_check`; the sheet
+    refuses it in words, the field taking focus).
   - Enquired / To quote / Confirmed. Confirmed comes from a verified signed
     letter (`verify_letter`) or the admin's reasoned override alone: the
     sheet never offers it (a confirmed line reads its state), and trigger
