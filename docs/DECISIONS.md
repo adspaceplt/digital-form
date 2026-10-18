@@ -4730,3 +4730,19 @@ finding fixed at the user's word ("fix all no matter what").
   database (it took any figures); it now prices the stored rows as the
   page does and refuses `stale` the same way, and `tests/letter.js`
   changes a rate while the sheet is open.
+
+- 2026-10-18 · A quoted letter whose lines run months of their own keeps
+  its commitment wording (review of #538 to #550, item 4). Since a letter
+  from a quotation is priced as `quote_adjust` totals it (#544), lines that
+  Build quote gave months of their own are priced as whole amounts, and the
+  letter took the reading of lines on two terms: Total incl. SST, no
+  monthly figure, no minimum term sentence, and the term row read
+  Commitment (5%) with no term. The quotation itself states its term,
+  Monthly incl. SST and its total commitment. The letter now keeps them:
+  `quotePrice` gives the quotation's term (`plan`) and its month incl. SST
+  (`planMonth`, every monthly line at the percentage, SST rounded once, as
+  `quote_adjust` gives it), and the summary reads `12-month commitment
+  (5%)`, the total incl. SST, then Monthly incl. SST; TERMS states the
+  minimum term with the total over the months stated for each line, and
+  the acceptance names the month, the term and the total. No figure moves.
+  `tests/pdfcases.js` (quotedmonths) holds the wording.
