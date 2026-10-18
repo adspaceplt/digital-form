@@ -3377,6 +3377,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     line and the figure its logging answers read with the same month's; `perf_calc`
     returns the `cap` and `points` it used, and the page names them from
     there, never a figure of its own.
+  - An issue's points are kept as a number (`perf_points_at`, settings to
+    two decimals, the VIC multiplier on the exact sum); the month's total is
+    rounded once, to the 0.1 step the scores take, before the cap.
   - L3 caps at B; L4 caps at D.
   - An issue may name the client it concerns (`perf_breaches.client_id`,
     the issue sheet's Client, optional; `bad-client`); on a VIC client's
