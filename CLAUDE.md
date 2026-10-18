@@ -8,7 +8,8 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
-(a prospect's own quotation), `details/` (a client's billing details form), `/` and
+(a prospect's own quotation), `details/` (a client's billing details form),
+`supplier-details/` (a supplier's details form), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -222,6 +223,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
+| `suppliers.js`, `supplierform.js`, `supplier-details/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -384,7 +386,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`, `supplier-details/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -1211,7 +1213,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
   2026-10-15); each offers Manage
-  alone (on or off). A
+  alone (on or off). `register.supplier_pay` (Supplier bank details,
+  2026-10-18) is granted too, at View (read) or Work (write). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
@@ -2115,6 +2118,34 @@ Each line is a rule that broke once. Its reason is in the archive.
     bar.
 - The reference on a row is a copy control (`.serial-copy`).
 - A hand-added row's second line is its kind alone.
+- Suppliers (`2026-10-18-suppliers.sql`, `js/suppliers.js`; the user,
+  2026-10-18: the Jotform supplier sign-up "via portal and data sync into it
+  similar as client billing", "invite only, with create link and set the
+  supplier id before sending", "nric only for individuals"): Documents'
+  second tab (`tab=suppliers`, `supplier=`; the strip drawn only where both
+  open), part `register.suppliers` (follows Documents). `suppliers` and
+  `supplier_forms` have RLS on, no policy, no grant. New supplier asks the
+  Supplier ID (the next AS number offered, unique, `code-taken`) and the
+  name, makes it Pending and its link (`/supplier-details/?k=`, open
+  `details_form_days`; Copy link, Preview, the ⋯ Reset link, asked). The
+  supplier's page (`supplier_form_read`, `supplier_form_submit`, anon) reads
+  the name and Supplier ID alone and checks as the Jotform form did:
+  Company or Individual, NRIC for an individual alone, a company's 12-digit
+  BRN, TIN, SST no. as J31-2601-32100001, the payment term (NET 7, 30, 45,
+  60, subject to approval), MYR or SGD, the bank from its list, the
+  authorisation ticked; the team at Documents: Suppliers Work is told (kind
+  `supplier.details`, opening the supplier). The answers never write the
+  supplier: Use details fills its sheet and Save (`supplier_save`) takes
+  them in. Approve (`supplier_set_status`, the details and the bank account
+  whole, `incomplete`) makes it Active; Set inactive / Set active in the ⋯,
+  Delete at Manage with the name typed back (letters keep their words). The
+  NRIC and the bank details are sent and saved only at
+  `register.supplier_pay` (granted), filed by name, never by value. A
+  supplier's letter is the family `supplier` (Letter to Supplier),
+  `ASL/{Supplier ID}/{YYMMDD}{NN}`, `documents.supplier_id`, issued from the
+  supplier (Issue document) or the Register, listed on the supplier and
+  under Supplier Letters; a reissue keeps the supplier. No bank statement
+  upload (the Jotform field was optional).
 - The old list is imported by a SQL file handed to the user, never committed
   (real names).
 
