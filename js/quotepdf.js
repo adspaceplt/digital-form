@@ -146,7 +146,7 @@
       });
       if (l.basis === 'once') rows.push({ s: 'One-off', c: mute });
       /* A line quoted for months of its own says so (2026-10-15). */
-      if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) rows.push({ s: l.months + ' months', c: mute });
+      if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) rows.push({ s: l.months + (Number(l.months) === 1 ? ' month' : ' months'), c: mute });
       var h = rows.length * 12.4 + 12;
       if (room(h)) headRow();
       for (var i = 0; i < 4; i++) rect(cx[i], y - h, cw[i], h, null);
@@ -164,13 +164,18 @@
     y -= 12;
 
     // The totals, ending at Monthly incl. SST (and One-off incl. SST).
+    /* Where a monthly line runs months of its own, the month's figures are
+       the first month's, every monthly line running in it, and are named so
+       (the user, 2026-10-18), as the Letter of Offer names them. */
+    var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
+    var mo = own ? 'First month' : 'Monthly';
     var tot = [];
     if (t.month) {
-      tot.push(['Monthly subtotal', amt(t.month.subtotal)]);
+      tot.push([mo + ' subtotal', amt(t.month.subtotal)]);
       if (Number(t.term_pct)) {
         tot.push([t.term + '-Month ' + (t.term_pct < 0 ? 'Commitment (' + Math.abs(t.term_pct) + '%)' : 'Term (' + t.term_pct + '%)'), amt(t.month.term)]);
       }
-      tot.push(['Monthly excl. SST', amt(t.month.excl)], ['SST ' + t.sst_pct + '%', amt(t.month.sst)], ['Monthly incl. SST', amt(t.month.incl), 1]);
+      tot.push([mo + ' excl. SST', amt(t.month.excl)], ['SST ' + t.sst_pct + '%', amt(t.month.sst)], [mo + ' incl. SST', amt(t.month.incl), 1]);
     }
     if (t.once) {
       tot.push(['One-off subtotal', amt(t.once.subtotal)], ['SST ' + t.sst_pct + '%', amt(t.once.sst)], ['One-off incl. SST', amt(t.once.incl), 1]);
@@ -189,7 +194,7 @@
     // Remarks / Terms.
     var days = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
     var notes = ['This quotation is valid for ' + both(days) + ' days from its date of issue.'];
-    if (t.month) notes.push('The amount per month incl. SST is inclusive of applicable ' + t.sst_pct + '% SST.');
+    if (t.month) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' incl. SST is inclusive of applicable ' + t.sst_pct + '% SST.');
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       notes.push('The advertising budget is not included in the service fee and is billed separately.');
     }
@@ -202,7 +207,6 @@
       'and work will begin per the agreed timeline. The Letter of Offer and our Service Terms at go.adspace.me/svc-terms together ' +
       'form the binding contract.');
     if (t.month) {
-      var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
         ' is ' + ((q.totals || {}).currency === 'SGD' ? 'S$ ' : 'RM ') + amt(t.commitment) + ' incl. SST' +
         (t.once ? ', one-off items included.' : '.'));

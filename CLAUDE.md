@@ -1953,9 +1953,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     head and never "including SST" after a figure. Lines on two terms of
     more than a month: Total incl. SST; a quoted letter so keeps its
     quotation's term (2026-10-18): the row `12-month commitment (5%)`,
-    Monthly incl. SST under the total as the quotation gives it, TERMS's
+    First month incl. SST under the total as the quotation gives it, TERMS's
     minimum term with the total over the months stated for each line, and
-    the acceptance's Monthly incl. SST, Minimum term and Total for the term.
+    the acceptance's First month incl. SST, Minimum term and Total for the
+    term. Wherever a monthly line runs months other than the term, the
+    month's figures are the first month's, named First month (subtotal,
+    excl. SST, incl. SST; 首月 on `/quote/`), on the letter, the quotation's
+    PDF, `/quote/` and Build quote alike; Monthly where every line runs the
+    term (the user, 2026-10-18).
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate
@@ -4556,7 +4561,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines the client's To quote lines (`quotation_id`, its term and
   percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
   ADSPACE PLT at the head's right, the facts, Description · Qty · Rate (RM)
-  · Subtotal (RM), totals ending at Monthly incl. SST, Remarks / Terms at
+  · Subtotal (RM), totals ending at Monthly (or First month) incl. SST, Remarks / Terms at
   8pt (validity, SST, budget billed separately, confirmation then the
   Letter of Offer, the whole term's commitment), the rate card line over
   PRIVATE & CONFIDENTIAL; named `ADspace Quotation {ref}.pdf`.

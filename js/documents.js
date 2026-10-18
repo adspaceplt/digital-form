@@ -821,7 +821,10 @@
         trow(taxWord, MON.money2(price.eachTax, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');
-        if (price.plan) trow('Monthly' + incl, MON.money2(price.planMonth, doc.market));
+        /* Lines running months of their own: the figure is the first
+           month's, every monthly line running in it (the user, 2026-10-18),
+           as the quotation names it. */
+        if (price.plan) trow('First month' + incl, MON.money2(price.planMonth, doc.market));
       }
       y -= 12;
 
@@ -886,7 +889,7 @@
             .concat(price.once > 0 ? [['First month due', MON.money2(firstDue, doc.market)]] : [])
             .concat([['Total for the term' + incl, MON.money2(price.total, doc.market)]])
         : price.plan
-          ? [['Monthly' + incl, MON.money2(price.planMonth, doc.market)], ['Minimum term', price.plan + ' months'],
+          ? [['First month' + incl, MON.money2(price.planMonth, doc.market)], ['Minimum term', price.plan + ' months'],
              ['Total for the term' + incl, MON.money2(price.total, doc.market)]]
           : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
 

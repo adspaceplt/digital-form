@@ -5093,3 +5093,18 @@ finding fixed at the user's word ("fix all no matter what").
   lost connection), and the sheet reads "The services or their quotation
   changed since this sheet was opened, and could not be read again: {why}.
   Close this sheet and open it again." `tests/letter.js` holds it.
+
+- 2026-10-18 · A month that is not every month is named First month. Since
+  #559 a quoted Letter of Offer whose lines run different months printed
+  "Monthly incl. SST" from the first month's figure, which prices every
+  monthly line as if it ran the whole term: term 12, a plan of 1,000 and a
+  200 line edited to one month, -5%, 8% SST printed Monthly incl. SST
+  1,231.20 beside a total of 12,517.20 (twelve such months are 14,774.40).
+  The quotation's PDF, `/quote/` and Build quote showed the same figure
+  under the same name. The user's decision: where a monthly line runs months
+  other than the term, the figure is First month incl. SST (its chain First
+  month subtotal and excl. SST, 首月 in Chinese); every line on the term
+  keeps Monthly. The minimum-term sentence stands. A one-month line on the
+  quotation's PDF also read "1 months"; it reads "1 month". Found by the
+  review of #559; `tests/pdfcases.js` (both PDFs, both cases) and
+  `tests/quotes.js` hold it.
