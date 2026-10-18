@@ -232,7 +232,7 @@
         : rows.length + ' of ' + all.length;
     }
     if (!all.length) {
-      UI.emptyLine(box, 'No documents.', $('regAdd') && !$('regAdd').hidden ? 'Add the first entry' : '', openAdd);
+      UI.emptyLine(box, 'No documents.', $('regAdd') && !$('regAdd').hidden ? 'Add existing document' : '', openAdd);
       return;
     }
     if (!rows.length) {
@@ -1334,7 +1334,7 @@
         o.hidden = forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
       });
       var rc = (d && d.recipient) || {};
-      $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add entry';
+      $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add existing document';
       $('regAddGo').textContent = d ? 'Save' : 'Add';
       $('regAddSerial').value = d ? d.serial : '';
       $('regAddSerial').readOnly = Boolean(d);

@@ -1005,6 +1005,16 @@ button.appver {
   background: var(--sunk); border-color: transparent; color: var(--ink-soft);
   cursor: default; text-overflow: ellipsis;
 }
+/* A value read as words (a `p` or `div`, never an `.input`) stands at the
+   field's height with no box: the shade belongs to the field shape, and on
+   a plain element it drew a slab with the words on its edge, out of line
+   with the fields under it (2026-10-18, the second time: Reports' Amount
+   spent, then Send email's From, Replies go to and To). */
+.readfield:not(.input) {
+  background: none; padding: 0; min-height: var(--ctl-h);
+  display: flex; align-items: center; color: var(--ink);
+  overflow-wrap: anywhere;
+}
 .hintbtn:active { transform: scale(.92); }
 /* The `?` reopens the route's own line, so it belongs beside the count that
    says what is on the page, never out on its own. It is inserted into
