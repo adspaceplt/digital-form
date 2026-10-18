@@ -231,6 +231,8 @@
   }
   function reasonOf(x) {
     if (/^upload/i.test(String(x.error || ''))) return REASON['131052'];
+    /* Failed by the queue itself after 48 hours (wa_expire, 2026-10-18). */
+    if (/^expired/i.test(String(x.error || ''))) return 'Not sent within 48 hours. Send it again if it is still needed.';
     var code = x.fail_code || (String(x.error || '').match(/\b(1\d{5}|80007|190|401)\b/) || [])[1];
     return REASON[code] || 'Not delivered.';
   }

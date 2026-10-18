@@ -5325,7 +5325,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   connect, TLS) is filed `not sent:` and queued again with its try given back
   (`2026-10-18-whatsapp-outage-spends-no-try.sql`; Meta's throughput limit
   130429 filed the same way), and ends that drain
-  (claimed again at once, a short outage spent all three tries). The queue is
+  (claimed again at once, a short outage spent all three tries). A message
+  still queued 48 hours after it was queued is Failed by `wa_expire`
+  (`expired:`, read "Not sent within 48 hours"; `wa_claim` and pg_cron
+  `wa-expire` hourly), so Sent recently lets it be sent again and
+  `privacy_retention` clears it in its time. The queue is
   claimed one row at a time (`wa_claim` gives one, five at most) and no
   send starts after 90 seconds, so a claimed row is never left at Sending. The queue and its tables are
   closed to every page.

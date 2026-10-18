@@ -5397,6 +5397,18 @@ finding fixed at the user's word ("fix all no matter what").
   own-department refusal stays for an admin who holds a department.
   `tests/perf.js` and `tests/perfui.js` hold both; the stand-in the same.
 
+- 2026-10-18 · A WhatsApp message that never left gives up after 48 hours
+  (review item 8). WHATSAPP OUTAGE SPENDS NO TRY gives back the try of a
+  request that never left, so a message caught by a long outage stayed
+  Queued for ever: the drain woke for it every five minutes, Sent recently
+  counted it as sent, and `privacy_retention`, which never clears a queued
+  row, kept its number and words. `wa_expire` now fails every row still
+  Queued 48 hours after it was queued (`expired: not sent within 48
+  hours`), run by `wa_claim` and by pg_cron `wa-expire` every hour; the
+  WhatsApp section reads it as Not sent within 48 hours, and the team sends
+  it again. `privacy_retention` was not restated: its body holds a delete,
+  which the connector holds for a confirmation.
+
 - 2026-10-18 · A wrong access code locks out the caller, not the client
   (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
   and checked the lock before the code, so anyone holding a link could
