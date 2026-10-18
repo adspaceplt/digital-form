@@ -1,18 +1,20 @@
 /*
- * Suppliers — Documents' second tab (2026-10-18; the user: "documents also
+ * Suppliers — a section of its own (2026-10-18; the user: "documents also
  * need to issue to supplier"; the Jotform supplier sign-up "could jump into
  * the fill in via portal and data sync into it similar as client billing";
  * "invite only, with create link and set the supplier id before sending";
- * "nric only for individuals").
+ * "nric only for individuals"; then "own section", and on the name: "i
+ * wont know the company name first lol, needs them to fill in").
  *
- * The team names a supplier and its Supplier ID (New supplier), sends the
+ * The team gives a supplier its Supplier ID (New supplier), sends the
  * link it makes (`/supplier-details/?k=`), and takes the answers in with Use
  * details and its own Save, as a client's Billing takes its details form.
  * Approve moves a supplier with its details whole from Pending to Active.
  * The NRIC and the bank details are read only at Documents: Supplier bank
- * details (granted, an admin's by itself); the database never sends them
- * otherwise. A supplier's letters are issued from its record through the
- * Register's own sheet (family `supplier`).
+ * details (`suppliers.pay`, granted, an admin's by itself); the database
+ * never sends them otherwise. A supplier's letters are issued from its
+ * record through Documents' own sheet (family `supplier`). Until its form
+ * names it, a supplier reads as its Supplier ID.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -34,15 +36,15 @@
   var BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
     'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
     '[SG] Maybank', '[SG] Bank of China'];
-  var TERMS = ['NET 7', 'NET 30', 'NET 45', 'NET 60'];
+  var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   var STATE = { pending: ['Pending', 'is-warn'], active: ['Active', 'is-ok'], inactive: ['Inactive', 'is-off'] };
   var SAID = {
     'denied': 'You do not have permission to do this.', 'not-found': 'That supplier is no longer there.',
     'bad-code': 'A Supplier ID is 2 to 12 letters or digits, as AS001.', 'code-taken': 'Another supplier holds that Supplier ID.',
     'bad-name': 'Enter the name, 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
     'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC, as 000814-01-2023.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
-    'bad-sst_no': 'Enter the SST no. as J31-2601-32100001.', 'bad-phone': 'Enter an office or mobile number of 8 to 15 digits.',
-    'bad-mobile': 'Enter a mobile number of 8 to 15 digits.', 'bad-address': 'Enter the full billing address.',
+    'bad-sst_no': 'Enter the SST no. as J31-2601-32100001.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
+    'bad-mobile': 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email.',
     'bad-finance_email': 'Enter a valid finance email.', 'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
@@ -65,46 +67,14 @@
 
   var state = { tab: 'documents', rows: null, find: '', open: null, rec: null, form: null, wired: false };
 
-  // ---- The tab strip --------------------------------------------------------
-  function mayDocs() { return may('register.documents', 'view') || may('register.hr', 'view'); }
-  function maySup() { return may('register.suppliers', 'view'); }
-  function urlState() {
-    if (state.tab !== 'suppliers') return {};
-    return { tab: 'suppliers', supplier: state.open || '' };
-  }
+  function urlState() { return { supplier: state.open || '' }; }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }
-  function showTab() {
-    var both = mayDocs() && maySup();
-    if (!maySup()) state.tab = 'documents';
-    if (!mayDocs()) state.tab = 'suppliers';
-    $('regTabs').hidden = !both;
-    Array.prototype.forEach.call($('regTabs').querySelectorAll('.tab'), function (b) {
-      var on = b.getAttribute('data-tab') === state.tab;
-      b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on));
-    });
-    $('regDocsPane').hidden = state.tab !== 'documents';
-    $('regSupPane').hidden = state.tab !== 'suppliers';
-  }
+  /* What a supplier is called: its name, else its Supplier ID until its own
+     form names it. */
+  function nameOf(x) { return x.name || x.code; }
   function wire() {
     if (state.wired) return;
     state.wired = true;
-    var strip = $('regTabs');
-    strip.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('.tab');
-      if (!b) return;
-      state.tab = b.getAttribute('data-tab'); state.open = null;
-      showTab(); setUrl();
-      if (state.tab === 'suppliers') load();
-      else if (window.ADspaceRegister) window.ADspaceRegister.load();
-    });
-    strip.addEventListener('keydown', function (e) {
-      var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab:not([hidden])'));
-      var i = tabs.indexOf(document.activeElement);
-      if (i < 0) return;
-      var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
-      if (to === null || !tabs[to]) return;
-      e.preventDefault(); tabs[to].click(); tabs[to].focus();
-    });
     $('supFind').addEventListener('input', function () {
       var v = this.value.trim().toLowerCase();
       if (v === state.find) return;
@@ -116,20 +86,15 @@
     $('supEditGo').addEventListener('click', save);
     $('supEdKind').addEventListener('change', kindRows);
     window.addEventListener('popstate', function () {
-      if ($('sectionRegister') && !$('sectionRegister').hidden) enter();
+      if ($('sectionSuppliers') && !$('sectionSuppliers').hidden) enter();
     });
   }
-  /* Documents' own enter() asks this first: the tab and the record are read
-     from the address, and the documents' list is read only where it shows. */
+  /* The record open is read from the address. */
   function enter() {
-    var q = new URLSearchParams(location.search);
     wire();
-    state.tab = q.get('tab') === 'suppliers' ? 'suppliers' : 'documents';
-    state.open = state.tab === 'suppliers' ? (q.get('supplier') || null) : null;
-    showTab();
-    $('supNew').hidden = !may('register.suppliers', 'work');
-    if (state.tab === 'suppliers') load();
-    return state.tab;
+    state.open = new URLSearchParams(location.search).get('supplier') || null;
+    $('supNew').hidden = !may('suppliers', 'work');
+    load();
   }
 
   // ---- The list -------------------------------------------------------------
@@ -145,7 +110,7 @@
   }
   function matches(s) {
     if (!state.find) return true;
-    return [s.code, s.name, s.contact_name, s.email].join(' ').toLowerCase().indexOf(state.find) > -1;
+    return [s.code, s.name || '', s.contact_name, s.email].join(' ').toLowerCase().indexOf(state.find) > -1;
   }
   function chip(s) {
     var st = STATE[s.status] || STATE.pending;
@@ -158,7 +123,7 @@
     var all = state.rows, rows = all.filter(matches);
     $('supCount').textContent = !all.length ? '' : rows.length === all.length
       ? all.length + (all.length === 1 ? ' supplier' : ' suppliers') : rows.length + ' of ' + all.length;
-    if (!all.length) { UI.emptyLine(box, 'No suppliers.', may('register.suppliers', 'work') ? 'New supplier' : '', create); return; }
+    if (!all.length) { UI.emptyLine(box, 'No suppliers.', may('suppliers', 'work') ? 'New supplier' : '', create); return; }
     if (!rows.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () { state.find = ''; $('supFind').value = ''; paint(); });
       return;
@@ -183,7 +148,7 @@
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'svc-row sup-row' + (s.status === 'inactive' ? ' is-off' : '');
-    b.innerHTML = '<span class="svc-name"><b>' + esc(s.name) + '</b><small class="sup-code">' + esc(s.code) + '</small></span>' +
+    b.innerHTML = '<span class="svc-name"><b>' + esc(nameOf(s)) + '</b>' + (s.name ? '<small class="sup-code">' + esc(s.code) + '</small>' : '<small>Waiting for their details</small>') + '</span>' +
       '<span class="sup-who">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-term">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-state">' + chip(s) + '</span>' +
@@ -193,23 +158,25 @@
   }
 
   // ---- New supplier ---------------------------------------------------------
-  /* The next free AS number, offered and the team's to change. */
+  /* The next free AS number, written as wide as the IDs already are
+     (AS0126, then AS0127), offered and the team's to change. */
   function nextCode() {
-    var n = 0;
-    (state.rows || []).forEach(function (s) { var m = /^AS(\d+)$/i.exec(s.code || ''); if (m) n = Math.max(n, Number(m[1])); });
+    var n = 0, w = 4;
+    (state.rows || []).forEach(function (s) {
+      var m = /^AS(\d+)$/i.exec(s.code || '');
+      if (m && Number(m[1]) >= n) { n = Number(m[1]); w = Math.max(3, m[1].length); }
+    });
     var x = String(n + 1);
-    while (x.length < 3) x = '0' + x;
+    while (x.length < w) x = '0' + x;
     return 'AS' + x;
   }
   function create() {
     window.ADspaceConfirm.ask({
       title: 'New supplier', go: 'Create link', wait: true,
-      fields: [
-        { name: 'code', label: 'Supplier ID', value: nextCode(), required: true, half: true },
-        { name: 'name', label: 'Company or personal name', placeholder: 'COMPANY NAME SDN BHD', required: true }
-      ]
+      /* The supplier names itself on its own form. */
+      fields: [{ name: 'code', label: 'Supplier ID', value: nextCode(), required: true }]
     }, function (v) {
-      return rpc('supplier_create', { p_code: v.code, p_name: v.name }).then(function (r) {
+      return rpc('supplier_create', { p_code: v.code, p_name: null }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) return said(r);
         state.rows = null; state.open = d.id; setUrl(); load();
@@ -260,7 +227,7 @@
   }
   function linkOf(key) { return location.origin + '/supplier-details/?k=' + key; }
   function formBlock() {
-    var f = state.form, work = may('register.suppliers', 'work'), s = state.rec;
+    var f = state.form, work = may('suppliers', 'work'), s = state.rec;
     var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Details form</h4>' + (act || '') + '</div>'; };
     if (f && f.state === 'submitted') {
       return head(work ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">Use details</button>' : '') +
@@ -283,16 +250,16 @@
         ? 'Received ' + esc(day(f.submitted_at)) + ', taken in' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
   }
   function paintRec() {
-    var s = state.rec, rec = $('supRec'), work = may('register.suppliers', 'work');
-    var complete = s.kind && s.tin && s.address && s.email && s.payment_term;
+    var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
+    var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
-      (may('register.suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
+      (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
     rec.innerHTML =
       '<div class="sup-back"><button class="btn btn-quiet btn-sm" type="button" data-s="back">' + BACK + 'Suppliers</button></div>' +
       '<div class="panel sup-rec">' +
-        '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(s.name) + '</h2><span class="sup-meta"><span class="sup-code">' + esc(s.code) + '</span>' +
+        '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : 'Waiting for their details') +
           (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</span></div>' +
           '<div class="sup-ctl">' + chip(s) +
             (s.status === 'pending' && work && complete ? '<button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button>' : '') +
@@ -304,7 +271,7 @@
         (formBlock() ? '<section class="readgroup sup-form">' + formBlock() + '</section>' : '') +
         GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Letters</h4>' +
-          (may('register.suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
+          (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
       '</div></div>';
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
@@ -340,14 +307,14 @@
     on('del', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete supplier?', tone: 'danger', go: 'Delete', wait: true,
-        body: s.name + ' and its details are deleted. Letters already issued keep their words. There is no restore.',
-        field: { label: 'Type the name to confirm', match: s.name }
+        body: nameOf(s) + ' and its details are deleted. Letters already issued keep their words. There is no restore.',
+        field: { label: s.name ? 'Type the name to confirm' : 'Type the Supplier ID to confirm', match: nameOf(s) }
       }, function (v) {
         return rpc('supplier_delete', { p_id: s.id, p_name: v }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) return said(r);
           state.open = null; state.rec = null; state.rows = null; setUrl(); load();
-          msg('supMsg', s.name + ' deleted.', 'ok');
+          msg('supMsg', nameOf(s) + ' deleted.', 'ok');
           return '';
         });
       });
@@ -382,7 +349,7 @@
       setTimeout(function () {
         if (was === 'pending') { msg('supRecMsg', 'Approved.', 'ok'); return; }
         if (window.ADspaceAdmin && window.ADspaceAdmin.undoBar && $('supRecMsg')) {
-          window.ADspaceAdmin.undoBar(to === 'inactive' ? s.name + ' set inactive.' : s.name + ' set active.', function () { status(was); }, $('supRecMsg'));
+          window.ADspaceAdmin.undoBar(nameOf(s) + (to === 'inactive' ? ' set inactive.' : ' set active.'), function () { status(was); }, $('supRecMsg'));
         }
       }, 400);
     });
@@ -419,7 +386,7 @@
     ['payee_name', 'supEdPayee'], ['bank_name', 'supEdBank'], ['bank_account', 'supEdAcct'], ['swift', 'supEdSwift'], ['bank_address', 'supEdBankAddr']];
   var PAY = { nric: 1, payee_name: 1, bank_name: 1, bank_account: 1, swift: 1, bank_address: 1 };
   var editing = null;
-  function payWork() { return may('register.supplier_pay', 'work'); }
+  function payWork() { return may('suppliers.pay', 'work'); }
   function kindRows() {
     var ind = $('supEdKind').value === 'individual';
     $('supEdNricWrap').hidden = !ind || !payWork();

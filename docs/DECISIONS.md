@@ -5205,3 +5205,18 @@ finding fixed at the user's word ("fix all no matter what").
   `ops_decide_due_change` reach it as definers and keep doing so. It is
   revoked from public, anon and authenticated; `tests/sql.js` holds the
   revoke, no page caller, and a definer caller still reaching it.
+
+- 2026-10-18 · Suppliers became a section of their own, and New supplier
+  asks the Supplier ID alone. The first release placed Suppliers as a
+  second tab inside Documents without asking; the user found it there
+  ("im surprised to see the Suppliers live inside Documents") and asked
+  for its own section. A placement in the rail is the user's call and is
+  asked before it is built. New supplier had asked the name, which the
+  team does not know before the supplier's form comes back ("i wont know
+  the company name first"): the name is now optional until the form gives
+  it, and Approve waits for one. The access keys moved from
+  `register.suppliers` / `register.supplier_pay` to `suppliers` /
+  `suppliers.pay`, each group keeping its level. The same push added
+  NET 14 (the imported AS0125 asked for it) and held phone numbers to
+  Malaysia's and Singapore's forms; the BRN, NRIC and SST shapes already
+  held.

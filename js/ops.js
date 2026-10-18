@@ -7957,7 +7957,7 @@
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
     if (!x.task_id && x.report_id) return 'reports';
     if (!x.task_id && x.script_id) return 'scripts';
-    if (!x.task_id && x.supplier_id) return 'register';
+    if (!x.task_id && x.supplier_id) return 'suppliers';
     if (!x.task_id && x.client_id) return 'clients';
     return 'work';
   }
@@ -8039,8 +8039,8 @@
     }
     /* A supplier's details sent on its form open the supplier (2026-10-18). */
     if (!x.task_id && x.supplier_id) {
-      history.replaceState(null, '', '/admin/?s=register&tab=suppliers&supplier=' + encodeURIComponent(x.supplier_id));
-      if (bridge.show) bridge.show('register');
+      history.replaceState(null, '', '/admin/?s=suppliers&supplier=' + encodeURIComponent(x.supplier_id));
+      if (bridge.show) bridge.show('suppliers');
       return;
     }
     /* A quotation made or a Letter of Offer requested on the website opens

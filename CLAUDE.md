@@ -1190,7 +1190,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `whatsapp`, `review`, `scripts` (Video Scripts),
-  `campaigns`, `reports`, `register` (Documents), `links`, `services`, `team`, `activity`. The
+  `campaigns`, `reports`, `register` (Documents), `suppliers`, `links`, `services`, `team`, `activity`. The
   Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
@@ -1213,7 +1213,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
   2026-10-15); each offers Manage
-  alone (on or off). `register.supplier_pay` (Supplier bank details,
+  alone (on or off). `suppliers.pay` (Supplier bank details,
   2026-10-18) is granted too, at View (read) or Work (write). A
   new admin-only act is a granted part, never `allowed('admin')`. Their unset
   option reads `No Access`, and each offers only the levels the database checks
@@ -2118,36 +2118,47 @@ Each line is a rule that broke once. Its reason is in the archive.
     bar.
 - The reference on a row is a copy control (`.serial-copy`).
 - A hand-added row's second line is its kind alone.
-- Suppliers (`2026-10-18-suppliers.sql`, `js/suppliers.js`; the user,
-  2026-10-18: the Jotform supplier sign-up "via portal and data sync into it
-  similar as client billing", "invite only, with create link and set the
-  supplier id before sending", "nric only for individuals"): Documents'
-  second tab (`tab=suppliers`, `supplier=`; the strip drawn only where both
-  open), part `register.suppliers` (follows Documents). `suppliers` and
-  `supplier_forms` have RLS on, no policy, no grant. New supplier asks the
-  Supplier ID (the next AS number offered, unique, `code-taken`) and the
-  name, makes it Pending and its link (`/supplier-details/?k=`, open
-  `details_form_days`; Copy link, Preview, the ⋯ Reset link, asked). The
-  supplier's page (`supplier_form_read`, `supplier_form_submit`, anon) reads
-  the name and Supplier ID alone and checks as the Jotform form did:
-  Company or Individual, NRIC for an individual alone, a company's 12-digit
-  BRN, TIN, SST no. as J31-2601-32100001, the payment term (NET 7, 30, 45,
-  60, subject to approval), MYR or SGD, the bank from its list, the
-  authorisation ticked; the team at Documents: Suppliers Work is told (kind
-  `supplier.details`, opening the supplier). The answers never write the
-  supplier: Use details fills its sheet and Save (`supplier_save`) takes
-  them in. Approve (`supplier_set_status`, the details and the bank account
-  whole, `incomplete`) makes it Active; Set inactive / Set active in the ⋯,
-  Delete at Manage with the name typed back (letters keep their words). The
-  NRIC and the bank details are sent and saved only at
-  `register.supplier_pay` (granted), filed by name, never by value. A
-  supplier's letter is the family `supplier` (Letter to Supplier),
-  `ASL/{Supplier ID}/{YYMMDD}{NN}`, `documents.supplier_id`, issued from the
-  supplier (Issue document) or the Register, listed on the supplier and
-  under Supplier Letters; a reissue keeps the supplier. No bank statement
-  upload (the Jotform field was optional).
 - The old list is imported by a SQL file handed to the user, never committed
   (real names).
+
+### Suppliers (`js/suppliers.js`, `js/supplierform.js`, `?s=suppliers`; `supplier-details/`)
+- A section of its own (`suppliers`, View / Work / Manage; the user,
+  2026-10-18: "own section"), in the Internal chunk after Documents
+  (`2026-10-18-suppliers.sql`, `2026-10-18-suppliers-own-section.sql`;
+  the user: the Jotform supplier sign-up "via portal and data sync into it
+  similar as client billing", "invite only, with create link and set the
+  supplier id before sending", "nric only for individuals"); `supplier=`
+  opens one. `suppliers` and `supplier_forms` have RLS on, no policy, no
+  grant.
+- New supplier asks the Supplier ID alone (the next AS number offered at
+  the width in use, unique, `code-taken`; the user: "i wont know the
+  company name first"), makes it Pending and its link
+  (`/supplier-details/?k=`, open `details_form_days`; Copy link, Preview,
+  the ⋯ Reset link, asked). Until its form names it a supplier reads its
+  Supplier ID, Waiting for their details.
+- The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
+  reads the Supplier ID (and the name once held) and checks as the Jotform
+  form did: Company or Individual, NRIC (XXXXXX-XX-XXXX) for an individual
+  alone, a company's 12-digit BRN, TIN, SST no. (AXX-XXXX-XXXXXXXX), Office
+  / mobile a Malaysian or Singapore number and Mobile / WhatsApp a mobile
+  (`supplier_number_ok`, the page alike), the payment term (NET 7, 14, 30,
+  45, 60, subject to approval), MYR or SGD, the bank from its list, the
+  authorisation ticked; the team at Suppliers Work is told (kind
+  `supplier.details`, opening the supplier). The answers never write the
+  supplier: Use details fills its sheet and Save (`supplier_save`) takes
+  them in. A supplier whose details change is sent a new link (Reset link)
+  or edited by hand.
+- Approve (`supplier_set_status`, a name, the details and the bank account
+  whole, `incomplete`) makes it Active; Set inactive / Set active in the
+  ⋯, Delete at Manage with the name (else the Supplier ID) typed back
+  (letters keep their words). The NRIC and the bank details are sent and
+  saved only at `suppliers.pay` (granted), filed by name, never by value.
+- A supplier's letter is the Documents family `supplier` (Letter to
+  Supplier), `ASL/{Supplier ID}/{YYMMDD}{NN}`, `documents.supplier_id`,
+  issued from the supplier (Issue document) or the Register, listed on the
+  supplier and under Supplier Letters (`register_may('supplier', …)`
+  answers the Suppliers section); a reissue keeps the supplier. No bank
+  statement upload (the Jotform field was optional).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four

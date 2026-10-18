@@ -19,7 +19,18 @@
   var BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
     'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
     '[SG] Maybank', '[SG] Bank of China'];
-  var TERMS = ['NET 7', 'NET 30', 'NET 45', 'NET 60'];
+  /* A Malaysian or Singapore number, as supplier_number_ok reads it. */
+  function numberOk(t, mobile) {
+    var d = String(t || '').replace(/\D/g, ''), sg = null, my = null;
+    if (d.length === 8) sg = d;
+    else if (d.length === 10 && /^65/.test(d)) sg = d.slice(2);
+    else if (/^0/.test(d)) my = d;
+    else if (/^60/.test(d)) my = '0' + d.slice(2);
+    if (sg) return (mobile ? /^[89]\d{7}$/ : /^[689]\d{7}$/).test(sg);
+    if (!my) return false;
+    return /^01\d{8,9}$/.test(my) || (!mobile && /^0[3-9]\d{7,8}$/.test(my));
+  }
+  var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   /* The authorisation the Jotform form carried, word for word. */
   var AUTH = [
     'I / We hereby authorise ADSPACE PLT to credit payments due to me / us to the above account.',
@@ -60,7 +71,7 @@
   function paintForm() {
     var ind = typed.kind === 'individual';
     return '<div class="qs-step" data-shown><h1 class="qs-title">Supplier Details</h1>' +
-      '<p class="qs-lead">' + esc(info.name) + ' · ' + esc(info.code) + '</p>' +
+      '<p class="qs-lead">' + (info.name ? esc(info.name) + ' · ' : '') + esc(info.code) + '</p>' +
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
@@ -130,8 +141,8 @@
   var FAULT = {
     name: 'Enter the name, 2 to 160 characters.', brn: 'Enter the 12-digit BRN, as 202304002162.',
     nric: 'Enter the NRIC, as 000814-01-2023.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
-    sst_no: 'Enter the SST no. as J31-2601-32100001.', phone: 'Enter a number of 8 to 15 digits.',
-    mobile: 'Enter a number of 8 to 15 digits.', address: 'Enter the full billing address.',
+    sst_no: 'Enter the SST no. as J31-2601-32100001.', phone: 'Enter a Malaysian or Singapore number, as 07-123 4567.',
+    mobile: 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', address: 'Enter the full billing address.',
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',
     bank_name: 'Choose a bank.', bank_account: 'Enter the account number, digits only.',
@@ -154,12 +165,12 @@
     if (ind && !/^\d{12}$/.test(digits('nric'))) bad('nric');
     if (!/^[A-Za-z0-9]{5,20}$/.test(v('tin').replace(/\s+/g, ''))) bad('tin');
     if (v('sst_no') && !/^[A-Za-z]\d{2}-\d{4}-\d{8}$/.test(v('sst_no').replace(/\s+/g, ''))) bad('sst_no');
-    if (digits('phone').length < 8 || digits('phone').length > 15) bad('phone');
+    if (!numberOk(v('phone'), false)) bad('phone');
     if (v('address').length < 10) bad('address');
     if (v('contact_name').length < 2) bad('contact_name');
     if (v('designation').length < 2) bad('designation');
     if (!mail.test(v('email'))) bad('email');
-    if (digits('mobile').length < 8 || digits('mobile').length > 15) bad('mobile');
+    if (!numberOk(v('mobile'), true)) bad('mobile');
     if (TERMS.indexOf(v('payment_term')) < 0) bad('payment_term');
     if (v('payee_name').length < 2) bad('payee_name');
     if (BANKS.indexOf(v('bank_name')) < 0) bad('bank_name');

@@ -4781,6 +4781,9 @@ body.no-manage-register-hr [data-need="register.hr:manage"],
 body.no-work-register-hr [data-need="register.hr:work"],
 body.no-view-register-hr [data-need="register.hr:view"],
 body.no-work-register-types [data-need="register.types:work"],
+body.no-manage-suppliers [data-need="suppliers:manage"],
+body.no-work-suppliers [data-need="suppliers:work"],
+body.no-view-suppliers [data-need="suppliers:view"],
 /* The Activity record is read a tab at a time, so each tab is a part and
    draws only where that part is readable. The database decides which rows
    arrive (`activity_section()` and the read policy), so a tab a group cannot
