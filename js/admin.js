@@ -4192,7 +4192,8 @@
     'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
     'video/x-m4v': 'm4v', 'video/mpeg': 'mpg', 'video/x-matroska': 'mkv',
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
-    'image/gif': 'gif', 'image/heic': 'heic', 'image/avif': 'avif'
+    'image/gif': 'gif', 'image/heic': 'heic', 'image/heif': 'heif', 'image/avif': 'avif',
+    'application/pdf': 'pdf', 'application/zip': 'zip', 'application/x-zip-compressed': 'zip'
   };
 
   function extFor(mimeType, name) {
@@ -4202,7 +4203,14 @@
     var fromName = String(name || '').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
     if (fromName && fromName.length <= 5 && /\./.test(String(name || ''))) return fromName;
 
-    // Last resort: at least keep video and image apart.
+    /* Then the file's own type (2026-10-18): one the map does not hold
+       keeps its subtype, so sign-upload signs it as itself or refuses it in
+       words, never stores it as a picture. */
+    var sub = String(mimeType || '').toLowerCase().split(';')[0].trim().split('/')[1] || '';
+    sub = sub.replace(/^x-/, '').replace(/\+.*$/, '').replace(/[^a-z0-9]/g, '');
+    if (sub) return sub;
+
+    // Last resort, a file with no type at all: keep video and image apart.
     return String(mimeType || '').indexOf('video') === 0 ? 'mp4' : 'jpg';
   }
 
@@ -5465,7 +5473,7 @@
     whoName: whoName,
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
     putToS3: putToS3,
-    // A file's extension as sign-upload reads it: its type first, then its name.
+    // A file's extension as sign-upload reads it: its type first, then its name, then its type's own name.
     extFor: extFor,
     // sign-upload's answer, or its refusal in the team's words.
     signedUpload: signedUpload,

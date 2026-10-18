@@ -4642,3 +4642,13 @@ finding fixed at the user's word ("fix all no matter what").
   insert, update or delete the guards refuse (`adminGuard` in
   `tests/stub2.js`), and `tests/team.js` walks the three as such a
   colleague.
+
+- 2026-10-18 · A file's extension falls back on its own type before a
+  picture's (review finding 13). `extFor` (js/admin.js) read the type
+  against its map, then the name's extension, and then guessed `jpg` for
+  anything not a video: a PDF or ZIP whose name held no extension was
+  signed and stored as a JPEG picture. The map now holds PDF, ZIP and
+  HEIF, an unmapped type gives its own subtype (so `sign-upload` signs it
+  as itself or refuses it in words), and the guess is left for a file with
+  no type at all. `tests/signupload.js` runs the page's `extFor` against
+  `sign-upload`'s own table.
