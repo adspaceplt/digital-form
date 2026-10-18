@@ -113,6 +113,14 @@
     }
     /* Whole amounts: one subtotal, the term's row on the span, one SST
        figure, the total incl. SST. */
+    /* The quotation's own month and term stay on the letter (2026-10-18):
+       its Monthly incl. SST, as quote_adjust gives it (every monthly line
+       at the percentage, SST rounded once), and its term for the commitment
+       wording. */
+    if (month) {
+      var pex = msub + cents(msub * qm.pct / 100);
+      out.plan = qm.term; out.planMonth = r2(pex + cents(pex * sst / 100)); out.planOnce = once > 0;
+    }
     var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
     var mtot = month ? cents(span * (1 + qm.pct / 100) * (1 + sst / 100)) : 0;
     out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
@@ -257,7 +265,7 @@
          letter cannot exist either way. */
       if (r.error) { then({ error: missingWord(r.error.message) }); return; }
       var out = r.data || {};
-      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error }); return; }
+      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
         if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be drawn.' }); return; }
         download(doc, function (warn) {
@@ -297,7 +305,7 @@
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
     'bad-state': 'That is not a state a service can be in.',
-    'stale': 'The services changed since this sheet was opened. Close it and issue the letter again.',
+    'stale': 'The services or their quotation changed since this sheet was opened. They have been read again: check them and issue the letter again.',
     'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
     'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
   };
@@ -713,9 +721,13 @@
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
         text(names[0] || '', cols.desc, y, 10, bold);
-        // The rate the client is billed, term adjustment included, because that
-        // is the figure they are accepting. Why it differs from the rate card
-        // is named on the mute line below, never left to be discovered.
+        // A letter priced line by line prints the rate the client is billed,
+        // term adjustment included, because that is the figure they are
+        // accepting, and names why it differs from the rate card on the mute
+        // line below. A quoted letter prints the rate before the term: the
+        // term is one row of the summary, taken once on the subtotal with
+        // SST on what it leaves, as the quotation prints it (2026-10-18).
+        // SST is never part of a line's rate.
         right(q === 1 ? MON.money2(shownRate, doc.market)
                       : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(shownRate, doc.market),
               cols.rate, y, 10);
@@ -738,7 +750,7 @@
       /* The one-off summary is five rows and a rule, about 85pt: kept whole
          on its page (audit I11, 2026-10-15). */
       var qd = price.quote, qadj = qd && Number(qd.pct) ? 1 : 0;
-      need((price.term && price.once > 0 ? 90 : 66) + qadj * 15);
+      need((price.term && price.once > 0 ? 90 : 66) + qadj * 15 + (price.plan ? 15 : 0));
       var lx = R - 230;
       var trow = function (label, value, kind) {
         var strong = kind === 'strong';
@@ -765,9 +777,9 @@
       var signed = function (v) { return v < 0 ? '(' + MON.money2(-v, doc.market) + ')' : MON.money2(v, doc.market); };
       var termRow = function () {
         if (!qadj) return;
-        var pc = Math.round(Math.abs(qd.pct) * 100) / 100;
-        trow((price.term ? price.term + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
-          .replace(/^./, function (c) { return price.term ? c : c.toUpperCase(); }), signed(qd.adj));
+        var pc = Math.round(Math.abs(qd.pct) * 100) / 100, tn = price.term || price.plan;
+        trow((tn ? tn + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
+          .replace(/^./, function (c) { return tn ? c : c.toUpperCase(); }), signed(qd.adj));
       };
       if (oneOff) {
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
@@ -783,6 +795,7 @@
         trow(taxWord, MON.money2(price.eachTax, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');
+        if (price.plan) trow('Monthly' + incl, MON.money2(price.planMonth, doc.market));
       }
       y -= 12;
 
@@ -795,6 +808,13 @@
         /* The term is stated once (the user, 2026-10-15). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months, a total of ' +
                    MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ' with the one-off items' : '') + '.');
+      } else if (price.plan) {
+        /* A quoted letter whose lines run months of their own: the
+           quotation's term, and the total over the months stated for each
+           line, as the quotation says it (2026-10-18). */
+        terms.push('Fees are billed monthly in advance for a minimum term of ' + price.plan + ' months, a total of ' +
+                   MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
+                   (price.planOnce ? ', with the one-off items' : '') + '.');
       }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       need(24 + terms.length * 26);
@@ -839,7 +859,10 @@
            ['Minimum term', price.term + ' months']]
             .concat(price.once > 0 ? [['First month due', MON.money2(firstDue, doc.market)]] : [])
             .concat([['Total for the term' + incl, MON.money2(price.total, doc.market)]])
-        : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
+        : price.plan
+          ? [['Monthly' + incl, MON.money2(price.planMonth, doc.market)], ['Minimum term', price.plan + ' months'],
+             ['Total for the term' + incl, MON.money2(price.total, doc.market)]]
+          : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
 
       var SIGH = 91;          // 32mm of signing room, not a ruled line
       var FIELDH = 29;        // 10mm for each of the three fields

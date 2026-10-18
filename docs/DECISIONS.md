@@ -4715,6 +4715,46 @@ finding fixed at the user's word ("fix all no matter what").
   address. covers it. `tests/camp.js` (draft link) and `tests/results.js`
   (post link) hold a space and a quote.
 
+- 2026-10-18 · Issue letter reads the services and their quotation again
+  when the database finds them changed (review of #538 to #550, item 2).
+  `issue_letter` works the price from the stored lines (and the quotation
+  they came from, while it stands) and refuses page figures off by a sen
+  (`stale`). The page kept the lines and quotations it read when the
+  record opened, and a refused quotation read left `state.quotes` null, so
+  a quoted letter was priced without its quotation's rate: every press
+  after a change, or after that failed read, was refused again, and the
+  sheet only said to close it. On `stale` the page now reads the service
+  lines and the quotations again and opens the sheet on the same ticks
+  and reference, saying they were read again, so the next press prices
+  what the database holds. The stand-in was more generous than the
+  database (it took any figures); it now prices the stored rows as the
+  page does and refuses `stale` the same way, and `tests/letter.js`
+  changes a rate while the sheet is open.
+
+- 2026-10-18 · A quoted letter whose lines run months of their own keeps
+  its commitment wording (review of #538 to #550, item 4). Since a letter
+  from a quotation is priced as `quote_adjust` totals it (#544), lines that
+  Build quote gave months of their own are priced as whole amounts, and the
+  letter took the reading of lines on two terms: Total incl. SST, no
+  monthly figure, no minimum term sentence, and the term row read
+  Commitment (5%) with no term. The quotation itself states its term,
+  Monthly incl. SST and its total commitment. The letter now keeps them:
+  `quotePrice` gives the quotation's term (`plan`) and its month incl. SST
+  (`planMonth`, every monthly line at the percentage, SST rounded once, as
+  `quote_adjust` gives it), and the summary reads `12-month commitment
+  (5%)`, the total incl. SST, then Monthly incl. SST; TERMS states the
+  minimum term with the total over the months stated for each line, and
+  the acceptance names the month, the term and the total. No figure moves.
+  `tests/pdfcases.js` (quotedmonths) holds the wording.
+
+- 2026-10-18 · The letter's rate comment says what a quoted letter prints
+  (review of #538 to #550, item 9). The comment on the Rate column read
+  "the rate the client is billed, term adjustment included", which since
+  #540 is true only of a letter priced line by line: a quoted letter
+  prints the rate before the term, the term one summary row taken once on
+  the subtotal, SST on what it leaves. The comment now states both. No
+  code changed.
+
 - 2026-10-18 · The WhatsApp queue's Not confirmed tally says it counts
   seven days (review of #538 to #550, item 3). `wa_messages`' queue counts
   `unknown` messages from the last seven days, as it does `failed`, but the
