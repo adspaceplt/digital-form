@@ -636,7 +636,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
   one `ops_notifications` row (kind `notice`, `notice_id`, `from_name`) to
   each active colleague but the sender and a system account (`bad-title`,
-  `bad-body`, `no-one`), so it reaches the bell and a push;
+  `bad-body`, `no-one`; ten a sender in any hour, `too-many` with when the
+  next can go, `2026-10-18-ten-notices-an-hour.sql`), so it reaches the bell
+  and a push;
   `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
   (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
   grant. Each is filed `team.changed` under subject Notices.

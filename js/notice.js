@@ -36,8 +36,10 @@
     'not-found': 'That notice is no longer there.',
     live: 'Withdraw the notice before it is deleted.'
   };
-  function said(e) {
+  function said(e, d) {
     if (!e) return 'Not sent.';
+    /* Ten notices an hour (2026-10-18, Team audit 16): the next one's time. */
+    if (e === 'too-many') return 'Ten notices an hour at most.' + (d && d.next ? ' The next can be sent at ' + when(d.next) + '.' : '');
     if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : 'Not sent. Check the connection and try again.';
     return SAID[e] || e;
   }
@@ -264,7 +266,7 @@
     db().rpc('team_notice_send', { p_title: title, p_body: body || null, p_to: to }).then(function (r) {
       var d = (r && r.data) || {};
       btn.disabled = false; btn.textContent = 'Send';
-      if ((r && r.error) || d.error) { newMsg(said(r.error || d.error), 'err'); return; }
+      if ((r && r.error) || d.error) { newMsg(said(r.error || d.error, d), 'err'); return; }
       backToList();
       msg(d.count === 1 ? 'Sent to 1 colleague.' : 'Sent to ' + d.count + ' colleagues.', 'ok');
       load();
