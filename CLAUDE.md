@@ -4034,8 +4034,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `brand_name` to the brand. A white-label report is not transferred
     (`white-label`). The list names it by its brand with a White label
     chip, the client under it. There is no list of partners
-    (`report_partners`, `partner_id`, `sm_report_white_label` and
-    `sm_report_label` are no longer used). Each brand says whose mark heads
+    (`report_partners` and `partner_id` are no longer used; the functions
+    that wrote them were dropped on 2026-10-19). Each brand says whose mark heads
     its reports (`client_brands.logo`, `partner` by default or `adspace`;
     `client_brand_logo`, the brand's ⋯ Use ADspace logo / Use {client} logo,
     never asks, filed from and to; the row's `ADspace logo` chip;
