@@ -136,6 +136,7 @@
     m.textContent = text;
   }
   var READ = {
+    bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
     announce: function () {
       return window.ADspaceAnnounce && window.ADspaceAnnounce.live && window.ADspaceAnnounce.live().then(function (n) {
         return n.team || n.clients ? parts(['Team ' + n.team + ' live', 'Clients ' + n.clients + ' live']) : 'None live';
@@ -231,7 +232,9 @@
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
         meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])
-          .concat(num('fx_sgd') == null ? [] : ['S$1 = RM ' + num('fx_sgd')])) }]);
+          .concat(num('fx_sgd') == null ? [] : ['S$1 = RM ' + num('fx_sgd')])) },
+      /* Bukku (2026-10-18): the contact fields that hold our IDs. */
+      biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') }]);
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
@@ -428,6 +431,7 @@
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
+    if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
 

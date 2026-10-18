@@ -2436,7 +2436,10 @@
         ['Billing contact', pick ? esc((pick.salutation ? pick.salutation + ' ' : '') + pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
-      ]);
+      ]) +
+      '<section class="readgroup bk-group" id="crmBukku" hidden></section>';
+    /* Bukku (2026-10-18): the contact this client is in Bukku, sent by hand. */
+    if (window.ADspaceBukku && maySeeBilling()) window.ADspaceBukku.group($('crmBukku'), 'client', c.id);
   }
   /* The sheet's fields are the record's values whenever it opens, so a Cancel
      leaves nothing half typed behind for the next Edit. */

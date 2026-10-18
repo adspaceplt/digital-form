@@ -3428,3 +3428,18 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-ov dd.mfield > .tl-pen { flex: 0 0 auto; }
 .mrec-ov dd.mfield > .select.tdetail { width: calc(100% + 9px); max-width: none; margin-block: calc((20px - var(--ctl-h)) / 2); }
 .mrec-ov .ovfacts > div:has(> dd > .tdetail) { align-items: baseline; }
+
+/* Bukku (js/bukku.js, 2026-10-18): the send sheet's contacts as ticks, one
+   a line, and what changes as a three-track table; on a narrow sheet a field
+   over its two values. */
+.bk-cand { display: flex; align-items: center; }
+.bk-cand b { font-weight: 600; }
+.bk-note { margin: 8px 0 0; font-size: 13px; }
+.bk-table { display: grid; font-size: 13px; }
+.bk-tr { display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.bk-tr > span { overflow-wrap: anywhere; min-width: 0; }
+.bk-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.bk-f { color: var(--ink-mute); }
+.bk-after { font-weight: 600; }
+.is-narrow .bk-tr, .is-tight .bk-tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.is-narrow .bk-f, .is-tight .bk-f { grid-column: 1 / -1; }
