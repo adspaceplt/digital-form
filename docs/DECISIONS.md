@@ -5147,3 +5147,11 @@ finding fixed at the user's word ("fix all no matter what").
   after), and closed the bucket's public read (the second audit's finding
   1), so files reach the web through CloudFront alone. Set in the AWS
   console; nothing in the repo checks either.
+
+- 2026-10-18 · Bonus and trip's open reviews are named on a line of their
+  own (the day's full gate, uxaudit at 390). #586 put the names of the
+  reviews still holding Confirm into the Company figures head's chip; a
+  chip does not wrap, so three names ran the page 39px sideways on a phone
+  (Bonus and trip, its figures sheet and Reward settings, both themes). The
+  chip counts them again (3 reviews not final) and the names follow under
+  the head as one warn line, which wraps.

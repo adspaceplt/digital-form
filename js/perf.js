@@ -2531,10 +2531,13 @@
        colleague's draft never does, 2026-10-18); the count where the
        database answers no list. */
     var open = (d.open_reviews || []).map(function (x) { return x.name + ' ' + ADspaceClock.month(String(x.period).slice(0, 7)); });
-    var openWord = open.length ? 'Not final: ' + (open.length > 3 ? open.slice(0, 3).join(', ') + ' and ' + (open.length - 3) + ' more' : open.join(', '))
-      : reviewsWord(Number(d.open_months)) + ' not final';
+    /* The chip counts them; the names go on a line of their own under the
+       head, which wraps (a chip holding the names ran 39px past a phone). */
+    var openNames = open.length ? 'Not final: ' + (open.length > 3 ? open.slice(0, 3).join(', ') + ' and ' + (open.length - 3) + ' more' : open.join(', ')) : '';
+    var openNow = !d.confirmed && Number(d.open_months) > 0;
     fig.innerHTML = '<div class="crm-group-head"><h3>Company figures</h3>' + confirmedChip(d) +
-      (!d.confirmed && Number(d.open_months) > 0 ? chip(openWord, 'is-warn') : '') + '</div>';
+      (openNow ? chip(reviewsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') + '</div>' +
+      (openNow && openNames ? '<p class="msg warn rw-open">' + esc(openNames) + '</p>' : '');
     var t = document.createElement('div');
     t.className = 'crm-table softpanel rw-facts';
     var outcome = function (x, amount, open) {
