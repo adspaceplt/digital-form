@@ -1517,7 +1517,7 @@
       ['Slots',             c.slots ? String(c.slots) + (Number(c.slots) === 1 ? ' creator' : ' creators') : ''],
       ['Backups',           c.backups_open ? 'Client may mark backups' : 'Not offered']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
-      return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
+      return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1]) + '</dd></div>';
     }).join('');
     $('campLink').value = campaignShare(c);
     $('campOpen').href = campaignUrl(c);

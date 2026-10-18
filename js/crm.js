@@ -1087,15 +1087,17 @@
        so neither is stated twice: a rail that repeats the head is a rail
        nobody reads. */
     $('crmFacts').innerHTML = [
-      ['Client ID', c.client_code || '<span class="muted">Not set</span>'],
-      ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
-      ['Industry', c.industry || '<span class="muted">Not set</span>'],
+      /* Null is Not set; every value is typed text, so it is always escaped
+         (a stored Industry reading <span… once drew as markup). */
+      ['Client ID', c.client_code || null],
+      ['Source',   c.source ? sourceWord(c.source) : null],
+      ['Industry', c.industry || null],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
-      ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
-      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>']
+      ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : null],
+      ['To commence', c.commence ? commenceWord(c.commence) : null]
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
-        (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
+        (f[1] == null ? '<span class="muted">Not set</span>' : esc(f[1])) + '</dd></div>';
     }).join('');
     paintSuppliers(c, !same || restoring);
 

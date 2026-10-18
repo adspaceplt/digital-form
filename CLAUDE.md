@@ -1078,6 +1078,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
+- A value is never drawn raw because of what it starts with: a fact not set
+  is a flag (`null` drawn as Not set), never sniffed from its text (2026-10-19:
+  an Industry or push format reading `<span…` drew as markup).
 - A stored address drawn as a link is held to the web twice: a check on its
   column (`^https?://`, an invoice `https://` or `private/`) and the page
   drawing it only on http or https (`absUrl` answers nothing for another
