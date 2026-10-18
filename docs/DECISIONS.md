@@ -5521,3 +5521,17 @@ nothing, which answered "how much" and never "what".
   three over three), worked out in CSS with the `(W - 100%) * 999` step,
   since container queries are refused here. Every width that passed before
   measures as before (1280, 626, 390).
+
+- 2026-10-18 · Buttons sharing a row share a width under a finger wider
+  than a phone (the iPhone Duo pass, finding 2). The rule held only below
+  560, so a touch screen wider than that (a foldable opened at 890, a
+  tablet) drew each button at its words' width: a booking card's Save,
+  Release to client and Request changes at 92, 148 and 131px, Save beside
+  Pending visit, the Creators head's Bulk dates and Add creators, the
+  Documents head and the Engagements head's pair (uxaudit `row-width`,
+  twelve states at 890×626). One rule for coarse pointers above 560, in the
+  shared sheet rather than per screen: two buttons or more in those rows
+  share the row's space up to 220px each, so they stand one width without
+  becoming slabs; a lone button and a quiet one keep their own width. The
+  Engagements pair sits in its own box, which takes the head's free space
+  (css/console.css). A desk and a phone measure as before.

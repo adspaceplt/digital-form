@@ -9119,3 +9119,16 @@ body.qs-page { background: var(--card); }
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */
 .sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; }
+
+/* Buttons sharing a row share one width under a finger wider than a phone
+   too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a
+   tablet upright). The phone's own rules set it at 560 and under; above
+   that a touch screen kept each button at its words' width, so Save stood
+   92px beside Release to client's 148. Two buttons or more share the row's
+   space up to 220px each, so they stand one width without becoming slabs;
+   a lone button, and a quiet one, keep their own width. */
+@media (pointer: coarse) and (min-width: 561px) {
+  :is(.kactions, .viewhead, .crm-engage-actions):has(> .btn:not(.btn-quiet):not([hidden]) ~ .btn:not(.btn-quiet):not([hidden])) > .btn:not(.btn-quiet) {
+    flex: 1 1 0; max-width: 220px;
+  }
+}
