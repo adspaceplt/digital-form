@@ -4094,13 +4094,15 @@
         });
       } };
   }
-  function loadQuotes(done) {
+  /* `always`: done is called on a refused read too (the letter sheet reads
+     again either way). */
+  function loadQuotes(done, always) {
     var Q = window.ADspaceQuotes, host = $('crmQuotes');
     if (!Q || !host || !state.client || !mayPart('clients.services', 'view')) return;
     var id = state.client.id;
     Q.load(quoteCtx(), function (rows, err) {
       if (!state.client || state.client.id !== id) return;
-      if (err) { state.quotes = null; failLine(host, 'Quotations', err.message || String(err), function () { loadQuotes(); }); host.hidden = false; return; }
+      if (err) { state.quotes = null; failLine(host, 'Quotations', err.message || String(err), function () { loadQuotes(); }); host.hidden = false; if (always && done) done(); return; }
       state.quotes = rows;
       Q.paint(host, quoteCtx(), rows);
       paintSummary();
@@ -4977,6 +4979,20 @@
     if (first) first.focus();
   }
 
+  function pickAgain(ids, said) {
+    var ref = $('pickRef') ? $('pickRef').value : '';
+    var id = state.client && state.client.id;
+    loadServices(function () {
+      var reopen = function () {
+        if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
+        openPick(ids);
+        if ($('pickRef')) $('pickRef').value = ref;
+        msg('pickMsg', said, 'warn');
+      };
+      if (window.ADspaceQuotes && mayPart('clients.services', 'view')) loadQuotes(reopen, true); else reopen();
+    });
+  }
+
   function pickedIds() {
     return Array.prototype.filter.call($('pickBody').querySelectorAll('input[type="checkbox"]'),
       function (i) { return i.checked && !i.disabled; }).map(function (i) { return i.value; });
@@ -5050,6 +5066,12 @@
       function (r) {
         go.disabled = false;
         go.textContent = 'Issue letter';
+        /* The services or the quotation they came from changed while the
+           sheet was open (or the quotations failed to load, so the page
+           priced them without their rate): both are read again and the sheet
+           opened on the same ticks, so the next press prices what the
+           database holds instead of being refused again (2026-10-18). */
+        if (r.code === 'stale') { pickAgain(ids, r.error); return; }
         if (r.error) { msg('pickMsg', r.error, 'err'); return; }
         shutPick();
         msg('crmDocMsg', r.number + (r.repeat ? ' was already issued.' : ' issued.') +

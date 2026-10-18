@@ -257,7 +257,7 @@
          letter cannot exist either way. */
       if (r.error) { then({ error: missingWord(r.error.message) }); return; }
       var out = r.data || {};
-      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error }); return; }
+      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
         if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be drawn.' }); return; }
         download(doc, function (warn) {
@@ -297,7 +297,7 @@
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
     'bad-state': 'That is not a state a service can be in.',
-    'stale': 'The services changed since this sheet was opened. Close it and issue the letter again.',
+    'stale': 'The services or their quotation changed since this sheet was opened. They have been read again: check them and issue the letter again.',
     'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
     'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
   };
