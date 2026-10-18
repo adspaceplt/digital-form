@@ -2363,7 +2363,8 @@
     var dmark = dwon.length
       ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' won · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
       : 'No payout · ' + ruled(NOPAY[dp.reason], d.rules);
-    var edit = may('team.performance', 'work') && !d.confirmed;
+    /* Department scores are an admin's (2026-10-18, review item 6). */
+    var edit = may('team.performance', 'work') && may('team.perfadmin', 'work') && !d.confirmed;
     box.appendChild(G.section({
       route: 'team-rw', key: 'department', name: 'Department prize', count: (d.departments || []).length,
       marks: chip(dmark), shut: false,
