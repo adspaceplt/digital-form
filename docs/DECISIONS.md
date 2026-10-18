@@ -4842,3 +4842,13 @@ finding fixed at the user's word ("fix all no matter what").
   database, 2026-10-18), so `2026-10-18-unused-task-shortcuts-closed.sql`
   revokes both from public, anon and authenticated, and the stand-in
   answers them 42501. `tests/sql.js` holds the revoke as their last word.
+
+- 2026-10-18 · A confirmed quarter or half holds its months (second audit,
+  item 8). Confirm keeps the rewards as a snapshot in `perf_rewards` and
+  they are paid on it, but `perf_reopen` and `perf_delete` read nothing of
+  it: a final month in a paid quarter could be reopened, rescored and
+  finalised again, or deleted, while the snapshot stayed as confirmed.
+  `2026-10-18-confirmed-periods-hold-their-months.sql` refuses both
+  (`period-confirmed`, with the quarter or the period named) until the
+  period is reopened under Quarters or Bonus and trip, as the department
+  scores and the company figures already are. `tests/perf.js` holds it.

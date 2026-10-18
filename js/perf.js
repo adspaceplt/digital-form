@@ -168,6 +168,7 @@
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
         ? 'This needs a database update. Ask an admin to run the latest migration.' : (d.message || 'Not saved.');
     }
+    if (d.error === 'period-confirmed') return (d.word || 'Its period') + ' is confirmed. Reopen it under ' + (d.kind === 'quarter' ? 'Quarters' : 'Bonus and trip') + ' first.';
     if (d.error === 'window-open') return 'Queries are open until ' + timeWord(d.until) + '.';
     if (d.error === 'month-released') return (d.month || 'That month') + ' is shared. Revert it to draft to change its issues.';
     if (d.error === 'wrong-code') return 'Wrong code. ' + d.left + (d.left === 1 ? ' try' : ' tries') + ' left.';
