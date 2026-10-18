@@ -420,8 +420,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Controls in a row share a width and a height. `.row` aligns to the top, and
   `.row > .btn` to the bottom. Under a finger, at any width, two buttons or
   more sharing a row (`.kactions`, `.viewhead`, `.crm-engage-actions`) share
-  one width: the phone's rules below 560, above it the row's space up to
-  220px each; a lone or quiet button keeps its own. A field standing alone fills its container.
+  one width: the phone's rules below 560, above it 220px each, the row
+  wrapping rather than squeezing a label; a lone or quiet button keeps its
+  own. A field standing alone fills its container.
 - A required field carries a red asterisk from `aria-required`.
 - A typed box (`textarea`) runs its row's width and stretches downwards only
   (`resize: vertical`): a sideways drag never widens the page, and it grows

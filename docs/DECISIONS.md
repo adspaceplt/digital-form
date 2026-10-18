@@ -5531,7 +5531,9 @@ nothing, which answered "how much" and never "what".
   Documents head and the Engagements head's pair (uxaudit `row-width`,
   twelve states at 890×626). One rule for coarse pointers above 560, in the
   shared sheet rather than per screen: two buttons or more in those rows
-  share the row's space up to 220px each, so they stand one width without
-  becoming slabs; a lone button and a quiet one keep their own width. The
+  take 220px each, one width without becoming slabs, and a row too narrow
+  wraps (sharing the row's space instead squeezed Release to client onto
+  two lines on a 626 card); a lone button and a quiet one keep their own
+  width. The
   Engagements pair sits in its own box, which takes the head's free space
   (css/console.css). A desk and a phone measure as before.

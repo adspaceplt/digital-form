@@ -9124,11 +9124,12 @@ body.qs-page { background: var(--card); }
    too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a
    tablet upright). The phone's own rules set it at 560 and under; above
    that a touch screen kept each button at its words' width, so Save stood
-   92px beside Release to client's 148. Two buttons or more share the row's
-   space up to 220px each, so they stand one width without becoming slabs;
-   a lone button, and a quiet one, keep their own width. */
+   92px beside Release to client's 148. Two buttons or more each take 220px,
+   one width without becoming slabs, and a row too narrow for them wraps
+   rather than squeezing a label onto two lines (a 626 card did); a lone
+   button, and a quiet one, keep their own width. */
 @media (pointer: coarse) and (min-width: 561px) {
   :is(.kactions, .viewhead, .crm-engage-actions):has(> .btn:not(.btn-quiet):not([hidden]) ~ .btn:not(.btn-quiet):not([hidden])) > .btn:not(.btn-quiet) {
-    flex: 1 1 0; max-width: 220px;
+    flex: 0 1 220px; white-space: nowrap;
   }
 }
