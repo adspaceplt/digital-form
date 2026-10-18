@@ -9,7 +9,7 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
 (a prospect's own quotation), `details/` (a client's billing details form),
-`supplier-details/` (a supplier's details form), `/` and
+`supplier/` (a supplier's details form; `supplier-details/` forwards to it), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -223,7 +223,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `quotes.js`, `quotepdf.js`, the QUOTATIONS section | quotes, crm, sql, settings |
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
-| `suppliers.js`, `supplierform.js`, `supplier-details/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
+| `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -386,7 +386,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`, `supplier-details/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`, `supplier/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -2122,7 +2122,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The old list is imported by a SQL file handed to the user, never committed
   (real names).
 
-### Suppliers (`js/suppliers.js`, `js/supplierform.js`, `?s=suppliers`; `supplier-details/`)
+### Suppliers (`js/suppliers.js`, `js/supplierform.js`, `?s=suppliers`; `supplier/`)
 - A section of its own (`suppliers`, View / Work / Manage; the user,
   2026-10-18: "own section"), in the Internal chunk after Documents
   (`2026-10-18-suppliers.sql`, `2026-10-18-suppliers-own-section.sql`;
@@ -2134,7 +2134,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - New supplier asks the Supplier ID alone (the next AS number offered at
   the width in use, unique, `code-taken`; the user: "i wont know the
   company name first"), makes it Pending and its link
-  (`/supplier-details/?k=`, open `details_form_days`; Copy link, Preview,
+  (`/supplier/?k=`, open `details_form_days`; Copy link, Preview,
   the ⋯ Reset link, asked). Until its form names it a supplier reads its
   Supplier ID, Waiting for their details.
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
@@ -5510,8 +5510,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Folder and file rules
 - Never edit the user's root files: `ap01.html`, `ap02.html`, `ap03.html`,
   `ap-dale.html`, `accv-new.html`, `3pform.html`, `einvoiceinfo.html`,
-  `interview-quiz.html`, `sales-program.html`, `supplier.html`. `index.html`
-  and `404.html` are the portal's.
+  `interview-quiz.html`, `sales-program.html`. `index.html` and `404.html`
+  are the portal's; `supplier.html` was retired for `/supplier/` (the user,
+  2026-10-18: "no longer in use").
 - `drafts/` (holding the old Jotform verify page) is excluded from Pages.
 - Portal pages are folders with an `index.html` and clean paths; never `.html`
   in a URL.

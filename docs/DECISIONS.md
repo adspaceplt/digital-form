@@ -5263,3 +5263,13 @@ finding fixed at the user's word ("fix all no matter what").
   database refused, and the page dropped the refusal in silence. Undo now
   brings such a task back In progress (To do and In progress go back where
   they were), and any refusal is said on the list. `tests/work.js` holds it.
+
+- **2026-10-18 · The supplier form moves to /supplier/.** The user: "can you
+  use the /supplier-details back to /supplier instead?" and "the
+  /supplier.html alr no longer in use". The old Jotform page `supplier.html`
+  (a root file, never edited until now) is removed at the user's word, and
+  the portal's form takes its address: `supplier/index.html`, the link the
+  console makes `/supplier/?k=`. `/supplier-details/` stays as a page that
+  forwards with its key, so a link sent earlier the same day still opens.
+  `3pform.html` still points at `/supplier`, which now reads the form's
+  Link not recognised cover without a key.

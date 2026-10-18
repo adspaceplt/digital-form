@@ -3,7 +3,7 @@
  * similar as client billing section"; "invite only, with create link and set
  * the supplier id before sending"; "nric only for individuals").
  *
- * `/supplier-details/?k={key}`, a link the team makes on a supplier in
+ * `/supplier/?k={key}`, a link the team makes on a supplier in
  * Documents, Suppliers (`supplier_link`). The page reads only the name and
  * Supplier ID the link is for and when it ends (`supplier_form_read`), never
  * a value the record holds, and sends the answers once
