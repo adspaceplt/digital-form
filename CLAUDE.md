@@ -5148,7 +5148,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`team_access_guard`, `removed`: with a sign-in a removal or an
     erasure, once made, is never moved or cleared, and moving an
     expired-then-removed colleague's date brings nobody back;
-    `2026-10-18-a-removal-stands.sql`); an extension on a task whose creator
+    `2026-10-18-a-removal-stands.sql`), so one who returns is added again:
+    a name, sign-in email and Employee ID are unique among colleagues not
+    removed (`team_members_{name,email,staff_code}_live_idx`,
+    `2026-10-18-removed-colleagues-free-their-details.sql`), the page naming
+    the field that clashes, and an edge function finding a colleague by
+    email reads the active row first; an extension on a task whose creator
     has left is asked of the first active admin who is not a system account
     (`ops_due_decider`); an on-site meeting's outstation reminder goes to
     its leader while active, else the month's manager; trigger

@@ -151,8 +151,11 @@ Deno.serve(async (req) => {
     // Clients sign in to /client/ with the same Authentication, so a login by
     // itself is not enough: the person has to be an active member of the team,
     // asked of the database with the service role.
+    // A removed colleague may share the address with one added again: the
+    // active row answers (Team audit, item 10).
     const { data: member } = await admin.from('team_members')
-      .select('active').ilike('email', exactEmail(user.email)).maybeSingle();
+      .select('active').ilike('email', exactEmail(user.email))
+      .order('active', { ascending: false }).limit(1).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
     const clientId = String(body.clientId ?? '');
