@@ -137,7 +137,7 @@
      none is typed, refuses one already spent, and answers the same document
      twice for the same idem key. */
   function issue(a, then) {
-    call('issue_document', {
+    var args = {
       p_type: a.type, p_client: a.client || null, p_member: a.member || null,
       p_serial: a.serial || null, p_issued_at: a.issued_at || null, p_title: a.title || null,
       p_recipient: a.recipient || {}, p_body: a.body || {}, p_signatory: a.signatory || null,
@@ -145,7 +145,11 @@
       p_idem: a.idem || DOCS.idemKey(),
       p_salutation: a.salutation || null,
       p_signed: typeof a.signed === 'boolean' ? a.signed : null
-    }, function (err, out) {
+    };
+    /* Named only for a supplier's letter (2026-10-18), so a client's or an HR
+       letter is the call it always was. */
+    if (a.supplier) args.p_supplier = a.supplier;
+    call('issue_document', args, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {
         if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be drawn.' }); return; }

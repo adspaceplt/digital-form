@@ -1,0 +1,221 @@
+/* A supplier's details form (2026-10-18; the user: the Jotform supplier
+ * sign-up "could jump into the fill in via portal and data sync into it
+ * similar as client billing section"; "invite only, with create link and set
+ * the supplier id before sending"; "nric only for individuals").
+ *
+ * `/supplier-details/?k={key}`, a link the team makes on a supplier in
+ * Documents, Suppliers (`supplier_link`). The page reads only the name and
+ * Supplier ID the link is for and when it ends (`supplier_form_read`), never
+ * a value the record holds, and sends the answers once
+ * (`supplier_form_submit`), checked as the Jotform form checked them; they
+ * wait on the supplier for the team to take in. English, as the form was. */
+(function () {
+  var API = window.ADspaceAPI, db = API && API.client;
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+  var W = window.ADspaceWords.of({ en: {} }).en;
+
+  /* What supplier_values_check accepts, in its order. */
+  var BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
+    'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
+    '[SG] Maybank', '[SG] Bank of China'];
+  var TERMS = ['NET 7', 'NET 30', 'NET 45', 'NET 60'];
+  /* The authorisation the Jotform form carried, word for word. */
+  var AUTH = [
+    'I / We hereby authorise ADSPACE PLT to credit payments due to me / us to the above account.',
+    'Amounts so credited would constitute valid discharge of obligations due to me / us.',
+    'This authorisation shall continue to be in force until we have expressly revoked it by notice in writing to you.',
+    'In the event of any change to our particulars, I / we shall inform you in writing 30 days in advance before the change, with ADSPACE PLT’s acknowledgement of receiving the notice in writing.',
+    'It is being understood that you may in your absolute discretion determine this arrangement by giving written notice to my / our last address or email contact last known to you.',
+    'I / We hereby declare that all the information provided herein above are true and correct.'
+  ];
+  var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+
+  var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
+  var info = null, state = 'loading', typed = { kind: 'company', currency: 'MYR' }, consent = false, sending = false;
+  var root = function () { return $('sfRoot'); };
+
+  function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
+  function cover(title, text) {
+    root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div></div></section>';
+  }
+  function field(id, label, html, hint) {
+    return '<div class="field" id="' + id + 'Wrap"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html +
+      (hint ? '<span class="qs-hint">' + esc(hint) + '</span>' : '') + '<span class="msg" id="' + id + 'Msg"></span></div>';
+  }
+  function input(id, k, req, attrs) {
+    return '<input class="input" id="' + id + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + ' ' + (attrs || '') +
+      ' value="' + esc(typed[k] || '') + '">';
+  }
+  function select(id, k, req, opts, none) {
+    return '<select class="select" id="' + id + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + '>' +
+      (none ? '<option value="">' + esc(none) + '</option>' : '') +
+      opts.map(function (o) { return '<option value="' + esc(o) + '"' + (typed[k] === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') +
+      '</select>';
+  }
+  function seg(id, k, opts, label) {
+    return '<select class="select" id="' + id + '" data-k="' + k + '" data-seg aria-label="' + esc(label) + '">' +
+      opts.map(function (o) { return '<option value="' + o[0] + '"' + (typed[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  }
+  function paintForm() {
+    var ind = typed.kind === 'individual';
+    return '<div class="qs-step" data-shown><h1 class="qs-title">Supplier Details</h1>' +
+      '<p class="qs-lead">' + esc(info.name) + ' · ' + esc(info.code) + '</p>' +
+      '<form class="qs-form" id="sfForm" novalidate>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
+        field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
+        field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
+        field('sfBrn', '12-digit SSM BRN', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '202304002162') + '"')) +
+        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', true, 'maxlength="14" inputmode="numeric" placeholder="000814-01-2023"')) : '') +
+        field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="C12345678090"')) +
+        field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
+        field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
+        field('sfAddr', 'Billing address', '<textarea class="input" id="sfAddr" data-k="address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.address || '') + '</textarea>') +
+      '</section>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">Person in charge</h2>' +
+        field('sfContact', 'Legal name', input('sfContact', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
+        field('sfRole', 'Designation', input('sfRole', 'designation', true, 'maxlength="80" autocomplete="organization-title"')) +
+        field('sfEmail', 'Email', input('sfEmail', 'email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
+        field('sfMobile', 'Mobile / WhatsApp', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
+      '</section>' +
+      '<section class="qs-sec"><h2 class="qs-sec-h">Payment details</h2>' +
+        field('sfTerm', 'Payment term', select('sfTerm', 'payment_term', true, TERMS, 'Choose a term'), 'Subject to approval.') +
+        field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
+        field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', true, 'maxlength="120"'), 'As the account holder’s name.') +
+        field('sfBank', 'Bank', select('sfBank', 'bank_name', true, BANKS, 'Choose a bank')) +
+        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', true, 'maxlength="24" inputmode="numeric"')) +
+        field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@adspace.me"')) +
+        field('sfSwift', 'SWIFT code', input('sfSwift', 'swift', false, 'maxlength="11" autocapitalize="characters" placeholder="Optional"')) +
+        field('sfBankAddr', 'Bank address', '<textarea class="input" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
+      '</section>' +
+      '<ol class="qs-notes sf-auth">' + AUTH.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
+      '<label class="qs-consent"><input type="checkbox" id="sfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">I agree to the authorisation above.</span></label>' +
+      '<span class="msg" id="sfConsentMsg"></span>' +
+      '<p class="qs-note">This form is open until ' + esc(day(info.expires_at)) + '.</p>' +
+      '<p class="msg" id="sfMsg" role="status"></p>' +
+      '</form></div>' +
+      '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfSubmit">Submit</button></div>';
+  }
+  function paintDone() {
+    root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
+      '<h1 class="qs-title">Details received</h1><p>Thank you. ADspace will review your details.</p></div>';
+  }
+  function paint() {
+    if (state === 'loading') return;
+    if (state === 'bad') { cover(W.notFound, W.notFoundText); return; }
+    if (state === 'fail') { cover(W.failTitle, W.failText); return; }
+    if (state === 'expired') { cover('Link expired', W.notFoundText); return; }
+    if (state === 'submitted') { cover('Details received', 'This form has already been submitted.'); return; }
+    if (state === 'done') { paintDone(); return; }
+    root().innerHTML = paintForm();
+    if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
+    Array.prototype.forEach.call(root().querySelectorAll('select[data-seg]'), function (s) {
+      s.addEventListener('change', function () { read(); if (s.id === 'sfKind') paint(); });
+    });
+  }
+  function read() {
+    Array.prototype.forEach.call(root().querySelectorAll('[data-k]'), function (el) { typed[el.getAttribute('data-k')] = el.value; });
+    consent = Boolean($('sfConsent') && $('sfConsent').checked);
+  }
+  function say(id, text, tone) {
+    var m = $(id); if (!m) return;
+    m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : '');
+  }
+  var ID = { kind: 'sfKind', name: 'sfName', brn: 'sfBrn', nric: 'sfNric', tin: 'sfTin', sst_no: 'sfSst', phone: 'sfPhone',
+    address: 'sfAddr', contact_name: 'sfContact', designation: 'sfRole', email: 'sfEmail', mobile: 'sfMobile',
+    payment_term: 'sfTerm', currency: 'sfCur', payee_name: 'sfPayee', bank_name: 'sfBank', bank_account: 'sfAcct',
+    finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
+  /* Each field's own fault, as supplier_values_check refuses it. */
+  var FAULT = {
+    name: 'Enter the name, 2 to 160 characters.', brn: 'Enter the 12-digit BRN, as 202304002162.',
+    nric: 'Enter the NRIC, as 000814-01-2023.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
+    sst_no: 'Enter the SST no. as J31-2601-32100001.', phone: 'Enter a number of 8 to 15 digits.',
+    mobile: 'Enter a number of 8 to 15 digits.', address: 'Enter the full billing address.',
+    contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
+    finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',
+    bank_name: 'Choose a bank.', bank_account: 'Enter the account number, digits only.',
+    swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'The bank address is up to 300 characters.',
+    kind: 'Choose how you are registered.', currency: 'Choose a currency.'
+  };
+  function check() {
+    var first = null, mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/, ind = typed.kind === 'individual';
+    var v = function (k) { return String(typed[k] || '').trim(); };
+    var digits = function (k) { return v(k).replace(/\D/g, ''); };
+    var bad = function (k) {
+      var id = ID[k]; say(id + 'Msg', FAULT[k]);
+      if ($(id)) $(id).setAttribute('aria-invalid', 'true');
+      if (!first) first = id;
+    };
+    Object.keys(ID).forEach(function (k) { say(ID[k] + 'Msg', ''); if ($(ID[k])) $(ID[k]).removeAttribute('aria-invalid'); });
+    say('sfConsentMsg', '');
+    if (v('name').length < 2) bad('name');
+    if ((!ind || digits('brn')) && !/^\d{12}$/.test(digits('brn'))) bad('brn');
+    if (ind && !/^\d{12}$/.test(digits('nric'))) bad('nric');
+    if (!/^[A-Za-z0-9]{5,20}$/.test(v('tin').replace(/\s+/g, ''))) bad('tin');
+    if (v('sst_no') && !/^[A-Za-z]\d{2}-\d{4}-\d{8}$/.test(v('sst_no').replace(/\s+/g, ''))) bad('sst_no');
+    if (digits('phone').length < 8 || digits('phone').length > 15) bad('phone');
+    if (v('address').length < 10) bad('address');
+    if (v('contact_name').length < 2) bad('contact_name');
+    if (v('designation').length < 2) bad('designation');
+    if (!mail.test(v('email'))) bad('email');
+    if (digits('mobile').length < 8 || digits('mobile').length > 15) bad('mobile');
+    if (TERMS.indexOf(v('payment_term')) < 0) bad('payment_term');
+    if (v('payee_name').length < 2) bad('payee_name');
+    if (BANKS.indexOf(v('bank_name')) < 0) bad('bank_name');
+    if (!/^\d{6,20}$/.test(v('bank_account').replace(/[\s-]/g, ''))) bad('bank_account');
+    if (!mail.test(v('finance_email'))) bad('finance_email');
+    if (v('swift') && !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(v('swift').replace(/\s+/g, ''))) bad('swift');
+    if (!consent) { say('sfConsentMsg', 'Tick to agree.'); if (!first) first = 'sfConsent'; }
+    if (first && $(first)) $(first).focus();
+    return !first;
+  }
+  function submit(btn) {
+    if (sending) return;
+    read();
+    if (!check()) return;
+    sending = true; btn.disabled = true;
+    var answers = { authorise: 'true' };
+    Object.keys(ID).forEach(function (k) { answers[k] = String(typed[k] || '').trim(); });
+    if (typed.kind !== 'individual') answers.nric = '';
+    db.rpc('supplier_form_submit', { p_key: key, p_answers: answers }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) throw r.error;
+      if (d.error === 'submitted') { state = 'submitted'; paint(); return; }
+      if (d.error === 'expired') { state = 'expired'; paint(); return; }
+      if (d.error === 'not_found') { state = 'bad'; paint(); return; }
+      var k = d.error && d.error.indexOf('bad-') === 0 ? d.error.slice(4) : null;
+      if (k && ID[k]) {
+        say(ID[k] + 'Msg', FAULT[k]);
+        if ($(ID[k])) { $(ID[k]).setAttribute('aria-invalid', 'true'); $(ID[k]).focus(); }
+        return;
+      }
+      if (d.error) throw new Error(d.error);
+      state = 'done'; paint(); window.scrollTo(0, 0);
+    }).catch(function () {
+      say('sfMsg', W.notSent);
+    }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('#sfSubmit');
+    if (b) submit(b);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#sfForm input:not([type=checkbox]), #sfForm textarea[data-oneline]') && !e.isComposing) {
+      e.preventDefault(); if ($('sfSubmit')) submit($('sfSubmit'));
+    }
+  });
+
+  if (!db) { state = 'fail'; paint(); return; }
+  if (!/^[a-z0-9]{8}$/.test(key)) { state = 'bad'; paint(); return; }
+  db.rpc('supplier_form_read', { p_key: key }).then(function (r) {
+    var d = r.data || {};
+    if (r.error) throw r.error;
+    if (d.error === 'expired') state = 'expired';
+    else if (d.error === 'submitted') state = 'submitted';
+    else if (d.error || !d.ok) state = 'bad';
+    else { info = d; state = 'open'; typed.name = d.name || ''; }
+    paint();
+  }).catch(function () { state = 'fail'; paint(); });
+})();

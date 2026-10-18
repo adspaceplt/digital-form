@@ -844,7 +844,9 @@
     campaigns: ['campaigns', 'creators', 'finance', 'files_delete'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any
        other group's once set. */
-    register:  ['documents', 'hr', 'types'],
+    /* Suppliers (2026-10-18) follow Documents; their bank details and NRIC
+       are granted (`supplier_pay`), an admin's by itself. */
+    register:  ['documents', 'hr', 'types', 'suppliers', 'supplier_pay'],
     /* The record is read a tab at a time, so its access is a part per tab.
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
@@ -875,7 +877,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'register.supplier_pay': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -918,7 +920,7 @@
      permission for what it governs, and the mapping lives here rather than
      being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
-    if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
+    if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view') || may('register.suppliers', 'view');
     if (name === 'activity') {
       return may('activity', 'view') || PARTS.activity.some(function (k) {
         return may('activity.' + k, 'view');
@@ -2020,6 +2022,9 @@
     } else if (section === 'services' && window.ADspaceCRM && window.ADspaceCRM.svcState) {
       var sv = window.ADspaceCRM.svcState();
       Object.keys(sv).forEach(function (k) { if (sv[k]) q.push(k + '=' + encodeURIComponent(sv[k])); });
+    } else if (section === 'register' && window.ADspaceSuppliers) {
+      var spl = window.ADspaceSuppliers.urlState();
+      Object.keys(spl).forEach(function (k) { if (spl[k]) q.push(k + '=' + encodeURIComponent(spl[k])); });
     } else if (section === 'mine' && window.ADspacePerf && window.ADspacePerf.mineState) {
       var mn = window.ADspacePerf.mineState();
       Object.keys(mn).forEach(function (k) { if (mn[k]) q.push(k + '=' + encodeURIComponent(mn[k])); });
@@ -2397,6 +2402,11 @@
     'document.reissued':     ['Document reissued', '', 'register'],
     'register.added':        ['Document added', 'is-ok', 'register'],
     'register.edited':       ['Document edited', '', 'register'],
+    /* A supplier (2026-10-18), filed by the database under Documents. */
+    'supplier.added':        ['Supplier added', 'is-ok', 'register'],
+    'supplier.edited':       ['Supplier edited', '', 'register'],
+    'supplier.approved':     ['Supplier approved', 'is-ok', 'register'],
+    'supplier.deleted':      ['Supplier deleted', 'is-danger', 'register'],
     'service.added':         ['Rate line added', 'is-ok', 'services'],
     'service.changed':       ['Rate line changed', '', 'services'],
     'service.off':           ['Rate line inactive', 'is-warn', 'services'],

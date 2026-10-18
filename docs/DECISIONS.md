@@ -5155,3 +5155,24 @@ finding fixed at the user's word ("fix all no matter what").
   (Bonus and trip, its figures sheet and Reward settings, both themes). The
   chip counts them again (3 reviews not final) and the names follow under
   the head as one warn line, which wraps.
+
+- 2026-10-18 · Suppliers, in Documents. The user: documents also go to
+  suppliers, and the Jotform supplier sign-up should be filled in through
+  the portal and land on the supplier "similar as client billing";
+  "invite only, with create link and set the supplier id before sending";
+  "nric only for individuals"; the list and the supplier letters in one
+  release. Built as Documents' second tab rather than a section of its own:
+  the letters live in Documents, and a section would have meant a new rail
+  entry, access row and walk for one list. The form copies the Jotform
+  form's rules (read from the form itself) except two: NRIC is asked of an
+  individual alone, and the BRN of a company alone (an individual's is
+  optional), since a freelancer may hold no SSM number; the optional bank
+  statement upload is left out, because a public upload to the private
+  bucket would need a new path through `sign-upload`. The NRIC and the bank
+  details are a granted part (`register.supplier_pay`), so a group given
+  Documents reads a supplier's details but not where its money goes. A
+  supplier letter is a new family (`supplier`, `ASL/{ID}/{YYMMDD}{NN}`), so
+  the two family checks and `issue_document`'s signature changed (one more
+  argument, the old one dropped first). Caught before release by the new
+  suite: the form's term and bank lists took each option's first letter as
+  its value (`o[0]` on a string), so no term or bank could be chosen.

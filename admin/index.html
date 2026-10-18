@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261018xf">
-<link rel="stylesheet" href="/css/console.css?v=20261018xf">
+<link rel="stylesheet" href="/css/portal.css?v=20261018xg">
+<link rel="stylesheet" href="/css/console.css?v=20261018xg">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3365,7 +3365,14 @@
     <!-- ---- Register: every document issued, and every serial the verify
          page answers. HR rows reach this list only where the database's own
          policy lets them. ---- -->
-    <div class="console-body" id="sectionRegister" hidden>
+    <div class="console-body" id="sectionRegister" data-swipe="regTabs" hidden>
+      <!-- Documents and its suppliers (2026-10-18), each a tab; the strip is
+           drawn only where both are open (js/suppliers.js). -->
+      <div class="tabrow" id="regTabs" role="tablist" aria-label="Documents" hidden>
+        <button class="tab is-on" data-tab="documents" type="button" role="tab">Documents</button>
+        <button class="tab" data-tab="suppliers" type="button" role="tab">Suppliers</button>
+      </div>
+      <div id="regDocsPane">
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3392,6 +3399,24 @@
       <!-- The public page every letter's foot names, so a colleague asked
            "is this real" knows where to send the person asking. -->
       <p class="routenote">Anyone can check a reference at <a class="plink" href="/verify/" target="_blank" rel="noopener" id="regVerifyLink">/verify</a>.</p>
+      </div>
+      <div id="regSupPane" hidden>
+        <div class="cmdbar" id="supBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="supFind" type="search" placeholder="Search name or Supplier ID" aria-label="Search suppliers" autocomplete="off">
+          </span>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="supCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="supNew" type="button" data-need="register.suppliers:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New supplier</button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="supMsg"></div>
+        <div id="supList"></div>
+        <div id="supRec" hidden></div>
+      </div>
     </div>
 
     <div class="console-body" id="sectionTeam" data-swipe="teamTabs" hidden>
@@ -5084,6 +5109,8 @@ raya-2026        https://example.com/raya"></textarea>
           <select class="select" id="docClient" aria-required="true"></select></div>
         <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
           <select class="select" id="docMember" aria-required="true"></select></div>
+        <div id="docSupplierWrap" hidden><label class="field-label" for="docSupplier">Supplier</label>
+          <select class="select" id="docSupplier" aria-required="true"></select></div>
       </div>
       <!-- An HR letter is the colleague's to read in My records (Letters)
            and they are told; untick for a draft not yet theirs. -->
@@ -5295,6 +5322,86 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 
 <!-- A serial made elsewhere, added so the verify page answers it. -->
+<!-- A supplier's details (js/suppliers.js): Edit, and Use details with the
+     answers its form sent. The NRIC and the bank details are drawn only at
+     Documents: Supplier bank details Work. -->
+<div class="sheet" id="supEditSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="supEditTitle">
+    <div class="sheet-head">
+      <h3 id="supEditTitle">Edit supplier</h3>
+      <button class="iconbtn" id="supEditClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <section class="fsec">
+        <h4 class="fsec-h">Billing details</h4>
+        <div class="row fgrid">
+          <div id="supEdCodeWrap"><label class="field-label" for="supEdCode">Supplier ID</label>
+            <input class="input" id="supEdCode" aria-required="true" autocapitalize="characters" spellcheck="false"></div>
+          <div id="supEdKindWrap"><label class="field-label" for="supEdKind">Registered as</label>
+            <select class="select" id="supEdKind" data-seg><option value="company">Company</option><option value="individual">Individual</option></select></div>
+          <div class="span-all" id="supEdNameWrap"><label class="field-label" for="supEdName">Name</label>
+            <textarea class="input" id="supEdName" rows="1" data-oneline aria-required="true" maxlength="160"></textarea></div>
+          <div id="supEdBrnWrap"><label class="field-label" for="supEdBrn">12-digit SSM BRN</label>
+            <input class="input" id="supEdBrn" inputmode="numeric" maxlength="14"></div>
+          <div id="supEdNricWrap"><label class="field-label" for="supEdNric">NRIC</label>
+            <input class="input" id="supEdNric" inputmode="numeric" maxlength="14" aria-required="true" placeholder="000814-01-2023" data-nodraft></div>
+          <div id="supEdTinWrap"><label class="field-label" for="supEdTin">TIN</label>
+            <input class="input" id="supEdTin" aria-required="true" autocapitalize="characters"></div>
+          <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST registration no.</label>
+            <input class="input" id="supEdSst" autocapitalize="characters" placeholder="Optional"></div>
+          <div id="supEdPhoneWrap"><label class="field-label" for="supEdPhone">Office / mobile</label>
+            <input class="input" id="supEdPhone" type="tel" aria-required="true"></div>
+          <div class="span-all" id="supEdAddrWrap"><label class="field-label" for="supEdAddr">Billing address</label>
+            <textarea class="textarea" id="supEdAddr" rows="3" aria-required="true" maxlength="400"></textarea></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Person in charge</h4>
+        <div class="row fgrid">
+          <div id="supEdContactWrap"><label class="field-label" for="supEdContact">Legal name</label>
+            <input class="input" id="supEdContact" aria-required="true" maxlength="80"></div>
+          <div id="supEdRoleWrap"><label class="field-label" for="supEdRole">Designation</label>
+            <input class="input" id="supEdRole" aria-required="true" maxlength="80"></div>
+          <div id="supEdEmailWrap"><label class="field-label" for="supEdEmail">Email</label>
+            <input class="input" id="supEdEmail" type="email" aria-required="true" maxlength="160"></div>
+          <div id="supEdMobileWrap"><label class="field-label" for="supEdMobile">Mobile / WhatsApp</label>
+            <input class="input" id="supEdMobile" type="tel" aria-required="true"></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Payment details</h4>
+        <div class="row fgrid">
+          <div id="supEdTermWrap"><label class="field-label" for="supEdTerm">Payment term</label>
+            <select class="select" id="supEdTerm" aria-required="true"></select></div>
+          <div id="supEdCurWrap"><label class="field-label" for="supEdCur">Currency</label>
+            <select class="select" id="supEdCur" data-seg><option value="MYR">MYR / RM</option><option value="SGD">SGD / S$</option></select></div>
+          <div class="span-all" id="supEdFinWrap"><label class="field-label" for="supEdFin">Finance email</label>
+            <input class="input" id="supEdFin" type="email" aria-required="true" maxlength="160"></div>
+        </div>
+        <div class="row fgrid" id="supPaySec">
+          <div id="supEdPayeeWrap"><label class="field-label" for="supEdPayee">Payee name</label>
+            <input class="input" id="supEdPayee" aria-required="true" maxlength="120" data-nodraft></div>
+          <div id="supEdBankWrap"><label class="field-label" for="supEdBank">Bank</label>
+            <select class="select" id="supEdBank" aria-required="true" data-nodraft></select></div>
+          <div id="supEdAcctWrap"><label class="field-label" for="supEdAcct">Account number</label>
+            <input class="input" id="supEdAcct" inputmode="numeric" aria-required="true" maxlength="24" data-nodraft></div>
+          <div id="supEdSwiftWrap"><label class="field-label" for="supEdSwift">SWIFT code</label>
+            <input class="input" id="supEdSwift" autocapitalize="characters" placeholder="Optional" data-nodraft></div>
+          <div class="span-all" id="supEdBankAddrWrap"><label class="field-label" for="supEdBankAddr">Bank address</label>
+            <textarea class="textarea" id="supEdBankAddr" rows="2" maxlength="300" placeholder="Optional" data-nodraft></textarea></div>
+        </div>
+      </section>
+      <div class="msg" id="supEditMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="supEditGo" type="button">Save</button>
+      <button class="btn btn-quiet" id="supEditCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="regAddSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
     <div class="sheet-head">
@@ -5406,26 +5513,27 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261018xb"></script>
+<script src="/js/admin.js?v=20261018xc"></script>
 <script src="/js/documents.js?v=20261018f"></script>
-<script src="/js/letters.js?v=20261007i"></script>
+<script src="/js/letters.js?v=20261018"></script>
 <script src="/js/smreport.js?v=20261018d"></script>
 <script src="/js/reports.js?v=20261017a"></script>
-<script src="/js/register.js?v=20261015b"></script>
+<script src="/js/register.js?v=20261018"></script>
+<script src="/js/suppliers.js?v=20261018"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261018f"></script>
 <script src="/js/quotepdf.js?v=20261018f"></script>
 <script src="/js/checklists.js?v=20261017"></script>
 <script src="/js/crm.js?v=20261018b"></script>
 <script src="/js/sales.js?v=20261015zh"></script>
-<script src="/js/team.js?v=20261018d"></script>
+<script src="/js/team.js?v=20261018e"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
 <script src="/js/scripts.js?v=20261015zm"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261018xe"></script>
-<script src="/js/ops.js?v=20261018xb"></script>
+<script src="/js/ops.js?v=20261018xc"></script>
 <script src="/js/perf.js?v=20261018xg"></script>
 <script src="/js/health.js?v=20261017"></script>
 <script src="/js/search.js?v=20261015zg"></script>
