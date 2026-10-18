@@ -4898,3 +4898,15 @@ finding fixed at the user's word ("fix all no matter what").
   uploaded drafts. The creator's Forget this device does the same, leaving
   a colleague's live pass alone as every client page does.
   `tests/mediapass.js` holds all three (each failed on the earlier pages).
+
+- 2026-10-18 · A campaign never books more creators than its slots (second
+  audit, item 10). `confirm_selection_with` compared the client's picks
+  with the whole of the slots, and `campaign_confirm_creators` checked
+  none: ten slots with six booked took ten stale picks and booked sixteen.
+  `2026-10-18-slots-hold-their-bookings.sql` restates both whole from
+  CONFIRM ONCE with one check each, `over-slots` where the bookings
+  (`campaign_booked`) and those confirmed now pass the slots, and adds
+  trigger `campaigns_slots_floor`: slots lowered below the bookings were
+  refused on the page alone. The selection page reads `over-slots` as its
+  selection changed and reads the campaign again; the console names how
+  many may still be confirmed. `tests/confirmonce.js` holds the three.

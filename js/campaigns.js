@@ -1292,6 +1292,9 @@
       backups_open: $('campBackups').checked
     };
     db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies, logo_url)').single().then(function (r) {
+      if (r.error && /slots-booked/.test((r.error.hint || '') + (r.error.message || ''))) {
+        msg('campMsg', 'Not saved. The count cannot go below the creators already booked.', 'err'); return;
+      }
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.edited', title, slots + ' creators');
       shutCampForm();
@@ -5183,6 +5186,7 @@
   var LOCK_SAID = {
     stale: function (d) { return (d.count === 1 ? '1 creator is' : d.count + ' creators are') + ' no longer shortlisted. The list has been read again.'; },
     empty: function () { return 'No creators selected.'; },
+    'over-slots': function (d) { return 'Not confirmed. ' + d.booked + ' of ' + d.slots + ' creators are already booked; confirm ' + Math.max(0, d.slots - d.booked) + ' at most.'; },
     denied: function () { return 'Not confirmed. Creator Campaigns at Manage is required.'; },
     'client-scope': function () { return 'Not confirmed. This client is outside your reach.'; },
     'not-found': function () { return 'This campaign is no longer available.'; }

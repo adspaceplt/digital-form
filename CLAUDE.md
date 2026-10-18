@@ -2512,6 +2512,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `get_campaign` sends the client's last confirmation (`campaign.confirmed`:
   person, time, the creators chosen); while the picks match it the bar reads
   Confirmed by {name} on {day} with no Confirm (2026-10-15).
+- A campaign never books more creators than its slots
+  (`2026-10-18-slots-hold-their-bookings.sql`): `confirm_selection_with`
+  and `campaign_confirm_creators` refuse `over-slots` (with `slots` and
+  `booked`) where those booked (`campaign_booked`) and those confirmed now
+  pass the slots, and trigger `campaigns_slots_floor` refuses slots below
+  the bookings (`slots-booked`), whoever writes them.
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
