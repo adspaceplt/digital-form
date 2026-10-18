@@ -5023,6 +5023,24 @@ finding fixed at the user's word ("fix all no matter what").
   created_at desc)` index (the one held covered unread notices alone).
   `tests/ops.js` answers nine windows beside the earlier definition.
 
+- 2026-10-18 · Client pages no longer download the console's stylesheet
+  (second audit, item 19). Every page loaded `css/portal.css` whole, 735 KB
+  (188 KB gzipped), most of it rules only the console meets. The rules no
+  client page can match (a class or id that no client page's markup or
+  scripts ever name, state classes and string prefixes counted as present)
+  moved unchanged, comments with them and in their order, to
+  `css/console.css`, which `admin/` alone loads right after it: client
+  pages now take 535 KB (141 KB gzipped). A rule moved later in the cascade
+  can win where it once lost, so a rule stays in `portal.css` wherever a
+  later rule there of equal specificity sets one of its properties on an
+  element both could match (classes that ever share one class attribute),
+  and the move was proved by computed style: every element's every
+  property on 41 routes (30 console screens, every client page) at 1280
+  light and 390 dark, old sheet against the two, until only the clock's
+  own text differed; nine rules the comparison caught stay in `portal.css`.
+  `tests/cssguard.js` reads both sheets and holds that no client page
+  links the console's; `tests/phone.js` reads both.
+
 - 2026-10-18 · A service line is never below zero. `client_services.rate`
   and `qty` took any number and the Services sheet sent what was typed;
   since #563 `quote_totals` leaves out a one-off part adding up to zero or
