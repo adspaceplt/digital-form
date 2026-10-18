@@ -2955,6 +2955,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     on again makes no date twice.
   - A task deleted stops its repeat (trigger `ops_tasks_stop_repeat`): a rule
     is seen and turned off only from its task.
+  - One rule never stops the others: a make refused or failing is undone
+    alone, kept on the rule (`last_error`, `last_error_at`, cleared by its
+    next task), answered in `errors`, and named in the admins' morning
+    notice (`jobs_watch`); the run goes on to the next rule.
 - Repeats run themselves; nobody presses Run:
   - a client's month confirmed (its meeting set or marked not applicable)
     makes that client's repeats for it at once, as the person confirming
@@ -5322,7 +5326,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Nothing deletes from S3: every uploaded file is kept, Content Review files
   and creator drafts included. `s3-sweep` is a daily report only (pg_cron,
   03:17 MYT, `s3-sweep-daily`): with a list-only key it lists `content/`,
-  asks `s3_keys_in_use()` (service role only) which files a row still names,
+  asks `s3_keys_in_use()` (service role only; each column read once a run,
+  `2026-10-18-s3-keys-read-once.sql`) which files a row still names,
   judges only objects over 7 days old, and files the counts in `s3_sweeps`.
   Its code has no delete request, and `tests/s3sweep.js` holds that. A
   video's `.web.mp4` copy counts as in use while its original is.
