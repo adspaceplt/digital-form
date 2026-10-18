@@ -5594,3 +5594,11 @@ talk's note: it is written for the colleague asked, who reads it in My
 records beside the colleague who asked. Team: Health now lists that a talk
 exists (who asked whom, its state and dates) and nothing it says, and the
 page no longer draws a note there. Live on 2026-10-18 no talk held a note.
+
+### 2026-10-18 · Agree again starts a colleague's health answers afresh for Team: Health
+Team audit, item 2. Withdrawing only stamped `withdrawn_at`, so agreeing
+again showed management the last twelve half months, answers given before the
+withdrawal included. Those were given under an agreement the colleague ended.
+`health_team()` now reads only check-ins saved on or after the agreement now
+standing; the colleague still reads all of their own. Live, no colleague had
+withdrawn, so nothing had been shown again.
