@@ -795,6 +795,7 @@
     m = String(m || '');
     if (/clients_client_code_uidx|duplicate key/i.test(m)) return 'That Client ID is already used by another client.';
     if (/clients_client_code_fmt/i.test(m)) return 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.';
+    if (/active-needs-code/.test(m)) return 'An Active client needs a Client ID.';
     return m;
   }
 
@@ -949,6 +950,9 @@
       msg('crmMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
       $('crmContactWa').focus(); return;
     }
+    /* A Client ID left empty where none was held is not sent: the field
+       never touches what it never held. */
+    if (!patch.client_code && !(state.editing && state.editing.client_code)) delete patch.client_code;
     patch.deal_note = val('crmEnquiry') || null;
     if (!state.editing) patch.stage = 'lead';
 
@@ -2265,8 +2269,50 @@
       askLeave(c, to, function (why) { moveStage(c, to, why); });
       return;
     }
+    /* A Client ID is given when a client turns Active (the user,
+       2026-10-18: a lead may come to no deal): the move asks for it, the
+       next number offered, and both go in one write. */
+    if (to === 'active' && !String(c.client_code || '').trim()) {
+      this.value = was;
+      askCode(c, function (code) { return moveStage(c, to, null, { client_code: code, inSheet: true }); });
+      return;
+    }
     moveStage(c, to, null);
   });
+  /* The next AC number across every client, read from the database (a
+     colleague who sees their own clients alone cannot count the rest);
+     where it cannot answer, the clients this page holds. */
+  function nextClientCode(then) {
+    var local = function () {
+      var n = 0, w = 3;
+      (state.clients || []).forEach(function (x) {
+        var m = /^AC(\d+)$/.exec(x.client_code || '');
+        if (m && Number(m[1]) >= n) { n = Number(m[1]); w = Math.max(3, m[1].length); }
+      });
+      var d = String(n + 1);
+      while (d.length < w) d = '0' + d;
+      return 'AC' + d;
+    };
+    db.rpc('client_code_next').then(function (r) {
+      then(r && !r.error && typeof r.data === 'string' ? r.data : local());
+    }).catch(function () { then(local()); });
+  }
+  function askCode(c, then) {
+    nextClientCode(function (next) {
+      window.ADspaceConfirm.ask({
+        title: 'Move to Active?',
+        body: 'An Active client holds a Client ID.',
+        go: 'Move', wait: true,
+        fields: [{ name: 'code', label: 'Client ID', value: next, required: true }],
+        check: function (v) {
+          var code = codeOf(v.code);
+          if (!CODE_OK.test(code)) return 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.';
+          var taken = (state.clients || []).filter(function (x) { return x.id !== c.id && x.client_code === code; })[0];
+          return taken ? 'That Client ID is already used by another client.' : '';
+        }
+      }, function (v) { return then(codeOf(v.code)); });
+    });
+  }
   function askLeave(c, to, then) {
     var word = stageWord(to)[1];
     var ask = function (n) {
@@ -2284,15 +2330,28 @@
       ask(r && !r.error && typeof r.data === 'number' ? r.data : 0);
     }).catch(function () { ask(0); });
   }
-  function moveStage(c, to, why) {
+  function moveStage(c, to, why, also) {
     var row = { stage: to };
     if (why) { row.stage_reason = why.reason; row.stage_note = why.note; }
-    db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+    if (also && also.client_code) row.client_code = also.client_code;
+    /* `also.inSheet`: the question that asked the Client ID is still open,
+       so a refusal is said there, with what was typed kept, and nothing else
+       moves (a Client ID another client holds, which this colleague's own
+       list may not show). */
+    var inSheet = also && also.inSheet;
+    return db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
       if (r.error) {
-        msg('crmWorkMsg', /stage-reason/.test(r.error.message || '') ? 'Choose a reason to move to ' + stageWord(to)[1] + '.' : r.error.message, 'err');
-        openClient(c); return;
+        var em = r.error.message || '';
+        var said = /stage-reason/.test(em) ? 'Choose a reason to move to ' + stageWord(to)[1] + '.'
+          : /active-needs-code/.test(em) ? 'An Active client needs a Client ID.' : saveWord(em);
+        if (inSheet) return said;
+        msg('crmWorkMsg', said, 'err');
+        openClient(c); return '';
       }
-      if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
+      if (!(r.data || []).length) {
+        if (inSheet) return 'Not saved. The database refused the request.';
+        msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return '';
+      }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
       /* A move on the day the stage began reads "the same day", never "after
@@ -2301,12 +2360,21 @@
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
+      if (row.client_code) {
+        c.client_code = row.client_code;
+        if (mine) mine.client_code = row.client_code;
+        log('client.edited', c.name, 'Client ID: not set → ' + row.client_code);
+      }
       log('client.stage', c.name, stageWord(to)[1] + ' ' + spent +
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
       refreshClient(c, function () { openClient(c); });
-    }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); openClient(c); });
+      return '';
+    }).catch(function () {
+      if (inSheet) return 'Not saved. Please try again.';
+      msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); openClient(c); return '';
+    });
   }
 
   // ---- Billing and notes --------------------------------------------------
