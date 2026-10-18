@@ -5040,3 +5040,89 @@ finding fixed at the user's word ("fix all no matter what").
   own text differed; nine rules the comparison caught stay in `portal.css`.
   `tests/cssguard.js` reads both sheets and holds that no client page
   links the console's; `tests/phone.js` reads both.
+
+- 2026-10-18 · A service line is never below zero. `client_services.rate`
+  and `qty` took any number and the Services sheet sent what was typed;
+  since #563 `quote_totals` leaves out a one-off part adding up to zero or
+  less while the page keeps it, so a letter holding a negative line was
+  refused `stale` on every press of Issue.
+  `2026-10-18-service-lines-never-below-zero.sql` adds both checks (none of
+  the 17 live lines held a negative, checked first; the migration refuses
+  to run while any does), and the sheet refuses one in words. The sheet's
+  message line sits at the foot of its body, below the fold on a phone, so
+  the refusal brings it into view with the field keeping focus.
+
+- 2026-10-18 · A WhatsApp outage spends no try. The drain stopped at a
+  request that never left, so each wake spent one try, but `wa_done` still
+  counted it: an outage longer than three wakes (about ten minutes) failed
+  the oldest waiting message, then the next. Meta's throughput limit
+  (130429) counted a try too, though it sent nothing.
+  `2026-10-18-whatsapp-outage-spends-no-try.sql` gives a `not sent:` try
+  back (the message queued, tries less one), and `wa-send`'s drain files
+  130429 as `not sent:` and stops; only Meta's refusal of the message spends
+  a try. Giving the try back in `wa_done` was chosen over `wa_claim` not
+  counting it: the claim cannot know how the send will end. `tests/sql.js`
+  holds five outage wakes failing nothing; `tests/wafn.js` the drain.
+
+- 2026-10-18 · A left colleague's draft never holds the half (follow-up to
+  #567). A draft review started and never scored, of a colleague who has
+  since left, can never become final (`perf_release` refuses an incomplete
+  month, `perf_close_windows` skips a draft), so the open-month check of
+  #567 held the whole half for good.
+  `2026-10-18-left-colleagues-draft-never-holds-the-half.sql` leaves such a
+  draft out (an inactive colleague earns no share); a released, queried or
+  acknowledged month of theirs still waits, as it closes by itself.
+  `perf_period` names the reviews it waits on (`open_reviews`) and Bonus
+  and trip's chip reads them. The quarter's own check counts the same way
+  and was not asked to change. `tests/perf.js` holds it.
+
+- 2026-10-18 · The PDF library's failure is named for what it is. pdf-lib
+  and fontkit are pinned by their hash (audit J), and a script refused for
+  its hash fires the same `onerror` as one that never arrived, so a file
+  changed at the CDN read "Check the connection and try again." and every
+  retry failed the same way. `js/documents.js` now fetches the file once
+  more and hashes it: one that arrives and does not match reads "The PDF
+  library has changed at its source and was not loaded. Tell an admin.";
+  anything it cannot tell reads as the connection. `tests/pdflibhash.js`
+  serves the page as committed (the suites' server takes hashes off).
+
+- 2026-10-18 · `reopens()` leaves My Work. It answered whether a task's
+  workflow held a Revision stage for `ops_reopen_task`, had no caller since
+  #566, and named a function closed to every browser in #568; nothing in
+  the tree called it (pages, suites, functions). Reopen works through
+  `ops_transition_task` as before.
+
+- 2026-10-18 · `wa-send` inflates a PDF's streams to 20 MB at most. A
+  quotation's or letter's PDF is searched for its reference stream by
+  stream, and the inflated output had no cap, so a crafted 4 MB stream
+  could inflate to gigabytes and end the function. Reading now stops once
+  a file's streams together pass 20 MB (`INFLATE_CAP`, the reader
+  cancelled), and the file reads as not naming its reference
+  (`bad-file`). A drawn quotation inflates to well under a megabyte.
+  `tests/wafn.js` refuses a 30 MB bomb in a fraction of a second and still
+  finds a reference past a 5 MB stream; the old code took the bomb.
+
+- 2026-10-18 · Issue letter says when the services could not be read again.
+  After a `stale` refusal the page reads the services and quotations again
+  and reopens the sheet on the same ticks (#558), but where that read
+  failed, `loadServices` never called back: the refusal was dropped and the
+  button simply came back, so the next press was refused the same way with
+  nothing said. `loadServices` now takes a failure callback (and catches a
+  lost connection), and the sheet reads "The services or their quotation
+  changed since this sheet was opened, and could not be read again: {why}.
+  Close this sheet and open it again." `tests/letter.js` holds it.
+
+- 2026-10-18 · A month that is not every month is named First month. Since
+  #559 a quoted Letter of Offer whose lines run different months printed
+  "Monthly incl. SST" from the first month's figure, which prices every
+  monthly line as if it ran the whole term: term 12, a plan of 1,000 and a
+  200 line edited to one month, -5%, 8% SST printed Monthly incl. SST
+  1,231.20 beside a total of 12,517.20 (twelve such months are 14,774.40).
+  The quotation's PDF, `/quote/` and Build quote showed the same figure
+  under the same name. The user's decision: where a monthly line runs months
+  other than the term, the figure is First month incl. SST (its chain First
+  month subtotal and excl. SST, 首月 in Chinese); every line on the term
+  keeps Monthly. The minimum-term sentence stands. A one-month line on the
+  quotation's PDF also read "1 months"; it reads "1 month". Found by the
+  review of #559; `tests/pdfcases.js` (both PDFs, both cases) and
+  `tests/quotes.js` hold it.

@@ -4043,13 +4043,19 @@
      removed contact or call is (the user's delete audit, 2026-10-07). */
   var showRemovedServices = false;
 
-  function loadServices(after) {
+  /* `failed` hears a read that failed, so a caller waiting on the lines
+     (Issue letter read again after `stale`) says so where it is. */
+  function loadServices(after, failed) {
     var box = $('crmServices');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
+    var fail = function (m) {
+      failLine(box, 'Services', m, loadServices); ovFailed('services', true);
+      if (failed) failed(m);
+    };
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .order('created_at').then(function (r) {
-          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); ovFailed('services', true); return; }
+          if (r.error) { fail(r.error.message); return; }
           ovFailed('services', false);
           var all = r.data || [];
           state.services = all.filter(function (l) { return !l.archived_at; });
@@ -4060,7 +4066,7 @@
           quotedLines();
           loadQuotes();
           if (after) after();
-        });
+        }).catch(function (e) { fail((e && e.message) || 'The connection was lost.'); });
     });
   }
 
@@ -4426,9 +4432,19 @@
     var s = pickById(slug);
     var label = slug === 'custom' ? val('svLabel') : (s ? s.name : '');
     if (!label) { msg('svMsg', 'A name is required.', 'err'); $('svLabel').focus(); return; }
+    /* Never below zero (client_services_rate_check, _qty_check): a negative
+       line made every Letter of Offer holding it refused as changed. */
+    var svQ = Number(val('svQty') || 1), svR = Number(val('svRate') || 0);
+    var svBelow = function (id, text) {
+      msg('svMsg', text, 'err');
+      $(id).focus({ preventScroll: true });
+      $('svMsg').scrollIntoView({ block: 'nearest' });
+    };
+    if (!isFinite(svQ) || svQ < 0) { svBelow('svQty', 'The quantity cannot be below zero.'); return; }
+    if (!isFinite(svR) || svR < 0) { svBelow('svRate', 'The rate cannot be below zero.'); return; }
     var row = {
       service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
-      qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
+      qty: svQ, rate: svR,
       tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
       note: val('svNote') || null,
       detail: val('svDetail') || null,
@@ -4453,7 +4469,10 @@
   /* A line moved into Confirmed by hand is refused by the database
      (client_services_confirm_guard): said in the team's words. */
   function svSaid(e) {
-    return /confirm-needs-letter/.test((e && e.message) || '') ? 'A service is confirmed when its signed letter is verified.' : ((e && e.message) || 'Not saved.');
+    var m = (e && e.message) || '';
+    if (/client_services_rate_check/.test(m)) return 'The rate cannot be below zero.';
+    if (/client_services_qty_check/.test(m)) return 'The quantity cannot be below zero.';
+    return /confirm-needs-letter/.test(m) ? 'A service is confirmed when its signed letter is verified.' : (m || 'Not saved.');
   }
   /* `act` names a removal or a restore, so each is filed as itself (a
      restore had read Service changed). */
@@ -4990,6 +5009,12 @@
         msg('pickMsg', said, 'warn');
       };
       if (window.ADspaceQuotes && mayPart('clients.services', 'view')) loadQuotes(reopen, true); else reopen();
+    }, function (m) {
+      /* The lines could not be read again: the refusal stands, said with
+         why, and the next press would be refused the same way. */
+      if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
+      msg('pickMsg', 'The services or their quotation changed since this sheet was opened, and could not be read again: ' +
+        String(m).replace(/\.$/, '') + '. Close this sheet and open it again.', 'err');
     });
   }
 

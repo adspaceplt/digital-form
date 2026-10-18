@@ -180,10 +180,26 @@ function pdfFrom(b64: string): Uint8Array | null {
    data may itself end in a line-feed byte (cutting every trailing break
    refused one valid file in about thirty, 2026-10-18). */
 const hexOf = (s: string) => Array.from(s).map((c) => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase();
-async function inflate(b: Uint8Array): Promise<string> {
+/* What one file's streams may inflate to, together (2026-10-18): a crafted
+   stream of 4 MB inflates to gigabytes and ends the function, so reading
+   stops at the cap and the file reads as not naming its reference. */
+const INFLATE_CAP = 20 * 1024 * 1024;
+async function inflate(b: Uint8Array, room: number): Promise<string | null> {
   try {
-    const out = new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate')));
-    return new TextDecoder('latin1').decode(new Uint8Array(await out.arrayBuffer()));
+    const reader = new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
+    const parts: Uint8Array[] = [];
+    let n = 0;
+    for (;;) {
+      const got = await reader.read();
+      if (got.done) break;
+      n += got.value.length;
+      if (n > room) { await reader.cancel().catch(() => {}); return null; }
+      parts.push(got.value);
+    }
+    const all = new Uint8Array(n);
+    let at = 0;
+    for (const x of parts) { all.set(x, at); at += x.length; }
+    return new TextDecoder('latin1').decode(all);
   } catch { return ''; }
 }
 async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
@@ -193,7 +209,7 @@ async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
   const hit = (t: string) => t.indexOf(lit) >= 0 || t.toUpperCase().replace(/\s+/g, '').indexOf(hex) >= 0;
   if (hit(raw)) return true;
   const re = /stream\r?\n/g;
-  let m: RegExpExecArray | null, seen = 0;
+  let m: RegExpExecArray | null, seen = 0, room = INFLATE_CAP;
   while ((m = re.exec(raw)) && seen < 400) {
     seen++;
     const start = m.index + m[0].length, end = raw.indexOf('endstream', start);
@@ -203,7 +219,9 @@ async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
       : b[end - 1] === 0x0d ? [end - 1] : [end];
     for (const stop of cuts) {
       if (stop <= start) continue;
-      const text = await inflate(b.subarray(start, stop));
+      const text = await inflate(b.subarray(start, stop), room);
+      if (text === null) return false;
+      room -= text.length;
       if (hit(text)) return true;
       if (text) break;
     }
@@ -349,7 +367,8 @@ Deno.serve(async (req) => {
        stops the drain: the row goes back to the queue as its oldest, and
        claiming again at once spent its three tries in a moment, so a short
        outage failed every message waiting (2026-10-18). The next wake, five
-       minutes on, tries again. */
+       minutes on, tries again, and such a try is not counted, so an outage
+       of any length fails nothing. */
     let sent = 0, failed = 0, held = false;
     const started = Date.now();
     for (let n = 0; n < 40 && !held && Date.now() - started < DRAIN_BUDGET_MS; n++) {
@@ -358,6 +377,10 @@ Deno.serve(async (req) => {
       if (got.error || !rows.length) break;
       for (const r of rows) {
         const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[], undefined, r.button || undefined);
+        /* Meta's throughput limit (130429) sent nothing either: it is filed
+           as not sent, which wa_done neither counts as a try nor fails, and
+           the drain stops until the next wake (2026-10-18). */
+        if (!out.ok && !out.unknown && /\b130429\b/.test(out.error || '')) out.error = ('not sent: ' + out.error).slice(0, 480);
         await svc.rpc('wa_done', { p_id: r.id, p_ok: out.ok, p_wa_id: out.id || null, p_error: out.error || null });
         if (out.ok) sent++; else { failed++; console.error(out.unknown ? 'wa-send: not confirmed' : 'wa-send: refused', r.purpose, out.error); }
         if (!out.ok && /^not sent:/.test(out.error || '')) held = true;

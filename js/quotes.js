@@ -66,9 +66,15 @@
     return ['Valid until ' + window.ADspaceClock.date(q.valid_until).replace(/ \d{4}$/, ''), 'is-live'];
   }
   function monthly(q) { var m = q.totals && q.totals.month; return m ? m.incl : null; }
+  /* A monthly line running months of its own makes the month's figures the
+     first month's, named so (the user, 2026-10-18), as the Letter of Offer
+     and the quotation's PDF name them. */
+  function ownMonths(lines, t) {
+    return (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number((t || {}).term); });
+  }
   function headline(q) {
     var m = monthly(q);
-    if (m != null) return [curOf(q) + ' ' + rm(m), 'Monthly incl. SST'];
+    if (m != null) return [curOf(q) + ' ' + rm(m), ownMonths(q.lines, q.totals) ? 'First month incl. SST' : 'Monthly incl. SST'];
     var o = q.totals && q.totals.once;
     return o ? [curOf(q) + ' ' + rm(o.incl), 'One-off incl. SST'] : ['—', ''];
   }
@@ -504,7 +510,7 @@
      while the lines and totals sit at the sheet's end (2026-10-15). */
   function sumOf(d) {
     var t = (d && d.totals) || {}, out = [];
-    if (t.month) out.push(CUR + ' ' + acct(t.month.incl) + ' monthly');
+    if (t.month) out.push(CUR + ' ' + acct(t.month.incl) + (ownMonths(d && d.lines, t) ? ' first month' : ' monthly'));
     if (t.once) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
     return out.length ? out.join(' · ') + ' incl. SST' : '';
   }
@@ -529,11 +535,11 @@
             '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
-    var tot = [];
+    var tot = [], mo = ownMonths(rows, t) ? 'First month' : 'Monthly';
     if (t.month) {
-      tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
+      tot.push([mo + ' subtotal', acct(t.month.subtotal)]);
       if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
-      tot.push(['Monthly excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], ['Monthly incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
+      tot.push([mo + ' excl. SST', acct(t.month.excl)], ['SST ' + t.sst_pct + '%', acct(t.month.sst)], [mo + ' incl. SST', CUR + ' ' + acct(t.month.incl), 1]);
     }
     if (t.once) tot.push(['One-off subtotal', acct(t.once.subtotal)], ['SST ' + t.sst_pct + '%', acct(t.once.sst)], ['One-off incl. SST', CUR + ' ' + acct(t.once.incl), 1]);
     out += '<dl class="qb-tot">' + tot.map(function (x) {

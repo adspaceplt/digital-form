@@ -197,7 +197,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
-| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql |
+| `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql, pdflibhash |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly, lettersql |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
@@ -1783,7 +1783,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Enabling opens a sheet with **Send invitation email unticked**.
   - Send invitation stays in the ⋯. Undo emails nobody.
 - Services:
-  - Quantity × rate × months from a start date.
+  - Quantity × rate × months from a start date; neither below zero
+    (`client_services_rate_check`, `client_services_qty_check`; the sheet
+    refuses it in words, the field taking focus).
   - Enquired / To quote / Confirmed. Confirmed comes from a verified signed
     letter (`verify_letter`) or the admin's reasoned override alone: the
     sheet never offers it (a confirmed line reads its state), and trigger
@@ -1921,7 +1923,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   only when Safari refuses a stale press (`tests/savename.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
-  loads them in its head (1.1 MB, about 600 ms of a phone's load).
+  loads them in its head (1.1 MB, about 600 ms of a phone's load). A
+  refusal names what failed: a file that arrives and fails its hash has
+  changed at its source (Tell an admin), anything else is the connection
+  (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
@@ -1948,9 +1953,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     head and never "including SST" after a figure. Lines on two terms of
     more than a month: Total incl. SST; a quoted letter so keeps its
     quotation's term (2026-10-18): the row `12-month commitment (5%)`,
-    Monthly incl. SST under the total as the quotation gives it, TERMS's
+    First month incl. SST under the total as the quotation gives it, TERMS's
     minimum term with the total over the months stated for each line, and
-    the acceptance's Monthly incl. SST, Minimum term and Total for the term.
+    the acceptance's First month incl. SST, Minimum term and Total for the
+    term. Wherever a monthly line runs months other than the term, the
+    month's figures are the first month's, named First month (subtotal,
+    excl. SST, incl. SST; 首月 on `/quote/`), on the letter, the quotation's
+    PDF, `/quote/` and Build quote alike; Monthly where every line runs the
+    term (the user, 2026-10-18).
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate
@@ -3584,7 +3594,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
     named by its first quarter; any date reads as its half. Like a quarter,
     its Confirm is drawn and accepted only once every review in its six
-    months is final (`months-open`, `scope` period; `open_months`). Revenue and profit are
+    months is final (`months-open`, `scope` period; `open_months`), a
+    draft of a colleague who has left aside (it can never be released);
+    the chip names the reviews it waits on (`open_reviews`). Revenue and profit are
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.
@@ -4549,7 +4561,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines the client's To quote lines (`quotation_id`, its term and
   percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
   ADSPACE PLT at the head's right, the facts, Description · Qty · Rate (RM)
-  · Subtotal (RM), totals ending at Monthly incl. SST, Remarks / Terms at
+  · Subtotal (RM), totals ending at Monthly (or First month) incl. SST, Remarks / Terms at
   8pt (validity, SST, budget billed separately, confirmation then the
   Letter of Offer, the whole term's commitment), the rate card line over
   PRIVATE & CONFIDENTIAL; named `ADspace Quotation {ref}.pdf`.
@@ -5116,7 +5128,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `wa-send` reads itself as the caller through `sign-download`, never the
   page's bytes, a quotation's or letter's refused unless it is a PDF whose
   title names the record's own reference (each stream inflated with only
-  its one closing line break cut; `bad-file`; audit S3, 2026-10-15;
+  its one closing line break cut, the file's streams inflating to 20 MB
+  at most, past which it reads as not naming it; `bad-file`; audit S3,
+  2026-10-15;
   the letter's PDF titled `Letter of Offer {number}`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
@@ -5200,7 +5214,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   connection, a timeout, Meta's 5xx, a row cut off at Sending) is Not
   confirmed (`unknown`, filed `unknown:`), never sent again by itself, and
   counts as Sent recently (2026-10-17); a request that never left (DNS,
-  connect, TLS) is filed `not sent:` and queued again, and ends that drain
+  connect, TLS) is filed `not sent:` and queued again with its try given back
+  (`2026-10-18-whatsapp-outage-spends-no-try.sql`; Meta's throughput limit
+  130429 filed the same way), and ends that drain
   (claimed again at once, a short outage spent all three tries). The queue is
   claimed one row at a time (`wa_claim` gives one, five at most) and no
   send starts after 90 seconds, so a claimed row is never left at Sending. The queue and its tables are
