@@ -249,5 +249,20 @@
     setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
   }
 
-  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, still: still, attach: attach, pass: pass, renew: renew, ready: ready };
+  /* Signing out takes the pass with it (second audit, item 7): the three
+     cookies on the root, on content/ and on every folder a pass was set on,
+     and the marks of when it ends and whom it was for. Left behind, they
+     kept the folders open in this browser for up to twelve hours after the
+     person had gone. A creator's page (`{ client: true }`) leaves a
+     colleague's live pass alone, as it never takes one away. */
+  function forget(o) {
+    if (o && o.client && teamPassLive()) return;
+    CF.forEach(function (n) { put(n, '', 0); put(n, '', 0, '/content/'); });
+    known().forEach(function (path) { if (FOLDER.test(path)) drop(path); });
+    remember([]);
+    put(UNTIL, '', 0);
+    put(FOR, '', 0);
+    proof = null;
+  }
+  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, still: still, attach: attach, pass: pass, renew: renew, ready: ready, forget: forget };
 })();

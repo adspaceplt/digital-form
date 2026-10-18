@@ -1395,7 +1395,11 @@
        client page: the bell, then sign out, then 中文 (the user, 2026-09-28). */
     chromeActions.insertBefore(forgetBtn, $('langToggle') || null);
   }
-  $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
+  $('signOutBtn').addEventListener('click', function () {
+    // The creator's media pass goes with the device's code (second audit, item 7).
+    if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget({ client: true });
+    forget(); askCode();
+  });
   $('linksEdit').addEventListener('click', openLinks);
   $('linksSave').addEventListener('click', saveLinks);
   $('linksCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
