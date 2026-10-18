@@ -90,6 +90,7 @@
     'wa-busy': 'WhatsApp is busy. Try again in a minute.',
     'wa-failed': 'Not sent. Try again.',
     'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
+    sending: 'This message is being sent now. Check the messages list before sending it again.',
     'bad-file': 'The PDF could not be attached.',
     'needs-update': 'This needs a database update.'
   };
