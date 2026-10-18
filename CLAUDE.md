@@ -673,7 +673,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
     applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`)
     unless `sst_applies` is false.
-  - Two decimals on every total.
+  - Two decimals on every total, each charged figure (`rateFor`, `taxOf`)
+    rounded by `cents()`, a half away from nought as Postgres rounds, the
+    float nudged first (1,234.50 × 0.95 is 1,172.7749… in a float).
   - `TERMS` holds the older factor table (used when `term_pct` is null).
   - `ADspaceMoney.load()` reads the business figures once a page
     (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
