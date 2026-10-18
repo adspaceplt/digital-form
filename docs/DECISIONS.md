@@ -5022,3 +5022,14 @@ finding fixed at the user's word ("fix all no matter what").
   same figures), and adds the bell's `ops_notifications (team_member_id,
   created_at desc)` index (the one held covered unread notices alone).
   `tests/ops.js` answers nine windows beside the earlier definition.
+
+- 2026-10-18 · A service line is never below zero. `client_services.rate`
+  and `qty` took any number and the Services sheet sent what was typed;
+  since #563 `quote_totals` leaves out a one-off part adding up to zero or
+  less while the page keeps it, so a letter holding a negative line was
+  refused `stale` on every press of Issue.
+  `2026-10-18-service-lines-never-below-zero.sql` adds both checks (none of
+  the 17 live lines held a negative, checked first; the migration refuses
+  to run while any does), and the sheet refuses one in words. The sheet's
+  message line sits at the foot of its body, below the fold on a phone, so
+  the refusal brings it into view with the field keeping focus.
