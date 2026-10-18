@@ -27,6 +27,8 @@
   overflow: hidden; background: var(--line-soft);
 }
 .draft-media img + img, .draft-media video + video, .draft-media img + video { display: none; }
+/* After its base: the phone's preview runs the card's width. */
+@media (max-width: 640px) { .draft-media { flex: 0 0 auto; width: 100%; height: 180px; } }
 .draft-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .draft-top .muted { flex: 1 1 auto; }
 .saved-pair:last-child { margin-bottom: 0; }
@@ -340,7 +342,6 @@ button.appver {
 .kcard .kread-link { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kstep-ended { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .kstep-titlerow .kstep-title { margin-bottom: 0; }
-.kplan { margin-bottom: 12px; }
 @media (max-width: 520px) {.kfields { grid-template-columns: 1fr 1fr; }
   }
 
@@ -684,6 +685,8 @@ button.appver {
    (move up, remove) at its right edge on the field's first line. */
 .rcw-rows { display: flex; flex-direction: column; gap: 8px; }
 .rcw-pt { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.rcw-pt:has(> .rcw-no:not(.rcw-rowno)) { grid-template-columns: 24px minmax(0, 1fr) auto; }
+.rcw-pt.is-one { grid-template-columns: minmax(0, 1fr); }
 .rcw-rowno { display: none; }
 .rcw-no { padding-top: calc((var(--ctl-h) - 1.55em) / 2); text-align: right; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .rcw-acts { display: flex; gap: 2px; }
@@ -699,6 +702,14 @@ button.appver {
   .rcw-pt > .rcw-acts { grid-area: acts; justify-self: end; }
   .rcw-pt > textarea, .rcw-pt > .rcw-cols { grid-area: field; }
 }
+@media (max-width: 560px) {
+  .rcw-pt.is-cols { padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
+  /* On a phone a point's number and its acts share its first line, and the
+     field takes the whole width under them. */
+  .rcw-pt, .rcw-pt:has(> .rcw-no:not(.rcw-rowno)) { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "no acts" "field field"; row-gap: 4px; }
+  .rcw-pt.is-one { grid-template-areas: "field"; grid-template-columns: minmax(0, 1fr); }
+  .rcw-pt > .rcw-no { grid-area: no; padding-top: 0; align-self: center; text-align: left; }
+  }
 /* A creator is a person with a fee, on the same row shape as everything else. */
 /* Creator · Profiles · Campaigns · Fee · ⋯ — a table with columns, because a
    list whose every value is stacked against the left margin has to be read
@@ -849,7 +860,6 @@ button.appver {
 .crm-head.client-row.is-picking > :first-child { padding-left: 74px; }
 @media (max-width: 760px) {.crm-row.client-row .crm-c-meta { padding-left: 38px; }
   .crm-row.client-row.is-picking .crm-c-meta { padding-left: 66px; }
-  .cl-pick { margin-top: 5px; }
   /* Restated, because the two-line rule above is later in the file than the
      phone rule that hides the cell: the date rides the meta line here. */
   .crm-c-seen { display: none; }
