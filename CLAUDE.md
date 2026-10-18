@@ -2728,7 +2728,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   leads, the pipeline and restricted accounts; one of the bookings serves
   the chart, those past their date and the quality check), read again on
   every visit and on a period change (a page turn reads nothing again),
-  never polled. The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
+  never polled. Where a set's posts stand is one `review_set_counts(p_sets)`
+  (invoker; posts, approved, changes, undecided, the oldest change), here
+  and in Waiting for you alike, never a read of every post and decision.
+  The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
   source alone; a tile reads Could not load with Try again; a signal Could
   not load), never nothing.
 - Committed monthly value is its one money figure (the user, 2026-10-12):
