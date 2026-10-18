@@ -4971,7 +4971,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### Team (`js/team.js`)
 - Members sit under their group. Your own row shows the neutral `You` chip.
-- A member row reads the name with the Employee ID beside it (`.team-eid`,
+- A member row reads the initials, the name with the Employee ID beside it (`.team-eid`,
   mute; still searched), then department and position (and Until), then the
   email; the state column names only the exception: Inactive, Access
   expired, Removed, or Card off for somebody still working. Inactive,
@@ -4981,18 +4981,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   seconds; a refusal or a warning stays until the next act.
 - A colleague is a record of their own (`member=`, `mtab=`; the user,
   2026-10-18: "build it similar as client individual section"): the
-  list's name opens it in place of the list and the Team strip, Back
-  returns; the head is the mark, the name, Employee ID, group and post,
-  the state and the row's own ⋯ (`memberMenu`, `wireActs`: one list of
-  acts for both); panes Overview (Sign-in and access, Employment,
-  Namecard, read first, Edit at Team Full Access), Work (what
-  `team_work_held` and the person in charge name, Hand over; Team Full
-  Access), Documents (their HR letters at HR Letters View; Issue document
-  and Add entry open on them), Performance (Open reviews: the months
-  searched for their name, behind its own lock) and Health (their
-  check-ins and talks from `health_team`, `team.health`), each drawn only
-  where readable (`tests/teamrec.js`).
-- Set inactive / Set active sits in the ⋯ (never on your own row). Send
+  list is the Clients list's shape (the user, the same day: "it should be
+  the same as client"), a row one button (the initials' disc, the name,
+  the email, the exception, the chevron), no ⋯ on the list; it opens in
+  place of the list and the Team strip, Back returns; the head is the
+  mark, the name, Employee ID, group and post, the state and the one ⋯
+  of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
+  (Sign-in and access, Employment, Namecard, read first, Edit at Team
+  Full Access), Work (each open task they own, each client they are
+  person in charge of, each open campaign they run, a row a record opening
+  it as search does, an overdue task's date in red; the other kinds
+  `team_work_held` counts on one line; Hand over at Team Full Access;
+  the user: "the tasks just shown its total number"), Documents (their
+  HR letters at HR Letters View; Issue document and Add entry open on
+  them), Performance (Open reviews: the months searched for their name,
+  behind its own lock) and Health (their check-ins and talks from
+  `health_team`, `team.health`), each drawn only where readable
+  (`tests/teamrec.js`).
+- Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
   group's ⋯ are Team Full Access (`team_admin`); Send invitation is

@@ -5373,7 +5373,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   .crm-head.link-row { display: none; }
 }
 
-.team-head.team-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px var(--ctl-h); }
+.team-head.team-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px 18px; }
 .team-state { min-width: 0; }
 
 @media (max-width: 640px) {
