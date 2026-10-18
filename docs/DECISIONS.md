@@ -4950,6 +4950,21 @@ finding fixed at the user's word ("fix all no matter what").
   after 90 (5,532 runs kept since 27 Sept on 2026-10-18), leaving a
   colleague's notice, whose copies Notices count. `tests/sql.js` holds it.
 
+- 2026-10-18 · A creator selection link closes with its client and can be
+  reset (second audit, item 5). `get_campaign` read a campaign by its key
+  whatever became of the client, and the key, written once as the campaign
+  was made, had no reset; `docs/OFFBOARDING.md` said it closed with the
+  selection, which it never did. Closing at the selection (or at
+  Completed) would cut the client off from the drafts and results the
+  link exists for, so the line is the client: once Past, `get_campaign`
+  answers `not-found` as for an unknown key, and `sign-download` and
+  `media-pass`, which ask it first, close with it.
+  `2026-10-18-selection-link-closes.sql` restates `get_campaign` whole with
+  that check and adds `campaign_reset_link(p_campaign)` (Creator Campaigns:
+  Campaigns at Work, client scope), a key from `new_link_key()` (the moved
+  key retired by `link_key_changed`), drawn as Reset access link in the
+  campaign's ⋯. `tests/confirmonce.js` and `tests/camp.js` hold both.
+
 - 2026-10-18 · One repeating task never stops the others (second audit,
   item 15). `ops_generate_recurring` returned at the first refusal, and a
   raised error ended the call, so one rule that could no longer make its
