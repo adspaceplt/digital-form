@@ -4773,3 +4773,20 @@ finding fixed at the user's word ("fix all no matter what").
   `pending` ten minutes after its claim (no run lasts three); one in flight
   still holds the report, and the colleague's daily total still counts it.
   `tests/sql.js` holds both.
+
+- 2026-10-18 · A quotation's totals are worked in one place (review of #538
+  to #550, item 8). The same totals were restated in `quote_price`,
+  `quote_adjust` and `issue_letter`'s quotation branch, and #544 had to
+  find and change two of them for one rule.
+  `2026-10-18-quote-totals-in-one-place.sql` adds `quote_totals(p_lines,
+  p_term, p_pct, p_sst)`, a helper closed to every role: the monthly
+  lines' subtotal, the term's percentage once on it, the month's SST
+  rounded once, the one-off lines and their SST apart, and the commitment
+  by the month where every monthly line runs the term, else on the whole
+  span with the percentage and SST taken once. All three functions call
+  it. No figure moves: `tests/sql.js` prices eighteen quotations (plans,
+  edited rates, quantities and months, one-off items, a one-off-only
+  quotation, a Singapore client, an exempt client, every term) before and
+  after the migration and compares them whole, and `tests/lettersql.js`
+  issues every quoted letter case again on the new `issue_letter`, at the
+  figures it was issued at before.

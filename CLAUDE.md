@@ -4441,7 +4441,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Quotations (`js/quotes.js`, `js/quotepdf.js`,
   `2026-10-14-quotations.sql`; the user, 2026-10-13: a quotation sent is
   honoured, and a client may hold several): one calculation,
-  `quote_price(snapshot, selection)`, prices every quotation from the live
+  `quote_price(snapshot, selection)`, its totals worked by
+  `quote_totals(lines, term, pct, sst)`, which `quote_adjust` and
+  `issue_letter`'s quotation branch call too, never a copy of their own
+  (2026-10-18), prices every quotation from the live
   version (`quote_card`), never the draft and never the page, on 3, 6,
   12, 18 or 24 months (`bad-term`; 1 for one-off items alone; the user,
   2026-10-14; the pages' one list `ADspaceMoney.QUOTE_TERMS`, held equal to
