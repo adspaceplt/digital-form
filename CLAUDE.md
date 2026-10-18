@@ -5081,7 +5081,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
   group's ⋯ are Team Full Access (`team_admin`); Send invitation is
   `team.invite` (`invite-member`). A row with nothing it may press draws no ⋯.
-- Changing a member's email asks first.
+- Changing a member's email asks first, and is an admin's alone: the page
+  offers it to an admin, and trigger `team_email_guard` refuses anybody else
+  (`admin-only`; deleting a colleague's details empties it as before;
+  `2026-10-18-sign-in-email-through-an-admin.sql`).
 - A member row carries:
   - Employee ID (`staff_code`, `^[A-Z0-9]{3,8}$`);
   - department (a segment);
