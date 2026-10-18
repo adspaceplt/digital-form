@@ -4676,3 +4676,19 @@ finding fixed at the user's word ("fix all no matter what").
   minute wake tries again. A send that may have reached Meta (`unknown:`)
   is unchanged. `tests/wafn.js` holds both, `tests/sql.js` the row left
   queued after one try.
+
+- 2026-10-18 · Three internal helpers closed again. INTERNAL HELPERS STAY
+  INTERNAL (2026-09-27) revoked nineteen helpers that only other functions
+  call. Three were later restated with the `grant ... to authenticated` of
+  their first definition, which opened them to every signed-in account
+  (client contacts included) again: `ops_owner_may_move` by ADMIN PARTS
+  (2026-10-07), `option_qc_count` by RELEASED FILES (2026-10-10) and
+  `ops_due_decider` by COLLEAGUE LEAVING (2026-10-15). The audit of
+  2026-10-16 had left the first two as they were; a live read of all
+  nineteen found the third. No page, policy, view, default, constraint or
+  invoker function calls them (checked live); every caller is security
+  definer. `2026-10-18-internal-helpers-closed-again.sql` revokes the three,
+  and `tests/sql.js` now reads every helper's last word in `schema.sql`: a
+  grant after the last revoke fails the suite, which it would have done on
+  each of the three restatements. The earlier check only applied the
+  revoke file and so could never see a later grant.
