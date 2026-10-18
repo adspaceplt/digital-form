@@ -610,6 +610,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - My Work's Completed list on Last month also lists work finished this
   month: the read starts at last month and nothing ends it (`periodEnd()`
   was never called and was removed as dead code, 2026-10-18).
+- Team's member name (`button.team-who.team-open`, the colleague record of
+  2026-10-18) is 22px tall under a finger (40px on your own row), under the
+  44px floor: `matrix` `MATRIX=duo` on Team and My namecard at 466, 626
+  and 890, and `uxaudit` at 890×626 (found by the iPhone Duo pass).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined

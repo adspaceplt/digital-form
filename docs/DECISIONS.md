@@ -5486,3 +5486,13 @@ Register's Issue document and Add entry take `member` as they took
   under the 44px floor (`matrix` `MATRIX=duo`: four fails, the card, its
   back and My namecard in both themes). Under a coarse pointer the
   landscape pair is 44px; a desk keeps 40.
+
+- 2026-10-18 · The client's Creator Selection at 626 wide (the iPhone Duo
+  pass, finding 4). The creators list had two narrow layouts: four tracks
+  at 640 and under, and the phone's own (the placements under the name,
+  no header) at 560 and under. Between the two the header stayed and the
+  placements had no grid area, so the header broke into three stacked
+  lines and an implicit track moved the fee and Backup right on the row
+  that held one placement (445 against 376). 640 is the phone line, so the
+  phone's layout now starts there and the in-between layout is gone; 560
+  and under, and every width over 640, measure as before.
