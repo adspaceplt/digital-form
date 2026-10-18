@@ -5376,6 +5376,17 @@ finding fixed at the user's word ("fix all no matter what").
   reached clients on `/quote/` and the client portal; it reads "Please
   contact ADspace." (DESIGN §6).
 
+- **2026-10-18 · A supplier linked to its client.** Some suppliers are also
+  clients; the user asked that the two IDs stay apart ("u can leave the
+  supplier and client id separate"), so the link is a column on the
+  supplier, set by hand, and each record opens the other. The BRN is the
+  one fact both hold, so a client whose registration number, digits alone,
+  equals the supplier's is named Same BRN and chosen in the question; it is
+  never linked by itself, and the client's BRN, a billing column withheld
+  from Clients View, is compared inside the function and never sent. The
+  question first read Client over a field labelled Client; it reads Linked
+  client.
+
 - 2026-10-18 · A wrong access code locks out the caller, not the client
   (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
   and checked the lock before the code, so anyone holding a link could

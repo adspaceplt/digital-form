@@ -1093,6 +1093,7 @@
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
+    paintSuppliers(c, !same || restoring);
 
     /* The journey is the Timeline's, stated once: it was a mute line here as
        well, so a record printed "Lead 10 days · Active today" under Details
@@ -1719,6 +1720,38 @@
       }, $('crmRestrict'));
     });
   });
+  /* The supplier this client also is (2026-10-18), a line under Details
+     opening its record; read once a record is opened, at Suppliers View. */
+  var sups = { id: null, rows: [] };
+  function paintSuppliers(c, fresh) {
+    var box = $('crmFacts');
+    var draw = function () {
+      if (sups.id !== c.id || !sups.rows.length || !box) return;
+      var old = box.querySelector('.crm-sup');
+      if (old) old.parentNode.removeChild(old);
+      var row = document.createElement('div');
+      row.className = 'crm-sup';
+      row.innerHTML = '<dt>Supplier</dt><dd>' + sups.rows.map(function (x) {
+        return '<button class="linkbtn" type="button" data-sup="' + esc(x.id) + '">' + esc(x.name ? x.code + ' · ' + x.name : x.code) + CHEV + '</button>';
+      }).join(' ') + '</dd>';
+      box.appendChild(row);
+      Array.prototype.forEach.call(row.querySelectorAll('[data-sup]'), function (b) {
+        b.addEventListener('click', function () {
+          history.pushState(null, '', '?s=suppliers&supplier=' + encodeURIComponent(b.getAttribute('data-sup')));
+          if (bridge.show) bridge.show('suppliers');
+        });
+      });
+    };
+    if (!mayPart('suppliers', 'view')) return;
+    if (!fresh && sups.id === c.id) { draw(); return; }
+    sups = { id: c.id, rows: [] };
+    db.rpc('client_suppliers', { p_client: c.id }).then(function (r) {
+      var d = r && r.data;
+      if (sups.id !== c.id || !d || !d.ok) return;
+      sups.rows = d.rows || [];
+      draw();
+    });
+  }
   function paintRail(c) {
     railNext(c);
     railDone(c);
