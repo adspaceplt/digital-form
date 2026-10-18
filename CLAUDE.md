@@ -1090,6 +1090,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   alone); one `absUrl` answers nothing for is refused where it was typed
   (Enter a web address.), never saved as none. A value
   drawn as HTML is escaped where it is put in, never where it is joined.
+- What a client page or a creator writes through a function is held to a
+  length: a name 80, a note 2,000, a caption 5,000, refused `too-long`
+  before anything is written (`submit_review` `too_long`; `review_draft`,
+  `confirm_selection`, `confirm_selection_with`, `creator_submit`,
+  `portal_request_once`; `2026-10-18-what-a-client-types-is-held-to-a-length.sql`).
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
   policy-refusable update takes `.select('id')`, and an empty answer is named
