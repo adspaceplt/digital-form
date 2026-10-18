@@ -3660,7 +3660,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   self-rating and reflection (the review list only); `remind_before_days`
   (3) before the month ends, its reflection; the same before each half
   month ends, the health check-in, only to a colleague whose agreement
-  stands. Both days are Performance settings (Reminders, 0 to 14, 0 sends
+  stands, the days held to the half's own (a February's second half is
+  reminded on its first day at the latest;
+  `2026-10-18-half-month-reminder-always-comes.sql`). Both days are Performance settings (Reminders, 0 to 14, 0 sends
   none). The bell and a push open the view (`perf.remind`, `perf.reflect`,
   `health.remind`, tag `my-hr`); never a score or a note.
 - An admin deletes a member's month in any state (`perf_delete`: the
