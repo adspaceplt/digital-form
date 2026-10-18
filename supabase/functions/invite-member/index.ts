@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
   const { data: caller } = await admin.from('team_members')
-    .select('role, is_admin, active').ilike('email', exactEmail(user.email)).maybeSingle();
+    .select('id, role, is_admin, active').ilike('email', exactEmail(user.email)).maybeSingle();
   if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
   // 3. What they want. kind "client" invites a client contact to /client/
@@ -106,6 +106,21 @@ Deno.serve(async (req) => {
       .select('id').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
   }
+
+  // A team login is made only for an address an active colleague holds, so
+  // the function never mints a login for somebody who is not on the team
+  // (Team audit, item 8).
+  if (kind === 'team') {
+    const { data: member } = await admin.from('team_members')
+      .select('id').ilike('email', exactEmail(email)).eq('active', true).limit(1).maybeSingle();
+    if (!member) return json({ error: 'not_team_member' }, 403, origin);
+  }
+  // Twenty invitations a day each, counted by the database before a login is
+  // made; a database that cannot count makes none.
+  const { data: claim, error: claimErr } = await admin.rpc('team_invite_claim',
+    { p_caller: caller.id, p_email: email, p_kind: kind });
+  if (claimErr) return json({ error: 'invite_failed', detail: 'This needs a database update.' }, 500, origin);
+  if (claim && claim.error) return json({ error: claim.error === 'too-many' ? 'too_many' : claim.error }, 429, origin);
 
   // 4. Make the login. Invited, Supabase sends the magic link and the person
   //    clicks it straight into the page, already signed in: there is no form

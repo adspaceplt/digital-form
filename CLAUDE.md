@@ -5080,7 +5080,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
   group's ⋯ are Team Full Access (`team_admin`); Send invitation is
-  `team.invite` (`invite-member`). A row with nothing it may press draws no ⋯.
+  `team.invite` (`invite-member`), which makes a team login only for an
+  address an active colleague holds (`not_team_member`) and claims every
+  invitation first, twenty a caller in 24 hours (`team_invite_claim`,
+  `team_invites`, the service role's; `too_many`;
+  `2026-10-18-invitation-goes-to-a-colleague.sql`). A row with nothing it may press draws no ⋯.
 - Changing a member's email asks first, and is an admin's alone: the page
   offers it to an admin, and trigger `team_email_guard` refuses anybody else
   (`admin-only`; deleting a colleague's details empties it as before;
