@@ -5586,3 +5586,11 @@ carrying no Employee ID (a candidate's offer, an NDA) is left as it is.
 Work now opens on counts and ten rows, one line a row, with Show all. Overview
 lost its Edit button: each value is changed where it is read, saved alone
 through the same write and the same refusals as the sheet.
+
+### 2026-10-18 · A health talk's note stays between the two colleagues in it
+Team audit, item 1. `health_team()` sent every talk's note, with both names,
+to whoever read Team: Health. The user decided that management never reads a
+talk's note: it is written for the colleague asked, who reads it in My
+records beside the colleague who asked. Team: Health now lists that a talk
+exists (who asked whom, its state and dates) and nothing it says, and the
+page no longer draws a note there. Live on 2026-10-18 no talk held a note.
