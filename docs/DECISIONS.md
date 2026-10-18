@@ -4898,3 +4898,16 @@ finding fixed at the user's word ("fix all no matter what").
   uploaded drafts. The creator's Forget this device does the same, leaving
   a colleague's live pass alone as every client page does.
   `tests/mediapass.js` holds all three (each failed on the earlier pages).
+
+- 2026-10-18 · Breach points are added as numbers (second audit, item 11).
+  The points are settings to two decimals, but `perf_deduction_at`
+  returned an integer and the VIC multiplier rounded again, so each issue
+  was rounded alone: Level 1 at 2.5 taken twice cost 6, not 5, and a 75
+  month fell to 69, below C. `2026-10-18-breach-points-added-as-numbers.sql`
+  adds `perf_points_at` (exact), and `perf_calc` rounds the month's total
+  once, to the 0.1 step the scores take, so the final score is always one
+  the page shows (rounding to two decimals would let 69.95 read 70 beside a
+  D), then applies the cap as a number. Each issue's line is answered to
+  two decimals. No live setting holds a decimal, so no open month moved;
+  a final month keeps its result. `tests/perf.js` holds 75 less 2.5 twice
+  as 70 and a C.
