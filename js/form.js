@@ -803,7 +803,7 @@
     s = String(s || '').toLowerCase();
     return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
   }
-  function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function findLabel(sel) {
     var l = sel.id && document.querySelector('label[for="' + sel.id + '"]');
     var t = l ? l.textContent : (sel.getAttribute('aria-label') || '');
