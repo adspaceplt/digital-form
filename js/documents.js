@@ -539,10 +539,12 @@
      on 2026-10-02) for a PDF most visits never draw. They are fetched here
      instead, once, the first time anything is drawn; every drawing (a letter,
      a report, a performance record) waits on this. A failed fetch is said
-     by name and fetched again on the next press. */
+     by name and fetched again on the next press. Each is pinned by the hash
+     of the file the CDN serves, as every script tag on a page is (a new
+     version is hashed from the file the CDN serves; tests/sql.js holds it). */
   var LIBS = [
-    ['PDFLib', 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'],
-    ['fontkit', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js']
+    ['PDFLib', 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js', 'sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI'],
+    ['fontkit', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js', 'sha384-2p6U+1mmqF10USehFeRiyG2ESG9FwIqN+jxULn5w9jjQIihSn9Pt13dVCn/Hawjn']
   ];
   var libWait = null;
   function lib() {
@@ -552,6 +554,7 @@
       if (window[l[0]]) return null;
       return new Promise(function (ok, bad) {
         var s = document.createElement('script');
+        if (l[2]) { s.integrity = l[2]; s.crossOrigin = 'anonymous'; }
         s.src = l[1];
         s.onload = ok;
         s.onerror = function () { bad(new Error('The PDF library could not be loaded. Check the connection and try again.')); };
