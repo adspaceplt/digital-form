@@ -35,6 +35,7 @@
     'no-client':      'Choose a client.',
     'no-member':      'Choose a colleague.',
     'no-supplier':    'Choose a supplier.',
+    'agreement-incomplete': 'Complete the schedules: the supplier\'s legal name, the start date, the fee and at least one account.',
     'no-staff-code':  'Add an Employee ID to that colleague on the Team page first.',
     'no-signatory':   'A signatory is required.',
     'issuer-name':    'A letter is signed by a person. Set your name on the Team page, then issue it.',
@@ -222,7 +223,7 @@
   function render(doc) {
     var D = window.ADspaceDocs;
     if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
-    return D.lib().then(function () { return drawLetter(doc); });
+    return D.lib().then(function () { return doc.body && doc.body.agreement ? drawAgreement(doc) : drawLetter(doc); });
   }
   function drawLetter(doc) {
     var PDF = window.PDFLib;
@@ -370,6 +371,187 @@
     });
   }
 
+  /* The Supplier Service Agreement (2026-10-18), drawn on the letterhead as
+     the Word template the team signed with: Our Ref and Date, the title,
+     the clauses numbered from the type's wording (`# Heading` a clause,
+     `1.` a numbered point under it, `a.` a lettered item, anything else a
+     paragraph of the clause), the confirmation with a signing block for
+     each party, then Schedule A (the supplier and key dates; the services
+     and fees) and Schedule B (the accounts, as at the document's date) as
+     tables. A point is one unit: a page breaks between points, never in
+     one that fits a page. */
+  function clausesOf(text) {
+    var out = [], n = 0, k = 0, l = 0;
+    String(text || '').replace(/\r/g, '').split(/\n\s*\n/).forEach(function (raw) {
+      var p = raw.replace(/\s*\n\s*/g, ' ').trim();
+      if (!p) return;
+      var m;
+      if ((m = /^#\s*(.+)$/.exec(p))) { n++; k = 0; l = 0; out.push({ kind: 'head', label: n + '.', text: m[1] }); }
+      else if ((m = /^\d+[.)]\s+(.+)$/.exec(p))) { k++; l = 0; out.push({ kind: 'point', label: n + '.' + k, text: m[1] }); }
+      else if ((m = /^[a-z][.)]\s+(.+)$/.exec(p))) { out.push({ kind: 'item', label: '(' + String.fromCharCode(97 + l++) + ')', text: m[1] }); }
+      else out.push({ kind: 'para', text: p });
+    });
+    return out;
+  }
+  function dmyOf(s) {
+    var d = String(s || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '';
+  }
+  function drawAgreement(doc) {
+    var PDF = window.PDFLib;
+    if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
+    var a = (doc.body && doc.body.agreement) || {}, p1 = a.part1 || {}, p2 = a.part2 || {};
+    var MON = window.ADspaceMoney;
+    var pdf, fonts, logo;
+    return PDF.PDFDocument.create().then(function (p) {
+      pdf = p;
+      return Promise.all([DOCS.embedFonts(pdf, PDF, {}), DOCS.embedLogo(pdf)]);
+    }).then(function (got) {
+      fonts = got[0]; logo = got[1];
+      var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
+      var pn = DOCS.pen(PDF, fonts, logo);
+      var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
+      var text = pn.text, wrap = pn.wrap;
+      var FILL = PDF.rgb(0.949, 0.949, 0.949), EDGE = PDF.rgb(0.85, 0.85, 0.85);
+      var pages = [], y;
+      var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); y = pn.head(); };
+      var need = function (h) { if (y - h < FLOOR) newPage(); };
+      newPage();
+
+      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
+      var REFX = M + 78;
+      var ref = function (label, value) {
+        text(label, M, y, BODY); text(':', M + 72, y, BODY); text(value, REFX, y, BODY); y -= LH;
+      };
+      ref('Our Ref', doc.serial);
+      ref('Date', DOCS.letterDate(doc.issued_at));
+      y -= 12;
+      wrap(String(doc.title || 'Service Agreement').toUpperCase(), R - M, 13, med).forEach(function (ln) {
+        need(18); pn.centre(ln, y, 13, med); y -= 18;
+      });
+      y -= 8;
+
+      /* The clauses: a heading with its number, points hung from their
+         number, items from their letter one step further in. */
+      var IN1 = 30, IN2 = 58;
+      var block = function (label, s, x, xText, f) {
+        var lines = wrap(s, R - xText, BODY, f || font);
+        if (lines.length * LH < FLOOR + 200) need(lines.length * LH);
+        if (label) text(label, x, y, BODY, f || font);
+        lines.forEach(function (ln, i) { if (i) need(LH); text(ln, xText, y, BODY, f || font); y -= LH; });
+        y -= 5;
+      };
+      clausesOf((doc.body || {}).en).forEach(function (c) {
+        if (c.kind === 'head') { y -= 6; need(LH * 3); block(c.label, c.text, M, M + IN1, med); }
+        else if (c.kind === 'point') block(c.label, c.text, M, M + IN1);
+        else if (c.kind === 'item') block(c.label, c.text, M + IN1, M + IN2);
+        else block('', c.text, M, M + IN1);
+      });
+
+      /* The confirmation: one block a party, side by side, reserved
+         together. */
+      var sig = doc.signatory || {};
+      var SIGH = 16 + LH + 56 + 4 + LH * 5;
+      need(SIGH + 30);
+      y -= 14;
+      text('CONFIRMATION & ACCEPTANCE', M, y, BODY, bold); y -= LH + 2;
+      var colW = (R - M - 30) / 2;
+      var party = function (x, who, name, desig) {
+        var yy = y;
+        wrap(who, colW, BODY, bold).forEach(function (ln) { text(ln, x, yy, BODY, bold); yy -= LH; });
+        yy -= 52;
+        pn.page.drawLine({ start: { x: x, y: yy }, end: { x: x + colW, y: yy }, thickness: 0.6, color: pn.ink });
+        yy -= LH;
+        text('Company Stamp & Authorised Signature', x, yy, 9, font, mute); yy -= LH;
+        [['Name', name], ['NRIC No.', ''], ['Designation', desig], ['Date', '']].forEach(function (r) {
+          text(r[0] + ':', x, yy, BODY); if (r[1]) text(r[1], x + 72, yy, BODY); yy -= LH;
+        });
+        return yy;
+      };
+      var y1 = party(M, 'For and on behalf of ' + (ORG.name || 'ADSPACE PLT'), String(sig.name || '').toUpperCase(), sig.designation || '');
+      var y2 = party(M + colW + 30, 'For and on behalf of ' + (p1.legal_name || 'the Supplier'), '', '');
+      y = Math.min(y1, y2);
+
+      /* A table of white cells under a shaded title row, on one grid. */
+      var CELL = 10, PADX = 6, PADY = 5;
+      var table = function (cols, head, rows) {
+        var widths = cols.map(function (c) { return (R - M) * c; });
+        var draw = function (cells, f, shade) {
+          var lines = cells.map(function (c, i) {
+            var out = [];
+            String(c == null ? '' : c).split(/\r?\n/).forEach(function (part) { out = out.concat(wrap(part, widths[i] - PADX * 2, CELL, f)); });
+            return out.length ? out : [''];
+          });
+          var h = Math.max.apply(null, lines.map(function (l) { return l.length; })) * (CELL + 3) + PADY * 2;
+          need(h);
+          var x = M;
+          lines.forEach(function (l, i) {
+            pn.page.drawRectangle({ x: x, y: y - h, width: widths[i], height: h, color: shade ? FILL : undefined, borderColor: EDGE, borderWidth: 0.6 });
+            l.forEach(function (ln, j) { text(ln, x + PADX, y - PADY - CELL + 1 - j * (CELL + 3), CELL, f); });
+            x += widths[i];
+          });
+          y -= h;
+        };
+        if (head) draw(head, bold, true);
+        rows.forEach(function (r) { draw(r, font, false); });
+      };
+      var heading = function (s, size) { need(LH * 4); text(s, M, y, size || BODY, med); y -= (size || BODY) + 10; };
+
+      newPage();
+      heading('SCHEDULE A', 13);
+      heading('Part 1: Supplier Details and Key Dates');
+      table([0.36, 0.64], ['Items', 'Details'], [
+        ['Agreement Date', DOCS.letterDate(doc.issued_at)],
+        ['Supplier Legal Name', p1.legal_name || ''],
+        ['BRN / NRIC / Passport', p1.id_no || ''],
+        ['Registered Address', p1.address || ''],
+        ['Contact Person (if a company)', p1.contact || ''],
+        ['Start Date', p1.start ? DOCS.letterDate(p1.start) : '']
+      ]);
+      y -= 18;
+      heading('Part 2: Services and Fees');
+      table([0.36, 0.64], ['Items', 'Details'], [
+        ['Platforms', p2.platforms || ''], ['Tasks', p2.tasks || ''], ['Reporting', p2.reporting || ''],
+        ['Response Time', p2.response || ''], ['Spend Approval Limit', p2.spend_limit || ''],
+        ['Approved Budget per Account', 'As per Schedule B'], ['Budget Tolerance', p2.tolerance || ''],
+        ['Fee', p2.fee || ''], ['Assigned Clients', 'As per Schedule B']
+      ]);
+
+      newPage();
+      heading('SCHEDULE B', 13);
+      text('Latest update as at ' + DOCS.letterDate(a.as_at || doc.issued_at), M, y, BODY, bold); y -= LH + 4;
+      String(a.notes || '').replace(/\r/g, '').split(/\n\s*\n/).forEach(function (para) {
+        para = para.replace(/\s*\n\s*/g, ' ').trim();
+        if (para) block('', para, M, M);
+      });
+      y -= 6;
+      table([0.07, 0.25, 0.22, 0.18, 0.14, 0.14], ['No.', 'Client', 'Ad Account', 'Ad Spend per Month', 'Start Date', 'End Date'],
+        (a.accounts || []).map(function (r, i) {
+          var spend = r.spend == null || r.spend === '' ? '' : MON ? MON.money2(r.spend, r.currency === 'SGD' ? 'SG' : 'MY') : String(r.spend);
+          return [String(i + 1), r.client || '', r.account || '', spend, dmyOf(r.start), dmyOf(r.end)];
+        }));
+
+      var n = pages.length;
+      var footWord = 'This is a computer-generated document. Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
+      var FZ = 7.5;
+      var refEnd = M + font.widthOfTextAtSize(String(doc.serial || ''), FZ);
+      var sentW = font.widthOfTextAtSize(footWord, FZ);
+      pages.forEach(function (pg, i) {
+        pn.page = pg;
+        pn.footMark(i, n, FZ);
+        text(doc.serial, M, 30, FZ, font, mute);
+        var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
+        var x = Math.min(Math.max(W / 2 - sentW / 2, refEnd + 12), pageStart - 12 - sentW);
+        text(footWord, x, 30, FZ, font, mute);
+        if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
+      });
+      /* The reference in the file's title, which supplier-mail checks. */
+      pdf.setTitle(String(doc.kind || 'Supplier Service Agreement') + ' ' + String(doc.serial || ''));
+      pdf.setAuthor('ADSPACE PLT');
+      return pdf.save();
+    });
+  }
+
   function download(doc, then) {
     var said = false, tab = DOCS.tabFor();
     var say = function (w) { if (said) return; said = true; if (then) then(w); };
@@ -390,7 +572,7 @@
   window.ADspaceLetters = {
     types: types, list: list, listAll: listAll, issue: issue, reissue: reissue, addManual: addManual, updateManual: updateManual,
     setVoid: setVoid, remove: remove, render: render, download: download,
-    fileName: fileName, fill: fill, stateOf: stateOf,
+    fileName: fileName, fill: fill, stateOf: stateOf, clausesOf: clausesOf,
     FAMILY_WORD: FAMILY_WORD, LANG_WORD: LANG_WORD, WORD: WORD
   };
 })();
