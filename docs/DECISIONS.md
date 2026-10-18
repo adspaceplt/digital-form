@@ -4652,3 +4652,16 @@ finding fixed at the user's word ("fix all no matter what").
   as itself or refuses it in words), and the guess is left for a file with
   no type at all. `tests/signupload.js` runs the page's `extFor` against
   `sign-upload`'s own table.
+
+- 2026-10-18 · The PDF library is pinned by its hash (review finding 14).
+  Every CDN script tag on a portal page carries `integrity` and
+  `crossorigin` since 2026-10-17 (audit J), but pdf-lib and fontkit are not
+  tags: `ADspaceDocs.lib()` (js/documents.js) makes their script elements
+  on the first drawing, with neither, so a changed file on either CDN would
+  have run in the console and the client portal. Each entry of `LIBS` now
+  names the sha384 of the file the CDN serves, set as `integrity` with
+  `crossOrigin` anonymous. The suites route their own copies (the same
+  bytes) or stubs; `tests/serve.js` empties the hash string in a portal
+  script as it already takes the attribute off a page's tag, and the script
+  sets neither without one. `tests/sql.js` holds both hashes and the two
+  assignments.
