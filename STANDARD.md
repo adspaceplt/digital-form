@@ -674,7 +674,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - Retention (2026-10-18, Team audit 12, PDPA 2010): health check-ins are
   kept 24 months and a leaver's health data 6 months after they left, each
   a Business setting the monthly `privacy_retention` reads; WhatsApp
-  messages' personal fields 12 months; the Activity record three years.
+  messages' personal fields 12 months; a caller's address against a link's
+  passcode 30 days after it was last used (audit 2026-10-18, item 14); the
+  Activity record three years.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
