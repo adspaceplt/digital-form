@@ -3572,6 +3572,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
     other events on the shared calendar do not count.
   - It re-reads until `hangoutLink` appears, and records `meet-pending`.
+  - A record's event has one id, made from the record's (`admonth` or
+    `adtouch` and its id's hex, Google's letters; 2026-10-19): a second
+    press is answered 409 and takes the event the first made, never a
+    second booking; its own event in the slot is no clash; one deleted and
+    booked again is put back, confirmed, with a new Meet (`tests/meetfn.js`).
   - It names a setup fault (`meet-not-set-up` with the missing names;
     `google-token`; `google-refused`).
   - `ops_engagement_set_meet` accepts only a `meet.google.com` link. A null
