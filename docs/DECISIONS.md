@@ -5438,3 +5438,17 @@ finding fixed at the user's word ("fix all no matter what").
   so before it saves; a code set before keeps working until it is changed,
   so no client's link stops opening. Six is a security floor, not a
   business figure, so it is not a setting.
+
+- 2026-10-18 · A completed campaign's link keeps its results after the
+  client moves to Past (the user: "creator selection, once completed the
+  results not even viewed then the link no longer works"; 988). Item 7's
+  rule closed every link of a Past client, and 988 was moved to Past two
+  days after its campaign completed, so its selection link read Link not
+  recognised before the client had read the results. `get_campaign` now
+  answers a Past client's completed campaign, read only: the selection
+  reads closed with no backups, so nothing is offered to choose, and every
+  write on the link (save, confirm, review) still refuses a Past client.
+  Any other campaign of a Past client still answers as a key nobody knows.
+  The rule shipped without the case a campaign finishes and the client
+  leaves before reading it; the item 7 entry above stands for everything
+  else.
