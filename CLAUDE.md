@@ -5532,7 +5532,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   rules only the console meets, loaded by `admin/` alone right after it. A
   rule moved between them keeps its place in the cascade (equal
   specificity and a shared property against a later rule of the other
-  sheet keep it in `portal.css`). One script per section, and the one-copy
+  sheet keep it in `portal.css`); a console base and its own `@media`
+  override share a sheet, the override after it (`cssguard`; 2026-10-18,
+  the upload preview). One script per section, and the one-copy
   mechanisms above.
 - Server code that is not a Supabase edge function lives in `workers/`, one
   folder per Worker, with a README.
