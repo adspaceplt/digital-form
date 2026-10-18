@@ -2171,11 +2171,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
   (letters keep their words). The NRIC and the bank details are sent and
   saved only at `suppliers.pay` (granted), filed by name, never by value.
-- A supplier's letter is the Documents family `supplier` (Letter to
-  Supplier), `ASL/{Supplier ID}/{YYMMDD}{NN}`, `documents.supplier_id`,
-  issued from the supplier (Issue document) or the Register, listed on the
-  supplier and under Supplier Letters (`register_may('supplier', …)`
-  answers the Suppliers section); a reissue keeps the supplier. No bank
+- A supplier's document is the Documents family `supplier`,
+  `documents.supplier_id`, issued from the supplier (Issue document) or the
+  Register, listed on the supplier and under Supplier Letters
+  (`register_may('supplier', …)` answers the Suppliers section); a reissue
+  keeps the supplier. The one offered is the Supplier Service Agreement
+  (`supplier_sca`, `2026-10-18-supplier-service-agreement.sql`; the user,
+  2026-10-18; Letter to Supplier, `ASL/{Supplier ID}/{YYMMDD}{NN}`, no
+  longer offered, its letters kept): `AD/SCA/{Supplier ID}/{YYMM}{NN}`,
+  signed by both parties; its clauses are the type's wording (`# Heading`
+  a clause, `1.` a numbered point, `a.` a lettered item; Document types);
+  the Issue sheet asks its schedules in place of a recipient
+  (`#docScaSec`): Schedule A Part 1 from the supplier (legal name, BRN /
+  NRIC / Passport, registered address, contact, Start date), Part 2 from
+  `doc_types.schedule` (platforms, tasks, reporting, response time, spend
+  approval limit, budget tolerance; the Fee typed), Schedule B an account
+  a row (the client from Clients, the ad account offered from its Meta
+  links, the spend a month in the client's currency, start and end) with
+  its notes, kept as `body.agreement` and refused without the legal name,
+  start, fee and an account (`agreement-incomplete`, `sca_complete`). The
+  PDF (`drawAgreement`, js/letters.js) prints the clauses numbered, both
+  signing blocks, then Schedule A and Schedule B (as at its date) as
+  tables. A new Schedule B is a Reissue: the same reference, as at the new
+  date. No bank
   statement upload (the Jotform field was optional). A document kept
   outside the portal (an agreement, an NDA) is Add entry's Supplier Letter
   (the record's ⋯, or the Register), naming its supplier and no client

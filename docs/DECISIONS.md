@@ -5539,3 +5539,19 @@ nothing, which answered "how much" and never "what".
   gates stopped part way left a Postgres cluster that killed sql and smsql
   in the next run (they pass alone and in the "after" run). The iPhone Duo
   sizes surfaced a namecard finding, logged under Logged defects.
+### 2026-10-18 · The Supplier Service Agreement is the supplier's document
+The user handed over the team's Supplier Service Agreement (Ads Campaign
+Management) as a Word file and asked for it to be the supplier document. The
+clauses became the type's wording, in a light markup the Document types sheet
+can edit (`# Heading`, `1.`, `a.`), numbered on the PDF as in the Word file.
+Schedule A and Schedule B are asked in the Issue sheet and kept as the
+document's snapshot, Schedule B's accounts picked from Clients with the ad
+accounts each client links to Meta offered. Schedule B changes by a new copy,
+so a new copy is a Reissue (the same reference, as at its new day). The
+reference is `AD/SCA/{Supplier ID}/{YYMM}{NN}` as the team numbered it. Letter
+to Supplier is stood down on the run that makes the agreement, so a team
+that turns it back on is not overruled by a re-run. The Word file's names and
+figures are a real client's and supplier's and were not committed; only the
+wording was. Its clause 10.3 points at Clause 6.7 for returning information,
+which in the numbered text is 6.8; the wording is kept as given, and the
+team corrects it in Document types.
