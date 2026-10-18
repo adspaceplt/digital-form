@@ -412,8 +412,7 @@
         talks.map(function (t) {
           return '<div class="health-talk' + (t.status === 'open' ? '' : ' is-closed') + '"><span class="health-talk-who">' +
             '<b>' + esc(t.from) + ' asked ' + esc(t.with) + '</b><small>' +
-            esc(t.status === 'done' ? 'Talked · ' + dateWord(t.closed_at) : 'Asked ' + dateWord(t.at)) + '</small>' +
-            (t.note ? '<span class="health-note">' + esc(t.note) + '</span>' : '') + '</span></div>';
+            esc(t.status === 'done' ? 'Talked · ' + dateWord(t.closed_at) : 'Asked ' + dateWord(t.at)) + '</small></span></div>';
         }).join('') + '</div></div>';
       box.appendChild(tc);
     }
@@ -462,8 +461,7 @@
       (talks.length ? '<section class="fsec"><h4 class="fsec-h">Talks</h4><div class="health-talks">' + talks.map(function (t) {
         return '<div class="health-talk' + (t.status === 'open' ? '' : ' is-closed') + '"><span class="health-talk-who"><b>' +
           esc(t.from_id === p.id ? 'Asked ' + t.with : t.from + ' asked them') + '</b><small>' +
-          esc(t.status === 'done' ? 'Talked · ' + dateWord(t.closed_at) : 'Asked ' + dateWord(t.at)) + '</small>' +
-          (t.note ? '<span class="health-note">' + esc(t.note) + '</span>' : '') + '</span></div>';
+          esc(t.status === 'done' ? 'Talked · ' + dateWord(t.closed_at) : 'Asked ' + dateWord(t.at)) + '</small></span></div>';
       }).join('') + '</div></section>' : '');
   }
   /* One colleague's check-ins and talks on their record (js/team.js,
