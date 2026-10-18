@@ -3090,14 +3090,30 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   padding: 2px 7px; border-radius: 4px; background: var(--line-soft); color: var(--ink-soft);
 }
 
+/* The client's creator list on a phone (640 and under, the phone line, so
+   a folded-open phone at 626 reads it as a 390 one does). Name and rate read
+   as one line, the placements under the name with their label, the things
+   to tap on the next. Below 640 the desk's seven named tracks no longer fit,
+   and the four-track row that stood here kept the header and gave the
+   placements no area: the header broke into three lines and an implicit
+   track moved the fee and Backup on the rows that held one placement. */
 @media (max-width: 640px) {
   .crow {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "no tick name rate" "no tick links backup";
-    row-gap: 8px;
+    grid-template-areas: "no tick name rate" "no . plat plat" "no . links backup";
+    gap: 8px 10px; padding: 12px 14px;
   }
   .crow-tick, .crow-no { align-self: start; }
   .crow-no { padding-top: 3px; }
+  /* Four labels over a phone's row is furniture, so the header leaves and
+     the placements go back under the name with their label. */
+  .crow-head { display: none; }
+  .crow:not(.crow-head) .crow-plat > span { display: inline; margin-right: 6px; color: var(--ink-mute); }
+  .crow-plat { font-size: 12px; margin-top: -2px; }
+  /* The name carries a second line, so the fee sits against the first one
+     rather than floating halfway down it. */
+  .crow-rate { min-width: 0; align-self: start; }
+  .crow-backup { align-self: start; padding: 0 13px; font-size: 12px; }
 }
 
 /* ---------- Confirm bar ---------- */
@@ -3606,23 +3622,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
   .kactions { gap: 8px; }
 
-  /* The client's creator list. Name and rate read as one line, the things to
-     tap sit on the next, and the profile button drops to the platform name so
-     two of them fit across instead of stacking. */
-  .crow {
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "no tick name rate" "no . plat plat" "no . links backup";
-    gap: 8px 10px; padding: 12px 14px;
-  }
-  /* Four labels over a 358px row is furniture, so the header leaves and the
-     placements go back under the name with their label. */
-  .crow-head { display: none; }
-  .crow:not(.crow-head) .crow-plat > span { display: inline; margin-right: 6px; color: var(--ink-mute); }
-  .crow-plat { font-size: 12px; margin-top: -2px; }
-  /* The name carries a second line, so the fee sits against the first one
-     rather than floating halfway down it. */
-  .crow-rate { min-width: 0; align-self: start; }
-  .crow-backup { align-self: start; padding: 0 13px; font-size: 12px; }
   /* Full label on a phone too: the client has to know which profile they are
      opening. They wrap to their own lines rather than being abbreviated. */
   .plink { padding: 8px 11px; font-size: 12.5px; }

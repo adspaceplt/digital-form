@@ -2728,6 +2728,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The detail card is folded and shut by default. The purpose and brief sit
     inside it; the due date (else the count) is on the head.
   - When the slots fill, the unpicked leave.
+  - At 640 and under (the phone line, a folded-open phone at 626 too) a
+    creator's row is the phone's: no column heads, the name over its
+    placements (Posting on), the profiles and Backup under them, the fee
+    at the right of the first line on every row (the iPhone Duo pass,
+    2026-10-18).
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
