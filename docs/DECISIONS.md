@@ -4886,3 +4886,15 @@ finding fixed at the user's word ("fix all no matter what").
   a later quarter, an earlier month's lines no longer added up to its
   total. `2026-10-18-an-issue-priced-by-its-month.sql` reads the issue's
   month in all three. `tests/perf.js` holds the lines adding up.
+
+- 2026-10-18 · Signing out takes the media pass with it (second audit,
+  item 7). The console's and the client portal's Sign out ended the
+  session but left CloudFront's three cookies (twelve hours, on the root,
+  content/ or a client's folder), so the next person at the browser could
+  still open those files. `ADspaceMedia.forget()` drops them on the root,
+  content/ and every folder `adspace-media-paths` remembers, with the
+  pass's own marks; the console's Sign out also removes the notes and
+  inputs kept for Write with AI and Run analysis and Content Review's
+  uploaded drafts. The creator's Forget this device does the same, leaving
+  a colleague's live pass alone as every client page does.
+  `tests/mediapass.js` holds all three (each failed on the earlier pages).
