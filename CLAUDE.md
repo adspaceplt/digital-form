@@ -3361,7 +3361,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     cap are settings from a quarter on (`2026-10-05-performance-rule-settings.sql`:
     `grade_a`…`grade_d` 90/80/70/60, `ded_l1`…`ded_l4` 3/7/15/30,
     `ded_repeat` 5, `ded_late` 5, `ded_cap` 35; `perf_grade_at`,
-    `perf_deduction_at`), a month graded by its own quarter's; `perf_calc`
+    `perf_deduction_at`), a month graded by its own quarter's, each issue's
+    line and the figure its logging answers read with the same month's; `perf_calc`
     returns the `cap` and `points` it used, and the page names them from
     there, never a figure of its own.
   - L3 caps at B; L4 caps at D.

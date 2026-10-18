@@ -4877,3 +4877,12 @@ finding fixed at the user's word ("fix all no matter what").
   `own-department` where the caller's department is the one scored; the
   admins hold no department (live, 2026-10-18) and score both.
   `tests/perf.js` holds it.
+
+- 2026-10-18 · An issue is priced by its own month (second audit, item 12).
+  `perf_calc` adds up a month's issues with that month's breach points, but
+  `perf_breaches_json` (the lines the review sheet, the member's page and
+  the printed record list) and the figure `perf_breach_log` answers and
+  files read today's, VIC multiplier included; once the points changed from
+  a later quarter, an earlier month's lines no longer added up to its
+  total. `2026-10-18-an-issue-priced-by-its-month.sql` reads the issue's
+  month in all three. `tests/perf.js` holds the lines adding up.
