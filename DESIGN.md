@@ -319,7 +319,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A component borrowed for its shape carries its old flex and behaviour. Use a
   class of its own (`.railrow`, never `.navitem`).
 - A class name belongs to one component. A new component never reuses a name
-  already styled elsewhere (grep `css/portal.css` first): Content Review's
+  already styled elsewhere (grep `css/portal.css` and `css/console.css` first): Content Review's
   `.cr-rec` split the Creators List's record cell, then named `.cr-rec` too.
 - A group that must stay together is one element in the markup, never a hope
   about where a wrap falls.

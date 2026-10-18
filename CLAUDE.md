@@ -175,7 +175,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| Shared layout, navigation, `css/portal.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
+| Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
@@ -5458,7 +5458,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Portal pages are folders with an `index.html` and clean paths; never `.html`
   in a URL.
 - New pages start from `docs/PAGE-TEMPLATE.html`.
-- One stylesheet (`css/portal.css`), one script per section, and the one-copy
+- Two stylesheets, never more (second audit, item 19, 2026-10-18):
+  `css/portal.css` holds the tokens and every rule a client page can meet,
+  and is the only sheet a client page loads; `css/console.css` holds the
+  rules only the console meets, loaded by `admin/` alone right after it. A
+  rule moved between them keeps its place in the cascade (equal
+  specificity and a shared property against a later rule of the other
+  sheet keep it in `portal.css`). One script per section, and the one-copy
   mechanisms above.
 - Server code that is not a Supabase edge function lives in `workers/`, one
   folder per Worker, with a README.
