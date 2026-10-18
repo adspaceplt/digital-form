@@ -58465,8 +58465,6 @@ grant execute on function public.perf_delete(text, uuid, text, text) to authenti
 
 -- END OF CONFIRMED PERIODS HOLD THEIR MONTHS --------------------------------
 
-select public.functions_tidy();
-
 -- ===========================================================================
 -- REVIEW SET COUNTS — where each content set's posts stand, counted by the
 -- database in one request. 2026-10-18. Safe to run twice. Rollback at the
