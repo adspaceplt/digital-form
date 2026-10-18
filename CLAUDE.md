@@ -1337,7 +1337,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Only an admin makes a colleague or a group admin, or changes an admin's
   group, access, access date, email or standing (`team_admin_guard`,
   `team_roles_admin_guard`, `admin-only`; 2026-10-17): Team Full Access is
-  not admin.
+  not admin. A signed-in write never takes away the last active admin: it
+  takes the team's admin lock first, so two admins standing each other down
+  at once leave one (`team_members_last_admin`, `last-admin`;
+  `2026-10-18-the-last-admin-is-kept.sql`).
 
 ### Directories and the command bar
 - Every console directory is a card per group via `js/group.js`:
