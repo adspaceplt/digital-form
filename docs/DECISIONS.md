@@ -4996,3 +4996,14 @@ finding fixed at the user's word ("fix all no matter what").
   (STANDARD.md). Performance's own trail, HR letters and documents keep
   their own rules. `privacy_retention()` runs on the 2nd of each month.
   `tests/sql.js` holds it.
+
+- 2026-10-18 · My Work's report reads its period (second audit, item 18).
+  `ops_report`'s spans worked out a span for every stage event ever
+  written, then kept those entered in the period, and the Dashboard asks it
+  eight times a visit. A span entered in the period ends at its task's next
+  event, later still, so the events before the period never changed an
+  answer: `2026-10-18-my-work-report-reads-its-period.sql` reads from
+  `p_from` on (tighter than the audit's 90 days before it, and still the
+  same figures), and adds the bell's `ops_notifications (team_member_id,
+  created_at desc)` index (the one held covered unread notices alone).
+  `tests/ops.js` answers nine windows beside the earlier definition.
