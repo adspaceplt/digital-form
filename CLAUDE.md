@@ -3541,7 +3541,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
-    named by its first quarter; any date reads as its half. Revenue and profit are
+    named by its first quarter; any date reads as its half. Like a quarter,
+    its Confirm is drawn and accepted only once every review in its six
+    months is final (`months-open`, `scope` period; `open_months`). Revenue and profit are
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.

@@ -4773,3 +4773,15 @@ finding fixed at the user's word ("fix all no matter what").
   `pending` ten minutes after its claim (no run lasts three); one in flight
   still holds the report, and the colleague's daily total still counts it.
   `tests/sql.js` holds both.
+
+- 2026-10-18 · A bonus and trip period waits on its final months (second
+  audit, item 2). `perf_period_calc` reads final reviews alone, and
+  `perf_period_confirm` confirmed a half while a review in it was still
+  shared, queried or acknowledged, so that month was left out of the
+  member's average and units for good (a December B not yet final left its
+  member RM 0 of a RM 20,000 pool). `perf_quarter_confirm` has refused
+  this since THE QUARTER RANKED; `2026-10-18-half-year-waits-on-final-months.sql`
+  makes the period refuse the same way (`months-open`, naming the period),
+  and `perf_period` answers `open_months`, so Bonus and trip draws Confirm
+  only once it can be pressed and names the reviews still open.
+  `tests/perf.js` holds it.
