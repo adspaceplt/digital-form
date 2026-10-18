@@ -5083,3 +5083,13 @@ finding fixed at the user's word ("fix all no matter what").
   (`bad-file`). A drawn quotation inflates to well under a megabyte.
   `tests/wafn.js` refuses a 30 MB bomb in a fraction of a second and still
   finds a reference past a 5 MB stream; the old code took the bomb.
+
+- 2026-10-18 · Issue letter says when the services could not be read again.
+  After a `stale` refusal the page reads the services and quotations again
+  and reopens the sheet on the same ticks (#558), but where that read
+  failed, `loadServices` never called back: the refusal was dropped and the
+  button simply came back, so the next press was refused the same way with
+  nothing said. `loadServices` now takes a failure callback (and catches a
+  lost connection), and the sheet reads "The services or their quotation
+  changed since this sheet was opened, and could not be read again: {why}.
+  Close this sheet and open it again." `tests/letter.js` holds it.
