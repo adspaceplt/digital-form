@@ -3414,7 +3414,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     and report tasks are unchanged. With several posts the button reads
     Create N tasks.
   - A move into Revision (Client) pushes the due date to today (MYT) plus
-    `revision_due_days` (1), only where that is later than the one held
+    `revision_due_days` (1) working days (weekends and public holidays passed
+    over, `ops_add_business_days`; `2026-10-18-working-days-skip-holidays.sql`),
+    only where that is later than the one held
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives

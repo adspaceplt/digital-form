@@ -5294,3 +5294,12 @@ finding fixed at the user's word ("fix all no matter what").
   active managers (My Work Manage, admins) are told. Each move is filed on
   the task with a note, so its history says why. `tests/ops.js` holds both
   paths and that finished work is left alone.
+
+- 2026-10-18 · Working days pass over public holidays (review item 20).
+  `ops_add_business_days` skipped weekends but counted a public holiday as
+  a working day, and a client's request for changes fell due in calendar
+  days (a Friday request was due on Saturday). The helper now passes over
+  the Public holidays list too (stable, no longer immutable, as it reads a
+  table), and the Revision (Client) push counts `revision_due_days` working
+  days through it. The setting's words read working days. `tests/ops.js`
+  holds a Friday, two holidays in a row, counting back, and the push.

@@ -67,7 +67,7 @@
     /* The list is js/admin.js's (the Services bar asks the same sheet). */
     tax: { title: 'Tax and terms', keys: (bridge.TAX_KEYS || []).map(function (k) { return k.concat(TAX_WORD[k[0]]); }) },
     due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
-      ['revision_due_days', 'Revision (Client): days after changes are asked', 'due', '', 'Revision', per('day')],
+      ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due', '', 'Revision', per('working day')],
       ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due', '', 'Approval reminder', per('day')]] },
     priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours', '', 'Urgent', per('hour')],
       ['priority_high_hours', 'High: hours from creation', 'hours', '', 'High', per('hour')],
@@ -202,7 +202,7 @@
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
-        meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'day', 'days')]
+        meta: rep == null ? '' : parts(['Report ' + plural(rep, 'day', 'days') + ' after the month', 'Revision ' + plural(rev, 'working day', 'working days')]
           .concat(num('approval_reminder_days') == null ? [] : ['Approval reminder ' + plural(num('approval_reminder_days'), 'day', 'days')])) },
       biz && { id: 'priority', name: 'Priority deadlines', kind: 'edit',
         meta: num('priority_high_hours') == null ? '' : parts(['Urgent ' + plural(num('priority_urgent_hours'), 'hour', 'hours'),
