@@ -5123,7 +5123,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `wa-send` reads itself as the caller through `sign-download`, never the
   page's bytes, a quotation's or letter's refused unless it is a PDF whose
   title names the record's own reference (each stream inflated with only
-  its one closing line break cut; `bad-file`; audit S3, 2026-10-15;
+  its one closing line break cut, the file's streams inflating to 20 MB
+  at most, past which it reads as not naming it; `bad-file`; audit S3,
+  2026-10-15;
   the letter's PDF titled `Letter of Offer {number}`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
