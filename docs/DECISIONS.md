@@ -5256,3 +5256,10 @@ finding fixed at the user's word ("fix all no matter what").
   transaction handed the task to that owner; a plain move and a plain
   reassignment are told as before. `tests/ops.js` holds both; the stand-in
   does the same.
+
+- 2026-10-18 · Undo after ticking an everyday task Done works from any
+  stage (review item 14). Done leads only to To do or In progress, so the
+  Undo from a task ticked at Waiting or Review asked for a move the
+  database refused, and the page dropped the refusal in silence. Undo now
+  brings such a task back In progress (To do and In progress go back where
+  they were), and any refusal is said on the list. `tests/work.js` holds it.

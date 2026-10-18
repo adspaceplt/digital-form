@@ -2564,7 +2564,12 @@
           return;
         }
         if (next === 'complete') {
-          state.undone = { id: t.id, back: from === 'complete' ? 'todo' : from, title: t.title };
+          /* Done goes back only where the workflow lets it (To do or In
+             progress); a task ticked from Waiting or Review comes back In
+             progress (2026-10-18: the Undo failed there in silence). */
+          var doneSt = state.stages[t.workflow_id + '|complete'];
+          var outs = (doneSt && doneSt.next_stage_keys) || ['todo', 'doing'];
+          state.undone = { id: t.id, back: outs.indexOf(from) > -1 ? from : (outs.indexOf('doing') > -1 ? 'doing' : outs[0]), title: t.title };
         } else state.undone = null;
         if (state.session && state.session.task_id === t.id && next === 'complete') { state.session = null; }
         done();
@@ -2578,7 +2583,11 @@
     undoBar('Completed ' + (u.title || 'the task') + '.', function () {
       var t = (state.tasks || []).filter(function (x) { return x.id === u.id; })[0];
       db.rpc('ops_transition_task', { p_task: u.id, p_next: u.back, p_version: t ? t.version : null, p_note: null })
-        .then(function () { load(); });
+        .then(function (r) {
+          var d = r.data;
+          if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error, t), 'err'); return; }
+          load();
+        }).catch(function (e) { msg('workMsg', (e && e.message) || String(e), 'err'); });
     }, $('workMsg'));
   }
 
