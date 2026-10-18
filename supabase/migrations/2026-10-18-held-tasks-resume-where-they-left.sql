@@ -114,7 +114,7 @@ begin
      to the start of the line; never on past stages it had not reached
      (the user, 2026-10-18: keep it light, AQC review happens on WhatsApp).
      Moving between the three is a step as before. A task held before the
-     column knew where from keeps the workflow's own steps. */
+     column knew where from keeps the steps of its workflow. */
   if cur.key = any (held) and not (p_next = any (held)) and t.held_from is not null then
     select s.key into first_key from public.ops_workflow_stages s
      where s.workflow_id = t.workflow_id and not s.retired

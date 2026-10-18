@@ -5188,3 +5188,12 @@ finding fixed at the user's word ("fix all no matter what").
   only there, Cancelled there or to the start of the line, and moving
   between the three is unchanged. `tests/ops.js` holds it against
   Postgres; the stand-in holds the same rule.
+
+- 2026-10-18 · The Supabase connector held the new `ops_transition_task`
+  three times (`apply_migration` and `execute_sql`, a timeout with nothing
+  reaching the database), though its parts each passed alone in `pg_temp`
+  and larger functions have passed before; no `drop` or `delete` was in
+  it. The user ran it in the SQL Editor. One comment was reworded to drop
+  an apostrophe while the cause was looked for, and the repo carries the
+  live wording. Rule kept: the same hold twice is a stop, and the held
+  statement goes to the user as its own SQL Editor file.
