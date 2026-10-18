@@ -3774,7 +3774,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   strength. Beside it, shaded, What you agree to (five questions every two
   weeks; ADspace management reads the answers by name, only to understand
   and support; never part of a performance review; withdraw at any time);
-  then I agree, which never asks (`health_consent`). Withdraw asks (warn),
+  then I agree, which never asks (`health_consent`). The words are the
+  database's (`health_wordings`, each version whole, a new version a
+  migration; `2026-10-18-health-terms-are-versioned.sql`): `health_mine()`
+  sends the latest, an agreement names the version shown (`stale-wording`)
+  and stands only on the latest (`health_agreed`), so a new version pauses
+  the check-ins, the talks, the reminders and Team: Health (Terms changed)
+  until the colleague agrees again. Withdraw asks (warn),
   stops the check-ins and takes the answers out of Team: Health; Agree again
   is the way back.
 - The check-in: Body, Mind, Sleep, Energy, Workload, 1 to 5 each (5 is well,

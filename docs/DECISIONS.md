@@ -5625,3 +5625,5 @@ monthly `privacy_retention` job applies both; Settings, Portal: Health data
 kept edits them. A colleague merely set inactive keeps theirs, since a
 stand-down may be undone. Live, 13 colleagues, none removed, so the first run
 removes nothing.
+
+- 2026-10-18 — Health terms are versioned (Team audit 17). The agreement card's words lived in `js/health.js` and every agreement was stored as wording 1, so changed words would have stood on agreements given to other words. The words moved to `health_wordings` (version 1 seeded with the words shown since 2026-10-07); `health_consent(p_on, p_wording)` refuses a version that is not the latest and `health_agreed` stands only on the latest. The old one-argument call stays for an open page and agrees to version 1 alone (no drop).

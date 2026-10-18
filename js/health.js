@@ -50,6 +50,7 @@
   var SAID = {
     'no-consent': 'Agree to the check-ins first.',
     'not-agreed': 'There is no agreement to withdraw.',
+    'stale-wording': 'These terms have changed. Read them again before agreeing.',
     'incomplete': 'Answer all five.',
     'bad-score': 'Each answer is 1 to 5.',
     'too-long': 'Keep the note to 1,000 characters.',
@@ -117,7 +118,10 @@
       paintMine();
     });
   }
-  function agreed(d) { return Boolean(d && d.consent && !d.consent.withdrawn_at); }
+  function agreed(d) {
+    return Boolean(d && d.consent && !d.consent.withdrawn_at &&
+      (!d.wording || Number(d.consent.wording || 0) >= Number(d.wording.version)));
+  }
   /* A card: its title (with a mute line under it where given), its one
      control at the right, then what it holds. */
   function card(title, ctl, inner, cls, meta) {
@@ -130,31 +134,26 @@
   /* Before a colleague agrees, the company's own words come first (the user,
      2026-10-07: say that ADspace cares about their health at work and at
      home, ask for honest answers, and invite them to seek help), then what
-     agreeing means. The one place in the console that speaks as "we". */
-  var CARE = [
-    'Life at work and life at home both shape how you feel, in body and in mind, and we care about all of it. ' +
-      'Every two weeks, take a quiet moment to tell us how you really are.',
-    'Please answer honestly. There are no right or wrong answers, only a true picture that helps us look after you. ' +
-      'If something feels heavy, ask for a talk: reaching out early is a strength, and we would always rather hear from you and help.'
-  ];
-  var TERMS = [
-    'Every two weeks: five questions on your body, mind, sleep, energy and workload, each from 1 to 5, with a note if you wish.',
-    'ADspace management reads your answers with your name, only to understand how you are and to support you.',
-    'Your answers are never part of your performance review.',
-    'You can withdraw at any time here, and your answers leave management\'s view.'
-  ];
+     agreeing means. The one place in the console that speaks as "we". The
+     words are the database's, each version kept whole (`health_wordings`,
+     2026-10-18): `health_mine()` sends the latest, and a new version asks
+     everyone to agree again. */
   function paintMine() {
     var d = st.mine, box = $('mineHealthBox');
     if (!d || !box) return;
     if (!agreed(d)) {
       var gone = d.consent && d.consent.withdrawn_at;
+      var stale = d.consent && !gone;
+      var w = d.wording;
+      if (!w) { UI.failLine(box, 'Your health check-ins', said({ error: 'db', message: 'PGRST202' }), enterMine); return; }
       box.innerHTML = card(HEART + 'Your health matters to us', '',
         '<div class="health-cols"><div class="health-words">' +
-          (gone ? '<p class="health-gone">You withdrew on ' + esc(dateWord(d.consent.withdrawn_at)) + '.</p>' : '') +
-          CARE.map(function (t) { return '<p class="health-lead">' + esc(t) + '</p>'; }).join('') + '</div>' +
+          (gone ? '<p class="health-gone">You withdrew on ' + esc(dateWord(d.consent.withdrawn_at)) + '.</p>'
+            : stale ? '<p class="health-gone">These terms changed on ' + esc(dateWord(w.made_at)) + '. Your check-ins resume once you agree to them.</p>' : '') +
+          (w.care || []).map(function (t) { return '<p class="health-lead">' + esc(t) + '</p>'; }).join('') + '</div>' +
           '<div class="health-termbox"><h4 class="health-sub">What you agree to</h4>' +
-          '<ul class="health-terms">' + TERMS.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div></div>' +
-        '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="agree" type="button">' + (gone ? 'Agree again' : 'I agree') + '</button></div>',
+          '<ul class="health-terms">' + (w.terms || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div></div>' +
+        '<div class="row acts refl-acts"><button class="btn btn-primary" data-a="agree" type="button">' + (gone || stale ? 'Agree again' : 'I agree') + '</button></div>',
         'health-consent');
       wireMine();
       return;
@@ -236,8 +235,17 @@
   /* Agreeing never asks: the card above the button is the question. */
   function agree(b) {
     b.disabled = true;
-    mineCall('health_consent', { p_on: true }, function (d) {
+    var shown = st.mine && st.mine.wording && st.mine.wording.version;
+    mineCall('health_consent', { p_on: true, p_wording: shown }, function (d) {
       b.disabled = false;
+      if (d.error === 'stale-wording') {
+        /* The words changed while the card was open: draw the new ones and say so. */
+        mineCall('health_mine', {}, function (m) {
+          if (!m.error) { st.mine = m; paintMine(); }
+          msg('mineHealthMsg', said(d), 'err');
+        });
+        return;
+      }
       if (d.error) { msg('mineHealthMsg', said(d), 'err'); return; }
       msg('mineHealthMsg', '');
       st.mine = d; paintMine();
@@ -409,7 +417,7 @@
     /* A system account (2026-10-08) is no colleague to check on. */
     var S = window.ADspaceAdmin;
     var people = (d.people || []).filter(function (p) { return !(S && S.isSystem && S.isSystem(p.team_member_id || p.id)); });
-    var standing = people.filter(function (p) { return p.consent && !p.consent.withdrawn_at; });
+    var standing = people.filter(function (p) { return p.consent && !p.consent.withdrawn_at && p.consent.current !== false; });
     var done = standing.filter(thisHalf);
     box.innerHTML = '';
     /* The half month at a glance: who has checked in, and the average of each
@@ -460,6 +468,7 @@
   function stateOf(p) {
     if (!p.consent) return 'Not agreed';
     if (p.consent.withdrawn_at) return 'Withdrawn';
+    if (p.consent.current === false) return 'Terms changed';
     return '';
   }
   function personRow(p) {
@@ -490,6 +499,7 @@
     var talks = ((st.team && st.team.talks) || []).filter(function (t) { return t.from_id === p.id || t.with_id === p.id; });
     return '<p class="perf-quiet">' + esc(s === 'Not agreed' ? 'Has not agreed to the check-ins.'
         : s === 'Withdrawn' ? 'Withdrew on ' + dateWord(p.consent.withdrawn_at) + '.'
+        : s === 'Terms changed' ? 'Has not agreed to the current terms.'
         : 'Agreed on ' + dateWord(p.consent.agreed_at) + '.') + '</p>' +
       (ck.length ? ck.map(function (c) {
         return '<section class="fsec"><h4 class="fsec-h">' + esc(halfWord(c.half, c.half_end)) + '</h4>' +
