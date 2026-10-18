@@ -7043,6 +7043,15 @@
     /* A resting tick says why (ux-audit WORK-9). */
     if ($('engRepNote')) $('engRepNote').hidden = !off;
   }
+  /* A folder address typed without its scheme is taken as https, as a
+     campaign's links are; what the column's check refuses (another scheme, a
+     space, a quote, <, >, a backtick, a backslash) is refused in the sheet
+     (2026-10-18). */
+  function driveUrl(v) {
+    v = String(v || '').trim();
+    if (v && !/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = 'https://' + v.replace(/^\/+/, '');
+    return v;
+  }
   function saveEng() {
     var c = cw.client;
     if (!c) return;
@@ -7050,12 +7059,12 @@
       client_id: c.id, period: engEditing ? engEditing.period : $('engPeriod').value,
       manager_id: $('engManager').value || null,
       planned_count: Number($('engPlanned').value) || 0,
-      drive_url: String($('engDrive').value || '').trim(),
+      drive_url: driveUrl($('engDrive').value),
       start_day: Number($('engStart').value) || 1,
       reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
         .map(function (x) { return x[1]; })
     };
-    if (payload.drive_url && !/^https:\/\//i.test(payload.drive_url)) {
+    if (payload.drive_url && !/^https:\/\/[^\s"'<>`\\]+$/i.test(payload.drive_url)) {
       msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
       return;
     }

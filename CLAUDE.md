@@ -1058,8 +1058,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   drawing it only on http or https (`absUrl` answers nothing for another
   scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
   column's check refuses; 2026-10-17: `javascript://` passed the scheme test). A link typed
-  that `absUrl` answers nothing for is refused where it was typed (Enter a
-  web address.), never saved as none. A value
+  bare takes `https://` (a month's Drive folder too, its column https
+  alone); one `absUrl` answers nothing for is refused where it was typed
+  (Enter a web address.), never saved as none. A value
   drawn as HTML is escaped where it is put in, never where it is joined.
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
@@ -1159,6 +1160,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   line per table, never in a `do $$` loop.
 - A comparison of two copies (a migration and its schema section; the
   `ACTION_LABEL` map and `activity_section()`) is enforced by a suite.
+- A merge leaves no conflict marker in the schema or a migration
+  (2026-10-18: a `=======` line from #491 stood in `schema.sql`;
+  `tests/sql.js`).
 
 ### Access
 - Access is a level per section, **none < view < work < manage**, in
@@ -4443,7 +4447,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Quotations (`js/quotes.js`, `js/quotepdf.js`,
   `2026-10-14-quotations.sql`; the user, 2026-10-13: a quotation sent is
   honoured, and a client may hold several): one calculation,
-  `quote_price(snapshot, selection)`, prices every quotation from the live
+  `quote_price(snapshot, selection)`, its totals worked by
+  `quote_totals(lines, term, pct, sst)`, which `quote_adjust` and
+  `issue_letter`'s quotation branch call too, never a copy of their own
+  (2026-10-18), prices every quotation from the live
   version (`quote_card`), never the draft and never the page, on 3, 6,
   12, 18 or 24 months (`bad-term`; 1 for one-off items alone; the user,
   2026-10-14; the pages' one list `ADspaceMoney.QUOTE_TERMS`, held equal to

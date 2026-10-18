@@ -4774,6 +4774,41 @@ finding fixed at the user's word ("fix all no matter what").
   still holds the report, and the colleague's daily total still counts it.
   `tests/sql.js` holds both.
 
+- 2026-10-18 · A quotation's totals are worked in one place (review of #538
+  to #550, item 8). The same totals were restated in `quote_price`,
+  `quote_adjust` and `issue_letter`'s quotation branch, and #544 had to
+  find and change two of them for one rule.
+  `2026-10-18-quote-totals-in-one-place.sql` adds `quote_totals(p_lines,
+  p_term, p_pct, p_sst)`, a helper closed to every role: the monthly
+  lines' subtotal, the term's percentage once on it, the month's SST
+  rounded once, the one-off lines and their SST apart, and the commitment
+  by the month where every monthly line runs the term, else on the whole
+  span with the percentage and SST taken once. All three functions call
+  it. No figure moves: `tests/sql.js` prices eighteen quotations (plans,
+  edited rates, quantities and months, one-off items, a one-off-only
+  quotation, a Singapore client, an exempt client, every term) before and
+  after the migration and compares them whole, and `tests/lettersql.js`
+  issues every quoted letter case again on the new `issue_letter`, at the
+  figures it was issued at before.
+
+- 2026-10-18 · A month's Drive folder link may be typed without https://
+  (review of #538 to #550, item 5). The month sheet refused a bare
+  `drive.google.com/…` with "Enter the folder's https:// address.", while
+  every campaign link takes a bare address as https. `saveEng` now adds
+  `https://` to an address with no scheme, and still refuses what
+  `ops_engagements_drive_url_web` refuses (another scheme, http, a space, a
+  quote, <, >, a backtick, a backslash). `tests/work.js` holds a bare
+  address saved as https and three refused.
+
+- 2026-10-18 · A merge conflict marker left in the schema is removed. A
+  `=======` line from resolving a conflict in #491 stood between DATA HELD
+  TO ITS LEVEL and ANALYSIS FILLS THE BRIEF, outside any comment, in place
+  of the banner's opening line: `schema.sql` (re-runnable by design) could
+  not be run whole. No suite runs the file whole (each cuts its sections),
+  so nothing failed; found while resolving a conflict beside it. The line
+  is the banner's opening rule again, and `tests/sql.js` now refuses a
+  conflict marker in the schema or any migration. No database change.
+
 - 2026-10-18 · A bonus and trip period waits on its final months (second
   audit, item 2). `perf_period_calc` reads final reviews alone, and
   `perf_period_confirm` confirmed a half while a review in it was still
