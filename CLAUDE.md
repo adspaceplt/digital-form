@@ -5021,7 +5021,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`
     stands down each active colleague whose moment has passed
     (`team_access_ends(day, time)`, MYT) (`active` false, `expired_at` stamped, filed `team.changed` by
-    `system`), never the last admin with access;
+    `system`), never the last admin with access; each open task they hold
+    goes back to its creator where the creator takes tasks (told, kind
+    `assigned`), else is left with no owner and open to take, the active
+    managers told (`tasks.unassigned`), each move filed on the task
+    (`team_expiry_hand_back`, `2026-10-18-expired-access-hands-tasks-back.sql`);
   - the row reads Access expired and its ⋯ Extend access; moving the date to
     today or later brings them back at once (`team_access_guard`), and Set
     active on a passed date is refused (`expired-date`);
@@ -5411,8 +5415,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   campaign's is reset from its ⋯ (`campaign_reset_link`, Creator
   Campaigns: Campaigns at Work, a key from `new_link_key()`), and
   `get_campaign` answers `not-found` once the client is Past (2026-10-18),
-  so `sign-download` and `media-pass` close with it; a completed campaign
-  of a current client stays readable for its results.
+  so `sign-download` and `media-pass` close with it, as do
+  `save_selection`, `confirm_selection`, `confirm_selection_with` and
+  `review_draft`, before the passcode, and `share_link_preview` names no
+  Past client (`2026-10-18-past-client-links-act-on-nothing.sql`); a
+  completed campaign of a current client stays readable for its results.
   A link's passcode is asked through `link_passcode(kind, token, stored,
   given)` (`2026-10-18-passcode-attempts.sql`; `link_attempts`, RLS on, no
   policy, no grant) by `get_review_feed`, `get_campaign`, `save_selection`,

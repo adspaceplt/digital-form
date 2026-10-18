@@ -63621,4 +63621,478 @@ grant execute on function public.supplier_emails_of(uuid) to authenticated;
 
 -- END OF SUPPLIER EMAILS ----------------------------------------------------
 
+
+-- ===========================================================================
+-- PAST CLIENT LINKS ACT ON NOTHING — a past client's selection link saves,
+-- confirms and decides nothing, as it already reads nothing, and its link
+-- preview names nobody. 2026-10-18. Safe to run twice. Rollback at the foot.
+-- Mirrored byte for byte in supabase/schema.sql under the same banner;
+-- tests/confirmonce.js compares the two.
+--
+-- WHAT CHANGED (second audit, item 7)
+--   1. save_selection, confirm_selection, confirm_selection_with and
+--      review_draft answer `not-found` for a campaign whose client is Past,
+--      before the passcode is asked, as get_campaign has since SELECTION
+--      LINK CLOSES. Each is restated whole from PASSCODE ATTEMPTS with only
+--      that check added.
+--   2. share_link_preview('campaign') answers nothing for a Past client's
+--      campaign, so a chat app's preview of /s/{key} names no client.
+--
+-- ROLLBACK
+--   Run the four functions from PASSCODE ATTEMPTS again
+--   (2026-10-18-passcode-attempts.sql), and share_link_preview from SHORT
+--   LINKS RE-LETTERED (2026-10-15-short-links-relettered.sql).
+-- ===========================================================================
+
+create or replace function public.save_selection(
+  p_token text, p_selected uuid[], p_backup uuid[], p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  n integer;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  -- A past client's link acts on nothing, as it reads nothing (second
+  -- audit, item 7): answered as a key nobody knows, before the passcode.
+  if exists (select 1 from public.clients cl where cl.id = c.client_id and cl.stage = 'past') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  -- Five wrong passcodes lock the link for 15 minutes, answered as a key
+  -- nobody knows (second audit, item 6).
+  case public.link_passcode('selection', c.access_token, c.passcode, p_passcode)
+    when 'locked' then return jsonb_build_object('error', 'not-found');
+    when 'wrong' then return jsonb_build_object('error', 'passcode');
+    else null;
+  end case;
+
+  n := coalesce(array_length(p_selected, 1), 0);
+  /* Closed once the slots were full, until the team reopens it; backups
+     alone may still be named where the team opened them. */
+  if c.selection_closed_at is not null and not (coalesce(c.backups_open, false) and n = 0) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  if n > c.slots then
+    return jsonb_build_object('error', 'over-slots', 'slots', c.slots);
+  end if;
+
+  -- Anything already confirmed or further along is the team's to change.
+  update campaign_options set state = 'option'
+   where campaign_id = c.id and state in ('shortlisted', 'backup');
+
+  if n > 0 then
+    update campaign_options set state = 'shortlisted'
+     where campaign_id = c.id and id = any(p_selected) and state = 'option';
+  end if;
+  -- Only where the team opened them: the page hides the control, and this is
+  -- what makes that a fact rather than a courtesy.
+  if coalesce(c.backups_open, false) and coalesce(array_length(p_backup, 1), 0) > 0 then
+    update campaign_options set state = 'backup'
+     where campaign_id = c.id and id = any(p_backup) and state = 'option';
+  end if;
+
+  return jsonb_build_object('ok', true, 'selected', n);
+end $$;
+
+revoke all on function public.save_selection(text, uuid[], uuid[], text) from public;
+grant execute on function public.save_selection(text, uuid[], uuid[], text) to anon, authenticated;
+
+create or replace function public.confirm_selection(
+  p_token text, p_person text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  -- A past client's link acts on nothing, as it reads nothing (second
+  -- audit, item 7): answered as a key nobody knows, before the passcode.
+  if exists (select 1 from public.clients cl where cl.id = c.client_id and cl.stage = 'past') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  -- Five wrong passcodes lock the link for 15 minutes, answered as a key
+  -- nobody knows (second audit, item 6).
+  case public.link_passcode('selection', c.access_token, c.passcode, p_passcode)
+    when 'locked' then return jsonb_build_object('error', 'not-found');
+    when 'wrong' then return jsonb_build_object('error', 'passcode');
+    else null;
+  end case;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+  if c.selection_closed_at is not null and not coalesce(c.backups_open, false) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  -- Nothing saved is nothing to confirm (a save refused under the page).
+  if not exists (select 1 from campaign_options o
+                  where o.campaign_id = c.id
+                    and o.state = case when c.selection_closed_at is not null
+                                       then 'backup' else 'shortlisted' end) then
+    return jsonb_build_object('error', 'empty');
+  end if;
+
+  insert into campaign_confirmations (campaign_id, kind, person, source)
+  values (c.id, 'client', trim(p_person), 'portal');
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          (select count(*)::text || ' creator' || case when count(*) = 1 then '' else 's' end
+             from campaign_options
+            where campaign_id = c.id and state = 'shortlisted') || ' confirmed');
+
+  return jsonb_build_object('ok', true);
+end $$;
+
+revoke all on function public.confirm_selection(text, text, text) from public;
+grant execute on function public.confirm_selection(text, text, text) to anon, authenticated;
+
+create or replace function public.confirm_selection_with(
+  p_token text, p_person text, p_passcode text, p_selected uuid[], p_backup uuid[],
+  p_seen jsonb, p_idem text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c      campaigns%rowtype;
+  v_sel  uuid[];
+  v_bak  uuid[];
+  v_all  uuid[];
+  v_idem text := left(nullif(btrim(coalesce(p_idem, '')), ''), 64);
+  v_now  jsonb;
+  v_snap jsonb;
+  n      integer;
+  v_booked integer;
+begin
+  select * into c from campaigns where access_token = p_token for update;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  -- A past client's link acts on nothing, as it reads nothing (second
+  -- audit, item 7): answered as a key nobody knows, before the passcode.
+  if exists (select 1 from public.clients cl where cl.id = c.client_id and cl.stage = 'past') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  -- Five wrong passcodes lock the link for 15 minutes, answered as a key
+  -- nobody knows (second audit, item 6).
+  case public.link_passcode('selection', c.access_token, c.passcode, p_passcode)
+    when 'locked' then return jsonb_build_object('error', 'not-found');
+    when 'wrong' then return jsonb_build_object('error', 'passcode');
+    else null;
+  end case;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+  -- The same press again: the first answer stands and nothing is filed twice.
+  if v_idem is not null and exists (select 1 from campaign_confirmations k
+                                     where k.campaign_id = c.id and k.idem = v_idem) then
+    return jsonb_build_object('ok', true, 'again', true);
+  end if;
+
+  v_sel := array(select distinct x from unnest(coalesce(p_selected, '{}'::uuid[])) x where x is not null);
+  v_bak := case when coalesce(c.backups_open, false)
+                then array(select distinct x from unnest(coalesce(p_backup, '{}'::uuid[])) x
+                            where x is not null and not (x = any (v_sel)))
+                else '{}'::uuid[] end;
+  v_all := v_sel || v_bak;
+  n := cardinality(v_sel);
+
+  if c.selection_closed_at is not null and not (coalesce(c.backups_open, false) and n = 0) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  if cardinality(v_all) = 0 then return jsonb_build_object('error', 'empty'); end if;
+  -- The slots left are the slots less the creators already booked: a
+  -- selection reopened for four of ten never books sixteen.
+  v_booked := public.campaign_booked(c.id);
+  if n > 0 and n > c.slots - v_booked then
+    return jsonb_build_object('error', 'over-slots', 'slots', c.slots, 'booked', v_booked);
+  end if;
+  -- Every creator named is still on the campaign and open to choose.
+  if (select count(*) from campaign_options o
+       where o.id = any (v_all) and o.campaign_id = c.id
+         and o.state in ('option', 'shortlisted', 'backup')) <> cardinality(v_all) then
+    return jsonb_build_object('error', 'stale');
+  end if;
+  -- The prices the client read are the prices now.
+  select jsonb_object_agg(o.id::text, o.rate) into v_now
+    from campaign_options o where o.id = any (v_all);
+  if exists (select 1 from campaign_options o
+              where o.id = any (v_all)
+                and coalesce(p_seen -> (o.id::text), 'null'::jsonb)
+                    is distinct from coalesce(to_jsonb(o.rate), 'null'::jsonb)) then
+    return jsonb_build_object('error', 'prices', 'rates', v_now);
+  end if;
+
+  update campaign_options set state = 'option'
+   where campaign_id = c.id and state in ('shortlisted', 'backup');
+  if n > 0 then
+    update campaign_options set state = 'shortlisted'
+     where campaign_id = c.id and id = any (v_sel) and state = 'option';
+  end if;
+  if cardinality(v_bak) > 0 then
+    update campaign_options set state = 'backup'
+     where campaign_id = c.id and id = any (v_bak) and state = 'option';
+  end if;
+
+  select jsonb_agg(jsonb_build_object('id', o.id, 'creator', cr.name, 'rate', o.rate, 'as', o.state)
+                   order by o.position, o.added_at)
+    into v_snap
+    from campaign_options o join creators cr on cr.id = o.creator_id
+   where o.id = any (v_all);
+  insert into campaign_confirmations (campaign_id, kind, person, source, idem, snapshot)
+  values (c.id, 'client', trim(p_person), 'portal', v_idem, coalesce(v_snap, '[]'::jsonb));
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          case when n > 0 then n::text || ' creator' || case when n = 1 then '' else 's' end || ' confirmed'
+               else cardinality(v_bak)::text || ' backup' || case when cardinality(v_bak) = 1 then '' else 's' end || ' confirmed' end);
+
+  return jsonb_build_object('ok', true, 'selected', n);
+end $$;
+
+revoke all on function public.confirm_selection_with(text, text, text, uuid[], uuid[], jsonb, text) from public;
+grant execute on function public.confirm_selection_with(text, text, text, uuid[], uuid[], jsonb, text) to anon, authenticated;
+
+create or replace function public.review_draft(
+  p_token text, p_option uuid, p_decision text, p_note text default null,
+  p_reviewer text default null, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  o campaign_options%rowtype;
+  n integer;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  -- A past client's link acts on nothing, as it reads nothing (second
+  -- audit, item 7): answered as a key nobody knows, before the passcode.
+  if exists (select 1 from public.clients cl where cl.id = c.client_id and cl.stage = 'past') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  -- Five wrong passcodes lock the link for 15 minutes, answered as a key
+  -- nobody knows (second audit, item 6).
+  case public.link_passcode('selection', c.access_token, c.passcode, p_passcode)
+    when 'locked' then return jsonb_build_object('error', 'not-found');
+    when 'wrong' then return jsonb_build_object('error', 'passcode');
+    else null;
+  end case;
+  if p_decision not in ('approved', 'changes') then
+    return jsonb_build_object('error', 'bad-decision');
+  end if;
+
+  select * into o from campaign_options
+   where id = p_option and campaign_id = c.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+
+  -- Only a draft that is actually with the client can be ruled on.
+  if o.state not in ('reviewing', 'changes') then
+    return jsonb_build_object('error', 'not-reviewing');
+  end if;
+  /* A draft the team sent back to the creator is not with the client: the
+     selection page shows it as Pending draft, so only a hand-made call
+     could rule on it (audit B, 2026-10-17). */
+  if o.state = 'changes' and coalesce(o.changes_by, 'client') = 'team' then
+    return jsonb_build_object('error', 'not-reviewing');
+  end if;
+
+  n := coalesce(o.revision_round, 0);
+
+  insert into option_reviews (option_id, round, decision, note, reviewer)
+  values (p_option, greatest(n, 1), p_decision, nullif(trim(coalesce(p_note, '')), ''), p_reviewer);
+
+  if p_decision = 'approved' then
+    update campaign_options set state = 'scheduled' where id = p_option;
+  else
+    update campaign_options
+       set state = 'changes', revision_round = greatest(n, 1) + 1,
+           changes_by = 'client'
+     where id = p_option;
+  end if;
+
+  /* The client's decision is the one event on a campaign that nobody on the
+     team witnesses, and it was the only one the activity record never held:
+     a draft went to Reviewing and appeared as Scheduled with nothing in
+     between saying who had said yes. The reviewer's own name is the actor,
+     because a person decided it. */
+  insert into activity_log (actor, action, subject, detail)
+  select coalesce(nullif(trim(coalesce(p_reviewer, '')), ''), 'Client'),
+         'campaign.review', c.title,
+         cr.name || ' · ' ||
+         case when p_decision = 'approved' then 'Approved' else 'Changes requested' end ||
+         coalesce(': ' || nullif(trim(coalesce(p_note, '')), ''), '')
+    from creators cr where cr.id = o.creator_id;
+
+  return jsonb_build_object('ok', true, 'decision', p_decision);
+end $$;
+
+revoke all on function public.review_draft(text, uuid, text, text, text, text) from public;
+grant execute on function public.review_draft(text, uuid, text, text, text, text) to anon, authenticated;
+
+create or replace function public.share_link_preview(p_kind text, p_key text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(case p_kind
+    when 'which' then (
+      select case
+        when exists (select 1 from public.campaigns k where k.access_token = p_key) then jsonb_build_object('kind', 'campaign')
+        when exists (select 1 from public.clients c where c.script_key = p_key) then jsonb_build_object('kind', 'script')
+      end
+       where p_key ~ '^[A-Za-z0-9_-]{6,64}$')
+    when 'script' then (
+      select jsonb_strip_nulls(jsonb_build_object('brand', c.name))
+        from public.clients c
+       where p_key ~ '^[A-Za-z0-9_-]{6,64}$'
+         and c.script_key = p_key and c.active
+         and exists (select 1 from public.video_scripts s where s.client_id = c.id and s.status = 'shared')
+       limit 1)
+    when 'campaign' then (
+      select jsonb_strip_nulls(jsonb_build_object('brand', c.name, 'title', nullif(btrim(k.title), '')))
+        from public.campaigns k
+        join public.clients c on c.id = k.client_id
+       where p_key ~ '^[A-Za-z0-9_-]{6,64}$'
+         and k.access_token = p_key
+         and coalesce(k.passcode, '') = '' and k.state <> 'draft'
+         and coalesce(c.stage, '') <> 'past'
+       limit 1)
+    when 'creator' then (
+      select case when count(*) = 1 then jsonb_strip_nulls(jsonb_build_object('brand', min(c.name), 'title', nullif(btrim(min(k.title)), ''))) end
+        from public.creators cr
+        join public.campaign_options o on o.creator_id = cr.id
+         and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted')
+        join public.campaigns k on k.id = o.campaign_id
+        join public.clients c on c.id = k.client_id
+       where p_key ~ '^[A-Za-z0-9]{8}$'
+         and cr.access_code = upper(p_key) and cr.active)
+  end, '{}'::jsonb)
+$$;
+revoke all on function public.share_link_preview(text, text) from public;
+grant execute on function public.share_link_preview(text, text) to anon, authenticated;
+
+-- END OF PAST CLIENT LINKS ACT ON NOTHING -----------------------------------
+
+-- ===========================================================================
+-- EXPIRED ACCESS HANDS TASKS BACK — when a colleague's access expires, each
+-- open task they hold goes back to whoever created it, else is left open to
+-- take. 2026-10-18. Safe to run twice. Rollback at the foot. Mirrored byte
+-- for byte in supabase/schema.sql under the same banner; tests/ops.js
+-- compares the two.
+--
+-- WHAT CHANGED (review of 2026-10-18, item 19)
+--   team_expire_access stood a colleague down and left their open tasks
+--   with them: hidden from most of the team and movable only by an admin.
+--   It now calls team_expiry_hand_back for each colleague it stands down.
+--   Each open task (not finished, cancelled or archived) they hold as owner:
+--     * goes back to its creator where the creator is another active
+--       colleague who takes tasks (ops_takes_tasks), who is told (kind
+--       assigned, "Handed back to you: … access ended.");
+--     * else is left with no owner and open to take (open_at; the Take
+--       flow of OPEN TO TAKE), and each active colleague at My Work Manage
+--       or admin who takes tasks is told (kind tasks.unassigned).
+--   Each move is filed on the task (assignment_changed, detail expired and
+--   a note), so its history says why. Helpers and reviewers are left as
+--   they are (trigger team_members_leaving ends them on a removal).
+--
+-- ROLLBACK
+--   Run team_expire_access as TEAM ACCESS TIME stated it (the
+--   previous last definition in schema.sql); team_expiry_hand_back may stay.
+-- ===========================================================================
+
+create or replace function public.team_expiry_hand_back(p_member uuid)
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  v_who public.team_members;
+  t public.ops_tasks;
+  v_to uuid;
+  v_title text;
+  n int := 0;
+begin
+  select * into v_who from public.team_members where id = p_member;
+  if v_who.id is null then return 0; end if;
+  for t in select k.* from public.ops_tasks k
+             join public.ops_task_assignees a on a.task_id = k.id
+            where a.team_member_id = p_member and a.responsibility = 'owner' and a.ended_at is null
+              and k.completed_at is null and k.cancelled_at is null and k.archived_at is null
+            order by k.task_no loop
+    v_to := case when t.created_by is not null and t.created_by <> p_member
+                       and public.ops_takes_tasks(t.created_by) then t.created_by end;
+    v_title := public.ops_serial(t.task_no) || ' · ' || public.ops_title(t);
+    update public.ops_task_assignees set ended_at = now()
+     where task_id = t.id and responsibility = 'owner' and ended_at is null;
+    if v_to is not null then
+      insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+      values (t.id, v_to, 'owner', null);
+      update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
+      perform public.ops_notify(v_to, t.id, 'assigned', v_title,
+        'Handed back to you: ' || v_who.name || '''s access ended.',
+        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'));
+    else
+      update public.ops_tasks set open_at = now(), open_by = null, version = version + 1, updated_at = now()
+       where id = t.id;
+      perform public.ops_notify(x.id, t.id, 'tasks.unassigned', v_title,
+        v_who.name || '''s access ended. The task is open to take.',
+        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'))
+        from public.team_members x
+       where x.active and x.id <> p_member and not coalesce(x.system, false)
+         and (coalesce(x.is_admin, false) or coalesce(x.role, '') = 'admin' or public.level_rank(x.access ->> 'ops') >= 3)
+         and public.ops_takes_tasks(x.id);
+    end if;
+    insert into public.ops_task_events (task_id, event_type, actor_id, actor_email, from_value, to_value, detail)
+    values (t.id, 'assignment_changed', null, null,
+            jsonb_build_object('owner_id', p_member), jsonb_build_object('owner_id', v_to),
+            jsonb_build_object('expired', true, 'note',
+              case when v_to is not null then 'Access ended; handed back to whoever created it.'
+                   else 'Access ended; open to take.' end));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.team_expiry_hand_back(uuid) from public, anon, authenticated;
+
+create or replace function public.team_expire_access()
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  n int := 0;
+begin
+  for m in select * from public.team_members t
+            where t.active and t.access_until is not null
+              and public.team_access_ends(t.access_until, t.access_until_time) <= now()
+            order by t.access_until, t.access_until_time nulls last, t.name loop
+    if (m.is_admin or m.role = 'admin') and not exists (
+         select 1 from public.team_members o
+          where o.id <> m.id and o.active and (o.is_admin or o.role = 'admin')
+            and (o.access_until is null
+                 or public.team_access_ends(o.access_until, o.access_until_time) > now())) then
+      continue;
+    end if;
+    update public.team_members set active = false, expired_at = now() where id = m.id;
+    perform public.team_expiry_hand_back(m.id);
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('system', 'team.changed', m.name,
+            case when m.access_until_time is null
+                 then 'Access expired after ' || public.team_access_word(m.access_until, null)
+                 else 'Access expired at ' || public.team_access_word(m.access_until, m.access_until_time) end);
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.team_expire_access() from public, anon, authenticated;
+
+-- END OF EXPIRED ACCESS HANDS TASKS BACK ------------------------------------
+
 select public.functions_tidy();

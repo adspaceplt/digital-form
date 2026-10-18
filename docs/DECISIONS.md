@@ -5274,6 +5274,27 @@ finding fixed at the user's word ("fix all no matter what").
   `3pform.html` still points at `/supplier`, which now reads the form's
   Link not recognised cover without a key.
 
+- 2026-10-18 · A Past client's selection link acts on nothing (second
+  audit, item 7). SELECTION LINK CLOSES made `get_campaign` answer a Past
+  client's link as an unknown key, but the functions that act through the
+  same link (`save_selection`, `confirm_selection`,
+  `confirm_selection_with`, `review_draft`) did not ask, so a saved link
+  could still save a selection, confirm it or decide on a draft, and
+  `share_link_preview('campaign')` still named the client in a chat
+  preview. Each now answers `not-found` for a Past client before the
+  passcode is asked; the preview answers nothing. `tests/confirmonce.js`
+  holds all five; the stand-in does the same.
+
+- 2026-10-18 · Expired access hands the open tasks back (review item 19).
+  `team_expire_access` stood a colleague down and left their open tasks
+  with them, hidden from most of the team and movable only by an admin.
+  Each open task they held now goes back to whoever created it, where that
+  colleague is active and takes tasks, who is told; otherwise it is left
+  with no owner and open to take through the existing Take flow, and the
+  active managers (My Work Manage, admins) are told. Each move is filed on
+  the task with a note, so its history says why. `tests/ops.js` holds both
+  paths and that finished work is left alone.
+
 - **2026-10-18 · Supplier emails.** The user chose Resend from
   `noreply-supplier@sc.adspace.me` (replies to ap@adspacestudios.com), sent
   by hand at Suppliers Work, templates at Full Access, Copy the finance
