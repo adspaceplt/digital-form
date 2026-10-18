@@ -176,6 +176,7 @@
     'draft-not-before-final': 'Draft due must be before the due date.',
     'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'Move not allowed from this stage.',
+    'priority-not-yours': 'The priority is changed by whoever created the task, or a manager.',
     'held-resume': 'The task goes back to the stage it left.',
     'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
@@ -5201,7 +5202,12 @@
       } else if (t.code_period) {
         rows.push(frow('Month', esc(monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : ''))));
       }
-      rows.push(frow('Priority', detailSelect('priority_level', 'Priority', PRIORITY_OPTS, String(prioValue(t)))));
+      /* A priority is a deadline from when it is set: whoever created the
+         task, My Work Manage or an admin changes it, never the person it
+         binds (ops_update_task, 2026-10-18). */
+      rows.push(frow('Priority', mayPriority(t)
+        ? detailSelect('priority_level', 'Priority', PRIORITY_OPTS, String(prioValue(t)))
+        : esc(PRIORITY_WORD[String(prioValue(t))] || 'Normal')));
       rows.push(frow('Complexity', detailSelect('complexity', 'Complexity', pairsOf(COMPLEX_WORD), t.complexity || 'standard')));
     } else {
       [['Format', formatWord(t)], ['Type', TASK_TYPE_WORD[t.task_type] || ''],
@@ -5307,6 +5313,7 @@
      will actually do, and while an ask is open the rail says so with the one
      action the reader has. Nobody is shown a button that is not theirs. */
   function whoDecides(t) { return (t && t.created_by) || null; }
+  function mayPriority(t) { return Boolean(t) && ((t.created_by && t.created_by === myId()) || may('ops', 'manage')); }
   function myId() { var m = bridge.me && bridge.me(); return (m && m.id) || null; }
   /* An admin, or a group given My Work: Move any task, moves any date
      directly, as the database lets them (ops.override, 2026-10-07). */
