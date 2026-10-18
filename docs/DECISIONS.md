@@ -4984,3 +4984,18 @@ finding fixed at the user's word ("fix all no matter what").
   once for its values holding it, joined by chr(1), which no key holds, and
   each key is sought in that text by the same `strpos`. `tests/s3sql.js`
   answers seven asks beside the first definition and finds the same keys.
+
+- 2026-10-18 · A link's passcode cannot be guessed (second audit, item 6).
+  `get_review_feed` and `get_campaign` compared a passcode with no limit on
+  tries, and a wrong one answered the client's name, so a key alone named
+  the client and a four-digit passcode fell to a script.
+  `2026-10-18-passcode-attempts.sql` adds `link_attempts` and
+  `link_passcode`, asked by every function a passcode opens (the two feeds,
+  `save_selection`, `confirm_selection`, `confirm_selection_with`,
+  `review_draft`), each restated whole with only that check changed: a call
+  without a passcode (the page learning one is needed) is never counted, a
+  fifth wrong try within 15 minutes locks the link for 15 minutes, and a
+  locked link answers as an unknown key. `submit_review` and
+  `submit_review_seen` keep their check: they need a post id only the feed
+  gives. No live link held a passcode when it shipped. `tests/confirmonce.js`
+  holds the rule on both kinds of link.
