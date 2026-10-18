@@ -5602,8 +5602,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `confirm_selection`, `confirm_selection_with` and `review_draft`
   (`2026-10-18-passcode-locks-per-caller.sql`): asked without one is never
   counted; wrong ones are counted per link and caller address
-  (`link_tries`, `request_ip()`: X-Forwarded-For's first entry, which
-  `media-pass` and `sign-download` pass on for their caller), five within
+  (`link_tries`, `request_ip()`: the address Cloudflare saw,
+  `cf-connecting-ip`, else the last X-Forwarded-For entry, never the first,
+  which the caller writes; `media-pass` and `sign-download` pass their
+  caller's on as `x-adspace-ip` beside `x-adspace-relay`, the
+  `ip_relay_secret` in `app_secrets`, the only way it is taken;
+  `2026-10-18-a-callers-address-is-cloudflares.sql`), five within
   15 minutes locking that address out, the right one included, for 15
   minutes, then an hour, then a day where it is locked again within a day
   of the last lock ending (`strikes`, `struck_until`; the right code and

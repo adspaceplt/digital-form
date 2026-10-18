@@ -92,11 +92,19 @@ async function cdnLink(path: string): Promise<string | null> {
 /* The caller's own address, passed on when this function asks for the
    link as the page did, so a wrong access code counts against the person
    who typed it and never against this function's own address, which every
-   client shares (second audit, item 4; `request_ip()` reads it). */
-function callerHeaders(req: Request): Record<string, string> {
-  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
-    || (req.headers.get('cf-connecting-ip') || '').trim();
-  return /^[0-9A-Fa-f.:]{3,45}$/.test(ip) ? { 'x-forwarded-for': ip } : {};
+   client shares (second audit, item 4). It is the address Cloudflare saw
+   (`cf-connecting-ip`, else the last X-Forwarded-For entry, the one the
+   gateway appended), never the first, which the caller writes (audit
+   2026-10-18, item 1). Cloudflare stamps this function's own address on
+   the call it makes, so the caller's rides in `x-adspace-ip` beside the
+   relay secret, the only way `request_ip()` takes it. */
+// deno-lint-ignore no-explicit-any
+async function callerHeaders(req: Request, admin: any): Promise<Record<string, string>> {
+  const xff = (req.headers.get('x-forwarded-for') || '').split(',');
+  const ip = (req.headers.get('cf-connecting-ip') || '').trim() || xff[xff.length - 1].trim();
+  if (!/^[0-9A-Fa-f.:]{3,45}$/.test(ip)) return {};
+  const { data } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
+  return data && data.value ? { 'x-adspace-ip': ip, 'x-adspace-relay': String(data.value) } : {};
 }
 
 function cors(origin: string | null) {
@@ -158,7 +166,8 @@ Deno.serve(async (req) => {
     // The client's page: the same answer the page itself was given.
     const token = String(body.token);
     if (!/^[A-Za-z0-9_-]{6,64}$/.test(token)) return json({ error: 'bad_token' }, 400, origin);
-    const pub = createClient(url, anon, { global: { headers: callerHeaders(req) } });
+    const relay = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const pub = createClient(url, anon, { global: { headers: await callerHeaders(req, relay) } });
     const { data, error } = await pub.rpc('get_campaign', {
       p_token: token, p_passcode: body.passcode ? String(body.passcode) : null
     });
