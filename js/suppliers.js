@@ -55,7 +55,8 @@
     'bad-subject': 'Enter a subject, 2 to 200 characters.', 'bad-body': 'Enter the message, 2 to 5,000 characters.',
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
     'mail-not-set-up': 'Email is not set up yet. Tell an admin.', 'not-sent': 'Not sent. Try again.',
-    'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.'
+    'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.',
+    'no-client': 'That client is no longer there or is outside your clients.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -205,6 +206,7 @@
         return;
       }
       state.rec = d.supplier; state.form = d.form; state.pay = d.pay;
+      state.client = d.client || null; state.match = d.match || [];
       paintRec();
       letters(id);
       emails(id);
@@ -257,6 +259,44 @@
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
         ? 'Received ' + esc(day(f.submitted_at)) + ', taken in' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
   }
+  /* The client this supplier also is (2026-10-18): its own Supplier ID and
+     Client ID kept apart, the two records opening each other. While none is
+     linked, a client sharing the BRN is named as the likely one. */
+  function clientBlock() {
+    var c = state.client, m = state.match || [], cv = may('clients', 'view');
+    var act = may('suppliers', 'work') && cv;
+    if (!c && !act) return '';
+    var name = function (x) { return esc(window.ADspaceForm.named(x.code, x.name)); };
+    var dd = !c ? '<dd class="is-empty">Not linked</dd>'
+      : c.hidden ? '<dd>Not in your clients</dd>'
+      : '<dd>' + (cv ? '<button class="linkbtn" type="button" data-s="client-open">' + name(c) + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button>' : name(c)) + '</dd>';
+    return '<div class="readgroup-head"><h4 class="fsec-h">Client</h4>' +
+        (act ? '<button class="btn btn-sm" type="button" data-s="client">' + (c ? 'Edit' : 'Link client') + '</button>' : '') + '</div>' +
+      '<dl class="ovfacts"><div><dt>Linked to</dt>' + dd + '</div>' +
+        (!c && m.length ? '<div><dt>Same BRN</dt><dd>' + m.map(name).join(', ') + '</dd></div>' : '') + '</dl>';
+  }
+  function linkClient() {
+    var s = state.rec, c = state.client;
+    db.from('clients').select('id, client_code, name').then(function (r) {
+      if (r.error) { msg('supRecMsg', 'Could not load the clients. ' + (r.error.message || ''), 'err'); return; }
+      var rows = (r.data || []).slice().sort(window.ADspaceForm.byClient);
+      var pick = c && c.id ? c.id : (state.match[0] || {}).id || '';
+      if (pick && !rows.some(function (x) { return x.id === pick; })) pick = '';
+      window.ADspaceConfirm.ask({
+        title: 'Linked client', go: 'Save', wait: true,
+        fields: [{ name: 'client', label: 'Client', required: false, value: pick,
+          choices: [['', 'Not linked']].concat(rows.map(function (x) { return [x.id, window.ADspaceForm.named(x.client_code, x.name)]; })) }]
+      }, function (v) {
+        var to = v.client || null;
+        if (to === ((c && c.id) || null)) return Promise.resolve('');
+        return rpc('supplier_client_set', { p_id: s.id, p_client: to }).then(function (r2) {
+          if (r2.error || (r2.data || {}).error) return said(r2);
+          openRec(s.id);
+          return '';
+        });
+      });
+    });
+  }
   function paintRec() {
     var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
@@ -278,6 +318,7 @@
         '<div class="msg" id="supRecMsg"></div>' +
         '<div class="readgroups">' +
         (formBlock() ? '<section class="readgroup sup-form">' + formBlock() + '</section>' : '') +
+        (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Letters</h4>' +
           (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
@@ -309,6 +350,11 @@
     });
     on('copy', function (b) { if (window.ADspaceCopy) window.ADspaceCopy.to(b, $('supLink').value); });
     on('approve', function (b) { status('active', b); });
+    on('client', linkClient);
+    on('client-open', function () {
+      history.pushState(null, '', '?s=clients&client=' + encodeURIComponent(state.client.slug || state.client.id));
+      if (bridge.show) bridge.show('clients');
+    });
     on('mail', function () { openMail(s.status === 'active' ? 'approved' : 'document'); });
     on('off', function () { status('inactive'); });
     on('on', function () { status('active'); });
