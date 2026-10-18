@@ -5240,3 +5240,11 @@ finding fixed at the user's word ("fix all no matter what").
   NET 14 (the imported AS0125 asked for it) and held phone numbers to
   Malaysia's and Singapore's forms; the BRN, NRIC and SST shapes already
   held.
+
+- 2026-10-18 · Tasks go only to a colleague at My Work Work or above
+  (review item 12). `ops_takes_tasks` and the page's `takesTasks` let in any
+  level above No Access, and the page offered a colleague whose row held no
+  access map at all; a colleague at View could be handed a task they could
+  not move, take or pass on. Both now ask Work or above (an admin always);
+  the triggers and the noon reminder follow, and the stand-in holds the
+  same. Nobody at View held a live task when it shipped.
