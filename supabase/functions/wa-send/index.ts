@@ -175,7 +175,10 @@ function pdfFrom(b64: string): Uint8Array | null {
    page draws it with the reference in the file's title, so a file that does
    not carry the record's reference is not that record's. pdf-lib keeps the
    title in a compressed object stream as UTF-16 hex, so each stream is
-   inflated and searched as text and as that hex. */
+   inflated and searched as text and as that hex. A stream ends with one
+   line break before `endstream`: only that is cut, since the compressed
+   data may itself end in a line-feed byte (cutting every trailing break
+   refused one valid file in about thirty, 2026-10-18). */
 const hexOf = (s: string) => Array.from(s).map((c) => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase();
 async function inflate(b: Uint8Array): Promise<string> {
   try {
@@ -195,10 +198,15 @@ async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
     seen++;
     const start = m.index + m[0].length, end = raw.indexOf('endstream', start);
     if (end < 0) break;
-    let stop = end;
-    while (stop > start && (b[stop - 1] === 0x0a || b[stop - 1] === 0x0d)) stop--;
-    if (stop - start > 4 * 1024 * 1024) continue;
-    if (hit(await inflate(b.subarray(start, stop)))) return true;
+    if (end - start > 4 * 1024 * 1024) continue;
+    const cuts = b[end - 1] === 0x0a ? (b[end - 2] === 0x0d ? [end - 1, end - 2] : [end - 1])
+      : b[end - 1] === 0x0d ? [end - 1] : [end];
+    for (const stop of cuts) {
+      if (stop <= start) continue;
+      const text = await inflate(b.subarray(start, stop));
+      if (hit(text)) return true;
+      if (text) break;
+    }
   }
   return false;
 }

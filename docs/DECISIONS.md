@@ -4676,3 +4676,15 @@ finding fixed at the user's word ("fix all no matter what").
   minute wake tries again. A send that may have reached Meta (`unknown:`)
   is unchanged. `tests/wafn.js` holds both, `tests/sql.js` the row left
   queued after one try.
+
+- 2026-10-18 · A valid quotation or letter PDF is no longer refused on
+  WhatsApp one time in thirty. Found while running `wafn` for item 1: its
+  check that a quotation naming its own reference is sent failed about one
+  run in nine. wa-send finds the reference inside pdf-lib's compressed
+  object stream, and cut every line-feed and carriage-return byte before
+  `endstream`; when the compressed data itself ended in a line-feed byte
+  (about one stream in thirty, its date making each file differ), the data
+  was cut short, would not inflate, and the file was refused `bad-file`.
+  Only the one line break before `endstream` is now cut (a CR LF tried
+  after a lone LF). `tests/wafn.js` draws a file whose stream ends in a
+  line feed and sends it.

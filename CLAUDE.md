@@ -5056,7 +5056,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
   `wa-send` reads itself as the caller through `sign-download`, never the
   page's bytes, a quotation's or letter's refused unless it is a PDF whose
-  title names the record's own reference (`bad-file`; audit S3, 2026-10-15;
+  title names the record's own reference (each stream inflated with only
+  its one closing line break cut; `bad-file`; audit S3, 2026-10-15;
   the letter's PDF titled `Letter of Offer {number}`); the
   message previewed as it will read. Send asks (`ADspaceConfirm`, naming
   the recipient, the number and the category), then `wa-send` `compose`
