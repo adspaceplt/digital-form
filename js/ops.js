@@ -7344,7 +7344,7 @@
            2026-10-06). */
         if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Due dates', msg: 'workMsg',
           keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-                 ['revision_due_days', 'Revision (Client): days after changes are asked', 'due'],
+                 ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due'],
                  ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] }, $('workMoreBtn'));
       });
     }
