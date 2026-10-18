@@ -685,7 +685,7 @@
   function openIssue(opts) {
     opts = opts || {};
     var re = opts.reissue && opts.reissue.id ? opts.reissue : null;
-    issuing = { client: opts.client || null, contact: opts.contact || null, supplier: opts.supplier || null,
+    issuing = { client: opts.client || null, contact: opts.contact || null, supplier: opts.supplier || null, member: opts.member || null,
                 families: re ? [re.family] : (opts.families || null),
                 idem: null, onDone: opts.onDone || null, reissue: re };
     sayTo = opts.msg || 'regMsg';
@@ -696,10 +696,12 @@
       fillClients(); fillMembers(); fillSuppliers();
       if (issuing.client) $('docClient').value = issuing.client.id;
       if (issuing.supplier) $('docSupplier').value = issuing.supplier.id;
+      if (issuing.member) $('docMember').value = issuing.member.id;
       $('docSerial').value = '';
       $('docDate').value = today();
       $('docTitle').textContent = issuing.client ? 'Issue document for ' + issuing.client.name
-        : issuing.supplier ? 'Issue document for ' + issuing.supplier.name : 'Issue document';
+        : issuing.supplier ? 'Issue document for ' + issuing.supplier.name
+        : issuing.member ? 'Issue document for ' + issuing.member.name : 'Issue document';
       $('docGo').textContent = re ? 'Reissue' : 'Issue';
       /* What a reissue fixes is what the document says; what it is, whose
          it is and its reference are not up for change. */
@@ -1091,10 +1093,10 @@
   var addSeed = null;
   function openAdd(d, onChange, opts) {
     opts = opts || {};
-    var forSup = opts.supplier || null;
-    if (!(may('register.documents', 'work') || mayFamily('client', 'work') || mayFamily('supplier', 'work'))) return;
+    var forSup = opts.supplier || null, forMem = opts.member || null;
+    if (!(may('register.documents', 'work') || mayFamily('client', 'work') || mayFamily('supplier', 'work') || mayFamily('hr', 'work'))) return;
     if (!(d && d.id)) d = null;
-    editing = d ? { d: d, then: onChange } : (forSup ? { then: opts.onDone } : null);
+    editing = d ? { d: d, then: onChange } : (forSup || forMem ? { then: opts.onDone } : null);
     if (!d) sayTo = opts.msg || 'regMsg';
     msg('regAddMsg', '');
     var go = function () {
@@ -1103,7 +1105,7 @@
       sel.innerHTML = $('docClient').innerHTML;
       /* The colleague an HR row concerns, read the way the register's Team
          column reads it, kept on the list even once they have left. */
-      var ms = $('regAddMember'), tm = d && d.family === 'hr' ? teamOf(d) : null;
+      var ms = $('regAddMember'), tm = d && d.family === 'hr' ? teamOf(d) : (forMem ? memberOf(forMem.id) || forMem : null);
       ms.innerHTML = $('docMember').innerHTML;
       if (tm && !ms.querySelector('option[value="' + tm.id + '"]')) {
         ms.add(new Option(F.named(tm.staff_code, tm.name), tm.id));
@@ -1120,7 +1122,7 @@
       if (forSup && !ss.querySelector('option[value="' + forSup.id + '"]')) ss.add(new Option(F.named(forSup.code, forSup.name || forSup.code), forSup.id));
       ss.value = spId;
       Array.prototype.forEach.call($('regAddFam').options, function (o) {
-        o.hidden = o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
+        o.hidden = forMem ? o.value !== 'hr' : o.value === 'supplier' ? !mayFamily('supplier', 'work') : Boolean(forSup);
       });
       var rc = (d && d.recipient) || {};
       $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add entry';
@@ -1131,13 +1133,14 @@
       $('regAddNote').value = d ? (d.note || '') : '';
       $('regAddUrl').value = d ? (d.file_url || '') : '';
       $('regAddDate').value = d ? String(d.issued_at || '').slice(0, 10) : today();
-      $('regAddFam').value = d ? d.family : forSup ? 'supplier' : (may('register.documents', 'work') ? 'other' : 'client');
+      $('regAddFam').value = d ? d.family : forSup ? 'supplier' : forMem ? 'hr' : (may('register.documents', 'work') ? 'other' : 'client');
       sel.value = d ? (d.client_id || '') : '';
       var was = d && clientOf(d.client_id);
       var wsp = supplierOf(spId) || forSup;
       addSeed = was && rc.name === (was.legal_name || was.name) ? rc.name
         : (tm && rc.name === tm.name ? rc.name : (wsp && rc.name === wsp.name ? rc.name : null));
       if (!d && wsp && wsp.name) { $('regAddWho').value = wsp.name; addSeed = wsp.name; }
+      if (!d && forMem && tm && tm.name) { $('regAddWho').value = tm.name; addSeed = tm.name; }
       fillKindPick(d ? d.kind : '');
       regAddFit();
       $('regAddSheet').hidden = false;

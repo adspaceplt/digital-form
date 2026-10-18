@@ -5464,3 +5464,17 @@ for the team to set Past or delete. Issue document takes the plus through
   The rule shipped without the case a campaign finishes and the client
   leaves before reading it; the item 7 entry above stands for everything
   else.
+
+### 2026-10-18 · A colleague is a record
+The user asked whether Team should be built like the client's record, a
+colleague holding as many functions (access, employment, namecard, work,
+HR letters, reviews, health); the recommendation was yes, as two releases,
+and the user confirmed "the revamped of team record all". One release
+instead: the name on the list opens `member=` with five panes, each read
+from what already answered it (the member row, `team_work_held`,
+`documents`, `health_team`); the row's ⋯ and the record's are one list
+(`memberMenu`). Performance stays behind its master code, so its pane
+opens the reviews filtered for the colleague rather than reading them.
+Register's Issue document and Add entry take `member` as they took
+`supplier`.
+

@@ -363,6 +363,7 @@
           state.loading = false;
           paintMembers();
           paintGroups();   // member counts and Delete depend on the rows
+          paintRec();
           if (pendingEdit) openPending();
         });
     });
@@ -533,14 +534,14 @@
          the signature on a letter are built from these, and the department
          is chosen from a list, so the line reads the same on every row
          whoever typed it. */
-      '<span class="team-who"><b>' + esc(m.name) +
+      '<button class="team-who team-open" type="button" data-a="open"><b>' + esc(m.name) +
         (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
         (self ? ' <span class="tone">You</span>' : '') +
         (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
         /* A line of parts wraps between its parts, never inside one, so Until
            and its time are read whole (the user, 2026-10-15). */
         (whoLine(m) ? '<small>' + whoLine(m).split(' · ').map(function (x) { return /^Until /.test(x) ? '<span class="team-part">' + esc(x) + '</span>' : esc(x); }).join(' · ') + '</small>' : '') +
-      '</span>' +
+      '</button>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       /* The exception only: Inactive, Access expired, or a card turned off
          for somebody still working; an ordinary row says nothing. */
@@ -550,7 +551,20 @@
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
          than a select on every row. A person cannot switch themselves off. */
-      rowMenu((manage ? menuItem('edit', 'Edit') : '') +
+      rowMenu(memberMenu(m));
+    wireActs(el, m);
+    var op = el.querySelector('[data-a="open"]');
+    if (op) op.addEventListener('click', function () { openRec(m.id); });
+    return el;
+  }
+
+  /* The acts on a colleague, one list for the row's ⋯ and the record's
+     (2026-10-18): the same items, drawn by the same permissions. */
+  function memberMenu(m) {
+    var self = me() && me().id === m.id;
+    var sysRow = Boolean(m.system) && !self;
+    var manage = may('team', 'manage') && !sysRow;
+    return (manage ? menuItem('edit', 'Edit') : '') +
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
               (self || !manage || m.removed_at ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))) +
@@ -559,8 +573,9 @@
               (self || !manage || m.active ? '' : menuItem('handover', 'Hand over work')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
                  their data kept or their personal details deleted. */
-              (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger')));
-
+              (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
+  }
+  function wireActs(el, m) {
     wireMenu(el);
     var nc = el.querySelector('[data-a="card"]');
     if (nc) nc.addEventListener('click', function () {
@@ -644,7 +659,6 @@
     if (ed) ed.addEventListener('click', function () { openMemberBox(m, this); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
-    return el;
   }
 
   function saveMember(m, patch, then) {
@@ -1810,9 +1824,242 @@
     });
   }
 
+
+  // ---- A colleague's record (2026-10-18) ------------------------------------
+  /* The user, 2026-10-18: a colleague holds as many functions as a client,
+     so they are a record of their own as a client is (`member=`): the head
+     (the mark, the name, Employee ID and group, the state, the row's own ⋯),
+     then a pane at a time (`mtab=`, Overview left out): Overview, Work,
+     Documents, Performance, Health, each drawn only where its section is
+     readable. The list stays the way in; Back returns to it. */
+  var rec = { id: null, pane: 'overview', seq: 0 };
+  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  var PANES = [['overview', 'Overview'], ['work', 'Work'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
+  function paneOk(k) {
+    if (k === 'work') return may('team', 'manage');
+    if (k === 'documents') return may('register.hr', 'view');
+    if (k === 'performance') return may('team.performance', 'view');
+    if (k === 'health') return may('team.health', 'manage');
+    return true;
+  }
+  (function () {
+    var q = new URLSearchParams(location.search);
+    rec.id = q.get('member') || null;
+    var t = q.get('mtab');
+    if (t && PANES.some(function (x) { return x[0] === t; })) rec.pane = t;
+  })();
+  function recUrl() {
+    var o = {};
+    if (rec.id) { o.member = rec.id; if (rec.pane !== 'overview') o.mtab = rec.pane; }
+    return o;
+  }
+  function pushUrl() { if (bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl(); }
+  function openRec(id, pane) {
+    rec.id = id; rec.pane = pane || 'overview';
+    pushUrl();
+    paintRec();
+    window.scrollTo(0, 0);
+  }
+  function closeRec() {
+    rec.id = null; rec.pane = 'overview';
+    pushUrl();
+    paintRec();
+  }
+  function stateChip(m) {
+    if (!m.active) return '<span class="chip-state is-off">' + (m.removed_at ? 'Removed' : m.expired_at ? 'Access expired' : 'Inactive') + '</span>';
+    return '<span class="chip-state is-ok">Active</span>';
+  }
+  function fact(label, value) {
+    return '<div><dt>' + esc(label) + '</dt><dd' + (value ? '' : ' class="is-empty"') + '>' + (value ? esc(value) : 'Not set') + '</dd></div>';
+  }
+  function hoursWord(min) { return min == null ? '' : (Math.round(min / 6) / 10) + ' hours a week'; }
+  function paintRec() {
+    var box = $('teamRec'), sec = $('sectionTeam');
+    if (!box) return;
+    var m = rec.id && (state.rows || []).filter(function (x) { return x.id === rec.id; })[0];
+    var showing = Boolean(rec.id) && (Boolean(m) || state.loading);
+    if (sec) sec.classList.toggle('is-member', showing);
+    box.hidden = !showing;
+    if (!showing) {
+      box.innerHTML = '';
+      if (rec.id && !state.loading) { rec.id = null; if (bridge.setUrl) bridge.setUrl(); msg('teamMsg', 'That colleague is no longer on the team.', 'warn'); }
+      return;
+    }
+    if (!m) { box.innerHTML = '<div class="softpanel"><div class="skel"><div class="skel-row"></div><div class="skel-row"></div></div></div>'; return; }
+    if (!paneOk(rec.pane)) rec.pane = 'overview';
+    var panes = PANES.filter(function (x) { return paneOk(x[0]); });
+    var menu = memberMenu(m);
+    var meta = [m.staff_code, roleName(m.role), whoLine(m)].filter(Boolean).join(' · ');
+    var self = me() && me().id === m.id;
+    box.innerHTML =
+      '<div class="mrec-back"><button class="btn btn-quiet btn-sm" type="button" data-r="back">' + BACK + 'Team</button></div>' +
+      '<section class="panel rec-head mrec-head"><div class="rec-id">' +
+        '<span class="rec-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(m.name || '')) + '</span>' +
+        '<div class="rec-who"><div class="rec-name"><h2>' + esc(m.name || '') + '</h2>' +
+          (self ? ' <span class="tone">You</span>' : '') + (m.system ? ' <span class="tone">System</span>' : '') + '</div>' +
+          '<p class="rec-id-meta">' + esc(meta) + '</p></div>' +
+        '<div class="rec-ctl">' + stateChip(m) + (menu ? menuBtn(menu) : '') + '</div>' +
+      '</div></section>' +
+      (panes.length > 1 ? '<nav class="rectabs mrec-tabs" role="tablist" aria-label="Colleague">' + panes.map(function (x) {
+        var on = x[0] === rec.pane;
+        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
+      }).join('') + '</nav>' : '') +
+      '<div class="msg" id="mrecMsg"></div>' +
+      '<div class="mrec-pane" id="mrecPane" data-narrow="640"></div>';
+    var head = box.querySelector('.rec-ctl');
+    wireActs(head, m);
+    box.querySelector('[data-r="back"]').addEventListener('click', closeRec);
+    Array.prototype.forEach.call(box.querySelectorAll('.mrec-tabs .tab'), function (b) {
+      b.addEventListener('click', function () {
+        if (b.getAttribute('data-pane') === rec.pane) return;
+        rec.pane = b.getAttribute('data-pane');
+        pushUrl();
+        paintRec();
+      });
+    });
+    if (window.ADspaceForm && window.ADspaceForm.thumb) {
+      var strip = box.querySelector('.mrec-tabs');
+      if (strip) window.ADspaceForm.thumb(strip);
+    }
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+    paintPane(m);
+  }
+  function paintPane(m) {
+    var host = $('mrecPane'), seq = ++rec.seq;
+    var live = function () { return seq === rec.seq && $('mrecPane') === host; };
+    if (rec.pane === 'work') return paneWork(m, host, live);
+    if (rec.pane === 'documents') return paneDocs(m, host, live);
+    if (rec.pane === 'performance') return panePerf(m, host);
+    if (rec.pane === 'health') return paneHealth(m, host, live);
+    paneOverview(m, host);
+  }
+  function group(title, inner, act) {
+    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>' + inner + '</section>';
+  }
+  function paneOverview(m, host) {
+    var edit = may('team', 'manage') && !(m.system && !(me() && me().id === m.id)) && !m.removed_at;
+    var editBtn = edit ? '<button class="btn btn-sm" type="button" data-r="edit">Edit</button>' : '';
+    var link = m.card_slug && window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost ? window.ADSPACE_CONFIG.linkHost.replace(/^https?:\/\//, '') + '/' + m.card_slug : (m.card_slug || '');
+    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' +
+      group('Sign-in and access', '<dl class="ovfacts">' +
+        fact('Sign-in email', m.email) + fact('User group', roleName(m.role)) +
+        fact('Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end') + '</dl>', editBtn) +
+      group('Employment', '<dl class="ovfacts">' +
+        fact('Employee ID', m.staff_code) + fact('Department', DEPT[m.department]) + fact('Position', m.designation) +
+        fact('Role standard', ROLE_STD[m.role_family]) + fact('Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +
+      group('Namecard', '<dl class="ovfacts">' +
+        fact('Mobile', m.mobile ? (window.ADspaceCard && window.ADspaceCard.phone ? window.ADspaceCard.phone(m.mobile) : m.mobile) : '') +
+        fact('Mobile on card', m.card_mobile === false ? 'Hide' : 'Show') +
+        fact('Short link', link) + fact('Card', m.card_on === false ? 'Off' : 'On') + '</dl>') +
+      '</div></div>';
+    var ed = host.querySelector('[data-r="edit"]');
+    if (ed) ed.addEventListener('click', function () { openMemberBox(m, ed); });
+  }
+  /* What the colleague holds now, kind by kind, with Hand over (Team Full
+     Access): the same reads and the same sheet Set inactive and Delete use. */
+  function paneWork(m, host, live) {
+    UI().skeleton(host, 2);
+    heldBy(m, function (own, held) {
+      if (!live()) return;
+      var rows = [];
+      if (own.clients.length) rows.push(['Clients they are person in charge of', own.clients.length, own.clients.map(function (c) { return c.name; })]);
+      if (own.campaigns.length) rows.push(['Open campaigns they run', own.campaigns.length, own.campaigns.map(function (c) { return c.title; })]);
+      HELD_KINDS.forEach(function (k) { var n = Number(held[k[0]] || 0); if (n) rows.push([k[1], n, null]); });
+      var self = me() && me().id === m.id;
+      var act = rows.length && !self && !m.system ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over</button>' : '';
+      host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('Their work',
+        rows.length ? '<dl class="ovfacts mrec-work">' + rows.map(function (r) {
+          return '<div><dt>' + esc(r[0]) + '</dt><dd><b>' + esc(String(r[1])) + '</b>' +
+            (r[2] ? '<small>' + esc(r[2].slice(0, 5).join(', ') + (r[2].length > 5 ? ' and ' + (r[2].length - 5) + ' more' : '')) + '</small>' : '') + '</dd></div>';
+        }).join('') + '</dl>' : '<p class="muted">Nothing is assigned to ' + esc(m.name) + '.</p>', act) + '</div></div>';
+      var h = host.querySelector('[data-r="hand"]');
+      if (h) h.addEventListener('click', function () {
+        var fields = handFields(m, own, held);
+        window.ADspaceConfirm.ask({
+          title: 'Hand over work', go: 'Hand over',
+          body: 'Choose who takes each kind of ' + m.name + '\'s work.',
+          fields: fields
+        }, function (v) {
+          v = v && typeof v === 'object' ? v : {};
+          msg('teamMsg', '');
+          Promise.resolve(handTo(m, own, v)).then(function () { if (rec.id === m.id && rec.pane === 'work') paintPane(m); });
+        });
+      });
+    });
+  }
+  /* Their HR letters (HR Letters at View), newest first: a letter the portal
+     issued opens as its PDF, one added by hand its file link; Issue document
+     and Add entry open on this colleague. */
+  function paneDocs(m, host, live) {
+    UI().skeleton(host, 2);
+    db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, file_url, shared_at, created_at')
+      .eq('member_id', m.id).eq('family', 'hr').order('created_at', { ascending: false }).then(function (r) {
+        if (!live()) return;
+        if (r.error) { UI().failLine(host, 'their letters', r.error.message || '', function () { paneDocs(m, host, live); }); return; }
+        var rows = r.data || [];
+        var work = may('register.hr', 'work') && window.ADspaceRegister;
+        var act = work ? '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-r="add">Add entry</button>' +
+          '<button class="btn btn-sm" type="button" data-r="issue">Issue document</button></span>' : '';
+        host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('HR letters',
+          rows.length ? '<dl class="ovfacts">' + rows.map(function (d, i) {
+            var words = esc(d.serial) + ' · ' + esc(d.kind) + (d.voided_at ? ' · ' + esc(d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : '') +
+              (d.shared_at && !d.voided_at ? ' · Shared' : '');
+            var hand = d.source === 'manual';
+            return '<div><dt>' + esc(dayWord(d.issued_at)) + '</dt><dd>' + (hand && !d.file_url ? words :
+              '<button class="linkbtn" type="button" data-l="' + i + '">' + words + '</button>') + '</dd></div>';
+          }).join('') + '</dl>' : '<p class="muted">No letters.</p>', act) + '</div></div>';
+        Array.prototype.forEach.call(host.querySelectorAll('[data-l]'), function (b) {
+          b.addEventListener('click', function () {
+            var d = rows[Number(b.getAttribute('data-l'))];
+            if (d.source === 'manual') { window.open(d.file_url, '_blank', 'noopener'); return; }
+            if (window.ADspaceLetters) window.ADspaceLetters.download(d, function (warn) { if (warn) msg('mrecMsg', warn, 'err'); });
+          });
+        });
+        var again = function () { if (rec.id === m.id && rec.pane === 'documents') paintPane(m); };
+        var is = host.querySelector('[data-r="issue"]');
+        if (is) is.addEventListener('click', function () {
+          window.ADspaceRegister.openIssue({ member: m, families: ['hr'], msg: 'mrecMsg', onDone: again });
+        });
+        var ad = host.querySelector('[data-r="add"]');
+        if (ad) ad.addEventListener('click', function () {
+          window.ADspaceRegister.openAdd({ member: m, msg: 'mrecMsg', onDone: again });
+        });
+      });
+  }
+  /* Reviews sit behind Performance's own lock, so the record opens them
+     there, the list searched for this colleague. */
+  function panePerf(m, host) {
+    host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + group('Monthly reviews',
+      '<p class="muted">Reviews open in Performance, behind its master code.</p>',
+      '<button class="btn btn-sm" type="button" data-r="perf">Open reviews</button>') + '</div></div>';
+    host.querySelector('[data-r="perf"]').addEventListener('click', function () {
+      if (window.ADspacePerf && window.ADspacePerf.openFor) window.ADspacePerf.openFor(m.name || '');
+    });
+  }
+  function paneHealth(m, host, live) {
+    if (!window.ADspaceHealth || !window.ADspaceHealth.paintPerson) { host.innerHTML = ''; return; }
+    host.innerHTML = '<div class="panel mrec-card"><div id="mrecHealth"></div></div>';
+    window.ADspaceHealth.paintPerson(m.id, $('mrecHealth'), live);
+  }
+  function UI() { return window.ADspaceState; }
+  window.addEventListener('popstate', function () {
+    var sec = $('sectionTeam');
+    if (!sec || sec.hidden || !state.rows) return;
+    window.ADspaceTeam.fromUrl();
+  });
+
   window.ADspaceTeam = {
-    urlState: function () { return {}; },
+    urlState: function () { return recUrl(); },
     enter: function () { load(); },
+    /* Leaves a record without touching the address (Performance writes it). */
+    close: function () { rec.id = null; rec.pane = 'overview'; paintRec(); },
+    /* Back and Forward on a colleague's record. */
+    fromUrl: function () {
+      var q = new URLSearchParams(location.search), id = q.get('member') || null, t = q.get('mtab') || 'overview';
+      if (id === rec.id && t === rec.pane) return;
+      rec.id = id; rec.pane = PANES.some(function (x) { return x[0] === t; }) ? t : 'overview';
+      paintRec();
+    },
     /* Opens one colleague's sheet, for the review profile's Edit on Members:
        from the rows already read, or once the list has been. */
     edit: function (id) { pendingEdit = id; if (!state.loading) openPending(); }

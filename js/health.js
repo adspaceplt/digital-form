@@ -443,10 +443,13 @@
   function openPerson(p, opener) {
     st.person = p;
     $('hpTitle').textContent = p.name;
+    $('hpBody').innerHTML = personBody(p);
+    window.ADspaceSheet.show($('healthPersonSheet'), { opener: opener });
+  }
+  function personBody(p) {
     var s = stateOf(p), ck = p.checkins || [];
     var talks = ((st.team && st.team.talks) || []).filter(function (t) { return t.from_id === p.id || t.with_id === p.id; });
-    $('hpBody').innerHTML =
-      '<p class="perf-quiet">' + esc(s === 'Not agreed' ? 'Has not agreed to the check-ins.'
+    return '<p class="perf-quiet">' + esc(s === 'Not agreed' ? 'Has not agreed to the check-ins.'
         : s === 'Withdrawn' ? 'Withdrew on ' + dateWord(p.consent.withdrawn_at) + '.'
         : 'Agreed on ' + dateWord(p.consent.agreed_at) + '.') + '</p>' +
       (ck.length ? ck.map(function (c) {
@@ -462,9 +465,21 @@
           esc(t.status === 'done' ? 'Talked · ' + dateWord(t.closed_at) : 'Asked ' + dateWord(t.at)) + '</small>' +
           (t.note ? '<span class="health-note">' + esc(t.note) + '</span>' : '') + '</span></div>';
       }).join('') + '</div></section>' : '');
-    window.ADspaceSheet.show($('healthPersonSheet'), { opener: opener });
+  }
+  /* One colleague's check-ins and talks on their record (js/team.js,
+     2026-10-18), from the same read Team: Health makes. */
+  function paintPerson(id, host, live) {
+    if (!host) return;
+    UI.skeleton(host, 2);
+    call('health_team', {}, function (d) {
+      if (live && !live()) return;
+      if (d.error) { UI.failLine(host, 'Health check-ins', said(d), function () { paintPerson(id, host, live); }); return; }
+      st.team = d;
+      var p = (d.people || []).filter(function (x) { return (x.team_member_id || x.id) === id; })[0];
+      host.innerHTML = p ? '<div class="mrec-health">' + personBody(p) + '</div>' : '<p class="perf-quiet">Has not agreed to the check-ins.</p>';
+    });
   }
   if ($('healthPersonSheet')) $('hpClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
-  window.ADspaceHealth = { enterMine: enterMine, enterTeam: enterTeam };
+  window.ADspaceHealth = { enterMine: enterMine, enterTeam: enterTeam, paintPerson: paintPerson };
 })();

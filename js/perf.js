@@ -3504,7 +3504,8 @@
     urlState: function () {
       if (st.tab === 'groups') return { tab: 'groups' };
       if (st.tab === 'health') return { tab: 'health' };
-      if (st.tab !== 'performance') return {};
+      /* Members: a colleague's record rides in the address (js/team.js). */
+      if (st.tab !== 'performance') return window.ADspaceTeam && window.ADspaceTeam.urlState ? window.ADspaceTeam.urlState() : {};
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
       if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };
       if (st.pv === 'commission') return { tab: 'performance', view: 'commission' };
@@ -3515,6 +3516,17 @@
     mineState: function () { var v = st.mv || mvFromUrl(); return v !== 'reviews' ? { view: v } : {}; },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); },
+    /* A colleague's record opens their reviews: Performance, its month list
+       searched for their name (2026-10-18). */
+    openFor: function (name) {
+      st.tab = 'performance'; st.pv = 'months';
+      st.find = String(name || '').trim().toLowerCase();
+      if ($('perfFind')) $('perfFind').value = name || '';
+      if (window.ADspaceTeam && window.ADspaceTeam.close) window.ADspaceTeam.close();
+      enterTeam();
+      if (bridge.setUrl) bridge.setUrl();
+      window.scrollTo(0, 0);
+    },
     /* The bell's letter opens Letters, read again. */
     openLetters: function () { st.mv = 'letters'; st.letters = null; if (bridge.show) bridge.show('mine'); },
     /* A reminder opens the view it points at (2026-10-07), read again. */
