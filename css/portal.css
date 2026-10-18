@@ -8321,6 +8321,9 @@ body.ncpage { background: var(--nc-ground); }
 .nc.is-land .nc-post { font-size: 14px; }
 .nc.is-land .nc-acts { grid-column: 1; grid-row: 3; padding-top: 0; }
 .nc.is-land .nc-acts .nc-pill { height: 40px; padding: 0 12px; }
+/* Under a finger the landscape card's pair keeps the 44px target too: a
+   tablet or a folded-open phone lies the card down at 760 and over. */
+@media (pointer: coarse) { .nc.is-land .nc-acts .nc-pill { height: 44px; } }
 .nc.is-land .nc-rows { grid-column: 2; grid-row: 1 / 4; align-self: center; margin-top: 0; }
 .nc.is-land .nc-row { grid-template-columns: 72px minmax(0, 1fr); }
 .nc.is-land .nc-qr { padding: 40px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 260px;

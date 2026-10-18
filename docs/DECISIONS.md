@@ -5478,3 +5478,11 @@ opens the reviews filtered for the colleague rather than reading them.
 Register's Issue document and Add entry take `member` as they took
 `supplier`.
 
+
+- 2026-10-18 · The namecard's Save contact under a finger (the iPhone Duo
+  pass, finding 1). The landscape card (`is-land`, a window at 760 and
+  over) set its pair to 40px for a desk, and a foldable opened like a book
+  (890×626) is a touch screen that wide, so Save contact and WhatsApp stood
+  under the 44px floor (`matrix` `MATRIX=duo`: four fails, the card, its
+  back and My namecard in both themes). Under a coarse pointer the
+  landscape pair is 44px; a desk keeps 40.

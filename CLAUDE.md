@@ -5090,6 +5090,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`fitMail`), else breaks only before the @;
   - the pair under the card (turn, QR code) is two equal halves of the
     portrait card's width on every face, so a turn never moves them;
+  - every pill on the card (Save contact, WhatsApp, the turn and QR pair)
+    is 44px under a finger, the landscape card's too (the iPhone Duo pass,
+    2026-10-18);
   - every card has a short link on the links host (`card_slug`,
     `2026-10-03-namecard-short-links.sql`): made as the colleague is added
     from the name's letters and digits run together (Xue Yi `xueyi`; a
