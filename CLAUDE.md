@@ -2477,8 +2477,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`tests/crswitch.js`).
   - Publish (blue) / Unpublish (tonal); an empty set draws no Publish and
     Add assets is its blue (2026-10-15). A client row and a set row count
-    the posts whose latest decision is Changes requested (red dot), read in
-    the list's own requests. Add to set is Add assets' sheet foot.
+    the posts whose latest decision is Changes requested (red dot), counted
+    by `review_set_counts` in one request, never a read of every post. Add to set is Add assets' sheet foot.
   - Enable client (`#crEnable`, the bar's one action, Content Review
     settings at Work; the user, 2026-10-12, in place of Manage clients):
     drawn only while an Active client is out of Content Review (one read of
