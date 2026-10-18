@@ -5601,9 +5601,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   refuses; `2026-10-18-completed-campaigns-stay-readable.sql`, the user:
   988's results were never read).
   A link's passcode is asked through `link_passcode(kind, token, stored,
-  given)` by `get_review_feed`, `get_campaign`, `save_selection`,
-  `confirm_selection`, `confirm_selection_with` and `review_draft`
-  (`2026-10-18-passcode-locks-per-caller.sql`): asked without one is never
+  given)` by `get_review_feed`, `submit_review`, `submit_review_seen`,
+  `get_campaign`, `save_selection`, `confirm_selection`,
+  `confirm_selection_with` and `review_draft`
+  (`2026-10-18-passcode-locks-per-caller.sql`,
+  `2026-10-18-review-decisions-ask-the-passcode.sql`): asked without one is never
   counted; wrong ones are counted per link and caller address
   (`link_tries`, `request_ip()`: the address Cloudflare saw,
   `cf-connecting-ip`, else the last X-Forwarded-For entry, never the first,
