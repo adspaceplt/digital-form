@@ -8,7 +8,9 @@
  * token never reaches a browser. A slot that already holds another online
  * meeting on that calendar (a Meet link, or a Meet, Zoom or Teams address) is
  * refused and named, so two calls cannot be booked into the same half hour;
- * the calendar's other events do not count.
+ * the calendar's other events do not count. A record's event has one id,
+ * made from the record's own (`eventIdOf`), so a second press finds the
+ * event the first made (Google answers 409) and never books another.
  *
  * Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
  *          (docs/GOOGLE-MEET-SETUP.md), plus the platform's SUPABASE_URL and
@@ -70,6 +72,14 @@ function meetLinkOf(ev: Record<string, unknown>): string | null {
   const cd = ev && ev.conferenceData as { entryPoints?: { entryPointType?: string; uri?: string }[] } | undefined;
   const v = cd && cd.entryPoints && cd.entryPoints.find((p) => p.entryPointType === 'video' && p.uri);
   return v && v.uri ? v.uri : null;
+}
+/* The one event a record may hold (the third audit, item 16): its id made
+   from the record's, in Google's own letters (0-9 and a-v; a UUID's hex is
+   inside them), so two presses at once, or a press after a save was lost,
+   ask Google for the same event and the second is answered 409, never a
+   second booking whose save orphans the first. */
+function eventIdOf(touch: boolean, id: string): string {
+  return (touch ? 'adtouch' : 'admonth') + id.replace(/-/g, '').toLowerCase();
 }
 /* What the Calendar API said, in one word the page can name. */
 async function why(r: Response): Promise<string> {
@@ -142,7 +152,7 @@ Deno.serve(async (req) => {
   const online = (x: Record<string, unknown>) => Boolean(meetLinkOf(x)) ||
     MEETING.test(String(x.location || '')) || MEETING.test(String(x.description || ''));
   const clash = ((await list.json()).items || []).find((x: Record<string, unknown>) =>
-    x.id !== eventId && x.status !== 'cancelled' && online(x));
+    x.id !== eventId && x.id !== eventIdOf(touch, eid) && x.status !== 'cancelled' && online(x));
   if (clash) {
     return json({ error: 'slot-taken', summary: String(clash.summary || 'Busy'),
       start: (clash.start as Record<string, string>)?.dateTime || null,
@@ -164,33 +174,54 @@ Deno.serve(async (req) => {
       conferenceSolutionKey: { type: 'hangoutsMeet' } } };
   }
   let r: Response;
+  let made: Record<string, any> | null = null;
   if (eventId) {
     r = await fetch(`${CAL}/${encodeURIComponent(eventId)}?conferenceDataVersion=1`,
       { method: 'PATCH', headers: g, body: JSON.stringify(event) });
   } else {
-    r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify(event) });
+    const fixed = eventIdOf(touch, eid);
+    r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify({ id: fixed, ...event }) });
+    if (r.status === 409) {
+      /* Already booked: the event another press made is this record's, and
+         is the answer. One taken off the calendar earlier (Delete, then
+         Create Google Meet) keeps its id at Google, so it is put back with
+         this booking's time and a Meet asked for again. */
+      const had = await fetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`, { headers: g });
+      if (!had.ok) return json({ error: 'google-refused', reason: await why(had) }, 200, origin);
+      made = await had.json();
+      if (made && made.status === 'cancelled') {
+        made = null;
+        event.status = 'confirmed';
+        event.conferenceData = { createRequest: { requestId: `${eid}-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' } } };
+        r = await fetch(`${CAL}/${encodeURIComponent(fixed)}?conferenceDataVersion=1`,
+          { method: 'PATCH', headers: g, body: JSON.stringify(event) });
+      }
+    }
   }
-  if (!r.ok) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
-  const made = await r.json();
+  if (!made) {
+    if (!r.ok) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
+    made = await r.json();
+  }
   /* Google makes the Meet a moment after the event, so the first answer can
      carry the event and not yet its link. The event is read again, briefly,
      until the link is there. */
-  let link = meetLinkOf(made);
+  let link = meetLinkOf(made!);
   for (let i = 0; !link && i < 8; i++) {
     await new Promise((ok) => setTimeout(ok, 750));
-    const again = await fetch(`${CAL}/${encodeURIComponent(made.id)}?conferenceDataVersion=1`, { headers: g });
+    const again = await fetch(`${CAL}/${encodeURIComponent(made!.id)}?conferenceDataVersion=1`, { headers: g });
     if (again.ok) link = meetLinkOf(await again.json());
   }
   link = link || (m.meeting_link ? String(m.meeting_link) : null);
   if (!link) {
     /* The event is recorded without a link, so the next press asks Google
        for the Meet on this event rather than booking a second one. */
-    await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: made.id });
-    return json({ error: 'meet-pending', event: made.id }, 200, origin);
+    await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: made!.id });
+    return json({ error: 'meet-pending', event: made!.id }, 200, origin);
   }
-  const saved = await db.rpc(SET, { [KEY]: eid, p_link: link, p_event: made.id });
+  const saved = await db.rpc(SET, { [KEY]: eid, p_link: link, p_event: made!.id });
   if (saved.error || (saved.data && saved.data.error)) {
-    return json({ error: 'not-saved', link, event: made.id }, 200, origin);
+    return json({ error: 'not-saved', link, event: made!.id }, 200, origin);
   }
-  return json({ link, event: made.id, [touch ? 'touch' : 'engagement']: saved.data }, 200, origin);
+  return json({ link, event: made!.id, [touch ? 'touch' : 'engagement']: saved.data }, 200, origin);
 });
