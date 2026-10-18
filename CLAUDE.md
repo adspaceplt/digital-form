@@ -5140,7 +5140,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   connection, a timeout, Meta's 5xx, a row cut off at Sending) is Not
   confirmed (`unknown`, filed `unknown:`), never sent again by itself, and
   counts as Sent recently (2026-10-17); a request that never left (DNS,
-  connect, TLS) is filed `not sent:` and queued again. The queue is
+  connect, TLS) is filed `not sent:` and queued again, and ends that drain
+  (claimed again at once, a short outage spent all three tries). The queue is
   claimed one row at a time (`wa_claim` gives one, five at most) and no
   send starts after 90 seconds, so a claimed row is never left at Sending. The queue and its tables are
   closed to every page.

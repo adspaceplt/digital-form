@@ -4652,3 +4652,14 @@ finding fixed at the user's word ("fix all no matter what").
   as itself or refuses it in words), and the guess is left for a file with
   no type at all. `tests/signupload.js` runs the page's `extFor` against
   `sign-upload`'s own table.
+
+- 2026-10-18 · A short outage no longer fails the WhatsApp queue (review
+  of #538 to #550, item 1). The drain claims one row at a time, and a send
+  whose request never left (DNS, connect, TLS) goes back to `queued` while
+  its tries are under three. `wa_claim` takes the oldest queued row, which
+  is the row just put back, so a DNS blip spent its three tries within
+  milliseconds and about thirteen rows of a drain's forty claims ended
+  Failed. wa-send now ends the drain on the first such result; the five
+  minute wake tries again. A send that may have reached Meta (`unknown:`)
+  is unchanged. `tests/wafn.js` holds both, `tests/sql.js` the row left
+  queued after one try.
