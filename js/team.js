@@ -512,6 +512,7 @@
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'This is a system account.';
     if (/admin-only/.test(t)) return ADMIN_ONLY;
+    if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
   }
   /* A save refused because a value is another colleague's names the field
