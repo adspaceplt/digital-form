@@ -3529,7 +3529,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     under its average (`2 of 3 · Not final`), and whoever is ahead reads
     Leading (the user, 2026-10-05). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
-    files it and never asks. Quarters begin with Q3 2026.
+    files it and never asks. A month inside a confirmed quarter or half is neither
+    reopened nor deleted (`period-confirmed`, naming it) until that period
+    is reopened. Quarters begin with Q3 2026.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
     rewards: best to worst by average, `rank` shared by equal averages, a
     short quarter's months under its average (`2 of 3`), and the individual
