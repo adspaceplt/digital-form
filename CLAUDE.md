@@ -2946,7 +2946,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   leads, the pipeline and restricted accounts; one of the bookings serves
   the chart, those past their date and the quality check), read again on
   every visit and on a period change (a page turn reads nothing again),
-  never polled. Where a set's posts stand is one `review_set_counts(p_sets)`
+  never polled. The work figures (the period, the one before it and, once a
+  visit, the last six months) are one `ops_reports(p_ranges)`, ops_report's
+  own answer a span; the sets with none this month read a year back.
+  Where a set's posts stand is one `review_set_counts(p_sets)`
   (invoker; posts, approved, changes, undecided, the oldest change), here
   and in Waiting for you alike, never a read of every post and decision;
   every set named is counted, with no cap

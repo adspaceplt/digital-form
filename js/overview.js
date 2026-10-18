@@ -160,21 +160,31 @@
     }
     return memo[key];
   }
-  function report(r) {
-    return db.rpc('ops_report', { p_from: r.from.toISOString(), p_to: r.to.toISOString() }).then(rows);
+  /* The period, the period before it and, once a visit, each of the last
+     six months (the on-time line, what was delivered each month): one
+     request (`ops_reports`, ops_report's own answer for each span; the third
+     audit, item 19), never a call a span. */
+  function reports() {
+    return once('rep:' + period, function () {
+      var want6 = !memo.rep6, ms = CH.months(6);
+      var spans = [rangeOf(period), prevOf(period)].concat(want6 ? ms.map(function (m) { return { from: m.start, to: m.end }; }) : []);
+      var all = db.rpc('ops_reports', { p_ranges: spans.map(function (r) { return { from: r.from.toISOString(), to: r.to.toISOString() }; }) })
+        .then(rows).then(function (l) {
+          if (!Array.isArray(l)) throw new Error('The read was refused.');
+          l.forEach(function (d) { rows({ data: d }); });
+          return l;
+        });
+      if (want6) {
+        memo.rep6 = all.then(function (l) { return ms.map(function (m, i) { return { m: m, d: l[i + 2] || {} }; }); });
+        memo.rep6.catch(function () { delete memo.rep6; });
+      }
+      return all.then(function (l) { return { now: l[0] || {}, prev: l[1] || {} }; });
+    });
   }
   var R = {
-    report: function () { return once('rep:' + period, function () { return report(rangeOf(period)); }); },
-    reportPrev: function () { return once('prev:' + period, function () { return report(prevOf(period)); }); },
-    /* Six months, one call a month, for the on-time line and what was
-       delivered each month. */
-    months: function () {
-      return once('rep6', function () {
-        var ms = CH.months(6);
-        return Promise.all(ms.map(function (m) { return report({ from: m.start, to: m.end }); }))
-          .then(function (all) { return ms.map(function (m, i) { return { m: m, d: all[i] || {} }; }); });
-      });
-    },
+    report: function () { return reports().then(function (x) { return x.now; }); },
+    reportPrev: function () { return reports().then(function (x) { return x.prev; }); },
+    months: function () { return memo.rep6 || reports().then(function () { return memo.rep6 || Promise.reject(new Error('The read was refused.')); }); },
     /* Every client the group reads, once: the sales figures, leads going
        cold, the pipeline and restricted accounts all draw from it. */
     clients: function () {
@@ -239,9 +249,13 @@
     noSet: function () {
       return once('noset', function () {
         var first = CK.start(CK.today().slice(0, 7) + '-01');
+        /* The sets of the last twelve months, never every set ever made (the
+           third audit, item 19): enough for "Last set" on a client gone quiet
+           within the year; quieter than that reads "No set this month" alone. */
+        var since = CK.start(CK.addMonths(CK.today(), -12) + '-01');
         return Promise.all([
           db.from('clients').select('id, name, slug, owner').eq('stage', 'active').eq('review_hidden', false).order('name').then(rows),
-          db.from('batches').select('client_id, created_at').order('created_at', { ascending: false }).then(rows)
+          db.from('batches').select('client_id, created_at').gte('created_at', since.toISOString()).order('created_at', { ascending: false }).then(rows)
         ]).then(function (r) {
           var last = {};
           (r[1] || []).forEach(function (b) { if (!last[b.client_id]) last[b.client_id] = b.created_at; });
