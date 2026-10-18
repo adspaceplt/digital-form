@@ -2844,6 +2844,21 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    decision somebody took, rather than something found at reconciliation. */
 /* Cells fill the row on any width: a grid, not a wrap. */
 .tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+/* Five or six cells never leave one alone on a desk either (the iPhone Duo
+   pass, 2026-10-18: six ran five across at 792px wide, the sixth on its own
+   row). While every cell does not fit one row, the cell's least width is a
+   third of the row, so five read three over two and six three over three;
+   once all fit (740px for five, 890px for six) they keep one row. The
+   `(W - 100%) * 999` term is positive under the width and negative from it,
+   so `min()` takes the third only below it. */
+@media (min-width: 641px) {
+  .tally:has(> :nth-child(5):last-child) {
+    grid-template-columns: repeat(auto-fit, minmax(max(140px, min(calc((100% - 23px) / 3), calc((740px - 100%) * 999))), 1fr));
+  }
+  .tally:has(> :nth-child(6):last-child) {
+    grid-template-columns: repeat(auto-fit, minmax(max(140px, min(calc((100% - 23px) / 3), calc((890px - 100%) * 999))), 1fr));
+  }
+}
 /* On a phone the column count follows the cell count so no cell sits alone:
    three, five or six cells run three across; anything else runs two across. */
 @media (max-width: 640px) {
