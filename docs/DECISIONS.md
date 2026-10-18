@@ -4761,3 +4761,15 @@ finding fixed at the user's word ("fix all no matter what").
   cell read Not confirmed beside Not sent in 7 days. It now reads Not
   confirmed in 7 days, with "in 7 days" held on one line on a phone.
   `tests/whatsapp.js` holds the label.
+
+- 2026-10-18 · An AI run stopped mid-way no longer blocks Try again until
+  midnight (review of #538 to #550, item 4). A press claims its
+  `ai_drafts` row as `pending` before Claude is asked, and the edge
+  function files the outcome after; a function stopped mid-run left the row
+  `pending` for good, and the per-report checks (`ai_draft_same`, the
+  report count in `ai_check_claim` / `ai_check_left`) counted it, so that
+  report's one draft or check of the day was spent.
+  `2026-10-18-ai-stale-run-frees-the-report.sql` leaves out a row still
+  `pending` ten minutes after its claim (no run lasts three); one in flight
+  still holds the report, and the colleague's daily total still counts it.
+  `tests/sql.js` holds both.
