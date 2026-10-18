@@ -5264,6 +5264,27 @@ finding fixed at the user's word ("fix all no matter what").
   brings such a task back In progress (To do and In progress go back where
   they were), and any refusal is said on the list. `tests/work.js` holds it.
 
+- **2026-10-18 · The supplier form moves to /supplier/.** The user: "can you
+  use the /supplier-details back to /supplier instead?" and "the
+  /supplier.html alr no longer in use". The old Jotform page `supplier.html`
+  (a root file, never edited until now) is removed at the user's word, and
+  the portal's form takes its address: `supplier/index.html`, the link the
+  console makes `/supplier/?k=`. `/supplier-details/` stays as a page that
+  forwards with its key, so a link sent earlier the same day still opens.
+  `3pform.html` still points at `/supplier`, which now reads the form's
+  Link not recognised cover without a key.
+
+- 2026-10-18 · A Past client's selection link acts on nothing (second
+  audit, item 7). SELECTION LINK CLOSES made `get_campaign` answer a Past
+  client's link as an unknown key, but the functions that act through the
+  same link (`save_selection`, `confirm_selection`,
+  `confirm_selection_with`, `review_draft`) did not ask, so a saved link
+  could still save a selection, confirm it or decide on a draft, and
+  `share_link_preview('campaign')` still named the client in a chat
+  preview. Each now answers `not-found` for a Past client before the
+  passcode is asked; the preview answers nothing. `tests/confirmonce.js`
+  holds all five; the stand-in does the same.
+
 - 2026-10-18 · Expired access hands the open tasks back (review item 19).
   `team_expire_access` stood a colleague down and left their open tasks
   with them, hidden from most of the team and movable only by an admin.

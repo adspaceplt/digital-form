@@ -7,7 +7,7 @@
  * wont know the company name first lol, needs them to fill in").
  *
  * The team gives a supplier its Supplier ID (New supplier), sends the
- * link it makes (`/supplier-details/?k=`), and takes the answers in with Use
+ * link it makes (`/supplier/?k=`), and takes the answers in with Use
  * details and its own Save, as a client's Billing takes its details form.
  * Approve moves a supplier with its details whole from Pending to Active.
  * The NRIC and the bank details are read only at Documents: Supplier bank
@@ -225,7 +225,7 @@
         (v ? esc(v) : 'Not set') + '</dd></div>';
     }).join('') + '</dl>';
   }
-  function linkOf(key) { return location.origin + '/supplier-details/?k=' + key; }
+  function linkOf(key) { return location.origin + '/supplier/?k=' + key; }
   function formBlock() {
     var f = state.form, work = may('suppliers', 'work'), s = state.rec;
     var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Details form</h4>' + (act || '') + '</div>'; };
