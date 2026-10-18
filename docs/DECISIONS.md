@@ -5425,3 +5425,16 @@ finding fixed at the user's word ("fix all no matter what").
   sees a lock under the review or selection link and clears it. The first
   entry of X-Forwarded-For can be set by a caller: a guesser who rotates it
   meets the backstop, and one who copies a client's address must know it.
+
+- 2026-10-18 · A caller locked out again is locked out longer, and a new
+  access code is six characters (second audit, item 16). After item 4 a
+  guesser at one address met a 15-minute lock and could start again, five
+  guesses a quarter hour without end, against codes the console let be
+  four digits. A lock that begins within a day of the last one ending now
+  lasts an hour, then a day (`link_tries.strikes`, `struck_until`); the
+  right code and the team's Clear start the steps again. Trigger
+  `passcode_long_enough` on clients and campaigns refuses a new or changed
+  code under six characters (`passcode-short`), and Client settings says
+  so before it saves; a code set before keeps working until it is changed,
+  so no client's link stops opening. Six is a security floor, not a
+  business figure, so it is not a setting.

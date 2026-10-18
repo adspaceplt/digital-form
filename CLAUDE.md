@@ -5452,8 +5452,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   counted; wrong ones are counted per link and caller address
   (`link_tries`, `request_ip()`: X-Forwarded-For's first entry, which
   `media-pass` and `sign-download` pass on for their caller), five within
-  15 minutes locking that address out for 15 minutes, the right one
-  included; the link's own count (`link_attempts`, 100 within an hour)
+  15 minutes locking that address out, the right one included, for 15
+  minutes, then an hour, then a day where it is locked again within a day
+  of the last lock ending (`strikes`, `struck_until`; the right code and
+  Clear start the steps again; `2026-10-18-passcode-locks-lengthen.sql`);
+  a new or changed access code is six characters at least (trigger
+  `passcode_long_enough`, `passcode-short`; Client settings says so before
+  it saves), one set before keeping its place; the link's own count (`link_attempts`, 100 within an hour)
   locks it for an hour for every address but one that opened it in the
   last 30 days; each answered `locked` with its minutes (`link_locked`),
   said on the page as Link temporarily locked (`W.lockedLine`), and a
