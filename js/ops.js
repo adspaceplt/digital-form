@@ -803,10 +803,6 @@
     if (n) ors.push('task_no.eq.' + Number(n[1]));
     return q.or(ors.join(',')).limit(200);
   }
-  function periodEnd() {
-    if (state.period === 'lastmonth') return CK.start(CK.today().slice(0, 7) + '-01');
-    return new Date();
-  }
 
   /* THE DAY, IN THE ORDER IT IS WORKED. What is overdue, what is due today,
      what is in hand, what is ready for review, what is coming, what is waiting
@@ -2678,13 +2674,6 @@
     return (s && s.label) || String(k || '').replace(/_/g, ' ');
   }
 
-  /* The move the row asked for. A refusal puts the select back where it was
-     and says why under the row, because the row is where the act happened and
-     the command bar is a screen away from it on a long list. */
-  function rowMove(t, el, sel) {
-    stepFromRow(t, el, sel.value);
-    sel.value = '';
-  }
   function plainOfKey(k) { return k === 'complete' ? 'done' : k; }
   /* A step from a row, a card or a drop. Where the database needs something
      said before it will allow the move — what has to change, why a post came
@@ -3629,33 +3618,6 @@
           readTask(t.id, function () { msg(b.msg, 'Rated ' + k + ' of 5.', 'ok'); });
         });
       });
-    });
-  }
-
-  /* THE PUBLISH DATE, where the sheet prints it. */
-  function inlinePublish(t, btn) {
-    var inp = document.createElement('input');
-    inp.type = 'date';
-    /* A date picked in place opens the browser's calendar at once and leaves
-       with it, so it stays the browser's own box (form.js §7). */
-    inp.setAttribute('data-native', '');
-    inp.className = 'input input-sm tinline-pick';
-    inp.setAttribute('aria-label', 'Post date');
-    inp.value = dateValue(t.publish_at);
-    btn.hidden = true;
-    btn.parentNode.appendChild(inp);
-    inp.focus();
-    if (inp.showPicker) { try { inp.showPicker(); } catch (e) {} }
-    var put = function () { if (inp.parentNode) inp.remove(); btn.hidden = false; };
-    inp.addEventListener('blur', function () { if (!inp.disabled) setTimeout(put, 150); });
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); put(); btn.focus(); } });
-    inp.addEventListener('change', function () {
-      if (inp.value === dateValue(t.publish_at)) return;
-      inp.disabled = true;
-      call('ops_set_publish_date', { p_task: t.id, p_at: inp.value ? inp.value + 'T00:00:00Z' : null, p_version: t.version }, 'dwMsg', function () {
-        state.drawerDirty = true;
-        readTask(t.id, function () { msg('dwMsg', 'Post date saved.', 'ok'); });
-      }, function () { inp.disabled = false; put(); });
     });
   }
 
@@ -5467,9 +5429,6 @@
     if (from && nexts.indexOf(from) > -1) return from;
     return nexts[0] || null;
   }
-  function canReopen(t) {
-    return Boolean(t && isFinished(t) && ((t.completed_at && reopens(t)) || reopenTo(t)));
-  }
   function askReopenTo(t) {
     var to = reopenTo(t);
     if (!to) return;
@@ -6161,14 +6120,6 @@
     var pick = chosen || monthKey(now.slice(0, 7));
     sel.innerHTML = months.map(function (k) {
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
-    }).join('');
-  }
-  /* Every task has an owner from the start: whoever is making it, unless
-     they choose somebody else. */
-  function fillOwners(sel, me) {
-    me = me || (bridge.me && bridge.me());
-    sel.innerHTML = pickable().map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
   }
   function fillClients(sel, past, was) {
@@ -7309,12 +7260,6 @@
       applyTask(d);
       readTask(t.id, function () { msg('taskOwnerMsg', 'Handed to ' + nameOf(to) + '.', 'ok'); });
     }, function () { btn.disabled = false; });
-  }
-
-  /* A task opened from a client record: the address first, because My Work
-     reads it on entry, then the route. */
-  function openTaskElsewhere(id) {
-    openDrawer(id, { from: 'client' });
   }
 
   // ---- Wiring --------------------------------------------------------------

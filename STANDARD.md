@@ -607,7 +607,9 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- None open.
+- My Work's Completed list on Last month also lists work finished this
+  month: the read starts at last month and nothing ends it (`periodEnd()`
+  was never called and was removed as dead code, 2026-10-18).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined

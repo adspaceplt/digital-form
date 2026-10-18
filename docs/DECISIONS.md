@@ -4808,3 +4808,14 @@ finding fixed at the user's word ("fix all no matter what").
   so nothing failed; found while resolving a conflict beside it. The line
   is the banner's opening rule again, and `tests/sql.js` now refuses a
   conflict marker in the schema or any migration. No database change.
+
+- 2026-10-18 · Fourteen dead functions removed (second audit, item 20).
+  Nothing in the tree called `inlinePublish`, `fillOwners`, `rowMove`,
+  `canReopen`, `openTaskElsewhere` or `periodEnd` (ops.js), `amAdmin`
+  (team.js), `monthsWord` (perf.js), `clientHandles` (admin.js),
+  `recordLine`, `histWord` or `pickerOpen` (campaigns.js), `dayStart`
+  (overview.js) or `hexRgb` (smreport.js), pages and suites included.
+  `tests/smsql.js` sliced the page's `periodWord` up to `hexRgb`; it now
+  slices up to `mix`. `periodEnd()` was the end Last month's rule named:
+  it was never called, so My Work's Completed list on Last month also
+  lists this month's work, now a Logged defect in `STANDARD.md`.
