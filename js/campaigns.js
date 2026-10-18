@@ -271,18 +271,6 @@
       });
   }
 
-  /* "4 · last Aug 2026" for somebody who has worked, and the same mute mark
-     every other cell in this console gives a value nobody has filled in for
-     somebody who has not. "None yet" written out on every row of a roster
-     where almost nobody has been booked is a sentence repeated three hundred
-     times where one character says it, under a heading that has already said
-     what the cell is. */
-  function recordLine(c) {
-    var rec = state.record && state.record[c.id];
-    if (!rec) return '';
-    return rec.n + (rec.last ? ' · last ' + monthOf(rec.last) : '');
-  }
-
   /* How many, and when they last shot. The cell named the latest campaign
      for a week and the user sent it back on 2026-09-20: a campaign title is
      longer than the column, it is truncated by the time it fits, and it
@@ -463,9 +451,6 @@
      here. Read from `creator_profile_changes`; Restore is
      `creator_restore_profiles`, which files the restore as a change too. */
   var histFor = null;
-  function histWord(list) {
-    return (list || []).map(function (p) { return (PLATFORM_LABEL[p.platform] || p.platform) + ' ' + p.url; });
-  }
   function histDiff(before, after) {
     var urls = function (l) { return (l || []).map(function (p) { return p.url; }); };
     var b = urls(before), a = urls(after), out = [];
@@ -2919,7 +2904,6 @@
      the strip's second view. */
   var addPick = {};        // creator id -> { rate, plats, links } while the sheet is open
   var addTab = 'list';
-  function pickerOpen() { return !$('addOptionBox').hidden; }
   function reofferable(o) {
     return (o.state === 'withdrawn' || o.state === 'replaced') && !o.goodwill;
   }

@@ -4087,14 +4087,6 @@
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
 
-  function clientHandles() {
-    var c = state.client || {};
-    return {
-      instagram: c.handle_ig, facebook: c.handle_fb,
-      tiktok: c.handle_tiktok, xhs: c.handle_xhs
-    };
-  }
-
   /* "MP4 · 1080 x 1920", so it is obvious what was actually imported. */
   /* Carousel order decides which slide Instagram shows first and sizes the
      whole post, so it has to be changeable when the guess is wrong. */
