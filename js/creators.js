@@ -55,13 +55,18 @@
     '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
     '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
-  function sstOf(subtotal) { return MON.taxOf(subtotal, mkt(), taxOn()); }
+  /* What is booked carries SST at the rate in force when the client last
+     confirmed, so a confirmed campaign's total never moves with a later rate
+     (the third audit, item 10); a selection still to confirm, today's. */
+  function confAt() { return (lastConfirm || (feed && feed.campaign && feed.campaign.confirmed) || {}).at; }
+  function sstOf(subtotal, at) { return MON.taxOf(subtotal, mkt(), taxOn(), at); }
+  function sstWord(at) { return MON.taxLabel(mkt(), at); }
   /* A client who is not charged tax gets two lines, not three with a zero in
      the middle. */
-  function totalsHtml(subtotal) {
-    var sst = sstOf(subtotal);
+  function totalsHtml(subtotal, at) {
+    var sst = sstOf(subtotal, at);
     return '<div><span>' + esc(t().subtotal) + '</span><span>' + money2(subtotal) + '</span></div>' +
-           (sst ? '<div><span>' + esc(MON.taxLabel(mkt())) + '</span><span>' + money2(sst) + '</span></div>' : '') +
+           (sst ? '<div><span>' + esc(sstWord(at)) + '</span><span>' + money2(sst) + '</span></div>' : '') +
            '<div class="is-total"><span>' + esc(t().total) + '</span><span>' + money2(subtotal + sst) + '</span></div>';
   }
 
@@ -564,7 +569,7 @@
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
     var c = feed.campaign || {};
-    $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub) : '';
+    $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub, confAt()) : '';
     $('amountFold').hidden = !booked.length;
     $('amountLabel').textContent = t().amountLabel;
     $('amountPdf').hidden = !c.invoice_url;
