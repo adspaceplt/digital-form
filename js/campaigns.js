@@ -103,8 +103,17 @@
   }
   function money(n)  { return MON.money(n, mkt()); }
   function money2(n) { return MON.money2(n, mkt()); }
-  function sstOf(subtotal) { return MON.taxOf(subtotal, mkt(), taxOn()); }
-  function taxWord() { return taxOn() ? MON.taxLabel(mkt()) : 'Tax'; }
+  /* SST at the rate in force on the client's last confirmation, the one the
+     selection page reads (`get_campaign`'s `confirmed`), so a confirmed
+     campaign's total never moves with a later rate (the third audit, item
+     10); before a confirmation, today's. */
+  function lastClientConfirm(rows) {
+    return (rows || []).filter(function (k) { return k.kind === 'client' && k.created_at; })
+      .map(function (k) { return k.created_at; }).sort().pop();
+  }
+  function confAt() { return lastClientConfirm(state.confirms); }
+  function sstOf(subtotal) { return MON.taxOf(subtotal, mkt(), taxOn(), confAt()); }
+  function taxWord() { return taxOn() ? MON.taxLabel(mkt(), confAt()) : 'Tax'; }
 
   /* ---- Platforms -------------------------------------------------------
      Each platform states the shape of a profile URL and where the identity
@@ -963,7 +972,7 @@
       });
   }
 
-  var campFind = '', campSums = {};
+  var campFind = '', campSums = {}, campConf = {};
 
   function loadCampaigns() {
     var box = $('campCards');
@@ -978,12 +987,20 @@
         state.campaigns = r.data || [];
         // The amount on a card is what the client is charged: the rates of
         // everyone selected or booked, plus tax, in the client's currency.
-        db.from('campaign_options').select('campaign_id, rate, state').then(function (q) {
+        Promise.all([
+          db.from('campaign_options').select('campaign_id, rate, state'),
+          db.from('campaign_confirmations').select('campaign_id, created_at, kind').eq('kind', 'client')
+        ]).then(function (a) {
+          var q = a[0], k = a[1];
           campSums = {};
           (q.data || []).forEach(function (o) {
             if (CHARGED.indexOf(o.state) < 0) return;
             campSums[o.campaign_id] = (campSums[o.campaign_id] || 0) + Number(o.rate || 0);
           });
+          var byCamp = {};
+          ((k && k.data) || []).forEach(function (x) { (byCamp[x.campaign_id] = byCamp[x.campaign_id] || []).push(x); });
+          campConf = {};
+          Object.keys(byCamp).forEach(function (id) { campConf[id] = lastClientConfirm(byCamp[id]); });
           paintCampaigns();
         });
       });
@@ -1094,7 +1111,7 @@
     var mk = cl.market || 'MY';
     var ap = cl.sst_applies == null ? true : cl.sst_applies;
     var sub = sums[c.id] || 0;
-    var amount = sub ? MON.money2(sub + MON.taxOf(sub, mk, ap), mk) : '';
+    var amount = sub ? MON.money2(sub + MON.taxOf(sub, mk, ap, campConf[c.id]), mk) : '';
     var row = document.createElement('button');
     row.type = 'button';
     row.className = 'crm-row camp-row';
@@ -1747,11 +1764,13 @@
         /* When the client confirmed, for the timing under Key dates. A read
            that fails costs the block one row and nothing else. */
         state.confirms = [];
+        campMoneyTotal = null;
         db.from('campaign_confirmations').select('created_at, kind')
           .eq('campaign_id', state.campaign.id).order('created_at')
           .then(function (q) {
             state.confirms = (q && q.data) || [];
             if (state.campaign) paintCampTiming(state.campaign);
+            paintCampMoney();
           }, function () {});
         var ids = state.options.map(function (o) { return o.id; });
         state.files = {};
@@ -2672,6 +2691,17 @@
      that place it. A block leaves entirely when its data does not exist, so
      the rule under the last one is set here: `:last-child` counts a hidden
      sibling and would draw a hairline under nothing. */
+  /* Drawn again once the confirmations answer, which date its SST. */
+  var campMoneyTotal = null;
+  function paintCampMoney() {
+    var box = $('campFinanceMoney');
+    if (!box || campMoneyTotal === null) return;
+    var total = campMoneyTotal;
+    box.innerHTML =
+      railMoney('Subtotal', money2(total)) +
+      railMoney(taxWord(), money2(sstOf(total))) +
+      railMoney('Total', money2(total + sstOf(total)), 'is-total');
+  }
   function paintCampRail(c, live, chosen, total, booked, goodwill) {
     /* What the campaign is waiting on us for is deliberately NOT a rail block:
        it is the warn line under the identity, on every pane, which is both
@@ -2701,13 +2731,8 @@
     var finance = $('campFinanceTotal');
     if (finance) {
       finance.hidden = !chosen.length;
-      if (chosen.length) {
-        var moneyRows =
-          railMoney('Subtotal', money2(total)) +
-          railMoney(taxWord(), money2(sstOf(total))) +
-          railMoney('Total', money2(total + sstOf(total)), 'is-total');
-        $('campFinanceMoney').innerHTML = moneyRows;
-      }
+      campMoneyTotal = chosen.length ? total : null;
+      paintCampMoney();
     }
 
     var db = $('campDateBlock');

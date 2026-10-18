@@ -67787,6 +67787,356 @@ grant execute on function public.supplier_link_close(uuid) to authenticated;
 
 -- END OF A SUPPLIER'S LINK IS CLOSED ----------------------------------------
 
+-- ACCESS ENDS ON THE MINUTE — a colleague whose access date has passed is
+-- off the team at once, not at the next expiry run (2026-10-18)
+-- ===========================================================================
+-- WHY (Team audit, item 15): `team_expire_access()` stands a colleague down
+-- every five minutes, and until it ran `is_team()`, `allowed()` and
+-- `ops_me()` still answered for them, so a colleague whose access ended at
+-- 17:00 could read and write until 17:05.
+--
+-- WHAT IT CHANGES
+--   * `is_team()`, `allowed(p_section, p_level)`, `ops_me()` and `me()` (the
+--     console's own read of who is signed in) count a colleague only while their access date has not
+--     passed (`team_access_ends`, Malaysia's day and time; no date is no
+--     end). The check sits in each query, with no function of its own, so
+--     every policy pays for it once, in the row it already reads.
+--     `allowed('admin')` asks only whether an active colleague is an admin,
+--     and so needs no change.
+--   * An admin is not held by it: the expiry run never stands down the
+--     last admin with access, and an admin's own date is the run's to apply.
+--   * `my_access_expired()` also answers for a colleague whose date has
+--     passed and whom the run has not reached, so sign-in reads Access
+--     expired, not Access denied.
+--
+-- ORDER: this file; the pages need nothing. Safe to run twice.
+-- Rollback: the five functions as TEAM ACCESS EXPIRY and ACCESS left them.
+-- ===========================================================================
+
+create or replace function public.is_team()
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.team_members t
+    where t.active and lower(t.email) = lower(auth.jwt() ->> 'email')
+      and (t.access_until is null or t.is_admin or t.role = 'admin'
+           or public.team_access_ends(t.access_until, t.access_until_time) > now()))
+$$;
+grant execute on function public.is_team() to authenticated;
+
+create or replace function public.allowed(p_section text, p_level text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare
+  t public.team_members;
+  k text := lower(coalesce(p_section, ''));
+  lv text;
+begin
+  select * into t from public.team_members x
+    where lower(x.email) = lower(auth.jwt() ->> 'email') and x.active
+      and (x.access_until is null or x.is_admin or x.role = 'admin'
+           or public.team_access_ends(x.access_until, x.access_until_time) > now())
+    limit 1;
+  if t.id is null then return false; end if;
+  if t.is_admin or t.role = 'admin' then return true; end if;
+  lv := t.access ->> k;
+  if lv is null and position('.' in k) > 0 then
+    lv := t.access ->> split_part(k, '.', 1);
+  end if;
+  return public.level_rank(lv) >= public.level_rank(p_level);
+end $$;
+grant execute on function public.allowed(text, text) to authenticated;
+
+create or replace function public.ops_me()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members t
+   where t.active and lower(t.email) = lower(auth.jwt() ->> 'email')
+     and (t.access_until is null or t.is_admin or t.role = 'admin'
+          or public.team_access_ends(t.access_until, t.access_until_time) > now())
+   limit 1
+$$;
+grant execute on function public.ops_me() to authenticated;
+
+create or replace function public.me()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members t
+  where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active
+    and (t.access_until is null or t.is_admin or t.role = 'admin'
+         or public.team_access_ends(t.access_until, t.access_until_time) > now())
+  limit 1
+$$;
+grant execute on function public.me() to authenticated;
+
+create or replace function public.my_access_expired()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.team_members t
+                  where lower(t.email) = lower(auth.jwt() ->> 'email')
+                    and ((not t.active and t.expired_at is not null)
+                         or (t.active and t.access_until is not null and not (t.is_admin or t.role = 'admin')
+                             and public.team_access_ends(t.access_until, t.access_until_time) <= now())))
+$$;
+grant execute on function public.my_access_expired() to authenticated;
+-- END OF ACCESS ENDS ON THE MINUTE ------------------------------------------
+select public.functions_tidy();
+
+-- ===========================================================================
+-- TEN NOTICES AN HOUR — a colleague sends at most ten notices in any hour
+-- (2026-10-18)
+-- ===========================================================================
+-- WHY (Team audit, item 16): `team_notice_send` wrote a bell row and a
+-- push for every colleague on each press with no limit, so a stuck key, a
+-- page sending twice or a misused part could fill every colleague's bell
+-- and phone.
+--
+-- WHAT IT CHANGES
+--   * `team_notice_send` refuses `too-many` (with `limit` 10 and `next`, the
+--     moment the next may go) once the sender has sent ten notices in the
+--     hour before, counted from `team_notices` under a lock held for the
+--     sender to the end of the transaction, so two presses at once are
+--     counted one after the other. Ten is a safety limit, not a business
+--     figure, so it is held in the function as an invitation's count is.
+--     Every refusal before it stands as it was.
+--
+-- ORDER: the page (it words `too-many`), then this file. Safe to run twice.
+-- Rollback: TEAM NOTICES' `team_notice_send`.
+-- ===========================================================================
+
+create or replace function public.team_notice_send(p_title text, p_body text, p_to uuid[])
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_title text := btrim(coalesce(p_title, ''));
+  v_body  text := nullif(btrim(coalesce(p_body, '')), '');
+  v_to    uuid[];
+  v_id    uuid;
+  n       int;
+  v_sent  int;
+  v_first timestamptz;
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if v_title = '' or length(v_title) > 120 then return jsonb_build_object('error', 'bad-title'); end if;
+  if v_body is not null and length(v_body) > 1000 then return jsonb_build_object('error', 'bad-body'); end if;
+  perform pg_advisory_xact_lock(hashtext('team-notice-send:' || me.id::text));
+  select count(*), min(tn.created_at) into v_sent, v_first
+    from (select x.created_at from public.team_notices x
+           where x.sent_by = me.id and x.created_at > now() - interval '1 hour'
+           order by x.created_at desc limit 10) tn;
+  if v_sent >= 10 then
+    return jsonb_build_object('error', 'too-many', 'limit', 10, 'next', v_first + interval '1 hour');
+  end if;
+  select coalesce(array_agg(m.id order by m.name), '{}') into v_to
+    from public.team_members m
+   where m.active and not coalesce(m.system, false) and m.id <> me.id
+     and (p_to is null or m.id = any(p_to));
+  n := coalesce(array_length(v_to, 1), 0);
+  if n = 0 then return jsonb_build_object('error', 'no-one'); end if;
+  insert into public.team_notices (title, body, to_all, recipients, sent_by, sent_by_name)
+  values (v_title, v_body, p_to is null, v_to, me.id, me.name)
+  returning id into v_id;
+  insert into public.ops_notifications (team_member_id, kind, title, body, notice_id, from_name)
+  select x, 'notice', v_title, v_body, v_id, me.name from unnest(v_to) as x;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Notices',
+    'Sent to ' || case when p_to is null then 'all colleagues (' || n || ')'
+                       when n = 1 then '1 colleague' else n || ' colleagues' end || ': ' || v_title);
+  return jsonb_build_object('ok', true, 'id', v_id, 'count', n);
+end $$;
+revoke all on function public.team_notice_send(text, text, uuid[]) from public, anon;
+grant execute on function public.team_notice_send(text, text, uuid[]) to authenticated;
+-- END OF TEN NOTICES AN HOUR ------------------------------------------------
+select public.functions_tidy();
+
+-- ===========================================================================
+-- A CALLER'S ADDRESS IS CLOUDFLARE'S — the passcode locks count the address
+-- Cloudflare saw, never one the caller wrote (2026-10-18)
+-- ===========================================================================
+-- WHY (audit 2026-10-18, item 1): `request_ip()` took the first entry of
+-- X-Forwarded-For, which the caller writes. Read live (one request sent
+-- with `X-Forwarded-For: 203.0.113.77, 198.51.100.9`): PostgREST passed
+-- `203.0.113.77, 198.51.100.9,<the caller>` and `cf-connecting-ip:
+-- <the caller>`; a request sending its own CF-Connecting-IP is refused by
+-- Cloudflare (error 1000) and X-Real-IP never arrives. So a guesser wrote a
+-- new address on every try and the five-try lock never held them.
+--
+-- WHAT IT CHANGES
+--   * `request_ip()` reads `cf-connecting-ip`, else the last
+--     X-Forwarded-For entry (the one the gateway appended), never the first.
+--   * `media-pass` and `sign-download` ask for a link as the page did, and
+--     Cloudflare stamps their own address on that call. They now pass the
+--     caller's address in `x-adspace-ip` with `x-adspace-relay`, a secret
+--     kept in `app_secrets` (`ip_relay_secret`, made here, read only with
+--     the service role); `request_ip()` takes `x-adspace-ip` only beside the
+--     right secret. It is security definer so it may read the secret, and
+--     stays closed to every browser.
+--   * The probe used to read the headers live (`zz_header_probe`, emptied
+--     and closed the same hour) is dropped.
+--
+-- ORDER: this file, then `media-pass` and `sign-download`. Between the two
+-- a function's passcode tries count against its own address, as before
+-- 2026-10-18. Safe to run twice. The connector holds the last line (a drop):
+-- run it in the SQL Editor.
+-- Rollback: PASSCODE LOCKS PER CALLER's `request_ip()`, and the functions as
+-- they were; the secret may stay.
+-- ===========================================================================
+
+insert into public.app_secrets (key, value)
+select 'ip_relay_secret', replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')
+ where not exists (select 1 from public.app_secrets s where s.key = 'ip_relay_secret');
+
+create or replace function public.request_ip()
+returns text
+language sql stable security definer set search_path = public as $$
+  select left(coalesce(
+    case when nullif(h ->> 'x-adspace-relay', '') is not null
+          and h ->> 'x-adspace-relay' = (select s.value from public.app_secrets s where s.key = 'ip_relay_secret')
+         then nullif(btrim(h ->> 'x-adspace-ip'), '') end,
+    nullif(btrim(h ->> 'cf-connecting-ip'), ''),
+    nullif(btrim(reverse(split_part(reverse(coalesce(h ->> 'x-forwarded-for', '')), ',', 1))), ''),
+    ''), 64)
+  from (select coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json as h) r
+$$;
+revoke all on function public.request_ip() from public, anon, authenticated;
+
+drop function if exists public.zz_header_probe();
+-- END OF A CALLER'S ADDRESS IS CLOUDFLARE'S ---------------------------------
+select public.functions_tidy();
+
+-- ===========================================================================
+-- WHATSAPP LINK FROM THE RECORD — a template's link button opens the page of
+-- the record being messaged, never a value the composer sent.
+-- 2026-10-19. Safe to run twice. Rollback at the foot. Mirrored byte for
+-- byte in supabase/schema.sql under the same banner; tests/sql.js compares
+-- the two.
+--
+-- WHAT CHANGED
+--   wa-send filled a template's link button with the value the composer
+--   sent, so a stale prefill could send one creator a button to another
+--   creator's page, or a client a link to another client's review page
+--   (the third audit, item 2).
+--   * wa_compose_prepare answers `link` for an approval reminder: the
+--     page that waits on the client, past the site's root (`review/?k=` and
+--     the client's key, `creators/?k=` and the campaign's key). It already
+--     answers a creator's `code`.
+--   * wa-send fills the link button from that answer alone (the creator's
+--     code; the approval link past the button's fixed base) and refuses a
+--     template whose link button the record does not fill (`wa-no-link`)
+--     (supabase/functions/wa-send). The composer shows the link button as a
+--     value only read (js/whatsapp.js).
+--
+-- ROLLBACK
+--   Run the wa_compose_prepare definition of the DATA HELD TO ITS LEVEL
+--   section of supabase/schema.sql again (it answers no `link`; wa-send
+--   then refuses every template with a link button sent to a contact).
+-- ===========================================================================
+
+create or replace function public.wa_compose_prepare(p_to_kind text, p_to uuid, p_purpose text, p_ref uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me   public.team_members := public.ops_me();
+  k    public.client_contacts;
+  cr   public.creators;
+  c    public.clients;
+  r    public.sm_reports;
+  o    public.campaign_options;
+  cp   public.campaigns;
+  b    public.batches;
+  q    public.quotations;
+  d    public.client_documents;
+  v_n  text;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_purpose not in ('message', 'report', 'feedback', 'creator', 'approval', 'quotation', 'offer')
+     or p_to_kind not in ('contact', 'creator')
+     or (p_purpose in ('report', 'feedback', 'approval', 'quotation', 'offer') and p_to_kind <> 'contact')
+     or (p_purpose = 'creator' and p_to_kind <> 'creator') then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  if not public.wa_may_send(p_purpose, p_to_kind) then return jsonb_build_object('error', 'denied'); end if;
+  if p_to_kind = 'contact' then
+    select * into k from public.client_contacts x where x.id = p_to and x.archived_at is null;
+    if k.id is null then return jsonb_build_object('error', 'not-found'); end if;
+    select * into c from public.clients x where x.id = k.client_id;
+    if c.id is null or not public.client_seen(c.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+    if p_purpose = 'report' then
+      select * into r from public.sm_reports x where x.id = p_ref;
+      if r.id is null or r.client_id <> c.id then return jsonb_build_object('error', 'not-found'); end if;
+      if r.status <> 'published' then return jsonb_build_object('error', 'not-published'); end if;
+    end if;
+    /* A quotation or a Letter of Offer is the contact's own client's: a
+       quotation not removed, a letter not voided. */
+    if p_purpose = 'quotation' then
+      select * into q from public.quotations x where x.id = p_ref;
+      if q.id is null or q.client_id <> c.id or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+      if q.status = 'not_proceeding' then return jsonb_build_object('error', 'void'); end if;
+    end if;
+    if p_purpose = 'offer' then
+      select * into d from public.client_documents x where x.id = p_ref;
+      if d.id is null or d.client_id <> c.id or d.kind not in ('offer', 'intent', 'cover') then
+        return jsonb_build_object('error', 'not-found');
+      end if;
+      if (d.voided_at is not null or d.superseded_by is not null) then return jsonb_build_object('error', 'void'); end if;
+    end if;
+    /* An approval reminder names what waits on the client: a published
+       content set of theirs, or a creator's draft at Reviewing on a
+       campaign of theirs, each read at its own section. */
+    if p_purpose = 'approval' then
+      select * into b from public.batches x where x.id = p_ref;
+      if b.id is not null then
+        if b.client_id <> c.id or not public.allowed('review.sets', 'view') then return jsonb_build_object('error', 'not-found'); end if;
+        if not coalesce(b.published, false) then return jsonb_build_object('error', 'not-waiting'); end if;
+      else
+        select * into o from public.campaign_options x where x.id = p_ref;
+        if o.id is not null then select * into cp from public.campaigns x where x.id = o.campaign_id; end if;
+        if o.id is null or cp.id is null or cp.client_id is distinct from c.id or not public.allowed('campaigns.campaigns', 'view') then
+          return jsonb_build_object('error', 'not-found');
+        end if;
+        if o.state <> 'reviewing' then return jsonb_build_object('error', 'not-waiting'); end if;
+      end if;
+    end if;
+    v_n := public.wa_number(coalesce(case when k.whatsapp !~ '^@' then k.whatsapp end, k.phone), c.market);
+    if v_n is null then
+      return jsonb_build_object('error', case when k.whatsapp ~ '^@' then 'username' else 'no-number' end);
+    end if;
+    return jsonb_build_object('ok', true, 'number', v_n, 'name', k.name, 'greeting', public.contact_greeting(k.salutation, k.name),
+      'client_id', c.id, 'client', case when r.id is not null then coalesce(nullif(r.brand_name, ''), c.name) else c.name end,
+      'subject', c.name, 'ref_kind', case when b.id is not null then 'set' when o.id is not null then 'option'
+                       when q.id is not null then 'quotation' when d.id is not null then 'offer' end,
+      -- an approval reminder's link button: the page that waits, past the
+      -- site's root (the client's review page, the campaign's selection page)
+      'link', case when b.id is not null then 'review/?k=' || c.access_token
+                   when o.id is not null then 'creators/?k=' || cp.access_token end);
+  end if;
+  select * into cr from public.creators x where x.id = p_to;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_purpose = 'creator' then
+    select * into o from public.campaign_options x where x.id = p_ref;
+    if o.id is null or o.creator_id <> cr.id then return jsonb_build_object('error', 'not-found'); end if;
+    select * into cp from public.campaigns x where x.id = o.campaign_id;
+    if cp.id is null or (cp.client_id is not null and not public.client_seen(cp.client_id, 'view')) then
+      return jsonb_build_object('error', 'not-found');
+    end if;
+    if o.state in ('option', 'shortlisted', 'backup', 'withdrawn', 'replaced') then
+      return jsonb_build_object('error', 'not-booked');
+    end if;
+  elsif not cr.active then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  v_n := public.wa_number(cr.whatsapp, 'MY');
+  if v_n is null then return jsonb_build_object('error', 'no-creator-number'); end if;
+  return jsonb_build_object('ok', true, 'number', v_n, 'name', cr.name, 'greeting', split_part(btrim(cr.name), ' ', 1),
+    'client_id', cp.client_id,
+    'campaign', case when cp.id is not null then coalesce(nullif(btrim(cp.title), ''), 'Your campaign') end,
+    'code', cr.access_code, 'subject', coalesce(nullif(btrim(cp.title), ''), cr.name));
+end $$;
+revoke all on function public.wa_compose_prepare(text, uuid, text, uuid) from public, anon;
+grant execute on function public.wa_compose_prepare(text, uuid, text, uuid) to authenticated;
+
+-- END OF WHATSAPP LINK FROM THE RECORD --------------------------------------
+
 select public.functions_tidy();
 
 -- ===========================================================================

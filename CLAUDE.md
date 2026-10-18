@@ -637,7 +637,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
   one `ops_notifications` row (kind `notice`, `notice_id`, `from_name`) to
   each active colleague but the sender and a system account (`bad-title`,
-  `bad-body`, `no-one`), so it reaches the bell and a push;
+  `bad-body`, `no-one`; ten a sender in any hour, `too-many` with when the
+  next can go, `2026-10-18-ten-notices-an-hour.sql`), so it reaches the bell
+  and a push;
   `team_notices_list()` and `team_notice_withdraw(p_id, p_restore)`
   (`hidden_at` on every copy). `team_notices` has RLS on, no policy, no
   grant. Each is filed `team.changed` under subject Notices.
@@ -672,9 +674,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   adjusted.
   - RM for MY, S$ for SG.
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
-    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`)
+    applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
+    campaign's booked creators the client's last confirmation (`kind`
+    client), a selection still to confirm none)
     unless `sst_applies` is false.
-  - Two decimals on every total.
+  - Two decimals on every total, each charged figure (`rateFor`, `taxOf`)
+    rounded by `cents()`, a half away from nought as Postgres rounds, the
+    float nudged first (1,234.50 × 0.95 is 1,172.7749… in a float).
   - `TERMS` holds the older factor table (used when `term_pct` is null).
   - `ADspaceMoney.load()` reads the business figures once a page
     (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
@@ -5215,6 +5221,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     for every active colleague but the caller, refusing a moment passed;
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
+  - the moment passes before the run comes: `is_team()`, `allowed()`,
+    `ops_me()` and `me()` count a colleague only while
+    `team_access_ends(access_until, access_until_time)` is ahead (an admin
+    is the run's, which keeps the last admin with access), so nothing waits
+    for the five minutes (`2026-10-18-access-ends-on-the-minute.sql`).
 - Digital namecards (`js/namecard.js`, `/card/?k=`, `2026-10-03-team-namecards.sql`):
   - every colleague has a `card_key` (eight characters from the link keys'
     alphabet), made by trigger and never changed, so a printed QR keeps
@@ -5391,8 +5402,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   header with one variable, body variables positional or named, one link
   button variable); each variable prefilled from the record (the greeting
   by `contact_greeting`, then the client or the report's brand, or a
-  creator's campaign; the report; a named one by its name; the link button
-  a creator's code), a typed one kept, a numbered one named for what fills it
+  creator's campaign; the report; a named one by its name), a typed one
+  kept; the link button the record's own, shown and never typed: `wa-send`
+  fills it from `wa_compose_prepare` alone (a creator's `code`; an approval
+  reminder's `link`, past the button's fixed base) and refuses `wa-no-link`
+  where the record holds none (2026-10-19); a numbered one named for what fills it
   (Greeting, Client, Campaign, Report, Reference, What waits, Link); a Report select only for a Document
   header, the recipient's client's published reports newest first, its file
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
@@ -5616,8 +5630,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `confirm_selection`, `confirm_selection_with` and `review_draft`
   (`2026-10-18-passcode-locks-per-caller.sql`): asked without one is never
   counted; wrong ones are counted per link and caller address
-  (`link_tries`, `request_ip()`: X-Forwarded-For's first entry, which
-  `media-pass` and `sign-download` pass on for their caller), five within
+  (`link_tries`, `request_ip()`: the address Cloudflare saw,
+  `cf-connecting-ip`, else the last X-Forwarded-For entry, never the first,
+  which the caller writes; `media-pass` and `sign-download` pass their
+  caller's on as `x-adspace-ip` beside `x-adspace-relay`, the
+  `ip_relay_secret` in `app_secrets`, the only way it is taken;
+  `2026-10-18-a-callers-address-is-cloudflares.sql`), five within
   15 minutes locking that address out, the right one included, for 15
   minutes, then an hour, then a day where it is locked again within a day
   of the last lock ending (`strikes`, `struck_until`; the right code and
