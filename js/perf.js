@@ -2067,7 +2067,7 @@
     if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', ' + Number(d.pct) + '% of profit.';
     if (d && d.error === 'pool-closed') return 'The bonus pool opens at ' + rm(d.at) + ' revenue.';
     if (d && d.error === 'trip-closed') return 'The trip opens at ' + rm(d.at) + ' revenue.';
-    if (d && d.error === 'months-open') return reviewsWord(d.count) + ' in the quarter ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
+    if (d && d.error === 'months-open') return reviewsWord(d.count) + ' in the ' + (d.scope === 'period' ? 'period' : 'quarter') + ' ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
     if (d && RW_SAID[d.error]) return RW_SAID[d.error];
     return said(d);
   }
@@ -2508,7 +2508,9 @@
     if (!d || st.pv !== 'company') return;
     var ppl = d.people || [], bo = d.bonus || {}, tr = d.trip || {}, co = d.company;
     $('rwPCount').textContent = ppl.length + (ppl.length === 1 ? ' person' : ' people');
-    $('rwPConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended && d.figures);
+    /* As a quarter's: drawn only once every review in the six months is
+       final, the chip naming what is still open. */
+    $('rwPConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended && d.figures && !(Number(d.open_months) > 0));
     $('rwPReopen').hidden = !(may('team.performance', 'manage') && d.confirmed);
     box.innerHTML = '';
     if (d.confirmed) {
@@ -2523,7 +2525,8 @@
        it divides. */
     var fig = document.createElement('section');
     fig.className = 'crm-group rw-figs';
-    fig.innerHTML = '<div class="crm-group-head"><h3>Company figures</h3>' + confirmedChip(d) + '</div>';
+    fig.innerHTML = '<div class="crm-group-head"><h3>Company figures</h3>' + confirmedChip(d) +
+      (!d.confirmed && Number(d.open_months) > 0 ? chip(reviewsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') + '</div>';
     var t = document.createElement('div');
     t.className = 'crm-table softpanel rw-facts';
     var outcome = function (x, amount, open) {
