@@ -5123,7 +5123,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     saying so); an erased colleague's card slug stays empty
     (`team_card_slug`); `team_hand_over` refuses `own` and
     `system-account`; a removed colleague is never made active again
-    (`team_access_guard`, `removed`); an extension on a task whose creator
+    (`team_access_guard`, `removed`: with a sign-in a removal or an
+    erasure, once made, is never moved or cleared, and moving an
+    expired-then-removed colleague's date brings nobody back;
+    `2026-10-18-a-removal-stands.sql`); an extension on a task whose creator
     has left is asked of the first active admin who is not a system account
     (`ops_due_decider`); an on-site meeting's outstation reminder goes to
     its leader while active, else the month's manager; trigger
