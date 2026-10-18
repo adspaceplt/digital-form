@@ -1276,7 +1276,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every colleague picker, the capacity bars, the review list, Health and the
   report reviewers leave it out (`ADspaceAdmin.isSystem`, one read beside
   `me()`; `sm_report_may_review`); Set access expiry for everyone skips it.
-  The mark is set only with no sign-in (the connector or the SQL editor);
+  The mark is set only with no sign-in (the connector or the SQL editor;
+  a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
+  by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
   trigger `team_members_system_guard` lets only the account itself change its
   standing, access date, group, admin mark or email (`system-account`).
   Team shows it with a System tag and no ⋯ for anyone else.
