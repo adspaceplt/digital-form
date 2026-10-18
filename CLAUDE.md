@@ -5321,6 +5321,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   judges only objects over 7 days old, and files the counts in `s3_sweeps`.
   Its code has no delete request, and `tests/s3sweep.js` holds that. A
   video's `.web.mp4` copy counts as in use while its original is.
+- Scheduled jobs are watched (`2026-10-18-scheduled-jobs-watched.sql`):
+  `jobs_watch()` (pg_cron `jobs-watch`, 08:20 MYT) tells each active admin
+  once a day (kind `jobs.failed`) of the scheduled runs that failed in the
+  last 24 hours, by job, and of an S3 report filed as failed or not arrived
+  in 26 hours; `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
+  over 14 days and notices read over 90 days ago, never a colleague's
+  notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,
   `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the
   Free plan keeps no backups): Supabase's own dump (roles, schema, data),

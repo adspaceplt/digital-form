@@ -4937,3 +4937,15 @@ finding fixed at the user's word ("fix all no matter what").
   trigger in the deleting transaction. The console's older direct-write
   fallback for Confirm creators is gone (the function has been live since
   2026-10-10). `tests/confirmonce.js` holds each.
+
+- 2026-10-18 · Scheduled jobs that fail are told (second audit, item 4).
+  Nothing read `cron.job_run_details`, and the kicks and notification
+  fan-outs swallow their errors on purpose (a notice never fails the write
+  behind it), so a reminder, a repeat or the S3 report that stopped would
+  have stopped silently. `2026-10-18-scheduled-jobs-watched.sql` adds a
+  morning check that tells each active admin, once a day, which jobs failed
+  and how often; the S3 report counts when filed as failed and when it did
+  not arrive at all (its job posts to the edge function and succeeds either
+  way). The same file prunes job history after 14 days and read notices
+  after 90 (5,532 runs kept since 27 Sept on 2026-10-18), leaving a
+  colleague's notice, whose copies Notices count. `tests/sql.js` holds it.
