@@ -2217,55 +2217,24 @@
     if (ids.length) page(0); else state.reviewSets = {};
   }
 
-  /* Rows of a table whose `field` is one of `ids`: a hundred ids a request
-     (an address has a length) and a thousand rows a page, never a request a
-     row. */
-  function readIn(table, cols, field, ids) {
-    var out = [], chunks = [];
-    for (var i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
-    function chunk(c) {
-      if (c >= chunks.length) return Promise.resolve(out);
-      function page(from) {
-        return db.from(table).select(cols).in(field, chunks[c]).order('id').range(from, from + 999).then(function (r) {
-          if (r.error) throw r.error;
-          out = out.concat(r.data || []);
-          if ((r.data || []).length === 1000) return page(from + 1000);
-          return chunk(c + 1);
-        });
-      }
-      return page(0);
-    }
-    return chunk(0);
-  }
-  /* Posts whose standing decision is Changes requested, counted by set: the
-     latest decision not taken back, on the round on show, since any
-     re-approval asked (the rule loadPosts reads a post's decision by). */
-  function changesBySet(posts, reviews) {
-    var byId = {}, latest = {}, out = {};
-    posts.forEach(function (p) { byId[p.id] = p; });
-    reviews.slice().sort(function (a, z) {
-      return a.created_at < z.created_at ? 1 : a.created_at > z.created_at ? -1 : 0;
-    }).forEach(function (x) {
-      var p = byId[x.post_id];
-      if (!p || x.undone_at || latest[x.post_id]) return;
-      if ((x.round || 1) !== (p.round || 1)) return;
-      if (p.review_reset_at && !(x.created_at > p.review_reset_at)) return;
-      latest[x.post_id] = x;
+  /* Where each set's posts stand, counted by the database in one request
+     (`review_set_counts`, as My Work and the Dashboard ask it; the third
+     audit, item 8): never a read of every post and decision. Keyed by set. */
+  function setCounts(batchIds) {
+    if (!batchIds.length) return Promise.resolve({});
+    return db.rpc('review_set_counts', { p_sets: batchIds }).then(function (r) {
+      if (r.error) throw r.error;
+      var out = {};
+      (r.data || []).forEach(function (x) { out[x.set_id] = x; });
+      return out;
     });
-    posts.forEach(function (p) {
-      if (latest[p.id] && latest[p.id].decision === 'changes') out[p.batch_id] = (out[p.batch_id] || 0) + 1;
-    });
-    return out;
-  }
-  var POST_COLS = 'id, batch_id, round, review_reset_at';
-  function readChanges(posts) {
-    if (!posts.length) return Promise.resolve({});
-    return readIn('reviews', 'id, post_id, decision, round, created_at, undone_at', 'post_id',
-      posts.map(function (p) { return p.id; })).then(function (rows) { return changesBySet(posts, rows); });
   }
   function readChangesFor(batchIds) {
-    if (!batchIds.length) return Promise.resolve({});
-    return readIn('posts', POST_COLS, 'batch_id', batchIds).then(readChanges);
+    return setCounts(batchIds).then(function (by) {
+      var out = {};
+      Object.keys(by).forEach(function (id) { if (by[id].n_changes) out[id] = by[id].n_changes; });
+      return out;
+    });
   }
   function changesChip(n) {
     return n ? '<span class="chip-state is-danger cr-changes">' + n + (n === 1 ? ' change requested' : ' changes requested') + '</span>' : '';
@@ -3402,29 +3371,27 @@
           }));
         });
         /* A count that could not be read is not a count of nothing: it
-           said "0 posts" over a failed request and the set looked empty. */
-        /* The same read of the posts counts them and, with one read of their
-           decisions, the change requests each set holds (2026-10-14). */
-        db.from('posts').select(POST_COLS).in('batch_id', sets.map(function (b) { return b.id; })).then(function (p) {
-          var n = {};
-          (p.data || []).forEach(function (x) { n[x.batch_id] = (n[x.batch_id] || 0) + 1; });
+           said "0 posts" over a failed request and the set looked empty.
+           One request counts each set's posts and its change requests. */
+        setCounts(sets.map(function (b) { return b.id; })).then(function (by) {
           sets.forEach(function (b) {
-            subs[b.id] = p.error ? 'Posts unavailable' : (n[b.id] || 0) + ((n[b.id] || 0) === 1 ? ' post' : ' posts');
+            var n = by[b.id] ? by[b.id].n_posts : 0;
+            subs[b.id] = n + (n === 1 ? ' post' : ' posts');
+            chg[b.id] = by[b.id] ? by[b.id].n_changes : 0;
           });
+          paintSubs(false);
+        }).catch(function () {
+          sets.forEach(function (b) { subs[b.id] = 'Posts unavailable'; });
+          paintSubs(true);
+        });
+        function paintSubs(failed) {
           Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
             var sub = row.querySelector('[data-role="sub"]');
-            sub.textContent = subs[row.getAttribute('data-set')];
-            sub.className = 'set-row-sub' + (p.error ? ' is-warn' : '');
+            if (!sub) return;
+            sub.innerHTML = subHtml(row.getAttribute('data-set'));
+            sub.className = 'set-row-sub' + (failed ? ' is-warn' : '');
           });
-          if (p.error || !(p.data || []).length) return;
-          readChanges(p.data).then(function (by) {
-            chg = by;
-            Array.prototype.forEach.call(box.querySelectorAll('[data-set]'), function (row) {
-              var sub = row.querySelector('[data-role="sub"]');
-              if (sub) sub.innerHTML = subHtml(row.getAttribute('data-set'));
-            });
-          }).catch(function () {});
-        });
+        }
       });
   }
 
