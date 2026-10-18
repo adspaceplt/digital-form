@@ -2059,6 +2059,7 @@
     'bad-client': 'Pick a client.',
     'description-needed': 'Describe the deal.',
     'bad-department': 'Pick a department.',
+    'own-department': 'Your own department’s scores are entered by somebody outside it.',
     'figures-needed': 'Enter the company figures first.'
   };
   /* The quarter waits on reviews, one a person a month (6 people over July
