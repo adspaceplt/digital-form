@@ -5197,3 +5197,11 @@ finding fixed at the user's word ("fix all no matter what").
   an apostrophe while the cause was looked for, and the repo carries the
   live wording. Rule kept: the same hold twice is a stop, and the held
   statement goes to the user as its own SQL Editor file.
+
+- 2026-10-18 · A due date moves only through its ask (review item 2).
+  `ops_change_due_date` was still executable by every signed-in account,
+  so a task's assignee could call it and move the final due date without
+  the creator's approval. No page calls it; `ops_request_due_change` and
+  `ops_decide_due_change` reach it as definers and keep doing so. It is
+  revoked from public, anon and authenticated; `tests/sql.js` holds the
+  revoke, no page caller, and a definer caller still reaching it.
