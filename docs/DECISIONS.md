@@ -4924,6 +4924,20 @@ finding fixed at the user's word ("fix all no matter what").
   a final month keeps its result. `tests/perf.js` holds 75 less 2.5 twice
   as 70 and a C.
 
+- 2026-10-18 · A client's confirmation is kept as it was made (second
+  audit, item 13). `campaign_confirmations` held the client's acceptance of
+  its creators and their rates, yet a colleague at Creator Campaigns Work
+  could rewrite a row and one at Manage remove it through PostgREST, and a
+  campaign's delete took every row with it by cascade, the page filing the
+  delete only afterwards (so a closed tab filed nothing).
+  `2026-10-18-confirmations-kept.sql` sets the three write policies to
+  admit nothing (the three functions that confirm are security definer),
+  stamps each row with its campaign's title and client, takes off the
+  foreign key so the rows outlive the campaign, and files the delete by
+  trigger in the deleting transaction. The console's older direct-write
+  fallback for Confirm creators is gone (the function has been live since
+  2026-10-10). `tests/confirmonce.js` holds each.
+
 - 2026-10-18 · Scheduled jobs that fail are told (second audit, item 4).
   Nothing read `cron.job_run_details`, and the kicks and notification
   fan-outs swallow their errors on purpose (a notice never fails the write

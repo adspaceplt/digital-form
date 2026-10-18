@@ -1690,7 +1690,7 @@
       db.from('campaigns').delete().eq('id', c.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('campWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
-        log('campaign.deleted', c.title, c.invoice_no || '');
+        // The database files the delete itself (`campaigns_deleted_log`, 2026-10-18).
         $('campBack').click();
       }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
     });
@@ -5116,14 +5116,13 @@
     var source = $('lockSource').value;
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     var ids = picked.map(function (o) { return o.id; });
-    var stamp = new Date().toISOString();
     var btn = this;
     if (btn.disabled) return;
 
     /* One act (audit S3, 2026-10-10): the confirmation, the bookings and the
        campaign move together in `campaign_confirm_creators`, which refuses a
        booking no longer shortlisted and answers the same key again without
-       filing twice. A database without it takes the older three writes. */
+       filing twice. The confirmation is written by it alone (2026-10-18). */
     if (!lockKey) lockKey = (window.ADspaceAPI && ADspaceAPI.accessToken ? ADspaceAPI.accessToken() : '') + Date.now().toString(36);
     btn.disabled = true;
     db.rpc('campaign_confirm_creators', {
@@ -5131,7 +5130,7 @@
     }).then(function (r) {
       btn.disabled = false;
       var missing = r.error && (r.error.code === 'PGRST202' || /campaign_confirm_creators/.test(r.error.message || ''));
-      if (missing) { lockOld(); return; }
+      if (missing) { msg('lockMsg', 'This needs a database update.', 'err'); return; }
       var d = r.data || {};
       if (r.error || d.error) {
         msg('lockMsg', r.error ? r.error.message : (LOCK_SAID[d.error] ? LOCK_SAID[d.error](d) : 'Not confirmed. The database refused the request.'), 'err');
@@ -5143,44 +5142,6 @@
       shutLock();
       openCampaign(state.campaign);
     }).catch(function (e) { btn.disabled = false; msg('lockMsg', (e && e.message) || String(e), 'err'); });
-
-    function lockOld() {
-    db.from('campaign_confirmations').insert({
-      campaign_id: state.campaign.id,
-      kind: source === 'portal' ? 'client' : 'keyed_in',
-      person: person, source: source
-    }).then(function (r) {
-      if (r.error) { msg('lockMsg', r.error.message, 'err'); return; }
-      /* Each booking is written and taken back; a refusal (204 with no row)
-         is named and the campaign is left as it is, never marked in
-         production over bookings that did not move (audit, 2026-10-03). */
-      if (!ids.length) { shutLock(); return; }
-      Promise.all(ids.map(function (id) {
-        return db.from('campaign_options')
-          .update({ state: 'confirmed', confirmed_at: stamp, confirmed_by: person })
-          .eq('id', id).select('id');
-      })).then(function (rs) {
-        var refused = rs.filter(function (x) { return x.error || !(x.data || []).length; }).length;
-        if (refused) {
-          msg('lockMsg', refused + ' of ' + ids.length + ' not confirmed. The database refused the request.', 'err');
-          loadOptions();
-          return;
-        }
-        return db.from('campaigns').update({ state: 'production' }).eq('id', state.campaign.id).select('id')
-          .then(function (q) {
-            if (q.error || !(q.data || []).length) {
-              msg('lockMsg', q.error ? q.error.message : 'Not saved. The database refused the request.', 'err');
-              loadOptions();
-              return;
-            }
-            state.campaign.state = 'production';
-            log('campaign.locked', state.campaign.title, picked.length + ' creators · ' + person);
-            shutLock();
-            openCampaign(state.campaign);
-          });
-      }).catch(function (e) { msg('lockMsg', (e && e.message) || String(e), 'err'); });
-    });
-    }
   });
   var lockKey = null;
   var LOCK_SAID = {

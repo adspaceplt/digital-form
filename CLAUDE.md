@@ -2518,6 +2518,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   `booked`) where those booked (`campaign_booked`) and those confirmed now
   pass the slots, and trigger `campaigns_slots_floor` refuses slots below
   the bookings (`slots-booked`), whoever writes them.
+- A client's confirmation is the record of what was accepted
+  (`2026-10-18-confirmations-kept.sql`): `campaign_confirmations` is
+  written by `confirm_selection_with`, `confirm_selection` and
+  `campaign_confirm_creators` alone (its insert, update and delete policies
+  admit nothing), keeps the campaign's title and client (stamped on insert),
+  and has no foreign key, so a deleted campaign leaves it. A campaign's
+  delete is filed by trigger `campaigns_deleted_log` (`campaign.deleted`,
+  the title and invoice number); the page files nothing.
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
