@@ -5046,6 +5046,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `12 Sept 2026`); an HR row is filed under `HR` with its type, date, note
   and file only.
 - `document.*` and `register.*` rows file under Documents.
+- The record keeps three years: `privacy_retention()` (pg_cron
+  `privacy-retention`, the 2nd of each month) removes older rows, and
+  clears a WhatsApp message's number, name, variables and link code twelve
+  months after it was queued, never one still queued or sending
+  (`2026-10-18-personal-data-kept-for-a-time.sql`).
 
 ### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `2026-10-10-whatsapp-approval-reminder.sql`, `docs/WHATSAPP-SETUP.md`)
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a

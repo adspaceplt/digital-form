@@ -4999,3 +4999,26 @@ finding fixed at the user's word ("fix all no matter what").
   `submit_review_seen` keep their check: they need a post id only the feed
   gives. No live link held a passcode when it shipped. `tests/confirmonce.js`
   holds the rule on both kinds of link.
+
+- 2026-10-18 · Personal data is kept for a stated time (second audit, item
+  17; PDPA 2010 and 2012). Nothing ever left `wa_outbox` or `activity_log`.
+  The periods: a WhatsApp message's number, name, variables and link code
+  are cleared twelve months after it was queued (what was sent, when, to
+  which record and how it went stay; the WhatsApp section lists twelve
+  months alone); an Activity record row is removed after three years; the
+  nightly dump in `private/backups/db/` keeps what it held on its day until
+  an S3 lifecycle rule expires it (for example 90 days), the user's to set
+  (STANDARD.md). Performance's own trail, HR letters and documents keep
+  their own rules. `privacy_retention()` runs on the 2nd of each month.
+  `tests/sql.js` holds it.
+
+- 2026-10-18 · My Work's report reads its period (second audit, item 18).
+  `ops_report`'s spans worked out a span for every stage event ever
+  written, then kept those entered in the period, and the Dashboard asks it
+  eight times a visit. A span entered in the period ends at its task's next
+  event, later still, so the events before the period never changed an
+  answer: `2026-10-18-my-work-report-reads-its-period.sql` reads from
+  `p_from` on (tighter than the audit's 90 days before it, and still the
+  same figures), and adds the bell's `ops_notifications (team_member_id,
+  created_at desc)` index (the one held covered unread notices alone).
+  `tests/ops.js` answers nine windows beside the earlier definition.
