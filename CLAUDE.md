@@ -1229,7 +1229,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client_scope` read policy and a `client_scope_guard` trigger (writes at
   Manage, `client-scope`) on the client and every table under it, by
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
-  `ops_report` (a colleague's own tasks always), and inside `client_billing`,
+  `ops_report` (every task read in it: open, finished, spans and reviews
+  reached; a colleague's own tasks always), and inside `client_billing`,
   `sm_client_reports`, `sm_report_file` and `sm_report_snapshot`. A new table
   hanging off a client joins the do-block's list; a policy of its own asks
   `client_scope_free` / `client_scope_ok`, never `client_seen` (closed to a

@@ -5205,3 +5205,12 @@ finding fixed at the user's word ("fix all no matter what").
   `ops_decide_due_change` reach it as definers and keep doing so. It is
   revoked from public, anon and authenticated; `tests/sql.js` holds the
   revoke, no page caller, and a definer caller still reaching it.
+
+- 2026-10-18 · The My Work report keeps client scope again (review item
+  3). CLIENT SCOPE put `ops_task_in_scope` on `ops_report`'s open work; a
+  later restatement dropped it, so a colleague on Own clients only who
+  holds My Work: Report read every client's late and open work on the
+  Dashboard. Every task read in it now asks it: open work, finished work,
+  the stage spans and the reviews reached. `tests/ops.js` holds a probe
+  task read by a colleague seeing all clients and by none whose scope
+  leaves it out; the stand-in filters the same way.
