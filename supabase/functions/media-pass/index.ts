@@ -53,6 +53,16 @@ const CDN = 'https://mycdn.adspace.me';
 const MAX_FOLDERS = 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+/* The caller's own address, passed on when this function asks for the
+   link as the page did, so a wrong access code counts against the person
+   who typed it and never against this function's own address, which every
+   client shares (second audit, item 4; `request_ip()` reads it). */
+function callerHeaders(req: Request): Record<string, string> {
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    || (req.headers.get('cf-connecting-ip') || '').trim();
+  return /^[0-9A-Fa-f.:]{3,45}$/.test(ip) ? { 'x-forwarded-for': ip } : {};
+}
+
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
@@ -140,7 +150,7 @@ Deno.serve(async (req) => {
   }
 
   // 1. Who is asking, proved the way the page itself was answered.
-  const pub = createClient(url, anon);
+  const pub = createClient(url, anon, { global: { headers: callerHeaders(req) } });
   const pass = body.passcode ? String(body.passcode) : null;
   const key = (v: unknown) => /^[A-Za-z0-9_-]{6,64}$/.test(String(v || ''));
   // The folders this caller may open; `null` is the whole of content/.

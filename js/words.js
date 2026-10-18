@@ -28,6 +28,13 @@
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code.',
+    // A link locked after wrong access codes from this connection.
+    lockedTitle: 'Link temporarily locked',
+    lockedText: 'Several incorrect access codes were entered. Please try again in {wait}.',
+    waitMinutes: '{n} minutes',
+    waitMinute: '1 minute',
+    waitHours: '{n} hours',
+    waitHour: '1 hour',
     noAccess: 'Access denied',
     noAccessText: 'Please contact your ADspace account manager.',
     failTitle: 'Unable to load',
@@ -110,6 +117,12 @@
     passTitle: '访问码',
     passText: '请输入访问码。',
     passWrong: '访问码不正确。',
+    lockedTitle: '链接已暂时锁定',
+    lockedText: '访问码多次输入错误。请于{wait}后重试。',
+    waitMinutes: '{n} 分钟',
+    waitMinute: '1 分钟',
+    waitHours: '{n} 小时',
+    waitHour: '1 小时',
     noAccess: '无访问权限',
     noAccessText: '请联系您的 ADspace 客户经理。',
     failTitle: '无法加载',
@@ -198,6 +211,16 @@
     draft: 'is-off', open: 'is-warn', production: 'is-warn'
   };
   W.tone = function (key) { return W.TONE[key] || ''; };
+
+  /* How long a locked link has left, in a page's own words (`t`, one
+     language's set): minutes under the hour, else whole hours. */
+  W.lockedLine = function (t, minutes) {
+    var m = Math.max(1, Math.ceil(Number(minutes) || 15));
+    var h = Math.ceil(m / 60);
+    var wait = m < 60 ? (m === 1 ? t.waitMinute : t.waitMinutes.replace('{n}', m))
+      : (h === 1 ? t.waitHour : t.waitHours.replace('{n}', h));
+    return t.lockedText.replace('{wait}', wait);
+  };
 
   /* A page's own words sit on top of these. One level deep is enough: every
      nested group here is a complete vocabulary, so a page that needed to

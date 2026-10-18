@@ -5446,12 +5446,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   Past client (`2026-10-18-past-client-links-act-on-nothing.sql`); a
   completed campaign of a current client stays readable for its results.
   A link's passcode is asked through `link_passcode(kind, token, stored,
-  given)` (`2026-10-18-passcode-attempts.sql`; `link_attempts`, RLS on, no
-  policy, no grant) by `get_review_feed`, `get_campaign`, `save_selection`,
-  `confirm_selection`, `confirm_selection_with` and `review_draft`: asked
-  without one is never counted; five wrong within 15 minutes lock the link
-  for 15 minutes, the right one included, answered as an unknown key
-  (`not_found` / `not-found`); a passcode asked for names nobody.
+  given)` by `get_review_feed`, `get_campaign`, `save_selection`,
+  `confirm_selection`, `confirm_selection_with` and `review_draft`
+  (`2026-10-18-passcode-locks-per-caller.sql`): asked without one is never
+  counted; wrong ones are counted per link and caller address
+  (`link_tries`, `request_ip()`: X-Forwarded-For's first entry, which
+  `media-pass` and `sign-download` pass on for their caller), five within
+  15 minutes locking that address out for 15 minutes, the right one
+  included; the link's own count (`link_attempts`, 100 within an hour)
+  locks it for an hour for every address but one that opened it in the
+  last 30 days; each answered `locked` with its minutes (`link_locked`),
+  said on the page as Link temporarily locked (`W.lockedLine`), and a
+  stored code that no longer opens the review link is let go, the media
+  pass not asked again. The team reads a lock under the link
+  (`link_lock_state`, `.linklock`) and clears it (`link_lock_clear`, the
+  section at Work, filed). A passcode asked for names nobody; the tables
+  have RLS on, no policy, no grant.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token, the Meta system user's
