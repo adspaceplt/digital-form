@@ -5377,8 +5377,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   header with one variable, body variables positional or named, one link
   button variable); each variable prefilled from the record (the greeting
   by `contact_greeting`, then the client or the report's brand, or a
-  creator's campaign; the report; a named one by its name; the link button
-  a creator's code), a typed one kept, a numbered one named for what fills it
+  creator's campaign; the report; a named one by its name), a typed one
+  kept; the link button the record's own, shown and never typed: `wa-send`
+  fills it from `wa_compose_prepare` alone (a creator's `code`; an approval
+  reminder's `link`, past the button's fixed base) and refuses `wa-no-link`
+  where the record holds none (2026-10-19); a numbered one named for what fills it
   (Greeting, Client, Campaign, Report, Reference, What waits, Link); a Report select only for a Document
   header, the recipient's client's published reports newest first, its file
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
