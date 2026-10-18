@@ -89,7 +89,8 @@
       doneT: 'Request received', doneTo: 'Once ADspace approves your quotation, the Letter of Offer will be sent to {wa} on WhatsApp.',
       doneAny: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
-      sst: 'SST {p}%', onceSub: 'One-off subtotal', onceTag: 'One-off',
+      sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
+      monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
       ref: 'Reference', monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST', status: 'Status', requested: 'Letter of Offer requested',
       newQuote: 'New quotation',
       err: {
@@ -160,7 +161,8 @@
       doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送服务确认函。',
       doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
       monthSub: '每月小计', commit: '{n} 个月合约优惠（{p}%）', termAdj: '{n} 个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
-      sst: 'SST {p}%', onceSub: '一次性小计', onceTag: '一次性',
+      sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
+      monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       ref: '编号', monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请服务确认函',
       newQuote: '重新报价',
       err: {
@@ -489,20 +491,28 @@
   /* The first month holds the one-off items too (the user, 2026-10-18). */
   function sum2(a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; }
   function firstIncl(tt) { return sum2(tt.month.incl, tt.once && tt.once.incl); }
+  /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
+     it does not apply, its row reads not applicable, no total names it and
+     the row before it, the same figure, is left out. */
+  function sstOn(tt) { return window.ADspaceMoney.sstApplies(tt.sst_pct); }
+  function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function totalsRows(tt) {
-    var r = [], own = tt.month && ownMonths(tt);
+    var r = [], own = tt.month && ownMonths(tt), w = t(), on = sstOn(tt);
+    var sst = on ? f(w.sst, { p: tt.sst_pct }) : w.sstNone;
     if (tt.month) {
-      var w = t(), sst = f(w.sst, { p: tt.sst_pct }), o = tt.once || {};
+      var o = tt.once || {};
       r.push([w.monthSub, n2(tt.month.subtotal)]);
       if (Number(tt.term_pct)) r.push([f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }), n2(tt.month.term)]);
       if (own) {
         if (tt.once) r.push([w.onceSub, n2(o.subtotal)]);
-        r.push([w.firstExcl, n2(sum2(tt.month.excl, o.subtotal))], [sst, n2(sum2(tt.month.sst, o.sst))], [w.first, qc() + ' ' + n2(firstIncl(tt)), 1]);
+        if (on) r.push([w.firstExcl, n2(sum2(tt.month.excl, o.subtotal))]);
+        r.push([sst, n2(sum2(tt.month.sst, o.sst))], [word(tt, 'first'), qc() + ' ' + n2(firstIncl(tt)), 1]);
       } else {
-        r.push([w.monthExcl, n2(tt.month.excl)], [sst, n2(tt.month.sst)], [w.monthly, qc() + ' ' + n2(tt.month.incl), 1]);
+        if (on) r.push([w.monthExcl, n2(tt.month.excl)]);
+        r.push([sst, n2(tt.month.sst)], [word(tt, 'monthly'), qc() + ' ' + n2(tt.month.incl), 1]);
       }
     }
-    if (tt.once && !own) r.push([t().onceSub, n2(tt.once.subtotal)], [f(t().sst, { p: tt.sst_pct }), n2(tt.once.sst)], [t().oneOff, qc() + ' ' + n2(tt.once.incl), 1]);
+    if (tt.once && !own) r.push([w.onceSub, n2(tt.once.subtotal)], [sst, n2(tt.once.sst)], [word(tt, 'oneOff'), qc() + ' ' + n2(tt.once.incl), 1]);
     return r;
   }
   function paintQuote() {
@@ -576,8 +586,8 @@
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
       '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
       '<dl class="qs-facts"><dt>' + esc(t().ref) + '</dt><dd>' + esc(q.ref) + '</dd>' +
-      (tt.month ? '<dt>' + esc(ownMonths(tt) ? t().first : t().monthly) + '</dt><dd>' + qc() + ' ' + esc(n2(ownMonths(tt) ? firstIncl(tt) : tt.month.incl)) + '</dd>' : '') +
-      (tt.once && !(tt.month && ownMonths(tt)) ? '<dt>' + esc(t().oneOff) + '</dt><dd>' + qc() + ' ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
+      (tt.month ? '<dt>' + esc(word(tt, ownMonths(tt) ? 'first' : 'monthly')) + '</dt><dd>' + qc() + ' ' + esc(n2(ownMonths(tt) ? firstIncl(tt) : tt.month.incl)) + '</dd>' : '') +
+      (tt.once && !(tt.month && ownMonths(tt)) ? '<dt>' + esc(word(tt, 'oneOff')) + '</dt><dd>' + qc() + ' ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
       '<dt>' + esc(t().status) + '</dt><dd><span class="chip-state is-warn">' + esc(t().requested) + '</span></dd></dl>' +
       '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>';
   }

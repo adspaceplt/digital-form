@@ -239,8 +239,6 @@ button.appver {
 
 /* ---------- Short Links ---------- */
 .slugfield { display: flex; align-items: stretch; }
-@media (max-width: 640px) {.tally-cell { padding: 9px 10px; }
-  }
 /* ---------- Profile link rows ---------- */
 .profrow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 @media (max-width: 640px) {.profrow { flex-wrap: wrap; }
@@ -2766,6 +2764,13 @@ button.aiu-row:first-child::before { content: none; }
 .task-row.is-swiping > :not(.trow-next) { transition: none; }
 .task-row.is-swiped > .trow-next { visibility: visible; opacity: 1; transition: opacity var(--t) var(--ease); }
 
+/* After the console's 760px `.crm-row` rule, which it overrides. */
+.vs-row, .crm-head.vs-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 240px) var(--state-w);
+  width: 100%; padding: 10px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; text-align: left; font: inherit; color: inherit;
+}
 button.vs-row { cursor: pointer; }
 .vs-row:last-child { border-bottom: 0; }
 @media (hover: hover) { button.vs-row:hover { background: var(--sunk); } }

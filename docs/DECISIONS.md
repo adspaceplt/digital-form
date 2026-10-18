@@ -5356,6 +5356,26 @@ finding fixed at the user's word ("fix all no matter what").
   is active; the task card's Repeats line shows the error. `tests/ops.js`
   holds each case.
 
+- 2026-10-18 · Two more layouts the stylesheet split had changed (review
+  item 18). The console's 760px `.crm-row` rule moved to `console.css`
+  and so beat `.vs-row`, left in `portal.css`: from 641 to 760px a client's
+  month of Video Scripts drew its rows with the phone's padding, top
+  aligned and a pixel off their heading. `.vs-row` now stands after it in
+  `console.css`. A 640px `.tally-cell` padding that `portal.css`'s own base
+  rule had always overridden came into force on a phone (9px 10px against
+  10px 13px); it never applied before the split and is removed.
+
+- 2026-10-18 · One SST rule on every total, and client wording (review
+  item 17). A client SST does not apply to read First month and SST not
+  applicable on the Letter of Offer, but First month incl. SST and SST 0%
+  on the quotation's PDF, Build quote and `/quote/`, and the PDF's remark
+  said SST twice ("incl. SST … is inclusive of applicable 0% SST"). The
+  four now follow the letter (`ADspaceMoney.sstApplies`); the remark reads
+  "The first month's amount includes the one-off items and SST at 8%." and
+  leaves SST out at 0%. "Tell an admin." in the PDF library's refusal
+  reached clients on `/quote/` and the client portal; it reads "Please
+  contact ADspace." (DESIGN §6).
+
 - 2026-10-18 · A wrong access code locks out the caller, not the client
   (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
   and checked the lock before the code, so anyone holding a link could

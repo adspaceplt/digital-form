@@ -590,7 +590,7 @@
           s.remove();
           whyNot(l).then(function (changed) {
             bad(new Error(changed
-              ? 'The PDF library has changed at its source and was not loaded. Tell an admin.'
+              ? 'The PDF library has changed at its source and was not loaded. Please contact ADspace.'
               : 'The PDF library could not be loaded. Check the connection and try again.'));
           });
         };
@@ -788,7 +788,7 @@
         right(value, R, y, size, f, ink);
         y -= 15;
       };
-      var taxWord = !(Number(price.eachTax) || Number(price.onceTax)) ? 'SST not applicable'
+      var taxWord = !(Number(price.eachTax) || Number(price.onceTax)) ? MON.SST_NONE
         : price.sstPct != null ? 'SST ' + (Math.round(price.sstPct * 100) / 100) + '%' : MON.taxLabel(doc.market, doc.issued_at);
       var oneOff = price.term && price.once > 0;
       /* One summary, one figure to pay first (the user, 2026-10-15: "just

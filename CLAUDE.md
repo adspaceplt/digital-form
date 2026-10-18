@@ -1931,7 +1931,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load). A
   refusal names what failed: a file that arrives and fails its hash has
-  changed at its source (Tell an admin), anything else is the connection
+  changed at its source (Please contact ADspace: client pages draw PDFs
+  too), anything else is the connection
   (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
@@ -1968,7 +1969,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     items (the one-off subtotal before SST, one First month incl. SST, no
     One-off incl. SST of its own), on the letter, the quotation's PDF,
     `/quote/` and Build quote alike; Monthly where every line runs the term
-    (the user, 2026-10-18).
+    (the user, 2026-10-18). Where SST does not apply (an exempt client,
+    0%), all four read SST not applicable on its row, name no SST on a
+    total (Monthly, First month, One-off total) and leave out the excl. SST
+    row; the quotation's remarks say once what the amount includes (the
+    one-off items, SST at 8%), naming no SST at 0% (`ADspaceMoney.sstApplies`,
+    `SST_NONE`; review item 17).
   - `priceOf()` computes the snapshot and the drawing. A letter whose every
     line came from one quotation is priced as `quote_price` priced it: the
     term percentage once on the subtotal, SST at the quotation's rate
