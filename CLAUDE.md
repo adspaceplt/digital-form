@@ -2050,8 +2050,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `perf_mine_gate()`, their own alone, a replaced version left out, a voided
   one marked Void), its PDF drawn in their browser: no Documents access is
   needed. Filed under HR with the kind alone.
-- Add entry (`register_add` / `register_update`, nine arguments with
-  `p_member`):
+- Add entry (`register_add` / `register_update`, ten arguments with
+  `p_member` and `p_supplier`; opened on a colleague or a supplier from
+  their record):
   - an HR entry names a team member and no client;
   - the document type is picked from the types already used for the family,
     with `__new` to type one, saved through `ADspaceForm.title`;
@@ -4978,6 +4979,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   card after the groups, shut until opened (opened for the row a stand-down
   or Delete moves there). A success line under the bar goes after 8
   seconds; a refusal or a warning stays until the next act.
+- A colleague is a record of their own (`member=`, `mtab=`; the user,
+  2026-10-18: "build it similar as client individual section"): the
+  list's name opens it in place of the list and the Team strip, Back
+  returns; the head is the mark, the name, Employee ID, group and post,
+  the state and the row's own ⋯ (`memberMenu`, `wireActs`: one list of
+  acts for both); panes Overview (Sign-in and access, Employment,
+  Namecard, read first, Edit at Team Full Access), Work (what
+  `team_work_held` and the person in charge name, Hand over; Team Full
+  Access), Documents (their HR letters at HR Letters View; Issue document
+  and Add entry open on them), Performance (Open reviews: the months
+  searched for their name, behind its own lock) and Health (their
+  check-ins and talks from `health_team`, `team.health`), each drawn only
+  where readable (`tests/teamrec.js`).
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Add member, Set access expiry, a member's Edit and Set inactive, and a
