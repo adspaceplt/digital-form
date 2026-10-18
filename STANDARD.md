@@ -611,9 +611,6 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - My Work's Completed list on Last month also lists work finished this
   month: the read starts at last month and nothing ends it (`periodEnd()`
   was never called and was removed as dead code, 2026-10-18).
-- `tests/sql.js`'s VIC section fails on main (2026-10-18, since
-  `2026-10-18-access-ends-on-the-minute.sql`): its cut-down `team_members`
-  holds no `access_until`, which `ops_me()` now reads.
 - A colleague's namecard on the iPhone Duo open (890 x 626, a coarse
   pointer): Save contact is 40px high, under the 44px floor (matrix
   `target`, 2026-10-18; front, back and My namecard, both themes).
