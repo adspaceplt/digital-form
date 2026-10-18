@@ -5355,3 +5355,12 @@ finding fixed at the user's word ("fix all no matter what").
   check is reported by the next, and tells Team Full Access when no admin
   is active; the task card's Repeats line shows the error. `tests/ops.js`
   holds each case.
+
+- 2026-10-18 · Two more layouts the stylesheet split had changed (review
+  item 18). The console's 760px `.crm-row` rule moved to `console.css`
+  and so beat `.vs-row`, left in `portal.css`: from 641 to 760px a client's
+  month of Video Scripts drew its rows with the phone's padding, top
+  aligned and a pixel off their heading. `.vs-row` now stands after it in
+  `console.css`. A 640px `.tally-cell` padding that `portal.css`'s own base
+  rule had always overridden came into force on a phone (9px 10px against
+  10px 13px); it never applied before the split and is removed.

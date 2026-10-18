@@ -610,6 +610,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - My Work's Completed list on Last month also lists work finished this
   month: the read starts at last month and nothing ends it (`periodEnd()`
   was never called and was removed as dead code, 2026-10-18).
+- The Suppliers section's Issue document button carries no file mark,
+  where the client's Documents draws it (uxaudit `glyph`, 2026-10-18, on
+  the walk for review item 18).
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
