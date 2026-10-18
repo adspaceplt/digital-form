@@ -5496,6 +5496,7 @@ Register's Issue document and Add entry take `member` as they took
   that held one placement (445 against 376). 640 is the phone line, so the
   phone's layout now starts there and the in-between layout is gone; 560
   and under, and every width over 640, measure as before.
+
 ### 2026-10-18 · The Team list reads as the Clients list; Work lists the work
 The user, on the colleague record: "the outer of the team section is
 different than the client section and still have the ..., it should be the
@@ -5510,3 +5511,13 @@ it the way search does (the address replaced, then the section: the console
 does not route Back between sections); the kinds that are not records here
 stay counted on one line. The first version counted everything and named
 nothing, which answered "how much" and never "what".
+
+- 2026-10-18 · A tally never leaves one cell alone on a desk (the iPhone
+  Duo pass, finding 3). The tally's tracks were `auto-fit` at 140px, so
+  the campaign's results (six cells) ran five across when the card was
+  792px wide (890×626) and left Cost per engagement on its own row; five
+  cells did the same between 590 and 740. While all the cells do not fit
+  one row, a cell's least width is now a third of the row (three over two,
+  three over three), worked out in CSS with the `(W - 100%) * 999` step,
+  since container queries are refused here. Every width that passed before
+  measures as before (1280, 626, 390).
