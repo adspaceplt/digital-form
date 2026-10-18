@@ -1225,8 +1225,19 @@
         });
         return;
       }
+      /* Wrong access codes from this connection lock the link a while
+         (second audit, item 4): said as a lock, never as a link unknown. */
+      if (data.error === 'locked') {
+        showState(W.lockedTitle, window.ADspaceWords.lockedLine(W, data.minutes));
+        return;
+      }
       if (data.error === 'passcode_required') {
-        showState(W.passTitle, W.passText, true);
+        /* A code kept from an earlier visit that no longer opens the link
+           (the team changed it) is let go, so a reload asks afresh and
+           never counts the old one again. */
+        var held = passcode;
+        if (held) { passcode = ''; sessionStorage.removeItem('adspace_pass_' + token); }
+        showState(W.passTitle, held ? W.passWrong : W.passText, true);
         return;
       }
       feed = data;

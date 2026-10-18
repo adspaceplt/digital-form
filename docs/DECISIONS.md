@@ -5398,3 +5398,69 @@ four rows whose reference names a supplier's ID onto the supplier (AS110's
 has no supplier record and stays). The stand-in client coded AS125 is left
 for the team to set Past or delete. Issue document takes the plus through
 `js/acts.js`, closing the logged glyph defect.
+
+- 2026-10-18 · Department scores are an admin's (review item 6). NOBODY
+  SCORES THEIR OWN DEPARTMENT kept a member from scoring their own
+  department, but with two departments and the prize going whole to the
+  higher, a member of Creative at Performance Work could still mark
+  Marketing down and win it. `perf_dept_save` now refuses `admin-only`
+  unless the caller holds `team.perfadmin` (an admin's by itself), and the
+  Quarters view offers Department scores to that part alone. The
+  own-department refusal stays for an admin who holds a department.
+  `tests/perf.js` and `tests/perfui.js` hold both; the stand-in the same.
+
+- 2026-10-18 · A WhatsApp message that never left gives up after 48 hours
+  (review item 8). WHATSAPP OUTAGE SPENDS NO TRY gives back the try of a
+  request that never left, so a message caught by a long outage stayed
+  Queued for ever: the drain woke for it every five minutes, Sent recently
+  counted it as sent, and `privacy_retention`, which never clears a queued
+  row, kept its number and words. `wa_expire` now fails every row still
+  Queued 48 hours after it was queued (`expired: not sent within 48
+  hours`), run by `wa_claim` and by pg_cron `wa-expire` every hour; the
+  WhatsApp section reads it as Not sent within 48 hours, and the team sends
+  it again. `privacy_retention` was not restated: its body holds a delete,
+  which the connector holds for a confirmation.
+
+- 2026-10-18 · A wrong access code locks out the caller, not the client
+  (second audit, item 4). PASSCODE ATTEMPTS counted wrong codes per link
+  and checked the lock before the code, so anyone holding a link could
+  keep its client out with five guesses every 15 minutes, and the page
+  called the lock Link not recognised. A client whose code was changed
+  locked themselves out by reloading: the review page kept the old code in
+  the tab and the media pass asked again with it. Wrong codes are now
+  counted per link and caller address (PostgREST's X-Forwarded-For, which
+  media-pass and sign-download pass on for their own caller, since every
+  client shares their address), the link's own count a backstop of 100 an
+  hour that never shuts out an address that opened it in the last 30
+  days. A lock is answered `locked` with its minutes and said as such; a
+  stale stored code is let go and the media pass stops asking. The team
+  sees a lock under the review or selection link and clears it. The first
+  entry of X-Forwarded-For can be set by a caller: a guesser who rotates it
+  meets the backstop, and one who copies a client's address must know it.
+
+- 2026-10-18 · A caller locked out again is locked out longer, and a new
+  access code is six characters (second audit, item 16). After item 4 a
+  guesser at one address met a 15-minute lock and could start again, five
+  guesses a quarter hour without end, against codes the console let be
+  four digits. A lock that begins within a day of the last one ending now
+  lasts an hour, then a day (`link_tries.strikes`, `struck_until`); the
+  right code and the team's Clear start the steps again. Trigger
+  `passcode_long_enough` on clients and campaigns refuses a new or changed
+  code under six characters (`passcode-short`), and Client settings says
+  so before it saves; a code set before keeps working until it is changed,
+  so no client's link stops opening. Six is a security floor, not a
+  business figure, so it is not a setting.
+
+- 2026-10-18 · A completed campaign's link keeps its results after the
+  client moves to Past (the user: "creator selection, once completed the
+  results not even viewed then the link no longer works"; 988). Item 7's
+  rule closed every link of a Past client, and 988 was moved to Past two
+  days after its campaign completed, so its selection link read Link not
+  recognised before the client had read the results. `get_campaign` now
+  answers a Past client's completed campaign, read only: the selection
+  reads closed with no backups, so nothing is offered to choose, and every
+  write on the link (save, confirm, review) still refuses a Past client.
+  Any other campaign of a Past client still answers as a key nobody knows.
+  The rule shipped without the case a campaign finishes and the client
+  leaves before reading it; the item 7 entry above stands for everything
+  else.

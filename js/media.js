@@ -146,6 +146,11 @@
            whole of content/ on the root; it is set as it always was, so a
            page served before the function is deployed keeps its media. */
         if (d && !passes && d.signature) passes = [{ path: '/', policy: d.policy, signature: d.signature }];
+        /* A link's proof refused (its access code changed since the page
+           opened) is not asked again: each ask would count as a wrong code
+           against this connection (second audit, item 4). */
+        var ctx = r && r.error && r.error.context;
+        if (ctx && ctx.status === 403 && proof && (proof.review || proof.campaign)) proof = null;
         if (!r || r.error || !d || d.off || !passes || !passes.length) { resolve(false); return; }
         var age = Math.max(60, d.expires - Math.floor(Date.now() / 1000));
         /* A pass for the whole of content/ left on the root by an earlier

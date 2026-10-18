@@ -89,6 +89,16 @@ async function cdnLink(path: string): Promise<string | null> {
   return `${resource}?Expires=${expires}&Signature=${cfSafe(b64(sig))}&Key-Pair-Id=${s.cf_media_key_id}`;
 }
 
+/* The caller's own address, passed on when this function asks for the
+   link as the page did, so a wrong access code counts against the person
+   who typed it and never against this function's own address, which every
+   client shares (second audit, item 4; `request_ip()` reads it). */
+function callerHeaders(req: Request): Record<string, string> {
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    || (req.headers.get('cf-connecting-ip') || '').trim();
+  return /^[0-9A-Fa-f.:]{3,45}$/.test(ip) ? { 'x-forwarded-for': ip } : {};
+}
+
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
@@ -148,7 +158,7 @@ Deno.serve(async (req) => {
     // The client's page: the same answer the page itself was given.
     const token = String(body.token);
     if (!/^[A-Za-z0-9_-]{6,64}$/.test(token)) return json({ error: 'bad_token' }, 400, origin);
-    const pub = createClient(url, anon);
+    const pub = createClient(url, anon, { global: { headers: callerHeaders(req) } });
     const { data, error } = await pub.rpc('get_campaign', {
       p_token: token, p_passcode: body.passcode ? String(body.passcode) : null
     });

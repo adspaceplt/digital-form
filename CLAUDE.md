@@ -1205,7 +1205,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   itself, no other group given any): `ops.numbering` (Task numbering),
   `ops.override` (move anybody's task and its final date), `team.perfadmin`
   (`perf_is_admin()`: revenue and profit, Performance settings, a month's
-  record removed), `team.settings` (Business settings), `team.upgrade`,
+  record removed, the department scores), `team.settings` (Business settings), `team.upgrade`,
   `team.invite` (asked by `invite-member` as the caller), `team.handbook`
   (the four functions and the bucket's add and remove policies),
   `reports.transfer`, `reports.ai`, `team.announce` (Announcements,
@@ -3695,9 +3695,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The department prize goes to the winning department whole (`share`,
     named "{Department} won"); its team leader decides the split, so no
     member's row carries a figure for it. Tied departments are joint winners
-    and one that does not qualify drops out. Nobody scores their own department
-    (`perf_dept_save` refuses `own-department` by `team_members.department`);
-    an admin, who holds none, scores both.
+    and one that does not qualify drops out. The department scores are
+    `team.perfadmin`'s alone (`perf_dept_save` refuses `admin-only`, the page
+    offers Department scores to that part alone; 2026-10-18), never of the
+    scorer's own department (`own-department`, by `team_members.department`).
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
@@ -5330,7 +5331,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   connect, TLS) is filed `not sent:` and queued again with its try given back
   (`2026-10-18-whatsapp-outage-spends-no-try.sql`; Meta's throughput limit
   130429 filed the same way), and ends that drain
-  (claimed again at once, a short outage spent all three tries). The queue is
+  (claimed again at once, a short outage spent all three tries). A message
+  still queued 48 hours after it was queued is Failed by `wa_expire`
+  (`expired:`, read "Not sent within 48 hours"; `wa_claim` and pg_cron
+  `wa-expire` hourly), so Sent recently lets it be sent again and
+  `privacy_retention` clears it in its time. The queue is
   claimed one row at a time (`wa_claim` gives one, five at most) and no
   send starts after 90 seconds, so a claimed row is never left at Sending. The queue and its tables are
   closed to every page.
@@ -5445,14 +5450,32 @@ Each line is a rule that broke once. Its reason is in the archive.
   `save_selection`, `confirm_selection`, `confirm_selection_with` and
   `review_draft`, before the passcode, and `share_link_preview` names no
   Past client (`2026-10-18-past-client-links-act-on-nothing.sql`); a
-  completed campaign of a current client stays readable for its results.
+  completed campaign stays readable for its results, a Past client's too,
+  read only (`selection_closed`, no backups; every write above still
+  refuses; `2026-10-18-completed-campaigns-stay-readable.sql`, the user:
+  988's results were never read).
   A link's passcode is asked through `link_passcode(kind, token, stored,
-  given)` (`2026-10-18-passcode-attempts.sql`; `link_attempts`, RLS on, no
-  policy, no grant) by `get_review_feed`, `get_campaign`, `save_selection`,
-  `confirm_selection`, `confirm_selection_with` and `review_draft`: asked
-  without one is never counted; five wrong within 15 minutes lock the link
-  for 15 minutes, the right one included, answered as an unknown key
-  (`not_found` / `not-found`); a passcode asked for names nobody.
+  given)` by `get_review_feed`, `get_campaign`, `save_selection`,
+  `confirm_selection`, `confirm_selection_with` and `review_draft`
+  (`2026-10-18-passcode-locks-per-caller.sql`): asked without one is never
+  counted; wrong ones are counted per link and caller address
+  (`link_tries`, `request_ip()`: X-Forwarded-For's first entry, which
+  `media-pass` and `sign-download` pass on for their caller), five within
+  15 minutes locking that address out, the right one included, for 15
+  minutes, then an hour, then a day where it is locked again within a day
+  of the last lock ending (`strikes`, `struck_until`; the right code and
+  Clear start the steps again; `2026-10-18-passcode-locks-lengthen.sql`);
+  a new or changed access code is six characters at least (trigger
+  `passcode_long_enough`, `passcode-short`; Client settings says so before
+  it saves), one set before keeping its place; the link's own count (`link_attempts`, 100 within an hour)
+  locks it for an hour for every address but one that opened it in the
+  last 30 days; each answered `locked` with its minutes (`link_locked`),
+  said on the page as Link temporarily locked (`W.lockedLine`), and a
+  stored code that no longer opens the review link is let go, the media
+  pass not asked again. The team reads a lock under the link
+  (`link_lock_state`, `.linklock`) and clears it (`link_lock_clear`, the
+  section at Work, filed). A passcode asked for names nobody; the tables
+  have RLS on, no policy, no grant.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token, the Meta system user's
