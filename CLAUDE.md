@@ -3108,8 +3108,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   `clients(name, stage)`; a client out of reach answers through
   `ops_task_client_facts`, else `ops_task_clients`), never written to the
   task, so the client back at Active clears it.
-- Reopen works on every cancelled task, back to the stage it was cancelled
-  from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
+- On hold, Blocked and Cancelled go back only to the stage the task left
+  (`ops_tasks.held_from`, stamped by trigger `ops_tasks_held_from`), and
+  Cancelled also to the start of the line (`held-resume`; the user,
+  2026-10-18: keep My Work's gates light, no AQC rule;
+  `2026-10-18-held-tasks-resume-where-they-left.sql`); a task held before
+  the column keeps the workflow's own steps. Reopen works on every
+  cancelled task. Leaving Cancelled clears `cancelled_at`.
   A task finishes and reopens through `ops_transition_task` alone: the first
   model's `ops_complete_task` and `ops_reopen_task` are closed to every
   browser (`2026-10-18-unused-task-shortcuts-closed.sql`).
@@ -3139,7 +3144,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Blocked, Cancelled, Taken down; rated 1–5 (`ops_rate_task`). Planning,
   Content meeting scheduled, Changes requested and Published are retired
   (`ops_workflow_stages.retired`): the month holds planning and the meeting.
-  On hold and Cancelled are reachable from every open stage on the line.
+  On hold and Cancelled are reachable from every open stage on the line,
+  and lead back only to the stage left (above).
   General and Video are retired for new tasks.
 - Results (`2026-10-10-post-results.sql`; the user, 2026-10-09: "doesn't
   have high views"): a client's task gone live records its views and

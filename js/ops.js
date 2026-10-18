@@ -176,6 +176,7 @@
     'draft-not-before-final': 'Draft due must be before the due date.',
     'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'Move not allowed from this stage.',
+    'held-resume': 'The task goes back to the stage it left.',
     'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
     'footage-not-ready': 'Footage not ready for editing.',
@@ -2319,15 +2320,20 @@
     var nexts = (here && here.next_stage_keys) || [];
     return stagesOf(t.workflow_id).filter(function (s) {
       return s.key === t.stage_key || (!s.retired && s.key !== 'blocked');
-    }).map(function (s) { return { s: s, how: howTo(here, s, nexts) }; });
+    }).map(function (s) { return { s: s, how: howTo(here, s, nexts, t) }; });
   }
   /* How a stage is reached from where the task stands: `here`, a `step` the
      workflow offers, a `skip` forward along the line, a move `back` along
      it, or not at all (''). A revision is entered only from its review and
      a take-down only from Live, so neither is skipped or gone back into. */
-  function howTo(here, s, nexts) {
+  function howTo(here, s, nexts, t) {
     if (!here) return '';
     if (s.key === here.key) return 'here';
+    /* On hold, Blocked and Cancelled go back only to the stage the task
+       left, Cancelled also to the start of the line, as the database holds
+       it (ops_tasks.held_from, 2026-10-18). */
+    var back = t && heldBack(t, here);
+    if (back && !HELD[s.key]) return back.indexOf(s.key) > -1 ? 'step' : '';
     if (nexts.indexOf(s.key) > -1) return 'step';
     if (SIDE[here.stage_group] || SIDE[s.stage_group] || s.stage_group === 'revision' ||
         s.stage_group === 'taken_down' || s.retired) return '';
@@ -2335,7 +2341,22 @@
   }
   function howOf(t, key) {
     var here = stageOf(t), s = state.stages[t.workflow_id + '|' + key];
-    return s ? howTo(here, s, (here && here.next_stage_keys) || []) : '';
+    return s ? howTo(here, s, (here && here.next_stage_keys) || [], t) : '';
+  }
+  var HELD = { on_hold: 1, blocked: 1, cancelled: 1 };
+  /* Where a held task may go back to, or null where the database keeps the
+     workflow's own steps (a task held before its stage was recorded). */
+  function heldBack(t, here) {
+    if (!here || !HELD[here.key] || !t.held_from) return null;
+    var from = state.stages[t.workflow_id + '|' + t.held_from];
+    var out = from && !from.retired ? [t.held_from] : [];
+    if (here.key === 'cancelled' || !from || from.retired) {
+      var first = stagesOf(t.workflow_id).filter(function (x) {
+        return !x.retired && !SIDE[x.stage_group] && x.stage_group !== 'revision' && !HELD[x.key];
+      })[0];
+      if (first && out.indexOf(first.key) < 0) out.push(first.key);
+    }
+    return out;
   }
   function stageWordOf(t, s) {
     if (isEveryday(t)) return (PLAIN[plainOfKey(s.key)] || {}).word || s.label;
@@ -4578,6 +4599,8 @@
      may go to. */
   function resumeTo(t) {
     var s = stageOf(t);
+    var back = heldBack(t, s);
+    if (back) return back[0] || null;
     var nexts = (s && s.next_stage_keys) || [];
     var from = cameFrom(t);
     if (from && nexts.indexOf(from) > -1) return from;
@@ -5387,6 +5410,8 @@
      always come back; the cancel sheet has always said it could. */
   function reopenTo(t) {
     var s = stageOf(t);
+    var back = heldBack(t, s);
+    if (back) return back[0] || null;
     var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'cancelled'; });
     var from = cameFrom(t);
     if (from && nexts.indexOf(from) > -1) return from;
