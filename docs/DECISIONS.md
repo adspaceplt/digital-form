@@ -4790,3 +4790,12 @@ finding fixed at the user's word ("fix all no matter what").
   after the migration and compares them whole, and `tests/lettersql.js`
   issues every quoted letter case again on the new `issue_letter`, at the
   figures it was issued at before.
+
+- 2026-10-18 · A month's Drive folder link may be typed without https://
+  (review of #538 to #550, item 5). The month sheet refused a bare
+  `drive.google.com/…` with "Enter the folder's https:// address.", while
+  every campaign link takes a bare address as https. `saveEng` now adds
+  `https://` to an address with no scheme, and still refuses what
+  `ops_engagements_drive_url_web` refuses (another scheme, http, a space, a
+  quote, <, >, a backtick, a backslash). `tests/work.js` holds a bare
+  address saved as https and three refused.
