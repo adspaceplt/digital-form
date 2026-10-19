@@ -3705,7 +3705,6 @@
        holds a number alone, and an empty field saved over it erased it. */
     $('ctWa').value = ct ? (waHandle(ct.whatsapp) || (ct.whatsapp || '')) : '';
     $('ctWa').dataset.was = $('ctWa').value;
-    waPrefix();
     $('ctEmail').value = ct ? (ct.email || '') : '';
     $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
     $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
@@ -3715,12 +3714,6 @@
        and the first field is rarely the one somebody came to change. */
   }
   function shutContact() { shutSheet('crmContactBox'); editingContact = null; state.dfContact = null; }
-  /* The printed @ is a username's; a number reads without it. */
-  function waPrefix() {
-    var el = $('ctWa'), pre = el.previousElementSibling;
-    if (pre) pre.hidden = waIsNumber(waUser(el.value));
-  }
-  $('ctWa').addEventListener('input', waPrefix);
   $('crmAddContact').addEventListener('click', function () { openContact(null); });
   $('ctCancel').addEventListener('click', shutContact);
 
