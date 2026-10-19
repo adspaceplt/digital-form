@@ -608,9 +608,6 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- My Work's Completed list on Last month also lists work finished this
-  month: the read starts at last month and nothing ends it (`periodEnd()`
-  was never called and was removed as dead code, 2026-10-18).
 - A colleague's namecard on the iPhone Duo open (890 x 626, a coarse
   pointer): Save contact is 40px high, under the 44px floor (matrix
   `target`, 2026-10-18; front, back and My namecard, both themes).

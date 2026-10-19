@@ -796,6 +796,10 @@
     if (state.period === 'year') return CK.start(today.slice(0, 4) + '-01-01');
     return month(0);
   }
+  /* Where the period ends: now, but for Last month. */
+  function periodEnd() {
+    return state.period === 'lastmonth' ? CK.start(CK.today().slice(0, 7) + '-01') : null;
+  }
   /* A SEARCH FINDS ANY TASK (the user, 2026-10-04: a finished task from
      last month could only be found by setting three controls). Whatever is
      typed is asked of every task the colleague may see, open or finished,
@@ -946,10 +950,18 @@
      saying it again (the user, 2026-10-04). */
   function inFilter(t) {
     var f = state.filter || 'day';
-    if (f === 'all') return true;
     var fin = isFinished(t);
-    if (f === 'done') return fin;
+    if (f === 'all') return !fin || inPeriod(t);
+    if (f === 'done') return fin && inPeriod(t);
     return fin ? doneToday(t) : true;
+  }
+  /* Finished work is listed only inside the chosen period: the week is
+     always read (Completed today), so a period it overhangs, or Last month,
+     which ends where this month begins, holds rows the read brought along. */
+  function inPeriod(t) {
+    var at = new Date(t.completed_at || t.cancelled_at).getTime();
+    var end = periodEnd();
+    return at >= periodStart().getTime() && (!end || at < end.getTime());
   }
   function inScope(t) {
     if (state.scope === 'all') return true;
