@@ -23,6 +23,7 @@
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
       notFound: 'Not found', notFoundText: 'Check the reference, or contact ADspace.',
       failed: 'Unable to check', failedText: 'Please try again.',
+      locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
       issued: 'Issued', state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced' }
     },
     zh: {
@@ -30,6 +31,7 @@
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
       notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。',
       failed: '无法核验', failedText: '请稍后再试。',
+      locked: '查询次数过多', lockedText: '此网络连接查询编号的次数过多。请于{wait}后重试。',
       issued: '签发于', state: { valid: '有效', voided: '已作废', replaced: '已替换' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
@@ -58,6 +60,14 @@
     if (last) paint(last);
   }
 
+  /* The shared minutes and hours (js/words.js), in this page's sentence. */
+  function lockedLine(minutes) {
+    var W = window.ADspaceWords, w = {}, k, base = W[lang] || W.en;
+    for (k in base) w[k] = base[k];
+    w.lockedText = t().lockedText;
+    return W.lockedLine(w, minutes);
+  }
+
   function kindWord(k) {
     var m = t().kind;
     return (m && m[String(k || '').trim().toLowerCase()]) || k || '';
@@ -69,6 +79,11 @@
     out.hidden = false;
     if (a.failed) {
       out.innerHTML = '<b>' + esc(t().failed) + '</b><span>' + esc(t().failedText) + '</span>';
+      return;
+    }
+    /* Thirty lookups an hour from one connection (`verify_serial`). */
+    if (a.locked) {
+      out.innerHTML = '<b>' + esc(t().locked) + '</b><span>' + esc(lockedLine(a.minutes)) + '</span>';
       return;
     }
     if (!a.found) {
@@ -99,12 +114,12 @@
     if (!serial) { last = null; $('vOut').hidden = true; $('vOut').innerHTML = ''; keep(''); $('vSerial').focus(); return; }
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
-    var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed) keep(serial); };
+    var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial); };
     if (!db) { done({ failed: true }); return; }
     db.rpc('verify_serial', { p_serial: serial }).then(function (r) {
       if (r.error || !r.data) { done({ failed: true }); return; }
       done(r.data);
-    }, function () { done({ failed: true }); });
+    }).catch(function () { done({ failed: true }); });
   }
 
   $('vForm').addEventListener('submit', function (e) { e.preventDefault(); check($('vSerial').value); });

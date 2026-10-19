@@ -608,9 +608,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- A colleague's namecard on the iPhone Duo open (890 x 626, a coarse
-  pointer): Save contact is 40px high, under the 44px floor (matrix
-  `target`, 2026-10-18; front, back and My namecard, both themes).
+- None.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
@@ -661,9 +659,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   (`workers/db-backup/README.md`), running since 2026-10-11 (the owner's
   key and secrets set; the first scheduled run succeeded), its Supabase CLI
   pinned (2.121.0, 2026-10-17). Not covered: Handbook files in Supabase
-  Storage. The user's to do (audit I, 2026-10-17): bucket versioning or
-  Object Lock on `private/backups/`, so a dump cannot be overwritten or
-  removed, and one restore rehearsal from a dump into a scratch project.
+  Storage. Bucket versioning on the backups: turned on by the user
+  (2026-10-19), so a dump overwritten or removed is kept.
+  A restore rehearsal from a dump into a scratch project: kept for later
+  (KIV, the user, 2026-10-19).
   Each dump expires 90 days after it is made (S3 rule `backups-expire` on
   `private/backups/db/`, set by the user 2026-10-18, PDPA), since it keeps
   the personal data the database has since cleared (`privacy_retention`);
@@ -672,7 +671,8 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   kept 24 months and a leaver's health data 6 months after they left, each
   a Business setting the monthly `privacy_retention` reads; WhatsApp
   messages' personal fields 12 months; a caller's address against a link's
-  passcode 30 days after it was last used (audit 2026-10-18, item 14); the
+  passcode 30 days after it was last used (audit 2026-10-18, item 14), and
+  against /verify/ 30 days after its hour began (2026-10-19); the
   Activity record three years.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,

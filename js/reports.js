@@ -4309,7 +4309,7 @@
   function clip(d, lo, hi) { return !d ? d : (lo && d < lo ? lo : hi && d > hi ? hi : d); }
   function parseAdRows(text, period, fallbackObj) {
     period = period || {};
-    var year = period.year || new Date().getFullYear(), lo = period.start || null, hi = period.end || null;
+    var year = period.year || Number(ADspaceClock.today().slice(0, 4)), lo = period.start || null, hi = period.end || null;
     var lines = String(text || '').replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
     if (lines.length < 2) return { error: 'Paste a header row and at least one ad.' };
     var sep = lines[0].indexOf('\t') > -1 ? '\t' : ',';

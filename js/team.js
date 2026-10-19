@@ -1299,10 +1299,6 @@
     });
     return out;
   }
-  function canon(acc) {
-    var out = canonMap(acc);
-    return JSON.stringify(Object.keys(out).sort().map(function (k) { return k + '=' + out[k]; }));
-  }
   /* A key's value in the panel's words: a section's level, a part's (Same
      as section where it says nothing of its own), an admin tool On or Off. */
   function valueWord(k, v) {
