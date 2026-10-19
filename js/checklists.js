@@ -24,7 +24,7 @@
     denied: 'This needs Clients at Work.', 'client-scope': 'This client is outside your access.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
     'bad-value': 'That answer is not one the checklist takes.', 'bad-item': 'This checklist has changed. Open it again.',
-    'too-long': 'A note is 1,000 characters at most.', own: 'Somebody other than the person who prepared it signs it off.',
+    'too-long': 'A note is 1,000 characters at most.', own: 'Somebody who did not prepare or fill it in signs it off.',
     'not-started': 'Nothing has been recorded on this checklist.',
     'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
     'ai-not-set-up': 'AI needs its key in Supabase.', 'ai-key': 'AI refused its key in Supabase.',
@@ -110,7 +110,9 @@
   function valueOf(d, key) {
     var a = d.answers[key];
     if (a && a.value != null) return a.value;
-    return d.started ? null : (d.prefill || {})[key];
+    /* Once started the database sends only what is worked out for each reader
+       (the registered name, the quotation), never stored (audit 3, 2026-10-19). */
+    return (d.prefill || {})[key];
   }
   function editable(d) { return d.can_work && d.status === 'open'; }
 
@@ -208,14 +210,14 @@
     var acts = '', me = d.me, prep = d.prepared;
     if (d.status === 'open' && d.can_work) acts = '<button class="btn btn-primary" type="button" data-a="prepare">Mark as prepared</button>';
     if (d.status === 'prepared' && d.can_work) {
-      acts = (prep && prep.id !== me ? '<button class="btn btn-primary" type="button" data-a="review">Sign off</button>' : '') +
+      acts = (prep && prep.id !== me && !d.filled_by_me ? '<button class="btn btn-primary" type="button" data-a="review">Sign off</button>' : '') +
         '<button class="btn" type="button" data-a="return">Send back</button>';
     }
     if (d.status === 'signed' && d.can_manage) acts = '<button class="btn" type="button" data-a="reopen">Reopen</button>';
     html += '<section class="ovcard ck-sec ck-sign"><h4 class="fsec-h">Sign-off</h4><dl class="ovfacts ck-facts">' +
       '<div><dt>Prepared by</dt><dd>' + (prep ? esc(prep.name + ', ' + day(prep.at)) : '<span class="muted">Not yet</span>') + '</dd></div>' +
       '<div><dt>Reviewed by</dt><dd>' + (d.reviewed ? esc(d.reviewed.name + ', ' + day(d.reviewed.at)) : '<span class="muted">Not yet</span>') + '</dd></div></dl>' +
-      (d.status === 'prepared' && prep && prep.id === me ? '<p class="ck-sec-note">Somebody other than you signs it off.</p>' : '') +
+      (d.status === 'prepared' && prep && (prep.id === me || d.filled_by_me) ? '<p class="ck-sec-note">Somebody other than you signs it off.</p>' : '') +
       (acts ? '<div class="row acts ck-acts">' + acts + '</div>' : '') + '</section>';
     V.host.innerHTML = html;
     wire();
@@ -820,7 +822,7 @@
         });
       }
       s.items.filter(function (it) { return it.kind !== 'tick'; }).forEach(function (it) {
-        var v = (d.answers[s.key + '.' + it.key] || {}).value;
+        var v = valueOf(d, s.key + '.' + it.key);
         /* A table (r1.2): its columns over a row each, under its label. */
         if (it.kind === 'table') {
           var tc = it.columns || [], share = [0.22, 0.27, 0.21, 0.13, 0.17];
