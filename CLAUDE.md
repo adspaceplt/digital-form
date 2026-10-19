@@ -2524,6 +2524,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   back later, with the same link. While hidden the link opens nothing
   (`get_review_feed`, `submit_review` answer `not_found`;
   `2026-10-03-hidden-from-content-review.sql`).
+- A new lead or client starts outside Content Review (`review_hidden`
+  defaults to true, `2026-10-19-content-review-by-hand.sql`; the user,
+  2026-10-19: "make it manually"): it joins only when a colleague enables
+  it (Enable client in Content Review, Enable Content Review on the
+  record); a client standing before kept its place.
 - Every everyday write leaves an activity row. An edit names the fields it
   changed.
 - Write with AI (2026-10-08, one caption from 2026-10-10; the user: "one
