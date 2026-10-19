@@ -5885,7 +5885,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
   repo file before anything else; a file is always sent whole, never in
-  part (2026-10-16: a half file broke `report-draft` for three minutes).
+  part (2026-10-16: a half file broke `report-draft` for three minutes),
+  its content pasted in the call itself, never a placeholder to fill later
+  (2026-10-19: `meet-create` served a placeholder for 50 seconds).
   The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
 - The report lists what the user does by hand: a dashboard setting.
