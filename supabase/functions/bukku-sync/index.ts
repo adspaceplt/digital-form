@@ -15,6 +15,9 @@
  *   POST { action: 'send', kind, id, contact } creates it (contact null) or
  *                                             updates it, then files the
  *                                             link (`bukku_linked`).
+ *   POST { action: 'link', kind, id, contact } links that contact as Bukku
+ *                                             holds it, nothing sent
+ *                                             (`bukku_link_only`).
  *
  * What is sent is the database's answer as the colleague (`bukku_prepare`),
  * never the page's. An update reads the contact first and changes only the
