@@ -2296,6 +2296,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   reads the contact first and keeps Bukku's code, terms, accounts, groups,
   other people and addresses; its types gain Customer or Supplier and never
   lose one; nothing is deleted or archived in Bukku (`tests/bukkufn.js`).
+  The address is read into Bukku's parts (street, postcode, city, state,
+  country; a line break a comma), and an address or a billing person Bukku
+  already holds however set out (the same letters and digits; every word of
+  ours in Bukku's name) is kept; the person goes with the contact's
+  salutation (`bukku_prepare` `salutation`), put before a name Bukku keeps;
+  a person or address added ticks default billing alone, never default
+  shipping; a supplier's payment term is set as Bukku's own term of the same
+  days where Bukku holds one (the user, 2026-10-19). Link only (`#bkLink`,
+  beside Link and send for a contact Bukku holds) links it as it stands and
+  sends nothing (`bukku-sync` `link`, `bukku_link_only`, filed Linked to
+  Bukku, nothing sent; `2026-10-19-bukku-as-bukku-holds-it.sql`).
   The link is filed by `bukku_linked` (`bukku_links`, `bukku_settings`: RLS
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.

@@ -18,8 +18,10 @@
  *
  * What is sent is the database's answer as the colleague (`bukku_prepare`),
  * never the page's. An update reads the contact first and changes only the
- * portal's fields: its code, payment terms, accounts, groups, price level and
- * other people and addresses stay as Bukku holds them; the contact's types
+ * portal's fields: its code, accounts, groups, price level and other people
+ * stay as Bukku holds them, its payment term too unless a supplier's agreed
+ * term is one Bukku holds, and an address or a name Bukku already holds is
+ * kept however it is set out; the contact's types
  * gain Customer or Supplier, never lose one. Nothing is ever deleted or
  * archived in Bukku.
  *
@@ -120,23 +122,81 @@ function nextCode(contacts: any[], name: string): string {
 
 const STATES = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Pulau Pinang', 'Perak',
   'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'];
-/* One typed address read into Bukku's parts: the whole of it the street,
-   the postcode, the town after it and the state where they can be read. */
+/* One typed address read into Bukku's parts (2026-10-19, the user: Bukku
+   holds the street, postcode, city, state and country apart): the country
+   and the state taken off its end, the postcode and the town after it,
+   the rest the street, a line break read as a comma and never doubled. */
+const COUNTRIES = ['Malaysia', 'Singapore'];
 function addressOf(text: string, country: string) {
-  const flat = String(text || '').replace(/\s*\n+\s*/g, ', ').replace(/\s+/g, ' ').trim();
-  const pc = (flat.match(country === 'SG' ? /\b(\d{6})\b/ : /\b(\d{5})\b/) || [])[1] || null;
-  let city: string | null = null;
-  if (pc) {
-    const after = flat.slice(flat.indexOf(pc) + pc.length).replace(/^[\s,]+/, '');
-    city = (after.split(',')[0] || '').trim() || null;
+  const flat = String(text || '').replace(/\s*,?\s*\n+\s*/g, ', ').replace(/\s+/g, ' ').replace(/(\s*,\s*)+/g, ', ')
+    .replace(/^[\s,]+|[\s,]+$/g, '');
+  let parts = flat.split(/\s*,\s*/).filter(Boolean);
+  const re = (w: string) => new RegExp('^' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
+  if (parts.length) {
+    // "Selangor Malaysia" or "Malaysia" alone: the country off the end.
+    const last = parts[parts.length - 1].replace(new RegExp('\\s+(' + COUNTRIES.join('|') + ')$', 'i'), '');
+    if (COUNTRIES.some((c) => re(c).test(last))) parts.pop(); else parts[parts.length - 1] = last;
   }
-  const state = STATES.find((s) => new RegExp('\\b' + s + '\\b', 'i').test(flat)) || null;
-  return { street: flat.slice(0, 255), postcode: pc, city: city && city.length <= 50 ? city : null, state, country_code: country };
+  let state: string | null = null;
+  if (parts.length > 1) {
+    const last = parts[parts.length - 1];
+    const hit = STATES.find((x) => re(x).test(last));
+    if (hit) { state = hit; parts.pop(); }
+  }
+  let pc: string | null = null, city: string | null = null;
+  const pcRe = country === 'SG' ? /\b(\d{6})\b/ : /\b(\d{5})\b/;
+  for (let i = parts.length - 1; i >= 0 && !pc; i--) {
+    const m = pcRe.exec(parts[i]);
+    if (!m) continue;
+    pc = m[1];
+    const rest = parts[i].replace(m[0], ' ').replace(/\s+/g, ' ').trim();
+    if (rest) {
+      // "52200 Petaling Jaya Selangor": a state at the end of the town is the state.
+      const st = !state ? STATES.find((x) => new RegExp('\\s' + x + '$', 'i').test(rest)) : undefined;
+      city = st ? rest.slice(0, rest.length - st.length).trim() : rest;
+      if (st) state = st;
+    } else if (parts[i + 1] && !state) { city = parts[i + 1]; parts.splice(i + 1, 1); }
+    parts.splice(i, 1);
+  }
+  if (!state) state = STATES.find((x) => new RegExp('\\b' + x + '\\b', 'i').test(flat)) || null;
+  if (country === 'SG' && !city && pc) city = 'Singapore';
+  const street = parts.join(', ') || flat;
+  return { street: street.slice(0, 255), postcode: pc, city: city && city.length <= 50 ? city : null, state, country_code: country };
 }
+/* The same address however it is punctuated or cased. */
+const plain = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function sameAddress(a: any, b: any) {
+  if (!a || !b) return false;
+  if (plain(a.street) !== plain(b.street)) return false;
+  for (const k of ['postcode', 'city', 'state']) if (a[k] && plain(a[k]) !== plain(b[k])) return false;
+  return !a.country_code || !b.country_code || a.country_code === b.country_code;
+}
+const addressLine = (a: any) => a ? [a.street, [a.postcode, a.city].filter(Boolean).join(' '), a.state,
+  a.country_code === 'SG' ? 'Singapore' : a.country_code === 'MY' ? 'Malaysia' : a.country_code].filter(Boolean).join(', ') : '';
+/* A name's words, a salutation's dots dropped. */
+const nameWords = (v: unknown) => String(v ?? '').toUpperCase().replace(/[.]/g, '').split(/\s+/).filter(Boolean);
 
 // ---- What the portal holds, set over what Bukku holds -------------------------
 type Prep = Record<string, any>;
-function merged(p: Prep, cur: any | null, code: string) {
+/* A supplier's payment term as Bukku's own term (2026-10-19): the one
+   whose name carries the same days ("NET 30", "Net 30 days"); none found,
+   Bukku's is kept. */
+async function termsOf(): Promise<any[]> {
+  try {
+    const r = await bukku('POST', '/v2/lists', { lists: ['terms'], params: {} });
+    const t = r && r.terms;
+    const list = Array.isArray(t) ? t : (t && (Array.isArray(t.items) ? t.items : null)) || [];
+    return list.filter((x: any) => x && x.id && x.name);
+  } catch { return []; }
+}
+function termFor(terms: any[], term: unknown): any | null {
+  const d = (String(term ?? '').match(/\d+/) || [])[0];
+  if (!d) return null;
+  return terms.find((x: any) => (String(x.name).match(/\d+/) || [])[0] === d && /net/i.test(String(x.name)))
+    || terms.find((x: any) => (String(x.name).match(/\d+/) || [])[0] === d) || null;
+}
+
+function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
   const c = cur || {};
   const out: Record<string, any> = {
     entity_type: c.entity_type || p.entity_type,
@@ -158,13 +218,25 @@ function merged(p: Prep, cur: any | null, code: string) {
     'receivable_account_id', 'debtor_credit_limit', 'payable_account_id']) {
     if (c[k] !== undefined && c[k] !== null) out[k] = c[k];
   }
+  // A supplier's agreed term over Bukku's, where Bukku holds the same.
+  if (term && term.id) out.default_term_id = term.id;
   // The billing person: the default billing one renamed, else added as it.
   const persons = (c.contact_persons || []).map((x: any) => ({ id: x.id, first_name: x.first_name, last_name: x.last_name,
     is_default_billing: !!x.is_default_billing, is_default_shipping: !!x.is_default_shipping }));
+  /* With its salutation (2026-10-19); a name Bukku already holds in full
+     (every word of ours in Bukku's) is kept, the salutation put before it
+     where Bukku's lacks it. */
   if (p.person) {
+    const sal = String(p.salutation || '').trim();
+    const named = (sal ? sal + ' ' : '') + String(p.person);
     const bp = persons.find((x: any) => x.is_default_billing);
-    if (bp) { bp.first_name = String(p.person).slice(0, 50); bp.last_name = null; }
-    else persons.push({ first_name: String(p.person).slice(0, 50), last_name: null, is_default_billing: true, is_default_shipping: !persons.length });
+    if (bp) {
+      const theirs = nameWords([bp.first_name, bp.last_name].filter(Boolean).join(' '));
+      if (nameWords(p.person).every((w) => theirs.includes(w))) {
+        if (sal && !nameWords(sal).every((w) => theirs.includes(w))) bp.first_name = (sal + ' ' + (bp.first_name || '')).trim().slice(0, 50);
+      } else { bp.first_name = named.slice(0, 50); bp.last_name = null; }
+    }
+    else persons.push({ first_name: named.slice(0, 50), last_name: null, is_default_billing: true, is_default_shipping: false });
   }
   if (persons.length) out.contact_persons = persons;
   // The billing address the same way.
@@ -173,8 +245,9 @@ function merged(p: Prep, cur: any | null, code: string) {
   if (p.address) {
     const a = addressOf(p.address, p.country);
     const ba = addrs.find((x: any) => x.is_default_billing);
-    if (ba) Object.assign(ba, a);
-    else addrs.push({ name: 'Billing Address', ...a, is_default_billing: true, is_default_shipping: !addrs.length });
+    // The address Bukku holds, however set out, is kept.
+    if (ba) { if (!sameAddress(a, ba)) Object.assign(ba, a); }
+    else addrs.push({ name: 'Billing Address', ...a, is_default_billing: true, is_default_shipping: false });
   }
   if (addrs.length) out.addresses = addrs;
   // The Client ID or Supplier ID in its custom field.
@@ -188,10 +261,11 @@ function merged(p: Prep, cur: any | null, code: string) {
 }
 
 /* What a person reads changing, field by field. */
-function rowsOf(p: Prep, cur: any | null, next: Record<string, any>) {
+function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[] = []) {
   const c = cur || {};
   const person = (x: any) => { const bp = (x.contact_persons || []).find((y: any) => y.is_default_billing); return bp ? [bp.first_name, bp.last_name].filter(Boolean).join(' ') : ''; };
-  const addr = (x: any) => { const ba = (x.addresses || []).find((y: any) => y.is_default_billing); return ba ? ba.street || '' : ''; };
+  const addr = (x: any) => addressLine((x.addresses || []).find((y: any) => y.is_default_billing));
+  const termName = (id: unknown) => { const t = terms.find((x: any) => Number(x.id) === Number(id)); return t ? String(t.name) : ''; };
   const idOf = (x: any) => { const f = (x.fields || []).find((y: any) => Number(y.field_id) === Number(p.field_id)); return f ? String(f.value ?? '') : ''; };
   const T: Record<string, string> = { customer: 'Customer', supplier: 'Supplier', employee: 'Employee' };
   const list: [string, string, string][] = [
@@ -204,6 +278,7 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>) {
     ['Phone', c.phone_no || '', next.phone_no || ''],
     ['Billing person', person(c), person(next)],
     ['Billing address', addr(c), addr(next)],
+    ['Payment term', termName(c.default_term_id), termName(next.default_term_id)],
     [p.kind === 'client' ? 'Client ID' : 'Supplier ID', idOf(c), idOf(next)],
     ['Type', (c.types || []).map((t: string) => T[t] || t).join(', '), (next.types || []).map((t: string) => T[t] || t).join(', ')]
   ];
@@ -273,10 +348,20 @@ Deno.serve(async (req) => {
       .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; }) : null;
     if (contact && !cur) return json({ error: 'bukku-gone' }, 200, origin);
     const code = cur ? cur.contact_code : nextCode(await allContacts(), p.legal_name);
-    const next = merged(p, cur, code);
+    const terms = p.payment_term ? await termsOf() : [];
+    const next = merged(p, cur, code, termFor(terms, p.payment_term));
 
+    /* Link only (2026-10-19): the contact as Bukku holds it, linked and
+       nothing sent. */
+    if (action === 'link') {
+      if (!cur) return json({ error: 'bad-request' }, 400, origin);
+      const l = await db.rpc('bukku_link_only', { p_kind: kind, p_id: id, p_contact: cur.id, p_code: cur.contact_code || code });
+      if (l.error) return json({ error: 'needs-update' }, 200, origin);
+      if (l.data && l.data.error) return json({ error: l.data.error }, 200, origin);
+      return json({ ok: true, contact: cur.id, code: cur.contact_code || code, linked: true }, 200, origin);
+    }
     if (action === 'preview') {
-      return json({ ok: true, code, rows: rowsOf(p, cur, next) }, 200, origin);
+      return json({ ok: true, code, rows: rowsOf(p, cur, next, terms) }, 200, origin);
     }
     if (action === 'send') {
       const r = cur ? await bukku('PUT', `/contacts/${contact}`, next) : await bukku('POST', '/contacts', next);

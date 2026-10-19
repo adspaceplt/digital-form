@@ -3442,6 +3442,12 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-cand { display: flex; align-items: center; }
 .bk-cand b { font-weight: 600; }
 .bk-note { margin: 8px 0 0; font-size: 13px; }
+/* Three actions on a phone (DESIGN §5): Cancel and Link only the halves,
+   Link and send the row under them, nearest the thumb. */
+@media (max-width: 560px) {
+  #bkSheet .sheet-foot:has(> #bkLink:not([hidden])) { flex-wrap: wrap; }
+  #bkSheet .sheet-foot:has(> #bkLink:not([hidden])) > #bkGo { order: 1; flex: 1 0 100%; }
+}
 .bk-table { display: grid; font-size: 13px; }
 .bk-tr { display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
 .bk-tr > span { overflow-wrap: anywhere; min-width: 0; }
