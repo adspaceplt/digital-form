@@ -5387,7 +5387,7 @@
        later day says so under its field (2026-10-14, audit SET-1). */
     var runs = {};
     spec.keys.forEach(function (k) { var s = k[3] || ''; runs[s] = (runs[s] || 0) + 1; });
-    var seen = {}, prev = null;
+    var seen = {}, prev = null, opened = {};
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
       var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
       /* A named section of three figures runs three across, so the sheet
@@ -5395,6 +5395,7 @@
       var third = Boolean(s) && n === 3;
       var next = MON.next ? MON.next(k[0]) : null;
       var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
+      opened[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
         half: !third && n > 1 && !(n % 2 && at === n), third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + next.value : '' };
@@ -5419,8 +5420,11 @@
     }, function (v) {
       var vals = {};
       spec.keys.forEach(function (k) {
-        if (String(v[k[0]] == null ? '' : v[k[0]]).trim() === '') return;
-        var n = Number(v[k[0]]); if (n !== MON.setting(k[0], v.from)) vals[k[0]] = n;
+        /* Only a figure the person moved is sent: one left as it opened
+           never overwrites a change already set from that day (2026-10-19). */
+        var x = String(v[k[0]] == null ? '' : v[k[0]]).trim();
+        if (x === '' || (opened[k[0]] !== '' && Number(x) === Number(opened[k[0]]))) return;
+        vals[k[0]] = Number(x);
       });
       if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'ok'); return; }
       db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {

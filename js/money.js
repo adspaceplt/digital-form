@@ -64,13 +64,14 @@
     if (loading && !force) return loading;
     var api = window.ADspaceAPI, db = api && api.client;
     if (!db) return (loading = Promise.resolve(null));
-    loading = db.rpc('app_settings_read').then(function (r) {
-      if (r.error || !r.data) return null;
+    /* A failed read is not kept: the next load() asks again (2026-10-19). */
+    var p = loading = db.rpc('app_settings_read').then(function (r) {
+      if (r.error || !r.data) { if (loading === p) loading = null; return null; }
       ROWS = (r.data.settings || []).map(function (x) { return { key: x.key, from: String(x.from).slice(0, 10), value: x.value, by: x.by, at: x.at }; });
       TAX.rate = setting('sst_pct') / 100; TAX.label = taxLabel();
       return r.data;
-    }).catch(function () { return null; });
-    return loading;
+    }).catch(function () { if (loading === p) loading = null; return null; });
+    return p;
   }
 
   // Malaysian service tax. One rate, because we are one entity.

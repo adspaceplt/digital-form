@@ -429,10 +429,8 @@
      On hold and Blocked are side lanes: the count goes on there. Worked out
      on every paint, never stored. */
   var PRIORITY_KEY = { 1: 'urgent', 2: 'high', 4: 'medium' };
-  var PRIORITY_FIRST = { urgent: 24, high: 48, medium: 72 };
   function prioHours(key, at) {
-    var M = window.ADspaceMoney, v = M && M.setting ? Number(M.setting('priority_' + key + '_hours', at)) : NaN;
-    return v > 0 ? v : PRIORITY_FIRST[key];
+    return Number(window.ADspaceMoney.setting('priority_' + key + '_hours', at));
   }
   function deliverFloor(wf) {
     var at = reviewFloor(wf);
@@ -1110,7 +1108,7 @@
        (2026-10-10) is offered Remind on WhatsApp, where the approval
        reminder's template is on and this colleague may send it. */
     var MONEY = window.ADspaceMoney, WA = window.ADspaceWhatsApp;
-    var waitDays = MONEY && MONEY.setting ? Number(MONEY.setting('approval_reminder_days')) || 3 : 3;
+    var waitDays = Number(MONEY.setting('approval_reminder_days'));
     var overdue = function (at) { return at && Date.now() - Date.parse(at) >= waitDays * 86400000; };
     var remind = false;
     if (WA && WA.may && WA.may('approval')) jobs.push(WA.on('approval').then(function (yes) { remind = yes; }, function () {}));
@@ -1138,7 +1136,7 @@
       .eq('status', 'review').eq('reviewer_id', me.id)).then(function (list) {
         (list || []).forEach(function (r) {
           var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;
-          var days = MON && MON.setting ? Number(MON.setting('report_due_days')) || 7 : 7;
+          var days = Number(MON.setting('report_due_days', r.period_end));
           var due = r.period_end ? new Date(new Date(r.period_end + 'T23:59:59+08:00').getTime() + days * 86400000) : null;
           var late = due && Date.now() > due.getTime();
           rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late, client: r.client_id,
