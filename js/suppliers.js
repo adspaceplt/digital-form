@@ -237,17 +237,57 @@
     }).join('') + '</dl>';
   }
   function linkOf(key) { return location.origin + '/supplier/?k=' + key; }
+  /* The details form (2026-10-18), and the update link an approved
+     supplier is sent (2026-10-20; the user: an approved supplier "would like
+     to change record"). A link is made for one step: approving a supplier
+     ends its form, so an Active supplier reads none until the team asks for
+     an update (Request update, the record's ⋯), and an update link open
+     waits quietly under the details. What came back leads the record. */
+  var FIELD = {};
+  GROUPS.forEach(function (g) { g[1].forEach(function (it) { FIELD[it[0]] = it; }); });
+  function formHead(title, act) { return '<div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>'; }
+  function formMenu(items) {
+    return '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-s="fmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" data-s-menu="form" hidden>' + items + '</div></span>';
+  }
+  function changesOf(f) {
+    var s = state.rec, a = f.answers || {}, rows = [];
+    Object.keys(FIELD).forEach(function (k) {
+      if (FIELD[k][2] && !state.pay) return;
+      if (!(k in a) && !(k in s)) return;
+      var was = valueOf(s, k), now = valueOf(a, k);
+      if (was === now) return;
+      rows.push('<div><dt>' + esc(FIELD[k][1]) + '</dt><dd>' + (FIELD[k][2] ? 'Changed'
+        : esc(was || 'Not set') + ' → ' + esc(now || 'Not set')) + '</dd></div>');
+    });
+    if (!state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Changed</dd></div>');
+    return rows.length ? rows.join('') : '<div><dt>Changes</dt><dd>None</dd></div>';
+  }
   function formBlock() {
     var f = state.form, work = may('suppliers', 'work'), s = state.rec;
-    var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Details form</h4>' + (act || '') + '</div>'; };
+    var update = f && f.purpose === 'update';
     if (f && f.state === 'submitted') {
-      return head(work ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">Use details</button>' : '') +
-        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in</dd></div></dl>';
+      var held = update && f.bank_changed && !payWork();
+      return formHead(update ? 'Details update' : 'Details form', work && !held
+          ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in</dd></div>' +
+        (update ? changesOf(f) : '') + '</dl>' +
+        (held && work ? '<p class="msg warn">The bank details changed. A colleague with Supplier bank details takes this in.</p>' : '');
     }
+    if (f && f.state === 'open' && s.status !== 'pending') {
+      var url0 = f.key ? linkOf(f.key) : '';
+      return formHead('Update link', work && url0 ? formMenu(
+          '<button class="kmenu-item" type="button" data-s="copy"><b>Copy link</b></button>' +
+          '<button class="kmenu-item" type="button" data-s="preview"><b>Preview</b></button>' +
+          '<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button>' +
+          '<button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>Open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
+        (url0 ? '<input type="hidden" id="supLink" value="' + esc(url0) + '">' : '');
+    }
+    if (s.status !== 'pending') return '';
     if (f && f.state === 'open') {
       var url = f.key ? linkOf(f.key) : '';
-      return head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-s="fmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-s-menu="form" hidden><button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button></div></span>' : '') +
+      return formHead('Details form', work ? formMenu('<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="supLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
@@ -256,7 +296,7 @@
           '</div></div>' : '');
     }
     if (!work && !f) return '';
-    return head(work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
+    return formHead('Details form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
         ? 'Received ' + esc(day(f.submitted_at)) + ', taken in' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
   }
@@ -268,13 +308,12 @@
     var act = may('suppliers', 'work') && cv;
     if (!c && !act) return '';
     var name = function (x) { return esc(window.ADspaceForm.named(x.code, x.name)); };
-    var dd = !c ? '<dd class="is-empty">Not linked</dd>'
-      : c.hidden ? '<dd>Not in your clients</dd>'
+    var dd = !c ? '' : c.hidden ? '<dd>Not in your clients</dd>'
       : '<dd>' + (cv ? '<button class="linkbtn" type="button" data-s="client-open">' + name(c) + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button>' : name(c)) + '</dd>';
     return '<div class="readgroup-head"><h4 class="fsec-h">Client</h4>' +
         (act ? '<button class="btn btn-sm" type="button" data-s="client">' + (c ? 'Edit' : 'Link client') + '</button>' : '') + '</div>' +
-      '<dl class="ovfacts"><div><dt>Linked to</dt>' + dd + '</div>' +
-        (!c && m.length ? '<div><dt>Same BRN</dt><dd>' + m.map(name).join(', ') + '</dd></div>' : '') + '</dl>';
+      (!c ? '<p class="muted">Not linked.</p>' + (m.length ? '<dl class="ovfacts"><div><dt>Same BRN</dt><dd>' + m.map(name).join(', ') + '</dd></div></dl>' : '')
+        : '<dl class="ovfacts"><div><dt>Linked to</dt>' + dd + '</div></dl>');
   }
   function linkClient() {
     var s = state.rec, c = state.client;
@@ -301,7 +340,10 @@
   function paintRec() {
     var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
+    var fb = formBlock(), quiet = s.status !== 'pending' && state.form && state.form.state === 'open';
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
+        (s.status === 'active' && !(state.form && (state.form.state === 'open' || state.form.state === 'submitted'))
+          ? '<button class="kmenu-item" type="button" data-s="link"><b>Request update</b></button>' : '') +
         (s.email ? '<button class="kmenu-item" type="button" data-s="mail"><b>Send email</b></button>' : '') +
         '<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
@@ -319,9 +361,10 @@
           '</div></div>' +
         '<div class="msg" id="supRecMsg"></div>' +
         '<div class="readgroups">' +
-        (formBlock() ? '<section class="readgroup sup-form">' + formBlock() + '</section>' : '') +
+        (fb && !quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
+        (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
@@ -368,6 +411,7 @@
         });
     });
     on('copy', function (b) { if (window.ADspaceCopy) window.ADspaceCopy.to(b, $('supLink').value); });
+    on('preview', function () { window.open($('supLink').value, '_blank', 'noopener'); });
     on('approve', function (b) { status('active', b); });
     on('client', linkClient);
     on('client-open', function () {
@@ -711,7 +755,7 @@
     $('supPaySec').hidden = !payWork();
     kindRows();
     if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb();
-    $('supEditTitle').textContent = form ? 'Use details' : 'Edit supplier';
+    $('supEditTitle').textContent = form ? (form.purpose === 'update' ? 'Use changes' : 'Use details') : 'Edit supplier';
     msg('supEditMsg', '');
     $('supEditSheet').hidden = false;
   }
@@ -736,7 +780,9 @@
       state.rows = null;
       rpc('suppliers_list', {}).then(function (r2) { if (r2.data && r2.data.rows) state.rows = r2.data.rows; });
       openRec(state.rec.id);
-      setTimeout(function () { msg('supRecMsg', 'Saved.', 'ok'); }, 400);
+      setTimeout(function () {
+        msg('supRecMsg', d.repending ? 'Saved. The bank details changed, so the supplier is Pending until approved again.' : 'Saved.', d.repending ? 'warn' : 'ok');
+      }, 400);
     });
   }
 

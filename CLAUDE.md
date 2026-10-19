@@ -311,6 +311,9 @@ added to all three in the same push.
   out of markup or a comment.
 - Assert that withheld data is absent from the function's payload. Never assert
   a value you believe correct.
+- A link handed out for one step of a record ends when the record moves
+  past that step, and a suite seeds the link still open at that move
+  (2026-10-20: an approved supplier's details form stood open).
 - A function removed is first grepped by name across the suites with no
   cap on the output: a suite that cuts a script at `'  function name('`
   uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).
@@ -2261,8 +2264,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   authorisation ticked; the team at Suppliers Work is told (kind
   `supplier.details`, opening the supplier). The answers never write the
   supplier: Use details fills its sheet and Save (`supplier_save`) takes
-  them in. A supplier whose details change is sent a new link (Reset link)
-  or edited by hand.
+  them in. A move of status (Approve, Set inactive) ends every open link of
+  the supplier, filed with the move. An Active supplier whose details change
+  is sent an update link (the ⋯ Request update; `supplier_forms.purpose`
+  `update`, `2026-10-20-supplier-update-link.sql`) or edited by hand: the
+  form opens on the details held but the NRIC and the bank details, which
+  it never reads and which, left blank, keep what is held; the record leads
+  with Details update, each change from and to (the bank as Changed), and
+  Use changes, held for a colleague at `suppliers.pay` where the bank
+  changed; an open update link waits quietly under Payment details (its ⋯
+  Copy link, Preview, Reset link, Close link). A new payee, bank or account
+  on an Active supplier, by link or by hand, puts it back to Pending until
+  approved again (`repending`), and an approval names who approved, never
+  a system account.
 - Approve (`supplier_set_status`, a name, the details and the bank account
   whole, `incomplete`) makes it Active; Set inactive / Set active in the
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back

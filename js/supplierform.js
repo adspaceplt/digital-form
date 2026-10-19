@@ -8,7 +8,11 @@
  * Supplier ID the link is for and when it ends (`supplier_form_read`), never
  * a value the record holds, and sends the answers once
  * (`supplier_form_submit`), checked as the Jotform form checked them; they
- * wait on the supplier for the team to take in. English, as the form was. */
+ * wait on the supplier for the team to take in. English, as the form was.
+ *
+ * An update link (2026-10-20), sent to a supplier already approved, opens
+ * on the details held but the NRIC and the bank details, which it never
+ * reads: left blank, they keep what is held. */
 (function () {
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
@@ -44,6 +48,9 @@
 
   var key = (new URLSearchParams(location.search).get('k') || '').trim().toLowerCase();
   var info = null, state = 'loading', typed = { kind: 'company', currency: 'MYR' }, consent = false, sending = false;
+  /* An update link: the bank details and the NRIC held are kept when left blank. */
+  var update = false, bankHeld = false, nricHeld = false;
+  function bankKept() { return update && bankHeld && !String(typed.bank_account || '').trim(); }
   var root = function () { return $('sfRoot'); };
 
   function day(iso) { return window.ADspaceClock.date(iso, { long: true }); }
@@ -69,15 +76,15 @@
       opts.map(function (o) { return '<option value="' + o[0] + '"' + (typed[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
   }
   function paintForm() {
-    var ind = typed.kind === 'individual';
-    return '<div class="qs-step" data-shown><h1 class="qs-title">Supplier Details</h1>' +
+    var ind = typed.kind === 'individual', keepBank = update && bankHeld, keepNric = update && nricHeld;
+    return '<div class="qs-step" data-shown><h1 class="qs-title">' + (update ? 'Update Supplier Details' : 'Supplier Details') + '</h1>' +
       '<p class="qs-lead">' + (info.name ? esc(info.name) + ' · ' : '') + esc(info.code) + '</p>' +
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
         field('sfBrn', '12-digit SSM BRN', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '202304002162') + '"')) +
-        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', true, 'maxlength="14" inputmode="numeric" placeholder="000814-01-2023"')) : '') +
+        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC held' : '000814-01-2023') + '"')) : '') +
         field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="C12345678090"')) +
         field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
         field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
@@ -90,11 +97,12 @@
         field('sfMobile', 'Mobile / WhatsApp', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Payment details</h2>' +
+        (keepBank ? '<p class="qs-note">Leave the bank account blank to keep the bank details held. A new bank account is approved by ADspace before payments are made to it.</p>' : '') +
         field('sfTerm', 'Payment term', select('sfTerm', 'payment_term', true, TERMS, 'Choose a term'), 'Subject to approval.') +
         field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
-        field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', true, 'maxlength="120"'), 'As the account holder’s name.') +
-        field('sfBank', 'Bank', select('sfBank', 'bank_name', true, BANKS, 'Choose a bank')) +
-        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', true, 'maxlength="24" inputmode="numeric"')) +
+        field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As the account holder’s name.') +
+        field('sfBank', 'Bank', select('sfBank', 'bank_name', !keepBank, BANKS, keepBank ? 'Keep the bank held' : 'Choose a bank')) +
+        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Leave blank to keep"' : ''))) +
         field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@adspace.me"')) +
         field('sfSwift', 'SWIFT code', input('sfSwift', 'swift', false, 'maxlength="11" autocapitalize="characters" placeholder="Optional"')) +
         field('sfBankAddr', 'Bank address', '<textarea class="input" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
@@ -110,7 +118,7 @@
   function paintDone() {
     root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">Details received</h1><p>Thank you. ADspace will review your details.</p></div>';
+      '<h1 class="qs-title">Details received</h1><p>' + (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.') + '</p></div>';
   }
   function paint() {
     if (state === 'loading') return;
@@ -162,7 +170,7 @@
     say('sfConsentMsg', '');
     if (v('name').length < 2) bad('name');
     if ((!ind || digits('brn')) && !/^\d{12}$/.test(digits('brn'))) bad('brn');
-    if (ind && !/^\d{12}$/.test(digits('nric'))) bad('nric');
+    if (ind && !(update && nricHeld && !digits('nric')) && !/^\d{12}$/.test(digits('nric'))) bad('nric');
     if (!/^[A-Za-z0-9]{5,20}$/.test(v('tin').replace(/\s+/g, ''))) bad('tin');
     if (v('sst_no') && !/^[A-Za-z]\d{2}-\d{4}-\d{8}$/.test(v('sst_no').replace(/\s+/g, ''))) bad('sst_no');
     if (!numberOk(v('phone'), false)) bad('phone');
@@ -172,11 +180,13 @@
     if (!mail.test(v('email'))) bad('email');
     if (!numberOk(v('mobile'), true)) bad('mobile');
     if (TERMS.indexOf(v('payment_term')) < 0) bad('payment_term');
-    if (v('payee_name').length < 2) bad('payee_name');
-    if (BANKS.indexOf(v('bank_name')) < 0) bad('bank_name');
-    if (!/^\d{6,20}$/.test(v('bank_account').replace(/[\s-]/g, ''))) bad('bank_account');
+    if (!bankKept()) {
+      if (v('payee_name').length < 2) bad('payee_name');
+      if (BANKS.indexOf(v('bank_name')) < 0) bad('bank_name');
+      if (!/^\d{6,20}$/.test(v('bank_account').replace(/[\s-]/g, ''))) bad('bank_account');
+    }
     if (!mail.test(v('finance_email'))) bad('finance_email');
-    if (v('swift') && !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(v('swift').replace(/\s+/g, ''))) bad('swift');
+    if (!bankKept() && v('swift') && !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(v('swift').replace(/\s+/g, ''))) bad('swift');
     if (!consent) { say('sfConsentMsg', 'Tick to agree.'); if (!first) first = 'sfConsent'; }
     if (first && $(first)) $(first).focus();
     return !first;
@@ -226,7 +236,13 @@
     if (d.error === 'expired') state = 'expired';
     else if (d.error === 'submitted') state = 'submitted';
     else if (d.error || !d.ok) state = 'bad';
-    else { info = d; state = 'open'; typed.name = d.name || ''; }
+    else {
+      info = d; state = 'open'; typed.name = d.name || '';
+      if (d.purpose === 'update') {
+        update = true; bankHeld = Boolean(d.bank_held); nricHeld = Boolean(d.nric_held);
+        Object.keys(d.current || {}).forEach(function (k) { typed[k] = d.current[k]; });
+      }
+    }
     paint();
   }).catch(function () { state = 'fail'; paint(); });
 })();
