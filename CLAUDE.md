@@ -2904,7 +2904,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     that reached client review plus `late_open`, the open work late by the
     late rule, counted in the period its deadline fell in and in one that
     runs to now (`2026-10-19-on-time-counts-late-open-work.sql`), empty and
-    reading a dash where nothing was due, beside Needs attention today,
+    reading a dash where nothing was due; beside it the Posted on time
+    ring from `ops_report.posted`: of the content whose post date (MYT)
+    fell in the period and has passed, or which went live, how much went
+    live by its post date, as the review's On-time posting reads it
+    (`2026-10-19-posted-on-time.sql`; the user, 2026-10-19: on-time
+    delivery stays the team's own measure); then Needs attention today,
     a signal a line: Late tasks, Reports owed for last month, Leads going
     cold, Sets waiting on clients, Unanswered client requests, Active
     clients, each its count and the dot and its word, Open list scrolling
@@ -2914,7 +2919,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     period before (`on Sept`, `on last quarter`) and its trend
     (`ADspaceChart.spark`) where it has a history; every tile keeps the
     trend's room and the two groups share their rows, so the eight stand
-    one height); the two trends, On-time delivery by month and Active
+    one height); the two trends, On time by month (delivered and posted,
+    two lines) and Active
     clients by month (each figure over its column, this month lighter);
     then Needs attention (`#ovwAttention`): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in

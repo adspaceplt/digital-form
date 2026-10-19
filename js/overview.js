@@ -643,17 +643,24 @@
      row is a grid of cards; the second row of Detail runs three across. */
   var PAGE1 = [
     [
-      { key: 'ontime', title: 'On-time delivery by month', can: canFigures, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
+      /* Delivery (the team's: client review by its due date) and posting
+         (the client's: live by its post date) side by side (the user,
+         2026-10-19: "Build posted on time on the dashboard"). */
+      { key: 'ontime', title: 'On time by month', can: canFigures, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.months().then(function (all) {
+          var rate = function (met, n) { return n ? Math.round(met / n * 100) : null; };
           var cats = all.map(function (x) {
-            var f = x.d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0);
-            return { label: x.m.label, long: x.m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
+            var f = x.d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0), met = Number(f.met || 0);
+            var p = x.d.posted || {}, pn = Number(p.due || 0), pm = Number(p.met || 0);
+            return { label: x.m.label, long: x.m.long, values: [rate(met, n), rate(pm, pn)], n: n, met: met, pn: pn, pm: pm };
           });
-          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks were due in the last six months.' };
-          return { kind: 'line', max: 100, none: 'None due', cats: cats, series: [{ label: 'On time' }],
+          if (!cats.some(function (c) { return c.values[0] != null || c.values[1] != null; })) return { empty: 'No tasks or posts were due in the last six months.' };
+          var cell = function (met, n, v) { return v == null ? '\u2014' : v + '% (' + met + ' of ' + n + ')'; };
+          return { kind: 'line', max: 100, none: 'None due', cats: cats,
+            series: [{ label: 'Delivered on time' }, { label: 'Posted on time', tone: 'mute' }],
             fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
-            table: { heads: ['Month', 'Due', 'On time', 'Rate'], rows: cats.map(function (c) {
-              return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
+            table: { heads: ['Month', 'Delivered on time', 'Posted on time'], rows: cats.map(function (c) {
+              return [c.long, cell(c.met, c.n, c.values[0]), cell(c.pm, c.pn, c.values[1])];
             }) } };
         });
       } },
@@ -862,28 +869,34 @@
     var card = document.createElement('section');
     card.className = 'chartcard ovw-glance' + (meter ? '' : ' is-plain');
     card.id = 'ovwGlance';
-    card.innerHTML = (meter ? '<div class="ovw-meter" id="ovwMeter"></div>' : '') +
+    card.innerHTML = (meter ? '<div class="ovw-meters"><div class="ovw-meter" id="ovwMeter"></div><div class="ovw-meter" id="ovwPosted"></div></div>' : '') +
       (sigs.length ? '<div class="ovw-sigs"><div class="ovw-cardhead"><h3>Needs attention today</h3>' +
         '<button class="btn btn-quiet btn-sm ovgo" type="button" data-a="list"><span class="ovgo-word">Open list</span>' + CHEV + '</button></div>' +
         '<div class="ovw-sig-rows"></div></div>' : '');
     box.appendChild(card);
     if (meter) {
-      var mbox = card.querySelector('#ovwMeter');
+      var mbox = card.querySelector('#ovwMeter'), pbox = card.querySelector('#ovwPosted');
       var runM = function () {
         UI.skeleton(mbox, 2);
+        UI.skeleton(pbox, 2);
         R.report().then(function (d) {
           /* Work still late counts as late beside what reached client review
              (the user, 2026-10-19: late tasks beside 100% on time). */
           var f = d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0), met = Number(f.met || 0);
+          /* Posted on time: content live by its post date (2026-10-19). */
+          var p = d.posted || {}, pn = Number(p.due || 0), pm = Number(p.met || 0);
           mbox.innerHTML = '';
-          /* An empty ring follows the signals in a narrow pane, so the first
+          pbox.innerHTML = '';
+          /* Empty rings follow the signals in a narrow pane, so the first
              screen of a phone opens on what needs acting on (ux-audit OVW-7). */
-          card.classList.toggle('is-ringless', !n);
-          /* The ring stands whatever the period holds (the user, 2026-10-12):
-             with nothing reached client review it is empty and reads a dash. */
+          card.classList.toggle('is-ringless', !n && !pn);
+          /* The rings stand whatever the period holds (the user, 2026-10-12):
+             with nothing due they are empty and read a dash. */
           CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
             rows: [{ label: 'On time', value: met, tone: 'ok' }, { label: 'Late', value: n - met }] });
-        }).catch(function (e) { fail(mbox, 'On-time delivery', e, runM); });
+          CH.draw(pbox, { kind: 'meter', name: 'Posted on time', word: 'Posted on time', valueHead: 'Posts',
+            rows: [{ label: 'On time', value: pm, tone: 'ok' }, { label: 'Late', value: pn - pm }] });
+        }).catch(function (e) { fail(mbox, 'On-time delivery', e, runM); pbox.innerHTML = ''; });
       };
       runM();
     }
