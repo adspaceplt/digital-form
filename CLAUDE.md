@@ -686,7 +686,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`app_settings_read()`, anon too) and `setting(key, at)` answers them;
     the console waits for it beside `me()`, the client portal beside
     `get_portal`, the selection page beside `get_campaign`. `FIRST` is used
-    only where the read fails.
+    only where the read fails, and is the one copy of a default (no page
+    keeps its own); a failed read is not kept, so the next `load()` asks
+    again. A figure is read at the day it applies to, as the database reads
+    it (a report's deadline at its period's end).
 - `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
   a popover card opens.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
@@ -1186,10 +1189,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   is answered `sst_pct` and the term percentages alone, what a client page
   prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
   p_values)` an admin's, from today (MYT) or later (`past`), filed
-  `team.changed` under Settings. One sheet edits a group of them
+  `team.changed` under Settings; a value saved for a planned day that equals
+  the one in force the day before withdraws that day's row, filed "planned
+  change withdrawn" (`2026-10-19-planned-setting-withdrawn.sql`). An edge
+  function reads a setting in force from `app_settings_read` through one
+  helper (`settingsAt`; `app_setting` is closed to a caller). One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure, under its
   section's heading where a key names one, a change already set from a
-  later day said under its field; only what changed is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
+  later day said under its field; only a figure moved from where the sheet
+  opened is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
   bar; `ADspaceAdmin.TAX_KEYS`, eight figures in three sections), Due dates
   (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
