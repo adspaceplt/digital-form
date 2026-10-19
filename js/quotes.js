@@ -485,6 +485,8 @@
   var timer = null;
   function preview() {
     clearTimeout(timer);
+    /* A changed selection is a new quotation: its own key (audit 15, 2026-10-19). */
+    if (B) B.idem = null;
     timer = setTimeout(function () {
       if (!B) return;
       var seq = ++B.seq;
