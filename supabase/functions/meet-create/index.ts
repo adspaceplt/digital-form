@@ -154,7 +154,9 @@ Deno.serve(async (req) => {
   const clash = ((await list.json()).items || []).find((x: Record<string, unknown>) =>
     x.id !== eventId && x.id !== eventIdOf(touch, eid) && x.status !== 'cancelled' && online(x));
   if (clash) {
-    return json({ error: 'slot-taken', summary: String(clash.summary || 'Busy'),
+    /* The clash's time alone: its title may be another client's meeting,
+       which the colleague asking may not see (audit 2026-10-19, item 3). */
+    return json({ error: 'slot-taken',
       start: (clash.start as Record<string, string>)?.dateTime || null,
       end: (clash.end as Record<string, string>)?.dateTime || null }, 200, origin);
   }

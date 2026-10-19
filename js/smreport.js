@@ -315,8 +315,6 @@
     return isNaN(d.getTime()) ? null : d;
   }
   function dayWord(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
-  function longDate(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
-  function stampWord(iso) { var d = iso ? dateOf(iso) : null; return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : ''; }
   /* "August 2026" for a calendar month, "1 to 15 August 2026" for part of one,
      "28 July to 3 August 2026" across two. */
   function periodWord(a, b) {
@@ -335,9 +333,6 @@
     }
     return da.getDate() + ' ' + MONTHS[da.getMonth()] + (da.getFullYear() !== db.getFullYear() ? ' ' + da.getFullYear() : '') +
       ' to ' + db.getDate() + ' ' + MONTHS[db.getMonth()] + ' ' + db.getFullYear();
-  }
-  function mix(PDF, c, white) {
-    return PDF.rgb(c.red + (1 - c.red) * white, c.green + (1 - c.green) * white, c.blue + (1 - c.blue) * white);
   }
   function words(s) { return String(s == null ? '' : s).replace(/\r/g, ''); }
   /* Ads Manager's result indicator is a key (`actions:post_engagement`,
@@ -381,12 +376,6 @@
     var t = resultWord(s);
     for (var i = 0; i < SHORT_RESULT.length; i++) if (SHORT_RESULT[i][0].test(t)) return SHORT_RESULT[i][1];
     return t.replace(/\s*\([^)]*\)\s*$/, '') || 'Results';
-  }
-  /* One point a line: an insights field holds several, one per line, and a
-     line that is only whitespace is not a point. Accidental repeated blank
-     lines are collapsed; a single blank line still divides two points. */
-  function points(s) {
-    return words(s).split(/\n/).map(function (l) { return l.trim(); }).filter(Boolean);
   }
   /* A caption keeps its paragraphs exactly, collapsing only a run of three or
      more line breaks (two or more empty lines) to one paragraph break. */
@@ -630,12 +619,6 @@
       else out.push({ t: txt, sub: [] });
     });
     return out;
-  }
-  function listWords(items) {
-    if (!items.length) return '';
-    if (items.length === 1) return items[0];
-    var own = items.some(function (s) { return / and /.test(s); });
-    return items.slice(0, -1).join(', ') + (own ? ', and ' : ' and ') + items[items.length - 1];
   }
 
   // ---- Assets -----------------------------------------------------------------

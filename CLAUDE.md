@@ -1182,7 +1182,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-10-05: "what if i need changes the next quarter"). Outside
   Performance they are `app_settings` (`2026-10-05-app-settings.sql`, key,
   from_date, value; RLS on, no policy, no grant): `app_setting(key, at)` for
-  functions, `app_settings_read()` for pages, `app_settings_set(p_from,
+  functions, `app_settings_read()` for pages (anyone the team does not hold
+  is answered `sst_pct` and the term percentages alone, what a client page
+  prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
   p_values)` an admin's, from today (MYT) or later (`past`), filed
   `team.changed` under Settings. One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure, under its
@@ -2158,6 +2160,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   match is answered first.
   - It never shows the recipient.
   - HR is shown as "HR letter".
+  - Anyone the team does not hold is answered 30 lookups an hour a
+    connection (`verify_tries` by `request_ip()`, RLS on, no policy, no
+    grant), then `locked` with the minutes left before any reference is
+    read, said as Too many checks (`2026-10-19-verify-lookups-counted.sql`:
+    an HR reference is guessable); `privacy_retention` removes a row whose
+    hour began over 30 days ago.
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
   - It is Noto Sans SC as TrueType in the repo (`css/NotoSansSC-Regular.ttf`,
     `css/NotoSansSC-NOTICE.txt`), embedded with only the characters used.
@@ -3635,8 +3643,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - It asks `ops_engagement_meet_prepare` (a month) or
     `client_touch_meet_prepare` (a Calls and visits meeting) as the caller.
   - It refuses a slot only where another online meeting overlaps it (a Meet
-    link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
-    other events on the shared calendar do not count.
+    link, or a Meet, Zoom or Teams address on the event; `slot-taken`,
+    answered with the clash's start and end alone, never its title: it may
+    be another client's); other events on the shared calendar do not count.
   - It re-reads until `hangoutLink` appears, and records `meet-pending`.
   - A record's event has one id, made from the record's (`admonth` or
     `adtouch` and its id's hex, Google's letters; 2026-10-19): a second
@@ -5790,8 +5799,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   run keeps a rule nobody active can make, or whose task its colleague
   cannot see, as its error, which the task card's Repeats line shows
   (`2026-10-18-failed-jobs-named.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
-  over 14 days and notices read over 90 days ago, never a colleague's
-  notice. Neither is a page's to call.
+  over 14 days and notices read over 90 days ago or unread over 180
+  (`2026-10-19-unread-notices-pruned.sql`), never a colleague's notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,
   `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the
   Free plan keeps no backups): Supabase's own dump (roles, schema, data),

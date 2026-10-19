@@ -46,7 +46,6 @@
      all, which money.js reads as on, so a letter issued then redraws at the
      figure it printed. */
   function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust, l.term_pct); }
-  function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
 
   /* One price, worked the same way when the letter is issued (by
      `issue_letter`, to the sen) and when it is drawn again later, so the

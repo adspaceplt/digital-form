@@ -140,10 +140,6 @@
   function serialOf(t) {
     return t && t.task_no != null ? '#WT' + String(t.task_no).padStart(5, '0') : '';
   }
-  function isAdmin() {
-    var m = bridge.me && bridge.me();
-    return Boolean(m && (m.is_admin || m.role === 'admin'));
-  }
 
   // ---- What the database said, in the team's words -------------------------
   /* Every one of these is a refusal a person can act on, so it is said in the
@@ -6143,13 +6139,6 @@
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
   }
-  function fillClients(sel, past, was) {
-    var list = clientsFor('client', past);
-    sel.innerHTML = '<option value="">Choose a client</option>' + list.map(function (c) {
-      return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(clientName(c)) +
-        (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
-    }).join('');
-  }
 
   /* DUPLICATE. A copy with a new code; the person says what else travels. */
   var dupKey = '';
@@ -7156,7 +7145,7 @@
     if (k === 'unreachable') return 'Google Meet could not be reached. Try again, or paste a link.';
     if (k === 'slot-taken') {
       var span = d.start ? clock(d.start) + (d.end ? ' to ' + clock(d.end) : '') : '';
-      return 'The shared calendar already has ' + (d.summary ? '\u201c' + d.summary + '\u201d' : 'a meeting') +
+      return 'The shared calendar already has a meeting' +
         (span ? ' at ' + span : '') + '. Choose another time.';
     }
     if (k === 'google-refused') return 'Google refused the booking' + (d.reason ? ' (' + d.reason + ')' : '') + '. Try again.';
