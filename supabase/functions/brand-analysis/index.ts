@@ -45,6 +45,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import Anthropic from 'npm:@anthropic-ai/sdk';
 
+/* A Business setting as app_setting(key, at) answers it: the newest row
+   from on or before the day (app_settings_read lists them by key and day).
+   app_setting itself is closed to a caller's session. */
+function settingsAt(data: unknown, test: RegExp): Record<string, number> {
+  const d = (data || {}) as Record<string, unknown>;
+  const day = String(d.today || new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10));
+  const out: Record<string, number> = {};
+  for (const r of (Array.isArray(d.settings) ? d.settings : []) as { key: string; from: string; value: number }[]) {
+    if (test.test(r.key) && String(r.from).slice(0, 10) <= day) out[r.key] = Number(r.value);
+  }
+  return out;
+}
+
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
 
 function cors(origin: string | null) {
@@ -489,15 +502,8 @@ Deno.serve(async (req) => {
 
     /* The Meta Malaysia benchmarks are Business settings (AD BENCHMARKS),
        read as the caller and taken as they stand today. */
-    const benchmarks: Record<string, number> = {};
     const st = await db.rpc('app_settings_read');
-    if (!st.error && st.data && Array.isArray((st.data as Record<string, unknown>).settings)) {
-      const today = String((st.data as Record<string, unknown>).today || new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10));
-      ((st.data as Record<string, unknown>).settings as { key: string; from: string; value: number }[])
-        .filter((r) => /^bench_/.test(r.key) && r.from <= today)
-        .sort((x, y) => (x.from < y.from ? -1 : 1))
-        .forEach((r) => { benchmarks[r.key] = Number(r.value); });
-    }
+    const benchmarks = st.error ? {} : settingsAt(st.data, /^bench_/);
     const B = (k: string) => (benchmarks[k] == null ? null : benchmarks[k]);
     const bench = Object.keys(benchmarks).length ? {
       market: 'Meta advertising in Malaysia',

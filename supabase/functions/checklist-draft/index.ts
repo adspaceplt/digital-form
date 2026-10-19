@@ -33,6 +33,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import Anthropic from 'npm:@anthropic-ai/sdk';
 
+/* A Business setting as app_setting(key, at) answers it: the newest row
+   from on or before the day (app_settings_read lists them by key and day).
+   app_setting itself is closed to a caller's session. */
+function settingsAt(data: unknown, test: RegExp): Record<string, number> {
+  const d = (data || {}) as Record<string, unknown>;
+  const day = String(d.today || new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10));
+  const out: Record<string, number> = {};
+  for (const r of (Array.isArray(d.settings) ? d.settings : []) as { key: string; from: string; value: number }[]) {
+    if (test.test(r.key) && String(r.from).slice(0, 10) <= day) out[r.key] = Number(r.value);
+  }
+  return out;
+}
+
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -228,14 +241,8 @@ Deno.serve(async (req) => {
     const clean = (v: unknown): unknown => typeof v === 'string' ? mask(scrub(v))
       : Array.isArray(v) ? v.map(clean) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, clean(x)])) : v;
 
-    const benchmarks: Record<string, number> = {};
     const st = await db.rpc('app_settings_read');
-    if (!st.error && st.data && Array.isArray((st.data as Record<string, unknown>).settings)) {
-      const today = String((st.data as Record<string, unknown>).today || new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10));
-      ((st.data as Record<string, unknown>).settings as { key: string; from: string; value: number }[])
-        .filter((r) => /^bench_/.test(r.key) && r.from <= today).sort((x, y) => (x.from < y.from ? -1 : 1))
-        .forEach((r) => { benchmarks[r.key] = Number(r.value); });
-    }
+    const benchmarks = st.error ? {} : settingsAt(st.data, /^bench_/);
     const lk = await db.rpc('meta_links_list', { p_client: clientId });
     const link = lk && !lk.error && lk.data && !(lk.data as Record<string, unknown>).error
       ? (((lk.data as Record<string, unknown>).links || []) as Record<string, unknown>[]).find((x) => !x.brand_id) : null;
