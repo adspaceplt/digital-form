@@ -1724,7 +1724,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ai_checklist_claim`: `checklist` 10, `checklist_admin` 20), priced and
   set on AI usage; the client's name goes as {brand}. Not signed off on
   an Active client, unless the month marks it Not needed, is a Dashboard
-  Needs attention row (`client_checklists_due`). A client's passwords are
+  Needs attention row (`client_checklists_due`), only where it was started
+  in the portal or the client first became Active from 15 Oct 2026 (MYT):
+  one onboarded before was checked on paper (the user, 2026-10-19;
+  `2026-10-19-checklists-from-portal-onboarding.sql`). A client's passwords are
   never kept: the credentials item is a tick. The templates are edited in
   the migration, not in Settings, for now.
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
