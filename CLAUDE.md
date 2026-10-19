@@ -1482,7 +1482,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-18-client-id-at-active.sql`). A Letter of Offer before Active
   still asks for one at its Reference.
 - The slug is set once from the name, never follows a rename, and a clash is
-  numbered. It lives only in the console address (`clientByKey()` resolves a
+  numbered, a clash only the index sees (a client outside the colleague's
+  scope; every Chinese name reads `client`) taking the next number, never
+  the database's words (2026-10-19). It lives only in the console address (`clientByKey()` resolves a
   slug or a UUID by shape) and never grants access.
 - Stage clock: `stage_since` and `stage_log` are stamped by
   `clients_stage_clock`, and only a real move restarts it. After a move the row
@@ -1524,7 +1526,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
-  fixed: the colleague keying a lead holds it.
+  fixed: the colleague keying a lead holds it. A contact refused after the
+  client is made is said, and what was typed waits in the contact sheet on
+  the new record (2026-10-19).
+- The Clients list, and every read of all clients (`bridge.active`,
+  `uniqueSlug`), is read a thousand at a time (`readPages`; 2026-10-19).
 - A client's address outside the colleague's reach (or gone) lands on the list
   with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
@@ -1594,11 +1600,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The running stage carries `.tl-row.is-now` and the overdue mark.
   - Every stage date and Client since are edited in place
     (`ADspaceAsk.rename`, type date).
-    - Client since is the first stage's start.
+    - Client since is the first stage's start, opened on its Malaysian day
+      (`dayOf`).
     - A stage never begins before the one before it, and no date is in the
       future.
-    - One save writes `stage_log`, `stage_since` and `created_at`, with
-      `.select('id')`.
+    - One save writes `stage_log`, `stage_since` and `created_at` (a move's
+      reason too), only over the row as read (`.eq('updated_at', …)`,
+      stamped by trigger `clients_touch`): a move made meanwhile reads "Not
+      saved. This changed since it was opened, and has been read again.";
+      where only another column moved, the write goes again once
+      (2026-10-19).
 - Billing required before Active:
   - registered company name (capitals);
   - BRN;
@@ -1609,6 +1620,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
+  - Trigger `clients_active_billing` refuses the move into Active while the
+    registered name, BRN or billing address is empty or no billing contact
+    (chosen, else a live main contact) stands (`active-needs-billing`,
+    `2026-10-19-clients-audit-fixes.sql`); a client already Active keeps
+    its place.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Details form makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
@@ -1619,10 +1635,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     old BRN, TIN, SST no., billing address, finance email, the billing
     contact's salutation, name, mobile and email; refused by field), telling
     the team at Clients: Billing Work whose bands and client scope reach the
-    client (kind `client.details`, opening Billing). The Active gate's Billing sheet offers it in one line
+    client (kind `client.details`, opening Billing), filed under the actor
+    Details form with the typed name in the detail (a public form's typed
+    name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
     details fills the Billing sheet and its own Save takes them in
-    (`client_details_used`), picking the billing contact the client sent
+    (`client_details_used(p_id, p_client)`, refusing another client's form;
+    opening Billing forgets an earlier Use details), picking the billing contact the client sent
     where Contacts holds them (email, else the number's last nine digits);
     while Contacts does not, the form keeps showing them, Not in Contacts,
     with Add as contact, before and after Use details, which opens Contacts
@@ -1664,9 +1683,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client.edited`); the pre-advertising one prefilled from the record (the
   registered name at Clients: Billing View, else the brand; the newest
   quotation at Clients: Services View; the brief's competitors, the
-  confirmed Brand analysis's SWOT; `checklist_prefill`). Mark as prepared
-  (`incomplete` with what is left), Sign off by another colleague (asked;
-  `own`), Send back, and Reopen at Manage (asked; the signed copy kept in
+  confirmed Brand analysis's SWOT; `checklist_prefill`), the registered
+  name and the quotation never stored: worked out for each reader on every
+  read (2026-10-19, audit 3). Mark as prepared
+  (`incomplete` with what is left), Sign off by a colleague who neither
+  prepared it nor ticked or answered any item (asked; `own`; a tick keeps
+  `by_id` beside its name, an answer or note `set_by`, an older tick read
+  by its name, `checklist_filled_by`; the read's `filled_by_me` hides the
+  button; 2026-10-19, audit 13), Send back, and Reopen at Manage (asked; the signed copy kept in
   `history`) through `client_checklist_step`; signed, it locks and ticks
   the month's check of that key (`ready`), and Reopen unticks it. A month's
   check is never ticked by hand (`ops_engagement_set_check` refuses
@@ -1710,8 +1734,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work), never typed; a link Meta no longer shows stays offered. Read first
   on the Brand pane (`#crmMetaRead`, Edit at Clients Work; a brand's from its
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
-  Work, `bad-brand`, `bad-asset`) files `client.brand` from and to, a brand's
-  under its name; `meta_links_list` at Reports or Clients View.
+  Work, `bad-brand`, `bad-asset`; writes through insert on conflict, so two
+  first saves at once both stand, 2026-10-19) files `client.brand` from and
+  to, a brand's under its name; `meta_links_list` at Reports or Clients View.
 - The content brief (`clients.brief`, `2026-10-10-client-brief.sql`; the
   user, 2026-10-09: "content not interesting"): one object of short texts
   (audience, pains, pillars, tone, avoid, competitors, hooks; 8,000
@@ -1839,7 +1864,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`2026-10-15-whatsapp-greeting-and-counts.sql`).
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
-    `@name` or the number.
+    `@name` or the number: the field opens on the stored number where it is
+    no username, is sent only where it changed, and digits typed into it
+    are stored as a number (2026-10-19).
+  - The main contact changes in one transaction
+    (`client_contact_make_primary`, Clients: Contacts at Work, in scope), so
+    a refused change leaves the old one.
   - One builder for every wa.me link, `ADspaceAPI.waNumber` (the console,
     the client portal, the creator's page, the namecard), reading a number
     as `wa_number` does in SQL (WhatsApp, below).
@@ -4816,7 +4846,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   languages, budget and term, one-off items as steppers two across, the
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
-  platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press).
+  platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
+  made again whenever the selection changes; the same key twice, even at
+  once, answers `again` with the first; 2026-10-19, audit 15).
   Each line's Qty, Rate (RM) and Months (a monthly line's; the term
   until typed) are fields in the lines table (`p_sel.edits` by the line's
   `key`, kind|slug|label; `2026-10-15-quotation-rates.sql`, the user,
@@ -4826,7 +4858,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   line (Rate card RM …), the commitment counting each line's months,
   filed `n lines changed`, Issue Letter of Offer giving each line its
   months; a website quotation is never adjusted; empty puts the card's
-  figure back.
+  figure back. A line may be priced at RM 0, a complimentary line (the
+  user, 2026-10-19): never refused.
   A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
   reels`) and the ad budget it covers; choosing a plan ticks Meta where no
   platform is ticked; the budget opens on the plan's own (`Included: up to
