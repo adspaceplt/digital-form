@@ -117,12 +117,15 @@
       '</div>' +
       '<div class="sheet-foot">' +
         '<button class="btn btn-primary" type="button" id="bkGo" disabled>Send</button>' +
+        '<button class="btn" type="button" id="bkLink" hidden>Link only</button>' +
         '<button class="btn btn-quiet" type="button" id="bkCancel">Cancel</button>' +
       '</div></div>';
     document.body.appendChild(sheet);
     sheet.querySelector('[data-a="x"]').addEventListener('click', shut);
     $('bkCancel').addEventListener('click', shut);
-    $('bkGo').addEventListener('click', go);
+    $('bkGo').addEventListener('click', function () { go('send'); });
+    /* Link only (2026-10-19): the contact Bukku holds, linked as it stands. */
+    $('bkLink').addEventListener('click', function () { go('link'); });
     $('bkPick').addEventListener('change', function (e) {
       if (e.target && e.target.name === 'bkPick') { cur.contact = e.target.value; preview(); }
     });
@@ -165,6 +168,7 @@
     var me = cur, seq = ++me.seq;
     $('bkGo').disabled = true;
     $('bkGo').textContent = me.linked || !me.contact ? 'Send' : 'Link and send';
+    $('bkLink').hidden = !!me.linked || !me.contact; $('bkLink').disabled = true;
     $('bkRows').innerHTML = '<p class="muted">Reading.</p>';
     say('');
     call({ action: 'preview', kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {
@@ -179,17 +183,16 @@
               '<span role="cell" class="bk-now">' + (r.now ? esc(r.now) : '<span class="muted">—</span>') + '</span>' +
               '<span role="cell" class="bk-after">' + (r.after ? esc(r.after) : '<span class="muted">—</span>') + '</span></div>';
           }).join('') + '</div>';
-      $('bkGo').disabled = false;
+      $('bkGo').disabled = false; $('bkLink').disabled = false;
     });
   }
-  function go() {
+  function go(action) {
     var me = cur;
     if (!me) return;
-    var b = $('bkGo');
-    b.disabled = true; say('');
-    call({ action: 'send', kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {
+    $('bkGo').disabled = true; $('bkLink').disabled = true; say('');
+    call({ action: action, kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {
       if (cur !== me) return;
-      b.disabled = false;
+      $('bkGo').disabled = false; $('bkLink').disabled = false;
       if (d.error) { say(said(d), 'err'); return; }
       shut();
       if (me.done) me.done(d);
