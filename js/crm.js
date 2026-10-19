@@ -85,7 +85,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-part]'), function (b) {
       b.hidden = !mayPart(b.getAttribute('data-part'), 'view');
     });
-    /* Account holds three parts: drawn where any one is readable. */
+    /* A tab of several parts (Services with Documents, Account) is drawn
+       where any one is readable. */
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-parts]'), function (b) {
       b.hidden = !b.getAttribute('data-parts').split(' ').some(function (k) { return mayPart(k, 'view'); });
     });
@@ -1154,7 +1155,7 @@
      The Activity record has no tab: it opens from the rail's Recent
      activity (View all), and the strip then marks none. */
   var TABS = { overview: ['overview'], calls: ['calls'], engagements: ['engagements', 'checklists'],
-    services: ['services'], brand: ['brand'], account: ['contacts', 'billing', 'documents'], activity: ['activity'] };
+    services: ['services', 'documents'], brand: ['brand'], account: ['contacts', 'billing'], activity: ['activity'] };
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
   var PANES = Object.keys(GROUP_OF).concat(['account']);
