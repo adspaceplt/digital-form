@@ -608,9 +608,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- A colleague's namecard on the iPhone Duo open (890 x 626, a coarse
-  pointer): Save contact is 40px high, under the 44px floor (matrix
-  `target`, 2026-10-18; front, back and My namecard, both themes).
+- None.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined

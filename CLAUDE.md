@@ -311,6 +311,9 @@ added to all three in the same push.
   out of markup or a comment.
 - Assert that withheld data is absent from the function's payload. Never assert
   a value you believe correct.
+- A function removed is first grepped by name across the suites with no
+  cap on the output: a suite that cuts a script at `'  function name('`
+  uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).
 
 ## 2. Load-bearing invariants
 
