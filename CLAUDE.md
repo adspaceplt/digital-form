@@ -2898,8 +2898,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   Last quarter on the quarter before, This year on last year), with the
   span and the time read beside it; both pages read the one period.
   - Summary: the glance (`#ovwGlance`: the on-time ring, `ADspaceChart`
-    `meter` from `ops_report.on_time` for the period, empty and reading a
-    dash where nothing reached client review, beside Needs attention today,
+    `meter` from `ops_report.on_time` for the period: met over the tasks
+    that reached client review plus `late_open`, the open work late by the
+    late rule, counted in the period its deadline fell in and in one that
+    runs to now (`2026-10-19-on-time-counts-late-open-work.sql`), empty and
+    reading a dash where nothing was due, beside Needs attention today,
     a signal a line: Late tasks, Reports owed for last month, Leads going
     cold, Sets waiting on clients, Unanswered client requests, Active
     clients, each its count and the dot and its word, Open list scrolling

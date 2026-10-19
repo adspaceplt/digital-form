@@ -646,13 +646,13 @@
       { key: 'ontime', title: 'On-time delivery by month', can: canFigures, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.months().then(function (all) {
           var cats = all.map(function (x) {
-            var f = x.d.on_time || {}, n = Number(f.reached || 0);
+            var f = x.d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0);
             return { label: x.m.label, long: x.m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
           });
-          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks reached client review in the last six months.' };
-          return { kind: 'line', max: 100, none: 'None reached client review', cats: cats, series: [{ label: 'On time' }],
+          if (!cats.some(function (c) { return c.values[0] != null; })) return { empty: 'No tasks were due in the last six months.' };
+          return { kind: 'line', max: 100, none: 'None due', cats: cats, series: [{ label: 'On time' }],
             fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
-            table: { heads: ['Month', 'Reached client review', 'On time', 'Rate'], rows: cats.map(function (c) {
+            table: { heads: ['Month', 'Due', 'On time', 'Rate'], rows: cats.map(function (c) {
               return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
             }) } };
         });
@@ -872,7 +872,9 @@
       var runM = function () {
         UI.skeleton(mbox, 2);
         R.report().then(function (d) {
-          var f = d.on_time || {}, n = Number(f.reached || 0), met = Number(f.met || 0);
+          /* Work still late counts as late beside what reached client review
+             (the user, 2026-10-19: late tasks beside 100% on time). */
+          var f = d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0), met = Number(f.met || 0);
           mbox.innerHTML = '';
           /* An empty ring follows the signals in a narrow pane, so the first
              screen of a phone opens on what needs acting on (ux-audit OVW-7). */
