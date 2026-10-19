@@ -7,7 +7,7 @@
  * this function's secrets, so nobody on the team signs in to Google and the
  * token never reaches a browser. A slot that already holds another online
  * meeting on that calendar (a Meet link, or a Meet, Zoom or Teams address) is
- * refused and named, so two calls cannot be booked into the same half hour;
+ * refused by its time, so two calls cannot be booked into the same half hour;
  * the calendar's other events do not count. A record's event has one id,
  * made from the record's own (`eventIdOf`), so a second press finds the
  * event the first made (Google answers 409) and never books another.
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
   /* The shared calendar holds the team's other plans too, so only another
      online meeting in the same slot refuses the booking (the user,
      2026-10-01): an event carrying a Meet link, or a Meet, Zoom or Teams
-     address. It is named, so the person can pick another time; a shoot or a
+     address. Its time is given, so the person can pick another; a shoot or a
      reminder in the slot is left alone. */
   const list = await fetch(`${CAL}?` + new URLSearchParams({
     timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '50'
