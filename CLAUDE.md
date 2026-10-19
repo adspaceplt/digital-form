@@ -1474,7 +1474,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-18-client-id-at-active.sql`). A Letter of Offer before Active
   still asks for one at its Reference.
 - The slug is set once from the name, never follows a rename, and a clash is
-  numbered. It lives only in the console address (`clientByKey()` resolves a
+  numbered, a clash only the index sees (a client outside the colleague's
+  scope; every Chinese name reads `client`) taking the next number, never
+  the database's words (2026-10-19). It lives only in the console address (`clientByKey()` resolves a
   slug or a UUID by shape) and never grants access.
 - Stage clock: `stage_since` and `stage_log` are stamped by
   `clients_stage_clock`, and only a real move restarts it. After a move the row
@@ -1516,7 +1518,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
-  fixed: the colleague keying a lead holds it.
+  fixed: the colleague keying a lead holds it. A contact refused after the
+  client is made is said, and what was typed waits in the contact sheet on
+  the new record (2026-10-19).
+- The Clients list, and every read of all clients (`bridge.active`,
+  `uniqueSlug`), is read a thousand at a time (`readPages`; 2026-10-19).
 - A client's address outside the colleague's reach (or gone) lands on the list
   with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
@@ -1586,11 +1592,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The running stage carries `.tl-row.is-now` and the overdue mark.
   - Every stage date and Client since are edited in place
     (`ADspaceAsk.rename`, type date).
-    - Client since is the first stage's start.
+    - Client since is the first stage's start, opened on its Malaysian day
+      (`dayOf`).
     - A stage never begins before the one before it, and no date is in the
       future.
-    - One save writes `stage_log`, `stage_since` and `created_at`, with
-      `.select('id')`.
+    - One save writes `stage_log`, `stage_since` and `created_at` (a move's
+      reason too), only over the row as read (`.eq('updated_at', …)`,
+      stamped by trigger `clients_touch`): a move made meanwhile reads "Not
+      saved. This changed since it was opened, and has been read again.";
+      where only another column moved, the write goes again once
+      (2026-10-19).
 - Billing required before Active:
   - registered company name (capitals);
   - BRN;
@@ -1601,6 +1612,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
+  - Trigger `clients_active_billing` refuses the move into Active while the
+    registered name, BRN or billing address is empty or no billing contact
+    (chosen, else a live main contact) stands (`active-needs-billing`,
+    `2026-10-19-clients-audit-fixes.sql`); a client already Active keeps
+    its place.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Details form makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
@@ -1616,7 +1632,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
     details fills the Billing sheet and its own Save takes them in
-    (`client_details_used`), picking the billing contact the client sent
+    (`client_details_used(p_id, p_client)`, refusing another client's form;
+    opening Billing forgets an earlier Use details), picking the billing contact the client sent
     where Contacts holds them (email, else the number's last nine digits);
     while Contacts does not, the form keeps showing them, Not in Contacts,
     with Add as contact, before and after Use details, which opens Contacts
@@ -1839,7 +1856,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`2026-10-15-whatsapp-greeting-and-counts.sql`).
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
-    `@name` or the number.
+    `@name` or the number: the field opens on the stored number where it is
+    no username, is sent only where it changed, and digits typed into it
+    are stored as a number (2026-10-19).
+  - The main contact changes in one transaction
+    (`client_contact_make_primary`, Clients: Contacts at Work, in scope), so
+    a refused change leaves the old one.
   - One builder for every wa.me link, `ADspaceAPI.waNumber` (the console,
     the client portal, the creator's page, the namecard), reading a number
     as `wa_number` does in SQL (WhatsApp, below).

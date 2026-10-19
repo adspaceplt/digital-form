@@ -116,17 +116,37 @@
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
   }
+  /* A read of every row, a thousand at a time: PostgREST answers a thousand
+     and no more, and past that clients left the list without a word. */
+  function readPages(make) {
+    var out = [];
+    function page(from) {
+      return make().range(from, from + 999).then(function (r) {
+        if (r.error) return r;
+        var got = r.data || [];
+        out = out.concat(got);
+        if (got.length < 1000 || from >= 49000) return { data: out };
+        return page(from + 1000);
+      });
+    }
+    return page(0);
+  }
   // A clash takes a number rather than failing; the database index is the
   // final word, so a race loses the insert and not the slug.
   function uniqueSlug(name, then) {
     var want = slugify(name) || 'client';
-    db.from('clients').select('slug').ilike('slug', want + '%').then(function (r) {
+    readPages(function () { return db.from('clients').select('slug').ilike('slug', want + '%').order('id'); }).then(function (r) {
       var used = {};
       (r.data || []).forEach(function (x) { if (x.slug) used[String(x.slug).toLowerCase()] = true; });
       if (!used[want]) { then(want); return; }
       for (var i = 2; i < 300; i++) { if (!used[want + '-' + i]) { then(want + '-' + i); return; } }
       then(want + '-' + Date.now().toString(36));
     }, function () { then(want); });
+  }
+  /* The next number after a slug the index refused: `client` → `client-2`. */
+  function nextSlug(slug, tries) {
+    var m = /^(.*)-(\d+)$/.exec(slug), base = m ? m[1] : slug, n = m ? Number(m[2]) + 1 : 2;
+    return tries > 8 ? base + '-' + Date.now().toString(36) : base + '-' + n;
   }
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   /* What the address carries: a slug now, a UUID in anything shared before
@@ -216,8 +236,9 @@
      back rather than patched from here: a guessed timestamp is a timestamp
      that disagrees with the one every other screen will load. */
   function refreshClient(c, then) {
-    db.from('clients').select('stage_since, stage_log').eq('id', c.id).single().then(function (r) {
+    db.from('clients').select('stage_since, stage_log, updated_at').eq('id', c.id).single().then(function (r) {
       if (r && r.data) {
+        c.updated_at = r.data.updated_at;
         c.stage_since = r.data.stage_since;
         c.stage_log = r.data.stage_log;
         var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
@@ -414,7 +435,7 @@
   function loadClients(then) {
     var box = $('crmList');
     if (!state.clients.length) skeleton(box, 6);
-    db.from('clients').select(API.CLIENT_COLS).order('name').then(function (r) {
+    readPages(function () { return db.from('clients').select(API.CLIENT_COLS).order('name').order('id'); }).then(function (r) {
       return r.error ? r : API.withBilling(r.data || []).then(function () { return r; });
     }).then(function (r) {
       if (r.error) {
@@ -793,6 +814,7 @@
     if (/clients_client_code_uidx|duplicate key/i.test(m)) return 'That Client ID is already used by another client.';
     if (/clients_client_code_fmt/i.test(m)) return 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.';
     if (/active-needs-code/.test(m)) return 'An Active client needs a Client ID.';
+    if (/active-needs-billing/.test(m)) return 'An Active client needs its registered name, BRN, billing address and billing contact.';
     return m;
   }
 
@@ -943,7 +965,7 @@
     // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
     if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
-    if (!state.editing && waUser(val('crmContactWa')) && !waUserOk(waUser(val('crmContactWa')))) {
+    if (!state.editing && waUser(val('crmContactWa')) && !waIsNumber(waUser(val('crmContactWa'))) && !waUserOk(waUser(val('crmContactWa')))) {
       msg('crmMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
       $('crmContactWa').focus(); return;
     }
@@ -974,20 +996,49 @@
     // Every client carries its own review link from the moment it exists, so
     // Content Review has nothing left to create.
     patch.access_token = token();
-    uniqueSlug(name, function (slug) {
+    uniqueSlug(name, function (first) {
+    var tries = 0;
+    var insert = function (slug) {
     patch.slug = slug;
     db.from('clients').insert(patch).select(API.CLIENT_COLS).single().then(function (r) {
-      if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
+      if (r.error) {
+        /* The slug was checked against the clients this colleague can see;
+           one held by a client out of their scope (every Chinese name reads
+           `client`) is taken by the index, and the next number is asked. */
+        if (r.error.code === '23505' && /slug/.test(String(r.error.message) + String(r.error.details || '')) && tries++ < 12) {
+          insert(nextSlug(slug, tries)); return;
+        }
+        msg('crmMsg', saveWord(r.error.message), 'err'); return;
+      }
       var salW = ($('crmContactSal') && $('crmContactSal').value) || '';
       log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + (salW ? salW + ' ' : '') + contactName : ''));
-      var open = function () { shutForm(); loadClients(function () { openClient(r.data); }); };
-      var phone = val('crmContactPhone'), waU = waUser(val('crmContactWa'));
-      db.from('client_contacts').insert({
-        client_id: r.data.id, salutation: ($('crmContactSal') && $('crmContactSal').value) || null, name: contactName, phone: phone || null,
-        whatsapp: waU ? '@' + waU : (phone || null),
-        email: val('crmContactEmail') || null, lang: 'en', is_primary: true
-      }).then(open, open);
-    });
+      var phone = val('crmContactPhone'), email = val('crmContactEmail');
+      var ct = {
+        client_id: r.data.id, salutation: salW || null, name: contactName, phone: phone || null,
+        whatsapp: waStore(val('crmContactWa'), phone),
+        email: email || null, lang: 'en', is_primary: true
+      };
+      /* The contact is a second write. A refused one is said, and what was
+         typed waits in the contact sheet on the new record, never lost. */
+      var open = function (failed) {
+        shutForm();
+        loadClients(function () {
+          openClient(r.data);
+          if (!failed) return;
+          openContact(null);
+          $('ctSalutation').value = ct.salutation || '';
+          $('ctName').value = ct.name; $('ctPhone').value = ct.phone || '';
+          $('ctWa').value = waHandle(ct.whatsapp) || (ct.whatsapp !== ct.phone ? ct.whatsapp || '' : '');
+          $('ctEmail').value = ct.email || ''; $('ctPrimary').checked = true;
+          msg('ctMsg', 'The client was added, but the contact was not saved. Save it again.', 'err');
+        });
+      };
+      db.from('client_contacts').insert(ct).select('id').then(function (c) {
+        open(Boolean(c.error || !(c.data || []).length));
+      }).catch(function () { open(true); });
+    }).catch(function () { msg('crmMsg', 'Not saved. Check the connection and try again.', 'err'); });
+    };
+    insert(first);
     });
   });
 
@@ -1951,6 +2002,31 @@
      stage's start, so the two can never disagree. The order is checked
      before anything is sent: a stage cannot begin before the one before it
      or after the one after it, and no date is in the future. */
+  /* The timeline is written whole from the copy on screen, so it is written
+     only over the row as read (`clients_touch` stamps updated_at): a move
+     made meanwhile is read again, never overwritten. A refusal at the row's
+     own policy reads the same way, since nothing tells the two apart. */
+  function timelineOf(c) {
+    return JSON.stringify([c.stage, c.stage_since, c.stage_log || null, c.created_at, c.stage_reason || null, c.stage_note || null]);
+  }
+  function readAgain(c, retry) {
+    db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).maybeSingle().then(function (r) {
+      return r.data ? API.withBilling(r.data).then(function () { return r; }) : r;
+    }).then(function (r) {
+      /* Only another column moved (a billing save, a rename): the timeline
+         is as it was read, so the write goes again, once. */
+      if (r.data && retry && timelineOf(r.data) === timelineOf(c)) {
+        c.updated_at = r.data.updated_at; retry(); return;
+      }
+      if (r.data) {
+        Object.assign(c, r.data);
+        var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+        if (mine && mine !== c) Object.assign(mine, r.data);
+        if (state.client && state.client.id === c.id) openClient(c);
+      }
+      msg('crmSinceMsg', 'Not saved. This changed since it was opened, and has been read again.', 'err');
+    }).catch(function () { msg('crmSinceMsg', 'Not saved. This changed since it was opened.', 'err'); });
+  }
   function saveDates(c, list, created, what) {
     var days = list.map(function (x) { return dayOf(x.at); });
     for (var i = 1; i < days.length; i++) {
@@ -1960,9 +2036,11 @@
     }
     if (days.concat([dayOf(created)]).some(function (d) { return d > today(); })) return 'A date cannot be in the future.';
     var row = { stage_log: list, stage_since: list.length ? list[list.length - 1].at : c.stage_since, created_at: created };
-    db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+    var send = function (again) {
+    db.from('clients').update(row).eq('id', c.id).eq('updated_at', c.updated_at).select('id, updated_at').then(function (r) {
       if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      if (!(r.data || []).length) { readAgain(c, again ? null : function () { send(true); }); return; }
+      c.updated_at = r.data[0].updated_at;
       c.stage_log = list; c.stage_since = row.stage_since; c.created_at = created;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) { mine.stage_log = list; mine.stage_since = row.stage_since; mine.created_at = created; }
@@ -1970,6 +2048,8 @@
       msg('crmSinceMsg', 'Saved.', 'ok');
       log('client.edited', c.name, what);
     });
+    };
+    send(false);
     return null;
   }
   /* The reason a client was paused or ended is corrected where it is read
@@ -1998,9 +2078,11 @@
           var row = { stage_log: list };
           var current = i === list.length - 1 && was.stage === c.stage;
           if (current) { row.stage_reason = v.reason; row.stage_note = note; }
-          db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+          var send = function (again) {
+          db.from('clients').update(row).eq('id', c.id).eq('updated_at', c.updated_at).select('id, updated_at').then(function (r) {
             if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
-            if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            if (!(r.data || []).length) { readAgain(c, again ? null : function () { send(true); }); return; }
+            c.updated_at = r.data[0].updated_at;
             c.stage_log = list;
             if (current) { c.stage_reason = v.reason; c.stage_note = note; }
             var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
@@ -2012,6 +2094,8 @@
               { reason: leaveWord(v.reason), note: note || '' },
               [['reason', 'Reason for ' + word], ['note', word + ' note']]));
           }).catch(function () { msg('crmSinceMsg', 'Not saved. Please try again.', 'err'); });
+          };
+          send(false);
         });
       });
     });
@@ -2053,7 +2137,7 @@
     pen.addEventListener('click', function () {
       ADspaceAsk.rename(val, pen, {
         type: 'date',
-        value: c.created_at ? String(c.created_at).slice(0, 10) : '',
+        value: c.created_at ? dayOf(c.created_at) : '',
         label: 'Client since',
         saveLabel: 'Save client since',
         /* Client since is the first stage's start, so moving it moves that
@@ -2448,6 +2532,9 @@
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
   }
   function openBilling(opener) {
+    /* The details form's answers are taken only by the Save of the sheet
+       Use details filled; a sheet left any other way forgets them. */
+    state.detUse = null;
     fillBilling(state.client);
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
@@ -3258,7 +3345,7 @@
       /* The details form's answers taken in by this Save (2026-10-14). */
       if (state.detUse) {
         var used = state.detUse; state.detUse = null;
-        db.rpc('client_details_used', { p_id: used }).then(function () { loadDetForm(); }).catch(function () {});
+        db.rpc('client_details_used', { p_id: used, p_client: state.client.id }).then(function () { loadDetForm(); }).catch(function () {});
       }
       openClient(state.client);
       msg('crmBillNote', still.length
@@ -3416,6 +3503,15 @@
   function waHandle(raw) {
     var s = String(raw || '').trim();
     return s.charAt(0) === '@' ? s.slice(1) : '';
+  }
+  /* What the field stores. Digits typed into it are a number (WhatsApp has
+     no all-digit username, and `@0123…` cannot be messaged); a name is
+     `@name`; empty follows the phone. */
+  function waIsNumber(u) { return /^\+?[\d\s\-()]+$/.test(u) && /\d/.test(u); }
+  function waStore(raw, phone) {
+    var u = waUser(raw);
+    if (!u) return phone || null;
+    return waIsNumber(u) ? u : '@' + u;
   }
   function waLink(raw, market, label) {
     var u = waHandle(raw);
@@ -3605,7 +3701,10 @@
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
     $('ctPhone').value = ct ? (ct.phone || '') : '';
-    $('ctWa').value = ct ? waHandle(ct.whatsapp) : '';
+    /* The stored number when it is not a username: a lead from the website
+       holds a number alone, and an empty field saved over it erased it. */
+    $('ctWa').value = ct ? (waHandle(ct.whatsapp) || (ct.whatsapp || '')) : '';
+    $('ctWa').dataset.was = $('ctWa').value;
     $('ctEmail').value = ct ? (ct.email || '') : '';
     $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
     $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
@@ -3622,56 +3721,65 @@
     var name = val('ctName');
     if (!name) { msg('ctMsg', 'A contact needs a name.', 'err'); $('ctName').focus(); return; }
     var phone = val('ctPhone'), waU = waUser(val('ctWa'));
-    if (waU && !waUserOk(waU)) {
+    if (waU && !waIsNumber(waU) && !waUserOk(waU)) {
       msg('ctMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
       $('ctWa').focus(); return;
     }
     var row = {
       salutation: $('ctSalutation').value || null,
       name: name, role: val('ctRole') || null, phone: phone || null,
-      whatsapp: waU ? '@' + waU : (phone || null),
+      whatsapp: waStore(val('ctWa'), phone),
       email: val('ctEmail') || null, lang: $('ctLang').value,
       is_primary: $('ctPrimary').checked
     };
+    /* Sent only where the field changed, so an edit to the name never
+       touches how the person is reached. */
+    if (editingContact && val('ctWa') === ($('ctWa').dataset.was || '').trim()) delete row.whatsapp;
+    /* A new main contact is the contact saved, then the swap in one
+       transaction (`client_contact_make_primary`): a swap that fails leaves
+       the old main contact, never a client with none. */
+    var swap = row.is_primary && state.contacts.some(function (c) {
+      return c.is_primary && !(editingContact && c.id === editingContact.id);
+    });
+    var write = Object.assign({}, row);
+    if (swap) write.is_primary = false;
     var after = function (r) {
       if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('ctMsg', 'Not saved. The database refused the request.', 'err'); return; }
-      log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
-        editingContact ? changed(editingContact, row, [['salutation', 'Salutation'], ['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
-          ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
-      var fromForm = !editingContact && state.dfContact, newId = r.data[0].id;
-      shutContact();
-      if (fromForm && !row.is_primary && mayPart('clients.billing', 'work')) dfBillTo(newId, name); else loadContacts();
+      var newId = r.data[0].id;
+      var done = function (swapped) {
+        log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
+          editingContact ? changed(editingContact, Object.assign({}, row, { is_primary: swapped ? true : Boolean(editingContact.is_primary) }), [['salutation', 'Salutation'], ['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
+            ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
+        var fromForm = !editingContact && state.dfContact;
+        shutContact();
+        if (!swapped && swap) msg('crmWorkMsg', 'Saved. The main contact was not changed: the database refused the request.', 'err');
+        if (fromForm && !row.is_primary && mayPart('clients.billing', 'work')) dfBillTo(newId, name); else loadContacts();
+      };
+      if (!swap) { done(false); return; }
+      db.rpc('client_contact_make_primary', { p_contact: newId }).then(function (q) {
+        done(Boolean(!q.error && q.data && q.data.ok));
+      }).catch(function () { done(false); });
     };
-    var go = function () {
-      if (editingContact) {
-        db.from('client_contacts').update(row).eq('id', editingContact.id).select('id').then(after);
-      } else {
-        row.client_id = state.client.id;
-        db.from('client_contacts').insert(row).select('id').then(after);
-      }
-    };
-    var othersPrimary = state.contacts.some(function (c) {
-      return c.is_primary && !(editingContact && c.id === editingContact.id);
-    });
-    if (row.is_primary && othersPrimary) clearPrimary(go); else go();
+    if (editingContact) {
+      db.from('client_contacts').update(write).eq('id', editingContact.id).select('id').then(after);
+    } else {
+      write.client_id = state.client.id;
+      db.from('client_contacts').insert(write).select('id').then(after);
+    }
   });
 
-  function clearPrimary(then) {
-    db.from('client_contacts').update({ is_primary: false })
-      .eq('client_id', state.client.id).then(then, then);
-  }
   function makePrimary(ct) {
-    clearPrimary(function () {
-      db.from('client_contacts').update({ is_primary: true }).eq('id', ct.id).select('id').then(function (r) {
-        if (r.error || !(r.data || []).length) {
-          msg('crmWorkMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
-          loadContacts(); return;
-        }
-        log('contact.primary', state.client.name + ' · ' + ct.name, '');
-        loadContacts();
-      });
-    });
+    db.rpc('client_contact_make_primary', { p_contact: ct.id }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || !d.ok) {
+        msg('crmWorkMsg', r.error && /function|schema cache/i.test(r.error.message) ? 'This needs a database update.'
+          : 'Not saved. The database refused the request.', 'err');
+        loadContacts(); return;
+      }
+      log('contact.primary', state.client.name + ' · ' + ct.name, '');
+      loadContacts();
+    }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });
   }
   function archiveContact(ct, away) {
     var patch = away ? { archived_at: new Date().toISOString(), is_primary: false }
@@ -4004,7 +4112,7 @@
       // The first call or visit is what makes a lead contacted.
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
-          if (q.error || !(q.data || []).length) return;
+          if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Logged. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
           var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
@@ -6106,7 +6214,7 @@
     // What the other sections may offer work to. They ask here rather than
     // keeping a list of their own.
     active: function (then) {
-      db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name')
+      readPages(function () { return db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name').order('id'); })
         .then(function (r) { then(r.data || []); }, function () { then([]); });
     },
     billingMissing: billingMissing,
