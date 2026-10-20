@@ -781,6 +781,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `inline(btn)` grows the field out of the control.
   - `note(after)` is a textarea; `once` removes it with its answer, and the
     handle carries `box`.
+  - `rename`'s `check(v)` refuses in place: the field stays open with what
+    was typed and the refusal under it (`.askmsg`), as a sheet refuses
+    (2026-10-20, TEAM-4).
   - There is no sheet in it.
 - `js/decide.js` records a client decision.
   - The name grows out of Approve (`.namebox`), key `adspace_reviewer`.
@@ -804,7 +807,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   controls.
 - `js/chart.js` (`ADspaceChart.draw(host, spec)`) is the only chart, in the
   page's tokens: bars (label and figure over the bar, a mark for a limit),
-  columns, a line, and a ring only for two to five parts of a whole (else
+  columns, a line (one of zeros is data, never No entries.; 2026-10-20), and a ring only for two to five parts of a whole (else
   bars), and a `meter` ring for one share of two parts (2026-10-12). Options:
   bars `inline` (label, bar and figure on one line; a row's `part` red at
   the bar's end), pie `total` (the whole in the middle) and status `tone`s
@@ -1202,8 +1205,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   helper (`settingsAt`; `app_setting` is closed to a caller). One sheet edits a group of them
   (`ADspaceAdmin.editSettings`: From, then each figure, under its
   section's heading where a key names one, a change already set from a
-  later day said under its field; only a figure moved from where the sheet
-  opened is sent): Follow-up limits (the Settings page alone), Tax and terms (the Services
+  later day said under its field with its unit as the Settings row says it
+  and Withdraw on it; each untouched figure shows the value in force on the
+  From day, and only a figure differing from it is sent, so one typed back
+  to the figure before a planned change withdraws it (2026-10-20, SET-1)):
+  Follow-up limits (the Settings page alone), Tax and terms (the Services
   bar; `ADspaceAdmin.TAX_KEYS`, eight figures in three sections), Due dates
   (My Work's ⋯: report and revision days), `team.settings`.
 - `expected_version` refuses a stale write with the current row, and the page
@@ -1649,7 +1655,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     client (kind `client.details`, opening Billing), filed under the actor
     Details form with the typed name in the detail (a public form's typed
     name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
-    (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`): Use
+    (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`),
+    one that differs from what Billing holds reading held → sent (2026-10-20, DTL-1): Use
     details fills the Billing sheet and its own Save takes them in
     (`client_details_used(p_id, p_client)`, refusing another client's form;
     opening Billing forgets an earlier Use details), picking the billing contact the client sent
@@ -2259,7 +2266,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`/supplier/?k=`, open `details_form_days`; Copy link, Preview,
   the ⋯ Reset link and Close link, each asked; `supplier_link_close`
   ends the open form now, filed, `2026-10-18-supplier-link-closed.sql`). Until its form names it a supplier reads its
-  Supplier ID, Waiting for their details.
+  Supplier ID, Waiting for their details, until its form comes back:
+  then Details received, the answers read in place under the form before
+  Use details; a supplier holding no details reads No details yet., never
+  groups of Not set (2026-10-20, SUP-1 to SUP-3).
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
   reads the Supplier ID (and the name once held) and checks as the Jotform
   form did: Company or Individual, NRIC (XXXXXX-XX-XXXX) for an individual
@@ -2294,8 +2304,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (letters keep their words). The NRIC and the bank details are sent and
   saved only at `suppliers.pay` (granted), filed by name, never by value.
 - A supplier's document is the Documents family `supplier`,
-  `documents.supplier_id`, issued from the supplier (Issue document) or the
-  Register, listed on the supplier and under Supplier Letters
+  `documents.supplier_id`, issued to an Active supplier alone, from its
+  record (Issue document) or the Register (2026-10-20, DOC-3), listed on the supplier and under Supplier Letters
   (`register_may('supplier', …)` answers the Suppliers section); a reissue
   keeps the supplier. The one offered is the Supplier Service Agreement
   (`supplier_sca`, `2026-10-18-supplier-service-agreement.sql`; the user,
@@ -2383,7 +2393,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   days where Bukku holds one (the user, 2026-10-19). Link only (`#bkLink`,
   beside Link and send for a contact Bukku holds) links it as it stands and
   sends nothing (`bukku-sync` `link`, `bukku_link_only`, filed Linked to
-  Bukku, nothing sent; `2026-10-19-bukku-as-bukku-holds-it.sql`).
+  Bukku, nothing sent; `2026-10-19-bukku-as-bukku-holds-it.sql`). What a
+  record lacks (`bukku_prepare`) is read with the group: a record that
+  cannot be sent draws no Send and says what is missing in one line
+  (2026-10-20, BKU-1).
   The link is filed by `bukku_linked` (`bukku_links`, `bukku_settings`: RLS
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.
@@ -5275,11 +5288,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   address an active colleague holds (`not_team_member`) and claims every
   invitation first, twenty a caller in 24 hours (`team_invite_claim`,
   `team_invites`, the service role's; `too_many`;
-  `2026-10-18-invitation-goes-to-a-colleague.sql`). A row with nothing it may press draws no ⋯.
+  `2026-10-18-invitation-goes-to-a-colleague.sql`); Add member invites only
+  where `team.invite` stands, else adds the colleague plainly (2026-10-20,
+  TEAM-12). A row with nothing it may press draws no ⋯.
 - A colleague and a group are written only over the row as read (`.eq('updated_at', …)`,
   `team_roles_touch`, `2026-10-18-stale-team-save-refused.sql`): one changed
   meanwhile reads "Not saved. This changed since it was opened, and has been
-  read again.", the member sheet opening again on the row as saved now.
+  read again.", the member sheet opening again on the row as saved now; the
+  group sheet stays open until its write answers, a refusal said in it with
+  every change kept (2026-10-20, TEAM-2).
 - Changing a member's email asks first, and is an admin's alone: the page
   offers it to an admin, and trigger `team_email_guard` refuses anybody else
   (`admin-only`; deleting a colleague's details empties it as before;
@@ -5610,7 +5627,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   The check and the filing are one step (`wa_send_begin`, 2026-10-19): a
   lock on the recipient, purpose and record, then `sending` while the same
   message is on its way (even with `again`), then `recent`, then the row
-  filed as Sending before Meta is asked, so two presses send once.
+  filed as Sending before Meta is asked, so two presses send once. A
+  feedback request or a plain message is Sent recently for any message of
+  the same template to the same recipient, whatever purpose it was filed
+  under (`2026-10-20-whatsapp-feedback-sent-once.sql`, WA-1).
 - Variables of the queued ones in order: reminder (first name, title,
   message), creator (first name, campaign; its link button's variable the
   creator's code, `wa_outbox.button`); a template takes the first n.
