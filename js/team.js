@@ -1065,6 +1065,7 @@
     var fail = function (t) {
       if (btn) btn.disabled = false;
       msg('grMsg', t, 'err');
+      try { $('grMsg').scrollIntoView({ block: 'nearest' }); } catch (e) {}
     };
     if (btn) btn.disabled = true;
     asRead(db.from('team_roles').update(patch).eq('slug', r.slug), r).select('slug').then(function (q) {

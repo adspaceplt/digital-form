@@ -1388,10 +1388,12 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .row.fgrid-3:has(> .fcells[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A date and its time as one cell of a two-column row, so the row keeps the
    columns of the rows above it (2026-10-20, TEAM-9). */
-.fpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; min-width: 0; }
-.fpair:has(> [hidden]) { grid-template-columns: minmax(0, 1fr); }
+.row > .fpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; min-width: 0; }
+.row > .fpair:has(> [hidden]) { grid-template-columns: minmax(0, 1fr); }
+.row > .fpair[hidden] { display: none; }
 .fpair > div { min-width: 0; display: flex; flex-direction: column; }
 .fpair > div > .input { margin-top: auto; }
+.fpair > [hidden] { display: none; }
 .row.fgrid:has(> .fpair[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A pane that narrow, or a phone, takes one field a line. */
 .is-tight .row.fgrid, .is-tight .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }

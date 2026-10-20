@@ -382,7 +382,7 @@
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
         /* A supplier holding no details yet reads one line, never three
            groups of Not set (2026-10-20, SUP-3). */
-        (!s.name && !s.kind ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
+        (!GROUPS.some(function (g) { return g[1].some(function (it) { return it[0] !== 'currency' && valueOf(s, it[0]); }); }) ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
           : GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('')) +
         (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
