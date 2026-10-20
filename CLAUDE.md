@@ -2269,14 +2269,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   supplier: Use details fills its sheet and Save (`supplier_save`) takes
   them in. A move of status (Approve, Set inactive) ends every open link of
   the supplier, filed with the move. An Active supplier whose details change
-  is sent an update link (the ⋯ Request update; `supplier_forms.purpose`
+  is sent an update link (`supplier_forms.purpose`
   `update`, `2026-10-20-supplier-update-link.sql`) or edited by hand: the
   form opens on the details held but the NRIC and the bank details, which
   it never reads and which, left blank, keep what is held; the record leads
   with Details update, each change from and to (the bank as Changed), and
   Use changes, held for a colleague at `suppliers.pay` where the bank
-  changed; an open update link waits quietly under Payment details (its ⋯
-  Copy link, Preview, Reset link, Close link). A new payee, bank or account
+  changed. An Active supplier holds one Details update form section under
+  Payment details in every state (Not sent, Sent and open until, Link
+  ended, taken in), its acts in its own head (Create link; open, the link
+  with Copy link and Preview, the ⋯ Reset link and Close link). The
+  record's ⋯ holds Edit, Set inactive or Set active, and Delete alone:
+  Issue document (its ⋯ Add existing document) heads Documents, Send email
+  heads Emails (2026-10-20, the user: six items read as too many). A new payee, bank or account
   on an Active supplier, by link or by hand, puts it back to Pending until
   approved again (`repending`), and an approval names who approved, never
   a system account.
@@ -2310,7 +2315,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   date. No bank
   statement upload (the Jotform field was optional). A document kept
   outside the portal (an agreement, an NDA) is Add existing document's Supplier Letter
-  (the record's ⋯, or the Register), naming its supplier and no client
+  (Documents' ⋯ on the record, or the Register), naming its supplier and no client
   (`register_add` / `register_update` `p_supplier`, `no-supplier`;
   `2026-10-18-supplier-entries.sql`, which filed the entries whose
   reference named a supplier's ID under it); on the record it opens its
@@ -2328,7 +2333,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Supplier emails (`2026-10-18-supplier-emails.sql`, `supplier-mail`,
   `docs/SUPPLIER-EMAIL-SETUP.md`; the user, 2026-10-18), sent by hand
   through Resend from `ADspace <noreply-supplier@sc.adspace.me>`, replies
-  to ap@adspacestudios.com: the record's ⋯ Send email (`#supMailSheet`,
+  to ap@adspacestudios.com: Send email at the head of Emails (`#supMailSheet`,
   Suppliers Work, a supplier with an email) offers Supplier approved (an
   Active supplier) and Document (a letter not void, sent as its PDF, which
   `supplier-mail` takes only where its title names the reference), the

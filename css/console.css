@@ -3190,6 +3190,7 @@ button.vs-row { cursor: pointer; }
 .dform-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
 .dform-foot > .btn { flex: 0 0 auto; }
 .dform-acts { position: relative; display: inline-flex; }
+.sup-head-acts { display: inline-flex; align-items: center; gap: 8px; }
 
 /* A draft month's acts at the review sheet's foot (TEAM-1, 2026-10-14): the
    scores end at the foot, so the acts do too. Drawn as a sheet's foot reads
