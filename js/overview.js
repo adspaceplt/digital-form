@@ -39,12 +39,9 @@
      team.performance) are asked at their grant. */
   function may(key, lv) { return Boolean(bridge.may && bridge.may(key, lv || 'view')); }
 
-  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-  var LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-              'September', 'October', 'November', 'December'];
   /* Every day, month and period is Malaysia's (js/clock.js), whatever the
-     device's clock. */
-  var CK = window.ADspaceClock;
+     device's clock, and so are the months' names. */
+  var CK = window.ADspaceClock, MON = CK.MON, LONG = CK.LONG;
   function pad2(n) { return String(n).padStart(2, '0'); }
   function today() { return CK.start(CK.today()); }
   // Whole days from a date to today; a future date is 0.
@@ -189,20 +186,25 @@
        cold, the pipeline and restricted accounts all draw from it. */
     clients: function () {
       return once('clients', function () {
-        return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, ' +
-          'restricted_platform, restricted_since, restricted_note').then(rows).then(function (l) { return l || []; });
+        return API.readPages(function () {
+          return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, ' +
+            'restricted_platform, restricted_since, restricted_note').order('id');
+        }).then(rows).then(function (l) { return l || []; });
       });
     },
     lines: function () {
       return once('lines', function () {
-        return db.from('client_services').select('client_id, qty, rate, tenure, term_adjust, term_pct, state, archived_at')
-          .then(rows).then(function (l) { return l || []; });
+        return API.readPages(function () {
+          return db.from('client_services').select('id, client_id, qty, rate, tenure, start_on, term_adjust, term_pct, state, archived_at').order('id');
+        }).then(rows).then(function (l) { return l || []; });
       });
     },
     openTasks: function () {
       return once('open', function () {
-        return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
-          .is('completed_at', null).is('cancelled_at', null).is('archived_at', null).then(rows).then(function (l) { return l || []; });
+        return API.readPages(function () {
+          return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
+            .is('completed_at', null).is('cancelled_at', null).is('archived_at', null).order('id');
+        }).then(rows).then(function (l) { return l || []; });
       });
     },
     owed: function () {
@@ -228,8 +230,12 @@
        back no longer stands). */
     sets: function () {
       return once('sets', function () {
-        return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug, owner)')
-          .eq('published', true).order('created_at', { ascending: false }).limit(200).then(rows).then(function (sets) {
+        /* Every published set, paged, never the newest few: an older set
+           still waiting on its client stays on the list (2026-10-20). */
+        return API.readPages(function () {
+          return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug, owner)')
+            .eq('published', true).order('created_at', { ascending: false }).order('id');
+        }).then(rows).then(function (sets) {
             sets = sets || [];
             if (!sets.length) return [];
             /* Counted by the database for every set in one request
@@ -292,8 +298,13 @@
   /* Worked out by the Sales view's own rules (`ADspaceSales.figures`), so the
      Dashboard and Clients · Sales never disagree. */
   var S = function () { return window.ADspaceSales; };
-  function figuresFor(r, lines) {
-    return R.clients().then(function (cl) { return S().figures(cl, lines || null, r); });
+  /* The period (`now`), the one before it (`prev`) or the last six months
+     (`six`), worked out once a visit and period, whatever draws from it. */
+  function figuresFor(which, lines) {
+    return once('fig:' + period + ':' + which + (lines ? ':lines' : ''), function () {
+      var r = which === 'prev' ? prevOf(period) : which === 'six' ? sixMonths() : rangeOf(period);
+      return R.clients().then(function (cl) { return S().figures(cl, lines || null, r); });
+    });
   }
   function sixMonths() {
     var ms = CH.months(6);
@@ -549,42 +560,37 @@
     l.innerHTML = '<span class="ovw-long">' + esc(titleOf(t)) + '</span><span class="ovw-short">' + esc(sh) + '</span>';
   }
 
+  /* A tile counting one kind of client move: the period, its change on the
+     period before and the six months' trend. */
+  function kindTile(key, title, kind) {
+    return { key: key, title: title, can: canLeads, load: function () {
+      return Promise.all([figuresFor('now'), figuresFor('prev'), figuresFor('six')]).then(function (f) {
+        return { fig: String(f[0][kind].length), sub: delta(f[0][kind].length, f[1][kind].length),
+                 spark: f[2].months.map(function (m) { return m[kind]; }) };
+      });
+    } };
+  }
   /* ---- The tiles -------------------------------------------------------------------
      A tile: its label, its figure, one line under it and, where the figure
      has a history, its trend. `load()` answers `{ fig, sub, tone, spark,
      bar }`. */
   var SALES = [
-    { key: 'leads', title: 'New leads', can: canLeads, load: function () {
-      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
-        return { fig: String(f[0].newLeads.length), sub: delta(f[0].newLeads.length, f[1].newLeads.length),
-                 spark: f[2].months.map(function (m) { return m.newLeads; }) };
-      });
-    } },
-    { key: 'won', title: 'Won', can: canLeads, load: function () {
-      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
-        return { fig: String(f[0].won.length), sub: delta(f[0].won.length, f[1].won.length),
-                 spark: f[2].months.map(function (m) { return m.won; }) };
-      });
-    } },
-    { key: 'churned', title: 'Churned', can: canLeads, load: function () {
-      return Promise.all([figuresFor(rangeOf(period)), figuresFor(prevOf(period)), figuresFor(sixMonths())]).then(function (f) {
-        return { fig: String(f[0].churned.length), sub: delta(f[0].churned.length, f[1].churned.length),
-                 spark: f[2].months.map(function (m) { return m.churned; }) };
-      });
-    } },
+    kindTile('leads', 'New leads', 'newLeads'),
+    kindTile('won', 'Won', 'won'),
+    kindTile('churned', 'Churned', 'churned'),
     /* Committed monthly value for whoever may open a client's Services, from
        the lines that part opens; Active clients for everyone else. */
     { key: 'value', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
       /* Its narrow word: the whole label is cut at a phone's tile (2026-10-15, audit OVW-1). */
       short: function () { return canValue() ? 'Committed value' : ''; }, can: canClients, load: function () {
       if (canValue()) {
-        return R.lines().then(function (lines) { return figuresFor(rangeOf(period), lines); }).then(function (f) {
+        return R.lines().then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
           var won = f.money && f.money.won, any = won && Object.keys(won).some(function (k) { return won[k]; });
           return { fig: moneyWord(f.money && f.money.active), money: true,
                    sub: any ? moneyWord(won) + ' won ' + periodName(period) : 'None won ' + periodName(period) };
         });
       }
-      return Promise.all([figuresFor(rangeOf(period)), figuresFor(sixMonths())]).then(function (f) {
+      return Promise.all([figuresFor('now'), figuresFor('six')]).then(function (f) {
         return { fig: String(f[0].activeEnd), sub: delta(f[0].activeEnd, f[0].activeStart),
                  spark: f[1].months.map(function (m) { return m.active; }) };
       });
@@ -666,7 +672,7 @@
       } },
       { key: 'active', title: 'Active clients by month', can: canClients,
         all: function () { return ['Clients', '/admin/?s=clients', 'clients']; }, load: function () {
-        return figuresFor(sixMonths()).then(function (f) {
+        return figuresFor('six').then(function (f) {
           if (!f.months.some(function (m) { return m.active; })) return { empty: 'No active clients in the last six months.' };
           var last = f.months.length - 1;
           /* The month still running is drawn lighter: its figure is so far. */
@@ -681,7 +687,7 @@
       [
       { key: 'funnel', title: 'Leads to clients', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
+        return figuresFor('now').then(function (f) {
           var words = ['New leads', 'Contacted', 'Proposal sent', 'Became clients'];
           var n = f.funnel.map(function (l) { return l.length; });
           if (!n[0]) return { empty: 'No new leads ' + periodName(period) + '.' };
@@ -693,7 +699,7 @@
         });
       } },
       { key: 'pipeline', title: 'Pipeline now', can: canLeads, all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
+        return figuresFor('now').then(function (f) {
           var p = f.pipeline;
           if (!p.lead.length && !p.contacted.length && !p.proposal.length) return { empty: 'No open leads.' };
           return { kind: 'pie', total: true, rows: [{ label: 'Lead', value: p.lead.length }, { label: 'Contacted', value: p.contacted.length },
@@ -709,7 +715,7 @@
       { key: 'moves', title: 'Sales moves', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         var val = canValue();
-        return (val ? R.lines() : Promise.resolve(null)).then(function (lines) { return figuresFor(rangeOf(period), lines); }).then(function (f) {
+        return (val ? R.lines() : Promise.resolve(null)).then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
           var pct = function (a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; };
           var decided = f.won.length + f.lost.length;
           var rowsOf = [
@@ -736,7 +742,7 @@
          Sales, 2026-10-12): counts only, never a ranking. */
       { key: 'owners', title: 'By person in charge', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
+        return figuresFor('now').then(function (f) {
           var ppl = Object.keys(f.byPerson).sort(function (a, b) { return a.localeCompare(b); }).map(function (k) { return f.byPerson[k]; })
             .filter(function (q) { return q.newLeads.length || q.won.length || q.lost.length || q.churned.length; });
           if (!ppl.length) return { empty: 'Nothing moved ' + periodName(period) + '.' };
@@ -752,7 +758,7 @@
       [
       { key: 'sources', title: 'New leads by source', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
+        return figuresFor('now').then(function (f) {
           var rowsOf = Object.keys(f.bySource).map(function (k) { return { label: k, value: f.bySource[k].length }; })
             .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
           if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
@@ -762,7 +768,7 @@
       { key: 'reasons', title: 'Why clients paused or left', can: canClients,
         all: function () { return ['Clients', '/admin/?s=clients', 'clients']; },
         load: function () {
-        return figuresFor(rangeOf(period)).then(function (f) {
+        return figuresFor('now').then(function (f) {
           var word = S().reasonWord || function (k) { return k || 'Not given'; };
           var rowsOf = Object.keys(f.reasons).map(function (k) {
             var r = f.reasons[k], pa = r.paused.length, le = r.past.length;

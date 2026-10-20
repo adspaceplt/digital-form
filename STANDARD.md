@@ -629,12 +629,12 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
     the media pass (`media-pass`, twelve hours, 2026-10-03), carried by the
     pages since 2026-10-03; required by CloudFront since 2026-10-09
     (`docs/S3-STORAGE.md` §6b done by the user).
-  - The ALP checklists as forms.
 - Access: client scope (built 2026-10-03) leaves the Activity record
   unscoped, so a group seeing its own clients only holds no Activity access
   (refused by the Team panel and the database, 2026-10-10).
-- Console search (`js/search.js`, built 2026-09-28) reads names, codes and
-  references only: not briefs, notes, comments or a document's body.
+- Console search (`js/search.js`, built 2026-09-28) reads names, codes,
+  references, task briefs and remarks and call notes; not a document's
+  body.
 - Performance rewards are worked out and confirmed in the portal; the
   payment itself is made outside it.
 - A flat, edge-to-edge register without a bounded panel would be a

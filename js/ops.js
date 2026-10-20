@@ -647,21 +647,8 @@
     });
   }
 
-  /* Every page of a read: `make` builds the same query each time (a query is
-     spent once sent), ordered to the row so no page repeats or skips one. */
-  function readPages(make) {
-    var out = [];
-    function page(from) {
-      return make().range(from, from + 999).then(function (r) {
-        if (r.error) return r;
-        var got = r.data || [];
-        out = out.concat(got);
-        if (got.length < 1000 || from >= 19000) return { data: out };
-        return page(from + 1000);
-      });
-    }
-    return page(0);
-  }
+  // Every row of a read, a thousand at a time (`ADspaceAPI.readPages`).
+  function readPages(make) { return window.ADspaceAPI.readPages(make, 20000); }
 
   /* Who is on the tasks read, and in what capacity: the live assignee rows of
      those tasks alone, in parts small enough for an address. Read for every
