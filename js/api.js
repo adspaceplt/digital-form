@@ -232,7 +232,27 @@
     return out.join(',');
   }
 
+  /* Every row of a read, a thousand at a time: PostgREST answers a thousand
+     and no more, and past that rows left the list without a word. `make`
+     builds the same query each time (a query is spent once sent), ordered
+     to the row so no page repeats or skips one; `cap` stops a runaway read. */
+  function readPages(make, cap) {
+    let out = [];
+    const last = (cap || 50000) - 1000;
+    function page(from) {
+      return make().range(from, from + 999).then((r) => {
+        if (r.error) return r;
+        const got = r.data || [];
+        out = out.concat(got);
+        if (got.length < 1000 || from >= last) return { data: out };
+        return page(from + 1000);
+      });
+    }
+    return page(0);
+  }
+
   window.ADspaceAPI = {
+    readPages,
     accessToken,
     fnRefusal,
     uploadAccept,

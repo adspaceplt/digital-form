@@ -1518,9 +1518,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceSales.figures`, `reasonWord`), read by the Dashboard from each
   client's `stage_log`, `stage_reason`, `source` and `owner`: Won is a
   lead's first move to Active (or a client keyed in Active), Lost a lead to
-  Past never Active, Churned Active to Past, Resumed Paused back to Active,
-  a Win-back Past back to Active; Committed monthly value a month of each
-  confirmed line by market, never added across currencies.
+  Past never Active, Churned Active to Past (Lost and Churned once a client
+  in a period, only where the period's last move leaves it in Past),
+  Resumed Paused back to Active, a Win-back Past back to Active; Committed
+  monthly value a month of each confirmed monthly line (a term over one
+  month, started by today) by market, never added across currencies.
 - The follow-up limits (`staleH(c)`, settings `lead_followup_hours` 48 and
   `proposal_followup_days` 21, calendar days; a VIC client's
   `vic_lead_followup_hours` 24 and `vic_proposal_followup_days` 7,
@@ -1538,7 +1540,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   client is made is said, and what was typed waits in the contact sheet on
   the new record (2026-10-19).
 - The Clients list, and every read of all clients (`bridge.active`,
-  `uniqueSlug`), is read a thousand at a time (`readPages`; 2026-10-19).
+  `uniqueSlug`, the Dashboard), is read a thousand at a time
+  (`ADspaceAPI.readPages`, the one copy; 2026-10-19).
 - A client's address outside the colleague's reach (or gone) lands on the list
   with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
@@ -3055,7 +3058,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   not load), never nothing.
 - Committed monthly value is its one money figure (the user, 2026-10-12):
   for whoever may open a client's Services (`clients.services` at View),
-  a month of each confirmed line by market, read from `client_services`
+  a month of each confirmed monthly line started by today (never a one-off
+  item) by market, read from `client_services`
   under that part's own policy; anyone else reads Active clients in that
   tile, and the lines are not read. No other value, revenue or fee.
 - Reports for last month (`sm_reports_owed(p_period)`,

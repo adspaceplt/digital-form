@@ -116,21 +116,8 @@
     return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
   }
-  /* A read of every row, a thousand at a time: PostgREST answers a thousand
-     and no more, and past that clients left the list without a word. */
-  function readPages(make) {
-    var out = [];
-    function page(from) {
-      return make().range(from, from + 999).then(function (r) {
-        if (r.error) return r;
-        var got = r.data || [];
-        out = out.concat(got);
-        if (got.length < 1000 || from >= 49000) return { data: out };
-        return page(from + 1000);
-      });
-    }
-    return page(0);
-  }
+  // Every row of a read, a thousand at a time (`ADspaceAPI.readPages`).
+  function readPages(make) { return window.ADspaceAPI.readPages(make, 50000); }
   // A clash takes a number rather than failing; the database index is the
   // final word, so a race loses the insert and not the slug.
   function uniqueSlug(name, then) {
