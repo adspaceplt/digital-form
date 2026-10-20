@@ -8660,10 +8660,12 @@ body.is-maint { overflow: hidden; }
 .cx-chips .plink { gap: 6px; }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips) { grid-column: 1 / -1; }
-/* The last plain fact before the chip facts, left alone on its row, takes
-   the row (2026-10-20, CRE-1: Shoot's time wrapped in half a phone). */
+/* On a phone the shoot (a day and its time) takes its row, and the last
+   plain fact left alone before the chip facts takes its row too
+   (2026-10-20, CRE-1: Shoot's time wrapped in half a phone). */
 @media (max-width: 640px) {
-  .cx-facts > div:not(:has(.cx-chips)):nth-child(odd):has(+ div .cx-chips) { grid-column: 1 / -1; }
+  .cx-facts > div:first-child { grid-column: 1 / -1; }
+  .cx-facts > div:not(:first-child):not(:has(.cx-chips)):nth-child(even):has(+ div .cx-chips) { grid-column: 1 / -1; }
 }
 .cx-nextup + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 /* A booking card in three parts, never run together on a phone (the user,
