@@ -364,7 +364,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - An act is offered once on a screen: a value is changed where it is read
   (its pen, its row's control), never again from a ⋯ (the user, 2026-10-09:
   Change sent date beside the Sent pen; Reassign beside Assigned to). The ⋯
-  holds only what nothing on the screen already does.
+  holds only what nothing on the screen already does. A row's one act is on
+  the row (its pen), never a ⋯ of one item (2026-10-20, SVC-1).
 - A fact is stated once on a screen. A control that changes it answers
   (`Saved.`), and puts itself back on a refusal.
 - A mark holds real artwork (`logo_url`, falling back to initials only while
@@ -415,7 +416,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     `.zone-actions`, `.qform-acts`, `.filearm-acts`.
   - On a phone the two halves are equal, Cancel on the left; with three
     actions Cancel and the secondary are the halves and the primary takes
-    the row under them, nearest the thumb.
+    the row under them, nearest the thumb: one rule for every sheet's foot
+    at 640 and under (`css/console.css`), never a sheet's own copy
+    (2026-10-20, DOC-1).
   - A count in the foot sits to the left of the pair (above it on a phone).
 - Controls in a row share a width and a height. `.row` aligns to the top, and
   `.row > .btn` to the bottom. Under a finger, at any width, two buttons or

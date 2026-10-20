@@ -1386,6 +1386,15 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .fcells > div { min-width: 0; display: flex; flex-direction: column; }
 .fcells > div > .input { margin-top: auto; }
 .row.fgrid-3:has(> .fcells[hidden]) > :first-child { grid-column: 1 / -1; }
+/* A date and its time as one cell of a two-column row, so the row keeps the
+   columns of the rows above it (2026-10-20, TEAM-9). */
+.row > .fpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; min-width: 0; }
+.row > .fpair:has(> [hidden]) { grid-template-columns: minmax(0, 1fr); }
+.row > .fpair[hidden] { display: none; }
+.fpair > div { min-width: 0; display: flex; flex-direction: column; }
+.fpair > div > .input { margin-top: auto; }
+.fpair > [hidden] { display: none; }
+.row.fgrid:has(> .fpair[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A pane that narrow, or a phone, takes one field a line. */
 .is-tight .row.fgrid, .is-tight .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }
 .is-tight .row.fgrid-3 > .span-2 { grid-column: auto; }
@@ -1466,6 +1475,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .msg { font-size: 13px; margin-top: 12px; }
 .msg.err { color: var(--err); }
 .msg.ok  { color: var(--ok); }
+.msg.mute { color: var(--ink-mute); }
+/* A value refused in place: its line under the field (js/ask.js, 2026-10-20). */
+.msg.askmsg { flex: 1 0 100%; order: 9; margin-top: 4px; }
 /* Nothing there, said as a line inside the panel the list would have filled.
    It was a 26px dashed rectangle with the words centred in it, so four empty
    sections on one record drew four large dashed boxes down the page and the
@@ -8320,7 +8332,7 @@ body.ncpage { background: var(--nc-ground); }
 .nc-cover-acts[hidden] { display: none; }
 /* A 320 phone's half holds Save contact's mark and words with room either
    side only a little closer together. */
-@media (max-width: 359px) { .nc-acts .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
+@media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
@@ -8330,7 +8342,11 @@ body.ncpage { background: var(--nc-ground); }
 .nc-pill:focus-visible, .nc-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 /* The pair under the card keeps one width on every face (the portrait card's),
    so turning the card never moves the button under the finger. */
-.nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: min(100%, 326px); }
+/* Two halves whatever the labels say: 1fr's floor is the longer label, so
+   at 320 the pair moved as the card turned (2026-10-20, CRD-1). */
+.nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; width: min(100%, 326px); }
+.nc-ctl .nc-pill { min-width: 0; }
+.nc-ctl .nc-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nc-ctl .nc-pill { height: 40px; background: var(--nc-card); }
 .nc-ctl .nc-pill[aria-pressed="true"] { background: var(--nc-ink); color: var(--nc-card); }
 @media (hover: hover) {
@@ -8644,6 +8660,13 @@ body.is-maint { overflow: hidden; }
 .cx-chips .plink { gap: 6px; }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips) { grid-column: 1 / -1; }
+/* On a phone the shoot (a day and its time) takes its row, and the last
+   plain fact left alone before the chip facts takes its row too
+   (2026-10-20, CRE-1: Shoot's time wrapped in half a phone). */
+@media (max-width: 640px) {
+  .cx-facts > div:first-child { grid-column: 1 / -1; }
+  .cx-facts > div:not(:first-child):not(:has(.cx-chips)):nth-child(even):has(+ div .cx-chips) { grid-column: 1 / -1; }
+}
 .cx-nextup + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 /* A booking card in three parts, never run together on a phone (the user,
    2026-10-09: "looks very compacted in mobile"): who and where it stands,

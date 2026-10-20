@@ -2600,8 +2600,14 @@
       var who = dfWho(a), inC = dfContactOf(a);
       box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
+        /* An answer that differs from what Billing holds reads held → sent,
+           as a supplier's update reads, so Use details is chosen knowing
+           what it replaces (2026-10-20, DTL-1). */
         DF_ROWS.filter(function (r) { return a[r[0]]; }).map(function (r) {
-          return '<div><dt>' + esc(r[1]) + '</dt><dd' + (r[0] === 'billing_address' ? ' class="is-pre"' : '') + '>' + esc(a[r[0]]) + '</dd></div>';
+          var held = String(state.client[r[0]] == null ? '' : state.client[r[0]]).trim(), sent = String(a[r[0]]).trim();
+          var same = !held || held.replace(/\s+/g, ' ').toLowerCase() === sent.replace(/\s+/g, ' ').toLowerCase();
+          return '<div' + (same ? '' : ' class="df-moved"') + '><dt>' + esc(r[1]) + '</dt><dd' + (r[0] === 'billing_address' ? ' class="is-pre"' : '') + '>' +
+            (same ? esc(sent) : esc(held) + ' → ' + esc(sent)) + '</dd></div>';
         }).join('') +
         '<div><dt>Billing contact</dt><dd>' + esc(who) + '<br>' + esc(a.contact_phone || '') + '<br>' + esc(a.contact_email || '') + '</dd></div></dl>' +
         (work && !inC && mayPart('clients.contacts', 'work') ? '<div class="dform-foot"><button class="btn btn-sm" type="button" data-df="contact">Add as contact</button></div>' : '') +
@@ -5555,14 +5561,12 @@
             row.innerHTML = '<span class="svc-name"><b>' + esc(named) + '</b><small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
               '<span class="svc-rate">' + (d.words[b.key] ? '<span class="chip">' + d.words[b.key] + '</span>' : '') + '</span>' +
               '<span class="svc-unit"></span>' +
+              /* Edit is the row's one act, its pen on the row, never a ⋯ of
+                 one item (2026-10-20, SVC-1). */
               '<span class="team-act">' + (maySvc()
-                ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-                  '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button></div>'
+                ? '<button class="kmenu-btn rcw-edit" data-a="edit" type="button" aria-label="Edit ' + esc(named) + '">' + PEN + '</button>'
                 : '') + '</span>';
-            if (maySvc()) {
-              wireMenu(row);
-              row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
-            }
+            if (maySvc()) row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
             table.appendChild(row);
           });
           return table;

@@ -542,10 +542,12 @@
       }).join('') + '</optgroup>';
     }).join('');
   }
-  function fillSuppliers() {
+  /* Only an Active supplier is issued a document (2026-10-20, DOC-3); a
+     reissue keeps the supplier its document names (`keep`). */
+  function fillSuppliers(keep) {
     var sel = $('docSupplier');
     if (!sel) return;
-    sel.innerHTML = '<option value="">Choose a supplier</option>' + state.suppliers.filter(function (x) { return x.status !== 'inactive'; })
+    sel.innerHTML = '<option value="">Choose a supplier</option>' + state.suppliers.filter(function (x) { return x.status === 'active' || (keep && x.id === keep); })
       .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name ? F.named(x.code, x.name) : x.code) + '</option>'; }).join('');
   }
   function fillMembers() {
@@ -750,7 +752,8 @@
     $('docScaId').value = sp ? (sp.brn || sp.nric || '') : '';
     $('docScaAddr').value = sp ? (sp.address || '') : '';
     $('docScaContact').value = sp ? (sp.contact_name || '') : '';
-    $('docScaStart').value = '';
+    /* The agreement starts on its date until another is chosen (2026-10-20, DOC-2). */
+    $('docScaStart').value = $('docDate').value || today();
     SCA_FIELDS.forEach(function (f) { $(f[0]).value = d[f[1]] || ''; });
     $('docScaNotes').value = d.notes || '';
     sca.rows = [{}];
@@ -840,6 +843,17 @@
     scaPaint();
     var sel = $('docSca' + (sca.rows.length - 1) + 'c'); if (sel) sel.focus();
   });
+  /* The Date moved carries the start with it while the start is still the
+     Date it was seeded from. */
+  var docDay = '';
+  if ($('docDate')) {
+    $('docDate').addEventListener('focus', function () { docDay = $('docDate').value; });
+    $('docDate').addEventListener('change', function () {
+      var st = $('docScaStart'), v = $('docDate').value;
+      if (st && v && (!st.value || st.value === docDay)) { st.value = v; st.dispatchEvent(new Event('change')); }
+      docDay = v;
+    });
+  }
   if ($('docScaStart')) $('docScaStart').addEventListener('change', function () {
     /* An account with no start yet takes the agreement's. */
     scaRead();
@@ -890,7 +904,7 @@
     var go = function () {
       var allowed = fillKinds();
       if (!allowed.length) { say('You do not have permission to issue a document.', 'err'); return; }
-      fillClients(); fillMembers(); fillSuppliers();
+      fillClients(); fillMembers(); fillSuppliers(re && re.supplier_id);
       if (issuing.client) $('docClient').value = issuing.client.id;
       if (issuing.supplier) $('docSupplier').value = issuing.supplier.id;
       if (issuing.member) $('docMember').value = issuing.member.id;

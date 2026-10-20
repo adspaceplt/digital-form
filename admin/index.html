@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261020b">
-<link rel="stylesheet" href="/css/console.css?v=20261020b">
+<link rel="stylesheet" href="/css/portal.css?v=20261020c">
+<link rel="stylesheet" href="/css/console.css?v=20261020c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -66,8 +66,8 @@
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/acts.js?v=20261018zt"></script>
 <script src="/js/grow.js?v=20261008"></script>
-<script src="/js/ask.js?v=20261017"></script>
-<script src="/js/confirm.js?v=20261015g"></script>
+<script src="/js/ask.js?v=20261020c"></script>
+<script src="/js/confirm.js?v=20261020c"></script>
 <script src="/js/sheet.js?v=20261011a"></script>
 <script src="/js/refresh.js?v=20261010zi"></script>
 <script src="/js/form.js?v=20261019"></script>
@@ -77,7 +77,7 @@
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261014b"></script>
 <script src="/js/records.js?v=20261012a"></script>
-<script src="/js/chart.js?v=20261012l"></script>
+<script src="/js/chart.js?v=20261020c"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261020a"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
@@ -3500,10 +3500,10 @@
               <!-- The last day their access runs, and the time on it (empty
                    for the day's end); empty for no end. Nobody sets their own
                    (the database refuses it), and then Group takes the row. -->
-              <div class="row fgrid-3">
+              <div class="row fgrid">
                 <div><label class="field-label" for="tmRole">Group</label>
                   <select class="select" id="tmRole" aria-required="true"></select></div>
-                <div class="fcells" id="tmUntilRow">
+                <div class="fpair" id="tmUntilRow">
                   <div><label class="field-label" for="tmUntil">Access until</label>
                     <input class="input" id="tmUntil" type="date"></div>
                   <!-- A time means something only on a day, so it arrives with one
@@ -3519,17 +3519,19 @@
                  standard from this row rather than keeping its own copy. -->
             <section class="fsec">
               <h4 class="fsec-h">Employment</h4>
+              <!-- The department's segment takes its own row, so no option is
+                   cut on a phone (2026-10-20, TEAM-9). -->
               <div class="row fgrid">
-                <div><label class="field-label" for="tmDept">Department</label>
+                <div class="span-all"><label class="field-label" for="tmDept">Department</label>
                   <!-- The options are ADspaceWords.dept, filled by js/team.js. -->
                   <select class="select" id="tmDept" data-seg>
                     <option value="">Not set</option>
                   </select></div>
-                <div><label class="field-label" for="tmDesig">Position</label>
-                  <input class="input" id="tmDesig" placeholder="Production Executive"></div>
               </div>
               <div class="row fgrid">
-                <div class="span-all"><label class="field-label" for="tmRoleStd">Role standard</label>
+                <div><label class="field-label" for="tmDesig">Position</label>
+                  <input class="input" id="tmDesig" placeholder="Production Executive"></div>
+                <div><label class="field-label" for="tmRoleStd">Role standard</label>
                   <select class="select" id="tmRoleStd">
                     <option value="">Not set</option>
                   </select></div>
@@ -5413,7 +5415,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div id="supEdBrnWrap"><label class="field-label" for="supEdBrn">12-digit SSM BRN</label>
             <input class="input" id="supEdBrn" inputmode="numeric" maxlength="14"></div>
           <div id="supEdNricWrap"><label class="field-label" for="supEdNric">NRIC</label>
-            <input class="input" id="supEdNric" inputmode="numeric" maxlength="14" aria-required="true" placeholder="000814-01-2023" data-nodraft></div>
+            <input class="input" id="supEdNric" inputmode="numeric" maxlength="14" aria-required="true" placeholder="XXXXXX-XX-XXXX" data-nodraft></div>
           <div id="supEdTinWrap"><label class="field-label" for="supEdTin">TIN</label>
             <input class="input" id="supEdTin" aria-required="true" autocapitalize="characters"></div>
           <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST registration no.</label>
@@ -5656,32 +5658,32 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261020b"></script>
+<script src="/js/admin.js?v=20261020c"></script>
 <script src="/js/documents.js?v=20261019m"></script>
 <script src="/js/letters.js?v=20261018zy"></script>
 <script src="/js/smreport.js?v=20261019m"></script>
 <script src="/js/reports.js?v=20261020b"></script>
-<script src="/js/register.js?v=20261018zz4"></script>
-<script src="/js/suppliers.js?v=20261020a"></script>
-<script src="/js/bukku.js?v=20261019a"></script>
+<script src="/js/register.js?v=20261020c"></script>
+<script src="/js/suppliers.js?v=20261020c"></script>
+<script src="/js/bukku.js?v=20261020c"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261019d"></script>
 <script src="/js/quotepdf.js?v=20261018zs"></script>
 <script src="/js/checklists.js?v=20261020b"></script>
-<script src="/js/crm.js?v=20261020b"></script>
+<script src="/js/crm.js?v=20261020c"></script>
 <script src="/js/sales.js?v=20261020a"></script>
-<script src="/js/team.js?v=20261019m"></script>
+<script src="/js/team.js?v=20261020c"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261012a"></script>
 <script src="/js/scripts.js?v=20261015zm"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261020b"></script>
-<script src="/js/ops.js?v=20261020a"></script>
-<script src="/js/perf.js?v=20261018zz3"></script>
+<script src="/js/ops.js?v=20261020c"></script>
+<script src="/js/perf.js?v=20261020c"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261015zg"></script>
 <script src="/js/overview.js?v=20261020a"></script>
-<script src="/js/settings.js?v=20261018zz6"></script>
+<script src="/js/settings.js?v=20261020c"></script>
 </body>
 </html>

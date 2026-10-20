@@ -612,6 +612,9 @@
       if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish), 'calendar']);
       if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due), 'clock']);
     }
+    /* A fact with its chips (the place, the contact) takes its own row, so
+       the plain facts come first and pair up (2026-10-20, CRE-1). */
+    facts = facts.filter(function (f) { return !f[3]; }).concat(facts.filter(function (f) { return f[3]; }));
     var icon = function (n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; };
     /* What is owed leads the card: the hand-in, its countdown and the
        request it answers, above the facts and the brief. */

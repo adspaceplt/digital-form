@@ -30,7 +30,7 @@
   function mayWork(kind) { return kind === 'client' ? may('clients.billing', 'work') : may('suppliers', 'work'); }
 
   var SAID = {
-    denied: 'This needs Clients: Billing (a client) or Suppliers (a supplier) at Manage.',
+    denied: 'This needs Clients: Billing (a client) or Suppliers (a supplier) at Work.',
     'not-found': 'That record is no longer there.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
@@ -77,9 +77,16 @@
       ? '<button class="btn btn-sm" type="button" data-bk="send">' + SEND + 'Send to Bukku</button>' : '';
     var head = '<div class="readgroup-head"><h4 class="fsec-h">Bukku</h4>' + act + '</div>';
     host.innerHTML = head + '<p class="muted">Loading.</p>';
-    rpc('bukku_link_get', { p_kind: kind, p_id: id }).then(function (d) {
+    /* What the record lacks is read up front: a record that cannot be sent
+       draws no Send, and says what is missing in one line (2026-10-20,
+       BKU-1). */
+    Promise.all([rpc('bukku_link_get', { p_kind: kind, p_id: id }),
+      act ? rpc('bukku_prepare', { p_kind: kind, p_id: id }) : Promise.resolve({})]).then(function (both) {
+      var d = both[0], pre = both[1] || {};
       if (d.error === 'denied') { host.hidden = true; return; }
       host.hidden = false;
+      var gap = act && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
+      if (gap) head = '<div class="readgroup-head"><h4 class="fsec-h">Bukku</h4></div>';
       if (d.error) { host.innerHTML = head + '<p class="msg err">' + esc(said(d)) + '</p>'; wire(); return; }
       var rows = d.contact_id
         ? [['Contact', esc(d.code || String(d.contact_id))],
@@ -88,7 +95,8 @@
         : [['Contact', 'Not sent']];
       host.innerHTML = head + '<dl class="ovfacts">' + rows.map(function (r) {
         return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>';
-      }).join('') + '</dl>' + (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '');
+      }).join('') + '</dl>' + (gap ? '<p class="msg warn bk-gap">' + esc(gap) + '</p>' : '') +
+        (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '');
       wire();
     });
     function wire() {

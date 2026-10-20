@@ -42,8 +42,8 @@
     'denied': 'You do not have permission to do this.', 'not-found': 'That supplier is no longer there.',
     'bad-code': 'A Supplier ID is 2 to 12 letters or digits, as AS001.', 'code-taken': 'Another supplier holds that Supplier ID.',
     'bad-name': 'Enter the name, 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
-    'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC, as 000814-01-2023.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
-    'bad-sst_no': 'Enter the SST no. as J31-2601-32100001.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
+    'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
+    'bad-sst_no': 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
     'bad-mobile': 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email.',
     'bad-finance_email': 'Enter a valid finance email.', 'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
@@ -121,9 +121,9 @@
     if (!state.find) return true;
     return [s.code, s.name || '', s.contact_name, s.email].join(' ').toLowerCase().indexOf(state.find) > -1;
   }
-  function chip(s) {
+  function chip(s, got) {
     var st = STATE[s.status] || STATE.pending;
-    return '<span class="chip-state ' + st[1] + '">' + esc(s.waiting ? 'Details received' : st[0]) + '</span>';
+    return '<span class="chip-state ' + st[1] + '">' + esc(s.waiting || got ? 'Details received' : st[0]) + '</span>';
   }
   function paint() {
     var box = $('supList'), rec = $('supRec');
@@ -157,7 +157,7 @@
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'svc-row sup-row' + (s.status === 'inactive' ? ' is-off' : '');
-    b.innerHTML = '<span class="svc-name"><b>' + esc(nameOf(s)) + '</b>' + (s.name ? '<small class="sup-code">' + esc(s.code) + '</small>' : '<small>Waiting for their details</small>') + '</span>' +
+    b.innerHTML = '<span class="svc-name"><b>' + esc(nameOf(s)) + '</b>' + (s.name ? '<small class="sup-code">' + esc(s.code) + '</small>' : s.waiting ? '' : '<small>Waiting for their details</small>') + '</span>' +
       '<span class="sup-who">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-term">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-state">' + chip(s) + '</span>' +
@@ -265,6 +265,22 @@
     if (!state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Changed</dd></div>');
     return rows.length ? rows.join('') : '<div><dt>Changes</dt><dd>None</dd></div>';
   }
+  /* What a details form brought back, read in place before Use details
+     (2026-10-20, SUP-2): each answer under its label, the bank details by
+     name alone without Supplier bank details. */
+  function answersOf(f) {
+    var a = f.answers || {}, rows = [];
+    if (a.name) rows.push('<div><dt>Name</dt><dd>' + esc(a.name) + '</dd></div>');
+    Object.keys(FIELD).forEach(function (k) {
+      if (k === 'nric' && a.kind !== 'individual') return;
+      var v = valueOf(a, k);
+      if (!v) return;
+      if (FIELD[k][2] && !state.pay) return;
+      rows.push('<div><dt>' + esc(FIELD[k][1]) + '</dt><dd' + (k === 'address' || k === 'bank_address' ? ' class="is-pre"' : '') + '>' + esc(v) + '</dd></div>');
+    });
+    if (!state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Given</dd></div>');
+    return rows.join('');
+  }
   function formBlock() {
     var f = state.form, work = may('suppliers', 'work'), s = state.rec;
     var update = f && f.purpose === 'update';
@@ -273,7 +289,7 @@
       return formHead(update ? 'Details update' : 'Details form', work && !held
           ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in</dd></div>' +
-        (update ? changesOf(f) : '') + '</dl>' +
+        (update ? changesOf(f) : answersOf(f)) + '</dl>' +
         (held && work ? '<p class="msg warn">The bank details changed. A colleague with Supplier bank details takes this in.</p>' : '');
     }
     /* An open link reads the same whether it asks for the details first or
@@ -342,6 +358,9 @@
   function paintRec() {
     var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
+    /* A form come back is never read as still waited for (2026-10-20,
+       SUP-1): the chip says Details received, the meta its day. */
+    var got = !!(state.form && state.form.state === 'submitted' && state.form.submitted_at);
     var fb = formBlock(), quiet = s.status !== 'pending' && !(state.form && state.form.state === 'submitted');
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
@@ -350,9 +369,9 @@
     rec.innerHTML =
       '<div class="sup-back"><button class="btn btn-quiet btn-sm" type="button" data-s="back">' + BACK + 'Suppliers</button></div>' +
       '<div class="panel sup-rec">' +
-        '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : 'Waiting for their details') +
+        '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
           (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</span></div>' +
-          '<div class="sup-ctl">' + chip(s) +
+          '<div class="sup-ctl">' + chip(s, got && s.status === 'pending') +
             (s.status === 'pending' && work && complete ? '<button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button>' : '') +
             (menu ? '<span class="team-act"><button class="kmenu-btn" type="button" data-s="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" data-s-menu="rec" hidden>' + menu + '</div></span>' : '') +
@@ -361,14 +380,18 @@
         '<div class="readgroups">' +
         (fb && !quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
-        GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('') +
+        /* A supplier holding no details yet reads one line, never three
+           groups of Not set (2026-10-20, SUP-3). */
+        (!GROUPS.some(function (g) { return g[1].some(function (it) { return it[0] !== 'currency' && valueOf(s, it[0]); }); }) ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
+          : GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('')) +
         (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
           /* Each act stands in the section it fills (2026-10-20, the user: six
              items in the record's ⋯): Issue document, the ⋯ beside it Add
              existing document; Send email in Emails. */
-          (work ? '<span class="sup-head-acts"><button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' +
+          /* Only an Active supplier is issued a document (2026-10-20, DOC-3). */
+          (work ? '<span class="sup-head-acts">' + (s.status === 'active' ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') +
             formMenu('<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>') + '</span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
         '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
@@ -738,7 +761,8 @@
     /* Five fields in two columns leave one alone: the number takes its row. */
     $('supEdPhoneWrap').classList.toggle('span-all', !$('supEdNricWrap').hidden);
     $('supEdBrn').setAttribute('aria-required', String(!ind));
-    $('supEdBrn').placeholder = ind ? 'Optional' : '202304002162';
+    /* Hints, never a real code (2026-10-20, SPF-1). */
+    $('supEdBrn').placeholder = ind ? 'Optional' : '12 digits';
   }
   function openEdit(form) {
     var s = state.rec, a = (form && form.answers) || {};

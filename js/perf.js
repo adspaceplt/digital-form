@@ -822,6 +822,13 @@
       if (!r.id || r.status === 'draft') {
         title = r.id ? 'Draft' : 'Not started';
         line = name + ' sees nothing of this month, issues included, until it is shared.';
+        /* Said as the month opens, not after six scores are typed: Share
+           needs an Employee ID (2026-10-20, TEAM-5). */
+        if (!(r.member && r.member.staff_code)) {
+          line += ' It cannot be shared until ' + name + ' has an Employee ID.';
+          if (may('team', 'view')) acts = '<button class="btn btn-sm" id="pvSetId" type="button">Open record' +
+            '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>';
+        }
         if (canWork()) {
           /* Whether the release tells them: ticked unless management says
              otherwise, on every month (2026-09-27). */
@@ -1271,6 +1278,13 @@
   function wireSheet(r) {
     var on = function (id, fn) { var el = $(id); if (el) el.addEventListener('click', function () { fn(el); }); };
     on('pvSave', function (b) { busy(b, true); save(); });
+    /* The colleague's own record, where the Employee ID is set. */
+    on('pvSetId', function () {
+      var id = r.team_member_id;
+      window.ADspaceSheet.close();
+      history.pushState(null, '', '/admin/?s=team&member=' + encodeURIComponent(id));
+      if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
+    });
     on('pvRelease', function (b) {
       var tell = !$('pvNotify') || $('pvNotify').checked;   // read before the save repaints anything
       busy(b, true);
@@ -3350,11 +3364,13 @@
         REFL.map(function (q) {
           return '<div class="refl-line"><span class="refl-q">' + esc(q[1]) + '</span>' +
             (f[q[0]] ? '<span class="refl-a">' + esc(f[q[0]]) + '</span>' : '<span class="perf-dash">—</span>') + '</div>';
-        }).join('') + '</div>' +
+        }).join('') +
+        /* Inside the padded section, never on the card's bare edge
+           (2026-10-20, MINE-1). */
         (f.open ? '<div class="row acts refl-acts">' +
           (shared ? '<button class="btn" data-a="unshare" type="button">Stop sharing</button>'
                   : '<button class="btn btn-go" data-a="share" type="button">Share with management</button>') + '</div>' : '') +
-      '</div>';
+      '</div></div>';
     var on = function (a, f2) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { f2(b); }); };
     on('edit', function (b) { openRefl(b); });
     on('share', function (b) { shareRefl(true, b); });

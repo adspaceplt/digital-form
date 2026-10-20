@@ -306,7 +306,9 @@
     if (spec.kind === 'bars' || spec.kind === 'pie' || spec.kind === 'meter') {
       return !(spec.rows || []).some(function (r) { return num(r.value) > 0 || num(r.mark) > 0; });
     }
-    return !(spec.cats || []).some(function (c) { return c.values.some(function (v) { return v != null && num(v) > 0; }); });
+    /* A line or columns of zeros is a figure, not an empty chart: on-time
+       at 0% is data (2026-10-20, OVW-1). */
+    return !(spec.cats || []).some(function (c) { return c.values.some(function (v) { return v != null && v !== '' && !isNaN(Number(v)); }); });
   }
 
   /* What the chart says, as the image's name: the title and each figure, so
