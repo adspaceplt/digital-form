@@ -7155,9 +7155,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A chip on a name stands beside it, never inside the clipped name: the name
-   gives way first, the chip keeps its words (2026-10-20, RPT-1). */
-.rp-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* A chip on a name stands beside it, never inside the clipped name; where
+   both do not fit it takes the line under the name, whole (2026-10-20, RPT-1). */
+.rp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
 .rp-line > b { min-width: 0; }
 .rp-line > .chip { flex: none; }
 .sheet-foot > .rp-adfoot { order: 1; margin-right: auto; display: flex; align-items: center; }

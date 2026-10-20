@@ -1661,7 +1661,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     policy, no grant.
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
     `#crmBrandSheet`. The Active gate opens the sheet on the first missing
-    field.
+    field, and its Save, billing then complete, carries on into the move
+    (the Client ID asked, the head brought back into view); Cancel forgets
+    it (2026-10-20, CLI-6).
   - The billing columns (registered name, both registration numbers, TIN,
     SST no., billing contact, finance email, billing address) are withheld
     from the table by column grants. They are read only through
@@ -1679,7 +1681,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Client Onboarding and Pre-Advertising Checklists, ver. r1.1-26, once per
   client): one `client_checklists` row a client and kind (RLS on, no
   policy, no grant), the template copied in when it is first written
-  (`checklist_template`). The pane lists both, `list=` opening one, read
+  (`checklist_template`). The pane lists both, `list=` opening one (its
+  Back line and head brought under the bar, never below the fold), read
   first (the user, 2026-10-15: "the checklist is coming back in the wrong
   design"): a head card (title, version, state, Write with AI, Preview PDF
   (a tab opened at the press; PDF on a tight pane), a ⋯ holding Download,
@@ -2468,7 +2471,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Changes requested reading Changes (`.tab-short`).
 - The caption is edited where it is read: Edit text beside Copy text at
   the heading's right (`.copyacts`, two small tonal buttons with their
-  glyphs; `.copy-pen` hidden once approved) turns each caption into a field in
+  glyphs; `.copy-pen` hidden the moment a post is approved, shown in every
+  other state, never only after a reload) turns each caption into a field in
   place and opens Request changes under it for a note and the name. While
   a request is open Approve and Request changes step away
   (`.approve.is-requesting`), so Cancel and Send request are the only acts;
@@ -2542,8 +2546,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     last, a row a set (name, the state at the right, the post count read for
     every set in one request) the page's width. A new set takes this month
     (MYT); the set's ⋯ Content month changes it (last month to six ahead, or
-    Ad hoc; filed `set.month` from and to), and the set's head names it
-    before whether the client sees it. Engagements files a set by its month,
+    Ad hoc; filed `set.month` from and to), and the set's head names its
+    client, then it, before whether the client sees it. Engagements files a set by its month,
     an Ad hoc one by the day it was made. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
@@ -2566,7 +2570,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     read answered for a set already left is thrown away
     (`tests/crswitch.js`).
   - Publish (blue) / Unpublish (tonal); an empty set draws no Publish and
-    Add assets is its blue (2026-10-15). A client row and a set row count
+    Add assets is its blue (2026-10-15). Unpublish asks nothing and draws
+    Undo where it happened (Unpublished. The client no longer sees this
+    set.), which publishes it again (2026-10-20, REV-1). A client row and a set row count
     the posts whose latest decision is Changes requested (red dot), counted
     by `review_set_counts` in one request, never a read of every post. Add to set is Add assets' sheet foot.
   - Enable client (`#crEnable`, the bar's one action, Content Review
@@ -2705,7 +2711,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`planFacts`, Edit in Schedule) and keeps only the notes. The creator's
   page shows location and contact. The Schedule is the Creators tab's
   register (`.bookreg.sched-reg`): Upcoming then Past, a folded row a booking
-  (name, shoot date and time, publish date; Not set where none), the plan's
+  (name, shoot date and time, publish date; Not set where none; where the
+  head is hidden each date leads with its head's word, Shoot or Delivery,
+  Publish), the plan's
   fields opening under the row on the name's x; a booking stays open through
   a save, and a lone booking opens by itself. On a phone Draft due and
   Publish share a line.
@@ -2756,6 +2764,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The campaign record:
   - Its panes (`pane=`) are Overview, Creators, Schedule, Selection,
     Finance, Activity.
+  - A draft with no creator draws no Publish and Add creators is its blue,
+    the empty list offering no second one (2026-10-20, CMP-1).
+  - Below 1100 Details, Key dates and Timing follow the pane (`.rail-after`);
+    Selection stays before the tabs (CMP-2).
   - Selection is a view over the bookings. It never writes.
   - `.camp-next` is derived on every repaint.
 - Next shoot means the earliest date from today; if none, the row reads Last
@@ -2805,7 +2817,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   and `campaign_confirm_creators` refuse `over-slots` (with `slots` and
   `booked`) where those booked (`campaign_booked`) and those confirmed now
   pass the slots, and trigger `campaigns_slots_floor` refuses slots below
-  the bookings (`slots-booked`), whoever writes them.
+  the bookings (`slots-booked`), whoever writes them. The selection page
+  reads `over-slots` in its own words with how many may still be chosen
+  (`overSlots`), shuts the sheet and rests Confirm while the picks and the
+  bookings pass the slots (2026-10-20, SEL-1).
 - A client's confirmation is the record of what was accepted
   (`2026-10-18-confirmations-kept.sql`): `campaign_confirmations` is
   written by `confirm_selection_with`, `confirm_selection` and
@@ -4485,7 +4500,8 @@ Each line is a rule that broke once. Its reason is in the archive.
       Manage once confirmed) returns it to draft with the changed rows as
       its note. Meta not answering (not connected, token, not shared, busy,
       failed) reads Not checked: Meta unavailable and holds it; an admin
-      alone continues without it (Continue without Meta, a reason, filed),
+      alone continues without it (Continue without Meta, a reason, filed;
+      the part's mark then the amber dot, never the done tick),
       at Publish since confirmation. Reports Select's Publish does
       not read Meta: an Advertising Report it holds is refused by name.
       While the period runs (today in Malaysia on or before its last day;
@@ -4618,6 +4634,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the notes do; the check flags those words (`AVOID`).
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
+  - The Ads and Posts step heads keep the import and Add on show; Select,
+    Import from Meta and Pictures from Meta sit behind one ⋯ (`secMore`),
+    each item drawn where its button was, the ⋯ leaving once none can be
+    pressed (2026-10-20, RPT-2). In a narrow pane a row's figures carry
+    their unit (`rp-unit`: 12 results, / result, views).
   - The age split must total 100% (±0.5).
   - Step 1's Results by objective show, until a figure is typed, each
     objective's results as the PDF adds them from its ads (the field's
@@ -4668,8 +4689,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   answers `meta-off` for ads and posts, `sm_report_audit_needed` answers
   false so Submit and Publish never wait on Meta, and every manual import
   (spreadsheet, Ads Manager export) is untouched. The stand-in seeds it on.
-- Import from Meta (`meta-import`, `docs/META-SETUP.md`, 2026-10-08): beside
-  Import from Ads Manager (Advertising) and Import from spreadsheet (Accounts),
+- Import from Meta (`meta-import`, `docs/META-SETUP.md`, 2026-10-08): in the
+  step head's ⋯ beside Import from Ads Manager (Advertising) and Import from
+  spreadsheet (Accounts),
   drawn only on a draft at Work whose client (or brand) has a link
   (`meta_links_list`); with two ad accounts, or a Page and Instagram, it asks
   which (`ADspaceConfirm`, choices). The function reads Meta with the system

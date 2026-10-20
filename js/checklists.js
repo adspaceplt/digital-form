@@ -113,7 +113,7 @@
       V = { host: host, ctx: ctx, kind: kind, data: d };
       setAddr(kind);
       paint();
-      bringIntoView(host.querySelector('.ck-head'));
+      bringIntoView(host.firstElementChild || host);
     }).catch(function (e) { host.innerHTML = '<p class="msg err">' + esc(said(e)) + '</p>'; });
   }
 

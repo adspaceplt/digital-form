@@ -2500,8 +2500,9 @@
     box.innerHTML = '';
     box.className = '';
     if (!state.options.length) {
-      if (mayWork()) UI.emptyLine(box, 'No creators.', 'Add creators', function () { $('showAddOption').click(); });
-      else UI.emptyLine(box, 'No creators.');
+      /* The head's Add creators is the way out, blue while none is in
+         (2026-10-20, CMP-1): the line never offers it twice. */
+      UI.emptyLine(box, 'No creators.');
     } else {
       /* One surface with a header over it, not a stack of bordered cards: ten
          bookings were ten floating panels with 12px of page ground between

@@ -444,6 +444,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A field inside a growing box draws its focus ring inside itself
   (`.cmdbar-find .input:focus`).
 - A value only read is not a field.
+- Equal halves grow from a half's basis (`flex: 1 1 50%`), never from 0: a
+  basis of 0 leaves each its own padding on top of its share (Request
+  changes stood 34px wider than Approve; 2026-10-20).
 - A destructive item is red on the item itself.
 - Delete has one place and one question (the user, 2026-10-10): the last
   item of the thing's own ⋯, red, never inside an Edit form and never a
@@ -531,6 +534,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   the screen less the bar's room, and pads the safe area.
 - A line of parts (`client · 10 creators · RM 8,640.00`) wraps between its
   parts, never inside one: a count and an amount hold their spaces.
+- A chip on a name that clips stands beside the name, never inside its
+  clipped box, and takes the line under it where both do not fit (an Ad
+  error chip inside the name was cut away on a phone; 2026-10-20).
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
   the header hides (`Over by | 4 days`).
 - The phone command bar is one row plus the view segment.
