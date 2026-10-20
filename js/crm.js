@@ -2321,6 +2321,9 @@
         setUrl();
         if (mayPart('clients.billing', 'work')) {
           openBilling(this);
+          /* Active was asked for: the Billing sheet's Save carries on into
+             the move once nothing is missing (2026-10-20, CLI-6). */
+          state.toActive = c.id;
           paintBillAsk();
           msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
           var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
@@ -2522,6 +2525,7 @@
     /* The details form's answers are taken only by the Save of the sheet
        Use details filled; a sheet left any other way forgets them. */
     state.detUse = null;
+    state.toActive = null;
     fillBilling(state.client);
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
@@ -2531,6 +2535,7 @@
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
   $('crmBillCancel').addEventListener('click', function () {
     state.detUse = null;
+    state.toActive = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
   });
   sheetClose('crmBillClose', 'crmBillCancel');
@@ -3334,11 +3339,24 @@
         var used = state.detUse; state.detUse = null;
         db.rpc('client_details_used', { p_id: used, p_client: state.client.id }).then(function () { loadDetForm(); }).catch(function () {});
       }
+      var goActive = state.toActive === state.client.id && !still.length;
+      state.toActive = null;
       openClient(state.client);
       msg('crmBillNote', still.length
         ? 'Saved. Required before Active: ' + still.join(', ') + '.'
         : 'Saved.',
         still.length ? 'warn' : 'ok');
+      /* Active was asked for and billing is now complete: the move goes on
+         the way the stage select takes it, the head brought back into view
+         (2026-10-20, CLI-6). */
+      if (goActive && (state.client.stage || 'lead') !== 'active') {
+        var c = state.client;
+        var head = document.querySelector('#sectionClients .rec-id');
+        if (head && head.scrollIntoView) head.scrollIntoView({ block: 'nearest' });
+        if (!String(c.client_code || '').trim()) {
+          askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true }); });
+        } else moveStage(c, 'active', null);
+      }
     });
   });
 

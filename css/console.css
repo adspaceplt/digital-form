@@ -88,7 +88,7 @@
 .rec-id-set .rec-name .rec-pen { vertical-align: middle; margin-left: 4px; }
 .rec-id-set .rec-name:has(> .askfield) .rec-pen { margin-left: 0; }
 .rec-month .part { white-space: nowrap; }
-.zone-head { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 16px; }
+.zone-head { display: flex; gap: 11px; align-items: center; margin-bottom: 16px; }
 /* Where things come in reads as an input surface */
 .zone-in { background: var(--card); border-color: var(--card-line); }
 /* Work in progress sits on the inset ground (2026-10-07: no amber box). */
@@ -1805,11 +1805,11 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) 104px 72px 104px var(--ctl-h); }
 .rp-ad-table.is-picking .rp-ad-row.crm-head > :nth-child(n+4):nth-child(-n+6) { text-align: right; }
 .rp-ad-table.is-picking .rp-ad-row.crm-head > :nth-child(3) { text-align: left; }
-.is-narrow .rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) 96px; grid-template-areas: "pk th name spend" "pk th res cpr"; }
+.is-narrow .rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) minmax(96px, max-content); grid-template-areas: "pk th name spend" "pk th res cpr"; }
 .is-narrow .rp-ad-table.is-picking .rp-ad-row > .rp-pick { grid-area: pk; }
 .is-narrow .rp-ad-table.is-picking .rp-ad-row > :last-child:not(.rp-pick) { display: none; }
 .rp-post-table.is-picking .rp-post-row { grid-template-columns: 24px 34px minmax(0, 1fr) 104px 84px 84px var(--ctl-h); }
-.is-narrow .rp-post-table.is-picking .rp-post-row { grid-template-columns: 24px 34px minmax(0, 1fr) 72px; grid-template-areas: "pk th name n1" "pk th date n2"; }
+.is-narrow .rp-post-table.is-picking .rp-post-row { grid-template-columns: 24px 34px minmax(0, 1fr) minmax(72px, max-content); grid-template-areas: "pk th name n1" "pk th date n2"; }
 .is-narrow .rp-post-table.is-picking .rp-post-row > .rp-pick { grid-area: pk; }
 .is-narrow .rp-post-table.is-picking .rp-post-row > :last-child:not(.rp-pick) { display: none; }
 /* A report is entered in four steps. The strip is the report's own tab row:
@@ -3325,9 +3325,10 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 .crm-head.client-row > :first-child { margin-left: -4px; padding-left: 48px; }
 .crm-head.client-row.is-picking > :first-child { padding-left: 78px; }
 .wfy-what .chip-vic { margin-left: 6px; }
-.cr-client-row .crm-c-name .chip-vic, .camp-c-client .chip-vic, .rp-name b .chip-vic, .vs-c-name b .chip-vic,
+.cr-client-row .crm-c-name .chip-vic, .camp-c-client .chip-vic, .vs-c-name b .chip-vic,
 .ovw-att-what b .chip-vic, .srow-name .chip-vic { margin-left: 6px; }
 #wsVicTag:empty { display: none; }
+.rp-line > .chip-vic { margin-left: 0; flex: none; }
 .bcard-title .chip-vic { margin-left: 6px; vertical-align: 1px; }
 /* An issue on a VIC client's work names it beside its level (2026-10-15). */
 .perf-breach-top .perf-vic { margin-right: auto; }

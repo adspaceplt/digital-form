@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261019a">
-<link rel="stylesheet" href="/css/console.css?v=20261020a">
+<link rel="stylesheet" href="/css/portal.css?v=20261020b">
+<link rel="stylesheet" href="/css/console.css?v=20261020b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1651,13 +1651,12 @@
           <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
           <div>
             <b>Add creative assets</b>
-            <span class="muted">Drop files here, or paste a Drive or direct link.</span>
           </div>
         </div>
 
         <div class="drop" id="drop">
           <b><span class="drop-fine">Drag files here</span><span class="drop-coarse">Choose files</span></b>
-          <span><span class="drop-fine">Or click to browse. </span>Placement is read from each file.</span>
+          <span class="drop-fine">Or click to browse.</span>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
@@ -1695,7 +1694,6 @@
           <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
           <div>
             <b>Pending assets</b>
-            <span class="muted">Uploaded, and visible to the client, only once added to the set.</span>
           </div>
         </div>
 
@@ -2160,8 +2158,11 @@
                got, what it is worth, the dates it holds, whether the client
                can see it, and the facts that place it. A block leaves
                entirely when its data does not exist. -->
+          <!-- Below 1100 the facts follow the pane (`.rail-after`), as the
+               client record's do: what waits on the team stays before the
+               tabs (2026-10-20, CMP-2). -->
           <aside class="rec-rail" aria-label="Campaign facts">
-            <div class="railblock" id="campFactBlock">
+            <div class="railblock rail-after" id="campFactBlock">
               <h3 class="railtitle">Details</h3>
               <dl class="facts" id="campFacts"></dl>
             </div>
@@ -2169,12 +2170,12 @@
               <h3 class="railtitle">Selection</h3>
               <div id="campPickRail"></div>
             </div>
-            <div class="railblock" id="campDateBlock" hidden>
+            <div class="railblock rail-after" id="campDateBlock" hidden>
               <h3 class="railtitle">Key dates</h3>
               <dl class="raildates" id="campDateRail"></dl>
             </div>
             <!-- Internal: how long the campaign sat in each stage. -->
-            <div class="railblock" id="campTimeBlock" hidden>
+            <div class="railblock rail-after" id="campTimeBlock" hidden>
               <h3 class="railtitle">Timing</h3>
               <div class="tline" id="campTimeRail"></div>
             </div>
@@ -5655,19 +5656,19 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261019d"></script>
+<script src="/js/admin.js?v=20261020b"></script>
 <script src="/js/documents.js?v=20261019m"></script>
 <script src="/js/letters.js?v=20261018zy"></script>
 <script src="/js/smreport.js?v=20261019m"></script>
-<script src="/js/reports.js?v=20261019m"></script>
+<script src="/js/reports.js?v=20261020b"></script>
 <script src="/js/register.js?v=20261018zz4"></script>
 <script src="/js/suppliers.js?v=20261020a"></script>
 <script src="/js/bukku.js?v=20261019a"></script>
 <script src="/js/engage.js?v=20261017"></script>
 <script src="/js/quotes.js?v=20261019d"></script>
 <script src="/js/quotepdf.js?v=20261018zs"></script>
-<script src="/js/checklists.js?v=20261019d"></script>
-<script src="/js/crm.js?v=20261020a"></script>
+<script src="/js/checklists.js?v=20261020b"></script>
+<script src="/js/crm.js?v=20261020b"></script>
 <script src="/js/sales.js?v=20261020a"></script>
 <script src="/js/team.js?v=20261019m"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
@@ -5675,7 +5676,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261015zm"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261019a"></script>
+<script src="/js/campaigns.js?v=20261020b"></script>
 <script src="/js/ops.js?v=20261020a"></script>
 <script src="/js/perf.js?v=20261018zz3"></script>
 <script src="/js/health.js?v=20261018zz8"></script>

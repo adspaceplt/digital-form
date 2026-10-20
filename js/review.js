@@ -563,6 +563,7 @@
   function approvalBlock(post, badge, copyBlock) {
     var wrap = document.createElement('div');
     wrap.className = 'approve';
+    wrap._copy = copyBlock || null;
     wrap.innerHTML =
       '<div class="approve-row">' +
         '<button class="btn btn-approve" type="button" aria-pressed="false">Approve</button>' +
@@ -779,6 +780,11 @@
     changesBtn.textContent = review && review.decision === 'changes' ? 'Edit request' : 'Request changes';
     var old = wrap.querySelector('.approve-note');
     if (old) old.remove();
+    /* An approved post offers no Edit text, the moment it is approved and
+       not only after a reload; any other state offers it again (2026-10-20,
+       RVP-1). */
+    var penB = wrap._copy && wrap._copy.querySelector('.copy-pen');
+    if (penB && !wrap._copy.classList.contains('is-editing')) penB.hidden = !!(review && review.decision === 'approved');
 
     if (!review) { badgeWord.textContent = 'Pending'; state.textContent = ''; return; }
 

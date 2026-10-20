@@ -95,6 +95,16 @@
     history.replaceState(history.state, '', u.pathname + u.search);
   }
 
+  /* The opened checklist's head is brought under the sticky head, never left
+     below the fold under the record's head and tabs (2026-10-20, CLI-7). */
+  function bringIntoView(el) {
+    if (!el) return;
+    var bar = document.querySelector('.console-head');
+    var room = (bar ? bar.getBoundingClientRect().bottom : 0) + 12;
+    var top = el.getBoundingClientRect().top + window.pageYOffset - room;
+    window.scrollTo(0, Math.max(0, top));
+  }
+
   function open(host, ctx, kind) {
     host.innerHTML = '<div class="skel skel-row"></div>';
     ctx.db.rpc('client_checklist', { p_client: ctx.client.id, p_kind: kind }).then(function (r) {
@@ -103,7 +113,7 @@
       V = { host: host, ctx: ctx, kind: kind, data: d };
       setAddr(kind);
       paint();
-      window.scrollTo(0, 0);
+      bringIntoView(host.querySelector('.ck-head'));
     }).catch(function (e) { host.innerHTML = '<p class="msg err">' + esc(said(e)) + '</p>'; });
   }
 
