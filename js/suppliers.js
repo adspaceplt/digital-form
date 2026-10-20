@@ -240,9 +240,11 @@
   /* The details form (2026-10-18), and the update link an approved
      supplier is sent (2026-10-20; the user: an approved supplier "would like
      to change record"). A link is made for one step: approving a supplier
-     ends its form, so an Active supplier reads none until the team asks for
-     an update (Request update, the record's ⋯), and an update link open
-     waits quietly under the details. What came back leads the record. */
+     ends its form. An Active supplier keeps one Details update form section
+     under its details, whatever its link's state (2026-10-20, the user: the
+     link's acts apart in the head's ⋯ and the section gone once the link
+     ended read as confusing): Not sent, open, ended or taken in, Create link
+     in its own head. What came back leads the record. */
   var FIELD = {};
   GROUPS.forEach(function (g) { g[1].forEach(function (it) { FIELD[it[0]] = it; }); });
   function formHead(title, act) { return '<div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>'; }
@@ -274,27 +276,27 @@
         (update ? changesOf(f) : '') + '</dl>' +
         (held && work ? '<p class="msg warn">The bank details changed. A colleague with Supplier bank details takes this in.</p>' : '');
     }
-    if (f && f.state === 'open' && s.status !== 'pending') {
-      var url0 = f.key ? linkOf(f.key) : '';
-      return formHead('Update link', work && url0 ? formMenu(
-          '<button class="kmenu-item" type="button" data-s="copy"><b>Copy link</b></button>' +
-          '<button class="kmenu-item" type="button" data-s="preview"><b>Preview</b></button>' +
-          '<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button>' +
-          '<button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
-        '<dl class="ovfacts"><div><dt>State</dt><dd>Open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
-        (url0 ? '<input type="hidden" id="supLink" value="' + esc(url0) + '">' : '');
-    }
-    if (s.status !== 'pending') return '';
-    if (f && f.state === 'open') {
+    /* An open link reads the same whether it asks for the details first or
+       for a change to them (2026-10-20, the user: the update link's ⋯ alone
+       read as "confusing"): what it is, until when, the link itself. */
+    if (f && f.state === 'open' && (update || s.status === 'pending')) {
       var url = f.key ? linkOf(f.key) : '';
-      return formHead('Details form', work ? formMenu('<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
+      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
-          '<input class="input readfield" id="supLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
+          '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Details form link') + '" value="' + esc(url) + '">' +
           '<button class="btn btn-icon" type="button" data-s="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
           '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
           '</div></div>' : '');
     }
+    if (s.status === 'active') {
+      var mine = update ? f : null;
+      if (!work && !mine) return '';
+      return formHead('Details update form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
+        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!mine ? 'Not sent' : mine.state === 'used'
+          ? 'Received ' + esc(day(mine.submitted_at)) + ', taken in' : 'Link ended ' + esc(day(mine.expires_at))) + '</dd></div></dl>';
+    }
+    if (s.status !== 'pending') return '';
     if (!work && !f) return '';
     return formHead('Details form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
@@ -340,12 +342,8 @@
   function paintRec() {
     var s = state.rec, rec = $('supRec'), work = may('suppliers', 'work');
     var complete = s.name && s.kind && s.tin && s.address && s.email && s.payment_term;
-    var fb = formBlock(), quiet = s.status !== 'pending' && state.form && state.form.state === 'open';
+    var fb = formBlock(), quiet = s.status !== 'pending' && !(state.form && state.form.state === 'submitted');
     var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
-        (s.status === 'active' && !(state.form && (state.form.state === 'open' || state.form.state === 'submitted'))
-          ? '<button class="kmenu-item" type="button" data-s="link"><b>Request update</b></button>' : '') +
-        (s.email ? '<button class="kmenu-item" type="button" data-s="mail"><b>Send email</b></button>' : '') +
-        '<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>' +
         (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
       (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
@@ -367,9 +365,14 @@
         (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
         (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
         '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
-          (may('suppliers', 'work') ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') + '</div>' +
+          /* Each act stands in the section it fills (2026-10-20, the user: six
+             items in the record's ⋯): Issue document, the ⋯ beside it Add
+             existing document; Send email in Emails. */
+          (work ? '<span class="sup-head-acts"><button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' +
+            formMenu('<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>') + '</span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
-        '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4></div>' +
+        '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
+          (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
           '<div id="supEmailList"><p class="muted">Loading.</p></div></section>' +
       '</div></div>';
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
@@ -411,7 +414,6 @@
         });
     });
     on('copy', function (b) { if (window.ADspaceCopy) window.ADspaceCopy.to(b, $('supLink').value); });
-    on('preview', function () { window.open($('supLink').value, '_blank', 'noopener'); });
     on('approve', function (b) { status('active', b); });
     on('client', linkClient);
     on('client-open', function () {
