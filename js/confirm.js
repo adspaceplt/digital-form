@@ -57,6 +57,11 @@
     return n;
   }
 
+  function fieldOf(name) {
+    for (var i = 0; i < rows.length; i++) if (rows[i].spec.name === name) return rows[i].input;
+    return null;
+  }
+
   function build() {
     if (sheet) return;
     sheet = el('div', 'sheet');
@@ -332,6 +337,19 @@
         var nt = el('p', 'asknote', f.note);
         nt.id = id + 'Note';
         input.setAttribute('aria-describedby', nt.id);
+        /* `noteAct` [label, fn] is one act on the note (Withdraw a planned
+           change): fn is handed the fields by name and answers the note's
+           new words. */
+        if (f.noteAct) {
+          var na = el('button', 'linkbtn asknote-act', f.noteAct[0]);
+          na.type = 'button';
+          na.addEventListener('click', function () {
+            var said = f.noteAct[1](fieldOf);
+            if (said) { nt.textContent = said; }
+          });
+          nt.appendChild(document.createTextNode(' '));
+          nt.appendChild(na);
+        }
         wrap.appendChild(nt);
       }
       elFields.appendChild(wrap);
@@ -346,6 +364,15 @@
         ADspaceForm.hint(input);
       }
       rows.push({ spec: f, input: input });
+    });
+
+    /* `change(name, fieldOf)` hears every field as it is typed in (the
+       Business settings sheet follows its From day). */
+    if (o.change) rows.forEach(function (x) {
+      if (!x.spec.name) return;
+      var hear = function () { o.change(x.spec.name, fieldOf); };
+      x.input.addEventListener('input', hear);
+      x.input.addEventListener('change', hear);
     });
 
     sheet.hidden = false;

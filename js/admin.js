@@ -5381,6 +5381,20 @@
     ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM to S$1', 'fx', 'Singapore']];
+  /* A figure in words, as the Settings row says it ("SST 6%"): the key's
+     own short name and format where the Settings page gives them (k[4],
+     k[5]), else its label and its kind's unit (2026-10-20, SET-5). */
+  var SET_UNIT = { pct: '%', adj: '%', allow: '%', share: '%', hours: ' hours', days: ' days', due: ' days', quote: ' days',
+    week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months' };
+  function setWord(k, v) {
+    if (v == null || v === '') return 'not set';
+    if (k[5]) return (k[4] ? k[4] + ' ' : '') + k[5](v);
+    var name = String(k[1]).replace(/\s*\((%|RM|US\$|days|hours)\)\s*$/, '');
+    var u = SET_UNIT[k[2]] || '';
+    if (k[2] === 'rm') return name + ' RM ' + v;
+    if (k[2] === 'usd') return name + ' US$' + v;
+    return name + ' ' + v + (/^ /.test(u) && name.indexOf(u.trim()) >= 0 ? '' : u);
+  }
   function editSettings(spec, opener) {
     var MON = window.ADspaceMoney;
     if (!may('team.settings', 'work') || !MON) return;
@@ -5391,7 +5405,7 @@
        later day says so under its field (2026-10-14, audit SET-1). */
     var runs = {};
     spec.keys.forEach(function (k) { var s = k[3] || ''; runs[s] = (runs[s] || 0) + 1; });
-    var seen = {}, prev = null, opened = {};
+    var seen = {}, prev = null, shown = {};
     var fields = [{ name: 'from', label: 'From', type: 'date', value: day, min: day, required: true }].concat(spec.keys.map(function (k) {
       var s = k[3] || '', at = seen[s] = (seen[s] || 0) + 1, n = runs[s];
       /* A named section of three figures runs three across, so the sheet
@@ -5399,16 +5413,40 @@
       var third = Boolean(s) && n === 3;
       var next = MON.next ? MON.next(k[0]) : null;
       var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
-      opened[k[0]] = cur == null ? '' : String(cur);
+      shown[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
         half: !third && n > 1 && !(n % 2 && at === n), third: third,
-        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + next.value : '' };
+        note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
+      /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
+         From moves to its day and the figure to the one in force the day
+         before, which app_settings_set reads as a withdrawal. */
+      if (next) f.noteAct = ['Withdraw', function (get) {
+        var fr = get('from');
+        fr.value = next.from; fr.dispatchEvent(new Event('input', { bubbles: true }));
+        var x = get(k[0]), was = MON.setting(k[0], ADspaceClock.addDays(next.from, -1));
+        x.value = was == null ? '' : String(was); x.dispatchEvent(new Event('input', { bubbles: true }));
+        return k[1] + ' stays ' + setWord(k, was) + ' from ' + ADspaceClock.date(next.from) + '. Save to withdraw the change.';
+      }];
       if (s && s !== prev) f.head = s;
       prev = s;
       return f;
     }));
     window.ADspaceConfirm.ask({
       title: spec.title, go: 'Save', fields: fields,
+      /* Each figure the person has not touched shows the value in force on
+         the From day, so a day with a planned change opens on that change
+         (2026-10-20, SET-1). */
+      change: function (name, get) {
+        if (name !== 'from') return;
+        var at = get('from').value;
+        if (!at) return;
+        spec.keys.forEach(function (k) {
+          var x = get(k[0]);
+          if (!x || x.value !== shown[k[0]]) return;
+          var w = MON.setting(k[0], at);
+          x.value = shown[k[0]] = w == null ? '' : String(w);
+        });
+      },
       check: function (v) {
         if (!v.from || v.from < day) return 'From is today or a later day.';
         for (var i = 0; i < spec.keys.length; i++) {
@@ -5424,13 +5462,15 @@
     }, function (v) {
       var vals = {};
       spec.keys.forEach(function (k) {
-        /* Only a figure the person moved is sent: one left as it opened
-           never overwrites a change already set from that day (2026-10-19). */
-        var x = String(v[k[0]] == null ? '' : v[k[0]]).trim();
-        if (x === '' || (opened[k[0]] !== '' && Number(x) === Number(opened[k[0]]))) return;
+        /* Only a figure that differs from the one in force on the From day
+           is sent: one left as it showed never overwrites a change already
+           set from that day (2026-10-19), and one typed back to the figure
+           before a planned change withdraws it (2026-10-20, SET-1). */
+        var x = String(v[k[0]] == null ? '' : v[k[0]]).trim(), at = MON.setting(k[0], v.from);
+        if (x === '' || (at != null && Number(x) === Number(at))) return;
         vals[k[0]] = Number(x);
       });
-      if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'ok'); return; }
+      if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'mute'); return; }
       db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) {

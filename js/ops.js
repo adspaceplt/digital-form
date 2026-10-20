@@ -2864,7 +2864,9 @@
     var fmt = metaFormat(t).replace(/^[^:]*:\s*/, '');
     var ctx = [whoseWord(t), fmt].filter(Boolean).join(' · ');
     var ml = t.engagement_id ? monthLink(t) : null;
-    var cl = !ml && t.clients && t.clients.slug
+    /* The way to the client is drawn only where Clients opens it
+       (2026-10-20, OPS-1). */
+    var cl = !ml && t.clients && t.clients.slug && may(t.scope === 'lead' ? 'clients.leads' : 'clients', 'view')
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
     var link = ml ? { label: t.code_period ? monthWord(t.code_period) : 'View month', href: ml.href } : cl;
     $('dwCtx').innerHTML = esc(ctx) + (vicTag(t.client_id) ? ' ' + vicTag(t.client_id) : '') + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
@@ -2991,6 +2993,15 @@
 
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at || !may('ops', 'manage');
     offerItems(menu, t);
+    /* A ⋯ whose every item is withheld is not drawn (2026-10-20, OPS-1). */
+    var anyItem = Array.prototype.some.call(menu.querySelectorAll('.kmenu-item'), function (b) {
+      if (b.hidden) return false;
+      var need = b.getAttribute('data-need');
+      if (!need) return true;
+      var p = need.split(':');
+      return may(p[0], p[1] || 'view');
+    });
+    $('dwMenuWrap').hidden = !anyItem;
   }
   /* A REPORT TASK'S OWN REPORT (the user, 2026-10-09: "linkages to the
      report section"). The month asks for the report, the task stands for

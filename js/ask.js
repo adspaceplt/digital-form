@@ -76,8 +76,20 @@
     var wasLabel = btn.getAttribute('aria-label');
     var wasHtml = btn.innerHTML;
 
+    /* `check(v)` answers a refusal in words, or nothing: a refused value
+       keeps the field open with what was typed and the refusal under it, as
+       a sheet refuses (2026-10-20, TEAM-4). */
+    var said = null;
+    function sayUnder(text) {
+      if (!said) { said = document.createElement('p'); said.className = 'msg err askmsg'; said.setAttribute('role', 'alert'); }
+      said.textContent = text;
+      var after = btn.parentNode === host.parentNode ? btn : host;
+      if (!said.parentNode) after.parentNode.insertBefore(said, after.nextSibling);
+      field.setAttribute('aria-invalid', 'true');
+    }
     function shut() {
       host._askOpen = false;
+      if (said) said.remove();
       field.remove();
       host.hidden = false;
       btn.innerHTML = wasHtml;
@@ -98,6 +110,8 @@
          code is then the name. The caller says which. */
       if (!v && !opts.allowEmpty) { field.focus(); return; }
       if (v === was) { shut(); return; }
+      var no = opts.check ? opts.check(v) : '';
+      if (no) { sayUnder(no); field.focus(); return; }
       shut();
       opts.save(v);
     }

@@ -1056,11 +1056,31 @@
     return el;
   }
 
-  function saveGroup(r, patch) {
+  /* The sheet stays open until the write answers (2026-10-20, TEAM-2): a
+     refusal is said in it with every change kept, and a group changed
+     meanwhile is read again under it, so the next Save goes over the row
+     as it stands. */
+  function saveGroup(r, patch, btn) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
+    var fail = function (t) {
+      if (btn) btn.disabled = false;
+      msg('grMsg', t, 'err');
+    };
+    if (btn) btn.disabled = true;
     asRead(db.from('team_roles').update(patch).eq('slug', r.slug), r).select('slug').then(function (q) {
-      if (q.error) { msg('groupMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error), 'err'); load(); return; }
-      if (!(q.data || []).length) { noRow('team_roles', 'slug', r, function (t) { load(function () { msg('groupMsg', t, 'err'); }); }); return; }
+      if (q.error) { fail(/scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error)); return; }
+      if (!(q.data || []).length) {
+        noRow('team_roles', 'slug', r, function (t) {
+          load(function () {
+            var now = state.roles.filter(function (x) { return x.slug === r.slug; })[0];
+            if (now && state.editing === r) state.editing = now;
+            fail(t);
+          });
+        });
+        return;
+      }
+      if (btn) btn.disabled = false;
+      shutGroupBox();
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
         if (k === 'access') return accessMoves(was.access, patch.access);
@@ -1078,16 +1098,17 @@
   /* What each level allows in each section, said once under its segment so a
      person granting it reads the consequence before saving (2026-09-25, the
      permissions revamp the user approved: "Build the revamp"). Each line is
-     what the database's own checks open at that level. */
+     what the database's own checks open at that level, checked line by line
+     against may() and the policies (2026-10-20, TEAM-1). */
   var DESC = {
-    ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
-           work: 'Also create tasks and add months.', manage: 'Also reassign and delete tasks.' },
+    ops: { none: 'My Work is hidden.', view: 'See your own tasks.',
+           work: 'Also update and create tasks, and add months.', manage: 'Also reassign, archive and delete tasks, and delete months.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
-               work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
+               work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and letters, void letters and change the person in charge.' },
     whatsapp: { none: 'WhatsApp is hidden, and no record offers it.', view: 'Read every message sent and its status.',
                 work: 'Send messages from WhatsApp and from records.', manage: 'Also choose the templates and turn them on or off.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
-              work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
+              work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets and posts.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',
                work: 'Write scripts, publish them to the client and record the clips on the day.', manage: 'Also delete scripts.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
@@ -1095,14 +1116,14 @@
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
                 work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
     suppliers: { none: 'Suppliers is hidden.', view: 'Read suppliers and their letters.',
-                 work: 'Add suppliers, send their details form, take it in and approve them.', manage: 'Also delete suppliers.' },
+                 work: 'Add suppliers, send their details form and take it in. Approving needs Supplier bank details.', manage: 'Also delete suppliers and edit their email templates.' },
     reports: { none: 'Reports is hidden.', view: 'Read reports and preview their PDFs.',
-               work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, publish, unpublish and delete reports.' },
+               work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, return, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
     services: { none: 'Services is hidden.', view: 'Read the rate card.',
-                work: 'Add and edit rate card lines.', manage: 'Also delete rate card lines.' },
-    team: { none: 'Team is hidden.', manage: 'Add colleagues, edit user groups and send invitations.' },
+                work: 'Read the rate card. Changes need Full Access.', manage: 'Add, edit and delete rate card lines, and publish the rate card.' },
+    team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Invitations need Send invitation.' },
     activity: { none: 'The activity record is hidden.', view: 'Read the activity record, tab by tab.' }
   };
 
@@ -1587,8 +1608,7 @@
       Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
       if (JSON.stringify(accessOf(r)) !== JSON.stringify(access)) patch.access = access;
       if ((r.client_scope || 'all') !== readScope()) patch.client_scope = readScope();
-      shutGroupBox();
-      if (Object.keys(patch).length) saveGroup(r, patch);
+      if (Object.keys(patch).length) saveGroup(r, patch, $('grSave')); else shutGroupBox();
       return;
     }
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -1818,6 +1838,10 @@
         log('team.added', name, email + ' · ' + roleName(role));
         shutMemberBox();
         load();
+        /* Only a colleague holding Send invitation invites; anyone else adds
+           the colleague plainly, as the record's ⋯ offers them no invitation
+           (2026-10-20, TEAM-12). */
+        if (!may('team.invite', 'work')) { msg('teamMsg', name + ' added.', 'ok'); return; }
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
         msg('teamMsg', name + ' added. Sending invitation…', 'ok');
@@ -2008,7 +2032,6 @@
         var moved = window.ADspaceRecords.changes(m, filed, MEMBER_LOG);
         var name = fields.name || m.name;
         if (moved) log('team.edited', name, moved);
-        msg('mrecMsg', 'Saved.', 'ok');
         if (fields.name && fields.name !== String(m.name || '').trim()) {
           ownedBy(m.name, true, function (own) {
             if (own.clients.length + own.campaigns.length) handOver(m.name, fields.name, own, [
@@ -2018,7 +2041,8 @@
           });
         }
         back(true);
-        load();
+        /* Said after the repaint, which empties the line (2026-10-20, TEAM-3). */
+        load(function () { msg('mrecMsg', 'Saved.', 'ok'); });
       }).catch(function () { msg('mrecMsg', 'Not saved. Please try again.', 'err'); back(false); });
     };
     if (fields.email != null && fields.email !== String(m.email || '').toLowerCase()) {
@@ -2084,6 +2108,13 @@
       '</div></div>';
     Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
       var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
+      var norm = function (v) {
+        v = String(v == null ? '' : v).trim();
+        if (k === 'staff_code') v = v.toUpperCase();
+        if (k === 'email' || k === 'card_slug') v = v.toLowerCase();
+        if (k === 'card_slug') v = v.replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+        return v;
+      };
       pen.addEventListener('click', function () {
         var raw = k === 'capacity_minutes_week' ? (m[k] == null ? '' : String(Math.round(m[k] / 6) / 10))
           : k === 'access_until' ? (m.access_until || '') : String(m[k] == null ? '' : m[k]);
@@ -2092,13 +2123,11 @@
           value: raw, type: k === 'access_until' ? 'date' : k === 'capacity_minutes_week' ? 'number' : 'text',
           code: k === 'staff_code', label: pen.getAttribute('aria-label').replace(/^Edit /, ''),
           allowEmpty: ['name', 'email'].indexOf(k) < 0,
+          /* A value refused keeps its field open, the refusal under it
+             (2026-10-20, TEAM-4). */
+          check: function (v) { return badValue(k, norm(v)) || ''; },
           save: function (v) {
-            v = String(v == null ? '' : v).trim();
-            if (k === 'staff_code') v = v.toUpperCase();
-            if (k === 'email' || k === 'card_slug') v = v.toLowerCase();
-            if (k === 'card_slug') v = v.replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-            var bad = badValue(k, v);
-            if (bad) { msg('mrecMsg', bad, 'err'); paneOverview(m, host); return; }
+            v = norm(v);
             var f = {};
             if (k === 'capacity_minutes_week') f[k] = v === '' ? null : Math.round(parseFloat(v) * 60);
             else if (k === 'access_until') { f.access_until = v || null; if (!v) f.access_until_time = null; }

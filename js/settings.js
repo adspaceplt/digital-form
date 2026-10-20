@@ -419,7 +419,7 @@
     if (READ[a]) reread = a;
     if (SPECS[a]) {
       var sp = SPECS[a];
-      bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3]]; }), msg: rowSay(a), done: paint }, btn);
+      bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3], k[4], k[5]]; }), msg: rowSay(a), done: paint }, btn);
       return;
     }
     if (a === 'upgrade') { if (bridge.upgradeToggle) bridge.upgradeToggle(btn); return; }
@@ -601,9 +601,17 @@
     wired = true;
     $('setList').addEventListener('focusin', function (e) {
       var b = e.target.closest && e.target.closest('[data-a]');
-      if (!reread || !b || b.getAttribute('data-a') !== reread || document.querySelector('.sheet:not([hidden])')) return;
+      if (!reread || !b || b.getAttribute('data-a') !== reread) return;
       var id = reread; reread = '';
-      readLine(id);
+      /* Focus comes back while the sheet is still shutting: the row is read
+         once it has shut, never skipped (2026-10-20, SET-2). */
+      var open = function () { return document.querySelector('.sheet:not([hidden])'); };
+      if (!open()) { readLine(id); return; }
+      var mo = new MutationObserver(function () {
+        if (open()) return;
+        mo.disconnect(); readLine(id);
+      });
+      mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
     });
     $('setList').addEventListener('click', function (e) {
       var gb = e.target.closest('[data-g]');
