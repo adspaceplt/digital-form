@@ -170,6 +170,10 @@
       selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       ratesChanged: 'The rates have been updated. Please review them and confirm again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
+      overSlots: function (n) {
+        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be chosen. Please remove one and confirm again.'
+          : 'Every creator for this campaign has been booked. Please contact your ADspace account manager.';
+      },
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -268,6 +272,10 @@
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       ratesChanged: '报价已更新，请查看后再次确认。',
       selectionChanged: '部分博主已无法选择，请重新查看后再次确认。',
+      overSlots: function (n) {
+        return n > 0 ? '目前只能再选 ' + n + ' 位博主，请取消多选的博主后再次确认。'
+          : '本次合作的博主名额已全部预订，请联系您的 ADspace 客户经理。';
+      },
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -1269,7 +1277,9 @@
     $('progLabel').textContent = t().yourSelection;
     $('progCount').textContent = t().count(n, slots);
     $('progFill').style.width = pct + '%';
-    $('progSay').textContent = n >= slots ? t().complete : t().chooseMore(slots - n);
+    var over = slots > 0 && n > slots;
+    $('progSay').textContent = over ? t().overSlots(slotsLeft()) : n >= slots ? t().complete : t().chooseMore(slots - n);
+    $('progSay').classList.toggle('is-over', over);
     /* A selection the client has confirmed says so when the link is opened
        again, and Confirm returns only once the picks differ from what was
        confirmed (UX audit SELECTION-1, 2026-10-14). */
@@ -1313,12 +1323,15 @@
       '<span class="muted">' + esc(t().count(n, slots) + ' · ' + money2(value)) +
         (sstOf(value) ? ' + ' + esc(MON.taxLabel(mkt())) + ' ' + money2(sstOf(value)) : '') +
       '</span>' +
-      (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '') +
+      (short > 0 && !over ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '') +
+      (over ? '<span class="is-over">' + esc(t().overSlots(slotsLeft())) + '</span>' : '') +
       (conf && !asConfirmed && confDay ? '<span class="muted">' + esc(t().changedSince(confDay)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
     // Backups are advice. Blocking the button on them left people who had
     // made their choice staring at a grey Confirm with no idea why.
-    $('confirmBtn').disabled = !pending.length;
+    /* More chosen than the slots left (a creator booked meanwhile): nothing
+       to confirm until one is taken off in the list (2026-10-20, SEL-1). */
+    $('confirmBtn').disabled = !pending.length || over;
     /* Confirmed as it stands: the bar says who confirmed it and when, and
        offers no second Confirm until the picks change. */
     if (asConfirmed) $('confirmSummary').innerHTML = '<b>' + esc(t().confirmedBy(conf.person, confDay)) + '</b>';
@@ -1404,7 +1417,7 @@
 
   $('confirmGo').addEventListener('click', function () {
     var name = ($('confirmName').value || '').trim();
-    if (!name) { msg('confirmMsg', t().nameNeeded, 'err'); return; }
+    if (!name) { msg('confirmMsg', t().nameNeeded, 'err'); $('confirmName').focus(); return; }
     var btn = this;
     if (btn.disabled) return;
     clearTimeout(saveTimer);
@@ -1424,7 +1437,14 @@
       if (e === 'closed') { msg('confirmMsg', t().selectionClosed, 'err'); load(); }
       else if (e === 'locked') msg('confirmMsg', window.ADspaceWords.lockedLine(t(), d.minutes), 'err');
       else if (e === 'prices') { msg('confirmMsg', t().ratesChanged, 'err'); reread(); }
-      else if (e === 'stale' || e === 'empty' || e === 'over-slots') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
+      else if (e === 'over-slots') {
+        /* Too many for the slots left: said in the client's words with how
+           many may still be chosen, the sheet shut so the list is fixed
+           where the picks are made (2026-10-20, SEL-1). */
+        shutConfirm();
+        load();
+      }
+      else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
       else msg('confirmMsg', t().saveFailed, 'err');
     };
     db.rpc('confirm_selection_with', {

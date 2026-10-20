@@ -3481,7 +3481,8 @@
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
-    $('setNote').textContent = ymWord(state.batch.period) + ' · ' + (live
+    /* The client first: the set's page names whose it is (2026-10-20, REV-2). */
+    $('setNote').textContent = (state.client && state.client.name ? state.client.name + ' · ' : '') + ymWord(state.batch.period) + ' · ' + (live
       ? 'Visible to the client on their review link.'
       : 'Not visible to the client.');
     msg('setMsg', '');
@@ -3535,9 +3536,13 @@
       /* Confirm internally and the client's progress hang off a published
          set, so the posts are read again with it (2026-10-14). */
       loadPosts();
-      msg('setMsg', next
-        ? 'Published.'
-        : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
+      /* Unpublish asks nothing and its way back is drawn where it happened:
+         Undo publishes the set again (2026-10-20, REV-1). */
+      if (next) msg('setMsg', 'Published.', 'ok');
+      else {
+        msg('setMsg', '');
+        undoHere('Unpublished. The client no longer sees this set.', function () { setPublished(true); }, $('setMsg'));
+      }
       loadBatches();
     });
   }
@@ -4896,7 +4901,6 @@
           '<div class="draft-top">' +
             '<select class="select" data-f="placement" aria-label="Placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(d.media[0])) + '</span>' +
-            '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
           '</div>' +
           (isCoverDraft(d) ? coverForField(d) : '') +

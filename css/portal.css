@@ -769,7 +769,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
 /* On the selection page the pair are equal halves, as the review page's are
    (SELECTION-9). */
-.booking .approve-row .btn-approve, .booking .approve-row .btn-changes { flex: 1 1 0; }
+.booking .approve-row .btn-approve, .booking .approve-row .btn-changes { flex: 1 1 50%; }
 @media (hover: hover) { .approve-row .btn-changes:hover { color: var(--ink); } }
 .approve-row .btn-changes[aria-pressed="true"] {
   background: var(--tonal-press); color: var(--ink); font-weight: 600;
@@ -2987,6 +2987,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .progress-card.is-done .progress-fill { background: var(--ok); }
 .progress-say { font-size: 13.5px; margin-top: 10px; }
 .progress-card.is-done .progress-say { color: var(--ok); font-weight: 500; }
+/* More chosen than the slots left: said in red where the picks are made. */
+.progress-say.is-over, .progress-card.is-done .progress-say.is-over, #confirmSummary .is-over { color: var(--err); font-weight: 500; }
 .progress-new {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
@@ -3019,7 +3021,9 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
-.crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
+/* Every head cell reads 12/600, the column's own rule never outranking it
+   (2026-10-20, SEL-3). */
+.crow.crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
   text-transform: inherit; color: inherit; }
 .crow-head .crow-plat > span { margin: 0; }
 /* Left aligned, like the two columns before it. Right aligned, the cell ended
@@ -5815,6 +5819,8 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
    with its shoot and publish dates, folded; the plan opens under its row.
    The fields line up under the name, so the body starts on the name's x. */
 .sched-reg .kcard-head { cursor: pointer; }
+.sched-lab { display: none; }
+.is-tight .sched-reg .sched-lab { display: inline; color: var(--ink-mute); }
 .sched-reg .sched-pubday {
   font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
@@ -7149,7 +7155,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rp-name b .rp-wl, .rp-name b .rp-aderr { margin-left: 8px; vertical-align: 1px; }
+/* A chip on a name stands beside it, never inside the clipped name; where
+   both do not fit it takes the line under the name, whole (2026-10-20, RPT-1). */
+.rp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
+.rp-line > b { min-width: 0; }
+.rp-line > .chip { flex: none; }
 .sheet-foot > .rp-adfoot { order: 1; margin-right: auto; display: flex; align-items: center; }
 .kmenu.rp-idspop { z-index: 93; width: min(320px, calc(100vw - 32px)); padding: 16px; gap: 8px; }
 .rp-idspop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
@@ -7200,17 +7210,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-acc-row { grid-template-columns: minmax(0, 1fr) 84px auto; grid-template-areas: "name grow act" "fol fol act" "figs figs act"; gap: 4px 12px; }
 .is-narrow .rp-acc-row > .rp-num:nth-child(2) { grid-area: fol; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-acc-row > :last-child { grid-area: act; }
-.is-narrow .rp-post-row { grid-template-columns: 34px minmax(0, 1fr) 72px auto; grid-template-areas: "th name n1 act" "th date n2 act"; gap: 2px 12px; }
+.is-narrow .rp-post-row { grid-template-columns: 34px minmax(0, 1fr) minmax(72px, max-content) auto; grid-template-areas: "th name n1 act" "th date n2 act"; gap: 2px 12px; }
 .is-narrow .rp-post-row > .rp-date { grid-area: date; font-size: 12px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > .rp-n2 { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > :last-child { grid-area: act; }
 .is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rp-ad-row.crm-head { padding: 12px 15px 8px; }
 .rp-ad-row.crm-row { padding: 10px 15px; min-height: 52px; }
-.is-narrow .rp-ad-row { grid-template-columns: 34px minmax(0, 1fr) 96px auto; grid-template-areas: "th name spend act" "th res cpr act"; gap: 2px 12px; }
+.is-narrow .rp-ad-row { grid-template-columns: 34px minmax(0, 1fr) minmax(96px, max-content) auto; grid-template-areas: "th name spend act" "th res cpr act"; gap: 2px 12px; }
 .is-narrow .rp-ad-row > .rp-res { grid-area: res; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-ad-row > .rp-cpr { grid-area: cpr; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-ad-row > :last-child { grid-area: act; }
+.rp-unit { display: none; }
+.is-narrow .rp-unit { display: inline; }
+.is-narrow .rp-ad-row > .rp-num, .is-narrow .rp-post-row > .rp-num { white-space: nowrap; }
 .rp-ad-row.is-picked { background: var(--line-soft); }
 .rp-post-row.is-picked { background: var(--line-soft); }
 .rp-adbar { margin: 0; }
@@ -7274,6 +7287,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check.is-done .rp-check-mark { background: var(--ok-solid); box-shadow: none; }
 .rp-check.is-missing .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--line-ctl); }
 .rp-check-mark svg { width: 13px; height: 13px; }
+.rp-check.is-override .rp-check-mark::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-wait); }
 .rp-check-t { display: flex; flex-direction: column; min-width: 0; }
 .rp-check-t b { font-size: 14px; font-weight: 600; }
 .rp-check-t small { font-size: 12.5px; color: var(--ink-mute); }
@@ -8177,7 +8191,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    2026-10-01: Approve took 1.35 shares and Send request its own width, so
    neither row read as balanced). While Approve asks for the name, Request
    changes still gives its half to the field. */
-.approve-row > .namebox, .approve-row > .btn-approve, .approve-row > .btn-changes { flex: 1 1 0; min-width: 0; }
+/* Half each from a half's basis, never from 0: a basis of 0 leaves each its
+   own padding on top of its share, and Request changes stood 34px wider
+   than Approve (2026-10-20, RVP-2). */
+.approve-row > .namebox, .approve-row > .btn-approve, .approve-row > .btn-changes { flex: 1 1 50%; min-width: 0; }
 .approve-row.is-asking > .namebox { flex: 1 1 100%; }
 .changebox-actions > .btn { flex: 1 1 0; min-width: 0; }
 /* While a request is open the decision pair steps away, so Cancel and Send

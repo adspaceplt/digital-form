@@ -1575,6 +1575,13 @@
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').className = 'chip ' + W.tone(c.state);
     var move = mayWork() ? publishMove(c.state) : null;
+    /* A draft with no creator has nothing to publish (2026-10-20, CMP-1):
+       Publish leaves it and Add creators is its blue, tonal again once a
+       creator is in. Unknown until the creators are read, so a campaign
+       holding some never loses its Publish. */
+    var none = state.optionsFor === c.id && !(state.options || []).length;
+    if (none && c.state === 'draft') move = null;
+    if ($('showAddOption')) $('showAddOption').className = 'btn' + (none ? ' btn-primary' : '');
     $('campPublish').hidden = !move;
     /* Its row leaves with it, so a View group's head ends on the link. */
     if ($('campPublish').parentNode) $('campPublish').parentNode.hidden = !move;
@@ -1754,7 +1761,9 @@
     db.from('campaign_options').select('*, creators(name, access_code, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
+        state.optionsFor = state.campaign.id;
         syncCampState();
+        if (state.campaign) paintCampState(state.campaign);
         /* What each creator uploaded on their own page, so the team reviews it
            here rather than opening a folder somebody had to find. Scoped to
            this campaign's bookings: an unfiltered read takes the first page of
@@ -2137,8 +2146,10 @@
           '<span class="kcard-lead"><button class="kfold" type="button" aria-label="Plan for ' + esc(name) +
             '" aria-expanded="' + String(open) + '">' + CHEV + '</button></span>' +
           '<span class="kcard-name">' + esc(name) + '</span>' +
-          '<span class="kcard-sum sched-sum">' + dayOr(o.visit_date, o.visit_time) + '</span>' +
-          '<span class="kcard-tags sched-pubday">' + dayOr(o.planned_publish) + '</span>' +
+          /* Each date carries its head's word where the head is hidden
+             (2026-10-20, CMP-3). */
+          '<span class="kcard-sum sched-sum"><span class="sched-lab">' + when + ' </span>' + dayOr(o.visit_date, o.visit_time) + '</span>' +
+          '<span class="kcard-tags sched-pubday"><span class="sched-lab">Publish </span>' + dayOr(o.planned_publish) + '</span>' +
           '<span class="kcard-act"></span>' +
         '</header>' +
         '<div class="kcard-body sched-body"' + (open ? '' : ' hidden') + '>' +
@@ -2489,8 +2500,9 @@
     box.innerHTML = '';
     box.className = '';
     if (!state.options.length) {
-      if (mayWork()) UI.emptyLine(box, 'No creators.', 'Add creators', function () { $('showAddOption').click(); });
-      else UI.emptyLine(box, 'No creators.');
+      /* The head's Add creators is the way out, blue while none is in
+         (2026-10-20, CMP-1): the line never offers it twice. */
+      UI.emptyLine(box, 'No creators.');
     } else {
       /* One surface with a header over it, not a stack of bordered cards: ten
          bookings were ten floating panels with 12px of page ground between

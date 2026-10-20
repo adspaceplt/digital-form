@@ -805,6 +805,48 @@
     return null;
   }
 
+  /* A step head keeps its import and Add on show; Select and the reads from
+     Meta go behind one ⋯ at its end, each item drawn only where its button
+     was (2026-10-20, RPT-2: five acts took three rows on a phone). */
+  function secMore(items) {
+    items = items.filter(Boolean);
+    if (!items.length) return '';
+    return '<span class="kmenu-wrap rp-sec-more"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false">' + ICON.more + '</button>' +
+      '<div class="kmenu" hidden>' + items.map(function (it) {
+        return '<button class="kmenu-item" type="button" data-a="' + it[0] + '">' + esc(it[1]) + '</button>';
+      }).join('') + '</div></span>';
+  }
+  /* What a press on a ⋯ item shows while it reads: the ⋯ rests and the
+     section's line says so; a button on show says it on itself. */
+  function busy(btn, line, words) {
+    var wrap = btn.classList.contains('kmenu-item') && btn.closest('.kmenu-wrap');
+    if (wrap) {
+      var mb = wrap.querySelector('.kmenu-btn');
+      shutMenus();
+      if (mb) mb.disabled = true;
+      say(line, words);
+      return function () { if (mb) mb.disabled = false; if (line && line.textContent === words) say(line, ''); };
+    }
+    var was = btn.innerHTML;
+    btn.disabled = true; btn.textContent = words;
+    return function () { btn.disabled = false; btn.innerHTML = was; };
+  }
+  /* The ⋯ leaves once nothing in it can be pressed. */
+  function moreLeaves(item) {
+    var wrap = item && item.closest('.rp-sec-more');
+    if (!wrap) return;
+    wrap.hidden = !Array.prototype.some.call(wrap.querySelectorAll('.kmenu-item'), function (x) { return !x.hidden; });
+  }
+  /* The control a sheet hands focus back to: the ⋯ for one of its items. */
+  function openerOf(btn) {
+    var wrap = btn.classList.contains('kmenu-item') && btn.closest('.kmenu-wrap');
+    return (wrap && wrap.querySelector('.kmenu-btn')) || btn;
+  }
+
+  /* A figure's word, drawn only in a narrow pane where its column's head is
+     hidden, so a bare figure keeps its meaning (2026-10-20, RPT-3). */
+  function unit(w) { return w ? '<span class="rp-unit"> ' + esc(w) + '</span>' : ''; }
+
   /* One step at a time. Each ends on the move to the next, named for it. */
   function paintStep() {
     var box = st.host.querySelector('.rp-stepbox');
@@ -823,10 +865,9 @@
         '<div class="rp-accs"></div></div>' + foot;
       paintAccounts();
     } else if (k === 'posts') {
-      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="pickposts">Select</button>' +
-          '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
-          (st.meta && (st.meta.page || st.meta.instagram) ? '<button class="btn btn-sm" type="button" data-a="metaposts">Import from Meta</button>' : '') +
-          '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' : '') +
+      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
+          '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' +
+          secMore([['pickposts', 'Select'], st.meta && (st.meta.page || st.meta.instagram) ? ['metaposts', 'Import from Meta'] : null]) : '') +
         (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
           ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
           '</select><span class="msg" data-m="rank"></span></div>' : '') +
@@ -846,11 +887,11 @@
       box.innerHTML = '<div class="rp-sec">' + head('Account figures') + '<div class="rp-totals"></div></div>' + foot;
       paintTotals();
     } else if (k === 'ads') {
-      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pickads">Select</button>' +
-          '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
-          (st.meta && (st.meta.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metaads">Import from Meta</button>' : '') +
-          (st.metaLinks && (st.metaLinks.ad_accounts || []).length ? '<button class="btn btn-sm" type="button" data-a="metapics">Pictures from Meta</button>' : '') +
-          '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
+      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
+          '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' +
+          secMore([['pickads', 'Select'],
+            st.meta && (st.meta.ad_accounts || []).length ? ['metaads', 'Import from Meta'] : null,
+            st.metaLinks && (st.metaLinks.ad_accounts || []).length ? ['metapics', 'Pictures from Meta'] : null]) : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
     } else if (k === 'text') {
@@ -871,6 +912,16 @@
     if ((b = box.querySelector('[data-a="metaposts"]'))) { var mp = b; mp.addEventListener('click', function () { metaImport('posts', mp); }); }
     if ((b = box.querySelector('[data-a="pickads"]'))) b.addEventListener('click', function () { st.adPick = {}; paintAds(); });
     if ((b = box.querySelector('[data-a="pickposts"]'))) b.addEventListener('click', function () { st.postPick = {}; paintPosts(); });
+    if ((b = box.querySelector('.rp-sec-more > .kmenu-btn'))) {
+      var mb = b;
+      mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var menu = mb.parentNode.querySelector('.kmenu'), open = menu.hidden;
+        shutMenus();
+        menu.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, menu);
+      });
+    }
   }
 
   /* The last step: what the report holds, what is still missing, and the one
@@ -1525,7 +1576,9 @@
       } else if (!lst) {
         mark = ' is-missing'; note = 'Not run';
       } else if (lst.outcome === 'match' || lst.outcome === 'override') {
-        mark = lst.current ? ' is-done' : ' is-missing';
+        /* Continued without Meta clears the gate but is no match: a neutral
+           mark led by the amber dot, never the green tick (2026-10-20, RPT-4). */
+        mark = !lst.current ? ' is-missing' : lst.outcome === 'override' ? ' is-override' : ' is-done';
         note = !lst.current ? 'Figures changed since ' + whenWord(lst.at)
           : lst.outcome === 'match' ? 'Matches Meta as of ' + whenWord(lst.at) + (a.within ? ' · ' + withinWord(a.within) : '')
           : 'Continued without Meta · ' + (lst.by || 'An admin') + ', ' + whenWord(lst.at);
@@ -2596,6 +2649,7 @@
     var pick = st.postPick;
     var pickBtn = st.host.querySelector('[data-a="pickposts"]');
     if (pickBtn) pickBtn.hidden = !ed || st.posts.length < 2 || !!pick;
+    moreLeaves(pickBtn);
     if (!st.platforms.length) { UI.emptyLine(box, 'Add an account first.'); return; }
     if (!st.posts.length) {
       UI.emptyLine(box, 'No posts.');
@@ -2633,8 +2687,8 @@
             '<span class="rp-thumb">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
             '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
             '<span class="rp-date">' + esc(dayWord(p.posted_on)) + '</span>' +
-            '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) : '') + '</span>' +
-            '<span class="rp-num rp-n2">' + (m[1] ? fmt(p[m[1]]) : '') + '</span>' +
+            '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) + unit(String(METRIC_WORD[m[0]] || '').toLowerCase()) : '') + '</span>' +
+            '<span class="rp-num rp-n2">' + (m[1] ? fmt(p[m[1]]) + unit(String(METRIC_WORD[m[1]] || '').toLowerCase()) : '') + '</span>' +
             (ed && !pick ? rowMenu(['Edit', 'Remove']) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join('');
@@ -3844,6 +3898,7 @@
     var pickBtn = st.host.querySelector('[data-a="pickads"]');
     if (!ed || st.ads.length < 2) st.adPick = null;
     if (pickBtn) pickBtn.hidden = !ed || st.ads.length < 2 || !!st.adPick;
+    moreLeaves(pickBtn);
     if (!st.ads.length) {
       UI.emptyLine(box, 'No ads.');
       return;
@@ -3880,10 +3935,10 @@
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(adName(a.name)) + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</b><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
+            '<span class="rp-name"><span class="rp-line"><b>' + esc(adName(a.name)) + '</b>' + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
-            '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
-            '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
+            '<span class="rp-num rp-res">' + esc(fmt(a.results)) + unit(Number(a.results) === 1 ? 'result' : 'results') + '</span>' +
+            '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + (c == null ? '' : unit('/ result')) + '</span>' +
             (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate', adErr(a) ? 'Clear ad error' : 'Mark ad error'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join(''); }).join('');
@@ -4618,18 +4673,16 @@
       : [m0.page ? ['facebook', 'Facebook Page · ' + m0.page.name] : null, m0.instagram ? ['instagram', 'Instagram · ' + m0.instagram.name] : null].filter(Boolean);
     if (!choices.length) return;
     var fetchIt = function (pick) {
-      var was = btn.innerHTML;
-      btn.disabled = true; btn.textContent = 'Reading Meta…';
+      var done = busy(btn, line, 'Reading Meta…');
       var body = kind === 'ads' ? { action: 'ads', report_id: st.open.id, account: pick } : { action: 'posts', report_id: st.open.id, source: pick };
-      var done = function () { btn.disabled = false; btn.innerHTML = was; };
       db.functions.invoke('meta-import', { body: body }).then(function (res) {
         done();
         var d = (res && res.data) || {};
         if ((res && res.error) || d.error) { say(line, META_SAID[d.error] || 'Meta did not answer. Try again.', 'err'); return; }
         if (!d.text) { say(line, kind === 'ads' ? 'Meta has no ads in this period.' : 'Meta has no posts in this period.', 'warn'); return; }
         if (line && line.parentNode) line.parentNode.removeChild(line);
-        if (kind === 'ads') pasteAdsSheet(btn, { text: d.text, age: d.age || '', pics: d.pics || null });
-        else pasteSheet(btn, { text: d.text, platform: d.source, pics: d.pics || null });
+        if (kind === 'ads') pasteAdsSheet(openerOf(btn), { text: d.text, age: d.age || '', pics: d.pics || null });
+        else pasteSheet(openerOf(btn), { text: d.text, platform: d.source, pics: d.pics || null });
       }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
     };
     if (choices.length === 1) { fetchIt(choices[0][0]); return; }
@@ -4659,8 +4712,7 @@
       var replace = !!held && v === 'on';
       var want = rows.filter(function (a) { return replace || !a.thumb_data; });
       if (!want.length) { say(line, 'Every ad already has a picture.', 'warn'); return; }
-      var was = btn.innerHTML;
-      btn.disabled = true; btn.textContent = 'Reading Meta…';
+      var done = busy(btn, line, 'Reading Meta…');
       var got = {}, refused = '';
       var batch = function (i) {
         if (i >= want.length || refused) return Promise.resolve();
@@ -4694,7 +4746,7 @@
           });
         })).then(function () { return before; });
       }).then(function (before) {
-        btn.disabled = false; btn.innerHTML = was;
+        done();
         if (!st.open || st.open.id !== r.id) return;
         var ids = Object.keys(before), n = ids.length, missed = want.length - n;
         paintAds();
@@ -4725,7 +4777,7 @@
             paintAds();
           });
         });
-      }).catch(function () { btn.disabled = false; btn.innerHTML = was; say(line, 'Meta did not answer. Try again.', 'err'); });
+      }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
     });
   }
 
@@ -5388,9 +5440,9 @@
             var wl = r.brand_id && r.brand_name;
             b2.innerHTML = (picking ? '<span class="rh-pick"><input class="trow-pick" type="checkbox"' + (hub.pick[r.id] ? ' checked' : '') +
                 ' aria-label="Select ' + esc((wl ? r.brand_name : (c.name || '')) + ' ' + periodWord(r.period_start, r.period_end)) + '"></span>' : '') +
-              '<span class="rp-name"><b>' + esc(wl ? r.brand_name : (c.name || '')) + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.client_id, true) : '') + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+              '<span class="rp-name"><span class="rp-line"><b>' + esc(wl ? r.brand_name : (c.name || '')) + '</b>' + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.client_id, true) : '') + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
                 (r.on_request ? '<span class="chip rp-wl">On request</span>' : '') +
-                '</b><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
+                '</span><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
                 (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
               '<span class="rp-ver rh-per">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
