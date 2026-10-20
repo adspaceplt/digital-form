@@ -2442,7 +2442,7 @@
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
-      refreshClient(c, function () { openClient(c); });
+      refreshClient(c, function () { openClient(c); if (also && also.after) requestAnimationFrame(also.after); });
       return '';
     }).catch(function () {
       if (inSheet) return 'Not saved. Please try again.';
@@ -3351,11 +3351,13 @@
          (2026-10-20, CLI-6). */
       if (goActive && (state.client.stage || 'lead') !== 'active') {
         var c = state.client;
-        var head = document.querySelector('#sectionClients .rec-id');
-        if (head && head.scrollIntoView) head.scrollIntoView({ block: 'nearest' });
+        var toHead = function () {
+          var head = document.querySelector('#sectionClients .rec-id'), bar = document.querySelector('.console-head');
+          if (head) window.scrollTo(0, Math.max(0, head.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.getBoundingClientRect().bottom : 0) - 12));
+        };
         if (!String(c.client_code || '').trim()) {
-          askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true }); });
-        } else moveStage(c, 'active', null);
+          askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true, after: toHead }); });
+        } else moveStage(c, 'active', null, { after: toHead });
       }
     });
   });

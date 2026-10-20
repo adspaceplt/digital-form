@@ -1775,7 +1775,14 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .rp-ailang { justify-content: space-between; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
-.rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+/* The head's ⋯ keeps the small buttons' line: its target overflows it evenly. */
+.rp-sec-more { display: inline-flex; }
+/* A narrow pane: acts that do not fit beside the title take the line under
+   it whole, never three broken rows (2026-10-20, RPT-2). */
+.is-narrow .rp-sec-head { flex-wrap: wrap; row-gap: 8px; }
+.is-narrow .rp-sec-acts { flex: 1 1 auto; }
+.rp-sec-more > .kmenu-btn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
 .rp-posts { display: grid; gap: 16px; }
 .rp-postgroup { display: grid; gap: 8px; }
 .rp-ticks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; margin-bottom: 16px; }

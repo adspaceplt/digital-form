@@ -831,6 +831,12 @@
     btn.disabled = true; btn.textContent = words;
     return function () { btn.disabled = false; btn.innerHTML = was; };
   }
+  /* The ⋯ leaves once nothing in it can be pressed. */
+  function moreLeaves(item) {
+    var wrap = item && item.closest('.rp-sec-more');
+    if (!wrap) return;
+    wrap.hidden = !Array.prototype.some.call(wrap.querySelectorAll('.kmenu-item'), function (x) { return !x.hidden; });
+  }
   /* The control a sheet hands focus back to: the ⋯ for one of its items. */
   function openerOf(btn) {
     var wrap = btn.classList.contains('kmenu-item') && btn.closest('.kmenu-wrap');
@@ -2643,6 +2649,7 @@
     var pick = st.postPick;
     var pickBtn = st.host.querySelector('[data-a="pickposts"]');
     if (pickBtn) pickBtn.hidden = !ed || st.posts.length < 2 || !!pick;
+    moreLeaves(pickBtn);
     if (!st.platforms.length) { UI.emptyLine(box, 'Add an account first.'); return; }
     if (!st.posts.length) {
       UI.emptyLine(box, 'No posts.');
@@ -3891,6 +3898,7 @@
     var pickBtn = st.host.querySelector('[data-a="pickads"]');
     if (!ed || st.ads.length < 2) st.adPick = null;
     if (pickBtn) pickBtn.hidden = !ed || st.ads.length < 2 || !!st.adPick;
+    moreLeaves(pickBtn);
     if (!st.ads.length) {
       UI.emptyLine(box, 'No ads.');
       return;
