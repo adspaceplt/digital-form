@@ -381,7 +381,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The commonest act on a row belongs on the row. A control inside a control is
   never nested: the name cell opens the record.
 - A forward move is a button at its own width, never full width. Revert beside
-  it is neutral, never a second blue.
+  it is neutral, never a second blue. A client form's lone Submit (`.qs-foot`,
+  /supplier/, /details/) stands at the column's right edge at a desk and full
+  width on a phone; /quote/'s Back and Continue stay equal halves.
 - The booking register clips its own rows (`.bookreg { overflow: hidden }`).
 - A board is the same rows, one workflow at a time. Columns exist only where
   work can go. The drag reaches the same move as the select.
