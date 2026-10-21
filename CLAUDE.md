@@ -83,6 +83,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - The stand-in's permission map is rebuilt on every page load, so re-read by
     navigating inside the console or through `window.__rpc`.
   - The stand-in seeds no campaigns.
+  - Every Postgres suite starts its cluster on UTC (`-c timezone=UTC`), as
+    the live database runs: a cluster started from a shell on Malaysia time
+    read date literals and `current_date` in MYT (2026-10-21).
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
   - A `cut()` of `schema.sql` always ends at the next banner.
