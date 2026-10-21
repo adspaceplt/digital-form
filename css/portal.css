@@ -9103,6 +9103,9 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-step .msg:empty, .qs-cf:empty { display: none; }
 .qs-foot { display: flex; gap: 8px; padding: 20px 0 8px; }
 .qs-foot > .btn { flex: 1 1 0; }
+/* A forward move is a button at its own width: a lone Submit stands at the
+   column's right edge at a desk, full width on a phone (SPF-4, DTL-3). */
+@media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
 
 .qs-quote { display: grid; gap: 24px; }
 .qs-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
