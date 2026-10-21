@@ -608,14 +608,7 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `sql` (2026-10-20, on main 61b1444 as on the wave 2 branch): "each set
-  named answers its posts…" (`review_set_counts`, the oldest change read
-  `-`) and "the newest call not removed and not ahead…"
-  (`client_last_activity`, the call read where the document was). Not
-  root-caused; neither function was touched.
-- `smsql` (2026-10-20, the same on main): five report deadline checks (the
-  month's gate and `sm_reports_owed`'s due day, seven or ten days after the
-  month). Not root-caused; likely the run's clock past midnight MYT.
+- None.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
