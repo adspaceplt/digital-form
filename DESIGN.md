@@ -540,6 +540,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A chip on a name that clips stands beside the name, never inside its
   clipped box, and takes the line under it where both do not fit (an Ad
   error chip inside the name was cut away on a phone; 2026-10-20).
+- A fact's span by its content (a fact holding chips takes the row)
+  outranks its span by its place (the last of five takes two): a placing
+  rule never wins on specificity alone (2026-10-21: On the day stood in two
+  of three columns at a desk, a cell alone on its row).
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
   the header hides (`Over by | 4 days`).
 - The phone command bar is one row plus the view segment.
