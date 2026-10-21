@@ -1827,7 +1827,7 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 .btn-sm svg { width: 13px; height: 13px; }
 /* What destroys is the red words on the ordinary tonal button, as Apple's
    destructive button is (2026-10-07); a red slab read as an alarm. */
-.btn-danger { background: var(--tonal); border-color: transparent; color: var(--err); flex: 0 0 auto; font-weight: 600; }
+.btn-danger { background: var(--tonal); border-color: transparent; color: var(--err-ink, var(--err)); flex: 0 0 auto; font-weight: 600; }
 @media (hover: hover) {
   .btn-danger:hover { background: var(--err-bg); border-color: transparent; color: var(--err-hi); }
 }
@@ -3909,7 +3909,10 @@ body > .shell { width: 100%; }
    measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
    16px (the span says "to", never a dash: PORTAL-10, 2026-10-14), and never
    wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) auto; }
+/* Join's track is one width on every row and the head, measured on Join meeting and
+   加入 with the leaving mark at a desk (2026-10-21: an `auto` track sized each
+   row to its own Join and the head to nothing, so no column lined up). */
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) 128px; }
 .meet-row .svc-amt { white-space: nowrap; }
 /* The client record's pane has no Brand column: every row there is that
    client's. */
@@ -7064,6 +7067,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .bulkbar[hidden] { display: none; }
 /* Inside a card the bar is shaded, never a second outline (2026-10-20, REV-7). */
 .bulkbar.is-incard { background: var(--sunk); border-color: transparent; }
+/* Red on the tonal button over the dark shade is 4.37:1; the heavier red
+   holds 4.5 there (2026-10-21, the Select posts bar's Delete). */
+:root[data-theme="dark"] .bulkbar.is-incard { --err-ink: var(--err-hi); }
 .bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .bulkbar-acts .btn { flex: 0 0 auto; }
@@ -8689,7 +8695,8 @@ body.is-maint { overflow: hidden; }
    (2026-10-20, CRE-1: Shoot's time wrapped in half a phone). */
 @media (max-width: 640px) {
   .cx-facts > div:first-child { grid-column: 1 / -1; }
-  .cx-facts > div:not(:first-child):not(:has(.cx-chips)):nth-child(even):has(+ div .cx-chips) { grid-column: 1 / -1; }
+  .cx-facts > div:not(:first-child):not(:has(.cx-chips)):nth-child(even):has(+ div .cx-chips),
+  .cx-facts > div:not(:first-child):not(:has(.cx-chips)):nth-child(even):last-child { grid-column: 1 / -1; }
 }
 .cx-nextup + .cx-facts { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 /* A booking card in three parts, never run together on a phone (the user,
