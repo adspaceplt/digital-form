@@ -167,7 +167,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   the portal's (`snapshot: <sha> · tests <sha>`, `+uncommitted` where the
   tests held unsaved edits).
 - uxaudit and matrix pass only on their own `: ok` line; they exit 0 on
-  PROBLEM too.
+  PROBLEM too. A walk that crashed is run again once fixed, before the day's
+  gate is read: a crash hides every screen after it (2026-10-21: nine
+  findings stood behind one crash on Reports).
 - `SKIP` is not a pass.
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup node tests/serve.js 8899 >/dev/null 2>&1 &` (http-server's
