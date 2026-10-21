@@ -78,7 +78,8 @@
   function paintForm() {
     var ind = typed.kind === 'individual', keepBank = update && bankHeld, keepNric = update && nricHeld;
     return '<div class="qs-step" data-shown><h1 class="qs-title">' + (update ? 'Update Supplier Details' : 'Supplier Details') + '</h1>' +
-      '<p class="qs-lead">' + (info.name ? esc(info.name) + ' · ' : '') + esc(info.code) + '</p>' +
+      /* Who asks, then whose details (2026-10-20, SPF-3). */
+      '<p class="qs-lead">For ADspace · ' + (info.name ? esc(info.name) + ' · ' : '') + 'Supplier ID ' + esc(info.code) + '</p>' +
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
@@ -224,7 +225,15 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#sfForm input:not([type=checkbox]), #sfForm textarea[data-oneline]') && !e.isComposing) {
-      e.preventDefault(); if ($('sfSubmit')) submit($('sfSubmit'));
+      /* Enter moves to the next field; only the last one submits
+         (2026-10-20, SPF-2). */
+      e.preventDefault();
+      var all = Array.prototype.filter.call($('sfForm').querySelectorAll('input, select, textarea'), function (f) {
+        return !f.disabled && f.offsetParent !== null && f.type !== 'hidden';
+      });
+      var at = all.indexOf(e.target), next = all[at + 1];
+      if (next) { next.focus(); return; }
+      if ($('sfSubmit')) submit($('sfSubmit'));
     }
   });
 

@@ -1627,7 +1627,7 @@
         '<span class="bcol-n">' + cards.length + (c.wip ? ' / ' + c.wip : '') + '</span></div>' +
         '<div class="bcards"></div>';
       var list = col.querySelector('.bcards');
-      if (!cards.length) list.innerHTML = '<p class="bcol-empty">None.</p>';
+      if (!cards.length) list.innerHTML = '<p class="bcol-empty">No tasks.</p>';
       cards.forEach(function (t) { list.appendChild(cardOf(t)); });
       if (!c.noDrop) dropInto(col, c.keys[0]);
       board.appendChild(col);
@@ -2142,6 +2142,7 @@
        (ux-audit WORK-4, 2026-10-15). */
     var vbar = seg && seg.closest('.cmdbar');
     if (vbar) vbar.classList.toggle('is-views-only', whole);
+    if (!whole) placeMore(false);
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
@@ -2163,6 +2164,20 @@
      the new view had nothing to start from. Two presses inside that frame
      draw once, the view last chosen. */
   var viewDraw = 0;
+  /* On Months at a desk the section's ⋯ stands in the Months bar beside
+     Add task, as on every other view, never alone at the end of the view
+     strip (2026-10-20, WRK-1); a phone keeps it beside the views, where its
+     bar's own ⋯ holds New month. */
+  var moreHome = null;
+  function placeMore(intoMonths) {
+    var w = $('workMoreWrap');
+    if (!w) return;
+    if (!moreHome) moreHome = { p: w.parentNode, n: w.nextSibling };
+    var phone = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+    var acts = intoMonths && !phone && document.querySelector('.cwbar .cmdbar-acts');
+    if (acts) acts.insertBefore(w, acts.firstChild);
+    else if (w.parentNode !== moreHome.p) moreHome.p.insertBefore(w, moreHome.n && moreHome.n.parentNode === moreHome.p ? moreHome.n : null);
+  }
   function setView(v) {
     applyView(v);
     if (bridge.setUrl) bridge.setUrl();
@@ -6541,6 +6556,7 @@
      nobody reads. The choice travels in the address and is remembered in
      this browser. */
   function paintClients(force) {
+    placeMore(false);
     var box = $('workClients');
     if (!box) return;
     if (!state.workflows.length && !state.clientsTried) {
@@ -6576,6 +6592,7 @@
     if (bridge.setUrl) bridge.setUrl();
   }
   function clientWork(box, client) {
+    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     if (!box || !client) return;
     cw.box = box; cw.client = client;
     cw.find = ''; cw.status = 'open'; cw.period = ''; cw.who = '';
@@ -6584,6 +6601,7 @@
     if (!state.workflows.length) loadCatalogue(ready); else ready();
   }
   function readClientWork() {
+    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     var box = cw.box, c = cw.client;
     Promise.all([
       db.from('ops_tasks').select('*, clients(name, slug)').eq('client_id', c.id).is('archived_at', null)
@@ -6641,6 +6659,7 @@
     return true;
   }
   function paintClientWork() {
+    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     var box = cw.box, c = cw.client;
     if (!box) return;
     var canWork = may('ops', 'work');
@@ -6690,6 +6709,7 @@
       '<div id="cwList" data-narrow="860"></div>';
     if (UI.fit) UI.fit('#cwList');
     if (window.ADspaceCmdbar) window.ADspaceCmdbar.wire();
+    placeMore(true);
     $('cwFind').value = cw.find; $('cwStatus').value = cw.status;
     $('cwPeriod').value = cw.period; $('cwWho').value = cw.who;
     $('cwFind').addEventListener('input', function () {

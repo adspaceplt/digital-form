@@ -178,7 +178,8 @@
     var row = document.createElement('div');
     row.className = 'hb-row' + (d.archived_at ? ' is-off' : '');
     row.setAttribute('data-doc', d.id);
-    var meta = d.link_url ? 'Link' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
+    /* A link says Link once, in its version cell (2026-10-20, HBK-1). */
+    var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
     if (vers.length) items += '<button class="kmenu-item" data-a="vers" type="button"><b>Versions</b></button>';
     if (admin) {
@@ -192,7 +193,7 @@
     var canOpen = Boolean(d.link_url || v);
     row.innerHTML =
       '<span class="hb-name"><b>' + esc(d.title) + '</b>' +
-        '<small>' + esc(d.summary ? d.summary : meta) + '</small></span>' +
+        ((d.summary || meta) ? '<small>' + esc(d.summary ? d.summary : meta) + '</small>' : '') + '</span>' +
       '<span class="hb-ver">' + (d.link_url ? 'Link' : v ? 'v' + v.version_no : '<span class="mute">—</span>') + '</span>' +
       '<span class="hb-when">' + esc(day(d.updated_at)) + '</span>' +
       '<span class="hb-act">' +

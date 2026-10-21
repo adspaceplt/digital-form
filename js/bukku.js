@@ -16,7 +16,6 @@
 (function () {
   var API = window.ADspaceAPI;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-  var SEND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg>';
 
   function db() { return API && API.client; }
   function $(id) { return document.getElementById(id); }
@@ -74,7 +73,9 @@
     if (!host) return;
     opts = opts || {};
     var act = mayWork(kind) && opts.can !== false
-      ? '<button class="btn btn-sm" type="button" data-bk="send">' + SEND + 'Send to Bukku</button>' : '';
+      /* Words alone, as Send email and Create link are: no act of the
+         table carries an arrow (2026-10-20, SUP-8). */
+      ? '<button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' : '';
     var head = '<div class="readgroup-head"><h4 class="fsec-h">Bukku</h4>' + act + '</div>';
     host.innerHTML = head + '<p class="muted">Loading.</p>';
     /* What the record lacks is read up front: a record that cannot be sent
@@ -96,12 +97,19 @@
       host.innerHTML = head + '<dl class="ovfacts">' + rows.map(function (r) {
         return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>';
       }).join('') + '</dl>' + (gap ? '<p class="msg warn bk-gap">' + esc(gap) + '</p>' : '') +
-        (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '');
+        (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '') +
+        (opts.said ? '<p class="msg ok bk-said" role="status">' + esc(opts.said) + '</p>' : '');
+      opts.said = '';
       wire();
     });
     function wire() {
       var b = host.querySelector('[data-bk="send"]');
-      if (b) b.addEventListener('click', function () { send(kind, id, b, function () { group(host, kind, id, opts); }); });
+      /* The outcome is said in the group it changed (2026-10-20, BKU-3). */
+      if (b) b.addEventListener('click', function () {
+        send(kind, id, b, function (d) {
+          group(host, kind, id, Object.assign({}, opts, { said: d && d.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
+        });
+      });
       if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(host);
     }
   }
@@ -203,7 +211,7 @@
       $('bkGo').disabled = false; $('bkLink').disabled = false;
       if (d.error) { say(said(d), 'err'); return; }
       shut();
-      if (me.done) me.done(d);
+      if (me.done) me.done(Object.assign({ action: action }, d));
     });
   }
 

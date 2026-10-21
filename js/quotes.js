@@ -20,6 +20,7 @@
   var esc = function (s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   };
+  var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var PLAT = [['meta', 'Meta'], ['tiktok', 'TikTok'], ['rednote', 'rednote'], ['linkedin', 'LinkedIn']];
   var LANG = [['en', 'English'], ['zh', 'Chinese'], ['ms', 'Malay']];
@@ -148,10 +149,11 @@
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + '" data-id="' + esc(q.id) + '">' +
-            '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + esc(metaOf(q)) + '</small></span>' +
+            /* A date holds together on a phone (2026-10-20, CLI-10). */
+            '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + wholeDays(esc(metaOf(q))) + '</small></span>' +
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-              (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
+              (st[2] ? '<small>' + wholeDays(esc(st[2])) + '</small>' : '') + '</span>' +
             '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>') + '</span>' +
             '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
               DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';

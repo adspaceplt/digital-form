@@ -967,6 +967,8 @@
               (c.market === 'SG' ? ' · S$' : '') + '</option>';
           }).join('');
         if (keep) sel.value = keep;
+        /* One Active client is the one chosen (2026-10-20, CMP-8). */
+        else if (state.clients.length === 1) sel.value = state.clients[0].id;
         $('campClientNone').hidden = state.clients.length > 0;
         if (then) then();
       });
@@ -3610,6 +3612,7 @@
     var stage = PIPELINE.indexOf(o.state === 'changes'
       ? (changesBy(o) === 'team' ? 'submitted' : 'reviewing') : o.state);
     var drafting = live && stage >= PIPELINE.indexOf('pending_draft');
+    var handedOver = ['scheduled', 'posted', 'completed'].indexOf(o.state) > -1;
 
     /* Submitted is the one step that is waiting on us, so the card opens by
        itself. Folded, it was a name, a chip and a summary line: the files the
@@ -3712,7 +3715,9 @@
       (drafting && (w || draftRead) ?
       '<div class="kstep kstep-work">' +
         '<div class="kstep-title">Draft submission</div>' +
-        (w ? draftGuide(o) : '') +
+        /* Once the client has the draft, nothing is handed in: no guide and
+           no link to paste (2026-10-20, CMP-4). */
+        (w && !handedOver ? draftGuide(o) : '') +
         requestHtml(o) +
         approvalHtml(o) +
         handedIn(o) +
@@ -3737,7 +3742,7 @@
                 '<div class="progress-track"><div class="progress-fill" data-teamfill></div></div>' +
               '</div>'
             : '') +
-          (w ? '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
+          (w && !handedOver ? '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
             '" placeholder="https://"></label>'
             : absUrl(o.draft_url) ? '<div class="kfield kfield-wide"><span>Draft link</span>' +
@@ -4228,16 +4233,24 @@
     on('proceed',   function () { proceed(o); });
     on('sendback',  function () { sendBack(o, card); });
 
+    /* One Save for the card: its notes and link, then each placement whose
+       figures moved (2026-10-20, CMP-5). */
     on('save', function () {
       var patch = readCard(card);
       if (!patch) return;
+      var m = card.querySelector('[data-msg]');
       db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
-        var m = card.querySelector('[data-msg]');
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
         if (!(r.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
-        m.textContent = 'Saved.'; m.className = 'msg ok';
-        say('card:' + o.id, 'Saved.');
-        loadOptions();
+        var rows = Array.prototype.filter.call(card.querySelectorAll('.postrow'), function (x) { return typeof x.__save === 'function'; });
+        return rows.reduce(function (chain, x) {
+          return chain.then(function (ok) { return x.__save().then(function (y) { return ok && y; }); });
+        }, Promise.resolve(true)).then(function (ok) {
+          if (!ok) { m.textContent = 'A placement was not saved. See below.'; m.className = 'msg err'; return; }
+          m.textContent = 'Saved.'; m.className = 'msg ok';
+          say('card:' + o.id, 'Saved.');
+          loadOptions();
+        });
       });
     });
   }
@@ -4727,6 +4740,8 @@
          from the top, because it is a different file. */
       delete qcKept[o.id];
       shutQc();
+      /* Said on the card it moved (2026-10-20, CMP-6). */
+      if (out.state !== 'waiting') say('card:' + o.id, 'Released to the client.');
       loadOptions();
     }).catch(function (e) {
       qcCount();
@@ -4842,11 +4857,10 @@
               '<input class="input" data-p="measure_to" type="date" value="' + esc(to) + '"></label>' +
             num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
-          /* Tonal: Release to client is the one blue on a card (2026-10-14,
-             audit CAMP-3: a Posted card drew a blue Save a placement). */
-          '<div class="kactions"><button class="btn btn-sm" data-p-save type="button">Save</button></div>' +
+          /* Each placement is saved by the card's one Save (2026-10-20,
+             CMP-5: a Posted card drew three); its refusal is said here. */
           saidHtml('post:' + p.id).replace('data-said', 'data-said data-p-msg');
-        w.querySelector('[data-p-save]').addEventListener('click', function () {
+        w.__save = function () {
           var patch = {}, badLink = null;
           Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
             var k = i.getAttribute('data-p');
@@ -4859,13 +4873,13 @@
             patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
           });
           var m = w.querySelector('[data-p-msg]');
+          var no = function (t) { m.textContent = t; m.className = 'msg err'; return Promise.resolve(false); };
           /* A post link that is not a web address is refused, never saved as
              none (2026-10-17). */
-          if (badLink) { m.textContent = 'Enter a web address.'; m.className = 'msg err'; badLink.focus(); return; }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) {
-            m.textContent = 'Count to comes after Count from.'; m.className = 'msg err'; return;
-          }
+          if (badLink) { badLink.focus(); return no('Enter a web address.'); }
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Count to comes after Count from.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
+          if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
           if (figures) patch.measured_at = ADspaceClock.today();
           /* Who entered the post and its numbers; setting the period alone
@@ -4874,15 +4888,12 @@
             patch.entered_by = 'team';
             patch.entered_at = new Date().toISOString();
           }
-          db.from('option_posts').update(patch).eq('id', p.id).select('id').then(function (res) {
-            if (res.error) { m.textContent = res.error.message; m.className = 'msg err'; return; }
-            if (!(res.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
-            m.textContent = 'Saved.'; m.className = 'msg ok';
-            /* The repaint draws the placement again; the line goes with it. */
-            say('post:' + p.id, 'Saved.');
-            loadOptions();
+          return db.from('option_posts').update(patch).eq('id', p.id).select('id').then(function (res) {
+            if (res.error) return no(res.error.message);
+            if (!(res.data || []).length) return no('Not saved. The database refused the request.');
+            return true;
           });
-        });
+        };
         box.appendChild(w);
       });
     });

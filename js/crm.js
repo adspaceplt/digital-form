@@ -2476,7 +2476,14 @@
         return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id && !(main && pick.id === main.id) ? ' selected' : '') + '>' +
           esc((ct.salutation ? ct.salutation + ' ' : '') + ct.name) + '</option>';
       }).join('');
+    var live = (state.contacts || []).some(function (ct) { return !ct.archived_at; });
+    $('crmBillAddContact').hidden = live || !mayPart('clients.contacts', 'work');
   }
+  $('crmBillAddContact').addEventListener('click', function () {
+    $('crmBillCancel').click();
+    showPane('contacts'); pushUrl();
+    openContact(null);
+  });
 
   /* Read first. The pane states what is held in the three groups the sheet
      edits, in the order an invoice reads them; a required value that is
@@ -3633,7 +3640,7 @@
     window.ADspaceConfirm.ask({
       title: 'Send an invitation',
       body: 'An email goes to ' + ct.email + ' with a sign-in link. '
-          + 'It leaves the building and cannot be recalled.',
+          + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () { send(); });
     function send() {
@@ -5198,7 +5205,7 @@
       '<div class="lpickref">' +
         '<label class="field-label" for="pickRef">Reference</label>' +
         '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false"' +
-          (noCode ? ' aria-required="true" aria-describedby="pickRefNote" placeholder="Type a reference"' : ' placeholder="Numbered automatically"') + '>' +
+          (noCode ? ' aria-required="true" aria-describedby="pickRefNote" placeholder="AQL/AC001/261001"' : ' placeholder="Numbered automatically"') + '>' +
         (noCode ? '<p class="msg warn" id="pickRefNote">This client has no Client ID, so the reference cannot be numbered automatically. Type one, or set the ID on the record.</p>' : '') +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
@@ -5979,8 +5986,12 @@
        spent the one accent on the ordinary case and buried the price under a
        control taller than it. The row is the name and what it costs; Inactive
        is the exception, so that is what gets named. */
+    row.setAttribute('data-slug', s.slug);
+    /* A line of parts wraps between its parts, never inside one: a count
+       keeps its word (2026-10-20, SVC-3). */
+    var nameWords = esc(s.name).replace(/(\d[\d,.]*) (?=\S)/g, '$1\u00a0');
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
+      '<span class="svc-name"><b>' + nameWords + (off ? ' <span class="tone is-off">Inactive</span>' : '') +
         (diffNow.lines[s.slug] ? ' <span class="chip">' + diffNow.lines[s.slug] + '</span>' : '') + '</b>' +
         /* The Bukku item code under the name, in the token face, as a
            client's ID sits under theirs (2026-10-15). */
@@ -6050,7 +6061,10 @@
              moves but the figure and its Changed tag. */
           s.rate = rate;
           paintServicesPage();
-          msg('svcListMsg', 'Saved.', 'ok');
+          /* Said on the row it changed, in sight (2026-10-20, SVC-2). */
+          var at = document.querySelector('#svcList .svc-row[data-slug="' + (window.CSS && CSS.escape ? CSS.escape(s.slug) : s.slug) + '"] .svc-name');
+          if (at) { var said = document.createElement('small'); said.className = 'msg ok svc-said'; said.setAttribute('role', 'status'); said.textContent = 'Saved.'; at.appendChild(said); }
+          else msg('svcListMsg', 'Saved.', 'ok');
         }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
       }
     });

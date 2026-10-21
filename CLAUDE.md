@@ -2271,6 +2271,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Use details; a supplier holding no details reads No details yet., never
   groups of Not set (2026-10-20, SUP-1 to SUP-3).
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
+  leads For ADspace · Supplier ID, Enter moving to the next field and
+  submitting from the last alone (2026-10-20, SPF-2, SPF-3),
   reads the Supplier ID (and the name once held) and checks as the Jotform
   form did: Company or Individual, NRIC (XXXXXX-XX-XXXX) for an individual
   alone, a company's 12-digit BRN, TIN, SST no. (AXX-XXXX-XXXXXXXX), Office
@@ -2718,6 +2720,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     request taken back. The client's page shows no round count.
 - A handed-in draft always shows its caption field, with `No caption.` in
   warn when it is empty.
+- A booking card has one Save: its notes and link, then each placement
+  whose results moved (2026-10-20, CMP-5); from Scheduled on it offers no
+  hand-in guide or link to paste (CMP-4), and Release to client says
+  Released to the client. on the card (CMP-6).
 - A booking's plan (date, a time picker, location, contact, phone, or the
   tracking no.; draft due; publish date) is written only on the Schedule,
   saved on change and filed with what changed. The card reads it
@@ -3044,7 +3050,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
-    letters, last month's reviews), What · Section (a grey tag) · Who ·
+    letters, last month's reviews), What · Section (a grey tag naming the
+    rail's section, never a record's kind; 2026-10-20, OVW-3) · Who ·
     Since, late first by the days late, then what waits, the longest first,
     then what has not started; five rows, then Show N more, a tonal toggle
     with its chevron that reads Show fewer once open and folds the list
@@ -3223,7 +3230,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   with no code its name; never the whole description (the user,
   2026-10-09). Then `+N more`. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
-- Months view (`view=months&wc=`, the tab named Months): a client select,
+- Months view (`view=months&wc=`, the tab named Months; at a desk the
+  section's ⋯ stands in its bar beside Add task, 2026-10-20, WRK-1): a client select,
   then that client's months, meetings and tasks (`clientWork()`), remembered
   per browser. A month's ⋯ is Add tasks (the New sheet on that client and
   month), Edit, Cancel month, Delete. A month whose tasks the filter hides
@@ -4626,6 +4634,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     asks first (`beforeunload`), and an answer that lands after the person
     moved to another step or screen is saved all the same and shown when
     that report's Commentary is next opened, once (`aiKept`).
+  - Out of a draft the commentary check's findings fold under one line,
+    and once confirmed or published they read as found, never to fix
+    (2026-10-20, RPT-6, RPT-7).
   - Check and submit ends in Key dates (`keyDates()`, two marks at least):
     Started (by whom), Submitted (by whom, to whom), Confirmed (by whom),
     Published, the names on their own line under the date (`.tl-who`), each with
@@ -5012,7 +5023,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     this tab.
   - Letters: Download redraws the snapshot.
   - Reports and Meetings: tabs drawn only once there is one; an address
-    naming one before it is drawn opens it when it is.
+    naming one before it is drawn opens it when it is. A meeting ahead with
+    a link offers Join on its row, never in a ⋯ (2026-10-20, POR-2).
   - Account: Contacts read-only, Portal access (Person · Sign-in email),
     Payment only once `ADSPACE_ORG.bank` is set.
 - The portal never writes a record. A request is a row the team applies.
@@ -5557,7 +5569,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
-  takes one; a link button's variable refused only for the team reminders, which the portal sends by itself (`NO_BUTTON`)), each row's
+  takes one; a link button's variable refused only for the team reminders, which the portal sends by itself (`NO_BUTTON`);
+  only templates the purpose can take are offered, 2026-10-20, WA-2), each row's
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record

@@ -659,7 +659,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The Mill
   International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport,
   Star Living, Niro Granite, Dale & Cecil, Dale, Gadang Holdings Berhad.
-- Chinese is localised, not translated.
+- Chinese is localised, not translated: 下午2:00, never pm; a figure and its unit with no space (42分钟); the full-width comma (2026-10-20, POR-3, VER-1).
 - No dashes in copy where avoidable. Dates `12 Sept 2026`, months `Oct 2026`,
   money `RM 8,490.00`, agreement prose `16 September 2026`.
 - Client-page cover words live in `js/words.js`:

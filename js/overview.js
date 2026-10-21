@@ -688,7 +688,8 @@
       { key: 'funnel', title: 'Leads to clients', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         return figuresFor('now').then(function (f) {
-          var words = ['New leads', 'Contacted', 'Proposal sent', 'Became clients'];
+          /* Each step counts this period's new leads alone (2026-10-20, OVW-5). */
+          var words = ['New leads', 'Contacted', 'Proposal sent', 'New leads now clients'];
           var n = f.funnel.map(function (l) { return l.length; });
           if (!n[0]) return { empty: 'No new leads ' + periodName(period) + '.' };
           return { kind: 'bars', inline: true, rows: words.map(function (w, i) {
@@ -1151,13 +1152,17 @@
           if (!a.failed.length) UI.emptyLine(body, 'Nothing waiting.');
           return;
         }
+        /* The Section column names the rail's section, never a record's
+           kind (2026-10-20, OVW-3). */
+        var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',
+          Document: 'Clients', Campaign: 'Creator Campaigns', Performance: 'Team' };
         var head = '<div class="ovw-att-head" aria-hidden="true"><span>What</span><span>Section</span><span>Who</span><span>Since</span></div>';
         var html = a.rows.map(function (r, i) {
           var since = r.late ? '<b class="is-err">' + esc(r.since) + '</b>'
             : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
           return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
             '<span class="ovw-att-what"><b>' + esc(r.name) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
-            '<span class="ovw-att-sec"><span class="chip">' + esc(r.tag) + '</span></span>' +
+            '<span class="ovw-att-sec"><span class="chip">' + esc(SEC_OF[r.tag] || r.tag) + '</span></span>' +
             '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
             '<span class="ovw-att-since">' + since + '</span></button>';
         }).join('');

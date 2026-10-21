@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261020c">
-<link rel="stylesheet" href="/css/console.css?v=20261020c">
+<link rel="stylesheet" href="/css/portal.css?v=20261021">
+<link rel="stylesheet" href="/css/console.css?v=20261021">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -60,7 +60,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261015zn"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261018pl"></script>
+<script src="/js/words.js?v=20261021"></script>
 <script src="/js/clock.js?v=20261012b"></script>
 <script src="/js/icons.js?v=20261017"></script>
 <script src="/js/copy.js?v=20261001a"></script>
@@ -83,7 +83,7 @@
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261015c"></script>
 <script src="/js/notice.js?v=20261018"></script>
-<script src="/js/whatsapp.js?v=20261019b"></script>
+<script src="/js/whatsapp.js?v=20261021"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261019a"></script>
 <script src="/js/media.js?v=20261018pl"></script>
@@ -776,7 +776,7 @@
           <div class="rec-pane" data-pane="contacts" hidden>
         <!-- The people. A company does not answer the phone. -->
         <div class="viewhead">
-          <span class="headmark"><h2>Client details</h2></span>
+          <span class="headmark"><h2>Contacts</h2></span>
           <button class="btn btn-primary" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
               <div class="sheet" id="crmContactBox" hidden>
@@ -852,11 +852,14 @@
             <span class="muted" id="crmBillSummary"></span>
             <button class="btn btn-sm" id="crmBillEdit" data-need="clients.billing:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
           </div>
+          <!-- The client's details form (2026-10-14): a link the client fills
+               in, the answers waiting here (js/crm.js, js/details.js). It
+               leads Billing, needed while billing is incomplete; Bukku,
+               which applies once it is complete, comes last (2026-10-20,
+               DTL-2). -->
+          <div class="readgroups"><section class="readgroup dform" id="crmDetForm" hidden></section></div>
           <div class="readgroups" id="crmBillRead"></div>
           <div class="msg" id="crmBillNote"></div>
-          <!-- The client's details form (2026-10-14): a link the client fills
-               in, the answers waiting here (js/crm.js, js/details.js). -->
-          <div class="readgroups"><section class="readgroup dform" id="crmDetForm" hidden></section></div>
         </section>
         <div class="sheet" id="crmBillSheet" hidden>
           <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmBillTitle">
@@ -893,7 +896,9 @@
                 <h4 class="fsec-h">Billing contact and address</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmBillContact">Billing contact</label>
-                    <select class="select" id="crmBillContact" aria-required="true"></select></div>
+                    <select class="select" id="crmBillContact" aria-required="true"></select>
+                    <!-- A client with no contact is offered one here (2026-10-20, CLI-8). -->
+                    <button class="linkbtn bill-addct" id="crmBillAddContact" type="button" hidden>Add contact</button></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
                     <input class="input" id="crmFinanceEmail" autocomplete="off" type="email" placeholder="accounts@adspace.me"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Company billing address</label>
@@ -1582,7 +1587,7 @@
         <nav class="tabrow poststages" id="postStages" role="tablist" aria-label="Posts by stage" hidden></nav>
         <!-- Select (2026-10-07): the posts ticked under the stage strip and
              what they can take together, each as one post takes it. -->
-        <div class="bulkbar" id="postBulk" data-narrow="640" hidden>
+        <div class="bulkbar is-incard" id="postBulk" data-narrow="640" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="postBulkAll"> <span id="postBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
             <button class="btn btn-sm" id="postBulkConfirm" type="button" data-need="review.sets:work" hidden>Confirm internally</button>
@@ -3604,8 +3609,9 @@
             <span class="cmdbar-count" id="groupCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+            <!-- The primary at the bar's right edge (2026-10-20, TEAM-10). -->
             <button class="btn btn-sm" id="groupCompare" type="button">Compare groups</button>
+            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
           </span>
         </span>
       </div>
@@ -4377,7 +4383,10 @@
         </div>
         <div id="mineRefl" hidden>
           <div class="cmdbar">
-            <select class="select select-sm" id="mineReflMonth" aria-label="Month" data-nofilter></select>
+            <!-- The month reflected on is a view in the bar at every width, never
+                 behind Filters (2026-10-20, MINE-5); the select stays the source. -->
+            <select class="select select-sm" id="mineReflMonth" aria-label="Month" data-nofilter hidden></select>
+            <span class="cmdbar-views" id="mineReflMonths" role="group" aria-label="Month"></span>
             <span class="cmdbar-end">
               <span class="cmdbar-acts">
                 <button class="btn btn-sm btn-primary" id="mineReflWrite" type="button" hidden>Write reflection</button>
@@ -4867,6 +4876,13 @@
         <!-- Two short fields on one split, the address under them full width,
              rather than three boxes at three pixel widths (the form audit of
              2026-09-24). -->
+        <!-- Where it goes first, what people know first (2026-10-20, LNK-3). -->
+        <div class="row">
+          <div>
+            <label class="field-label" for="newTarget">Destination</label>
+            <textarea class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+          </div>
+        </div>
         <div class="row fgrid">
           <div>
             <label class="field-label" for="newSlug">Short link</label>
@@ -4879,12 +4895,6 @@
           <div>
             <label class="field-label" for="newLinkLabel">Label (optional)</label>
             <input class="input" id="newLinkLabel" placeholder="Event poster QR">
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label class="field-label" for="newTarget">Destination</label>
-            <textarea class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
           </div>
         </div>
         
@@ -5237,10 +5247,15 @@ raya-2026        https://example.com/raya"></textarea>
             <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangMs"> Malay</label></span>
           </span></div>
       </div>
+      <!-- An agreement's clauses are the type's wording: folded, read on
+           asking (2026-10-20, DOC-4). A letter's body stands open. -->
+      <details class="fmore doc-clauses" id="docClauseFold" open>
+      <summary id="docClauseSum" hidden>Clauses as set in Document types</summary>
       <div class="row">
         <div><label class="field-label" for="docBodyEn" id="docBodyLabel">Body</label>
           <textarea class="input" id="docBodyEn" aria-required="true" rows="9" placeholder="Body"></textarea></div>
       </div>
+      </details>
       <div class="row" id="docBodyZhWrap" hidden>
         <div><label class="field-label" for="docBodyZh">Body, Chinese</label>
           <textarea class="input" id="docBodyZh" rows="6" lang="zh" placeholder="正文"></textarea></div>
@@ -5403,8 +5418,10 @@ raya-2026        https://example.com/raya"></textarea>
       </button>
     </div>
     <div class="sheet-body">
+      <!-- Sections of two to five fields (2026-10-20, SUP-7): Billing details
+           as Registration and Tax and contact, Payment as Terms and Bank. -->
       <section class="fsec">
-        <h4 class="fsec-h">Billing details</h4>
+        <h4 class="fsec-h">Registration</h4>
         <div class="row fgrid">
           <div id="supEdCodeWrap"><label class="field-label" for="supEdCode">Supplier ID</label>
             <input class="input" id="supEdCode" aria-required="true" autocapitalize="characters" spellcheck="false"></div>
@@ -5416,11 +5433,16 @@ raya-2026        https://example.com/raya"></textarea>
             <input class="input" id="supEdBrn" inputmode="numeric" maxlength="14"></div>
           <div id="supEdNricWrap"><label class="field-label" for="supEdNric">NRIC</label>
             <input class="input" id="supEdNric" inputmode="numeric" maxlength="14" aria-required="true" placeholder="XXXXXX-XX-XXXX" data-nodraft></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Tax and contact</h4>
+        <div class="row fgrid">
           <div id="supEdTinWrap"><label class="field-label" for="supEdTin">TIN</label>
             <input class="input" id="supEdTin" aria-required="true" autocapitalize="characters"></div>
           <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST registration no.</label>
             <input class="input" id="supEdSst" autocapitalize="characters" placeholder="Optional"></div>
-          <div id="supEdPhoneWrap"><label class="field-label" for="supEdPhone">Office / mobile</label>
+          <div class="span-all" id="supEdPhoneWrap"><label class="field-label" for="supEdPhone">Office / mobile</label>
             <input class="input" id="supEdPhone" type="tel" aria-required="true"></div>
           <div class="span-all" id="supEdAddrWrap"><label class="field-label" for="supEdAddr">Billing address</label>
             <textarea class="textarea" id="supEdAddr" rows="3" aria-required="true" maxlength="400"></textarea></div>
@@ -5440,7 +5462,7 @@ raya-2026        https://example.com/raya"></textarea>
         </div>
       </section>
       <section class="fsec">
-        <h4 class="fsec-h">Payment details</h4>
+        <h4 class="fsec-h">Payment terms</h4>
         <div class="row fgrid">
           <div id="supEdTermWrap"><label class="field-label" for="supEdTerm">Payment term</label>
             <select class="select" id="supEdTerm" aria-required="true"></select></div>
@@ -5449,7 +5471,10 @@ raya-2026        https://example.com/raya"></textarea>
           <div class="span-all" id="supEdFinWrap"><label class="field-label" for="supEdFin">Finance email</label>
             <input class="input" id="supEdFin" type="email" aria-required="true" maxlength="160"></div>
         </div>
-        <div class="row fgrid" id="supPaySec">
+      </section>
+      <section class="fsec" id="supPaySec">
+        <h4 class="fsec-h">Bank account</h4>
+        <div class="row fgrid">
           <div id="supEdPayeeWrap"><label class="field-label" for="supEdPayee">Payee name</label>
             <input class="input" id="supEdPayee" aria-required="true" maxlength="120" data-nodraft></div>
           <div id="supEdBankWrap"><label class="field-label" for="supEdBank">Bank</label>
@@ -5658,32 +5683,32 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261020c"></script>
+<script src="/js/admin.js?v=20261021"></script>
 <script src="/js/documents.js?v=20261019m"></script>
 <script src="/js/letters.js?v=20261018zy"></script>
 <script src="/js/smreport.js?v=20261019m"></script>
-<script src="/js/reports.js?v=20261020b"></script>
-<script src="/js/register.js?v=20261020c"></script>
-<script src="/js/suppliers.js?v=20261020c"></script>
-<script src="/js/bukku.js?v=20261020c"></script>
+<script src="/js/reports.js?v=20261021"></script>
+<script src="/js/register.js?v=20261021"></script>
+<script src="/js/suppliers.js?v=20261021"></script>
+<script src="/js/bukku.js?v=20261021"></script>
 <script src="/js/engage.js?v=20261017"></script>
-<script src="/js/quotes.js?v=20261019d"></script>
+<script src="/js/quotes.js?v=20261021"></script>
 <script src="/js/quotepdf.js?v=20261018zs"></script>
 <script src="/js/checklists.js?v=20261020b"></script>
-<script src="/js/crm.js?v=20261020c"></script>
+<script src="/js/crm.js?v=20261021"></script>
 <script src="/js/sales.js?v=20261020a"></script>
-<script src="/js/team.js?v=20261020c"></script>
+<script src="/js/team.js?v=20261021"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
-<script src="/js/handbook.js?v=20261012a"></script>
-<script src="/js/scripts.js?v=20261015zm"></script>
+<script src="/js/handbook.js?v=20261021"></script>
+<script src="/js/scripts.js?v=20261021"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261020b"></script>
-<script src="/js/ops.js?v=20261020c"></script>
-<script src="/js/perf.js?v=20261020c"></script>
+<script src="/js/campaigns.js?v=20261021"></script>
+<script src="/js/ops.js?v=20261021"></script>
+<script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261015zg"></script>
-<script src="/js/overview.js?v=20261020a"></script>
-<script src="/js/settings.js?v=20261020c"></script>
+<script src="/js/overview.js?v=20261021"></script>
+<script src="/js/settings.js?v=20261021"></script>
 </body>
 </html>

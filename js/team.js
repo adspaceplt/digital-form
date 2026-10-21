@@ -219,7 +219,8 @@
      allowed. No Access only hides the page; each card still asks Full
      Access on its own section. */
   var DASH = 'overview';
-  var DASH_DESC = { on: 'Shown with the cards of each section the group holds at Full Access.', none: 'The Dashboard is hidden.' };
+  var DASH_DESC = { on: 'Shown with the cards of each section the group holds at Full Access.', none: 'The Dashboard is hidden.',
+    empty: 'On, but nothing is shown: the group holds no section at Full Access.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
     'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1, 'whatsapp.documents': 1 };
 
@@ -1387,7 +1388,8 @@
     var line = said.length ? 'This group has ' + listWords(said, ', and ') + '.' : 'This group has no access.';
     if (scope === 'own') line += ' Own clients only.';
     if (acc[DASH] === 'none') line += ' The Dashboard is hidden.';
-    if (tuned) line += ' ' + tuned + (tuned === 1 ? ' permission is' : ' permissions are') + ' customised.';
+    /* What differs is counted once, against the preset, by the Custom note
+       (2026-10-20, TEAM-8); the sentence names no count of its own. */
     if (tools) line += ' ' + tools + (tools === 1 ? ' admin tool is' : ' admin tools are') + ' on.';
     return line;
   }
@@ -1398,7 +1400,9 @@
     var adm = adminBox();
     var admin = Boolean(adm && adm.checked), locked = Boolean(state.editing && state.editing.slug === 'admin');
     var tuned = 0;
-    $('grDesc-' + DASH).textContent = admin ? 'Every level, as an admin.' : DASH_DESC[access[DASH] === 'none' ? 'none' : 'on'];
+    /* On shows nothing without a section at Full Access (2026-10-20, TEAM-7). */
+    $('grDesc-' + DASH).textContent = admin ? 'Every level, as an admin.' : access[DASH] === 'none' ? DASH_DESC.none
+      : SECTIONS.some(function (s) { return access[s[0]] === 'manage'; }) ? DASH_DESC.on : DASH_DESC.empty;
     $('grDash').disabled = locked || admin;
     SECTIONS.forEach(function (s) {
       var d = $('grDesc-' + s[0]);
@@ -1500,8 +1504,9 @@
       roles.map(function (r) { return cell(r.name, esc(r.name)); }).join('') + '</div>' +
       '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">Dashboard</span>' +
       roles.map(function (r) {
-        var off = !r.is_admin && accessOf(r)[DASH] === 'none';
-        return cell(r.name, '<b>' + (off ? 'No Access' : 'On') + '</b>', off ? 'is-off' : '');
+        var acc = accessOf(r), off = !r.is_admin && acc[DASH] === 'none';
+        var none = !off && !r.is_admin && !SECTIONS.some(function (s) { return acc[s[0]] === 'manage'; });
+        return cell(r.name, '<b>' + (off ? 'No Access' : 'On') + '</b>' + (none ? '<small>Nothing shown without Full Access</small>' : ''), off ? 'is-off' : '');
       }).join('') + '</div>';
     CHUNKS.forEach(function (c) {
       html += '<div class="permcmp-chunk">' + esc(c[0]) + '</div>';
@@ -1850,7 +1855,7 @@
           .then(function (r) {
             var d = r.data || {};
             if (r.error) {
-              var why = (d.error === 'not_admin') ? 'Only an admin can send invitations.'
+              var why = (d.error === 'not_admin') ? 'Sending an invitation needs Team: Send invitation.'
                 : /not deployed/.test(r.why)
                   ? 'The invite-member function is not deployed. Add the login under Supabase ' +
                     'Authentication, or deploy the function and use Send invitation.'
@@ -1873,7 +1878,7 @@
     window.ADspaceConfirm.ask({
       title: 'Send an invitation',
       body: 'An email goes to ' + m.email + ' with a sign-in link. '
-          + 'It leaves the building and cannot be recalled.',
+          + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () {
       msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
