@@ -912,9 +912,10 @@
   function decidedLine(o) {
     var r = o.review;
     if (!r || !r.decision) return '';
+    /* The console's own stamp, the year included (2026-10-20, SEL-5). */
     var stamp = r.at && ADspaceClock.parts(r.at)
-      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true, year: false }) + ' ' + ADspaceClock.time(r.at)
-                       : ADspaceClock.date(r.at, { year: false }) + ', ' + ampm(ADspaceClock.time(r.at)))
+      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true }) + ' ' + ADspaceClock.clock(r.at, { h24: true })
+                       : ADspaceClock.date(r.at) + ', ' + ADspaceClock.clock(r.at))
       : '';
     /* An approval the team gave on the client's behalf names the colleague
        who proceeded, never as if the client had approved it. */

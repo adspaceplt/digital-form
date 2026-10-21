@@ -503,7 +503,12 @@
     var w = PURPOSE[t.purpose] || [t.purpose, ''];
     metaTemplates().then(function (m) {
       if (m.error) { say($('waTplMsg'), said(m.error), 'err'); return; }
-      var fit = (m.list || []).filter(function (x) { return x.supported; });
+      /* Only templates this purpose can take are offered (2026-10-20,
+         WA-2): the refusals below stay for a template that changed at Meta. */
+      var fit = (m.list || []).filter(function (x) {
+        return x.supported && (DOC[t.purpose] ? x.header === 'DOCUMENT' : x.header !== 'DOCUMENT') &&
+          !x.header_var && x.body_vars.length <= 5 && !(x.button_var && NO_BUTTON[t.purpose]);
+      });
       if (!fit.length) { say($('waTplMsg'), 'Meta holds no approved template to choose.', 'err'); return; }
       var byKey = {};
       fit.forEach(function (x) { byKey[tplKey(x)] = x; });
@@ -581,13 +586,15 @@
       $('waToNote').hidden = false;
       return;
     }
-    var list = [];
+    var list = [], narrow = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
     (d.contacts || []).forEach(function (k) {
       if (forClient(o) && k.client_id !== o.clientId) return;
       if (o.purpose === 'creator') return;
       list.push({ kind: 'contact', id: k.id, name: k.name, client: k.client, client_id: k.client_id, greeting: k.greeting,
         number: k.number, username: k.username, primary: k.is_primary,
-        label: k.name + ' · ' + k.client + (k.is_primary ? ' · Main contact' : '') });
+        /* On a phone the label keeps what tells two apart, Main contact
+           left to the number shown under it (2026-10-20, WA-3). */
+        label: k.name + ' · ' + k.client + (k.is_primary && !narrow ? ' · Main contact' : '') });
     });
     (d.creators || []).forEach(function (k) {
       if (forClient(o)) return;

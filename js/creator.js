@@ -165,7 +165,7 @@
       linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ADspace 客户经理。',
       linkNone: '请至少保留一个主页链接。',
       linkFail: '未能保存，请重试。',
-      postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '发布日期',
+      postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '实际发布日期',
       countPeriod: '统计期间：{a} 至 {b}', periodWait: '统计期间尚未设定。',
       views: '浏览量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
@@ -705,7 +705,13 @@
   function postOf(b, plat) {
     return (b.posts || []).filter(function (p) { return platKeyOf(p.platform) === platKeyOf(plat); })[0] || {};
   }
-  function numVal(v) { return v == null || v === '' ? '' : String(v); }
+  /* A count reads with its separators, written and read back alike
+     (2026-10-20, CRE-4); the save takes the digits. */
+  function numVal(v) {
+    if (v == null || v === '') return '';
+    var d = String(v).replace(/[,\s]/g, '');
+    return /^\d+$/.test(d) ? Number(d).toLocaleString('en-GB') : String(v);
+  }
   function postsHtml(b) {
     var open = b.state !== 'completed';
     var rows = placementsOf(b).map(function (plat) {
@@ -782,6 +788,10 @@
       day.addEventListener('change', show);
       day.addEventListener('input', show);
       setTimeout(show, 0);
+      ['views', 'engagements', 'impressions'].forEach(function (k) {
+        var el = box.querySelector('[data-k="' + k + '"]');
+        if (el) el.addEventListener('blur', function () { el.value = numVal(el.value.trim()); });
+      });
     });
     /* What one placement sends, or why it cannot: checked for every
        placement before anything is sent. */

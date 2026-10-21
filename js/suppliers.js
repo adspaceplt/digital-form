@@ -158,8 +158,10 @@
     b.type = 'button';
     b.className = 'svc-row sup-row' + (s.status === 'inactive' ? ' is-off' : '');
     b.innerHTML = '<span class="svc-name"><b>' + esc(nameOf(s)) + '</b>' + (s.name ? '<small class="sup-code">' + esc(s.code) + '</small>' : s.waiting ? '' : '<small>Waiting for their details</small>') + '</span>' +
-      '<span class="sup-who">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
-      '<span class="sup-term">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
+      /* What is not known is left out on a phone, as Clients leaves it
+         (2026-10-20, SUP-9). */
+      '<span class="sup-who' + (s.contact_name ? '' : ' is-none') + '">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
+      '<span class="sup-term' + (s.payment_term ? '' : ' is-none') + '">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-state">' + chip(s) + '</span>' +
       '<span class="sup-go">' + CHEV + '</span>';
     b.addEventListener('click', function () { state.open = s.id; setUrl(); openRec(s.id); });
@@ -199,7 +201,7 @@
     var rec = $('supRec');
     $('supList').hidden = true; $('supBar').hidden = true; rec.hidden = false;
     if (!state.rec || state.rec.id !== id) UI.skeleton(rec, 4);
-    rpc('supplier_get', { p_id: id }).then(function (r) {
+    return rpc('supplier_get', { p_id: id }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
         if (d.error === 'not-found') { state.open = null; setUrl(); msg('supMsg', 'That supplier is no longer there.', 'err'); paint(); return; }
@@ -492,18 +494,18 @@
     if (btn) btn.disabled = true;
     var s = state.rec, was = s.status;
     rpc('supplier_set_status', { p_id: s.id, p_status: to }).then(function (r) {
-      if (btn) btn.disabled = false;
       var d = r.data || {};
-      if (r.error || d.error) { msg('supRecMsg', said(r), 'err'); return; }
+      if (r.error || d.error) { if (btn) btn.disabled = false; msg('supRecMsg', said(r), 'err'); return; }
       state.rows = null;
       rpc('suppliers_list', {}).then(function (r2) { if (r2.data && r2.data.rows) state.rows = r2.data.rows; });
-      openRec(s.id);
-      setTimeout(function () {
+      /* The answer follows the record's read, never a timer: the button
+         holds its pending state until then (2026-10-20, SUP-4). */
+      openRec(s.id).then(function () {
         if (was === 'pending') { msg('supRecMsg', 'Approved.', 'ok'); offerMail(s); return; }
         if (window.ADspaceAdmin && window.ADspaceAdmin.undoBar && $('supRecMsg')) {
           window.ADspaceAdmin.undoBar(nameOf(s) + (to === 'inactive' ? ' set inactive.' : ' set active.'), function () { status(was); }, $('supRecMsg'));
         }
-      }, 400);
+      });
     });
   }
 
@@ -758,9 +760,14 @@
   function kindRows() {
     var ind = $('supEdKind').value === 'individual';
     $('supEdNricWrap').hidden = !ind || !payWork();
-    /* Five fields in two columns leave one alone: the number takes its row. */
-    $('supEdPhoneWrap').classList.toggle('span-all', !$('supEdNricWrap').hidden);
+    /* The ID's row holds Registered as alone in Use details: the kind
+       then takes the row. */
+    $('supEdKindWrap').classList.toggle('span-all', $('supEdCodeWrap').hidden);
+    $('supEdBrnWrap').classList.toggle('span-all', $('supEdNricWrap').hidden);
     $('supEdBrn').setAttribute('aria-required', String(!ind));
+    /* Its label's mark follows, as the save refuses (2026-10-20, SUP-6). */
+    var brnLab = document.querySelector('label[for="supEdBrn"]');
+    if (brnLab) brnLab.classList.toggle('is-req', !ind);
     /* Hints, never a real code (2026-10-20, SPF-1). */
     $('supEdBrn').placeholder = ind ? 'Optional' : '12 digits';
   }
@@ -779,6 +786,8 @@
       $(x[1]).value = v == null ? '' : v;
     });
     $('supPaySec').hidden = !payWork();
+    /* The Supplier ID is the team's, changed in Edit alone (2026-10-20, SUP-7). */
+    $('supEdCodeWrap').hidden = Boolean(form);
     kindRows();
     if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb();
     $('supEditTitle').textContent = form ? (form.purpose === 'update' ? 'Use changes' : 'Use details') : 'Edit supplier';

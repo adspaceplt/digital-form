@@ -742,6 +742,8 @@
     $('docSalRow').hidden = on;
     $('docLetterH').textContent = on ? 'Clauses' : 'Letter';
     $('docBodyLabel').textContent = on ? 'Clauses' : 'Body';
+    $('docClauseFold').open = !on;
+    $('docClauseSum').hidden = !on;
     /* An agreement is signed by both parties, always. */
     if (on) $('docSigned').checked = true;
     $('docSigned').disabled = on || Boolean(issuing && issuing.reissue);

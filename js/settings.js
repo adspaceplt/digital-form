@@ -99,7 +99,7 @@
       ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
-      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'A leaver\'s', per('month')]] },
+      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
     resend: { title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
   };
   /* The earliest change set from a later day, in the row's words: "From
@@ -163,6 +163,13 @@
         return t.on + ' of ' + t.all + ' on';
       });
     },
+    /* What the Supplier emails row holds, from its own read (2026-10-20, SET-7). */
+    suptpl: function () {
+      return db.rpc('supplier_email_templates_list').then(function (r) {
+        if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+        return plural(((r.data && r.data.rows) || []).length, 'template', 'templates');
+      });
+    },
     types: function () {
       return db.from('doc_types').select('id, active').then(function (r) {
         if (r.error) throw r.error;
@@ -196,7 +203,7 @@
       biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() },
       biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
         meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-          'A leaver\'s ' + plural(num('health_leaver_months'), 'month', 'months') + ' after they left']) }]);
+          'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
@@ -250,7 +257,7 @@
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
         meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Within ' + plural(rep2, 'hour', 'hours') }]);
     add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
-      bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: '2 templates' }]);
+      bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') }]);
     return out;
   }
 

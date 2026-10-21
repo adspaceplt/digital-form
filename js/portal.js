@@ -593,9 +593,11 @@
      abroad read their own hour and no zone (the client pages refresh,
      2026-10-07). A Date shifted eight hours and read in UTC is that clock. */
   function myt(d) { return new Date(new Date(d).getTime() + 8 * 3600000); }
+  /* Chinese reads 下午2:00, never pm (2026-10-20, POR-3). */
   function clock(d) {
-    var h = d.getUTCHours(), m = d.getUTCMinutes();
-    return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
+    var h = d.getUTCHours(), m = d.getUTCMinutes(), hm = ((h % 12) || 12) + ':' + String(m).padStart(2, '0');
+    if (lang === 'zh') return (h < 12 ? '上午' : '下午') + hm;
+    return hm + (h < 12 ? 'am' : 'pm');
   }
   var MON_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var DAY_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -609,7 +611,7 @@
     var day = lang === 'zh'
       ? a.getUTCFullYear() + '年' + (a.getUTCMonth() + 1) + '月' + a.getUTCDate() + '日'
       : DAY_EN[a.getUTCDay()] + ' ' + a.getUTCDate() + ' ' + MON_EN[a.getUTCMonth()] + ' ' + a.getUTCFullYear();
-    return day + ', ' + meetSpan(v);
+    return day + (lang === 'zh' ? '，' : ', ') + meetSpan(v);
   }
   /* Add to calendar: one event as an .ics file, the time in UTC, the link
      where it has one. Made in the page; nothing is sent anywhere. */
@@ -648,16 +650,14 @@
         var ahead = new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > now;
         var row = document.createElement('div');
         row.className = 'svc-row doc-row meet-row';
-        var items = ahead && v.link ? [['join', w.join]] : [];
+        /* Join is the row's own act while the meeting is ahead, as the
+           Overview draws it (2026-10-20, POR-2). */
+        var join = ahead && v.link;
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period, v.kind)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
           '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
           '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held, 'is-ok')) + '</span>' +
-          menuCell(items);
-        wireMenu(row);
-        if (items.length) row.querySelector('[data-a="join"]').addEventListener('click', function () {
-          window.open(v.link, '_blank', 'noopener');
-        });
+          '<span class="team-act">' + (join ? '<a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + ' ' + EXT + '</a>' : '') + '</span>';
         tb.appendChild(row);
       });
       box.innerHTML = ''; box.appendChild(tb);
@@ -935,7 +935,9 @@
           '<span class="svc-name"><b>' + esc((w[r.kind] || r.kind) + (r.service_label ? ' · ' + r.service_label : '')) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
             (r.reply ? '<small>' + esc(w.reply + ': ' + r.reply) + '</small>' : '') + '</span>' +
-          '<span class="svc-rate svc-amt">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +
+          /* No fee is a mute dash at a desk under its head, nothing on a
+             phone, where the head is hidden (2026-10-20, POR-1). */
+          '<span class="svc-rate svc-amt' + (r.fee != null && r.fee !== '' ? '' : ' is-none') + '">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +
           '<span class="svc-state">' + chip(gone ? w.withdrawn : (w.rqState[r.state] || r.state), tone) + '</span>' +
           menuCell(items);
         wireMenu(row);

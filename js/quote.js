@@ -81,7 +81,7 @@
       proceed: 'Proceed', download: 'Download', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
-      validLong: 'This quotation is valid until {d}.', basis: 'Rates are based on the ADspace Rate Card v.{v}.',
+      basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', brnSg: 'UEN', brnHintSg: '9 or 10 characters', addr: 'Billing address',
       ask: 'Request Letter of Offer', asking: 'Sending…',
       askNote: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
@@ -153,7 +153,7 @@
       proceed: '继续办理', download: '下载', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
-      validLong: '本报价有效期至 {d}。', basis: '价格依据 ADspace 价目表 v.{v}。',
+      basis: '价格依据 ADspace 价目表 v.{v}。',
       billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', brnSg: 'UEN 编号', brnHintSg: '9 或 10 位', addr: '账单地址',
       ask: '申请服务确认函', asking: '提交中…',
       askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
@@ -533,7 +533,8 @@
     var notes = [], managed = managedBudget(q);
     if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
     else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
-    if (!gone) notes.push(f(t().validLong, { d: day(q.valid_until, true) }));
+    /* The validity is the status line's on screen; the PDF states it in its
+       remarks (2026-10-20, QTE-1). */
     notes.push(f(t().basis, { v: q.version }));
     var sg = q.market === 'SG';
     var aside = gone ? '' :

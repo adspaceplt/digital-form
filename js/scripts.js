@@ -215,7 +215,9 @@
         route: 'scripts', key: 'm' + p, name: p === 'none' ? 'No month' : monthWord(p), count: n,
         shut: !st.find && GRP.shut('scripts', 'm' + p, i > 0, months.length === 1),
         table: function () {
-          var table = GRP.table('vs-row', ['Client', 'Next shoot', 'Published']);
+          /* The column is the state, as the month's list heads it; its chip
+             never repeats a heading (2026-10-20, VS-1). */
+          var table = GRP.table('vs-row', ['Client', 'Next shoot', 'State']);
           GRP.more(table, groups, 30, 'scripts', rowOf);
           return table;
         }

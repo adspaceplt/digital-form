@@ -388,7 +388,9 @@
         return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>' +
           (brandsOf[c.id] || []).map(function (b) {
             return '<option value="b:' + esc(b.id) + '" data-client="' + esc(c.id) + '">' +
-              esc(c.name + ' \u203a ' + b.name + ' · White label') + '</option>';
+              /* Named code first, as its client is, so the client's code
+                 finds it (2026-10-20, RPT-5). */
+              esc(F.named(c.client_code, c.name) + ' \u203a ' + b.name + ' · White label') + '</option>';
           }).join('');
       }).join('');
       if (keep && sel.querySelector('option[value="' + keep.replace(/"/g, '') + '"]')) sel.value = keep;
@@ -1673,16 +1675,22 @@
       return f.fix && t.indexOf(f.fix) > -1 ? 'applied' : 'gone';
     };
     var openOnes = found.filter(function (f) { return standing(f) === 'open'; });
-    var tmark = !last ? ' is-missing' : stale || moved || found.length ? ' is-missing' : ' is-done';
+    /* Once confirmed or published the check is history: what it found is
+       said as found, never as still to fix (2026-10-20, RPT-7). */
+    var past = r.status === 'confirmed' || r.status === 'published';
+    var tmark = !last ? ' is-missing' : past ? (found.length ? '' : ' is-done') : stale || moved || found.length ? ' is-missing' : ' is-done';
     var tnote = checkRun[r.id] ? 'Checking…' : !last ? 'Not run' :
-      (found.length ? found.length + ' to fix' : 'No issues') + ' · Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '');
+      (found.length ? found.length + (past ? ' found' : ' to fix') : 'No issues') + ' · Checked ' + stampWord(last.at) + (last.by ? ' by ' + last.by : '');
     var text = '<div class="rp-check rp-part' + tmark + '" data-part="text">' +
         '<span class="rp-check-mark" aria-hidden="true">' + (tmark === ' is-done' ? ICON.tick : '') + '</span>' +
         '<span class="rp-check-t"><b>Commentary</b><small>' + esc(tnote) + '</small></span>' +
         (openOnes.length > 1 ? '<span class="rp-aicheck-acts"><button class="btn btn-sm" type="button" data-a="applyall">Apply all</button></span>' : '') +
       '</div>' +
-      (stale ? '<p class="rp-anote">The commentary has changed since this check. Run the audit again to check it as it stands.</p>'
+      (past ? '' : stale ? '<p class="rp-anote">The commentary has changed since this check. Run the audit again to check it as it stands.</p>'
         : moved ? '<p class="rp-anote">The figures have changed since this check. Run the audit again to check the commentary against them.</p>' : '') +
+      /* Out of a draft nothing in the findings is left to do, so they fold
+         and the review's own acts come up the screen (2026-10-20, RPT-6). */
+      (!draft && found.length ? '<details class="rp-afold"><summary>Findings · ' + found.length + '</summary>' : '') +
       found.map(function (f, i) {
         var sx = standing(f);
         return '<div class="rp-finding' + (sx === 'applied' ? ' is-applied' : '') + '"><span class="rp-f-where">' + esc(f.where || '') + '</span>' +
@@ -1691,7 +1699,7 @@
           (f.fix ? '<span class="rp-f-fix"><span class="rp-f-label">Use</span>' + esc(f.fix) + '</span>' : '') +
           (sx === 'open' ? '<span class="rp-f-acts"><button class="btn btn-sm" type="button" data-a="apply" data-i="' + i + '">' + (f.fix ? 'Apply' : 'Remove words') + '</button></span>'
             : sx === 'applied' ? '<span class="rp-f-acts"><span class="chip-state is-ok">Applied</span></span>' : '') + '</div>';
-      }).join('');
+      }).join('') + (!draft && found.length ? '</details>' : '');
 
     host.innerHTML = head + meta + text + '<div class="msg" data-m="cmsg"></div>';
     var m = host.querySelector('[data-m="cmsg"]');
@@ -2684,7 +2692,7 @@
           var line = titled ? (FORMAT_WORD[p.content_type] && p.content_type ? FORMAT_WORD[p.content_type] : '') : firstLine(p.caption);
           return '<div class="crm-row rp-post-row' + (pick && pick[p.id] ? ' is-picked' : '') + '" data-id="' + esc(p.id) + '">' +
             (pick ? tick(p.id, 'Select ' + postName(p), !!pick[p.id]) : '') +
-            '<span class="rp-thumb">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
+            '<span class="rp-thumb' + (p.thumb_data ? '' : ' is-empty') + '">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
             '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
             '<span class="rp-date">' + esc(dayWord(p.posted_on)) + '</span>' +
             '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) + unit(String(METRIC_WORD[m[0]] || '').toLowerCase()) : '') + '</span>' +
@@ -3934,7 +3942,7 @@
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
-            '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
+            '<span class="rp-thumb' + (a.thumb_data ? '' : ' is-empty') + '">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
             '<span class="rp-name"><span class="rp-line"><b>' + esc(adName(a.name)) + '</b>' + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + unit(Number(a.results) === 1 ? 'result' : 'results') + '</span>' +
@@ -5145,8 +5153,11 @@
           if (editing) {
             /* The admins' figure stays in sight while it differs, under the
                name so the fields keep one edge (2026-10-14, audit SET-3). */
+            /* A figure typed is saved for admins too, and the line says so
+               as it is typed (2026-10-20, SET-3). */
             return '<label class="aiu-row aiu-limit"><span class="aiu-name"><b>' + esc(l[2]) + '</b>' +
-              (a !== v ? '<small class="aiu-adm">Admins ' + esc(String(a)) + ' a day</small>' : '') + '</span>' +
+              '<small class="aiu-adm" data-was="' + (a !== v ? esc('Admins ' + a + ' a day') : '') + '"' + (a !== v ? '' : ' hidden') + '>' +
+              (a !== v ? 'Admins ' + esc(String(a)) + ' a day' : '') + '</small></span>' +
               '<span class="aiu-field"><input class="input input-sm aiu-num" type="number" inputmode="numeric" min="0" max="500" step="1"' +
               ' data-k="' + l[0] + '" value="' + esc(String(v)) + '" placeholder="' + AI_STD[l[0]] + '" aria-label="' + esc(l[2] + ', a day') + '">' +
               '<span class="aiu-unit">a day</span></span></label>';
@@ -5165,6 +5176,16 @@
         sec.outerHTML = limitsHtml(setting);
         sec = host.querySelector('.aiu-limits');
         if (on && sec.scrollIntoView) sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        if (on) Array.prototype.forEach.call(sec.querySelectorAll('.aiu-num'), function (f) {
+          var k = f.getAttribute('data-k'), shown = setting(k), adm = f.closest('.aiu-row').querySelector('.aiu-adm');
+          var pair = LIMITS.filter(function (l) { return l[0] === k; })[0];
+          f.addEventListener('input', function () {
+            var x = String(f.value).trim(), n = x === '' ? AI_STD[k] : Number(x);
+            var moved = /^\d{1,3}$/.test(x || String(AI_STD[k])) && n !== shown;
+            var word = moved ? (n !== setting(pair[1]) ? 'Admins also ' + n + ' a day' : '') : adm.getAttribute('data-was');
+            adm.textContent = word; adm.hidden = !word;
+          });
+        });
       }
     };
     unedit.onclick = function () { setEditing(false); };
@@ -5188,7 +5209,7 @@
       });
       if (bad) { say(m, 'A limit is a whole number from 0 to 500.', 'err'); bad.focus(); return; }
       setEditing(false);
-      if (!jobs.length) { say(m, 'No change.', 'ok'); return; }
+      if (!jobs.length) { say(m, 'No change.', 'mute'); return; }
       setLimit(jobs);
     };
     var setLimit = function (jobs) {
@@ -5421,6 +5442,12 @@
     months.sort().reverse();
     months.forEach(function (k, i) {
       var inMonth = mine.filter(function (r) { return monthKey(r) === k; });
+      var wholeMonth = function (r) {
+        var a0 = String(r.period_start || '').slice(0, 10), b0 = String(r.period_end || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-01$/.test(a0) || a0.slice(0, 7) !== b0.slice(0, 7)) return false;
+        var y = Number(a0.slice(0, 4)), m = Number(a0.slice(5, 7));
+        return Number(b0.slice(8, 10)) === new Date(Date.UTC(y, m, 0)).getUTCDate();
+      };
       list.appendChild(GRP.section({
         route: 'reports', key: hub.tab + ':' + k, name: monthName(k), count: inMonth.length,
         /* Published keeps its newest month open and the rest shut; the
@@ -5428,7 +5455,9 @@
         shut: q ? false : GRP.shut('reports', hub.tab + ':' + k, hub.tab === 'published' && i > 0, months.length === 1),
         table: function () {
           var picking = Boolean(hub.pick);
-          var t = GRP.table('rh-row' + (picking ? ' is-picking' : ''), (picking ? [''] : []).concat(['Client', 'Period', 'Version', 'Updated', '']));
+          /* The card names the month; a row names its span only where it is
+             not that whole month (2026-10-20, RPT-9). */
+          var t = GRP.table('rh-row' + (picking ? ' is-picking' : ''), (picking ? [''] : []).concat(['Client', 'Version', 'Updated', '']));
           GRP.more(t, inMonth, 30, 'reports', function (r) {
             var c = hub.byClient[r.client_id] || {};
             /* Picking, the row is its tick: a press anywhere on it ticks it. */
@@ -5444,8 +5473,8 @@
                 (r.on_request ? '<span class="chip rp-wl">On request</span>' : '') +
                 '</span><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
+                (wholeMonth(r) ? '' : ' · ' + periodWord(r.period_start, r.period_end)) +
                 (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
-              '<span class="rp-ver rh-per">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
               '<span class="rp-ver rh-vno">v' + r.version_no + '</span>' +
               '<span class="rp-ver rh-upd">' + esc(stampWord(r.updated_at)) + '</span>' +
               '<span class="rp-go" aria-hidden="true">' + ICON.go + '</span>';

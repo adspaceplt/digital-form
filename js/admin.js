@@ -3615,9 +3615,11 @@
     };
     /* The two side by side at 9:16, large enough to judge a match by eye;
        the video plays in place. */
-    var coverTile = function (m) {
+    /* Each cover named by its place in the set, so two covers read apart
+       (2026-10-20, REV-6). */
+    var coverTile = function (m, c) {
       return '<figure class="pairtile"><span class="pairtile-pic">' + (m ? thumbOf(m) : '') + '</span>' +
-        '<figcaption>Cover</figcaption></figure>';
+        '<figcaption>Post ' + (posts.indexOf(c) + 1) + ' · Cover</figcaption></figure>';
     };
     var videoTile = function (x) {
       return '<figure class="pairtile is-video"><span class="pairtile-pic">' +
@@ -3630,7 +3632,7 @@
       if (next) taken[next.id] = true;
       var id = 'pairSel' + i;
       return '<div class="paircard" data-cover="' + esc(c.id) + '">' +
-        '<div class="paircard-media">' + coverTile((c.media || [])[0]) +
+        '<div class="paircard-media">' + coverTile((c.media || [])[0], c) +
           '<span class="pairlink" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>' +
           videoTile(next) + '</div>' +
         '<div class="paircard-ctl">' +
@@ -5095,7 +5097,7 @@
     $('pairNote').hidden = true;
     $('setProgressBlock').hidden = true;
   }
-  function loadPosts() {
+  function loadPosts(then) {
     if (!state.batch) return;
     var bid = state.batch.id;
     if (!state.postView || state.postView.batch !== bid) {
@@ -5162,6 +5164,7 @@
             paintPostStages(true);
             paintProgress(r.data, latest, !rev.error);
             settleScroll();
+            if (typeof then === 'function') then();
           });
       });
   }
@@ -5917,6 +5920,7 @@
     extra = extra || {};
     var row = document.createElement('div');
     row.className = 'saved';
+    row.setAttribute('data-post', p.id);
     row.addEventListener('click', function (e) {
       if (!state.postPick || row.classList.contains('is-editing')) return;
       if (e.target.closest && e.target.closest('input, button, a, textarea, select, label, video')) return;
@@ -6128,8 +6132,20 @@
           db.rpc('review_confirm', { p_post: p.id }).then(function (res) {
             var d = (res && res.data) || {};
             if (res.error || d.error) { msg('setMsg', confirmSaid(res.error ? res.error.message : d.error), 'err'); return; }
-            msg('setMsg', 'Confirmed internally.', 'ok');
-            loadPosts();
+            /* The way back stands at the post, where it happened
+               (2026-10-20, REV-8); a post the stage strip no longer shows
+               takes it in the set's line. */
+            loadPosts(function () {
+              var back = function () {
+                db.rpc('review_revert_confirm', { p_post: p.id }).then(function (res2) {
+                  var d2 = (res2 && res2.data) || {};
+                  if (res2.error || d2.error) { msg('setMsg', confirmSaid(res2.error ? res2.error.message : d2.error), 'err'); return; }
+                  loadPosts();
+                });
+              };
+              var at = document.querySelector('#postList .saved[data-post="' + p.id + '"]');
+              undoHere(postName(p) + ' confirmed internally.', back, at || $('setMsg'));
+            });
           }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
         });
       });
@@ -6774,6 +6790,9 @@
              way any other fold is: somebody who has just paused a link is
              somebody who wants that card open. */
           window.ADspaceGroup.keep('links', live ? 'live' : 'paused', false);
+          /* An earlier act's line (… added.) gives way to this one
+             (2026-10-20, LNK-1). */
+          msg('linkListMsg', '');
           loadLinks();
           /* The way back where it happened (ux-audit LNK-7, 2026-10-14). */
           if (!live) undoHere('/' + l.slug + ' paused.', function () { setLinkLive(l, true); }, $('linkListMsg'));
@@ -6972,7 +6991,9 @@
           '<div class="qrrow-acts">' +
             '<button class="btn btn-sm" data-q="dl" type="button">Download</button>' +
             '<button class="btn btn-sm" data-q="copy" type="button">Copy link</button>' +
-            '<button class="btn btn-sm btn-quiet' + (q.active ? ' is-danger' : '') +
+            /* Red words on the tonal button, a width with its pair
+               (2026-10-20, LNK-2). */
+            '<button class="btn btn-sm' + (q.active ? ' btn-danger' : '') +
               '" data-q="toggle" data-need="links:work" type="button">' + (q.active ? 'Revoke' : 'Restore') + '</button>' +
           '</div>' +
         '</div>';

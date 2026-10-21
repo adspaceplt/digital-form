@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261020c">
+<link rel="stylesheet" href="/css/portal.css?v=20261021">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -44,6 +44,8 @@
     height: var(--head-h); flex: 0 0 auto;
     display: flex; align-items: center;
     padding: 0 24px;
+    /* The rule every chrome page's bar draws (2026-10-20, NF-1). */
+    border-bottom: 1px solid var(--line);
   }
   /* `contain` for the reason `.brand-logo` takes it: height plus an auto
      width plus a max-width clamp squashes the mark in a box too narrow for

@@ -370,7 +370,7 @@ a { color: inherit; }
 .chrome-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .chrome-actions .btn, .chrome-actions .pill { min-width: 0; }
 .brand-kicker, .brand-for { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 /* `height` + `width: auto` + the global `img { max-width: 100% }` is a squash
    waiting for a narrow box: the width is clamped to what is left and the
    height is not, so the mark is compressed horizontally and the wordmark
@@ -1471,6 +1471,10 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .fmore > summary::after { order: 3; }
 .fmore[open] .fmore-sum { visibility: hidden; }
 .fmore > .row:first-of-type { margin-top: 12px; }
+/* A fold standing open with its summary hidden reads as the fields alone
+   (the Issue sheet's letter body, 2026-10-20). */
+.fmore > summary[hidden] { display: none; }
+.fmore:has(> summary[hidden]) { border-top: 0; margin-top: 0; }
 .muted { color: var(--ink-mute); font-size: 12.5px; }
 .msg { font-size: 13px; margin-top: 12px; }
 .msg.err { color: var(--err); }
@@ -3436,6 +3440,16 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .booking-facts:has(> :nth-child(5)) > :last-child:nth-child(3n+1) { grid-column: 1 / -1; }
   .booking-facts:has(> :nth-child(5)) > :last-child:nth-child(3n+2) { grid-column: span 2; }
 }
+/* Every booking on the selection page lays its facts two across, however
+   many it holds, so the cards read alike (2026-10-20, SEL-4). */
+@media (min-width: 641px) {
+  #bookingList .booking-facts, #needBox .booking-facts,
+  #bookingList .booking-facts:not(:has(> :nth-child(4))), #needBox .booking-facts:not(:has(> :nth-child(4))) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row;
+  }
+  #bookingList .booking-facts > :last-child, #needBox .booking-facts > :last-child { grid-column: auto; }
+  #bookingList .booking-facts > :last-child:nth-child(odd), #needBox .booking-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
 @media (max-width: 640px) {
   .booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
   .booking-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
@@ -3873,6 +3887,7 @@ body > .shell { width: 100%; }
 .svc-name small { font-size: 12px; color: var(--ink-mute); }
 /* A line's Bukku item code, in the token face as a client's ID (2026-10-15). */
 .svc-name small.svc-sku { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; letter-spacing: 0; }
+.svc-name small.svc-said { margin: 2px 0 0; color: var(--ok); font-size: 12.5px; }
 .svc-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13.5px; }
 .svc-unit { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .svc-calc { font-size: 12.5px; color: var(--ink-mute); }
@@ -3894,7 +3909,7 @@ body > .shell { width: 100%; }
    measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
    16px (the span says "to", never a dash: PORTAL-10, 2026-10-14), and never
    wrapped into the state beside it. */
-.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) var(--ctl-h); }
+.doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) auto; }
 .meet-row .svc-amt { white-space: nowrap; }
 /* The client record's pane has no Brand column: every row there is that
    client's. */
@@ -4339,6 +4354,8 @@ body > .shell { width: 100%; }
 }
 .is-narrow .doc-row.meet-row > .svc-state { margin-left: 12px; }
 .is-narrow .doc-row.meet-row > .team-act:not(:empty) { margin-left: 8px; }
+/* A request with no fee says nothing on a phone (2026-10-20, POR-1). */
+.is-narrow .doc-row > .svc-amt.is-none { display: none; }
 /* Two lines: the reference and its ⋯, then who and when, the date ending at
    the card's right edge. */
 /* The right track is fixed, measured against `30 Sept 2026`, because an
@@ -5240,7 +5257,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    the rules that size it sit with the rest of `.filecard`, above. */
 @media (max-width: 520px) {
   .client-draft-media { grid-template-columns: minmax(0, 1fr); }
-  .client-draft-media video, .client-draft-media img { width: 100%; max-height: 72vh; }
+  /* About three fifths of the screen, so Approve is in reach of the draft
+     (2026-10-20, SEL-6); a picture keeps its shape inside it. */
+  .client-draft-media video, .client-draft-media img { width: 100%; max-height: 60vh; max-height: 60dvh; object-fit: contain; }
 }
 
 /* The decision sits on the card it belongs to, so it takes the card's own
@@ -7043,6 +7062,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
 }
 .bulkbar[hidden] { display: none; }
+/* Inside a card the bar is shaded, never a second outline (2026-10-20, REV-7). */
+.bulkbar.is-incard { background: var(--sunk); border-color: transparent; }
 .bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .bulkbar-acts .btn { flex: 0 0 auto; }
@@ -7186,6 +7207,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-thumb { width: 34px; height: 42px; border-radius: 6px; background: var(--sunk); overflow: hidden; display: block; }
 .rp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .rp-thumb-lg { width: 64px; height: 80px; flex: 0 0 auto; }
+/* No picture leaves its cell empty, never a grey square (2026-10-20, RPT-8). */
+.rp-thumb.is-empty { background: none; }
 /* A message under the head sits one step under it, never the gap and its
    own margin together. */
 .rp-head > .msg { margin: 0; }
@@ -7336,11 +7359,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
 .rp-vrow .rp-name .nb { white-space: nowrap; }
 .rh-row.crm-head { padding: 12px 15px 8px; }
-.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "per upd"; gap: 4px 12px; }
+.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "name upd"; gap: 4px 12px; }
 /* Select (2026-10-06): a tick leads each row; the row is its label. */
-.rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 150px 64px 110px 20px; cursor: pointer; }
+.rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 64px 110px 20px; cursor: pointer; }
 .rh-row.is-picked { background: var(--line-soft); }
-.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick per upd"; }
+.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd"; }
 /* My Work, Clients: one client's content months, meetings and tasks, picked
    from the select above them. The select is as wide as a client's name reads
    and no wider; on a phone it takes the row. The step to the months under
@@ -7691,7 +7714,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 }
 .crm-head.ml-row { padding: 12px 15px 8px; }
 .ml-row.is-off > :not(.ml-act) { opacity: .55; }
-.is-narrow .ml-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who act" "state act"; gap: 4px 10px; }
+.is-narrow .ml-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who act"; gap: 4px 10px; }
 .is-narrow .refl-line, .perfcard .refl-line { grid-template-columns: minmax(0, 1fr); }
 #mineSelf[hidden] { display: none; }
 .perf-self-sum { margin: 0 0 8px; }
@@ -8637,9 +8660,9 @@ body.is-maint { overflow: hidden; }
    cut: it breaks at its space where its column is narrow (2026-10-15, the
    user: a status is never shortened into a word that changes its meaning). */
 .cx-journey span { overflow-wrap: normal; word-break: keep-all; hyphens: none; }
-@media (max-width: 400px) { .cx-journey li { font-size: 11px; } .cx-journey { gap: 3px; } }
+@media (max-width: 400px) { .cx-journey li { font-size: 11px; } .cx-journey { gap: 4px; } }
 .is-tight .cx-journey li { font-size: 11px; }
-.is-tight .cx-journey { gap: 3px; }
+.is-tight .cx-journey { gap: 4px; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
@@ -8647,7 +8670,7 @@ body.is-maint { overflow: hidden; }
 .cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
 .cx-nextup .booking-deliver { border-top: 0; padding-top: 0; }
 .cx-drop {
-  position: relative; display: grid; justify-items: center; gap: 3px; margin-top: 14px; padding: 22px 12px;
+  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 14px; padding: 22px 12px;
   border-radius: var(--radius-sm); background: var(--tonal); text-align: center; cursor: pointer;
 }
 .cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
@@ -8877,6 +8900,9 @@ body.is-maint { overflow: hidden; }
 /* The client reads the script alone: the scene and, on a detailed script,
    its words, and no clip number or tick (the user, 2026-10-09). */
 .vs-scenes.is-read .vs-scene { grid-template-columns: 32px minmax(0, 1fr); }
+/* The last scene gives its padding back, so the list ends as far above the
+   next block as the hook does (2026-10-20, VSP-1). */
+.vs-scenes.is-read .vs-scene:last-child { padding-bottom: 0; }
 .vs-scenes.is-read.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr); }
 .is-narrow .vs-scenes.is-read .vs-scene, .is-narrow .vs-scenes.is-read.is-two .vs-scene {
   grid-template-columns: 24px minmax(0, 1fr); grid-template-areas: "n text" "n line";

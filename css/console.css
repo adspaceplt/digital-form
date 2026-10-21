@@ -1934,10 +1934,9 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-vrow .rp-name small { white-space: normal; overflow-wrap: anywhere; }
 .rp-vact { display: flex; justify-content: flex-end; }
 /* The Reports route: one row a report across every client. */
-.rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
+.rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 64px 110px 20px; }
 .is-narrow .rh-row.crm-head { display: none; }
 .is-narrow .rh-row > .rp-name { grid-area: name; }
-.is-narrow .rh-row > .rh-per { grid-area: per; }
 .is-narrow .rh-row > .rh-vno { grid-area: ver; text-align: right; }
 .is-narrow .rh-row > .rh-upd { grid-area: upd; text-align: right; }
 .is-narrow .rh-row > .rp-go { display: none; }
@@ -2161,7 +2160,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .crm-head.init-row { display: none; }
 
 /* My performance > Letters: the letter, its state, Download at the edge. */
-.ml-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 132px; align-items: center; }
+.ml-row { grid-template-columns: minmax(0, 1fr) 132px; align-items: center; }
 .ml-act { display: flex; justify-content: flex-end; }
 .is-narrow .ml-row > .init-name { grid-area: who; }
 .is-narrow .ml-row > .ml-state { grid-area: state; }
@@ -2185,6 +2184,12 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 /* The grid's gap is the one step: the cards give up their own margin. */
 #mineSelf > * { margin: 0; }
 .self-facts dd small { color: var(--ink-mute); font-weight: 400; }
+/* A self-rating reads as figures across, each label over its score, so a
+   category's name never breaks beside an empty track (2026-10-20, MINE-3). */
+.ovfacts.self-facts { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px 24px; }
+.ovfacts.self-facts > div, .is-narrow .ovfacts.self-facts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.is-narrow .ovfacts.self-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.self-said { margin: 4px 0 0; }
 .perf-cat-self { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
 .ctx-inits { display: flex; flex-direction: column; gap: 8px; }
 .ctx-init { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -2546,6 +2551,7 @@ button.aiu-row:first-child::before { content: none; }
 .input.aiu-num::-webkit-outer-spin-button, .input.aiu-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .aiu-unit { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
 .aiu-adm { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
+.aiu-adm[hidden] { display: none; }
 .aiu-limits.is-editing .aiu-row { padding: 6px 0; }
 .aiu-limits.is-editing .aiu-row:first-child { padding-top: 0; }
 
@@ -3370,6 +3376,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .sup-row > .sup-state { grid-area: state; justify-self: end; }
 .is-narrow .sup-row > .sup-term { grid-area: term; text-align: right; }
 .is-narrow .sup-row > .sup-go { display: none; }
+.is-narrow .sup-row > .is-none { display: none; }
 .sup-back { margin-bottom: 12px; }
 .sup-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
 .sup-rec { padding: 18px 20px; }
@@ -3475,3 +3482,12 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .sheet-foot:has(> .btn:not([hidden]) ~ .btn:not([hidden]) ~ .btn:not([hidden])) { flex-wrap: wrap; row-gap: 8px; }
   .sheet-foot:has(> .btn:not([hidden]) ~ .btn:not([hidden]) ~ .btn:not([hidden])) > .btn:first-of-type { order: 1; flex: 1 0 100%; }
 }
+.bill-addct { align-self: flex-start; margin-top: 4px; }
+
+/* A check's findings out of a draft, folded under one line (2026-10-20, RPT-6). */
+.rp-afold > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h-sm);
+  font-size: 13px; color: var(--ink-soft); padding: 0 2px; }
+.rp-afold > summary::-webkit-details-marker { display: none; }
+.rp-afold > summary::after { content: ""; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform var(--t) var(--ease); }
+.rp-afold[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }

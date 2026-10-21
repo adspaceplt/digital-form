@@ -1674,7 +1674,10 @@
       window.ADspaceSheet.close();
       st.self = d.months || [];
       paintSelf();
-      msg('mineSelfMsg', 'Saved.', 'ok');
+      /* Said on the card rated, in sight (2026-10-20, MINE-2). */
+      var card = document.querySelector('#mineSelf .self-card[data-period="' + m.period + '"] .refl-head');
+      if (card) { var said = document.createElement('p'); said.className = 'msg ok self-said'; said.setAttribute('role', 'status'); said.textContent = 'Saved.'; card.insertAdjacentElement('afterend', said); }
+      else msg('mineSelfMsg', 'Saved.', 'ok');
     });
   });
 
@@ -3203,15 +3206,16 @@
     var box = $('mineLetterList'), list = st.letters || [];
     if (!list.length) { UI.emptyLine(box, 'No letters.'); return; }
     box.innerHTML = '<div class="crm-table softpanel">' +
-      '<div class="crm-head ml-row"><span>Letter</span><span>State</span><span></span></div>' +
+      /* Void is the exception, a chip after its name; no column waits for
+         it (2026-10-20, MINE-4). */
+      '<div class="crm-head ml-row"><span>Letter</span><span></span></div>' +
       list.map(function (l, i) {
         var canDraw = l.source !== 'manual';
         var act = canDraw ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="dl">' + FILE_GLYPH + 'Download</button>'
           : l.file_url ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="open">Open' + OUT + '</button>' : '';
         return '<div class="crm-row ml-row' + (l.void ? ' is-off' : '') + '">' +
-          '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + '</b>' +
+          '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + (l.void ? ' <span class="chip is-off">Void</span>' : '') + '</b>' +
           '<small>' + esc([l.serial, dateWord(l.issued_at)].filter(Boolean).join(' · ')) + '</small></span>' +
-          '<span class="ml-state">' + (l.void ? '<span class="chip is-off">Void</span>' : '') + '</span>' +
           '<span class="ml-act">' + act + '</span></div>';
       }).join('') + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-a]'), function (b) {
@@ -3330,8 +3334,19 @@
     var sel = $('mineReflMonth');
     if (sel.options.length) return;
     sel.innerHTML = reflMonths().map(function (p) { return '<option value="' + p + '">' + esc(monthWord(p)) + '</option>'; }).join('');
-    if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(sel);
+    $('mineReflMonths').innerHTML = reflMonths().map(function (p, i) {
+      return '<button class="acttab btn-sm' + (i ? '' : ' is-on') + '" type="button" data-p="' + p + '" aria-pressed="' + (i ? 'false' : 'true') + '">' + esc(monthWord(p)) + '</button>';
+    }).join('');
   }
+  $('mineReflMonths').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-p]');
+    if (!b || b.getAttribute('data-p') === $('mineReflMonth').value) return;
+    $('mineReflMonth').value = b.getAttribute('data-p');
+    Array.prototype.forEach.call(this.querySelectorAll('.acttab'), function (x) {
+      var on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on));
+    });
+    $('mineReflMonth').dispatchEvent(new Event('change'));
+  });
   $('mineReflMonth').addEventListener('change', function () { st.refl = null; $('mineReflWrite').hidden = true; loadRefl(); });
   $('mineReflWrite').addEventListener('click', function () { openRefl(this); });
   function loadRefl() {
