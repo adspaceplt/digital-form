@@ -8682,7 +8682,8 @@ body.is-maint { overflow: hidden; }
 .cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cx-chips .plink { gap: 6px; }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
-.cx-facts > div:has(.cx-chips) { grid-column: 1 / -1; }
+.cx-facts > div:has(.cx-chips),
+.booking-facts.cx-facts:has(> :nth-child(5)) > div:has(.cx-chips) { grid-column: 1 / -1; }
 /* On a phone the shoot (a day and its time) takes its row, and the last
    plain fact left alone before the chip facts takes its row too
    (2026-10-20, CRE-1: Shoot's time wrapped in half a phone). */

@@ -317,6 +317,10 @@ added to all three in the same push.
 - A link handed out for one step of a record ends when the record moves
   past that step, and a suite seeds the link still open at that move
   (2026-10-20: an approved supplier's details form stood open).
+- A control hidden, a message moved or words taken off a row is first
+  grepped by its id or words across the suites, and each suite that reads
+  it is changed in the same push (2026-10-21: six pressed a Publish #691
+  hid, myhr read a line #693 moved, uxaudit a month #693 took off a row).
 - A function removed is first grepped by name across the suites with no
   cap on the output: a suite that cuts a script at `'  function name('`
   uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).
