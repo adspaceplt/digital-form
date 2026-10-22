@@ -3640,14 +3640,20 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 
 /* WhatsApp, the second audit (2026-10-22). A template's name gives way and
    its category reads whole (WA-3); the phone row's meta leads with what was
-   sent, the number leaving first where the line runs out (WA-4). */
-.wam-tplline { display: flex; min-width: 0; }
-.wam-tplname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wam-cat { flex: none; white-space: pre; }
-.wam-to small.wam-parts { display: flex; flex-wrap: wrap; line-height: 1.5; max-height: 1.5em; overflow: hidden; }
-.wam-parts > span { white-space: nowrap; }
-.wam-parts > .wam-part::before { content: '\00a0\00b7\00a0'; }
-.wam-parts > span:first-child { display: none; }
-.wam-parts > span:nth-child(2)::before { content: none; }
-.is-narrow .wam-parts > span:first-child { display: inline; }
-.is-narrow .wam-parts > span:nth-child(2)::before { content: '\00a0\00b7\00a0'; }
+   sent, the number leaving first where the line runs out (WA-4). The parts
+   are inline blocks, so a line reads as one sentence to a screen reader. */
+.wam-tpl small.wam-tplline { display: block; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+.wam-tplname { display: inline-block; max-width: calc(100% - 8.4em); vertical-align: bottom; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wam-cat, .wam-sep { white-space: pre; }
+.wam-to small.wam-parts { display: block; white-space: normal; line-height: 1.5; max-height: 1.5em; overflow: hidden; text-overflow: clip; }
+.wam-parts > .wam-part { display: inline-block; white-space: nowrap; vertical-align: top; }
+.wam-parts > .wam-part:first-child { display: none; }
+.wam-parts > .wam-part:nth-of-type(2) > .wam-sep { display: none; }
+.is-narrow .wam-parts > .wam-part:first-child { display: inline-block; }
+.is-narrow .wam-parts > .wam-part:nth-of-type(2) > .wam-sep { display: inline; }
+.wam-tplname:only-child { max-width: 100%; }
+/* The name gives way by its category's own width, so no gap stands
+   between the cut name and the category. */
+.wam-tplline.is-utility .wam-tplname { max-width: calc(100% - 4.4em); }
+.wam-tplline.is-service .wam-tplname { max-width: calc(100% - 4.6em); }
+.wam-tplline.is-marketing .wam-tplname { max-width: calc(100% - 5.9em); }

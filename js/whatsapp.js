@@ -411,7 +411,7 @@
        (2026-10-22, WA-4). */
     var parts = function (list) {
       return list.filter(Boolean).map(function (w, i) {
-        return '<span' + (i ? ' class="wam-part"' : '') + '>' + esc(w) + '</span>';
+        return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
       }).join('');
     };
     row.innerHTML =
@@ -419,8 +419,8 @@
         '<small class="wam-parts">' + parts([KIND[x.purpose] || 'Message', whoOf(x), phone(x.to_number)]) + '</small>' + why + '</span>' +
       '<span class="wam-tpl"><span>' + esc(KIND[x.purpose] || 'Message') + '</span>' +
         /* The template's name gives way; its category reads whole (WA-3). */
-        '<small class="wam-tplline">' + (x.template ? '<span class="wam-tplname">' + esc(x.template) + '</span>' : '') +
-          (CATEGORY[x.category] ? '<span class="wam-cat">' + (x.template ? ' · ' : '') + esc(CATEGORY[x.category]) + '</span>' : '') + '</small>' + why + '</span>' +
+        '<small class="wam-tplline' + (CATEGORY[x.category] ? ' is-' + x.category : '') + '">' + (x.template ? '<span class="wam-tplname">' + esc(x.template) + '</span>' : '') +
+          (CATEGORY[x.category] ? '<span class="wam-cat">' + (x.template ? '<span class="wam-sep"> · </span>' : '') + esc(CATEGORY[x.category]) + '</span>' : '') + '</small>' + why + '</span>' +
       '<span class="wam-by">' + esc(!x.created_by || x.created_by === 'system' ? 'Automatic' : x.created_by) + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[2] + '">' + esc(s[1]) + '</span>' +
         '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
