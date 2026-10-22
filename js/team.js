@@ -37,6 +37,12 @@
      a refusal or a warning stays until the next act replaces it. */
   var msgTimers = {};
   function msg(id, text, kind) {
+    /* An act pressed on a colleague's record answers on the record's own
+       line, never the list's out of sight (TEAM-3, 2026-10-22). */
+    if (id === 'teamMsg' && rec.id && $('mrecMsg') && !$('teamRec').hidden) id = 'mrecMsg';
+    /* The record repaints after the read an act starts, so what it said is
+       kept for its next paint (`rec.said`). */
+    if (id === 'mrecMsg') rec.said = text ? { id: rec.id, text: text, kind: kind } : null;
     var el = $(id); if (!el) return;
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
     clearTimeout(msgTimers[id]);
@@ -663,7 +669,7 @@
       shutMenus();
       heldBy(m, function (own, held) {
         var fields = handFields(m, own, held);
-        if (!fields.length) { msg('teamMsg', 'Nothing is assigned to ' + m.name + '.', 'ok'); return; }
+        if (!fields.length) { msg('teamMsg', 'Nothing is assigned to ' + m.name + '.', ''); return; }
         window.ADspaceConfirm.ask({
           title: 'Hand over work', go: 'Hand over',
           body: 'Choose who takes each kind of ' + m.name + '\'s work.',
@@ -1995,7 +2001,9 @@
     if (!paneOk(rec.pane)) rec.pane = 'overview';
     var panes = PANES.filter(function (x) { return paneOk(x[0]); });
     var menu = memberMenu(m);
-    var meta = [m.staff_code, roleName(m.role), whoLine(m)].filter(Boolean).join(' · ');
+    /* The Employee ID and the post alone: the group and department are
+       Overview's facts, said once (TEAM-1, 2026-10-22). */
+    var meta = [m.staff_code, m.designation].filter(Boolean).join(' · ');
     var self = me() && me().id === m.id;
     box.innerHTML =
       '<div class="mrec-back"><button class="btn btn-quiet btn-sm" type="button" data-r="back">' + BACK + 'Team</button></div>' +
@@ -2012,6 +2020,11 @@
       }).join('') + '</nav>' : '') +
       '<div class="msg" id="mrecMsg"></div>' +
       '<div class="mrec-pane" id="mrecPane" data-narrow="640"></div>';
+    if (rec.said && rec.said.id === m.id) {
+      var said = rec.said;
+      msg('mrecMsg', said.text, said.kind);
+      rec.said = null;
+    }
     var head = box.querySelector('.rec-ctl');
     wireActs(head, m);
     box.querySelector('[data-r="back"]').addEventListener('click', closeRec);

@@ -6150,6 +6150,38 @@ The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
 - Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
   TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
 
+## 2026-10-22: internal review, release 2 (the bar's ⋯, Team, Short Links, My records)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
+- SHELL-5 a rare act declared `data-rare` goes behind the bar's ⋯ at every
+  width (js/cmdbar.js alone, as the brief asked); DOC-6, TEAM-2 and LNK-1
+  use it for Document types, Compare groups and Bulk import. The menus
+  suite measured the bar's ⋯ mid-arrival (318 of 320); it now finishes
+  the animation before measuring. DOC-6's Preview moves under the letter.
+- TEAM-1 the record head said the group and the department twice; TEAM-3
+  an act on a record answered on the list's line, out of sight, and a
+  "Nothing is assigned" read as a success. The record repaints after the
+  read its act starts, so what it said is kept for that paint.
+- LNK-2 Open on a live link's row; LNK-3 the Worker keeps an /s/ key's
+  kind a day (deployed by the user with wrangler).
+- MINE-2 the lock said a code is sent before anything was; PERF-1 a draft
+  month's card restated the chip.
+- SUP-3 Documents' ⋯ of one item became a button. Found while testing: at
+  390 the two buttons ran past the screen's edge (Approve's question then
+  sat half off the screen); a narrow pane wraps them, each on its line.
+
+## 2026-10-22: internal review, release 3 (the two majors)
+The user, 2026-10-22: "Fix all", the approved mockups.
+- SUP-4 the supplier record was one card of nine sections, Documents and
+  Emails four screens down on a phone; it is now the head card over a strip
+  of Overview, Payment, Documents and Emails, as a colleague's record.
+  Every pane is drawn and the others hidden, so the reads that fill
+  Documents, Emails and Bukku land wherever the person is. tests/bukku.js
+  opens the supplier on `tab=payment`; uxaudit walks each pane.
+- MINE-1 Rate yourself was a card a month each over a button saying the
+  same; it is one card, a row a month, Due on the newest still to rate.
+- Skipped: none. All 29 findings of the internal report are built.
+
+
 ### 2026-10-22 — The client pages' review findings (release 2b)
 The rest of the client review: CP-13 to CP-17.
 - CP-13: a line of parts broke inside a part ("4 / contents", "RM /

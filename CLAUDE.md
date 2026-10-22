@@ -1028,7 +1028,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `#regSort`): never counted by the badge, never reset by Clear.
   - A second action goes behind `.cmd-more` beside a primary; a bar of plain
     actions keeps its first and puts the rest there once it has three (the
-    Performance Months bar); each item carries its button's
+    Performance Months bar); a button marked `data-rare` (with its `data-g`)
+    is behind the ⋯ at every width, the ⋯ drawn at a desk for it alone and
+    taking the focus back from what the item opens (Document types, Compare
+    groups, Bulk import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
   - The Filters sheet focuses its card, never a select (a focused select wears
@@ -2317,7 +2320,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     sign and needs a signatory; unticked, the name and designation follow
     ADSPACE PLT with no space and the foot reads No signature required.
   - The sheet runs in the letter's own order.
-  - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
+  - Preview (`#docPreview`, a `.btn-sm` under the letter's fields, never in
+    the foot; DOC-6, 2026-10-22) draws the letter from the sheet
     on the same pen without issuing it: no row, no number spent, the
     reference reading PREVIEW (a reissue keeps its own), every page under
     DRAFT (INTERNAL USE ONLY) (the report's watermark, one copy:
@@ -2329,7 +2333,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit: Document types
-    in the bar (behind the ⋯ on a phone), `register.types`
+    behind the bar's ⋯ (`data-rare`), `register.types`
     (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
     My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
     Name (unique), an HR letter's Reference code (required, its own among
@@ -2404,7 +2408,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   heads Emails (2026-10-20, the user: six items read as too many). A new payee, bank or account
   on an Active supplier, by link or by hand, puts it back to Pending until
   approved again (`repending`), and an approval names who approved, never
-  a system account.
+  a system account. The record is its head card over a strip (`#supTabs`,
+  `tab=` pushed, Overview left out; SUP-4, 2026-10-22): Overview (a form
+  waiting to be taken in first, then Client, Billing details, Person in
+  charge), Payment (Payment details, the Details update form, Bukku),
+  Documents, Emails; a pane with nothing in it is not drawn.
 - Approve (`supplier_set_status`, a name, the details and the bank account
   whole, `incomplete`) makes it Active; Set inactive / Set active in the
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
@@ -4029,8 +4037,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
-  themselves on the six scorecard categories in My records, Reviews (Rate
-  yourself, {Month}), for each month from June 2026 to last month while its
+  themselves on the six scorecard categories in My records, Reviews (one
+  Rate yourself card, a row a month newest first, the newest still to rate
+  tagged Due and its button the one blue, a rated month its total and Edit;
+  MINE-1, 2026-10-22), for each month from June 2026 to last month while its
   review is not shared (`perf_self_open`: `bad-month`, `shared`,
   `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
   score (`incomplete`) or one outside its category's maximum or off a step
@@ -5262,7 +5272,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The client's parameters are carried over, minus `q`.
   - `go.adspace.me` is never retired: printed QR codes encode it.
   - The host is `ADSPACE_CONFIG.linkHost`.
-- Bulk import is a sheet (`#importBox`, `links:work`, as the QR sheet's
+- A live link's row offers Copy, Open (its short address, a new tab), QR
+  codes and the ⋯ (LNK-2, 2026-10-22). The Worker keeps which kind an `/s/`
+  key is a day at its edge (`caches.default`, a kind the database named
+  alone), so a person's visit is sent on without a read (LNK-3).
+- Bulk import is behind the bar's ⋯ (`data-rare`) and is a sheet (`#importBox`, `links:work`, as the QR sheet's
   Create, Revoke and Restore): every line taken shuts it; a skipped line stays
   in the box.
 - Pause and Resume live in the ⋯ (`links:work`).
@@ -5485,7 +5499,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the same as client"), a row one button (the initials' disc, the name,
   the email, the exception, the chevron), no ⋯ on the list; it opens in
   place of the list and the Team strip, Back returns; the head is the
-  mark, the name, Employee ID, group and post, the state and the one ⋯
+  mark, the name, Employee ID and post (the group and department are
+  Overview's; TEAM-1, 2026-10-22), the state and the one ⋯
   of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
   (Sign-in and access, Employment, Namecard, each value changed where it
   is read at Team Full Access: a word or a date its pen, a choice a
