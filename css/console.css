@@ -3057,6 +3057,10 @@ button.vs-row { cursor: pointer; }
    Content Review's set. The console's alone, so in this sheet (2026-10-22,
    SET2-14). */
 .stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
+/* On a phone the groups are the view strip, held under the head on the
+   page's ground, edge to edge in the gutters (2026-10-22, SET2-17). */
+.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: 0 -16px 12px; padding: 4px 16px 12px; }
+.stg.is-phone .stg-sec { scroll-margin-top: calc(var(--head-h) + 64px); }
 .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
 /* What was pressed answers on its row (2026-10-14, audit SET-2). */
 .stg-what > .msg.stg-said { margin: 4px 0 0; }

@@ -5871,6 +5871,19 @@ removes nothing.
   found by Release 2's run.
 - Skipped: none of the three. Not built: QT-6 (declined).
 
+### 2026-10-22 — Settings' groups as a strip on a phone
+- The user, on the audit's majors: "SET2-17 phone group strip: approve".
+- Built: at 640 and under Settings' groups are the view strip
+  (`#stgStrip`), sticky under the head on the page's ground, scrolling
+  sideways with faded edges; a press calls the page's own `go(key)` and
+  `mark()` keeps the chosen tab in step with the scroll; the scroll to a
+  group, the group in view and an address's landing all reckon from under
+  the strip (`topOf`). 1280 is unchanged; no drill-down (refused
+  2026-10-11). The guide's first step rings the strip on a phone. uxaudit
+  meets the strip at 390 alone (`STRIP_PHONE`), a desk listing the groups
+  down the left.
+- Not built: SET2-18, SET2-19 (not approved).
+
 ### 2026-10-22 — A PDF in the installed app has a way out
 - Reported by the user: "when pdf generated from PWA there is no button to
   share to close the windows whatsoever".
