@@ -7,8 +7,9 @@
  * the ads send people, the ad account, the countries) and the colleague's
  * optional notes. The function reads, as the caller and under the caller's
  * own access (Clients at Work on a client in scope): the client (industry,
- * market, whether it has a website, the brief; never the address, which
- * names the client however `{brand}` masks the name: CLI-2026-10-22), the checklist as it stands (open, ver. r1.3
+ * market, whether it has a website (never the address, which names the
+ * client however {brand} masks the name; 2026-10-22, CLI-3), the brief),
+ * the checklist as it stands (open, ver. r1.3
  * or the template it began with), the latest confirmed Brand analysis (it
  * refuses `no-analysis` without one), the Ad benchmarks (Business settings)
  * and whether the client links Meta ad accounts. Claude answers every field
