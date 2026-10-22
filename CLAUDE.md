@@ -83,6 +83,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - The stand-in's permission map is rebuilt on every page load, so re-read by
     navigating inside the console or through `window.__rpc`.
   - The stand-in seeds no campaigns.
+  - A suite that answers the CDN itself answers a video address with a
+    playable video (`revise`'s WebM), never a picture: a reel fed a PNG
+    fails to decode and draws the missing tile (2026-10-22).
   - Every Postgres suite starts its cluster on UTC (`-c timezone=UTC`), as
     the live database runs: a cluster started from a shell on Malaysia time
     read date literals and `current_date` in MYT (2026-10-21).
@@ -1184,8 +1187,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every forward move is walked backwards before it ships.
 - PL/pgSQL: declared names never match a column, and lookups are qualified. A
   shadowed name fails at run time, not at create time.
-- A function's today is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
-  never `current_date` or `now()::date` (the database runs on UTC: yesterday
+- A function's today, and a column's default day, is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
+  never `current_date` or `now()::date` (`tests/sql.js` reads every
+  column's default; 2026-10-22, BE-9) (the database runs on UTC: yesterday
   until 8am; 2026-10-17, `tests/sql.js` reads every function's last
   definition). The database's TimeZone stays UTC: PostgREST writes timestamps
   in it and the pages read them so. Months are taken off Malaysia's local
@@ -1454,7 +1458,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Creator Campaigns as a tab a state (`#campStages`: Draft, Open for
     selection, In production, Completed, each counted, opening on the first
     that holds any), a card a month made (MYT) under it, newest open; a row
-    reads Updated where the state would repeat its tab;
+    reads Updated where the state would repeat its tab, and Booked n of N
+    (creators booked of its slots, never the slots alone; 2026-10-22, CMP-8);
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;
@@ -1611,7 +1616,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the new record (2026-10-19).
 - The Clients list, and every read of all clients (`bridge.active`,
   `uniqueSlug`, the Dashboard), is read a thousand at a time
-  (`ADspaceAPI.readPages`, the one copy; 2026-10-19).
+  (`ADspaceAPI.readPages`, the one copy; 2026-10-19); past its cap it
+  answers `too-many`, never a list cut without a word (2026-10-22, BE-14).
 - A client's address outside the colleague's reach (or gone) lands on the list
   with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
@@ -2471,7 +2477,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_replace)` (`team.settings`; `bad-row`; filed `team.changed` under Tax
   codes); Settings, Money: Tax codes (`#taxSheet`: active first, highest
   rate first, one no longer offered last; Edit, Add code, Read from Bukku,
-  which lists Bukku's codes (`bukku-sync` `taxes`) to tick, those offered
+  which lists Bukku's codes (`bukku-sync` `taxes`, asked of `bukku_config`
+  as `fields` is; 2026-10-22, BE-12) to tick, those offered
   ticked, and keeps only the ticked ones offered: one unticked is set not
   offered, one never held is never added; each code's ⋯ Delete and Select
   delete through `tax_codes_delete(p_codes)`, all or none, refused
@@ -2663,8 +2670,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `submit_review_seen(… p_version)`, which refuses a post changed since
   (`changed`: "This post was updated after the page opened. Please refresh to
   review the latest version.") and keeps what was decided on in
-  `reviews.seen`; `ADspaceAPI.submitReview` asks `submit_review` only where
-  the function is missing.
+  `reviews.seen`; `ADspaceAPI.submitReview` sends a decision with its
+  version through `submit_review_seen` alone, a refusal never sent again
+  without it (2026-10-22, BE-13).
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
@@ -2855,19 +2863,30 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A booking card has one Save: its notes and link, then each placement
   whose results moved (2026-10-20, CMP-5); from Scheduled on it offers no
   hand-in guide or link to paste (CMP-4), and Release to client says
-  Released to the client. on the card (CMP-6).
+  Released to the client. on the card (CMP-6). Its actions stand at the
+  card's foot, after Results, reading Revert, Request changes, Save, then
+  the step forward at the right edge (its own row on a phone); an empty
+  note is a quiet Add note growing into the box, a result figure reads
+  with its separators, and every step taken on a card is answered on that
+  card (`cardSay`), never in the head (2026-10-22, CMP-7, CMP-10, CMP-16,
+  CMP-M2). Bookings and the Schedule list booked creators alone, a
+  shortlisted one staying on Selection (CMP-13). The record says post,
+  never publish, of a booking's date: Post date, Next post date, Posted on
+  (CMP-11); a time reads 2:00pm (CMP-12). On a phone a move that is not the
+  blue Publish (Unpublish, Reopen selection, Resume campaign) is the head
+  ⋯'s lifecycle item (`#campLifeItem`), never a row above the tabs (CMP-M1).
 - A booking's plan (date, a time picker, location, contact, phone, or the
-  tracking no.; draft due; publish date) is written only on the Schedule,
+  tracking no.; draft due; post date) is written only on the Schedule,
   saved on change and filed with what changed. The card reads it
   (`planFacts`, Edit in Schedule) and keeps only the notes. The creator's
   page shows location and contact. The Schedule is the Creators tab's
   register (`.bookreg.sched-reg`): Upcoming then Past, a folded row a booking
-  (name, shoot date and time, publish date; Not set where none; where the
+  (name, shoot date and time, post date; Not set where none; where the
   head is hidden each date leads with its head's word, Shoot or Delivery,
-  Publish), the plan's
+  Post date), the plan's
   fields opening under the row on the name's x; a booking stays open through
   a save, and a lone booking opens by itself. On a phone Draft due and
-  Publish share a line.
+  Post date share a line.
 - The client's selection closes by trigger the moment the bookings fill the
   slots (`campaigns.selection_closed_at`); only Reopen selection clears it,
   offered only while closed with a free slot, whether the campaign is Open
@@ -3882,7 +3901,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A month's Google Meet is deleted from its Link row's ⋯ (Delete, My Work
     at Work, asked first: `meet-create` `delete`): the event leaves the
     shared calendar and the link goes, the date and time stay, and Create
-    Google Meet books a new one (the user, 2026-10-12).
+    Google Meet books a new one (the user, 2026-10-12); a link the database
+    refuses to clear is said (`not-saved`), never answered deleted
+    (2026-10-22, BE-8).
   - Not connected is not a failure of the save.
   - `clientMessage()` is the one bilingual template.
 - The client portal shows meetings read-only (`portal_meetings`), never a task.
@@ -4893,8 +4914,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   leaves out people Meta could not age, which Ads Manager's export by age
   counts (2609W3_Balance: 800 against 6,484). Then each ad or post with no picture of its own takes
   Meta's (an ad's creative, a post's image or a reel's cover frame), read
-  through `meta-import` `pictures` (Meta's own image hosts alone, a redirect
-  held to them too, six a call, read only up to 4 MB each; Meta's addresses expire within days; each ad's creative,
+  through `meta-import` `pictures` (Meta's own image hosts alone, one
+  reader for a creative and `pictures`, `readMeta`: a redirect followed by
+  hand, three hops at most, each held to them before it is asked, six a
+  call, streamed and cut at 4 MB; 2026-10-22, BE-7; Meta's addresses expire within days; each ad's creative,
   as each post's metric here and in `brand-analysis`, asked of Meta on its
   own: Graph v26 refuses the `?ids=` read of many at once, 2026-10-12), drawn down to the
   320px JPEG and kept on the row (`.is('thumb_data', null)`: a picture the
@@ -5780,7 +5803,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the kept PDF the client portal hands over (`ADspaceReports.keptPdf`), which
   `wa-send` reads itself as the caller through `sign-download`, never the
   page's bytes, a quotation's or letter's refused unless it is a PDF whose
-  title names the record's own reference (each stream inflated with only
+  title names the record's own reference (`_shared/pdfref.ts`, the one
+  reading, supplier-mail's too; 2026-10-22, LEAN-1) (each stream inflated with only
   its one closing line break cut, the file's streams inflating to 20 MB
   at most, past which it reads as not naming it; `bad-file`; audit S3,
   2026-10-15;
@@ -5910,7 +5934,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `push_target`, `2026-10-18-a-clients-device-follows-only-a-link-that-opens.sql`),
   the creator's page the creator by their code (`creator`).
   - One colleague and one creator a device; a client's device any number of
-    campaigns (`push_subscriptions`, unique `(endpoint, target)`).
+    campaigns (`push_subscriptions`, unique `(endpoint, target)`). A target
+    takes five new devices an hour and twenty in all (`too-many`), and none
+    is pushed out for another (2026-10-22, BE-11).
   - Only a push service's address is stored (`push_endpoint_ok`: Google,
     Apple, Mozilla, Microsoft), and `push-send` checks it again: the sender
     never posts anywhere else.
@@ -6080,14 +6106,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The database is kept every night (`workers/db-backup/`,
   `.github/workflows/db-backup.yml`, 02:37 MYT; the user, 2026-10-10: the
   Free plan keeps no backups): Supabase's own dump (roles, schema, data),
-  refused when it holds no clients, encrypted with `BACKUP_PASSPHRASE`, put
+  refused when it holds no client row (an empty clients table too; its
+  workflow's actions pinned to commits, 2026-10-22, SEC-2, BE-10),
+  encrypted with `BACKUP_PASSPHRASE`, put
   at `private/backups/db/db-{MYT day}.tar.gz.gpg` by a key that may only add
   there; it runs on its schedule or by hand, never on a pull request, and
   reads, lists and deletes nothing (`tests/dbbackup.js`). Storage objects
   (the Handbook) are not in it.
 - Video conversion (`workers/video-convert/`, AWS Lambda `adspace-video-convert`
   on the bucket's ObjectCreated under `content/`, the user's own setup from
-  its README): every video that is not already H.264 in an MP4 indexed first
+  its README): every video a picker takes (mov, mp4, m4v, qt, mkv, webm,
+  mpg, mpeg; `js/media.js` asks the copy of each; 2026-10-22, BE-1) that is
+  not already H.264 in an MP4 indexed first
   gets an AWS Elemental MediaConvert job writing `name.web.mp4` beside it
   (H.264, AAC, upright, Rec. 709, fitted to 1080 × 1920 either way up at up
   to 60 fps, never enlarged). It reads and asks; it never deletes, copies or
@@ -6155,6 +6185,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (2026-10-19: `meet-create` served a placeholder for 50 seconds).
   The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
+  A function that imports `../_shared/` is sent with that file in the same
+  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`), and both read back.
 - The report lists what the user does by hand: a dashboard setting.
 - Every go-live report names the version the console shows exactly as the rail reads it (`v{YY.MM.DD} · {commit}`), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check

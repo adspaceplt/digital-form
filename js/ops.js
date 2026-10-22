@@ -1532,8 +1532,8 @@
     all.checked = n > 0 && n === shown;
     all.indeterminate = n > 0 && n < shown;
     all.setAttribute('aria-label', n === shown && n ? 'Clear the selection' : 'Select every task shown');
-    $('workBulkOwner').disabled = !n;
-    $('workBulkDelete').disabled = !n;
+    $('workBulkOwner').hidden = !n;
+    $('workBulkDelete').hidden = !n;
   }
   function pickRow(id, on) {
     if (on) state.picked[id] = 1; else delete state.picked[id];
@@ -7306,6 +7306,7 @@
         (span ? ' at ' + span : '') + '. Choose another time.';
     }
     if (k === 'google-refused') return 'Google refused the booking' + (d.reason ? ' (' + d.reason + ')' : '') + '. Try again.';
+    if (k === 'not-saved' && d.deleted === false) return 'The event was deleted from the calendar, but the month still holds its link. Try again.';
     if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
     return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
   }

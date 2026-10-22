@@ -26,8 +26,10 @@ supabase db dump --db-url "$SUPABASE_DB_URL" -f "$WORK/schema.sql"
 supabase db dump --db-url "$SUPABASE_DB_URL" -f "$WORK/data.sql" --use-copy --data-only
 
 # A dump that holds no clients is not a backup: stop before it is kept.
-if ! grep -Eq '^COPY "?public"?\."?clients"? ' "$WORK/data.sql"; then
-  echo "backup: the data dump holds no clients table; nothing kept" >&2
+# pg_dump writes the COPY header for an empty table too, so a client row
+# must stand between the header and its closing "\." line.
+if ! awk '/^COPY "?public"?\."?clients"? /{f=1; next} f && /^\\\.$/{exit} f{n++} END{exit !(n > 0)}' "$WORK/data.sql"; then
+  echo "backup: the data dump holds no clients; nothing kept" >&2
   exit 3
 fi
 if ! grep -Eq 'CREATE TABLE (IF NOT EXISTS )?"?public"?\."?clients"?' "$WORK/schema.sql"; then

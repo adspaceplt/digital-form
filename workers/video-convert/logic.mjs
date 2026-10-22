@@ -1,7 +1,12 @@
 /* The decisions of adspace-video-convert, with no AWS in them, so they can be
    tested on their own. index.mjs does the reading and the asking. */
 export const PREFIX = 'content/';
-export const VIDEO = /\.(mov|mp4|m4v|qt)$/i;
+/* Every video a page lets a person upload (sign-upload's EXT_TYPE). Only the
+   ISO base media files (mov, mp4, m4v, qt) are read box by box; the rest
+   are always converted (2026-10-22, BE-1: an mkv or mpg never had a copy). */
+export const VIDEO = /\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$/i;
+export const ISO_BMFF = /\.(mov|mp4|m4v|qt)$/i;
+export const UNREAD = { brand: '', codecs: [], video: null, faststart: false };
 
 export const webKey = (key) => key.replace(/\.[a-z0-9]+$/i, '.web.mp4');
 export const isCandidate = (key) =>
