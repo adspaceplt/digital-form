@@ -67,6 +67,13 @@
     if (q.status === 'requested') return ['Letter of Offer requested', 'is-warn'];
     return ['Valid until ' + window.ADspaceClock.date(q.valid_until).replace(/ \d{4}$/, ''), 'is-live'];
   }
+  /* A quotation that can still become a Letter of Offer: valid, or the
+     client has asked for the letter (2026-10-22, QT-M1). */
+  function offerable(q, live) {
+    if (q.removed_at) return false;
+    var st = stateOf(q, live);
+    return st[1] === 'is-live' || st[0] === 'Letter of Offer requested';
+  }
   function monthly(q) { var m = q.totals && q.totals.month; return m ? m.incl : null; }
   /* A monthly line running months of its own makes the month's figures the
      first month's, named so (the user, 2026-10-18), as the Letter of Offer
@@ -89,7 +96,7 @@
      billing a prospect gave on the website is read through
      `quotation_billing`, at Clients: Billing (2026-10-14). */
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
-    'valid_until, made_by, contact, access_key, requested_at, idem, removed_at, removed_by';
+    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by';
   function metaOf(q) {
     var t = q.totals || {};
     var bits = [];
@@ -128,7 +135,9 @@
       (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
     var list = shown.concat(showRemoved ? gone : []);
-    if (!list.length) html += '<div class="empty">No quotations.</div>';
+    /* An empty list carries its way out (2026-10-22, SL-M2). */
+    if (!list.length) html += '<div class="empty has-go"><span>No quotations.</span>' +
+      (maySet ? '<button class="btn btn-sm" data-a="build" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>';
     else {
       html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
         '<span class="svc-rate">Amount</span><span>State</span><span></span><span></span></div>' +
@@ -138,26 +147,37 @@
           if (q.removed_at) items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
-          if (WA() && WA().may('quotation') && !q.removed_at && q.status !== 'not_proceeding') {
-            items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
+          /* What a quotation that can be offered asks next is on its row,
+             beside Download (2026-10-22, QT-M1): Issue Letter of Offer, and
+             Use billing details once the client has asked for the letter.
+             The ⋯ keeps the rest. */
+          var acts = [];
+          if (maySet && !q.removed_at && q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) {
+            acts.push('<button class="btn btn-sm" data-a="billing" type="button">Use billing details</button>');
+          }
+          if (maySet && !q.removed_at && mayOffer && offerable(q, live)) {
+            acts.push('<button class="btn btn-sm" data-a="offer" type="button">Issue Letter of Offer</button>');
           }
           if (maySet && !q.removed_at) {
-            if (mayOffer && st[0] !== 'Not proceeding' && st[0] !== 'Expired' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
-            if (q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) items.push('<button class="kmenu-item" data-a="billing" type="button"><b>Use billing details</b></button>');
             items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
+            /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
+               drawn only once the template is on (`waOn` below). */
+            if (WA() && WA().may('quotation') && q.status !== 'not_proceeding') {
+              items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
+            }
             items.push(q.status === 'not_proceeding'
               ? '<button class="kmenu-item" data-a="proceeding" type="button"><b>Restore</b></button>'
               : '<button class="kmenu-item" data-a="not_proceeding" type="button"><b>Not proceeding</b></button>');
             items.push('<button class="kmenu-item is-danger" data-a="remove" data-soft type="button"><b>Remove</b></button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>');
-          return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + '" data-id="' + esc(q.id) + '">' +
+          return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + wholeDays(esc(metaOf(q))) + '</small></span>' +
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
               (st[2] ? '<small>' + wholeDays(esc(st[2])) + '</small>' : '') + '</span>' +
-            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>') + '</span>' +
+            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>') + acts.join('') + '</span>' +
             '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
               DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';
         }).join('') + '</div>';
@@ -170,6 +190,9 @@
     host.hidden = false;
     var b = $('qtBuild');
     if (b) b.addEventListener('click', function () { build(ctx, null, b); });
+    var be = host.querySelector('.empty [data-a="build"]');
+    if (be) be.addEventListener('click', function () { build(ctx, null, be); });
+    if (ctx.painted) ctx.painted();
     var g = $('qtGone');
     if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });
     if (host.querySelector('[data-wa]')) {
@@ -181,8 +204,9 @@
     Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
-      var dl = row.querySelector('.qt-dl [data-a="pdf"]');
-      if (dl) dl.addEventListener('click', function () { act('pdf', q, ctx, host, dl); });
+      Array.prototype.forEach.call(row.querySelectorAll('.qt-dl [data-a]'), function (b2) {
+        b2.addEventListener('click', function () { act(b2.getAttribute('data-a'), q, ctx, host, b2); });
+      });
       if (!btn) return;
       btn.addEventListener('click', function () {
         var open = menu.hidden;
@@ -679,7 +703,7 @@
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
-      B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : String(Date.now()));
+      B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)));
       go.disabled = true;
       B.ctx.db.rpc('quotation_create', { p_client: B.ctx.client.id, p_sel: B.sel, p_idem: B.idem }).then(function (r) {
         var d = r.data || {};
@@ -694,5 +718,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline };
+  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline, offerable: offerable };
 })();

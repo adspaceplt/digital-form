@@ -63,7 +63,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses
     `.single()` on anything but one row (PGRST116; `.maybeSingle()` on more
-    than one). Every read and every function's answer is fresh JSON, so a
+    than one), and answers a read 1,000 rows at most (max-rows). Every read and every function's answer is fresh JSON, so a
     page changing what it read never changes the row.
   - It refuses, as PostgREST does, a table, column, function or argument the
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
@@ -214,6 +214,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
+| Any ⋯ menu, a bulk bar, `ADspaceMenu.items` | menus, deletes, then `ui` |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
@@ -533,7 +534,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   at a desk the groups also run down the left, the one in view marked, a
   press scrolling to its card and naming it in the address (`tab=`, the
   first left out; replaced, never pushed), so a refresh lands on it; it
-  never stands between the person and a row. Each row drawn only for its
+  never stands between the person and a row. At 640 and under (the phone line)
+  the groups are the view strip (`#stgStrip`, `.actstrip.stg-strip`),
+  sticky under the head on the page's ground, scrolling sideways with
+  faded edges; a press scrolls as at a desk and the chosen tab follows the
+  scroll (the user, 2026-10-22, SET2-17: "approve"); never a drill-down. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
   opening the one sheet that already edits it; a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
@@ -712,8 +717,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps its own); a failed read is not kept, so the next `load()` asks
     again. A figure is read at the day it applies to, as the database reads
     it (a report's deadline at its period's end).
-- `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
-  a popover card opens.
+- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `tidy`) is the only copy
+  of where a ⋯ or a popover card opens, and of what a ⋯ holds and in what
+  order (DESIGN.md §5 Menus and action groups): every item carries its
+  group (`data-g` 1 to 6), and `tidy` lays roles, separators and the red
+  each time a menu shows; a record head's ⋯ (in `.rec-ctl`, or
+  `data-dock`) docks at the foot under 640.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
     `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
     a desk it hangs from its control with a caret (`--caret`, `is-up`); under
@@ -1110,6 +1119,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   times").
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
+- A guard trigger holds an insert as it holds an update, a page's insert
+  read against a blank row (2026-10-22, SEC-1: a client could be inserted
+  Active with billing by a colleague without the Billing part).
+- A public form's typed name is never an actor: it is filed under the form
+  (Details form, Supplier form, Quotation website), the name in the detail
+  (2026-10-22, BE-3).
 - Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
@@ -1220,7 +1235,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   functions, `app_settings_read()` for pages (anyone the team does not hold
   is answered `sst_pct` and the term percentages alone, what a client page
   prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
-  p_values)` an admin's, from today (MYT) or later (`past`), filed
+  p_values)` an admin's, from today (MYT) or later (`past`); a figure is the
+  one in force on the day, the first row standing in for an earlier day
+  only where the schema seeded it (`app_setting`, `setting()`; a figure
+  planned for a later day is unset before it; 2026-10-22, BE-5), filed
   `team.changed` under Settings; a value saved for a planned day that equals
   the one in force the day before withdraws that day's row, filed "planned
   change withdrawn" (`2026-10-19-planned-setting-withdrawn.sql`). An edge
@@ -1646,7 +1664,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Enquired lines are left out.
   - An empty section says so in one line.
 - Rail blocks (`.railblock`, `.railtitle` at 15px):
-  - Next action: a written `next_action`/`next_at` beats `nextStep()`.
+  - Next action: a written `next_action`/`next_at` beats `nextStep()`; a
+    written one opens Calls and visits, where it is done. Its date is said
+    there alone (the Timeline holds no Next follow up).
   - The billing gate: `.railgate` in red, only while a billing field is
     missing on a record that is not Active; it opens Billing where
     `maySeeBilling()`.
@@ -1709,8 +1729,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact's salutation, name, mobile and email; refused by field), telling
     the team at Clients: Billing Work whose bands and client scope reach the
     client (kind `client.details`, opening Billing), filed under the actor
-    Details form with the typed name in the detail (a public form's typed
-    name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
+    Details form with the typed name in the detail. A move into Active or
+    Past ends every link still open (trigger `clients_details_close`), and a
+    Past client's link opens nothing (2026-10-22, BE-6). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`),
     one that differs from what Billing holds reading held → sent (2026-10-20, DTL-1): Use
     details fills the Billing sheet and its own Save takes them in
@@ -1748,7 +1769,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Back line and head brought under the bar, never below the fold), read
   first (the user, 2026-10-15: "the checklist is coming back in the wrong
   design"): a head card (title, version, state, Write with AI, Preview PDF
-  (a tab opened at the press; PDF on a tight pane), a ⋯ holding Download,
+  (a tab opened at the press; PDF on a tight pane), Download beside it (no ⋯; 2026-10-22, CLI-7),
   the facts), then a card a section where a tick is pressed in
   place (its note and who and when under it) and every other answer reads
   as a fact (Not set where empty), a table as a table; no field stands open
@@ -1794,7 +1815,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   declaration (filling the brief), then `checklist-draft` reads the
   confirmed Brand analysis (`no-analysis` without one), the Ad benchmarks
   and the linked Meta accounts and proposes every field but the ticks,
-  following the playbook's Meta rules; nothing is written until the
+  following the playbook's Meta rules (the client's website sent as
+  whether it has one, never its address); nothing is written until the
   colleague keeps the ticked proposals in `#ckAiSheet` (what a field holds
   now said under it), declares them read (`ADspaceConfirm.ai.declare`) and
   each is saved as if typed, Undo where it happened. Its own count
@@ -2026,7 +2048,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A card a month (`ADspaceGroup.section`, route `client-months`), newest
     first: a month from today's on open, an older one shut until opened and
     remembered; a month starting on its `start_day` states its span on the
-    heading, and the heading counts the month's overdue tasks in red. A month
+    heading, and the heading counts the month's overdue tasks in red, late by
+    My Work's rule (`ops_engagement_counts` `late`, `ops_task_late`). A month
     is drawn only where the reader may see something in it.
   - A row a thing (`.cmonth-row`: the section's rail glyph on a tonal tile,
     the name over its facts, the state, the chevron), in the rail's order:
@@ -2103,6 +2126,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   blocked window) an iPhone's save takes the share sheet with a named File,
   asking File ready · Save (`ADspaceConfirm`; the client portal loads it)
   only when Safari refuses a stale press (`tests/savename.js`).
+- In the installed app on a touch screen (`ADspaceDocs.installed()`:
+  display-mode standalone or `navigator.standalone`, on iOS or Android) no
+  window is opened for a PDF: a window on the app's own address opens inside
+  it with no Share, Done or Back (the user, 2026-10-22). `tabFor()` and
+  `previewTab()` (every Preview's one opener, Drawing the PDF…) answer null
+  there, the file goes to the share sheet as a named File (a stale press asks
+  File ready · Share), and with no share sheet for files it is shown in a
+  sheet with Close and Download (`#pdfViewSheet`); a window on another origin
+  (the Handbook's signed link, an invoice) is left as it is (`tests/pwapdf.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load). A
@@ -2494,6 +2526,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.
   Since then reads Details changed once a sent field moves (`bukku_print`).
+  One Bukku contact is one record's, a supplier and its own client sharing
+  one: `bukku-sync` sends a linked record to its own contact alone and asks
+  `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
+  `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
@@ -2663,14 +2699,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     posts, and a rail (the client's
     review, the tasks naming it). Back returns to the client. Add assets is a
     sheet (`#assetSheet`) that shuts on Add to set.
-  - A picked or Drive-read file stays on the device (an object URL preview)
-    until Add to set, which uploads what is left with progress, then writes
+  - A file over the size cap (S3's `s3.maxUploadMB`, else Supabase's) is
+    refused at the pick, by name. A picked or Drive-read file stays on the
+    device (an object URL preview) until Add to set, which uploads what is left with progress, then writes
     the posts; a removed file costs nothing. Cancel aborts; a failed upload
     keeps its draft; only uploaded drafts are kept for a reload; leaving
     with a file held asks first.
   - A video's thumbnail in a console row is its cover frame (`poster`),
     else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
-    a bare `<video>` is blank on iPhone Safari until it plays.
+    a bare `<video>` is blank on iPhone Safari until it plays. One whose
+    file fails, after the media pass's retry, is a shaded tile with its
+    kind's glyph (`.thumb-miss`), never the broken picture.
   - Sets are folded, one open at a time. Opening a set clears the last
     one's strip, covers line, progress and posts (`clearPostView`), and a
     read answered for a set already left is thrown away
@@ -4947,11 +4986,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   export are priced from the live version, never the draft; with none
   published, the card as it stands. The page: one command bar holding the
   search (Rate card alone), the version line (Live v.{n} · valid until,
-  `n changes not published`, Publish) and the acts (Download, Tax and terms,
+  Review n changes, Publish) and the acts (Download, Tax and terms,
   Add service on Rate card alone; on a phone the line under the marks where
   a search stands, else beside the ⋯; the user, 2026-10-14), then Rate card,
   Wording, Versions (`tab=`); a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
+  Review n changes (`#svcReview`, a tonal toggle, `aria-pressed`; equal
+  halves with Publish on a phone; the user, 2026-10-22: "approve") shows
+  only what the draft holds that the live version does not: the lines
+  changed, each naming what moved from and to (`ADspaceRecords.changes`),
+  the lines removed, the blocks of wording changed, under Showing the n
+  changes not published. with Show the whole card, the search set aside;
+  Publish's question lists the same, five, then and n more (SVC2-M1).
 - A block of wording is edited as the card prints it (`#rcwBox`; the user,
   2026-10-13: one box of lines read "ugly and untidy unstructured"): a list
   as numbered points (a field each, Add point, Move up, Remove), a table a
@@ -5022,8 +5068,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#crmQuotes`; the Overview opens on them while any stand): the state
   worked out on read (Valid until, Expired, Letter of Offer requested, Not
   proceeding, Letter of Offer issued once a live letter holds its lines),
-  Download on the row, the ⋯ Issue Letter of Offer, Make a copy, Not proceeding / Restore,
-  Remove with Undo (Restore after). Build quote (`#qbBox`, as the approved
+  Download on the row, and on a row that can be offered (Valid, Letter of
+  Offer requested) Issue Letter of Offer beside it, with Use billing
+  details while the letter is asked for (at a desk under the figure, the
+  reference kept whole; equal halves under the meta on a phone); the ⋯
+  Make a copy, Send on WhatsApp, Not proceeding / Restore, Remove with Undo
+  (Restore after) (the user, 2026-10-22, QT-M1: "approve"). The pane's one
+  blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
+  quote line, Build quote; one quotation that can be offered, its Issue
+  Letter of Offer (none blue where two can); To quote lines no live letter
+  holds, Issue letter, drawn only once a To quote or Confirmed line
+  exists; else none. An empty Quotations or Service lines list carries
+  Build quote or Add service on its line. Build quote (`#qbBox`, as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
@@ -5031,7 +5087,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
   made again whenever the selection changes; the same key twice, even at
-  once, answers `again` with the first; 2026-10-19, audit 15).
+  once, answers `again` with the first, and only for its own client, a
+  website key its own visitor's email; 2026-10-19, audit 15; 2026-10-22,
+  BE-4).
   Each line's Qty, Rate (RM) and Months (a monthly line's; the term
   until typed) are fields in the lines table (`p_sel.edits` by the line's
   `key`, kind|slug|label; `2026-10-15-quotation-rates.sql`, the user,
@@ -5244,8 +5302,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Copy link, Preview), the key read once a client and made at Work the first
   time; under it the month (`month=` in the address; the user, 2026-10-10:
   thirty to fifty scripts a client a year) is a card of its scripts
-  (`#vsMonthList`: Scripts with Add script in its head, a row a script, VS01
-  and its title over its type, the shoot, the state, in number order), a
+  (`#vsMonthList`: Scripts with Add script in its head, a row a script, its
+  whole code (2611VS01, as its head reads) and title over its type, the shoot, the state, in number order), a
   row opening its script on a page of its own (`script=`): Previous, `n of
   N` and Next over it (`#vsNav`, a sideways swipe on a phone), Back
   returning to the month and the month's Back to the list; the script's

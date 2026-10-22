@@ -312,12 +312,7 @@
       return SM().render(v.snapshot).then(function (out) { return keepFile(v, clientId, out.bytes); });
     });
   }
-  function openTab() {
-    var tab = null;
-    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
-    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
-    return tab;
-  }
+  function openTab() { return window.ADspaceDocs.previewTab(); }
 
   /* Open a report in the Reports section from anywhere: the address first,
      then the section, the way the bell opens a task. A blank id opens the

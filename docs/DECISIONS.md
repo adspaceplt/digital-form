@@ -5846,3 +5846,180 @@ removes nothing.
   lists: each head already holds its own, and an act is offered once on a
   screen (DESIGN.md). Not built (the user's to decide): QT-6, SVC2-M1,
   QT-M1, SL-M2.
+
+### 2026-10-22 — The rate card's changes reviewed before Publish, and the Services pane's blue follows the deal
+- The user, on the audit's majors: "SVC2-M1 review changes before Publish:
+  approve; QT-M1 Issue Letter of Offer on the row: approve; SL-M2 the blue
+  follows the deal: approve".
+- Built: SVC2-M1 "n changes not published" becomes Review n changes, a
+  tonal toggle beside Publish showing only the changed lines (each from and
+  to), the lines removed and the wording changed, the search set aside;
+  Publish's question lists them, five, then and n more (the question's
+  words now keep their line breaks). QT-M1 Issue Letter of Offer and Use
+  billing details on the quotation's row, out of its ⋯. Measured at 1280
+  the three buttons on the row's first line left the reference
+  "ADP/QT2610-" over "L01" in a 591px pane, so at a desk a row holding them
+  sets them under the figure and state, ending at the ⋯; a row with
+  Download alone keeps it on the first line (QT-5). SL-M2 `paintDeal`
+  picks the pane's one blue (Build quote, the row's Issue Letter of Offer,
+  Issue letter, or none), Issue letter waits for a To quote or Confirmed
+  line, and the empty lists carry Build quote and Add service (completing
+  SL-10, held back in the release before as an act offered twice; the
+  user approved the mockup holding both).
+- Suites: pdfcases read the quotation's remarks in the words #616 replaced
+  ("incl. SST is inclusive"); it now reads #616's ("includes SST at 8%."),
+  found by Release 2's run.
+- Skipped: none of the three. Not built: QT-6 (declined).
+
+### 2026-10-22 — Settings' groups as a strip on a phone
+- The user, on the audit's majors: "SET2-17 phone group strip: approve".
+- Built: at 640 and under Settings' groups are the view strip
+  (`#stgStrip`), sticky under the head on the page's ground, scrolling
+  sideways with faded edges; a press calls the page's own `go(key)` and
+  `mark()` keeps the chosen tab in step with the scroll; the scroll to a
+  group, the group in view and an address's landing all reckon from under
+  the strip (`topOf`). 1280 is unchanged; no drill-down (refused
+  2026-10-11). The guide's first step rings the strip on a phone. uxaudit
+  meets the strip at 390 alone (`STRIP_PHONE`), a desk listing the groups
+  down the left.
+- Not built: SET2-18, SET2-19 (not approved).
+
+### 2026-10-22 — Clients, Content Review, Video Scripts: release 1 of the second audit (P2 first)
+- The user, on the audit of 2026-10-22: "Fix all".
+- Built: CLI-1 a written next action opened the Activity record (a dead
+  end without it); it opens Calls and visits, where it is done. CLI-2 the
+  record counted a task late once its final date passed, from its own read
+  of the reader's tasks, while My Work counts it late only short of client
+  review or past a priority's deadline: `ops_engagement_counts` answers
+  `late` by one helper, `ops_task_late`, stating `ops_report`'s rule, and
+  the pane reads no task itself (one request fewer). CLI-3
+  `checklist-draft` sent the client's website to Claude, which names the
+  client however `{brand}` masks the name: it sends whether there is one.
+  CLI-4 the Timeline's Next follow up repeated Next action's date: gone.
+  CLI-5 Open Content Review drew the leaving mark and reloaded the console;
+  it, New campaign and Enable Content Review open the section in place, a
+  chevron after the words. CLI-6 the sign-off read "Not yet": Not prepared,
+  Not signed off. CLI-7 the checklist's ⋯ held Download alone: Download is
+  a button beside Preview PDF (this reopens 2026-10-15's "Download in the
+  head's ⋯"; the user's "Fix all" supersedes it). CLI-8 Delete client
+  named contacts, lines, letters and calls, then "any content sets and
+  campaigns": it counts the months, sets, scripts, campaigns and reports
+  Engagements read. REV-1 a file over S3's cap passed the picker and failed
+  at Add to set as "too_large", and the copy promised S3 had no limit: the
+  cap is S3's own (`s3.maxUploadMB`), refused at the pick by name, the
+  refusal in words. VS-1 the Video Scripts list read once, unpaged: past
+  1,000 the oldest months left silently; it reads a thousand at a time, and
+  the stand-in now answers a read 1,000 rows at most, as PostgREST does.
+- Skipped: none in this release; release 2 holds CLI-9 to CLI-11, REV-2 to
+  REV-5 and VS-2 to VS-4.
+
+### 2026-10-22 — Menus: one standard, one helper, one look (release 1 of the menu review)
+- What was wrong (tests/audits/2026-10-22/menus/report.txt): two rules
+  contradicted (Records: "a row's one act is on the row, never a ⋯ of one
+  item"; Forms: "Delete is the last item of the thing's own ⋯ … never a
+  button on a row"); nothing fixed the order inside a ⋯ beyond Delete last,
+  nor separators (the account menu's alone), nor that an item which cannot
+  apply is left out; menus came in two looks (13.5/600 at 320px in most,
+  400 at 200px on Team's rows); 88 of 135 items lacked `role="menuitem"`;
+  at 390 the client head's ⋯ hung over the record's name.
+- The user, 2026-10-22: "MENU standard: approve; MENU structural moves (3,
+  6, 7, 8, 9, 13, 16, 19): approve", then "Fix all".
+- Built here: the standard as DESIGN.md §5 Menus and action groups (the
+  two contradicting lines now point to it); `ADspaceMenu.items(groups)`
+  writes items with their group (`data-g`), and `ADspaceMenu.tidy` lays
+  roles, the red of group 6 alone and the hairlines (`hr.kmenu-sep`, the
+  account menu's `.acct-sep` the same rule) each time a menu shows, through
+  one MutationObserver on `hidden`, so a menu whose items the page shows or
+  hides keeps its separators true (MENU-11, MENU-15 for every converted
+  menu); every item 13.5/400 in ink, a `<b>` inside it carrying no weight,
+  Team's 200px width gone (MENU-4); a ⋯ in `.rec-ctl` (or marked
+  `data-dock`) docks at the foot inside the gutters under 640 (MENU-16).
+  `tests/menus.js` holds the helper and every menu converted (none listed
+  yet: the areas convert in the next releases), uxaudit's `menu` rule its
+  red, size, look and roles.
+- Next: each area's menus onto the helper, with MENU-1 to MENU-3, MENU-5 to
+  MENU-10, MENU-12 to MENU-14, MENU-17 to MENU-19.
+
+### 2026-10-22 — Clients, Content Review, Video Scripts: release 2 of the second audit
+- The user, on the audit of 2026-10-22: "Fix all".
+- Built: CLI-9 Edit client read the whole Clients list again, billing
+  included, to reopen one record: it reads the one row; a record opened
+  from the list repaints only when `updated_at` moved, never on a column
+  read in another form. CLI-10 a checklist's long labels wrapped into three
+  lines on a narrow pane: the 150px label track holds there, 104 only when
+  tight. CLI-11 (major) the Brand pane ran 3,359px, the analysis ~1,300 of
+  it, six sections read at once: the head (State, Version, Read from) stays
+  open and every section is a fold, its title over the line it is read for
+  (SWOT: 2 strengths · 2 weaknesses · …), shut, opened ones remembered per
+  client, Brand positioning opening by itself on a draft so Confirm is read
+  against it; Sources and Other versions folds too. REV-2 the asset picker
+  offered SVG and TIFF, refused only at Add to set: it offers what
+  sign-upload signs. REV-3 Add assets named itself twice and held a card in
+  its card: the drop zone sits in the sheet. REV-4 the Content Review list
+  found a client by name alone: a Client ID finds it too. REV-5 a thumbnail
+  whose file failed drew the broken picture: a shaded tile with its kind's
+  glyph. VS-2 a shoot read "10:00 am", a meeting "2:00pm": both are
+  Malaysia's clock's one form. VS-3 Script type, three choices, is a
+  segment. VS-4 the month's rows read VS01 and the script's head 2611VS01:
+  both read the whole code.
+- Skipped: none.
+
+### 2026-10-22 — A PDF in the installed app has a way out
+- Reported by the user: "when pdf generated from PWA there is no button to
+  share to close the windows whatsoever".
+- Cause: every Preview, and every save on an iPhone or iPad, opened a
+  window at the press (`ADspaceDocs.tabFor()` and four copies of `openTab()`
+  in reports, scripts, checklists and register) and pointed it at the
+  worker's `/admin/file/…` (or `/client/file/…`) or a blob:. In the
+  installed app that address is inside the app's own scope, so the PDF
+  opened inside the standalone app with no browser bar: no Share, no Done,
+  no Back, the person stuck until the app was closed. In Safari the same
+  flow worked, its own bar giving the way out.
+- Fix: `ADspaceDocs.installed()` (display-mode standalone or
+  `navigator.standalone`, on iOS or an Android touch screen) is the one
+  test. There `tabFor()` and `previewTab()` (the one Preview opener, which
+  replaced the four copies) open nothing; `save()` hands the share sheet the
+  named File (the PDF with its name, Save to Files, Print, WhatsApp, a
+  close), asking File ready · Share (分享) when the press has gone stale; and
+  where the app has no share sheet for files the PDF is shown in a sheet
+  (`#pdfViewSheet`) with Close and Download. The windows opened for a
+  signed Handbook file and a campaign invoice go to another origin, which
+  the installed app opens in Safari's own viewer with Done; left alone.
+- Proof: `tests/pwapdf.js` (new) on an iPhone and Android in the installed
+  app: no window opened, the named File shared, File ready · Share after a
+  stale press, the viewer with Close, Escape and Download where share is
+  missing, a browser tab still opening its tab at the press, and a scan of
+  every script for a blank window opened outside ADspaceDocs. Only an
+  iPhone can confirm the share sheet itself: the user checks it on the
+  installed app.
+### 2026-10-22 — The backend review's security and data findings (release 1 of 3)
+- The user, 2026-10-22, on the review of the client pages and the backend:
+  "Fix all". `2026-10-22-backend-review-holds.sql`.
+- Built: SEC-1 the six guards that held only an update (`clients_billing_guard`,
+  `clients_active_billing`, `clients_white_label_guard`,
+  `clients_brand_guard`, `campaigns_finance_guard`,
+  `campaign_deliverables_guard`) hold an insert too, read against a blank
+  row, a page's write alone (the API's role; the quotation website makes a
+  client with none of the columns): a colleague at Clients Work without the
+  Billing part could post a client born Active with its billing. BE-2 one
+  Bukku contact a record: `bukku-sync` sent a linked record's details to
+  any contact id the sheet named (another customer's, from a stale sheet);
+  it now refuses a contact other than the linked one and asks
+  `bukku_contact_check` before writing Bukku, the link functions refusing
+  `taken`. BE-3 / CP-2 (one fix) the supplier form and the quotation
+  website filed the typed name as the actor, as the details form did until
+  2026-10-19: now 'Supplier form' and 'Quotation website', the name in the
+  detail. BE-4 a quotation's key answered across clients (a website key's
+  replay gave its public key): scoped to the client, a website key to its
+  visitor's email; the page no longer reads `idem`, and its fallback key is
+  random. BE-5 `app_setting` and `ADspaceMoney.setting` read a key's first
+  row for any earlier day, so an S$ rate planned for 1 Nov priced quotations
+  from today: the first row now stands in only where the schema seeded it
+  (no `set_by`; on the page, `FIRST`). BE-6 a details link stayed open
+  after its client went Active or Past: trigger `clients_details_close`
+  ends it at the move, and a Past client's link opens nothing.
+- Tests: `tests/sql.js` probes every insert as a Work-only role, the
+  seeded and planned figures, the link across the move, both actors, the
+  key across clients and visitors, and the Bukku contact; `suppliersql`
+  the supplier form's actor; `bukkufn` the linked and taken refusals; the
+  stand-in holds each.

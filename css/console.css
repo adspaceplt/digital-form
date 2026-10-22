@@ -681,6 +681,17 @@ button.appver {
 /* Tight enough that the line, its Publish and the bar's acts keep one row at
    1280 with a change waiting (ux-audit SVC-5). */
 .svc-live-acts { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+/* Review n changes (2026-10-22, SVC2-M1): a tonal toggle left of Publish;
+   on a phone the pair are equal halves of their own row. */
+.svc-review-note { margin: 0 0 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; color: var(--ink-soft); }
+.svc-review-note .linkbtn { font-size: 13px; }
+.svc-name small.svc-moved { color: var(--ink-soft); }
+#svcList > .softpanel { margin-top: 12px; }
+@media (max-width: 640px) {
+  .cmdbar > .svc-live:has(#svcReview) { order: 1; flex-basis: 100%; }
+  .svc-live-acts:has(> #svcReview) { flex: 1 1 100%; }
+  .svc-live-acts:has(> #svcReview) > .btn { flex: 1 1 50%; min-width: 0; white-space: nowrap; }
+}
 .svctabs { margin-bottom: 12px; }
 /* A block of the rate card's words, edited as the card prints it (2026-10-13):
    numbered points, or a table's rows under its column names; each row's acts
@@ -2600,6 +2611,25 @@ button.aiu-row:first-child::before { content: none; }
 .ba-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
 .ba-hypo { margin: 12px 0 0; }
 .ba-sec { margin-top: 24px; }
+/* Each section a fold (2026-10-22, CLI-11): a hairline over it, the title
+   over the line it is read for, the chevron at the right edge; the body runs
+   0fr to 1fr with its opacity. */
+.ba-fold { margin-top: 0; border-top: 1px solid var(--line-soft); }
+.ba-fold:first-of-type { margin-top: 16px; }
+.ba-fold-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: var(--ctl-h); padding: 10px 0;
+  border: 0; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.ba-fold-t { display: grid; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ba-fold-t .fsec-h { margin: 0; }
+.ba-fold-sum { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ba-fold-chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.ba-fold.is-open .ba-fold-chev { transform: rotate(90deg); }
+.ba-fold.is-open .ba-fold-sum { display: none; }
+.ba-fold-body { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease), visibility var(--t-slow); }
+.ba-fold.is-open .ba-fold-body { grid-template-rows: 1fr; opacity: 1; }
+.ba-fold-in { overflow: hidden; min-height: 0; }
+.ba-fold.is-open .ba-fold-in { padding-bottom: 16px; }
+.ba-fold:not(.is-open) .ba-fold-body { visibility: hidden; }
+@media (hover: hover) { .ba-fold-head:hover .ba-fold-chev { color: var(--ink); } }
 .ba dd { overflow-wrap: anywhere; }
 .ba-list { margin: 0; padding-left: 18px; }
 .ba-list li + li { margin-top: 4px; }
@@ -3046,6 +3076,10 @@ button.vs-row { cursor: pointer; }
    Content Review's set. The console's alone, so in this sheet (2026-10-22,
    SET2-14). */
 .stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
+/* On a phone the groups are the view strip, held under the head on the
+   page's ground, edge to edge in the gutters (2026-10-22, SET2-17). */
+.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: 0 -16px 12px; padding: 4px 16px 12px; }
+.stg.is-phone .stg-sec { scroll-margin-top: calc(var(--head-h) + 64px); }
 .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
 /* What was pressed answers on its row (2026-10-14, audit SET-2). */
 .stg-what > .msg.stg-said { margin: 4px 0 0; }
@@ -3124,10 +3158,24 @@ button.vs-row { cursor: pointer; }
    service lines, and the Build quote sheet. */
 .qt-box > .viewhead { margin-top: 0; }
 .qt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.qt-row { grid-template-columns: minmax(0, 1fr) 140px 190px 116px var(--ctl-h); }
+.qt-row { grid-template-columns: minmax(0, 1fr) 140px 190px auto var(--ctl-h); }
 /* Download on the row: sending the quotation is the next act every time
    (2026-10-15, audit CLI-5). */
-.qt-dl { justify-self: end; }
+.qt-dl { justify-self: end; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+/* What a quotation asks next stands beside Download (2026-10-22, QT-M1):
+   on a phone the row's buttons share the line under the meta as equal
+   halves, the last taking a row of its own where there are three. */
+/* At a desk a row holding them keeps its reference whole: the buttons take
+   the line under the figure and state, ending at the ⋯'s edge, since three
+   on the first line left the reference a word a line. */
+.rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
+.rec-pane:not(.is-narrow) .qt-row.has-acts > .qt-dl { grid-row: 2; grid-column: 1 / span 4; justify-self: end; margin-top: 8px; }
+.is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl act"; }
+.is-narrow:not(.is-tight) .qt-row.has-acts > .qt-dl { grid-area: dl; justify-self: end; margin-top: 8px; }
+.is-tight .qt-row.has-acts > .qt-dl { justify-self: stretch; justify-content: stretch; }
+.is-tight .qt-row.has-acts > .qt-dl > .btn { flex: 1 1 calc(50% - 4px); min-width: 0; }
+/* An empty list carries its way out on its line (2026-10-22, SL-M2). */
+.empty.has-go { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .qb-nb { white-space: nowrap; }
 .qt-amt, .qt-state { display: flex; flex-direction: column; }
 .qt-ref { font-variant-numeric: tabular-nums; }
@@ -3287,7 +3335,7 @@ button.vs-row { cursor: pointer; }
 .ck-chev svg { width: 16px; height: 16px; }
 .ck-back { margin-bottom: 12px; }
 .ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 16px; padding: 18px 20px; margin-bottom: 12px; }
-.ck-ctl { display: flex; align-items: center; gap: 8px; }
+.ck-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ck-head .ck-facts { grid-column: 1 / -1; }
 .is-narrow .ck-head { padding: 14px; grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ck-ctl .chip-state { margin-right: auto; }
@@ -3297,6 +3345,10 @@ button.vs-row { cursor: pointer; }
 .ck-sec-acts { display: flex; align-items: center; gap: 8px; }
 .ck-sec-acts .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
 .ck-facts { margin: 0; }
+/* A checklist's labels are long ("Pixel / Analytics Connection"): a narrow
+   pane keeps the 150px label track, 104 only when tight (2026-10-22, CLI-10). */
+.is-narrow .ovfacts.ck-facts > div { grid-template-columns: 150px minmax(0, 1fr); gap: 0 16px; }
+.is-tight .ovfacts.ck-facts > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
 .ck-sec-head + .ck-facts, .ck-sec-note + .ck-facts, .ck-row + .ck-facts { margin-top: 12px; }
 .ck-facts + .ck-row { margin-top: 12px; }
 .ck-row.is-table { grid-template-columns: minmax(0, 1fr); }
@@ -3537,3 +3589,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 @media (max-width: 560px) {
   .row.fgrid-3.fgrid-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* A thumbnail whose file did not load (2026-10-22, REV-5): a shaded tile
+   with its kind's glyph, where the picture would be. */
+.thumb-miss { display: grid; place-items: center; width: 100%; height: 100%; min-height: 40px; background: var(--sunk); color: var(--ink-mute); }
+.thumb-miss svg { width: 18px; height: 18px; }

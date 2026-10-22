@@ -748,6 +748,8 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 /* At the specificity of `.btn` alone, so every filled variant's own pressed
    step (and a red fill's colour) wins over the tonal one. */
 .btn:where(:active) { background: var(--tonal-press); }
+/* A tonal toggle held on reads one step deeper (Review n changes). */
+.btn:where([aria-pressed="true"]) { background: var(--tonal-press); color: var(--ink); }
 /* Approve is the action we want the client to take, so it carries the weight.
    Request changes stays available but visually quiet. Blue while it is still a
    decision to make; the settled state below is green, because by then it is no
@@ -1956,6 +1958,9 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
+/* The installed app's PDF viewer, where it has no share sheet for files
+   (js/documents.js `viewer`): the file at the sheet's height. */
+.pdfview { display: block; width: 100%; height: 70vh; height: 70dvh; border: 0; border-radius: var(--radius-sm); background: var(--sunk); }
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }
@@ -2317,7 +2322,6 @@ body.is-plain .topbar { background: var(--chrome); }
   gap: 10px; text-align: left; min-height: var(--ctl-h); padding: 4px 10px;
 }
 /* The label and its second line read as one row, not as two stacked items. */
-.acct-menu .kmenu-item b { font-weight: 600; }
 .acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
 .acct-who-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .acct-who-text b {
@@ -2331,7 +2335,9 @@ body.is-plain .topbar { background: var(--chrome); }
 /* Four groups (you, the workspace, this device, the way out), each set off
    by a hairline. The workspace's rows are each drawn only where they may be
    used, and its hairline leaves with the last of them. */
-.acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
+/* A menu's groups are set off by one hairline (DESIGN.md §5 Menus, 4),
+   laid by `ADspaceMenu.tidy`; the account menu's are the same rule. */
+.kmenu-sep, .acct-sep { flex: 0 0 auto; border: 0; height: 1px; margin: 4px 6px; background: var(--line-soft); }
 .acct-theme-word { flex: 1 1 auto; min-width: 0; cursor: default; }
 .acct-theme .seg { flex: 0 0 auto; margin-left: auto; }
 /* On the menu's raised ground the chosen option takes the menu's own edge,
@@ -2548,7 +2554,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .sheet-wide .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
 .sheet-card.askcard { width: min(440px, 100%); }
-.askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; white-space: pre-line; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
 .askentry + .askentry { margin-top: 12px; }
 /* A date beside its time: two halves on one row, every other field the
@@ -3278,7 +3284,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   text-align: left; min-height: var(--ctl-h);
   padding: 9px 11px; border: 0; border-radius: var(--radius-sm); background: none;
 }
-.kmenu-item b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.kmenu-item { font-size: 13.5px; font-weight: 400; color: var(--ink); }
+/* One look for every item (DESIGN.md §5 Menus, 10; MENU-4, 2026-10-22): a
+   bold label in some menus and a plain one in others read as two kinds. */
+.kmenu-item b { font: inherit; color: inherit; }
 .kmenu-item span { font-size: 12px; line-height: 1.45; color: var(--ink-mute); }
 .kmenu-item:hover { background: var(--line-soft); }
 /* A destructive item is red whether or not it carries a <b>. The colour hung
@@ -3665,6 +3674,9 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* A ⋯ menu is as wide as its words on a phone too (2026-10-11): drawn
      the screen's width, the task card's covered the card's whole head. */
   .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
+  /* A record head's ⋯ docks at the foot inside the gutters, as the account
+     menu does, and never covers the record's name (MENU-16, 2026-10-22). */
+  .kmenu.is-footdock { max-width: none; transform-origin: bottom center; }
   .kactions { gap: 8px; }
 
   /* Full label on a phone too: the client has to know which profile they are
@@ -4675,7 +4687,7 @@ body > .shell { width: 100%; }
 .group-name small { font-size: 12px; color: var(--ink-mute); }
 /* The ⋯ menu hangs from its own cell, not from the table. */
 .team-act { position: relative; display: flex; justify-content: flex-end; }
-.team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; width: 200px; }
+.team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; }
 .group-name .input { width: 100%; }
 .input-sm { min-height: var(--ctl-h-sm); font-size: 13px; }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
