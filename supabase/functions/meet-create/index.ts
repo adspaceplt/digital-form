@@ -131,7 +131,11 @@ Deno.serve(async (req) => {
       const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
       if (!r.ok && r.status !== 404 && r.status !== 410) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
     }
-    await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: null });
+    /* The event is gone; a refused save leaves the link pointing at it, so
+       it is said, never answered as deleted (2026-10-22, BE-8). Create
+       Google Meet books a new one either way. */
+    const cleared = await db.rpc(SET, { [KEY]: eid, p_link: null, p_event: null });
+    if (cleared.error || (cleared.data && cleared.data.error)) return json({ error: 'not-saved', deleted: false }, 200, origin);
     return json({ deleted: true }, 200, origin);
   }
 

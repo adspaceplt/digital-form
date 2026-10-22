@@ -24,7 +24,7 @@
 import { S3Client, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { MediaConvertClient, CreateJobCommand } from '@aws-sdk/client-mediaconvert';
 
-import { PREFIX, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc } from './logic.mjs';
+import { PREFIX, ISO_BMFF, UNREAD, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc } from './logic.mjs';
 
 const s3 = new S3Client({});
 const mc = new MediaConvertClient({});
@@ -72,7 +72,7 @@ async function convert(Bucket, Key, size, redo) {
     if (!overCap((await inspect(Bucket, webKey(Key), had)).video)) return 'copy exists';
   }
   const ext = (Key.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
-  const info = await inspect(Bucket, Key, size);
+  const info = ISO_BMFF.test(Key) ? await inspect(Bucket, Key, size) : UNREAD;
   if (had === null && alreadyWeb(ext, info)) return 'already plays everywhere';
   const hasAudio = info.codecs.some((c) => /^(mp4a|ac-3|ec-3|lpcm|sowt|twos|alac)$/.test(c)) || !info.codecs.length;
   const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudio, info.video)));

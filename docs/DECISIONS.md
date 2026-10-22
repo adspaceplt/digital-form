@@ -6190,6 +6190,7 @@ in review while the tile counted them: 6 beside 7; both count every report
 not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
 reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
 WRK-M1, and OVW-7's shared cold-lead rule.
+
 ### 2026-10-22 — Creator Campaigns: release 2 of the second audit (the booking card and the record)
 The user, 2026-10-22: "Fix all". Built: CMP-7 (a step taken on a booking's
 card was answered in the head card a screen above it; `cardSay` answers
@@ -6208,6 +6209,65 @@ result figures with separators) and CMP-17's inline styles. CMP-M1:
 reopens the 2026-10-09 line (a video script's client link) that put a campaign's Unpublish beside Copy link and
 Preview; at a desk it stays, on a phone it is the head ⋯'s lifecycle item
 (`#campLifeItem`), as the approved mockup draws it.
+
+### 2026-10-22 — Menus: a client's requests and letters, the Register, the bulk bars (release 3 of the menu review)
+A request's Reply stands on its row as a small button (MENU-6). A client
+letter's ⋯ reads Download | Send on WhatsApp | Mark signed or Mark not
+signed | Void, Delete through `ADspaceMenu.items`, and a signed letter's
+Verify stands on its row before the ⋯ (MENU-9; "Not signed after all"
+retired). On the Register a Letter of Offer and a performance record open
+on a press of the row, a chevron its way there and no ⋯ (MENU-7); every
+other row's ⋯ runs through the helper. The Clients, posts and My Work bulk
+bars hide their acts at zero ticked, never grey them (MENU-12). Issue
+letter reads Issue Letter of Offer, and the void sheet's act Void
+(MENU-14); on a phone the Documents head's two acts take a row each so the
+longer label is never broken. The task card's ⋯ carries its groups.
+Skipped: nothing in these areas. `tests/take.js` "and says so under it"
+fails on main before this release (logged in STANDARD.md).
+
+### 2026-10-22 · `revise` fed a picture to a video
+`tests/revise.js` "and one without asks for its first frame, inline" failed
+on main once REV-5 (#712) put a shaded `.thumb-miss` tile in place of a
+thumbnail whose file fails. The page was right: the suite answered every
+`mycdn.adspace.me` address with a PNG, so the reel's `.mov` did not decode,
+fired `error`, and REV-5 replaced the `<video>` the check looks for. The
+suite now answers a video address (`.mov`, `.mp4`, `.webm`) with a 16px
+WebM the browser plays, keeps the PNG for pictures and a 404 for a `gone.`
+file, and seeds Picture gone to assert the missing tile, never a broken
+image. The assertion is unchanged. Rule: a suite that answers the CDN
+answers a video with a video (CLAUDE.md §1, harness facts).
+
+
+### 2026-10-22 — The backend review's remaining findings (release 3 of 3)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/backend/report.txt).
+Built: SEC-2, BE-1, BE-7 to BE-14, LEAN-1, LEAN-2.
+- SEC-2: the backup workflow, which holds the database owner's connection,
+  ran `actions/checkout@v4` and `supabase/setup-cli@v1` by movable tags; both
+  are pinned to their commits (v4.4.0, v1.7.3) and `dbbackup` holds every
+  `uses:` to a 40-hex commit.
+- BE-10: the backup's guard read the clients table's COPY header, which an
+  empty table also writes; it now needs a row before the closing `\.`.
+- BE-1: pickers took mkv, webm, mpg and mpeg since 2026-10-17, but the
+  conversion and the page's copy lookup knew mov, mp4, m4v and qt alone, so
+  those uploads never played on an iPhone. The Lambda is redeployed by the
+  user from `workers/video-convert/`.
+- BE-7, LEAN-2: a creative's picture followed redirects blind and read the
+  whole body before the 4 MB check; one reader now serves both paths.
+- BE-8: Delete Google Meet answered deleted even where the month kept the
+  link.
+- BE-9: the two issue-day defaults the review named were already set to
+  Malaysia's day on 2026-10-17 (the review read the create table alone);
+  `tests/sql.js` now holds every column's last default to it.
+- BE-11: anyone holding a selection link could register twenty endpoints and
+  push the client's own phones out; new devices are capped and nobody is
+  pushed out.
+- BE-12: `bukku-sync` `taxes` let a colleague at View alone use the company's
+  Bukku token; it asks `bukku_config` as `fields` does.
+- BE-13: two fallbacks for databases before 2026-09-28 and 2026-10-10 could
+  resend a decision without its version check; removed.
+- BE-14: `readPages` past its cap returned a cut list as whole.
+- LEAN-1: the PDF reference reading was copied byte for byte in wa-send and
+  supplier-mail; one `_shared/pdfref.ts`.
 ### 2026-10-22 — Reports and WhatsApp: release 3 of the second audit (campaigns area)
 The user, 2026-10-22: "Fix all". Built: RPT-2 (White label in a report's
 ⋯ for a client that is not white label led to a line saying so; drawn only
