@@ -2345,16 +2345,18 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .is-narrow .ovw-facts > div:nth-child(2) { border-top: 1px solid var(--line-soft); padding-top: 8px; }
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-span { font-size: 12px; color: var(--ink-mute); }
-/* The glance: the two rings (delivered and posted on time) on the left,
-   the signals on the right; one column in a narrow pane, the rings side by
-   side over them. */
+/* The glance: the two rings (delivered and posted on time); what needs
+   acting on is the list straight under it (2026-10-22, OVW-M1). */
 .ovw-glance { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; }
 .ovw-meters { display: grid; grid-template-columns: repeat(2, 170px); gap: 16px; justify-content: center; }
 .is-narrow .ovw-meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-narrow .ovw-meters .chart-meter { width: min(150px, 100%); height: auto; aspect-ratio: 1; }
 .is-narrow .ovw-meters .cm-mid b { font-size: 22px; }
 .is-narrow .ovw-meters .cm-mid small { font-size: 11px; max-width: 64%; justify-self: center; line-height: 1.25; }
-.is-narrow .ovw-glance.is-ringless > .ovw-meters { order: 1; }
+.ovw-srcs-host:not(:empty) { margin: 0 0 12px; }
+/* A strip inside a card runs the card's width, its tabs sharing what is spare. */
+.tabrow.ovw-srcs { width: 100%; }
+.tabrow.ovw-srcs .tab { flex: 1 0 auto; text-align: center; }
 .ovw-card.is-empty > .ovw-body { display: grid; align-content: center; justify-items: center; text-align: center; }
 /* The Dashboard's lines are 13, its rows' words; an empty card's line too (ux-audit OVW-3). */
 .ovw-card .emptyline b { font-size: 13px; }
@@ -2362,13 +2364,6 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .cm-arc { fill: none; stroke: var(--ink-soft); stroke-width: 3.6; stroke-linecap: round; }
 .cm-arc.is-ok { stroke: var(--ok-solid); }
 .cm-mid { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 2px; }
-.ovw-sig-rows { display: grid; }
-.ovw-sig {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto 124px; gap: 16px; align-items: baseline;
-  padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13px;
-}
-.ovw-sig-n { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--ink); }
-.ovw-sig-fail { font-size: 12.5px; color: var(--ink-mute); }
 /* Sales and Operations: a label over two by two tiles, the two groups side
    by side at a desk and one over the other in a narrow pane. */
 .ovw-groups { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
