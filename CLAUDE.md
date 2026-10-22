@@ -4333,7 +4333,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     active brand straight under its client, `{client} › {brand} · White
     label`, value `b:{brand id}`; one pick, no For field; the user,
     2026-10-15; `sm_report_create_for`), the head ⋯'s White label (any
-    report not published; `sm_report_brand`, `exists`, `bad-brand`, filed
+    report not published, drawn only where the client is white label and
+    holds a brand; 2026-10-22, RPT-2; `sm_report_brand`, `exists`, `bad-brand`, filed
     from and to), accounts carried from the same brand's last report and
     the AI quota counted by brand (`ai_drafts.brand_id`, filled by
     trigger). A brand's report sets `label_client` to its own client and
@@ -4413,7 +4414,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the latest period), with Undo over the list putting back each report's
   own day. Download saves each file under its own name.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
-  submit.
+  submit. Every step's foot reads Next: {step}, Save beside it where the
+  step saves, and the editor's way out is Back (2026-10-22, RPT-7); the
+  Commentary step is done, its tick drawn, only once every block is
+  written (RPT-8).
   - The head is the record head: the name, then the state, Preview PDF and
     the ⋯ at the right edge; the meta under them (type · period alone),
     then the facts each under its label (`.rp-facts`: Version, Client
@@ -4809,7 +4813,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the time since the step before, and the total (so far); the rows sit in
     the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
-    result first, then those with no result by spend, most first.
+    result first, then those with no result by spend, most first. An ad's
+    name opens its Edit; its ⋯ reads Open in Ads Manager, then Edit and
+    Make a copy, then Mark or Clear ad error, then Remove (`data-g`); on a
+    narrow pane a table with no picture gives up the picture's track and
+    the dates wrap between their parts (2026-10-22, RPT-4, RPT-5).
   - Ad error (`sm_report_ads.ad_error`, `2026-10-16-ad-error.sql`; the
     user, 2026-10-16: a Meta delivery fault read as the cheapest ad): an
     ad's ⋯ Mark ad error asks a reason (200 at most) on a draft at Work, the
@@ -5748,10 +5756,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
 - Messages (the landing view, `wa_messages(p_month)`, client scope): one
-  card of the month's messages (Malaysia time) newest first, a row who it
+  table of the chosen month's messages (Malaysia time, read from
+  `ADspaceClock`, `9 Oct, 2:05pm`), never a card naming the month again,
+  newest first (2026-10-22, WA-2, WA-3), a row who it
   went to (name; client, Creator or Colleague; the number as
   `ADspaceCard.phone` writes it), what it was (Report, Feedback request,
-  Booking, Reminder, Message over the template and its category), who sent
+  Booking, Reminder, Message over the template, which gives way, and its
+  category, read whole; on a phone the meta line leads with what was sent,
+  the number leaving first; WA-4), who sent
   it (Automatic for the queue) and the status over when: Queued, Sending,
   Sent, Delivered, Read, Not confirmed (check the chat before sending again), or Failed with the reason in the team's words
   (`REASON`, by Meta's code). Above it the month's templates sent by
@@ -5776,8 +5788,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceWhatsApp.manage`), never a second copy.
 - The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
   record shares: To (`wa_recipients`: client contacts named with their
-  client, active creators; never a colleague), the number as it will be
-  sent, else why not (a username alone cannot be messaged); Template
+  client, active creators; never a colleague; one with no number listed
+  last as · No number), the number as it will be
+  sent, else why not (a username alone cannot be messaged), with Open
+  contacts on the client's Account where Clients: Contacts is readable
+  (2026-10-22, WA-5); Template
   (Meta's approved ones the portal can fill: a Document header, a text
   header with one variable, body variables positional or named, one link
   button variable); each variable prefilled from the record (the greeting

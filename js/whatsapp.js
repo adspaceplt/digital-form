@@ -156,17 +156,15 @@
     if (!n) return '';
     return C && C.phone ? C.phone(n) : '+' + String(n).replace(/\D/g, '');
   }
-  /* A moment as Malaysia reads it: `9 Oct 14:05`. */
-  function myt(iso) { var t = Date.parse(iso); return isNaN(t) ? null : new Date(t + 8 * 3600000); }
+  /* A moment as Malaysia reads it, from Malaysia's clock as the rest of
+     the console reads one: `9 Oct, 2:05pm` (2026-10-22, WA-2). */
+  var CK = window.ADspaceClock;
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function whenOf(iso) {
-    var d = myt(iso);
-    return d ? d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) : '';
+    if (!iso || !CK.parts(iso)) return '';
+    return CK.date(iso, { year: false }) + ', ' + CK.clock(iso);
   }
-  function monthNow() {
-    var d = new Date(Date.now() + 8 * 3600000);
-    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-01';
-  }
+  function monthNow() { return CK.today().slice(0, 7) + '-01'; }
   function rpc(name, args) {
     return db().rpc(name, args || {}).then(function (r) {
       if (r.error) throw r.error;
@@ -393,23 +391,14 @@
       });
       return;
     }
-    box.appendChild(G.section({
-      /* The card names the month it holds, never the tab again (ux-audit
-         WA-6, 2026-10-14). */
-      route: 'whatsapp', key: 'messages', name: monthWord(), count: list.length,
-      shut: false,
-      table: function () {
-        var table = G.table('wam-row', ['To', 'Template', 'Sent by', 'Status']);
-        G.more(table, list, 30, 'messages', rowOf);
-        return table;
-      }
-    }));
+    /* One month is always chosen in the bar, so the messages are one table
+       under the heads, never a card naming the month again (2026-10-22,
+       WA-3). */
+    var table = G.table('wam-row', ['To', 'Template', 'Sent by', 'Status']);
+    G.more(table, list, 30, 'messages', rowOf);
+    box.appendChild(table);
   }
 
-  function monthWord() {
-    var sel = $('waMonth'), o = sel && sel.options[sel.selectedIndex];
-    return (o && o.textContent) || 'Messages';
-  }
   function rowOf(x) {
     var s = statusOf(x);
     var row = document.createElement('div');
@@ -417,12 +406,21 @@
     row.setAttribute('data-id', x.id);
     var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + '</small>'
       : s[0] === 'unknown' ? '<small class="wam-why is-unknown">' + esc(SAID['wa-unknown']) + '</small>' : '';
-    var meta = [whoOf(x), phone(x.to_number)].filter(Boolean).join(' · ');
+    /* A line of parts, each held whole; on a phone what was sent leads it
+       and the number, last, leaves first where the line runs out
+       (2026-10-22, WA-4). */
+    var parts = function (list) {
+      return list.filter(Boolean).map(function (w, i) {
+        return '<span' + (i ? ' class="wam-part"' : '') + '>' + esc(w) + '</span>';
+      }).join('');
+    };
     row.innerHTML =
       '<span class="wam-to"><b>' + esc(x.to_name || phone(x.to_number)) + '</b>' +
-        '<small>' + esc(meta) + '</small>' + why + '</span>' +
+        '<small class="wam-parts">' + parts([KIND[x.purpose] || 'Message', whoOf(x), phone(x.to_number)]) + '</small>' + why + '</span>' +
       '<span class="wam-tpl"><span>' + esc(KIND[x.purpose] || 'Message') + '</span>' +
-        '<small>' + esc([x.template, CATEGORY[x.category]].filter(Boolean).join(' · ')) + '</small>' + why + '</span>' +
+        /* The template's name gives way; its category reads whole (WA-3). */
+        '<small class="wam-tplline">' + (x.template ? '<span class="wam-tplname">' + esc(x.template) + '</span>' : '') +
+          (CATEGORY[x.category] ? '<span class="wam-cat">' + (x.template ? ' · ' : '') + esc(CATEGORY[x.category]) + '</span>' : '') + '</small>' + why + '</span>' +
       '<span class="wam-by">' + esc(!x.created_by || x.created_by === 'system' ? 'Automatic' : x.created_by) + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[2] + '">' + esc(s[1]) + '</span>' +
         '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
@@ -619,8 +617,12 @@
     var seen = {};
     list.forEach(function (r) { seen[r.label] = (seen[r.label] || 0) + 1; });
     list.forEach(function (r) {
-      if (seen[r.label] > 1) r.label += r.number ? ' · ' + String(r.number).slice(-4) : r.username ? ' · ' + r.username : ' · No number';
+      if (seen[r.label] > 1 && r.number) r.label += ' · ' + String(r.number).slice(-4);
+      /* One who cannot be messaged is listed last and says so (2026-10-22,
+         WA-5). */
+      if (!r.number) r.label += ' · No number';
     });
+    list = list.filter(function (r) { return r.number; }).concat(list.filter(function (r) { return !r.number; }));
     cx.recips = list;
     list.forEach(function (r) { cx.byVal[r.kind + ':' + r.id] = r; });
     var first = o.purpose === 'creator' ? list[0]
@@ -672,6 +674,21 @@
     $('waNumber').value = r && r.number ? phone(r.number) : '';
     var why = !r ? '' : r.number ? '' : r.kind === 'creator' ? SAID['no-creator-number'] : r.username ? SAID.username : SAID['no-number'];
     say($('waToNote'), why, 'warn');
+    /* The way to add the number, where the colleague reads the client's
+       Contacts: the client's Account tab, the sheet shut (WA-5). */
+    if (why && r.kind === 'contact' && r.client_id && may('clients.contacts', 'view')) {
+      var go = document.createElement('button');
+      go.type = 'button'; go.className = 'btn btn-sm btn-quiet ovgo wa-tocontacts';
+      go.innerHTML = 'Open contacts<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+      go.addEventListener('click', function () {
+        window.ADspaceSheet.close();
+        history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(r.client_id) + '&tab=account');
+        var b = bridge();
+        if (b.show) b.show('clients');
+      });
+      $('waToNote').appendChild(document.createTextNode(' '));
+      $('waToNote').appendChild(go);
+    }
     $('waToNote').hidden = !why;
     /* Send rests while the line above says why (ux-audit WA-8, 2026-10-14). */
     $('waSend').disabled = Boolean(why);

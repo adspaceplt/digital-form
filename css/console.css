@@ -3617,3 +3617,37 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .kcard-acts:has(> [data-a="sendback"]) > .kact-go { order: 2; }
   .kcard-acts:has(> [data-a="sendback"]) > .btn-quiet { order: 3; flex: 1 1 100%; }
 }
+/* Reports, the second audit (2026-10-22). An ad's name opens its Edit
+   (RPT-4): the name as it reads, one line, its press hugging the words. */
+.rp-adname {
+  min-width: 0; max-width: 100%; padding: 0; border: 0; background: none; text-align: left;
+  font: inherit; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; border-radius: 4px;
+}
+@media (hover: hover) { .rp-adname:hover { color: var(--action-ink); } }
+/* A narrow ad row wraps its line of dates between its parts, and a table
+   holding no picture gives up the picture's track (RPT-5). */
+.is-narrow .rp-ad-row .rp-name small { white-space: normal; overflow: visible; }
+.is-narrow .rp-ad-table:not(:has(.rp-thumb:not(.is-empty))) .rp-ad-row > .rp-thumb { display: none; }
+.is-narrow .rp-ad-table:not(.is-picking):not(:has(.rp-thumb:not(.is-empty))) .rp-ad-row {
+  grid-template-columns: minmax(0, 1fr) minmax(96px, max-content) auto;
+  grid-template-areas: "name spend act" "res cpr act";
+}
+.is-narrow .rp-ad-table.is-picking:not(:has(.rp-thumb:not(.is-empty))) .rp-ad-row {
+  grid-template-columns: 24px minmax(0, 1fr) minmax(96px, max-content);
+  grid-template-areas: "pk name spend" "pk res cpr";
+}
+
+/* WhatsApp, the second audit (2026-10-22). A template's name gives way and
+   its category reads whole (WA-3); the phone row's meta leads with what was
+   sent, the number leaving first where the line runs out (WA-4). */
+.wam-tplline { display: flex; min-width: 0; }
+.wam-tplname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wam-cat { flex: none; white-space: pre; }
+.wam-to small.wam-parts { display: flex; flex-wrap: wrap; line-height: 1.5; max-height: 1.5em; overflow: hidden; }
+.wam-parts > span { white-space: nowrap; }
+.wam-parts > .wam-part::before { content: '\00a0\00b7\00a0'; }
+.wam-parts > span:first-child { display: none; }
+.wam-parts > span:nth-child(2)::before { content: none; }
+.is-narrow .wam-parts > span:first-child { display: inline; }
+.is-narrow .wam-parts > span:nth-child(2)::before { content: '\00a0\00b7\00a0'; }
