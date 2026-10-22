@@ -36,6 +36,7 @@
  * act on answers 200 with { error }.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { pdfFrom, namesRef } from '../_shared/pdfref.ts';
 
 const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
 function cors(origin: string | null) {
@@ -59,62 +60,6 @@ const SEND_TIMEOUT_MS = 25000;
 const NEVER_LEFT = /client error \(Connect\)|dns error|failed to lookup address|name or service not known|no such host|connection refused|tcp connect error|network is unreachable|no route to host|invalid peer certificate|certificate verify failed|tls handshake|handshake failure/i;
 
 // ---- The document's PDF, as wa-send reads a letter's ----------------------
-const isPdf = (b: Uint8Array) => b.length > 4 && b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46;
-function pdfFrom(b64: string): Uint8Array | null {
-  if (!b64 || b64.length > 20 * 1024 * 1024) return null;
-  try {
-    const b = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    return isPdf(b) ? b : null;
-  } catch { return null; }
-}
-const hexOf = (s: string) => Array.from(s).map((c) => c.charCodeAt(0).toString(16).padStart(4, '0')).join('').toUpperCase();
-const INFLATE_CAP = 20 * 1024 * 1024;
-async function inflate(b: Uint8Array, room: number): Promise<string | null> {
-  try {
-    const reader = new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
-    const parts: Uint8Array[] = [];
-    let n = 0;
-    for (;;) {
-      const got = await reader.read();
-      if (got.done) break;
-      n += got.value.length;
-      if (n > room) { await reader.cancel().catch(() => {}); return null; }
-      parts.push(got.value);
-    }
-    const all = new Uint8Array(n);
-    let at = 0;
-    for (const x of parts) { all.set(x, at); at += x.length; }
-    return new TextDecoder('latin1').decode(all);
-  } catch { return ''; }
-}
-/* The page draws the document with its reference in the file's title, so a
-   file that does not carry the reference is not that document. */
-async function namesRef(b: Uint8Array, ref: string): Promise<boolean> {
-  if (!ref) return false;
-  const raw = new TextDecoder('latin1').decode(b);
-  const hex = hexOf(ref), lit = '(' + ref;
-  const hit = (t: string) => t.indexOf(lit) >= 0 || t.toUpperCase().replace(/\s+/g, '').indexOf(hex) >= 0;
-  if (hit(raw)) return true;
-  const re = /stream\r?\n/g;
-  let m: RegExpExecArray | null, seen = 0, room = INFLATE_CAP;
-  while ((m = re.exec(raw)) && seen < 400) {
-    seen++;
-    const start = m.index + m[0].length, end = raw.indexOf('endstream', start);
-    if (end < 0) break;
-    if (end - start > 4 * 1024 * 1024) continue;
-    const cuts = b[end - 1] === 0x0a ? (b[end - 2] === 0x0d ? [end - 1, end - 2] : [end - 1])
-      : b[end - 1] === 0x0d ? [end - 1] : [end];
-    for (const stop of cuts) {
-      if (stop <= start) continue;
-      const text = await inflate(b.subarray(start, stop), room);
-      if (text === null) return false;
-      room -= text.length;
-      if (hit(text)) return true;
-      if (text) break;
-    }
-  }
-  return false;
-}
 function b64Of(b: Uint8Array): string {
   let s = '';
   for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
