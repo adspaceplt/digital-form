@@ -10,7 +10,7 @@
 (function () {
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+  var esc = window.ADspaceWords.esc;
   var LANG_KEY = 'adspace.details.lang';
   var lang = 'en';
   try { if (localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh'; } catch (e) {}
@@ -33,14 +33,14 @@
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
       company: '公司', legal: '公司注册名称', brn: '公司注册号码',
-      brnHint: '新的 12 位号码。', old: '旧注册号码', tin: '税务识别号（TIN）',
+      brnHint: '新的12位号码。', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
       optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料用于业务用途。',
       submit: '提交', ends: '此表格开放至 {d}。',
       req: '此项为必填。', badBrn: '请按公司注册文件填写注册号码。',
-      badEmail: '请输入有效的邮箱地址。', badPhone: '请输入 8 至 15 位数字的手机号码。',
-      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写 {a} 至 {b} 位字母或数字。', tick: '请勾选确认。',
+      badEmail: '请输入有效的邮箱地址。', badPhone: '请输入8至15位数字的手机号码。',
+      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。', tick: '请勾选确认。',
       doneT: '资料已收到', doneP: '谢谢。您的 ADspace 客户经理将会审阅。',
       expT: '链接已过期', submittedT: '资料已收到', submittedP: '此表格已提交。'
     }

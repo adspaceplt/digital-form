@@ -14,11 +14,7 @@
 (function () {
   var ORG = window.ADSPACE_ORG || {};
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   /* A number as Malaysia and Singapore write it with the country code:
      012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;

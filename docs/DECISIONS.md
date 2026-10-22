@@ -6078,6 +6078,33 @@ releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
   RPT-5, RPT-7, RPT-8, WA-2 to WA-5) follows in the next releases.
 
 
+### 2026-10-22 — The client pages' review findings (release 2 of 3)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/client/report.txt).
+Built: CP-1, CP-3 to CP-12 (CP-2 shipped with BE-3 in release 1). Left for
+the next release: CP-13 to CP-17.
+- CP-1: the creator's page named a client on its access code cover; the
+  For line is hidden until a code is proved and again on Forget.
+- CP-3: Request change kept one key across edits, so a note changed after a
+  lost reply filed the first words; the key now follows the kind, line and
+  note.
+- CP-4: what a client types is held to the database's lengths on the page
+  (`maxlength` 80 a name, 2,000 a note, 5,000 a caption) and `too-long` is
+  said in the client's words (`W.tooLong`), never Not sent.
+- CP-5: `.then(ok, bad)` left on the creator's page and the portal; now
+  `.then(ok).catch(bad)`.
+- CP-6: the review page read a locked link as Not sent; it reads Link
+  temporarily locked with its minutes, as the selection page does.
+- CP-7: `sessionStorage` read bare threw in a private window; wrapped.
+- CP-8: an announcement drew any `http` link; https alone, as stated.
+- CP-9: eleven copies of `esc`; one, `ADspaceWords.esc`, escaping quotes.
+- CP-10: Chinese counts read "3 位"; a figure and its unit take no space.
+- CP-11: the supplier form's covers named an account manager a supplier
+  does not have; Please contact ADspace.
+- CP-12: the portal's Qty × rate cell ran past its header with the term on
+  the same line; the months take a line of their own under the rate.
+- Tests: `creator` reads the For line hidden on the cover and after Forget;
+  `words` fails a Chinese count with a space before its unit.
+
 ## 2026-10-22: internal review, release 1 (Activity, search, Suppliers, Handbook, Documents)
 The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
 - ACT-1 the Activity record read the newest 200 rows of every section and

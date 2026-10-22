@@ -1126,7 +1126,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A public form's typed name is never an actor: it is filed under the form
   (Details form, Supplier form, Quotation website), the name in the detail
   (2026-10-22, BE-3).
-- Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
+- Every page's `esc` (a client page's is `ADspaceWords.esc`; `js/chrome.js`
+  keeps its own, loaded before it) escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
 - A value is never drawn raw because of what it starts with: a fact not set

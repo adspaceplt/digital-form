@@ -3903,6 +3903,7 @@ body > .shell { width: 100%; }
 .svc-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13.5px; }
 .svc-unit { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .svc-calc { font-size: 12.5px; color: var(--ink-mute); }
+.svc-calc small { display: block; font-size: 12px; }
 /* The state column is one width everywhere, so the selects line up down a
    table and across sections. It sits last before the ⋯. */
 .svc-state { text-align: left; }

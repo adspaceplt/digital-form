@@ -52,7 +52,7 @@
        so a phone never squeezes it beside the state. */
     if (after && after.parentNode === host) host.insertBefore(line, after.nextSibling);
     else host.appendChild(line);
-    function esc(x) { return String(x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    var esc = window.ADspaceWords.esc;
     function paint() {
       var name = known();
       line.hidden = !name;
@@ -64,7 +64,7 @@
       line.querySelector('[data-a="forget"]').addEventListener('click', function () { forget(); });
     }
     function edit() {
-      line.innerHTML = '<input class="input input-sm decide-as-field" type="text" autocomplete="name" aria-label="' + esc(w.name) + '">' +
+      line.innerHTML = '<input class="input input-sm decide-as-field" type="text" autocomplete="name" maxlength="80" aria-label="' + esc(w.name) + '">' +
         '<button class="btn btn-sm btn-primary" type="button" data-a="save">' + esc(w.save) + '</button>' +
         '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">' + esc(w.cancel) + '</button>';
       var f = line.querySelector('input');
@@ -100,6 +100,7 @@
     field.className = 'input namebox-field';
     field.type = 'text';
     field.autocomplete = 'name';
+    field.maxLength = 80;
     field.setAttribute('aria-label', words.label);
     field.placeholder = words.placeholder;
     /* Out of the tab order while it is shut. A field nobody can see is not a

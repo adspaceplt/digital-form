@@ -16,7 +16,10 @@
   // GitHub Pages serves static files only, so the token travels as ?k=.
   var token = new URLSearchParams(location.search).get('k') || '';
 
-  var passcode = sessionStorage.getItem('adspace_pass_' + token) || '';
+  /* Storage that throws (blocked site data, some private windows) never
+     holds the page back (CP-7). */
+  var passcode = '';
+  try { passcode = sessionStorage.getItem('adspace_pass_' + token) || ''; } catch (e) { /* no storage */ }
 
   // The mark is the shared chrome's job now.
   if (!API.configured) $('demoStrip').hidden = false;
@@ -244,11 +247,7 @@
     });
   }
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  function escapeHtml(s) { return window.ADspaceWords.esc(s); }
 
   // ---- Rendering -----------------------------------------------------------
   function postCard(post, clientMeta) {
@@ -570,12 +569,12 @@
         '<button class="btn btn-changes" type="button" aria-pressed="false">Request changes</button>' +
       '</div>' +
       '<div class="changebox">' +
-        '<textarea class="textarea" data-f="note" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
+        '<textarea class="textarea" data-f="note" maxlength="2000" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
         /* Shown only while no name is held (`openBox`), so Forget on the
            page brings it back. */
-        '<input class="input changebox-who" type="text" autocomplete="name"' +
+        '<input class="input changebox-who" type="text" autocomplete="name" maxlength="80"' +
           ' aria-label="Your name" placeholder="John Doe"' + (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
         '<div class="changebox-actions">' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
@@ -732,6 +731,8 @@
             ? 'Please describe the required changes.'
             : res && res.error === 'changed'
               ? 'This post was updated after the page opened. Please refresh to review the latest version.'
+              : res && res.error === 'locked' ? window.ADspaceWords.lockedLine(W, res.minutes)
+              : res && /^too[-_]long$/.test(res.error || '') ? W.tooLong
               : W.notSent;
         return;
       }
@@ -1201,7 +1202,7 @@
   $('passForm').addEventListener('submit', function (e) {
     e.preventDefault();
     passcode = $('passInput').value.trim();
-    sessionStorage.setItem('adspace_pass_' + token, passcode);
+    try { sessionStorage.setItem('adspace_pass_' + token, passcode); } catch (e2) { /* no storage */ }
     load();
   });
 
@@ -1242,7 +1243,7 @@
            (the team changed it) is let go, so a reload asks afresh and
            never counts the old one again. */
         var held = passcode;
-        if (held) { passcode = ''; sessionStorage.removeItem('adspace_pass_' + token); }
+        if (held) { passcode = ''; try { sessionStorage.removeItem('adspace_pass_' + token); } catch (e3) { /* no storage */ } }
         showState(W.passTitle, held ? W.passWrong : W.passText, true);
         return;
       }
