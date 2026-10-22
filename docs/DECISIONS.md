@@ -5992,6 +5992,37 @@ removes nothing.
   every script for a blank window opened outside ADspaceDocs. Only an
   iPhone can confirm the share sheet itself: the user checks it on the
   installed app.
+### 2026-10-22 — The backend review's security and data findings (release 1 of 3)
+- The user, 2026-10-22, on the review of the client pages and the backend:
+  "Fix all". `2026-10-22-backend-review-holds.sql`.
+- Built: SEC-1 the six guards that held only an update (`clients_billing_guard`,
+  `clients_active_billing`, `clients_white_label_guard`,
+  `clients_brand_guard`, `campaigns_finance_guard`,
+  `campaign_deliverables_guard`) hold an insert too, read against a blank
+  row, a page's write alone (the API's role; the quotation website makes a
+  client with none of the columns): a colleague at Clients Work without the
+  Billing part could post a client born Active with its billing. BE-2 one
+  Bukku contact a record: `bukku-sync` sent a linked record's details to
+  any contact id the sheet named (another customer's, from a stale sheet);
+  it now refuses a contact other than the linked one and asks
+  `bukku_contact_check` before writing Bukku, the link functions refusing
+  `taken`. BE-3 / CP-2 (one fix) the supplier form and the quotation
+  website filed the typed name as the actor, as the details form did until
+  2026-10-19: now 'Supplier form' and 'Quotation website', the name in the
+  detail. BE-4 a quotation's key answered across clients (a website key's
+  replay gave its public key): scoped to the client, a website key to its
+  visitor's email; the page no longer reads `idem`, and its fallback key is
+  random. BE-5 `app_setting` and `ADspaceMoney.setting` read a key's first
+  row for any earlier day, so an S$ rate planned for 1 Nov priced quotations
+  from today: the first row now stands in only where the schema seeded it
+  (no `set_by`; on the page, `FIRST`). BE-6 a details link stayed open
+  after its client went Active or Past: trigger `clients_details_close`
+  ends it at the move, and a Past client's link opens nothing.
+- Tests: `tests/sql.js` probes every insert as a Work-only role, the
+  seeded and planned figures, the link across the move, both actors, the
+  key across clients and visitors, and the Bukku contact; `suppliersql`
+  the supplier form's actor; `bukkufn` the linked and taken refusals; the
+  stand-in holds each.
 
 ### 2026-10-22 — Creator Campaigns, Reports, WhatsApp: release 1 of the second audit (P1 and P2 first)
 - Built from tests/audits/2026-10-22/campaigns/report.txt (the user, 2026-10-22: "Fix all"):

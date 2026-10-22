@@ -1119,6 +1119,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   times").
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
+- A guard trigger holds an insert as it holds an update, a page's insert
+  read against a blank row (2026-10-22, SEC-1: a client could be inserted
+  Active with billing by a colleague without the Billing part).
+- A public form's typed name is never an actor: it is filed under the form
+  (Details form, Supplier form, Quotation website), the name in the detail
+  (2026-10-22, BE-3).
 - Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
@@ -1229,7 +1235,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   functions, `app_settings_read()` for pages (anyone the team does not hold
   is answered `sst_pct` and the term percentages alone, what a client page
   prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
-  p_values)` an admin's, from today (MYT) or later (`past`), filed
+  p_values)` an admin's, from today (MYT) or later (`past`); a figure is the
+  one in force on the day, the first row standing in for an earlier day
+  only where the schema seeded it (`app_setting`, `setting()`; a figure
+  planned for a later day is unset before it; 2026-10-22, BE-5), filed
   `team.changed` under Settings; a value saved for a planned day that equals
   the one in force the day before withdraws that day's row, filed "planned
   change withdrawn" (`2026-10-19-planned-setting-withdrawn.sql`). An edge
@@ -1720,8 +1729,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact's salutation, name, mobile and email; refused by field), telling
     the team at Clients: Billing Work whose bands and client scope reach the
     client (kind `client.details`, opening Billing), filed under the actor
-    Details form with the typed name in the detail (a public form's typed
-    name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
+    Details form with the typed name in the detail. A move into Active or
+    Past ends every link still open (trigger `clients_details_close`), and a
+    Past client's link opens nothing (2026-10-22, BE-6). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`),
     one that differs from what Billing holds reading held → sent (2026-10-20, DTL-1): Use
     details fills the Billing sheet and its own Save takes them in
@@ -2516,6 +2526,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.
   Since then reads Details changed once a sent field moves (`bukku_print`).
+  One Bukku contact is one record's, a supplier and its own client sharing
+  one: `bukku-sync` sends a linked record to its own contact alone and asks
+  `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
+  `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
@@ -5082,7 +5096,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
   made again whenever the selection changes; the same key twice, even at
-  once, answers `again` with the first; 2026-10-19, audit 15).
+  once, answers `again` with the first, and only for its own client, a
+  website key its own visitor's email; 2026-10-19, audit 15; 2026-10-22,
+  BE-4).
   Each line's Qty, Rate (RM) and Months (a monthly line's; the term
   until typed) are fields in the lines table (`p_sel.edits` by the line's
   `key`, kind|slug|label; `2026-10-15-quotation-rates.sql`, the user,
