@@ -1660,19 +1660,14 @@
       </div>
       <div class="sheet-body">
       <!-- Step 1: where content comes in -->
-      <section class="panel zone-in">
-        <div class="zone-head">
-          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
-          <div>
-            <b>Add creative assets</b>
-          </div>
-        </div>
-
+      <!-- The sheet names it once (Add assets): no card of its own inside
+           the sheet's card (2026-10-22, REV-3). -->
+      <section class="zone-in">
         <div class="drop" id="drop">
           <b><span class="drop-fine">Drag files here</span><span class="drop-coarse">Choose files</span></b>
           <span class="drop-fine">Or click to browse.</span>
         </div>
-        <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden><!-- accept set from ADspaceAPI.uploadAccept on boot -->
 
         <div class="linkrow">
           <textarea class="input" id="mediaUrl" aria-label="Asset link" placeholder="Drive or file link" rows="1" data-oneline data-noenter inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
@@ -4252,7 +4247,7 @@
           <section class="fsec">
             <h4 class="fsec-h">Video</h4>
             <div class="row"><div><label class="field-label" for="vsKind">Script type</label>
-              <select class="select" id="vsKind">
+              <select class="select" id="vsKind" data-seg>
                 <option value="scenes">Detailed scenes</option>
                 <option value="products">Products and scenes</option>
                 <option value="story">Story and voice-over</option>
@@ -4324,7 +4319,7 @@
           <div class="row"><div><label class="field-label" for="vsNewMonth">Content month</label>
             <select class="select" id="vsNewMonth" aria-required="true"></select></div></div>
           <div class="row"><div><label class="field-label" for="vsNewKind">Script type</label>
-            <select class="select" id="vsNewKind">
+            <select class="select" id="vsNewKind" data-seg>
               <option value="scenes">Detailed scenes</option>
               <option value="products">Products and scenes</option>
               <option value="story">Story and voice-over</option>
