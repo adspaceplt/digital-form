@@ -6190,3 +6190,21 @@ in review while the tile counted them: 6 beside 7; both count every report
 not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
 reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
 WRK-M1, and OVW-7's shared cold-lead rule.
+### 2026-10-22 — Creator Campaigns: release 2 of the second audit (the booking card and the record)
+The user, 2026-10-22: "Fix all". Built: CMP-7 (a step taken on a booking's
+card was answered in the head card a screen above it; `cardSay` answers
+on the card, unfolding it, and the head only where the card is gone),
+CMP-8 (the list's Creators column showed the slots; Booked n of N),
+CMP-9 and CMP-M2 (Save stood above the Results it saves; the card's
+actions are its foot), CMP-10 (the step forward was second of four; Revert,
+Request changes, Save, then the step forward at the right edge, its own
+row on a phone), CMP-11 (Publish date beside the track's Post date; post
+everywhere on the record), CMP-12 (9.30am; 9:30am), CMP-13 (Bookings and
+the Schedule listed a shortlisted creator; booked alone, Not set where no
+date), CMP-14 (Review draft hid on Selection; only the confirm line's way
+hides there), CMP-15 (no PDF said twice, a triangle caret; the head alone,
+the chevron), CMP-16 (an empty Notes box on every card; Add note, and
+result figures with separators) and CMP-17's inline styles. CMP-M1:
+reopens the 2026-10-09 line (a video script's client link) that put a campaign's Unpublish beside Copy link and
+Preview; at a desk it stays, on a phone it is the head ⋯'s lifecycle item
+(`#campLifeItem`), as the approved mockup draws it.
