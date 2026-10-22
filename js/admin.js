@@ -6792,6 +6792,10 @@
         '<span class="link-label">' + esc(l.title || '') + '</span>' +
         '<span class="link-act">' +
           iconBtn('copy', 'copy', 'Copy short link') +
+          /* Open tests the link as a person meets it, as a namecard's row
+             does (LNK-2, 2026-10-22). */
+          '<a class="iconbtn" data-a="open" href="' + esc(shortUrl(l.slug)) + '" target="_blank" rel="noopener" title="Open" aria-label="Open">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON.out + '</svg></a>' +
           iconBtn('qr',   'qr',   'QR codes') +
           /* Every item here changes the link, so the ⋯ is drawn at Work, as
              each item is (a View group was offered Edit, audit 2026-10-03). */

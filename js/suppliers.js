@@ -399,7 +399,9 @@
              existing document; Send email in Emails. */
           /* Only an Active supplier is issued a document (2026-10-20, DOC-3). */
           (work ? '<span class="sup-head-acts">' + (s.status === 'active' ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') +
-            formMenu('<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>') + '</span>' : '') + '</div>' +
+            /* A ⋯ of one item is a button (the menu standard, rule 8; SUP-3,
+               2026-10-22). */
+            '<button class="btn btn-sm" type="button" data-s="add">Add existing document</button></span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
         '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
           (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +

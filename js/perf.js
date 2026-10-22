@@ -820,12 +820,16 @@
     if (manage()) {
       var name = (r.member && r.member.name) || 'They';
       if (!r.id || r.status === 'draft') {
-        title = r.id ? 'Draft' : 'Not started';
-        line = name + ' sees nothing of this month, issues included, until it is shared.';
+        /* A draft month draws no card of its own: the head's chip says its
+           state and Notify says who is told (PERF-1, 2026-10-22). Only what
+           stops it being shared is said. */
+        var noId = !(r.member && r.member.staff_code);
+        title = noId ? 'Employee ID needed' : '';
+        line = '';
         /* Said as the month opens, not after six scores are typed: Share
            needs an Employee ID (2026-10-20, TEAM-5). */
-        if (!(r.member && r.member.staff_code)) {
-          line += ' It cannot be shared until ' + name + ' has an Employee ID.';
+        if (noId) {
+          line = 'It cannot be shared until ' + name + ' has an Employee ID.';
           if (may('team', 'view')) acts = '<button class="btn btn-sm" id="pvSetId" type="button">Open record' +
             '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>';
         }
@@ -889,6 +893,7 @@
       }
       if (r.status !== 'draft') acts += '<button class="btn btn-sm btn-icon" id="pvPrint" type="button">' + FILE_GLYPH + 'Download</button>';
     }
+    if (!title) return st.foot ? '' : '<div class="msg" id="pvMsg"></div>';
     var ackNote = !manage() && acts.indexOf('pvAck') > -1
       ? '<p class="perf-note">Acknowledging records that the review was discussed and the result was shown. It is not necessarily agreement with the rating.</p>' : '';
     return '<section class="qcard qnext"><h3 class="qnext-title">' + esc(title) + '</h3>' +
@@ -1468,8 +1473,9 @@
   }
   function lockCopy(pk, why) {
     $('minePasskey').hidden = !pk;
-    $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or an emailed code sent to ' + guard.email + '.'
-                                              : 'An emailed code is sent to ' + guard.email + '.');
+    /* Nothing is sent before Send code is pressed (MINE-2, 2026-10-22). */
+    $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or a code sent to ' + guard.email + '.'
+                                              : 'A code will be sent to ' + guard.email + '.');
     $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
     $('mineSend').className = pk ? 'btn' : 'btn btn-primary';
   }
