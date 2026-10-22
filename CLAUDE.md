@@ -63,7 +63,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses
     `.single()` on anything but one row (PGRST116; `.maybeSingle()` on more
-    than one). Every read and every function's answer is fresh JSON, so a
+    than one), and answers a read 1,000 rows at most (max-rows). Every read and every function's answer is fresh JSON, so a
     page changing what it read never changes the row.
   - It refuses, as PostgREST does, a table, column, function or argument the
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
@@ -1646,7 +1646,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Enquired lines are left out.
   - An empty section says so in one line.
 - Rail blocks (`.railblock`, `.railtitle` at 15px):
-  - Next action: a written `next_action`/`next_at` beats `nextStep()`.
+  - Next action: a written `next_action`/`next_at` beats `nextStep()`; a
+    written one opens Calls and visits, where it is done. Its date is said
+    there alone (the Timeline holds no Next follow up).
   - The billing gate: `.railgate` in red, only while a billing field is
     missing on a record that is not Active; it opens Billing where
     `maySeeBilling()`.
@@ -1794,7 +1796,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   declaration (filling the brief), then `checklist-draft` reads the
   confirmed Brand analysis (`no-analysis` without one), the Ad benchmarks
   and the linked Meta accounts and proposes every field but the ticks,
-  following the playbook's Meta rules; nothing is written until the
+  following the playbook's Meta rules (the client's website sent as
+  whether it has one, never its address); nothing is written until the
   colleague keeps the ticked proposals in `#ckAiSheet` (what a field holds
   now said under it), declares them read (`ADspaceConfirm.ai.declare`) and
   each is saved as if typed, Undo where it happened. Its own count
@@ -2026,7 +2029,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A card a month (`ADspaceGroup.section`, route `client-months`), newest
     first: a month from today's on open, an older one shut until opened and
     remembered; a month starting on its `start_day` states its span on the
-    heading, and the heading counts the month's overdue tasks in red. A month
+    heading, and the heading counts the month's overdue tasks in red, late by
+    My Work's rule (`ops_engagement_counts` `late`, `ops_task_late`). A month
     is drawn only where the reader may see something in it.
   - A row a thing (`.cmonth-row`: the section's rail glyph on a tonal tile,
     the name over its facts, the state, the chevron), in the rail's order:
@@ -2663,8 +2667,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     posts, and a rail (the client's
     review, the tasks naming it). Back returns to the client. Add assets is a
     sheet (`#assetSheet`) that shuts on Add to set.
-  - A picked or Drive-read file stays on the device (an object URL preview)
-    until Add to set, which uploads what is left with progress, then writes
+  - A file over the size cap (S3's `s3.maxUploadMB`, else Supabase's) is
+    refused at the pick, by name. A picked or Drive-read file stays on the
+    device (an object URL preview) until Add to set, which uploads what is left with progress, then writes
     the posts; a removed file costs nothing. Cancel aborts; a failed upload
     keeps its draft; only uploaded drafts are kept for a reload; leaving
     with a file held asks first.
