@@ -5744,3 +5744,21 @@ removes nothing.
 
 - 2026-10-22 — A part a tab of a client's record (the user, after the review of the group panel: "it does not cover every parent section and every child section … AMV quote, AMV Service Lines, AMV Issue documents? shouldnt it be like this?", then "build 1 to 5"). Found: Requests could be granted and never reached (the Services tab was drawn for Services or Documents alone); Clients: Services held quotations and service lines together; Issue document on the record asked Clients: Documents while the database also took Documents: Client documents; Brand and the checklists answered to the Clients level alone; no part said what it covered. Built: Quotations, Brand and Checklists as parts following Clients, the access maps given Quotations at their Services level so nobody gained or lost anything (live: the Members group's Services No Access copied); Services renamed Service lines and Documents Letters in the panel; a line under each part; the Services tab drawn for Quotations, Service lines or Requests; Issue document for either part. `tests/clientparts.js` reads each from a colleague's side, the database's refusals included.
 
+### 2026-10-22 — Read from Bukku asks which codes; a tax code can be deleted
+- The user, 2026-10-22: "Read from bukku for sst codes pull in 32 items for
+  taxes which i only uses 0% no tax or 8% SST. And you didnt provide option
+  to delete this is a mistake or error", then "When importing let to choose
+  before direct import n provide all delete options mentioned many times".
+- What broke: Read from Bukku saved every code Bukku holds (32, of which the
+  team uses NT and SV8), and the table was built so a code could only be
+  stood down, never deleted. Both went against what the user had asked
+  before: choose before importing, and a way to delete what is added.
+- Now Read from Bukku lists Bukku's codes with ticks (those offered already
+  ticked) and keeps only the ticked ones; each code's ⋯ holds Delete and
+  Select deletes several (the count typed back). A code a service line, a
+  quotation or a letter names is refused by name and stays (it can be set
+  not offered), so an issued letter keeps the code it names.
+- The rule is written as a standing one in CLAUDE.md (Writes, refusals,
+  reversibility): an import lists what it found and takes what is ticked;
+  whatever can be added can be deleted.
+

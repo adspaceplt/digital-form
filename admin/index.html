@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261022b">
-<link rel="stylesheet" href="/css/console.css?v=20261022b">
+<link rel="stylesheet" href="/css/console.css?v=20261022c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5324,10 +5324,13 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="sheet-body">
       <p class="msg" id="taxMsg" role="status"></p>
+      <div class="tax-bar" id="taxBar" hidden><span class="tax-count" id="taxCount"></span><button class="btn btn-sm" id="taxSelect" type="button">Select</button></div>
       <div id="taxList"></div>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-primary" id="taxBukku" type="button">Read from Bukku</button>
+      <button class="btn btn-primary" id="taxKeep" type="button" hidden>Keep codes</button>
+      <button class="btn btn-danger" id="taxDel" type="button" hidden>Delete</button>
       <button class="btn" id="taxAdd" type="button">Add code</button>
       <button class="btn btn-quiet" id="taxCancel" type="button">Close</button>
     </div>
@@ -5730,6 +5733,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261015zg"></script>
 <script src="/js/overview.js?v=20261022b"></script>
-<script src="/js/settings.js?v=20261022a"></script>
+<script src="/js/settings.js?v=20261022c"></script>
 </body>
 </html>

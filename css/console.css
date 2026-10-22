@@ -2418,6 +2418,12 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .hol-year { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .hol-year .field-label { margin: 0; }
 .hol-acts { display: flex; align-items: center; gap: 4px; }
+.tax-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.tax-count { font-size: 13px; color: var(--ink-mute); }
+.tax-row.is-picking { cursor: pointer; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; }
+.tax-pick { display: grid; gap: 4px; }
+.tax-pick .tickline { min-height: var(--ctl-h); }
+.tax-pick .tickline small { display: block; font-size: 12px; color: var(--ink-mute); }
 .hol-row.is-past .dtrow-name { color: var(--ink-mute); }
 .dtrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
 .dtrow.is-off > .dtrow-name { opacity: .55; }
