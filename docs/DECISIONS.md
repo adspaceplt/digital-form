@@ -6181,3 +6181,18 @@ for these menus. Left for the next release (the gate at 22:00Z): MENU-6
 (bulk bars hidden at zero), the rest of the areas. `tests/crm.js` now
 restricts an Active client, and `tests/menus.js` measures a menu's
 layout width, not its opening scale.
+
+### 2026-10-22 — Menus: a client's requests and letters, the Register, the bulk bars (release 3 of the menu review)
+A request's Reply stands on its row as a small button (MENU-6). A client
+letter's ⋯ reads Download | Send on WhatsApp | Mark signed or Mark not
+signed | Void, Delete through `ADspaceMenu.items`, and a signed letter's
+Verify stands on its row before the ⋯ (MENU-9; "Not signed after all"
+retired). On the Register a Letter of Offer and a performance record open
+on a press of the row, a chevron its way there and no ⋯ (MENU-7); every
+other row's ⋯ runs through the helper. The Clients, posts and My Work bulk
+bars hide their acts at zero ticked, never grey them (MENU-12). Issue
+letter reads Issue Letter of Offer, and the void sheet's act Void
+(MENU-14); on a phone the Documents head's two acts take a row each so the
+longer label is never broken. The task card's ⋯ carries its groups.
+Skipped: nothing in these areas. `tests/take.js` "and says so under it"
+fails on main before this release (logged in STANDARD.md).

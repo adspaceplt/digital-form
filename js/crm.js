@@ -697,7 +697,7 @@
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
     all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every client shown');
-    $('crmBulkOwner').disabled = !n;
+    $('crmBulkOwner').hidden = !n;
   }
   /* Each client in turn, so a refusal is named against its client. */
   function setOwners(list, nameOf, then) {
@@ -4958,7 +4958,7 @@
         if (!state.requests.length) { box.innerHTML = '<div class="empty">No requests.</div>'; return; }
         var table = document.createElement('div');
         table.className = 'crm-table';
-        table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
+        table.innerHTML = '<div class="crm-head svc-row doc-row rq-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
         state.requests.forEach(function (q) { table.appendChild(requestRow(q)); });
         box.appendChild(table);
       });
@@ -4970,7 +4970,7 @@
     var gone = Boolean(q.withdrawn_at);
     var w = RQ_STATE[q.state] || RQ_STATE.requested;
     var row = document.createElement('div');
-    row.className = 'svc-row doc-row' + (gone ? ' is-off' : '');
+    row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
     var sub = [q.contact_name, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
@@ -4983,15 +4983,11 @@
           Object.keys(RQ_STATE).map(function (k) {
             return '<option value="' + k + '"' + (k === q.state ? ' selected' : '') + '>' + esc(RQ_STATE[k][0]) + '</option>';
           }).join('') + '</select>') + '</span>' +
+      /* The row's one act is on the row (MENU-6, 2026-10-22). */
       '<span class="team-act">' +
-        (gone ? '' :
-        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-        '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="reply" type="button"><b>Reply</b></button>' +
-        '</div>') +
+        (gone ? '' : '<button class="btn btn-sm" data-a="reply" type="button">Reply</button>') +
       '</span>';
     if (!gone) {
-      wireMenu(row);
       row.querySelector('[data-a="reply"]').addEventListener('click', function () { openReply(q); });
       row.querySelector('[data-f="state"]').addEventListener('change', function () { saveRequest(q, { state: this.value }, 'request.changed'); });
     }
@@ -5087,7 +5083,7 @@
         else {
           var table = document.createElement('div');
           table.className = 'crm-table';
-          table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
+          table.innerHTML = '<div class="crm-head svc-row doc-row ltr-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
           rows.forEach(function (d) { table.appendChild(documentRow(d)); });
           box.appendChild(table);
         }
@@ -5118,7 +5114,7 @@
        it carried. A legacy letter is history and is left as history. */
     var canVerify = st === 'signed' && mapped.length && mapped.length === (d.lines || []).length;
     var row = document.createElement('div');
-    row.className = 'svc-row doc-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    row.className = 'svc-row doc-row ltr-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
     var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
     var lines = docLines(d);
     row.innerHTML =
@@ -5132,25 +5128,26 @@
           (d.verified_by ? ' · ' + d.verified_by : '')) + '</small>' : '') + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
+      /* A signed letter's next step, Verify, stands on the row (MENU-9,
+         2026-10-22); the rest is the ⋯ in the standard's order. */
       '<span class="team-act">' +
+        (canVerify ? '<button class="btn btn-sm" data-a="verify" type="button">Verify</button>' : '') +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
-          /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
-             drawn once the template is on; never a voided or replaced one. */
-          (waOffer && !d.voided_at && !d.superseded_by
-            ? '<button class="kmenu-item" data-a="wa" hidden type="button"><b>Send on WhatsApp</b></button>' : '') +
-          (st === 'issued' ? '<button class="kmenu-item" data-a="sign" type="button"><b>Mark signed</b></button>' : '') +
-          (st === 'signed' ? '<button class="kmenu-item" data-a="unsign" type="button"><b>Not signed after all</b></button>' : '') +
-          (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
-          /* Void reverses a confirmation, so it is offered on a verified
-             letter and nowhere else: an issued or signed letter has confirmed
-             nothing and there is nothing to put back. Both acts are the
-             section's Manage level, so both carry the same `data-need` and
-             the database decides again when the button is pressed. */
-          (st === 'verified'
-            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete</b></button>' +
+          ADspaceMenu.items([
+            [{ a: 'download', label: 'Download' }],
+            [],
+            /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
+               drawn once the template is on; never a voided or replaced one. */
+            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true }],
+            [st === 'issued' && { a: 'sign', label: 'Mark signed' },
+             st === 'signed' && { a: 'unsign', label: 'Mark not signed' }],
+            [],
+            /* Void reverses a confirmation, so it is offered on a verified
+               letter and nowhere else. Both acts are the section's Manage
+               level; the database decides again at the press. */
+            [st === 'verified' && { a: 'void', label: 'Void', need: 'clients.documents:manage' },
+             { a: 'del', label: 'Delete', need: 'clients.documents:manage' }]]) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -5471,7 +5468,7 @@
   function pickClosed() {
     picking = null;
     $('pickGo').disabled = false;
-    $('pickGo').textContent = 'Issue letter';
+    $('pickGo').textContent = 'Issue Letter of Offer';
   }
   function shutPick() {
     if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
@@ -5522,7 +5519,7 @@
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;
-        go.textContent = 'Issue letter';
+        go.textContent = 'Issue Letter of Offer';
         /* The services or the quotation they came from changed while the
            sheet was open (or the quotations failed to load, so the page
            priced them without their rate): both are read again and the sheet

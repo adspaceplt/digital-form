@@ -613,6 +613,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   counts under MY (#704, bill in RM by default). Found 2026-10-22 by the
   work review's release 2; the expectation or `ADspaceSales` is to be
   settled by the area that owns #704.
+- `tests/take.js` "and says so under it" fails on main as of #718: a task
+  taken from Open to take no longer says Yours under its row. Found
+  2026-10-22 by the menu review's release 3; My Work's area to settle.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
