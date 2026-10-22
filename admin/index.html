@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261021c">
-<link rel="stylesheet" href="/css/console.css?v=20261022a">
+<link rel="stylesheet" href="/css/portal.css?v=20261022b">
+<link rel="stylesheet" href="/css/console.css?v=20261022b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -83,7 +83,7 @@
 <script src="/js/maintenance.js?v=20261009h"></script>
 <script src="/js/announce.js?v=20261015c"></script>
 <script src="/js/notice.js?v=20261018"></script>
-<script src="/js/whatsapp.js?v=20261022"></script>
+<script src="/js/whatsapp.js?v=20261022b"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261022a"></script>
 <script src="/js/media.js?v=20261018pl"></script>
@@ -733,8 +733,8 @@
                  from the rail's Recent activity. Each part keeps its own
                  address (`tab=billing`), which opens its tab on it. -->
             <button class="tab" data-pane="engagements" type="button" role="tab" aria-selected="false">Engagements</button>
-            <button class="tab" data-pane="services" data-parts="clients.services clients.documents" type="button" role="tab" aria-selected="false">Services</button>
-            <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
+            <button class="tab" data-pane="services" data-parts="clients.quotes clients.services clients.requests clients.documents register.documents" type="button" role="tab" aria-selected="false">Services</button>
+            <button class="tab" data-pane="brand" data-parts="clients.brand reports.whitelabel" type="button" role="tab" aria-selected="false">Brand</button>
             <button class="tab" data-pane="account" data-parts="clients.contacts clients.billing" type="button" role="tab" aria-selected="false">Account</button>
           </nav>
 
@@ -1130,12 +1130,12 @@
         <!-- The pane is two sections alike (the user, 2026-10-14): Quotations
              with Build quote above, then the client's service lines with Add
              service, each heading over its own list. -->
-        <div class="viewhead qt-head svc-linehead">
+        <div class="viewhead qt-head svc-linehead" data-need="clients.services:view">
           <span class="headmark"><h3>Service lines</h3></span>
           <button class="btn btn-sm" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
         </div>
-        <div class="msg" id="crmServiceMsg"></div>
-        <div id="crmServices"></div>
+        <div class="msg" id="crmServiceMsg" data-need="clients.services:view"></div>
+        <div id="crmServices" data-need="clients.services:view"></div>
         <!-- What the client asked for from the portal. The team moves each
              one along and may set a fee and a reply the client reads. -->
         <div id="crmRequests" hidden>
@@ -1173,7 +1173,7 @@
         <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn" id="crmIssueDoc" type="button" data-need="clients.documents:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+          <button class="btn" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           <button class="btn btn-primary" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
@@ -5704,7 +5704,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261021"></script>
+<script src="/js/admin.js?v=20261022b"></script>
 <script src="/js/documents.js?v=20261022a"></script>
 <script src="/js/letters.js?v=20261018zy"></script>
 <script src="/js/smreport.js?v=20261019m"></script>
@@ -5713,12 +5713,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/suppliers.js?v=20261021"></script>
 <script src="/js/bukku.js?v=20261022a"></script>
 <script src="/js/engage.js?v=20261017"></script>
-<script src="/js/quotes.js?v=20261022a"></script>
+<script src="/js/quotes.js?v=20261022b"></script>
 <script src="/js/quotepdf.js?v=20261022a"></script>
 <script src="/js/checklists.js?v=20261020b"></script>
-<script src="/js/crm.js?v=20261022a"></script>
+<script src="/js/crm.js?v=20261022b"></script>
 <script src="/js/sales.js?v=20261020a"></script>
-<script src="/js/team.js?v=20261021"></script>
+<script src="/js/team.js?v=20261022b"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261021"></script>
 <script src="/js/scripts.js?v=20261021"></script>
@@ -5729,7 +5729,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261015zg"></script>
-<script src="/js/overview.js?v=20261021"></script>
+<script src="/js/overview.js?v=20261022b"></script>
 <script src="/js/settings.js?v=20261022a"></script>
 </body>
 </html>

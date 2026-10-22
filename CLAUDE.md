@@ -210,7 +210,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql, pdflibhash |
-| `team.js` | team, perms, levels, card, scope, perfui, viewonly, lettersql |
+| `team.js` | team, perms, clientparts, levels, card, scope, perfui, viewonly, lettersql |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
@@ -1285,6 +1285,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   grants (`offered()`).
 - `ops.list`, `ops.board` and `ops.calendar` follow My Work unless set to No
   access.
+- A client's record has a part a tab (`2026-10-22-client-parts-for-each-tab.sql`;
+  the user, 2026-10-22: "AMV quote, AMV Service Lines, AMV Issue documents"):
+  Contacts, Billing, Quotations (`clients.quotes`: Build quote, the
+  quotations, their PDF and WhatsApp send, the rate card read, a checklist's
+  quotation), Service lines (`clients.services`), Letters
+  (`clients.documents`), Requests, Calls and visits, Brand (`clients.brand`:
+  the Brand profile, content brief and brand notes by trigger
+  `clients_brand_guard`, `brand-columns`; Meta accounts; the Brand analysis)
+  and Checklists (`clients.checklists`), each following Clients where a group
+  sets none and named in the panel over one line of what it covers
+  (`PART_DESC`). Issue Letter of Offer from a quotation asks Quotations,
+  Service lines and Letters at Work; Issue document on the record asks
+  Letters or Documents: Client documents at Work (`register_may`); a tab of
+  several parts (Services: Quotations, Service lines, Requests; Documents;
+  Brand with Reports: White label) is drawn where any is readable
+  (`PARTS_OF`, `data-parts`).
 - Client scope (`2026-10-03-client-scope.sql`): `clients.leads` (Lead,
   Contacted, Proposal sent) and `clients.past` (Past) narrow Clients and never
   widen it (`PART_LEVELS` View and Manage); a group's `client_scope` is `all`

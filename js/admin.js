@@ -839,10 +839,10 @@
     /* `leads` and `past` are the lead stages and Past (2026-10-03): they
        narrow what the Clients level opens on those records, in the database
        (`client_row_seen`) as here. */
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past', 'vic'],
+    clients:   ['contacts', 'billing', 'quotes', 'services', 'documents', 'requests', 'calls', 'brand', 'checklists', 'leads', 'past', 'vic'],
     /* WhatsApp (2026-10-10): a send for a report, a feedback request or a
        creator's booking follows the section unless a group shuts it. */
-    whatsapp:  ['report', 'feedback', 'booking', 'approval'],
+    whatsapp:  ['report', 'feedback', 'booking', 'approval', 'documents'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance', 'files_delete'],
     /* Document types (2026-10-07) is granted: an admin's by itself, any

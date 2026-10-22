@@ -88,8 +88,12 @@
     /* A tab of several parts (Services with Documents, Account) is drawn
        where any one is readable. */
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-parts]'), function (b) {
-      b.hidden = !b.getAttribute('data-parts').split(' ').some(function (k) { return mayPart(k, 'view'); });
+      b.hidden = !b.getAttribute('data-parts').split(' ').some(function (k) { return mayPart(k, k === 'reports.whitelabel' ? 'work' : 'view'); });
     });
+    /* Issue document is a client letter, which either part issues as the
+       database's `register_may('client', …)` allows it (2026-10-22). */
+    var issue = $('crmIssueDoc');
+    if (issue) issue.hidden = !(mayPart('clients.documents', 'work') || mayPart('register.documents', 'work'));
   }
 
   function esc(s) {
@@ -1094,7 +1098,7 @@
        nothing in it can be pressed. */
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
-    $('crmBrandEdit').hidden = !canWork;
+    $('crmBrandEdit').hidden = !(canWork && mayPart('clients.brand', 'work'));
     $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
@@ -1197,8 +1201,14 @@
   var GROUP_OF = {};
   Object.keys(TABS).forEach(function (g) { TABS[g].forEach(function (k) { GROUP_OF[k] = g; }); });
   var PANES = Object.keys(GROUP_OF).concat(['account']);
-  var PART_OF = { calls: 'clients.calls', services: 'clients.services', contacts: 'clients.contacts',
-    billing: 'clients.billing', documents: 'clients.documents' };
+  var PART_OF = { calls: 'clients.calls', contacts: 'clients.contacts', billing: 'clients.billing',
+    checklists: 'clients.checklists' };
+  /* A pane holding several parts is drawn where any of them is readable
+     (2026-10-22): Services holds Quotations, Service lines and Requests,
+     Documents the Letters and the client letters Documents issues, Brand
+     the brand and a white-label client's reports. */
+  var PARTS_OF = { services: ['clients.quotes', 'clients.services', 'clients.requests'],
+    documents: ['clients.documents', 'register.documents'], brand: ['clients.brand', 'reports.whitelabel'] };
   var pane = 'overview';
   /* Engagements is drawn for a client engaged now or before, or one holding
      anything there (js/engage.js); a lead's waits for the answer. Its tab
@@ -1219,6 +1229,7 @@
       var c = state.client, ENG = window.ADspaceEngage;
       return !!c && (ENGAGED.indexOf(c.stage) > -1 || !!(ENG && ENG.holds(c.id)));
     }
+    if (PARTS_OF[k]) return PARTS_OF[k].some(function (p) { return mayPart(p, p === 'reports.whitelabel' ? 'work' : 'view'); });
     return !PART_OF[k] || mayPart(PART_OF[k], 'view');
   }
 
@@ -1503,8 +1514,9 @@
     state.ovFail[go] = on;
     paintSummary();
   }
-  function ovSection(title, go, goWord, body, isEdit) {
-    if (OV_PART[go] && !mayPart(OV_PART[go], 'view')) return '';
+  function ovSection(title, go, goWord, body, isEdit, part) {
+    var need = part || OV_PART[go];
+    if (need && !mayPart(need, 'view')) return '';
     if (state.ovFail && state.ovFail[go]) { body = ovNone('Could not load.'); goWord = 'View all'; isEdit = false; }
     /* A colleague who may only read the pane is offered the way to it, never
        Edit or Manage (audit, 2026-10-03). */
@@ -1592,7 +1604,7 @@
   function ovQuotes() {
     var Q = window.ADspaceQuotes;
     if (!Q || !(state.quotes || []).some(function (q) { return !q.removed_at; })) return '';
-    return ovSection('Quotations', 'services', 'View all', Q.overview(state.quotes, liveMap()));
+    return ovSection('Quotations', 'services', 'View all', Q.overview(state.quotes, liveMap()), false, 'clients.quotes');
   }
 
   function ovDocuments() {
@@ -2764,7 +2776,7 @@
           : '<dd class="is-missing">Required</dd>') + '</div>' +
         '<div><dt>Brands</dt><dd data-m="list"></dd></div></dl></section>' : '') +
       '<section class="readgroup meta-links" id="crmMetaRead"><div class="readgroup-head"><h4 class="fsec-h">Meta</h4>' +
-        (mayPart('clients', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
+        (mayPart('clients.brand', 'work') ? '<button class="btn btn-sm" type="button" data-a="meta">' + PEN + 'Edit</button>' : '') +
         '</div><div data-m="list"></div></section>' +
       '<section class="readgroup ba" id="crmAnalysis"><div class="readgroup-head"><h4 class="fsec-h">Brand analysis</h4>' +
         '<span class="ba-acts" data-m="acts"></span></div><p class="msg capmsg" id="crmAnalysisMsg"></p><div data-m="body"></div></section>';
@@ -2782,7 +2794,7 @@
     var host = $('crmWlBrands');
     if (!host) return;
     var list = host.querySelector('[data-m="list"]'), seq = ++brandSeq;
-    var can = mayPart('reports.whitelabel', 'work'), canMeta = mayPart('clients', 'work');
+    var can = mayPart('reports.whitelabel', 'work'), canMeta = mayPart('clients.brand', 'work');
     db.rpc('client_brands_list', { p_client: c.id }).then(function (q) {
       if (seq !== brandSeq || state.client !== c) return;
       var d = (q && q.data) || {};
@@ -2973,7 +2985,7 @@
     var host = $('crmAnalysis');
     if (!host || state.client !== c) return;
     var acts = host.querySelector('[data-m="acts"]'), body = host.querySelector('[data-m="body"]');
-    var may = mayPart('clients', 'view');
+    var may = mayPart('clients.brand', 'view');
     var list = ba.versions || [];
     var v = list.filter(function (x) { return x.id === ba.show; })[0] || list[0] || null;
     var latest = v && v === list[0];
@@ -3027,6 +3039,9 @@
   }
   function loadAnalysis(c, force) {
     if (!$('crmAnalysis')) return;
+    /* The Brand analysis is Clients: Brand's (2026-10-22). */
+    $('crmAnalysis').hidden = !mayPart('clients.brand', 'view');
+    if ($('crmAnalysis').hidden) return;
     if (ba.id === c.id && ba.versions && !force) { paintAnalysis(c); return; }
     if (ba.id !== c.id) { ba.versions = null; ba.show = null; }
     ba.id = c.id; ba.failed = false;
@@ -3417,7 +3432,7 @@
     }
     db.from('clients').update(patch).eq('id', state.client.id)
       .select('id').then(function (r) {
-        if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
+        if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'The content brief and brand notes need Clients: Brand at Manage.' : r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
         log('client.brand', state.client.name, [changed(was, patch, [
@@ -4335,7 +4350,7 @@
      again either way). */
   function loadQuotes(done, always) {
     var Q = window.ADspaceQuotes, host = $('crmQuotes');
-    if (!Q || !host || !state.client || !mayPart('clients.services', 'view')) return;
+    if (!Q || !host || !state.client || !mayPart('clients.quotes', 'view')) { if (host) host.hidden = true; return; }
     var id = state.client.id;
     Q.load(quoteCtx(), function (rows, err) {
       if (!state.client || state.client.id !== id) return;
@@ -5260,7 +5275,7 @@
         if ($('pickRef')) $('pickRef').value = ref;
         msg('pickMsg', said, 'warn');
       };
-      if (window.ADspaceQuotes && mayPart('clients.services', 'view')) loadQuotes(reopen, true); else reopen();
+      if (window.ADspaceQuotes && mayPart('clients.quotes', 'view')) loadQuotes(reopen, true); else reopen();
     }, function (m) {
       /* The lines could not be read again: the refusal stands, said with
          why, and the next press would be refused the same way. */
