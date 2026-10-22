@@ -2611,6 +2611,25 @@ button.aiu-row:first-child::before { content: none; }
 .ba-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
 .ba-hypo { margin: 12px 0 0; }
 .ba-sec { margin-top: 24px; }
+/* Each section a fold (2026-10-22, CLI-11): a hairline over it, the title
+   over the line it is read for, the chevron at the right edge; the body runs
+   0fr to 1fr with its opacity. */
+.ba-fold { margin-top: 0; border-top: 1px solid var(--line-soft); }
+.ba-fold:first-of-type { margin-top: 16px; }
+.ba-fold-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: var(--ctl-h); padding: 10px 0;
+  border: 0; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.ba-fold-t { display: grid; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ba-fold-t .fsec-h { margin: 0; }
+.ba-fold-sum { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ba-fold-chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.ba-fold.is-open .ba-fold-chev { transform: rotate(90deg); }
+.ba-fold.is-open .ba-fold-sum { display: none; }
+.ba-fold-body { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease), visibility var(--t-slow); }
+.ba-fold.is-open .ba-fold-body { grid-template-rows: 1fr; opacity: 1; }
+.ba-fold-in { overflow: hidden; min-height: 0; }
+.ba-fold.is-open .ba-fold-in { padding-bottom: 16px; }
+.ba-fold:not(.is-open) .ba-fold-body { visibility: hidden; }
+@media (hover: hover) { .ba-fold-head:hover .ba-fold-chev { color: var(--ink); } }
 .ba dd { overflow-wrap: anywhere; }
 .ba-list { margin: 0; padding-left: 18px; }
 .ba-list li + li { margin-top: 4px; }
@@ -3316,7 +3335,7 @@ button.vs-row { cursor: pointer; }
 .ck-chev svg { width: 16px; height: 16px; }
 .ck-back { margin-bottom: 12px; }
 .ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 16px; padding: 18px 20px; margin-bottom: 12px; }
-.ck-ctl { display: flex; align-items: center; gap: 8px; }
+.ck-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ck-head .ck-facts { grid-column: 1 / -1; }
 .is-narrow .ck-head { padding: 14px; grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ck-ctl .chip-state { margin-right: auto; }
@@ -3326,6 +3345,10 @@ button.vs-row { cursor: pointer; }
 .ck-sec-acts { display: flex; align-items: center; gap: 8px; }
 .ck-sec-acts .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
 .ck-facts { margin: 0; }
+/* A checklist's labels are long ("Pixel / Analytics Connection"): a narrow
+   pane keeps the 150px label track, 104 only when tight (2026-10-22, CLI-10). */
+.is-narrow .ovfacts.ck-facts > div { grid-template-columns: 150px minmax(0, 1fr); gap: 0 16px; }
+.is-tight .ovfacts.ck-facts > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
 .ck-sec-head + .ck-facts, .ck-sec-note + .ck-facts, .ck-row + .ck-facts { margin-top: 12px; }
 .ck-facts + .ck-row { margin-top: 12px; }
 .ck-row.is-table { grid-template-columns: minmax(0, 1fr); }
@@ -3566,3 +3589,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 @media (max-width: 560px) {
   .row.fgrid-3.fgrid-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* A thumbnail whose file did not load (2026-10-22, REV-5): a shaded tile
+   with its kind's glyph, where the picture would be. */
+.thumb-miss { display: grid; place-items: center; width: 100%; height: 100%; min-height: 40px; background: var(--sunk); color: var(--ink-mute); }
+.thumb-miss svg { width: 18px; height: 18px; }

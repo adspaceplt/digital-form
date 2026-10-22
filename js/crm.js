@@ -977,9 +977,16 @@
           ['deal_note', 'Enquiry']]);
         if (moved) log('client.edited', name, moved);
         shutForm();
-        loadClients(function () {
+        /* The one row read back, never the whole list with its billing
+           (2026-10-22, CLI-9). */
+        db.from('clients').select(API.CLIENT_COLS).eq('id', id).single().then(function (q) {
           var found = state.clients.filter(function (x) { return x.id === id; })[0];
-          if (found) openClient(found);
+          if (!found) return;
+          Object.assign(found, (q && !q.error && q.data) || patch);
+          openClient(found);
+        }, function () {
+          var found = state.clients.filter(function (x) { return x.id === id; })[0];
+          if (found) { Object.assign(found, patch); openClient(found); }
         });
       });
       return;
@@ -1084,10 +1091,10 @@
       }).catch(function () {});
       db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
-        var moved = Object.keys(r.data).some(function (k) {
-          return JSON.stringify(r.data[k]) !== JSON.stringify(c[k]);
-        });
-        if (!moved) return;
+        /* `updated_at` is stamped by `clients_touch` on every write, so it
+           alone says whether the row moved; comparing every column redrew
+           every pane on a difference of form (CLI-9). */
+        if (r.data.updated_at === c.updated_at) return;
         Object.assign(c, r.data);
         openClient(c, true);
       }, function () {});
@@ -1841,7 +1848,7 @@
       .sort(function (a, b) { return String(a.next_at || '9999') < String(b.next_at || '9999') ? -1 : 1; })[0];
     if (open) {
       var late = open.next_at && open.next_at < today();
-      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' + ico('calendar') +
+      box.innerHTML = '<button class="railnext" type="button" data-go="calls">' + ico('calendar') +
         '<span class="railnext-text">' + esc(open.next_action) + '</span>' +
         (open.next_at ? '<span class="railnext-when' + (late ? ' is-late' : '') + '">' +
           esc((late ? 'Overdue · ' : 'Due ') + niceDate(open.next_at)) + '</span>' : '') +
@@ -1920,8 +1927,6 @@
     if (!block || !box) return;
     var live = (state.touches || []).filter(function (t) { return !t.archived_at; });
     var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
-    var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
-      .map(function (t) { return t.next_at; }).sort()[0];
 
     /* The stage it is in now is the one running, so its duration reads "so
        far" and carries the overdue mark where the stage has run past its
@@ -1957,16 +1962,15 @@
     var dates = [
       ['Client since', c.created_at, true],
       ['VIC since', vicNow && vicNow.since, 'vic'],
-      ['Last contact', last, false],
-      ['Next follow up', nextAt, false]
+      ['Last contact', last, false]
     ].filter(function (r) { return r[1]; }).map(function (r) {
-      var late = r[0] === 'Next follow up' && r[1] < today();
+      /* The next follow up is Next action's own date, said there once. */
       /* Client since is the one date here a person may correct, so the value
          itself is what opens: a field growing out of the thing it changes,
          never a second field and a Save button below the list. */
       return '<div class="tl-row tl-date">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
-          '<span class="tl-when' + (late ? ' is-late' : '') + '"' +
+          '<span class="tl-when"' +
             (r[2] === 'vic' ? ' id="crmVicSinceVal"' : r[2] ? ' id="crmSinceVal"' : '') + '>' +
             esc(niceDate(r[1])) + '</span></span>' +
         (r[2] === 'vic'
@@ -2224,7 +2228,16 @@
       delCount((state.services || []).length, 'service line'),
       delCount((state.documents || []).length, 'letter'),
       delCount((state.touches || []).length, 'call or visit', 'calls and visits')
-    ].filter(Boolean);
+    ];
+    /* What Engagements read on opening, counted where it was (CLI-8). */
+    var held = window.ADspaceEngage && window.ADspaceEngage.held ? window.ADspaceEngage.held(c.id) : {};
+    gone = gone.concat([
+      delCount(held.content, 'content month'),
+      delCount(held.sets, 'content set'),
+      delCount(held.scripts, 'video script'),
+      delCount(held.camps, 'campaign'),
+      delCount(held.reports != null ? held.reports : held.finished, 'report')
+    ]).filter(Boolean);
     /* The one question every Delete asks (2026-10-10): what goes, the name
        typed back, and the delete code where one is set, the question kept
        open on a refusal. Whether a code is set is not a secret; it is asked
@@ -2235,8 +2248,8 @@
       if (codeNeeded) fields.push({ name: 'code', label: 'Delete code', type: 'password', need: 'The delete code is required.' });
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'Deleting ' + c.name + ' removes the record and everything filed under it: ' +
-          gone.concat(['any content sets and campaigns on this client, with everything in them']).join(', ') +
+        body: 'Deleting ' + c.name + ' removes the record and everything filed under it' +
+          (gone.length ? ': ' + gone.join(', ') + ', and everything in them' : '') +
           '. This is immediate and cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
       }, function (v) {
@@ -2947,7 +2960,28 @@
       return '<div><dt>' + esc(r[0]) + '</dt>' + (r[1] ? '<dd>' + r[1] + '</dd>' : '<dd class="is-empty">—</dd>') + '</div>';
     }).join('') + '</dl>';
   }
-  function baSec(title, rows) { return '<div class="ba-sec"><h5 class="fsec-h">' + esc(title) + '</h5>' + baFacts(rows) + '</div>'; }
+  /* Each section of an analysis is a fold (2026-10-22, CLI-11; the user:
+     "Fix all"): its title over the line it is read for, shut until opened,
+     a section opened remembered for that client (`ADspaceGroup`, route
+     `brand-analysis`). A draft opens Brand positioning by itself, so
+     Confirm is read against it. The head (State, Version, Read from) stays
+     open. */
+  var baCtx = { client: null, draft: false };
+  var BA_CHEV = '<svg class="ba-fold-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  function baKey(title) { return String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function baN(n, one, many) { n = n || 0; return n ? n + ' ' + (n === 1 ? one : (many || one + 's')) : ''; }
+  function baFold(title, summary, inner) {
+    var key = baKey(title), GRP = window.ADspaceGroup;
+    var dflt = !(baCtx.draft && key === 'brand-positioning');
+    var shut = GRP && baCtx.client ? GRP.shut('brand-analysis', baCtx.client + ':' + key, dflt) : dflt;
+    var id = 'baf-' + key;
+    return '<div class="ba-sec ba-fold' + (shut ? '' : ' is-open') + '" data-fold="' + esc(key) + '">' +
+      '<button class="ba-fold-head" type="button" data-a="ba-fold" aria-expanded="' + String(!shut) + '" aria-controls="' + id + '">' +
+        '<span class="ba-fold-t"><span class="fsec-h">' + esc(title) + '</span>' +
+        (summary ? '<span class="ba-fold-sum">' + esc(summary) + '</span>' : '') + '</span>' + BA_CHEV + '</button>' +
+      '<div class="ba-fold-body" id="' + id + '"><div class="ba-fold-in">' + inner + '</div></div></div>';
+  }
+  function baSec(title, rows, summary) { return baFold(title, summary, baFacts(rows)); }
   /* The client analysis playbook's sections (2026-10-15): drawn only for a
      version that holds them, so an earlier version reads as it was. */
   var BA_LABEL = { official: 'Official', listing: 'Listing', third_party: 'Third party' };
@@ -2968,16 +3002,18 @@
         .concat(facts.length ? [['Facts', '<ul class="ba-list ba-facts">' + facts.map(function (x) {
           return '<li>' + esc(x.fact) + ' <span class="chip">' + esc(BA_LABEL[x.label] || 'Third party') + '</span>' +
             (x.confirm ? ' <span class="chip-state is-warn">To confirm</span>' : '') + '</li>';
-        }).join('') + '</ul>']] : []));
+        }).join('') + '</ul>']] : []), [e.name, baN(facts.length, 'fact')].filter(Boolean).join(' · '));
     }
     if ((a.works || []).length || (a.weak || []).length) {
-      out += baSec('What works and what is weak', [['What works', baList(a.works)], ['What is weak', baList(a.weak)]]);
+      out += baSec('What works and what is weak', [['What works', baList(a.works)], ['What is weak', baList(a.weak)]],
+        [baN((a.works || []).length, 'that works', 'that work'), baN((a.weak || []).length, 'weak', 'weak')].filter(Boolean).join(' · '));
     }
     if ((f.channels || []).length || f.angle) {
       out += baSec('Where ADspace fits', [['Channels', (f.channels || []).length ? '<ul class="ba-list">' + f.channels.map(function (x) {
           return '<li><span class="ba-name">' + esc(x.channel) + ' <span class="chip">' + esc(BA_WHEN[x.priority] || x.priority) + '</span></span>' + esc(x.why || '') + '</li>';
         }).join('') + '</ul>' : ''],
-        ['Fix before paid traffic', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]]);
+        ['Fix before paid traffic', baList(f.fix_first)], ['Commercial angle', esc(f.angle || '')]],
+        [baN((f.channels || []).length, 'channel'), baN((f.fix_first || []).length, 'to fix first', 'to fix first')].filter(Boolean).join(' · '));
     }
     return out;
   }
@@ -3013,6 +3049,8 @@
     if (!v) { body.innerHTML = '<p class="ba-none">Not run.</p>'; return; }
     var a = v.analysis || {}, p = a.positioning || {}, sw = a.swot || {}, ct = a.content || {}, ad = a.ads || {};
     var earlier = list.filter(function (x) { return x !== v; });
+    baCtx = { client: c.id, draft: !v.confirmed_at };
+    var len = function (x) { return (x || []).length; };
     body.innerHTML =
       baFacts([
         ['State', v.confirmed_at ? '<span class="chip-state is-ok">Confirmed</span>' : '<span class="chip-state is-warn">Draft</span>'],
@@ -3024,28 +3062,34 @@
       (v.hypothesis ? '<p class="msg warn ba-hypo">A starting hypothesis to test</p>' : '') +
       baPlaybook(a) +
       baSec('Brand positioning', [['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
-        (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]]) +
-      '<div class="ba-sec"><h5 class="fsec-h">Target audiences</h5>' + baFacts((a.audiences || []).map(function (s) {
-        return [s.name, [['Who they are', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
-          .filter(function (x) { return x[1]; }).map(function (x) { return '<p class="ba-line"><span class="ba-k">' + esc(x[0]) + '</span>' + esc(x[1]) + '</p>'; }).join('')];
-      })) + '</div>' +
+        (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
+        p.could_own ? 'Could own: ' + p.could_own : (p.now || '')) +
+      baFold('Target audiences', (a.audiences || []).map(function (s) { return s.name; }).filter(Boolean).join(' · '),
+        baFacts((a.audiences || []).map(function (s) {
+          return [s.name, [['Who they are', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
+            .filter(function (x) { return x[1]; }).map(function (x) { return '<p class="ba-line"><span class="ba-k">' + esc(x[0]) + '</span>' + esc(x[1]) + '</p>'; }).join('')];
+        }))) +
       baSec('SWOT', [['Strengths', baList(sw.strengths)], ['Weaknesses', baList(sw.weaknesses)],
-        ['Opportunities', baList(sw.opportunities)], ['Threats', baList(sw.threats)]]) +
+        ['Opportunities', baList(sw.opportunities)], ['Threats', baList(sw.threats)]],
+        [baN(len(sw.strengths), 'strength'), baN(len(sw.weaknesses), 'weakness', 'weaknesses'),
+          baN(len(sw.opportunities), 'opportunity', 'opportunities'), baN(len(sw.threats), 'threat')].filter(Boolean).join(' · ')) +
       baSec('Content', [['What worked', baList(ct.worked)], ['What did not', baList(ct.not_worked)],
-        ['Pillars', baList(ct.pillars)], ['Formats', baList(ct.formats)]]) +
+        ['Pillars', baList(ct.pillars)], ['Formats', baList(ct.formats)]],
+        [baN(len(ct.pillars), 'pillar'), baN(len(ct.formats), 'format')].filter(Boolean).join(' · ')) +
       baSec('Ad targeting', [['Objectives', baList(ad.objectives)], ['Age bands', esc((ad.ages || []).join(' · '))],
         ['Interests', esc((ad.interests || []).join(' · '))], ['Placements', esc((ad.placements || []).join(' · '))],
         ['Budget by objective', esc((ad.budget || []).map(function (x) { return x.objective + ' ' + x.share + '%'; }).join(' · '))],
-        ['Test first', esc(ad.test || '')]].concat(ad.realism ? [['Budget realism', esc(ad.realism)]] : [])) +
-      ((a.confirm || []).length ? baSec('To confirm with the client', [['Points', baList(a.confirm)]]) : '') +
-      (a.next_question ? baSec('Next question', [['Ask', esc(a.next_question)]]) : '') +
-      ((v.sources || []).length ? '<div class="ba-sec"><h5 class="fsec-h">Sources</h5><div class="ba-sources">' + v.sources.map(function (x) {
+        ['Test first', esc(ad.test || '')]].concat(ad.realism ? [['Budget realism', esc(ad.realism)]] : []),
+        (ad.objectives || []).join(' · ')) +
+      ((a.confirm || []).length ? baSec('To confirm with the client', [['Points', baList(a.confirm)]], baN(len(a.confirm), 'point')) : '') +
+      (a.next_question ? baSec('Next question', [['Ask', esc(a.next_question)]], a.next_question) : '') +
+      ((v.sources || []).length ? baFold('Sources', baN(v.sources.length, 'source'), '<div class="ba-sources">' + v.sources.map(function (x) {
         return /^https:\/\//i.test(x.url || '') ? '<a class="plink" href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.title || x.url) + '</a>' : '';
-      }).join('') + '</div></div>' : '') +
-      (earlier.length ? '<div class="ba-sec"><h5 class="fsec-h">Other versions</h5><div class="ba-versions">' + earlier.map(function (x) {
+      }).join('') + '</div>') : '') +
+      (earlier.length ? baFold('Other versions', baN(earlier.length, 'earlier version'), '<div class="ba-versions">' + earlier.map(function (x) {
         return '<button class="linkbtn" type="button" data-a="ba-show" data-id="' + esc(x.id) + '">' +
           esc('Version ' + x.version + ' · ' + baDay(x.created_at) + (x.by ? ' · ' + x.by : '') + (x.confirmed_at ? ' · Confirmed' : ' · Draft')) + '</button>';
-      }).join('') + '</div></div>' : '');
+      }).join('') + '</div>') : '');
   }
   function loadAnalysis(c, force) {
     if (!$('crmAnalysis')) return;
@@ -3173,6 +3217,12 @@
     else if (a === 'ba-withdraw' && shown) confirmAnalysis(c, shown, false);
     else if (a === 'ba-show') { ba.show = t.getAttribute('data-id'); paintAnalysis(c); }
     else if (a === 'ba-latest') { ba.show = null; paintAnalysis(c); }
+    else if (a === 'ba-fold') {
+      var fold = t.closest('.ba-fold'), open = !fold.classList.contains('is-open');
+      fold.classList.toggle('is-open', open);
+      t.setAttribute('aria-expanded', String(open));
+      if (window.ADspaceGroup) window.ADspaceGroup.keep('brand-analysis', c.id + ':' + fold.getAttribute('data-fold'), !open);
+    }
   });
   var META_SAID = {
     'not-connected': 'Meta is not connected.',
@@ -4013,10 +4063,7 @@
   var MEET_LINK = /^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
   /* Hours and minutes in Malaysia, wherever the browser is. */
   function myt(d) { var x = new Date(d.getTime() + 8 * 3600000); return { h: x.getUTCHours(), m: x.getUTCMinutes() }; }
-  function clockOf(d) {
-    var t = myt(d), h = t.h, m = t.m;
-    return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? 'am' : 'pm');
-  }
+  function clockOf(d) { return window.ADspaceClock.clock(d); }
   function lengthWord(n) {
     n = Number(n) || 30;
     return n < 60 ? n + ' min' : (n % 60 ? (n / 60) + ' hours' : (n === 60 ? '1 hour' : (n / 60) + ' hours'));
@@ -4221,7 +4268,9 @@
     // Nothing is started for a client who is not Active, so the head waits.
     if (c.stage !== 'active') { act.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-    var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    /* A way to another console page carries the chevron after its words,
+       never the leaving mark: it opens in this tab (2026-10-22, CLI-5). */
+    var CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
     /* Each way into the work is offered where it can be taken: Enable Content
        Review writes the client (Clients at Work, or Content Review settings
        at Work, as `clients_update` asks), New campaign makes one (Campaigns
@@ -4234,7 +4283,7 @@
       (!canReview ? ''
         : c.review_hidden
         ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
-        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + OUT + '</button>') +
+        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + CHEVR + '</button>') +
       (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '');
     var on = $('crmReviewOn');
     /* The way back from Remove from Content Review: never asks, and a
@@ -4249,17 +4298,25 @@
         }
         c.review_hidden = false;
         log('client.review_on', c.name, '');
-        location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
+        goTo('/admin/?s=review&client=' + encodeURIComponent(keyOf(c)), 'review');
       }).catch(function (e) { on.disabled = false; msg('crmEngageMsg', (e && e.message) || String(e), 'err'); });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
-      location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
+      goTo('/admin/?s=review&client=' + encodeURIComponent(keyOf(c)), 'review');
     });
     var nc = $('crmGoCampaign');
     if (nc) nc.addEventListener('click', function () {
-      location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
+      goTo('/admin/?s=campaigns&new=' + encodeURIComponent(c.id), 'campaigns');
     });
+  }
+  /* Into another section as an Engagements row opens one: the address,
+     then the section, never a reload of the console (CLI-5). */
+  function goTo(url, section) {
+    if (!bridge.show) { location.href = url; return; }
+    history.replaceState(null, '', url);
+    if (section === 'review' && bridge.restore) bridge.restore();
+    else bridge.show(section);
   }
   if (window.ADspaceEngage) {
     window.ADspaceEngage.onData(function (c) {
