@@ -721,12 +721,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps its own); a failed read is not kept, so the next `load()` asks
     again. A figure is read at the day it applies to, as the database reads
     it (a report's deadline at its period's end).
-- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `tidy`) is the only copy
-  of where a ⋯ or a popover card opens, and of what a ⋯ holds and in what
-  order (DESIGN.md §5 Menus and action groups): every item carries its
-  group (`data-g` 1 to 6), and `tidy` lays roles, separators and the red
-  each time a menu shows; a record head's ⋯ (in `.rec-ctl`, or
-  `data-dock`) docks at the foot under 640.
+- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `item`, `groupOf`,
+  `tidy`) is the only copy of where a ⋯ or a popover card opens, and of
+  what a ⋯ holds and in what order (DESIGN.md §5 Menus and action groups):
+  every item carries its group (`data-g` 1 to 6; `groupOf(label)` is the
+  one table of the standard's words, `item(a, label, need)` one item
+  written from it), and `tidy` puts the items in group order, lays roles,
+  separators and the red each time a menu shows; a record head's ⋯ (in
+  `.rec-ctl`, or `data-dock`) docks at the foot under 640. A new act's
+  word joins `groupOf` and `tests/menus.js` together.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
     `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
     a desk it hangs from its control with a caret (`--caret`, `is-up`); under
@@ -2686,7 +2689,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   post whole, then its copy and the decision; each post opens at its top.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
-    settings as a sheet with one Save, Reset access link, Remove from Content
+    settings as a sheet with one Save, Reset link, Remove from Content
     Review), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
     address and Copy link the review page's own link, Preview the page;
@@ -4342,7 +4345,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     active brand straight under its client, `{client} › {brand} · White
     label`, value `b:{brand id}`; one pick, no For field; the user,
     2026-10-15; `sm_report_create_for`), the head ⋯'s White label (any
-    report not published; `sm_report_brand`, `exists`, `bad-brand`, filed
+    report not published, drawn only where the client is white label and
+    holds a brand; 2026-10-22, RPT-2; `sm_report_brand`, `exists`, `bad-brand`, filed
     from and to), accounts carried from the same brand's last report and
     the AI quota counted by brand (`ai_drafts.brand_id`, filled by
     trigger). A brand's report sets `label_client` to its own client and
@@ -4422,7 +4426,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the latest period), with Undo over the list putting back each report's
   own day. Download saves each file under its own name.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
-  submit.
+  submit. Every step's foot reads Next: {step}, Save beside it where the
+  step saves, and the editor's way out is Back (2026-10-22, RPT-7); the
+  Commentary step is done, its tick drawn, only once every block is
+  written (RPT-8).
   - The head is the record head: the name, then the state, Preview PDF and
     the ⋯ at the right edge; the meta under them (type · period alone),
     then the facts each under its label (`.rp-facts`: Version, Client
@@ -4818,7 +4825,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the time since the step before, and the total (so far); the rows sit in
     the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
-    result first, then those with no result by spend, most first.
+    result first, then those with no result by spend, most first. An ad's
+    name opens its Edit; its ⋯ reads Open in Ads Manager, then Edit and
+    Make a copy, then Mark or Clear ad error, then Remove (`data-g`); on a
+    narrow pane a table with no picture gives up the picture's track and
+    the dates wrap between their parts (2026-10-22, RPT-4, RPT-5).
   - Ad error (`sm_report_ads.ad_error`, `2026-10-16-ad-error.sql`; the
     user, 2026-10-16: a Meta delivery fault read as the cheapest ad): an
     ad's ⋯ Mark ad error asks a reason (200 at most) on a draft at Work, the
@@ -5401,7 +5412,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Publish (`video_script_share`, Undo where it happened; not drawn on a
   script with no scenes) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
-  `script_link`; Reset access link asks and retires the old key). The link is
+  `script_link`; Reset link asks and retires the old key). The link is
   for the client to read the scripts (the user, 2026-10-09: "no need show the
   approve or changes at client side"; "remove from all client-facing
   site"): the name card, a tab a content month (drawn where there are two),
@@ -5759,10 +5770,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
 - Messages (the landing view, `wa_messages(p_month)`, client scope): one
-  card of the month's messages (Malaysia time) newest first, a row who it
+  table of the chosen month's messages (Malaysia time, read from
+  `ADspaceClock`, `9 Oct, 2:05pm`), never a card naming the month again,
+  newest first (2026-10-22, WA-2, WA-3), a row who it
   went to (name; client, Creator or Colleague; the number as
   `ADspaceCard.phone` writes it), what it was (Report, Feedback request,
-  Booking, Reminder, Message over the template and its category), who sent
+  Booking, Reminder, Message over the template, which gives way, and its
+  category, read whole; on a phone the meta line leads with what was sent,
+  the number leaving first; WA-4), who sent
   it (Automatic for the queue) and the status over when: Queued, Sending,
   Sent, Delivered, Read, Not confirmed (check the chat before sending again), or Failed with the reason in the team's words
   (`REASON`, by Meta's code). Above it the month's templates sent by
@@ -5787,8 +5802,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceWhatsApp.manage`), never a second copy.
 - The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
   record shares: To (`wa_recipients`: client contacts named with their
-  client, active creators; never a colleague), the number as it will be
-  sent, else why not (a username alone cannot be messaged); Template
+  client, active creators; never a colleague; one with no number listed
+  last as · No number), the number as it will be
+  sent, else why not (a username alone cannot be messaged), with Open
+  contacts on the client's Account where Clients: Contacts is readable
+  (2026-10-22, WA-5); Template
   (Meta's approved ones the portal can fill: a Document header, a text
   header with one variable, body variables positional or named, one link
   button variable); each variable prefilled from the record (the greeting
@@ -6027,7 +6045,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   SQL (`2026-10-01-short-links.sql`), never `Math.random`. A long key from
   before is kept as `moved_token`: it opens nothing itself, and
   `link_moved(kind, token)` answers it with the current key, which the page
-  puts in the address and loads. Changing a key (Reset access link) clears
+  puts in the address and loads. Changing a key (Reset link) clears
   the moved key by trigger, so a reset retires every earlier link. A
   campaign's is reset from its ⋯ (`campaign_reset_link`, Creator
   Campaigns: Campaigns at Work, a key from `new_link_key()`), and
