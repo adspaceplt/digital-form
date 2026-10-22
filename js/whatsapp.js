@@ -77,6 +77,7 @@
     'not-published': 'Publish the report first.',
     'not-booked': 'Only a booked creator can be sent their booking.',
     'not-found': 'This record is no longer available.',
+    'not-client': 'Feedback is asked of a client, never a lead.',
     void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
     'wa-params-missing': 'Fill in every variable.',
