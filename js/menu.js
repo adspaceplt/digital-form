@@ -190,8 +190,33 @@
        anything precedes it, and between every other change of group once
        four items or more show. Run by itself whenever a menu is shown. */
     tidy: tidy,
-    GROUPS: GROUPS
+    GROUPS: GROUPS,
+    /* The group a label belongs to (DESIGN.md §5 Menus and action groups),
+       for a page that writes its items one at a time: `item(a, label,
+       need, key)` writes one as `items` would. 0 is a label the standard
+       does not name, which the page must place itself. */
+    groupOf: groupOf,
+    item: function (a, label, need, key) {
+      var g = groupOf(label) || 2, one = [[], [], [], [], [], []];
+      one[g - 1].push({ a: a, label: label, need: need });
+      return this.items(one, key);
+    }
   };
+
+  var WORDS = [
+    /^(Open|Open .+|Versions|Download|Preview|Link history)$/,
+    /^(Edit|Rename|Make a copy|New version|Take|Take lead|Offer to the team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change content month|Client settings|Pair with video|Select|Select .+|Templates|Task numbering|Due dates|Make main contact|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat on a schedule|Reissue|Replace|Add tasks)$/,
+    /^(Send on WhatsApp|Request feedback on WhatsApp|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email)$/,
+    /^(Mark .+|Remove VIC|Verify signed letter|Confirm internally|Confirm for client|Revert confirmation|Clear ad error)$/,
+    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Not proceeding|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Revoke portal access|Enable portal access|Extend access|Set access expiry)$/,
+    /^(Remove|Remove from .+|Void|Delete)$/
+  ];
+  function groupOf(label) {
+    var w = String(label == null ? '' : label).replace(/\s+/g, ' ').trim();
+    // Mark .+ is a flag, but never Mark as sent's way back read as a Remove.
+    for (var i = WORDS.length - 1; i >= 0; i--) if (WORDS[i].test(w)) return i + 1;
+    return 0;
+  }
 
   function attr(v) {
     return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -200,13 +225,22 @@
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
   function shown(el) {
-    return !el.hidden && el.style.display !== 'none' && !el.closest('[hidden]:not(.kmenu)');
+    return !el.hidden && el.style.display !== 'none' && !el.closest('[hidden]:not(.kmenu)') &&
+      (!el.isConnected || getComputedStyle(el).display !== 'none');
   }
   function tidy(menu) {
     if (!menu || !menu.querySelector || !menu.querySelector('[data-g]')) return;
     if (menu.getAttribute('role') !== 'menu') menu.setAttribute('role', 'menu');
     var old = menu.querySelectorAll('hr.kmenu-sep[data-auto]');
     for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+    /* Items in their group's order, whatever order the page wrote them:
+       a stable sort by group, the page's order kept within a group. */
+    var all = Array.prototype.slice.call(menu.querySelectorAll('.kmenu-item[data-g]'));
+    var sorted = all.slice().sort(function (x, y) { return (+x.getAttribute('data-g') - +y.getAttribute('data-g')) || (all.indexOf(x) - all.indexOf(y)); });
+    if (sorted.some(function (e, n) { return e !== all[n]; }) && all.every(function (e) { return e.parentNode === all[0].parentNode; })) {
+      var tail = all[all.length - 1].nextSibling, host = all[0].parentNode;
+      sorted.forEach(function (e) { host.insertBefore(e, tail); });
+    }
     var items = Array.prototype.filter.call(menu.querySelectorAll('.kmenu-item[data-g]'), function (e) {
       if (e.getAttribute('role') !== 'menuitem') e.setAttribute('role', 'menuitem');
       e.classList.toggle('is-danger', e.getAttribute('data-g') === String(GROUPS));

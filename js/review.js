@@ -1222,7 +1222,7 @@
       if (!data || data.error === 'not_found') {
         /* A long link from before the short keys still opens: its new key
            replaces it in the address and the page loads on that. A key
-           retired by Reset access link answers nothing. */
+           retired by Reset link answers nothing. */
         API.movedKey('review', token).then(function (next) {
           if (!next || next === token) { showState(W.notFound, W.notFoundText); return; }
           token = next;

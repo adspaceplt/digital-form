@@ -721,12 +721,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps its own); a failed read is not kept, so the next `load()` asks
     again. A figure is read at the day it applies to, as the database reads
     it (a report's deadline at its period's end).
-- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `tidy`) is the only copy
-  of where a ⋯ or a popover card opens, and of what a ⋯ holds and in what
-  order (DESIGN.md §5 Menus and action groups): every item carries its
-  group (`data-g` 1 to 6), and `tidy` lays roles, separators and the red
-  each time a menu shows; a record head's ⋯ (in `.rec-ctl`, or
-  `data-dock`) docks at the foot under 640.
+- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `item`, `groupOf`,
+  `tidy`) is the only copy of where a ⋯ or a popover card opens, and of
+  what a ⋯ holds and in what order (DESIGN.md §5 Menus and action groups):
+  every item carries its group (`data-g` 1 to 6; `groupOf(label)` is the
+  one table of the standard's words, `item(a, label, need)` one item
+  written from it), and `tidy` puts the items in group order, lays roles,
+  separators and the red each time a menu shows; a record head's ⋯ (in
+  `.rec-ctl`, or `data-dock`) docks at the foot under 640. A new act's
+  word joins `groupOf` and `tests/menus.js` together.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
     `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
     a desk it hangs from its control with a caret (`--caret`, `is-up`); under
@@ -2686,7 +2689,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   post whole, then its copy and the decision; each post opens at its top.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
-    settings as a sheet with one Save, Reset access link, Remove from Content
+    settings as a sheet with one Save, Reset link, Remove from Content
     Review), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
     address and Copy link the review page's own link, Preview the page;
@@ -5409,7 +5412,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Publish (`video_script_share`, Undo where it happened; not drawn on a
   script with no scenes) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
-  `script_link`; Reset access link asks and retires the old key). The link is
+  `script_link`; Reset link asks and retires the old key). The link is
   for the client to read the scripts (the user, 2026-10-09: "no need show the
   approve or changes at client side"; "remove from all client-facing
   site"): the name card, a tab a content month (drawn where there are two),
@@ -6042,7 +6045,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   SQL (`2026-10-01-short-links.sql`), never `Math.random`. A long key from
   before is kept as `moved_token`: it opens nothing itself, and
   `link_moved(kind, token)` answers it with the current key, which the page
-  puts in the address and loads. Changing a key (Reset access link) clears
+  puts in the address and loads. Changing a key (Reset link) clears
   the moved key by trigger, so a reset retires every earlier link. A
   campaign's is reset from its ⋯ (`campaign_reset_link`, Creator
   Campaigns: Campaigns at Work, a key from `new_link_key()`), and
