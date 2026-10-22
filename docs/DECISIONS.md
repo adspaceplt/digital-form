@@ -6023,3 +6023,28 @@ removes nothing.
   key across clients and visitors, and the Bukku contact; `suppliersql`
   the supplier form's actor; `bukkufn` the linked and taken refusals; the
   stand-in holds each.
+
+### 2026-10-22 — My Work and the Dashboard: release 1 of the work review
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/work/report.txt).
+Built: WRK-1 to WRK-7, OVW-1, OVW-2, OVW-10, OVW-11. Left for the next
+releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
+- WRK-1 (P1): New month opened on this month with empty fields; saved on a
+  month the client held, `ops_engagement_upsert` edited it, so its plan,
+  Reports ticks and Drive link were wiped and its report task cancelled.
+  New month now leaves out the months held (its button is not drawn with
+  none free) and sends `new: true`; the function refuses `exists`
+  (`2026-10-22-new-month-never-replaces-one.sql`).
+- OVW-1: `at::date <= due::date` read UTC's day, so review reached at 07:00
+  MYT the morning after the due day counted on time. OVW-2: on time by
+  person compared the finish day (a week after Live) with the due date; it
+  now reads the day review was reached. OVW-11: ops_reports' month spans are
+  light (`ops_report_of`); `2026-10-22-on-time-on-malaysias-day.sql`.
+  `tests/sql.js` now reads a name a query gives a moment (`… as at`) in an
+  ops_/perf_ function as a moment.
+- WRK-2 Waiting for you's request row opens Services. WRK-3 the catalogue
+  is read once a visit, Waiting for you on entering and after a decision, a
+  row's press reads that task alone, a search asks the database alone.
+  WRK-4 finished work is read whole. WRK-5 a failed Waiting read is said
+  with Try again and the tab bar's dot keeps its count. WRK-6 a deadline
+  over a day reads in days. WRK-7 a due date still ahead is never red.
+  OVW-10 `.then(ok).catch(bad)` in My Work's `call()` and the other sites.

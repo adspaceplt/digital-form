@@ -3787,6 +3787,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     meeting, link and message are `.eng-row`s (label, value, controls at the
     right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
     and the value runs full width beneath.
+- New month never edits a month held: it offers only the months the client
+  does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
+  `exists` (2026-10-22, WRK-1).
+- A press on one task reads that task alone; the catalogue is read once a
+  visit and Waiting for you on entering and after a decision; a failed
+  Waiting read is said in the card with Try again (2026-10-22, WRK-3, WRK-5).
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
   `month-closed`, `month-not-confirmed`). This holds for the New sheet,
