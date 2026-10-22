@@ -5779,3 +5779,8 @@ removes nothing.
 - Rule written: `CLAUDE.md`, `js/money.js` and Billing: the market never
   picks the currency alone.
 
+- Found by the suites before merging: the approx. S$ line in Build quote's
+  foot named `ctx`, out of scope in the preview's answer (`B.ctx`), so the
+  lines drew the error in place of the quotation; and the one-time S$ seed
+  read `sm_reports` directly, which a cut-down database lacks (now each
+  table read only where it exists).
