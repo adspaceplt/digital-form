@@ -5762,3 +5762,20 @@ removes nothing.
   reversibility): an import lists what it found and takes what is ticked;
   whatever can be added can be deleted.
 
+### 2026-10-22 — A Singapore client is billed in RM unless set to S$
+- Reported: the user saw an Edit service sheet for a Singapore client
+  quoted straight in S$: "I remembered that told u to follow RM as usual
+  unless and optionally choose to have it in S$ with the conversion".
+- Cause: on 2026-10-15 "singapore client reprice in S$" was built as the
+  market deciding the currency, so every Singapore client's figures read
+  S$ (quotations, lines, letters, reports, campaigns, the portal).
+- Decided: RM by default; S$ is a per-client choice on Billing, shown for
+  a Singapore client alone (the user: "if its at the client site chosen S$
+  Singapore market then show this option, as it will also affect the
+  report"). Billed in RM, totals add the approximate S$ at `fx_sgd` (the
+  user: "Total RM 3,000 (approx. S$ 952.xx) assuming my rate is 3.15").
+- The one-time seed kept S$ for a Singapore client already holding a
+  report, an S$ quotation or an S$ letter; the rest read RM.
+- Rule written: `CLAUDE.md`, `js/money.js` and Billing: the market never
+  picks the currency alone.
+

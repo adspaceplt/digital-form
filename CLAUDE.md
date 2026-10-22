@@ -688,7 +688,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   twice.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
-  - RM for MY, S$ for SG.
+  - RM, or S$ for a Singapore client billed in S$ (`curOf(c)`: a payload's
+    `bill_market`, else `market` SG with `bill_sgd`; the market alone never
+    picks the currency); a Singapore client billed in RM reads its total's
+    S$ beside it (`approx(n, c, at)`, ` (approx. S$ 952.38)` at `fx_sgd`).
   - SST at the rate in force on the document's own day (`taxOf(sub, m,
     applies, at)`, `taxLabel(m, at)`; a letter passes its `issued_at`, a
     campaign's booked creators the client's last confirmation (`kind`
@@ -1669,6 +1672,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact or is removed; 2026-10-13);
   - billing address.
   - Optional: old registration no., TIN, SST no., finance email.
+  - Bill in (`clients.bill_sgd`, `2026-10-22-bill-in-rm-or-sgd.sql`; the
+    user, 2026-10-22: "follow RM as usual unless and optionally choose to
+    have it in S$"): RM / S$ on Billing for a Singapore client alone, RM
+    by default, at Clients: Billing Work (`clients_billing_guard`), filed
+    from and to; `client_bill_market(market, sgd)` is SG only where both
+    hold. `get_portal`, `get_campaign` and `sm_report_snapshot` send
+    `bill_market`; `issue_letter` keeps it as the letter's `market`, and
+    in `bill_to` the client's market and, billed in RM, `fx_sgd` then in
+    force, which the letter reads under its figure in bold (Approx.
+    S$ …); `bukku_prepare` sends its currency. The market stays the
+    number's, the registration's and Meta's taxes'. A version published
+    before reads its market as drawn.
   - Trigger `clients_active_billing` refuses the move into Active while the
     registered name, BRN or billing address is empty or no billing contact
     (chosen, else a live main contact) stands (`active-needs-billing`,
@@ -4967,8 +4982,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the rate in force on the day it is priced (MYT), none for a client whose
   `sst_applies` is false (`quote_tax_snap`; a preview names its client in
   `p_sel.client`, never kept; `2026-10-15-quotation-tax-day.sql`). A
-  Singapore client's is in S$ (`2026-10-15-quotation-in-sgd.sql`; the
-  user, 2026-10-15): `fx_sgd`, the ringgit to S$1 (Tax and terms,
+  client billed in S$ is quoted in S$ (`2026-10-15-quotation-in-sgd.sql`,
+  `quote_fx` since `2026-10-22-bill-in-rm-or-sgd.sql`; the user,
+  2026-10-15): `fx_sgd`, the ringgit to S$1 (Tax and terms,
   Singapore; four decimals, unset until the team sets it), turns every
   rate on the card to the cent (`quote_fx_snap`) and every RM figure in a
   line's words to whole dollars (`quote_fx_out`), the totals marked
