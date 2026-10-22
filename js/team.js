@@ -365,6 +365,7 @@
             return;
           }
           state.rows = q.data || [];
+          state.read = true;
           state.loading = false;
           paintMembers();
           paintGroups();   // member counts and Delete depend on the rows
@@ -2380,6 +2381,10 @@
       var q = new URLSearchParams(location.search), id = q.get('member') || null, t = q.get('mtab') || 'overview';
       if (id === rec.id && t === rec.pane) return;
       rec.id = id; rec.pane = PANES.some(function (x) { return x[0] === t; }) ? t : 'overview';
+      /* Before the colleagues are read (search opening a record from
+         another section) the read paints it; painting now would find no
+         row and let go of it. */
+      if (!state.read && !state.loading) return;
       paintRec();
     },
     /* Opens one colleague's sheet, for the review profile's Edit on Members:
