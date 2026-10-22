@@ -7283,6 +7283,7 @@
         (span ? ' at ' + span : '') + '. Choose another time.';
     }
     if (k === 'google-refused') return 'Google refused the booking' + (d.reason ? ' (' + d.reason + ')' : '') + '. Try again.';
+    if (k === 'not-saved' && d.deleted === false) return 'The event was deleted from the calendar, but the month still holds its link. Try again.';
     if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
     return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
   }

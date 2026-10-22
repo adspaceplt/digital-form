@@ -6166,3 +6166,34 @@ The rest of the client review: CP-13 to CP-17.
   Open the draft the card's width; the pair now stand 220px at the right
   edge, Approve last, Open the draft at its own width. This reopens the
   2026-10-20 equal halves at desk width on this card alone.
+
+### 2026-10-22 — The backend review's remaining findings (release 3 of 3)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/backend/report.txt).
+Built: SEC-2, BE-1, BE-7 to BE-14, LEAN-1, LEAN-2.
+- SEC-2: the backup workflow, which holds the database owner's connection,
+  ran `actions/checkout@v4` and `supabase/setup-cli@v1` by movable tags; both
+  are pinned to their commits (v4.4.0, v1.7.3) and `dbbackup` holds every
+  `uses:` to a 40-hex commit.
+- BE-10: the backup's guard read the clients table's COPY header, which an
+  empty table also writes; it now needs a row before the closing `\.`.
+- BE-1: pickers took mkv, webm, mpg and mpeg since 2026-10-17, but the
+  conversion and the page's copy lookup knew mov, mp4, m4v and qt alone, so
+  those uploads never played on an iPhone. The Lambda is redeployed by the
+  user from `workers/video-convert/`.
+- BE-7, LEAN-2: a creative's picture followed redirects blind and read the
+  whole body before the 4 MB check; one reader now serves both paths.
+- BE-8: Delete Google Meet answered deleted even where the month kept the
+  link.
+- BE-9: the two issue-day defaults the review named were already set to
+  Malaysia's day on 2026-10-17 (the review read the create table alone);
+  `tests/sql.js` now holds every column's last default to it.
+- BE-11: anyone holding a selection link could register twenty endpoints and
+  push the client's own phones out; new devices are capped and nobody is
+  pushed out.
+- BE-12: `bukku-sync` `taxes` let a colleague at View alone use the company's
+  Bukku token; it asks `bukku_config` as `fields` does.
+- BE-13: two fallbacks for databases before 2026-09-28 and 2026-10-10 could
+  resend a decision without its version check; removed.
+- BE-14: `readPages` past its cap returned a cut list as whole.
+- LEAN-1: the PDF reference reading was copied byte for byte in wa-send and
+  supplier-mail; one `_shared/pdfref.ts`.
