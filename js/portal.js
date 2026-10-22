@@ -275,8 +275,10 @@
     if (!items.length) return '<span class="team-act"></span>';
     return '<span class="team-act">' +
       '<button class="kmenu-btn" data-a="menu" type="button" aria-label="' + esc(t().more) + '" aria-expanded="false">' + DOTS + '</button>' +
-      '<div class="kmenu" data-menu hidden>' + items.map(function (it) {
-        return '<button class="kmenu-item' + (it[2] ? ' is-danger' : '') + '" data-a="' + it[0] + '" type="button"><b>' + esc(it[1]) + '</b></button>';
+      /* Each item carries its group (DESIGN.md §5 Menus and action
+         groups); a request of a change is a Send, never red. */
+      '<div class="kmenu" data-menu hidden role="menu">' + items.map(function (it) {
+        return '<button class="kmenu-item" data-g="' + (it[2] || 3) + '" data-a="' + it[0] + '" type="button" role="menuitem">' + esc(it[1]) + '</button>';
       }).join('') + '</div></span>';
   }
   var undoTimer = null;
@@ -877,7 +879,7 @@
         row.className = 'svc-row csv-row';
         var sub = [parts([l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct)]), termWord(l), l.note ? esc(l.note) : '']
           .filter(Boolean).join(' · ');
-        var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel, true]] : [];
+        var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
           /* The months on a line of their own: "1 × RM 2,830.00 × 6 months"
@@ -922,16 +924,18 @@
     $('rqWrap').hidden = !reqs.length;
     var rbox = $('rqBox');
     if (reqs.length) {
-      var rtb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.request) + '</span><span class="svc-rate">' + esc(w.fee) +
+      var rtb = table('<div class="crm-head svc-row doc-row rq-row"><span>' + esc(w.request) + '</span><span class="svc-rate">' + esc(w.fee) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       reqs.forEach(function (r) {
         var row = document.createElement('div');
         var gone = Boolean(r.withdrawn_at);
-        row.className = 'svc-row doc-row' + (gone ? ' is-off' : '');
+        row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
         var tone = gone ? '' : (r.state === 'approved' || r.state === 'applied') ? 'is-ok' : (r.state === 'declined') ? '' : 'is-warn';
         var sub = [r.created_at ? '<span class="nb">' + esc(niceDate(r.created_at)) + '</span>' : '', r.note ? esc(r.note) : '']
           .filter(Boolean).join(' · ');
-        var items = (!gone && r.state === 'requested') ? [['withdraw', w.withdraw, true]] : [];
+        /* A request still Requested is withdrawn from its row, a tonal
+           button, Undo as before (MENU-19, 2026-10-22). */
+        var canWithdraw = !gone && r.state === 'requested';
         row.innerHTML =
           '<span class="svc-name"><b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
@@ -940,9 +944,8 @@
              phone, where the head is hidden (2026-10-20, POR-1). */
           '<span class="svc-rate svc-amt' + (r.fee != null && r.fee !== '' ? '' : ' is-none') + '">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +
           '<span class="svc-state">' + chip(gone ? w.withdrawn : (w.rqState[r.state] || r.state), tone) + '</span>' +
-          menuCell(items);
-        wireMenu(row);
-        if (items.length) row.querySelector('[data-a="withdraw"]').addEventListener('click', function () { withdraw(r); });
+          '<span class="team-act">' + (canWithdraw ? '<button class="btn btn-sm" data-a="withdraw" type="button">' + esc(w.withdraw) + '</button>' : '') + '</span>';
+        if (canWithdraw) row.querySelector('[data-a="withdraw"]').addEventListener('click', function () { withdraw(r); });
         rtb.appendChild(row);
       });
       rbox.innerHTML = ''; rbox.appendChild(rtb);

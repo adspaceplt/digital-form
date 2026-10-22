@@ -191,8 +191,8 @@
           (meta ? '<small>' + esc(meta) + '</small>' : '') + '</span>' +
         '<span class="team-act pk-act"><button class="kmenu-btn" type="button" aria-label="More actions" aria-haspopup="true" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden>' +
-            '<button class="kmenu-item" data-act="rename" type="button"><b>Rename</b></button>' +
-            '<button class="kmenu-item is-danger" data-soft data-act="remove" type="button"><b>Remove</b></button>' +
+            '<button class="kmenu-item" data-g="2" data-act="rename" type="button" role="menuitem">Rename</button>' +
+            '<button class="kmenu-item is-danger" data-g="6" data-soft data-act="remove" type="button" role="menuitem">Remove</button>' +
           '</div></span>' +
       '</div>';
     }).join('');

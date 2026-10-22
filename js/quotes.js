@@ -144,7 +144,7 @@
         list.map(function (q) {
           var st = stateOf(q, live), h = headline(q);
           var items = [];
-          if (q.removed_at) items.push('<button class="kmenu-item" data-a="pdf" type="button"><b>Download</b></button>');
+          if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
           /* What a quotation that can be offered asks next is on its row,
@@ -159,18 +159,18 @@
             acts.push('<button class="btn btn-sm" data-a="offer" type="button">Issue Letter of Offer</button>');
           }
           if (maySet && !q.removed_at) {
-            items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
+            items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Make a copy</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding') {
-              items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
+              items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa hidden type="button" role="menuitem">Send on WhatsApp</button>');
             }
             items.push(q.status === 'not_proceeding'
-              ? '<button class="kmenu-item" data-a="proceeding" type="button"><b>Restore</b></button>'
-              : '<button class="kmenu-item" data-a="not_proceeding" type="button"><b>Not proceeding</b></button>');
-            items.push('<button class="kmenu-item is-danger" data-a="remove" data-soft type="button"><b>Remove</b></button>');
+              ? '<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>'
+              : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Not proceeding</button>');
+            items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
-          if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>');
+          if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b><small>' + wholeDays(esc(metaOf(q))) + '</small></span>' +

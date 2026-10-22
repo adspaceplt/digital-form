@@ -181,14 +181,14 @@
     /* A link says Link once, in its version cell (2026-10-20, HBK-1). */
     var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
-    if (vers.length) items += '<button class="kmenu-item" data-a="vers" type="button"><b>Versions</b></button>';
+    if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Versions</button>';
     if (admin) {
-      items += '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>';
-      if (!d.link_url) items += '<button class="kmenu-item" data-a="newver" type="button"><b>New version</b></button>';
+      items += '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>';
+      if (!d.link_url) items += '<button class="kmenu-item" data-g="2" data-a="newver" type="button" role="menuitem">New version</button>';
       items += d.archived_at
-        ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
-        : '<button class="kmenu-item" data-a="archive" type="button"><b>Archive</b></button>';
-      items += '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>';
+        ? '<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>'
+        : '<button class="kmenu-item" data-g="5" data-a="archive" type="button" role="menuitem">Archive</button>';
+      items += '<button class="kmenu-item is-danger" data-g="6" data-a="del" type="button" role="menuitem">Delete</button>';
     }
     var canOpen = Boolean(d.link_url || v);
     row.innerHTML =

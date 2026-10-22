@@ -193,22 +193,22 @@
     GROUPS: GROUPS,
     /* The group a label belongs to (DESIGN.md §5 Menus and action groups),
        for a page that writes its items one at a time: `item(a, label,
-       need, key)` writes one as `items` would. 0 is a label the standard
+       need, key, attrs)` writes one as `items` would. 0 is a label the standard
        does not name, which the page must place itself. */
     groupOf: groupOf,
-    item: function (a, label, need, key) {
+    item: function (a, label, need, key, attrs) {
       var g = groupOf(label) || 2, one = [[], [], [], [], [], []];
-      one[g - 1].push({ a: a, label: label, need: need });
+      one[g - 1].push({ a: a, label: label, need: need, attrs: attrs });
       return this.items(one, key);
     }
   };
 
   var WORDS = [
     /^(Open|Open .+|Versions|Download|Preview|Link history)$/,
-    /^(Edit|Rename|Make a copy|New version|Take|Take lead|Offer to the team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change content month|Client settings|Pair with video|Select|Select .+|Templates|Task numbering|Due dates|Make main contact|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat on a schedule|Reissue|Replace|Add tasks)$/,
+    /^(Edit|Rename|Make a copy|New version|Take|Take lead|Offer to the team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change content month|Client settings|Pair with video|Select|Select .+|Templates|Task numbering|Due dates|Make main contact|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat on a schedule|Reissue|Replace|Add tasks|Import from .+|Pictures from Meta|Move to .+|Review profile|Tax and terms|Document types)$/,
     /^(Send on WhatsApp|Request feedback on WhatsApp|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email)$/,
     /^(Mark .+|Remove VIC|Verify signed letter|Confirm internally|Confirm for client|Revert confirmation|Clear ad error)$/,
-    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Not proceeding|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Revoke portal access|Enable portal access|Extend access|Set access expiry)$/,
+    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Not proceeding|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Revoke portal access|Enable portal access|Extend access|Set access expiry|Withdraw confirmation)$/,
     /^(Remove|Remove from .+|Void|Delete)$/
   ];
   function groupOf(label) {

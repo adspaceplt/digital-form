@@ -2605,7 +2605,7 @@
      hold, no ⋯. */
   function rowMenu(t, takeShown) {
     var item = function (a, word, cls) {
-      return '<button class="kmenu-item' + (cls ? ' ' + cls : '') + '" data-m="' + a + '" type="button" role="menuitem">' + word + '</button>';
+      return window.ADspaceMenu.item(a, word, '', 'data-m');
     };
     var items =
       (takeable(t) && !takeShown ? item('take', 'Take') : '') +
@@ -3211,7 +3211,7 @@
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(label) + '">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
       '<span class="kmenu" hidden role="menu">' + items.map(function (x) {
-        return '<button class="kmenu-item' + (x[2] ? ' is-danger' : '') + '" data-i="' + x[0] + '" type="button" role="menuitem">' + esc(x[1]) + '</button>';
+        return window.ADspaceMenu.item(x[0], x[1], '', 'data-i');
       }).join('') + '</span></span>';
   }
   function shutItemMenus(except) {

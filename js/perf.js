@@ -496,8 +496,8 @@
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="profile" type="button"><b>Review profile</b></button>' +
-          (r && r.id && may('team.perfadmin', 'work') ? '<button class="kmenu-item is-danger" data-a="delete" type="button">Delete</button>' : '') + '</div>' +
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="2" data-a="profile" type="button" role="menuitem">Review profile</button>' +
+          (r && r.id && may('team.perfadmin', 'work') ? '<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>' : '') + '</div>' +
       '</span>';
     el.querySelector('.perf-open').addEventListener('click', function () { openReview(p.team_member_id, this); });
     var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
@@ -2904,7 +2904,7 @@
       el.insertAdjacentHTML('beforeend', '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden><button class="kmenu-item is-danger" data-a="remove" type="button">Remove</button></div></span>');
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item is-danger" data-g="6" data-a="remove" type="button" role="menuitem">Remove</button></div></span>');
       var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
       btn.addEventListener('click', function (e) {
         e.stopPropagation();

@@ -302,7 +302,7 @@
        read as "confusing"): what it is, until when, the link itself. */
     if (f && f.state === 'open' && (update || s.status === 'pending')) {
       var url = f.key ? linkOf(f.key) : '';
-      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
+      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" data-g="5" type="button" data-s="reset" role="menuitem">Reset link</button><button class="kmenu-item" data-g="5" type="button" data-s="close" role="menuitem">Close link</button>') : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Details form link') + '" value="' + esc(url) + '">' +
@@ -369,10 +369,10 @@
        SUP-1): the chip says Details received, the meta its day. */
     var got = !!(state.form && state.form.state === 'submitted' && state.form.submitted_at);
     var fb = formBlock(), quiet = s.status !== 'pending' && !(state.form && state.form.state === 'submitted');
-    var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
-        (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
-        (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
-      (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
+    var menu = (work ? '<button class="kmenu-item" data-g="2" type="button" data-s="edit" role="menuitem">Edit</button>' +
+        (s.status === 'active' ? '<button class="kmenu-item" data-g="5" type="button" data-s="off" role="menuitem">Set inactive</button>' : '') +
+        (s.status === 'inactive' ? '<button class="kmenu-item" data-g="5" type="button" data-s="on" role="menuitem">Set active</button>' : '') : '') +
+      (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" data-g="6" type="button" data-s="del" role="menuitem">Delete</button>' : '');
     rec.innerHTML =
       '<div class="sup-back"><button class="btn btn-quiet btn-sm" type="button" data-s="back">' + BACK + 'Suppliers</button></div>' +
       '<div class="panel sup-rec">' +
@@ -399,7 +399,7 @@
              existing document; Send email in Emails. */
           /* Only an Active supplier is issued a document (2026-10-20, DOC-3). */
           (work ? '<span class="sup-head-acts">' + (s.status === 'active' ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') +
-            formMenu('<button class="kmenu-item" type="button" data-s="add"><b>Add existing document</b></button>') + '</span>' : '') + '</div>' +
+            formMenu('<button class="kmenu-item" data-g="2" type="button" data-s="add" role="menuitem">Add existing document</button>') + '</span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
         '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
           (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +

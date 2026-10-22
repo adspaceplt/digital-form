@@ -814,7 +814,7 @@
     if (!items.length) return '';
     return '<span class="kmenu-wrap rp-sec-more"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false">' + ICON.more + '</button>' +
       '<div class="kmenu" hidden>' + items.map(function (it) {
-        return '<button class="kmenu-item" type="button" data-a="' + it[0] + '">' + esc(it[1]) + '</button>';
+        return window.ADspaceMenu.item(it[0], it[1]);
       }).join('') + '</div></span>';
   }
   /* What a press on a ⋯ item shows while it reads: the ⋯ rests and the
@@ -1974,29 +1974,30 @@
   function moreMenu(r, live) {
     /* Download (2026-10-07): the file itself under its own name, to send;
        Preview PDF's tab holds a passing address and the browser's own name. */
-    var items = ['<button class="kmenu-item" type="button" data-a="download">Download</button>'];
+    var M = window.ADspaceMenu;
+    var items = [M.item('download', 'Download')];
     /* Every version the client was given, each its own file (2026-10-07). */
-    if ((st.openVersions || []).length) items.push('<button class="kmenu-item" type="button" data-a="versions">Versions</button>');
+    if ((st.openVersions || []).length) items.push(M.item('versions', 'Versions'));
     /* A report in review from before reviewers is given one the same way. */
     if (r.status === 'review' && may('work') &&
         (r.submitted_by === myId() || (r.reviewer_id && r.reviewer_id === myId()) || isAdmin())) {
-      items.push('<button class="kmenu-item" type="button" data-a="reassign">' + (r.reviewer_id ? 'Change reviewer' : 'Assign reviewer') + '</button>');
+      items.push(M.item('reassign', r.reviewer_id ? 'Change reviewer' : 'Assign reviewer'));
     }
     /* A draft started under a temporary client moves to its own (an
        admin's, 2026-10-06). */
-    if (r.status === 'draft' && bridge.may && bridge.may('reports.transfer', 'work')) items.push('<button class="kmenu-item" type="button" data-a="move">Transfer client</button>');
+    if (r.status === 'draft' && bridge.may && bridge.may('reports.transfer', 'work')) items.push(M.item('move', 'Transfer client'));
     /* White-label work for a partner (2026-10-07): a client ticked White
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
-    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push('<button class="kmenu-item" type="button" data-a="whitelabel">White label</button>');
+    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push(M.item('whitelabel', 'White label'));
     /* The sent day is set from the head's Sent fact (Mark as sent, else the
        day and its pen); the ⋯ holds only its way back (the user, 2026-10-09:
        the menu repeated the pen). */
     if (r.status === 'published' && may('work') && r.sent_on) {
-      items.push('<button class="kmenu-item" type="button" data-a="unsent">Mark as not sent</button>');
+      items.push(M.item('unsent', 'Mark as not sent'));
     }
-    if (live && may('manage')) items.push('<button class="kmenu-item" data-soft type="button" data-a="unpublish">Unpublish</button>');
-    if (may('manage')) items.push('<button class="kmenu-item is-danger" type="button" data-a="delete">Delete</button>');
+    if (live && may('manage')) items.push(M.item('unpublish', 'Unpublish', '', '', 'data-soft'));
+    if (may('manage')) items.push(M.item('delete', 'Delete'));
     if (!items.length) return '';
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false" data-a="more">' + ICON.more + '</button>' +
       '<div class="kmenu" hidden>' + items.join('') + '</div></span>';
@@ -2454,7 +2455,7 @@
   function rowMenu(items) {
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false">' + ICON.more + '</button>' +
       '<div class="kmenu" hidden>' + items.map(function (w) {
-        return '<button class="kmenu-item' + (w === 'Remove' ? ' is-danger' : '') + '" data-soft type="button" data-act="' + esc(w) + '">' + esc(w) + '</button>';
+        return window.ADspaceMenu.item(w, w, '', 'data-act', 'data-soft');
       }).join('') + '</div></span>';
   }
   function wireRows(box, fn) {

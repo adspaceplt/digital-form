@@ -104,7 +104,7 @@
             ? '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>' +
               '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
                 '<div class="kmenu" data-menu hidden role="menu">' +
-                  '<button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delete">Delete</button>' +
+                  '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button>' +
                 '</div></span>'
             : '<button class="btn btn-sm btn-warn" type="button" data-a="withdraw">Withdraw</button>') + '</div></div>';
       }).join('') + '</div>';
