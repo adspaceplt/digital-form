@@ -2195,6 +2195,15 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .refl-q { font-size: 13px; color: var(--ink-mute); }
 .refl-a { white-space: pre-line; overflow-wrap: anywhere; }
 .refl-acts { margin-top: 12px; }
+/* Rate yourself: one card, a row a month (MINE-1, 2026-10-22). */
+.self-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); min-height: var(--ctl-h); }
+.refl-head + .self-row { border-top: 0; padding-top: 0; }
+.self-month { flex: 1 1 auto; min-width: 0; font-weight: 500; }
+.self-month .chip { margin-left: 6px; }
+.self-total { flex: 0 0 auto; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.self-total b { font-weight: 600; color: var(--ink); }
+.self-total small { color: var(--ink-mute); }
+.self-row > .btn { flex: 0 0 auto; }
 /* Rate yourself (2026-10-07): a month's own scores read as label beside
    value; beside management's scores, each category names it once. */
 #mineReviews > .msg:empty { display: none; }
@@ -3295,6 +3304,12 @@ button.vs-row { cursor: pointer; }
 .dform-foot > .btn { flex: 0 0 auto; }
 .dform-acts { position: relative; display: inline-flex; }
 .sup-head-acts { display: inline-flex; align-items: center; gap: 8px; }
+/* Issue document and Add existing document side by side (SUP-3,
+   2026-10-22): a narrow pane takes them on a line of their own, equal
+   halves, never past the screen's edge. */
+#supLetters .readgroup-head { flex-wrap: wrap; }
+.is-narrow #supLetters .sup-head-acts { flex: 1 1 100%; flex-wrap: wrap; }
+.is-narrow #supLetters .sup-head-acts .btn { flex: 1 1 auto; white-space: nowrap; }
 
 /* A draft month's acts at the review sheet's foot (TEAM-1, 2026-10-14): the
    scores end at the foot, so the acts do too. Drawn as a sheet's foot reads
@@ -3473,6 +3488,11 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
 .sup-rec { padding: 18px 20px; }
 .sup-rec .readgroups { margin-top: 16px; }
+/* The record in panes (SUP-4, 2026-10-22): the head its own card, the
+   strip under it, then the pane's card; the step between is the 12 every
+   block in a section keeps. */
+.sup-headcard, .sup-tabs { margin-bottom: 12px; }
+.sup-body .readgroups.sup-pane { margin-top: 0; }
 /* The record head (2026-10-20): the name and its meta at the left, the
    state and the ⋯ on the name's line at the right edge, at every width. */
 .sup-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
@@ -3595,6 +3615,9 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    with its kind's glyph, where the picture would be. */
 .thumb-miss { display: grid; place-items: center; width: 100%; height: 100%; min-height: 40px; background: var(--sunk); color: var(--ink-mute); }
 .thumb-miss svg { width: 18px; height: 18px; }
+.doc-preview-row { display: flex; justify-content: flex-start; margin-top: 16px; }
+.doc-preview-row .btn { flex: 0 0 auto; }
+
 
 /* Creator Campaigns, the second audit (2026-10-22). The invoice fold's
    chevron is every fold's, turned as it opens (CMP-15); its actions take a
