@@ -6223,3 +6223,15 @@ letter reads Issue Letter of Offer, and the void sheet's act Void
 longer label is never broken. The task card's ⋯ carries its groups.
 Skipped: nothing in these areas. `tests/take.js` "and says so under it"
 fails on main before this release (logged in STANDARD.md).
+
+### 2026-10-22 · `revise` fed a picture to a video
+`tests/revise.js` "and one without asks for its first frame, inline" failed
+on main once REV-5 (#712) put a shaded `.thumb-miss` tile in place of a
+thumbnail whose file fails. The page was right: the suite answered every
+`mycdn.adspace.me` address with a PNG, so the reel's `.mov` did not decode,
+fired `error`, and REV-5 replaced the `<video>` the check looks for. The
+suite now answers a video address (`.mov`, `.mp4`, `.webm`) with a 16px
+WebM the browser plays, keeps the PNG for pictures and a 404 for a `gone.`
+file, and seeds Picture gone to assert the missing tile, never a broken
+image. The assertion is unchanged. Rule: a suite that answers the CDN
+answers a video with a video (CLAUDE.md §1, harness facts).
