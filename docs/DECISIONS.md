@@ -6208,3 +6208,18 @@ result figures with separators) and CMP-17's inline styles. CMP-M1:
 reopens the 2026-10-09 line (a video script's client link) that put a campaign's Unpublish beside Copy link and
 Preview; at a desk it stays, on a phone it is the head ⋯'s lifecycle item
 (`#campLifeItem`), as the approved mockup draws it.
+
+### 2026-10-22 — Menus: a client's requests and letters, the Register, the bulk bars (release 3 of the menu review)
+A request's Reply stands on its row as a small button (MENU-6). A client
+letter's ⋯ reads Download | Send on WhatsApp | Mark signed or Mark not
+signed | Void, Delete through `ADspaceMenu.items`, and a signed letter's
+Verify stands on its row before the ⋯ (MENU-9; "Not signed after all"
+retired). On the Register a Letter of Offer and a performance record open
+on a press of the row, a chevron its way there and no ⋯ (MENU-7); every
+other row's ⋯ runs through the helper. The Clients, posts and My Work bulk
+bars hide their acts at zero ticked, never grey them (MENU-12). Issue
+letter reads Issue Letter of Offer, and the void sheet's act Void
+(MENU-14); on a phone the Documents head's two acts take a row each so the
+longer label is never broken. The task card's ⋯ carries its groups.
+Skipped: nothing in these areas. `tests/take.js` "and says so under it"
+fails on main before this release (logged in STANDARD.md).

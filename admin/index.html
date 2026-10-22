@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261022w">
+<link rel="stylesheet" href="/css/portal.css?v=20261022z">
 <link rel="stylesheet" href="/css/console.css?v=20261022y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -646,7 +646,7 @@
         <div class="bulkbar" id="crmBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="crmBulkAll"> <span id="crmBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" disabled>Change person in charge</button>
+            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" hidden>Change person in charge</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="crmBulkDone" type="button">Done</button>
         </div>
@@ -1183,7 +1183,7 @@
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
           <button class="btn" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
-          <button class="btn" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
+          <button class="btn" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue Letter of Offer</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
@@ -1286,7 +1286,7 @@
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">
-              <h3 id="pickTitle">Issue letter</h3>
+              <h3 id="pickTitle">Issue Letter of Offer</h3>
               <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
               </button>
@@ -1294,7 +1294,7 @@
             <div class="sheet-body" id="pickBody"></div>
             <div class="sheet-foot">
               <span class="lpicksum" id="pickSum"></span>
-              <button class="btn btn-primary" id="pickGo" type="button">Issue letter</button>
+              <button class="btn btn-primary" id="pickGo" type="button">Issue Letter of Offer</button>
               <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="pickMsg"></div>
@@ -1603,7 +1603,7 @@
           <span class="bulkbar-acts">
             <button class="btn btn-sm" id="postBulkConfirm" type="button" data-need="review.sets:work" hidden>Confirm internally</button>
             <button class="btn btn-sm" id="postBulkReask" type="button" data-need="review.sets:work" hidden>Request re-approval</button>
-            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" disabled>Delete</button>
+            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" hidden>Delete</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="postBulkDone" type="button">Done</button>
         </div>
@@ -2437,8 +2437,8 @@
         <div class="bulkbar" id="workBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="workBulkAll"> <span id="workBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Reassign</button>
-            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" disabled>Delete</button>
+            <button class="btn btn-sm" id="workBulkOwner" type="button" hidden>Reassign</button>
+            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" hidden>Delete</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="workBulkDone" type="button">Done</button>
         </div>
@@ -3019,14 +3019,13 @@
                   <!-- The rare acts, Delete last; every stage move is the
                        stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
-                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
-                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
-                    <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
-                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
-                    <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                    <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
-                    <hr class="kmenu-sep" data-need="ops:manage">
-                    <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem" data-g="2">Make a copy</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem" data-g="2">Repeat on a schedule</button>
+                    <button class="kmenu-item" data-a="take" type="button" role="menuitem" data-g="2" hidden>Take</button>
+                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" data-g="2" hidden>Offer to the team</button>
+                    <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" data-g="2" hidden>Withdraw offer</button>
+                    <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-g="5" data-need="ops:manage" hidden>Restore</button>
+                    <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-g="6" data-need="ops:manage">Delete</button>
                   </div>
                 </span>
                 <button class="iconbtn" id="dwClose" type="button" aria-label="Close">
@@ -5684,7 +5683,7 @@ raya-2026        https://example.com/raya"></textarea>
       <textarea class="input" id="rvoidReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-warn" id="rvoidGo" type="button">Void document</button>
+      <button class="btn btn-warn" id="rvoidGo" type="button">Void</button>
       <button class="btn btn-quiet" id="rvoidCancel" type="button">Cancel</button>
     </div>
     <div class="msg" id="rvoidMsg"></div>
@@ -5713,19 +5712,19 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261022v"></script>
+<script src="/js/admin.js?v=20261022z"></script>
 <script src="/js/documents.js?v=20261022v"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261022s"></script>
 <script src="/js/reports.js?v=20261022s"></script>
-<script src="/js/register.js?v=20261022v"></script>
+<script src="/js/register.js?v=20261022z"></script>
 <script src="/js/suppliers.js?v=20261022v"></script>
 <script src="/js/bukku.js?v=20261022q"></script>
 <script src="/js/engage.js?v=20261022i"></script>
 <script src="/js/quotes.js?v=20261022q"></script>
 <script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261022p"></script>
-<script src="/js/crm.js?v=20261022w"></script>
+<script src="/js/crm.js?v=20261022z"></script>
 <script src="/js/sales.js?v=20261022t"></script>
 <script src="/js/team.js?v=20261022v"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
@@ -5734,7 +5733,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261022y"></script>
-<script src="/js/ops.js?v=20261022t"></script>
+<script src="/js/ops.js?v=20261022z"></script>
 <script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261022v"></script>

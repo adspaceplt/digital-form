@@ -3642,6 +3642,9 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn {
     flex: 0 0 auto; margin-left: auto;
   }
+  /* Issue Letter of Offer does not fit half a phone's row: the Documents
+     head's two acts take a row each, never a label broken (MENU-14). */
+  .viewhead:has(#crmCover:not([hidden])) > .btn:not([hidden]) { flex-basis: 100%; }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
   /* Action rows: a button keeps a readable width and wraps to the next line
@@ -3926,6 +3929,17 @@ body > .shell { width: 100%; }
    加入 with the leaving mark at a desk (2026-10-21: an `auto` track sized each
    row to its own Join and the head to nothing, so no column lined up). */
 .doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) 128px; }
+/* A request's Reply stands on its row (MENU-6). */
+.doc-row.rq-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 92px; }
+.doc-row.rq-row > .team-act { justify-self: end; }
+/* A Letter of Offer or a performance record on the Register opens on a
+   press of its row (MENU-7). */
+.reg-row.is-go { cursor: pointer; }
+.reg-go svg { width: 15px; height: 15px; color: var(--ink-mute); }
+@media (hover: hover) { .reg-row.is-go:hover { background: var(--sunk); } }
+/* A signed letter's Verify stands before its ⋯ (MENU-9). */
+.doc-row.ltr-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 140px; }
+.doc-row.ltr-row > .team-act { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .meet-row .svc-amt { white-space: nowrap; }
 /* The client record's pane has no Brand column: every row there is that
    client's. */
