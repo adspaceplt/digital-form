@@ -73525,17 +73525,26 @@ alter table public.clients add column if not exists bill_sgd boolean not null de
 grant select (bill_sgd) on table public.clients to authenticated;
 grant update (bill_sgd) on table public.clients to authenticated;
 
--- Once: a Singapore client already holding S$ figures keeps S$.
+-- Once: a Singapore client already holding S$ figures keeps S$ (read by
+-- name, so a database without one of the three tables seeds from the rest).
 do $$
+declare
+  v_has text := '';
 begin
-  if not exists (select 1 from public.app_flags f where f.key = 'bill_sgd_seeded') then
-    update public.clients c set bill_sgd = true
-     where c.market = 'SG' and not c.bill_sgd
-       and (exists (select 1 from public.sm_reports r where r.client_id = c.id)
-            or exists (select 1 from public.quotations q where q.client_id = c.id and q.totals ->> 'currency' = 'SGD')
-            or exists (select 1 from public.client_documents d where d.client_id = c.id and d.market = 'SG'));
-    insert into public.app_flags (key, on_now, set_by, set_at) values ('bill_sgd_seeded', true, 'migration', now()) on conflict (key) do nothing;
+  if exists (select 1 from public.app_flags f where f.key = 'bill_sgd_seeded') then return; end if;
+  if to_regclass('public.sm_reports') is not null then
+    v_has := v_has || ' or exists (select 1 from public.sm_reports r where r.client_id = c.id)';
   end if;
+  if to_regclass('public.quotations') is not null then
+    v_has := v_has || ' or exists (select 1 from public.quotations q where q.client_id = c.id and q.totals ->> ''currency'' = ''SGD'')';
+  end if;
+  if to_regclass('public.client_documents') is not null then
+    v_has := v_has || ' or exists (select 1 from public.client_documents d where d.client_id = c.id and d.market = ''SG'')';
+  end if;
+  if v_has <> '' then
+    execute 'update public.clients c set bill_sgd = true where c.market = ''SG'' and not c.bill_sgd and (false' || v_has || ')';
+  end if;
+  insert into public.app_flags (key, on_now, set_by, set_at) values ('bill_sgd_seeded', true, 'migration', now()) on conflict (key) do nothing;
 end $$;
 
 create or replace function public.clients_billing_guard()

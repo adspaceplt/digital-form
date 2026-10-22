@@ -519,7 +519,7 @@
         var keys = (d.lines || []).map(function (l) { return l.key; });
         Object.keys(B.edits).forEach(function (k) { if (keys.indexOf(k) < 0) delete B.edits[k]; });
         $('qbLines').innerHTML = table(d);
-        $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), ctx.client) : '');
+        $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '');
         $('qbSave').disabled = false;
       }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
     }, 200);
