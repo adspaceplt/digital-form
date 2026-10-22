@@ -119,7 +119,9 @@ draft. Nothing is typed when sending.
    URL `https://digital.adspace.me/` and nothing after it: Meta adds `{{1}}`
    itself once the type is Dynamic. Never type `{{1}}` into the address:
    Meta keeps a typed one as text (`/%7B%7B1%7D%7D{{1}}`), and no page can
-   fill the button (2026-10-22). Sample `review/?k=abcd2345`. Submit.
+   fill the button (2026-10-22). Sample: the whole address,
+   `https://digital.adspace.me/review/?k=abcd2345` (Meta asks for a full
+   URL there). Submit.
 7. Once Meta shows it **Active**: the console's **WhatsApp** → **Templates**
    → Approval reminder → **Edit** → choose `approval_reminder` → turn its
    switch on. **Remind** then shows in My Work's Waiting for you on a set or
