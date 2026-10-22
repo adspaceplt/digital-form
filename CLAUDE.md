@@ -1119,7 +1119,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   times").
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
-- Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
+- A guard trigger holds an insert as it holds an update, a page's insert
+  read against a blank row (2026-10-22, SEC-1: a client could be inserted
+  Active with billing by a colleague without the Billing part).
+- A public form's typed name is never an actor: it is filed under the form
+  (Details form, Supplier form, Quotation website), the name in the detail
+  (2026-10-22, BE-3).
+- Every page's `esc` (a client page's is `ADspaceWords.esc`; `js/chrome.js`
+  keeps its own, loaded before it) escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
 - A value is never drawn raw because of what it starts with: a fact not set
@@ -1229,7 +1236,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   functions, `app_settings_read()` for pages (anyone the team does not hold
   is answered `sst_pct` and the term percentages alone, what a client page
   prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
-  p_values)` an admin's, from today (MYT) or later (`past`), filed
+  p_values)` an admin's, from today (MYT) or later (`past`); a figure is the
+  one in force on the day, the first row standing in for an earlier day
+  only where the schema seeded it (`app_setting`, `setting()`; a figure
+  planned for a later day is unset before it; 2026-10-22, BE-5), filed
   `team.changed` under Settings; a value saved for a planned day that equals
   the one in force the day before withdraws that day's row, filed "planned
   change withdrawn" (`2026-10-19-planned-setting-withdrawn.sql`). An edge
@@ -1720,8 +1730,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact's salutation, name, mobile and email; refused by field), telling
     the team at Clients: Billing Work whose bands and client scope reach the
     client (kind `client.details`, opening Billing), filed under the actor
-    Details form with the typed name in the detail (a public form's typed
-    name is never an actor; 2026-10-19). The Active gate's Billing sheet offers it in one line
+    Details form with the typed name in the detail. A move into Active or
+    Past ends every link still open (trigger `clients_details_close`), and a
+    Past client's link opens nothing (2026-10-22, BE-6). The Active gate's Billing sheet offers it in one line
     (`#crmBillAsk`: Create link, Copy link, or Use details once answered). The answers wait on Billing (`client_details_state`),
     one that differs from what Billing holds reading held → sent (2026-10-20, DTL-1): Use
     details fills the Billing sheet and its own Save takes them in
@@ -2116,6 +2127,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   blocked window) an iPhone's save takes the share sheet with a named File,
   asking File ready · Save (`ADspaceConfirm`; the client portal loads it)
   only when Safari refuses a stale press (`tests/savename.js`).
+- In the installed app on a touch screen (`ADspaceDocs.installed()`:
+  display-mode standalone or `navigator.standalone`, on iOS or Android) no
+  window is opened for a PDF: a window on the app's own address opens inside
+  it with no Share, Done or Back (the user, 2026-10-22). `tabFor()` and
+  `previewTab()` (every Preview's one opener, Drawing the PDF…) answer null
+  there, the file goes to the share sheet as a named File (a stale press asks
+  File ready · Share), and with no share sheet for files it is shown in a
+  sheet with Close and Download (`#pdfViewSheet`); a window on another origin
+  (the Handbook's signed link, an invoice) is left as it is (`tests/pwapdf.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load). A
@@ -2507,6 +2527,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.
   Since then reads Details changed once a sent field moves (`bukku_print`).
+  One Bukku contact is one record's, a supplier and its own client sharing
+  one: `bukku-sync` sends a linked record to its own contact alone and asks
+  `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
+  `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
@@ -2684,7 +2708,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     with a file held asks first.
   - A video's thumbnail in a console row is its cover frame (`poster`),
     else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
-    a bare `<video>` is blank on iPhone Safari until it plays.
+    a bare `<video>` is blank on iPhone Safari until it plays. One whose
+    file fails, after the media pass's retry, is a shaded tile with its
+    kind's glyph (`.thumb-miss`), never the broken picture.
   - Sets are folded, one open at a time. Opening a set clears the last
     one's strip, covers line, progress and posts (`clearPostView`), and a
     read answered for a set already left is thrown away
@@ -2968,6 +2994,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `nameKey()` trims, collapses whitespace and ignores case. The name is
     stored that way, and the duplicate is refused before any link is typed.
   - The word is Creators List, never "roster".
+- A campaign's rates are in the client's currency (`mkt()`): for a client
+  billed in S$ the Creators List's RM is turned at `fx_sgd` to the cent and
+  the field reads S$, left empty while no rate is set; a creator made from
+  such a campaign keeps the list's rate in RM (2026-10-22, CMP-1).
+- Adding creators, its Undo and Remove are filed under the campaign
+  (`campaign.offered`, `campaign.unoffered`); Remove asks nothing and
+  offers Undo, which puts the same row back (2026-10-22, CMP-3, CMP-4).
 - Add creators is a sheet (`#addOptionBox`, 2026-10-10; the user: "messy …
   no proper grouping"): the strip Creators List / New creator; a search by
   name or handle and a platform; the Creators List's fee bands (stood down
@@ -3762,6 +3795,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     meeting, link and message are `.eng-row`s (label, value, controls at the
     right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
     and the value runs full width beneath.
+- New month never edits a month held: it offers only the months the client
+  does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
+  `exists` (2026-10-22, WRK-1).
+- A press on one task reads that task alone; the catalogue is read once a
+  visit and Waiting for you on entering and after a decision; a failed
+  Waiting read is said in the card with Try again (2026-10-22, WRK-3, WRK-5).
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
   `month-closed`, `month-not-confirmed`). This holds for the New sheet,
@@ -4444,7 +4483,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     client's true first month.
   - One row per ad and objective.
   - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
-    under Cost per result in every table, never Per 1,000 reached.
+    under Cost per result in every table, never Per 1,000 reached; the
+    console's row and the PDF read one rule (`ADspaceSmReport.cprOf`,
+    `perThousand`; 2026-10-22, RPT-1).
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
@@ -5062,7 +5103,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
   made again whenever the selection changes; the same key twice, even at
-  once, answers `again` with the first; 2026-10-19, audit 15).
+  once, answers `again` with the first, and only for its own client, a
+  website key its own visitor's email; 2026-10-19, audit 15; 2026-10-22,
+  BE-4).
   Each line's Qty, Rate (RM) and Months (a monthly line's; the term
   until typed) are fields in the lines table (`p_sel.edits` by the line's
   `key`, kind|slug|label; `2026-10-15-quotation-rates.sql`, the user,
@@ -5275,8 +5318,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Copy link, Preview), the key read once a client and made at Work the first
   time; under it the month (`month=` in the address; the user, 2026-10-10:
   thirty to fifty scripts a client a year) is a card of its scripts
-  (`#vsMonthList`: Scripts with Add script in its head, a row a script, VS01
-  and its title over its type, the shoot, the state, in number order), a
+  (`#vsMonthList`: Scripts with Add script in its head, a row a script, its
+  whole code (2611VS01, as its head reads) and title over its type, the shoot, the state, in number order), a
   row opening its script on a page of its own (`script=`): Previous, `n of
   N` and Next over it (`#vsNav`, a sideways swipe on a phone), Back
   returning to the month and the month's Back to the list; the script's
@@ -5796,7 +5839,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   status recorded by `wa_status_record` (the service role's alone) against
   `wa_outbox.wa_id`: `delivered_at`, `read_at`, `failed_at` with
   `fail_code` / `fail_title`, Meta's pricing category; a delivered or read
-  message never turns failed. Messages sent in and coexistence echoes are
+  message never turns failed; a status the database could not take is
+  answered 500 after the rest are recorded, so Meta sends it again
+  (2026-10-22, WA-1). Messages sent in and coexistence echoes are
   not read.
 - A number is `wa_number`'s international form, read as the team types it
   (`2026-10-09-whatsapp-numbers-resend.sql`): a leading 0 is Malaysia (60

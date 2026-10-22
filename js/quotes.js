@@ -96,7 +96,7 @@
      billing a prospect gave on the website is read through
      `quotation_billing`, at Clients: Billing (2026-10-14). */
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
-    'valid_until, made_by, contact, access_key, requested_at, idem, removed_at, removed_by';
+    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by';
   function metaOf(q) {
     var t = q.totals || {};
     var bits = [];
@@ -703,7 +703,7 @@
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
-      B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : String(Date.now()));
+      B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)));
       go.disabled = true;
       B.ctx.db.rpc('quotation_create', { p_client: B.ctx.client.id, p_sel: B.sel, p_idem: B.idem }).then(function (r) {
         var d = r.data || {};

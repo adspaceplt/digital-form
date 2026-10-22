@@ -2263,7 +2263,7 @@
     var box = $('clientCards');
     var all = state.reviewClients || [];
     var rows = !crFind ? all : all.filter(function (c) {
-      return String(c.name || '').toLowerCase().indexOf(crFind) >= 0;
+      return (String(c.name || '') + ' ' + String(c.client_code || '')).toLowerCase().indexOf(crFind) >= 0;
     });
     var count = $('crCount');
     if (count) {
@@ -2453,6 +2453,8 @@
     'campaign.locked':       ['Selection accepted', 'is-ok', 'campaigns'],
     'campaign.keyed':        ['Picked for client', '', 'campaigns'],
     'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
+    'campaign.offered':      ['Creators offered', '', 'campaigns'],
+    'campaign.unoffered':    ['Creators taken off', 'is-warn', 'campaigns'],
     'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
     'campaign.stage':        ['Stage changed', '', 'campaigns'],
     'campaign.task_linked':  ['Task linked', '', 'campaigns'],
@@ -3775,6 +3777,9 @@
 
   // ---- Uploading ----------------------------------------------------------
   var drop = $('drop'), fileInput = $('fileInput');
+  /* The picker offers only what sign-upload signs (2026-10-22, REV-2): an
+     SVG or a TIFF was taken, then refused at Add to set. */
+  if (API && API.uploadAccept) fileInput.setAttribute('accept', API.uploadAccept(['image', 'video']));
   drop.addEventListener('click', function () { fileInput.click(); });
   drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('is-over'); });
   drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
@@ -5782,10 +5787,27 @@
      <video> draws nothing on iPhone Safari until it plays, which left every
      reel an empty box (the user, 2026-10-01). */
   function thumbOf(m) {
-    if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="">';
-    if (m.poster) return '<img src="' + esc(m.poster) + '" alt="">';
-    return ADspaceMedia.still(m.url);
+    if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="" data-thumb="image">';
+    if (m.poster) return '<img src="' + esc(m.poster) + '" alt="" data-thumb="video">';
+    return ADspaceMedia.still(m.url).replace('<video ', '<video data-thumb="video" ');
   }
+  /* A thumbnail whose file fails, after the media pass's one retry (which
+     holds the event until its answer), is a shaded tile with its kind's
+     glyph, never the browser's broken picture (2026-10-22, REV-5). */
+  var MISS = {
+    image: '<path d="M4 5h16v14H4z"/><path d="m4 16 5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="8.5" r="1.5"/>',
+    video: '<path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3"/>'
+  };
+  document.addEventListener('error', function (e) {
+    var t = e.target, box = t && t.nodeType === 1 ? (t.tagName === 'SOURCE' ? t.parentNode : t) : null;
+    if (!box || !box.getAttribute || !box.getAttribute('data-thumb')) return;
+    if (t.tagName === 'SOURCE' && t !== box.lastElementChild) return;
+    var tile = document.createElement('span');
+    tile.className = 'thumb-miss';
+    tile.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (MISS[box.getAttribute('data-thumb')] || MISS.image) + '</svg>';
+    if (box.parentNode) box.parentNode.replaceChild(tile, box);
+  }, true);
 
   function coverWord(p, videos) {
     var v = (videos || []).filter(function (x) { return x.id === p.cover_for; })[0];

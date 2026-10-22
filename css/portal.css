@@ -1958,6 +1958,9 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
+/* The installed app's PDF viewer, where it has no share sheet for files
+   (js/documents.js `viewer`): the file at the sheet's height. */
+.pdfview { display: block; width: 100%; height: 70vh; height: 70dvh; border: 0; border-radius: var(--radius-sm); background: var(--sunk); }
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }
@@ -3900,6 +3903,7 @@ body > .shell { width: 100%; }
 .svc-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13.5px; }
 .svc-unit { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .svc-calc { font-size: 12.5px; color: var(--ink-mute); }
+.svc-calc small { display: block; font-size: 12px; }
 /* The state column is one width everywhere, so the selects line up down a
    table and across sections. It sits last before the ⋯. */
 .svc-state { text-align: left; }

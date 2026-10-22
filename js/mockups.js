@@ -34,11 +34,7 @@
     return node;
   }
 
-  function esc(text) {
-    return String(text == null ? '' : text)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   /* Turns #tags and @mentions blue, keeps line breaks. */
   function captionHtml(text) {

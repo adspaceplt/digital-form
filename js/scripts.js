@@ -70,11 +70,12 @@
     if (!iso) return '';
     return window.ADspaceClock.date(iso);
   }
+  /* A time of day as every console page writes it, Malaysia's clock's one
+     copy: 10:00am, no space (2026-10-22, VS-2). */
   function timeWord(t) {
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');
     if (!m) return '';
-    var h = Number(m[1]), ap = h >= 12 ? 'pm' : 'am';
-    return ((h % 12) || 12) + ':' + m[2] + ' ' + ap;
+    return window.ADspaceClock.clock('2000-01-01T' + (m[1].length < 2 ? '0' : '') + m[1] + ':' + m[2]);
   }
   function durWord(n) {
     n = Number(n) || 0;
@@ -548,13 +549,14 @@
 
   /* A script's number within the month (VS01). */
   function tabWord(x) { var c = codeOf(x); return /VS\d+$/.test(c) ? c.replace(/^\d{4}/, '') : c; }
-  /* The month's scripts as rows: the number and title over the type, the
-     shoot, the state, each opening its script. */
+  /* The month's scripts as rows: the code and title over the type, the
+     shoot, the state, each opening its script. The code is written whole,
+     as the script's own head writes it (2026-10-22, VS-4). */
   function paintMonth() {
     $('vsNextVideo').hidden = !may('work');
     var rows = st.series.map(function (x) {
       return '<button class="crm-row vs-row vs-mrow" type="button" data-v="' + esc(x.id) + '">' +
-        '<span class="vs-c-name"><b>' + esc(tabWord(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
+        '<span class="vs-c-name"><b>' + esc(codeOf(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
         '<span class="vs-c-shoot">' + (x.shoot_on ? esc(dayWord(x.shoot_on)) : '<span class="mute">Not set</span>') + '</span>' +
         '<span class="vs-c-state">' + chip(stateOf(x)) + '</span></button>';
     }).join('');
@@ -1208,12 +1210,7 @@
   /* Preview PDF opens a tab at the press and puts the drawn file in it;
      Download (the ⋯) saves it under its own name, as a report's do. With
      two scripts or more in the month, either asks which. */
-  function openTab() {
-    var tab = null;
-    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
-    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
-    return tab;
-  }
+  function openTab() { return window.ADspaceDocs.previewTab(); }
   function drawPdf(btn, save) {
     /* From the month the whole month is drawn; on a script's own page, with
        others in its month, the question is that script or the month (VS-2). */

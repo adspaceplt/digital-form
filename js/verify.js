@@ -11,11 +11,7 @@
   var db = API && API.client;
 
   function $(id) { return document.getElementById(id); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   var WORDS = {
     en: {

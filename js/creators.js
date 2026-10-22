@@ -15,10 +15,7 @@
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   /* "Prepared for <client>" under the section name, in whichever language the
      page is showing. */
@@ -191,12 +188,12 @@
       kicker: '博主选择',
       preparedFor: '呈交',
       lang: 'EN',
-      chooseMore: function (n) { return '再选 ' + n + ' 位。'; },
+      chooseMore: function (n) { return '再选' + n + '位。'; },
       complete: '已选齐。',
       over: '所选人数已超出本次合作的名额。',
       yourSelection: '您的选择',
       count: function (a, b) { return '已选 ' + a + ' / ' + b; },
-      newAdded: function (n) { return '新增了 ' + n + ' 位博主'; },
+      newAdded: function (n) { return '新增了' + n + '位博主'; },
       seeNew: '查看新增',
       select: '选择',
       selected: '已选',
@@ -243,7 +240,7 @@
         confirmed: '安排拍摄日期', pending_visit: '拍摄',
         pending_draft: '初稿制作中', reviewing: '等您确认',
         changes: '修改中', scheduled: '即将发布',
-        posted: '7 天后提供数据'
+        posted: '7天后提供数据'
       },
       tbc: '待定',
       amountLabel: '金额',
@@ -273,7 +270,7 @@
       ratesChanged: '报价已更新，请查看后再次确认。',
       selectionChanged: '部分博主已无法选择，请重新查看后再次确认。',
       overSlots: function (n) {
-        return n > 0 ? '目前只能再选 ' + n + ' 位博主，请取消多选的博主后再次确认。'
+        return n > 0 ? '目前只能再选' + n + '位博主，请取消多选的博主后再次确认。'
           : '本次合作的博主名额已全部预订，请联系您的 ADspace 客户经理。';
       },
       unavailable: '暂不可用，请在下方选择替补。',
@@ -944,13 +941,13 @@
         '<button class="btn btn-changes" type="button" data-act="changes">' + esc(t().askChanges) + '</button>' +
       '</div>' +
       '<div class="changebox">' +
-        '<textarea class="textarea" rows="3" aria-label="' + esc(t().noteLabel) +
+        '<textarea class="textarea" rows="3" maxlength="2000" aria-label="' + esc(t().noteLabel) +
           '" placeholder="' + esc(t().needNote) + '"></textarea>' +
         /* Drawn only where we do not already hold the name, so a client who
            has decided on something before is not asked twice. */
         /* Shown only while no name is held (the Request changes press), so
            Forget on the page brings it back. */
-        '<input class="input changebox-who" type="text" autocomplete="name" aria-label="' +
+        '<input class="input changebox-who" type="text" autocomplete="name" maxlength="80" aria-label="' +
           esc(t().nameLabel) + '" placeholder="' + esc(t().namePlaceholder) + '"' +
           (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
         '<div class="changebox-actions">' +
@@ -1038,7 +1035,8 @@
         if ((r && r.error) || d.error) {
           lock(false);
           say(d.error === 'closed' ? t().closedText
-            : d.error === 'locked' ? window.ADspaceWords.lockedLine(t(), d.minutes) : t().notSent, true);
+            : d.error === 'locked' ? window.ADspaceWords.lockedLine(t(), d.minutes)
+            : d.error === 'too-long' ? t().tooLong : t().notSent, true);
           return;
         }
         say(t().reviewThanks);
@@ -1446,6 +1444,7 @@
         load();
       }
       else if (e === 'stale' || e === 'empty') { msg('confirmMsg', t().selectionChanged, 'err'); reread(); }
+      else if (e === 'too-long') msg('confirmMsg', t().tooLong, 'err');
       else msg('confirmMsg', t().saveFailed, 'err');
     };
     db.rpc('confirm_selection_with', {

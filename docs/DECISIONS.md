@@ -5940,6 +5940,170 @@ removes nothing.
 - Next: each area's menus onto the helper, with MENU-1 to MENU-3, MENU-5 to
   MENU-10, MENU-12 to MENU-14, MENU-17 to MENU-19.
 
+### 2026-10-22 — Clients, Content Review, Video Scripts: release 2 of the second audit
+- The user, on the audit of 2026-10-22: "Fix all".
+- Built: CLI-9 Edit client read the whole Clients list again, billing
+  included, to reopen one record: it reads the one row; a record opened
+  from the list repaints only when `updated_at` moved, never on a column
+  read in another form. CLI-10 a checklist's long labels wrapped into three
+  lines on a narrow pane: the 150px label track holds there, 104 only when
+  tight. CLI-11 (major) the Brand pane ran 3,359px, the analysis ~1,300 of
+  it, six sections read at once: the head (State, Version, Read from) stays
+  open and every section is a fold, its title over the line it is read for
+  (SWOT: 2 strengths · 2 weaknesses · …), shut, opened ones remembered per
+  client, Brand positioning opening by itself on a draft so Confirm is read
+  against it; Sources and Other versions folds too. REV-2 the asset picker
+  offered SVG and TIFF, refused only at Add to set: it offers what
+  sign-upload signs. REV-3 Add assets named itself twice and held a card in
+  its card: the drop zone sits in the sheet. REV-4 the Content Review list
+  found a client by name alone: a Client ID finds it too. REV-5 a thumbnail
+  whose file failed drew the broken picture: a shaded tile with its kind's
+  glyph. VS-2 a shoot read "10:00 am", a meeting "2:00pm": both are
+  Malaysia's clock's one form. VS-3 Script type, three choices, is a
+  segment. VS-4 the month's rows read VS01 and the script's head 2611VS01:
+  both read the whole code.
+- Skipped: none.
+
+### 2026-10-22 — A PDF in the installed app has a way out
+- Reported by the user: "when pdf generated from PWA there is no button to
+  share to close the windows whatsoever".
+- Cause: every Preview, and every save on an iPhone or iPad, opened a
+  window at the press (`ADspaceDocs.tabFor()` and four copies of `openTab()`
+  in reports, scripts, checklists and register) and pointed it at the
+  worker's `/admin/file/…` (or `/client/file/…`) or a blob:. In the
+  installed app that address is inside the app's own scope, so the PDF
+  opened inside the standalone app with no browser bar: no Share, no Done,
+  no Back, the person stuck until the app was closed. In Safari the same
+  flow worked, its own bar giving the way out.
+- Fix: `ADspaceDocs.installed()` (display-mode standalone or
+  `navigator.standalone`, on iOS or an Android touch screen) is the one
+  test. There `tabFor()` and `previewTab()` (the one Preview opener, which
+  replaced the four copies) open nothing; `save()` hands the share sheet the
+  named File (the PDF with its name, Save to Files, Print, WhatsApp, a
+  close), asking File ready · Share (分享) when the press has gone stale; and
+  where the app has no share sheet for files the PDF is shown in a sheet
+  (`#pdfViewSheet`) with Close and Download. The windows opened for a
+  signed Handbook file and a campaign invoice go to another origin, which
+  the installed app opens in Safari's own viewer with Done; left alone.
+- Proof: `tests/pwapdf.js` (new) on an iPhone and Android in the installed
+  app: no window opened, the named File shared, File ready · Share after a
+  stale press, the viewer with Close, Escape and Download where share is
+  missing, a browser tab still opening its tab at the press, and a scan of
+  every script for a blank window opened outside ADspaceDocs. Only an
+  iPhone can confirm the share sheet itself: the user checks it on the
+  installed app.
+### 2026-10-22 — The backend review's security and data findings (release 1 of 3)
+- The user, 2026-10-22, on the review of the client pages and the backend:
+  "Fix all". `2026-10-22-backend-review-holds.sql`.
+- Built: SEC-1 the six guards that held only an update (`clients_billing_guard`,
+  `clients_active_billing`, `clients_white_label_guard`,
+  `clients_brand_guard`, `campaigns_finance_guard`,
+  `campaign_deliverables_guard`) hold an insert too, read against a blank
+  row, a page's write alone (the API's role; the quotation website makes a
+  client with none of the columns): a colleague at Clients Work without the
+  Billing part could post a client born Active with its billing. BE-2 one
+  Bukku contact a record: `bukku-sync` sent a linked record's details to
+  any contact id the sheet named (another customer's, from a stale sheet);
+  it now refuses a contact other than the linked one and asks
+  `bukku_contact_check` before writing Bukku, the link functions refusing
+  `taken`. BE-3 / CP-2 (one fix) the supplier form and the quotation
+  website filed the typed name as the actor, as the details form did until
+  2026-10-19: now 'Supplier form' and 'Quotation website', the name in the
+  detail. BE-4 a quotation's key answered across clients (a website key's
+  replay gave its public key): scoped to the client, a website key to its
+  visitor's email; the page no longer reads `idem`, and its fallback key is
+  random. BE-5 `app_setting` and `ADspaceMoney.setting` read a key's first
+  row for any earlier day, so an S$ rate planned for 1 Nov priced quotations
+  from today: the first row now stands in only where the schema seeded it
+  (no `set_by`; on the page, `FIRST`). BE-6 a details link stayed open
+  after its client went Active or Past: trigger `clients_details_close`
+  ends it at the move, and a Past client's link opens nothing.
+- Tests: `tests/sql.js` probes every insert as a Work-only role, the
+  seeded and planned figures, the link across the move, both actors, the
+  key across clients and visitors, and the Bukku contact; `suppliersql`
+  the supplier form's actor; `bukkufn` the linked and taken refusals; the
+  stand-in holds each.
+
+### 2026-10-22 — My Work and the Dashboard: release 1 of the work review
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/work/report.txt).
+Built: WRK-1 to WRK-7, OVW-1, OVW-2, OVW-10, OVW-11. Left for the next
+releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
+- WRK-1 (P1): New month opened on this month with empty fields; saved on a
+  month the client held, `ops_engagement_upsert` edited it, so its plan,
+  Reports ticks and Drive link were wiped and its report task cancelled.
+  New month now leaves out the months held (its button is not drawn with
+  none free) and sends `new: true`; the function refuses `exists`
+  (`2026-10-22-new-month-never-replaces-one.sql`).
+- OVW-1: `at::date <= due::date` read UTC's day, so review reached at 07:00
+  MYT the morning after the due day counted on time. OVW-2: on time by
+  person compared the finish day (a week after Live) with the due date; it
+  now reads the day review was reached. OVW-11: ops_reports' month spans are
+  light (`ops_report_of`); `2026-10-22-on-time-on-malaysias-day.sql`.
+  `tests/sql.js` now reads a name a query gives a moment (`… as at`) in an
+  ops_/perf_ function as a moment.
+- WRK-2 Waiting for you's request row opens Services. WRK-3 the catalogue
+  is read once a visit, Waiting for you on entering and after a decision, a
+  row's press reads that task alone, a search asks the database alone.
+  WRK-4 finished work is read whole. WRK-5 a failed Waiting read is said
+  with Try again and the tab bar's dot keeps its count. WRK-6 a deadline
+  over a day reads in days. WRK-7 a due date still ahead is never red.
+  OVW-10 `.then(ok).catch(bad)` in My Work's `call()` and the other sites.
+### 2026-10-22 — Creator Campaigns, Reports, WhatsApp: release 1 of the second audit (P1 and P2 first)
+- Built from tests/audits/2026-10-22/campaigns/report.txt (the user, 2026-10-22: "Fix all"):
+  - CMP-1 (P1): a campaign for a client billed in S$ took the Creators
+    List's RM rate as S$ (RM 500 charged as S$ 500). The rate fields now
+    carry the campaign's sign, the list's RM is turned at `fx_sgd` to the
+    cent as SL-1 does for service lines, left empty with "Set the Singapore
+    dollar rate in Tax and terms." while unset, and a creator made from a
+    campaign keeps the list's rate in RM. `tests/sgd.js`.
+  - CMP-2: Confirm for client and its undo filed under the creator, so the
+    campaign's Activity never showed them; filed under the campaign now.
+  - CMP-3: adding creators, its Undo and Remove wrote no row:
+    `campaign.offered` / `campaign.unoffered` (ACTION_LABEL and
+    `activity_section()`, `2026-10-22-creators-offered-are-filed.sql`).
+  - CMP-4: Remove asked a Withdraw question and could not be undone; it now
+    removes, says so, and Undo puts the same row back.
+  - CMP-5: a refused results read drew No placements.; it reads as failed.
+  - CMP-6: the list's amounts and the Creators List's record read one
+    request of every booking, short past PostgREST's 1,000; read by the
+    thousand, a refused or dropped read said.
+  - CMP-17: `option_posts_figures_check` (no figure below zero).
+  - RPT-1: a reach ad's cost read per result in the console while the PDF
+    read per 1,000; both read `ADspaceSmReport.cprOf` / `perThousand`.
+  - RPT-3, RPT-6: a dropped report read no longer spins forever; a refused
+    Undo of a removed post is said.
+  - WA-1: `wa-hook` answered 200 when a status was not recorded, so Meta
+    never sent it again; it answers 500 after recording the rest.
+- The rest of the report (CMP-7 to CMP-16, CMP-M1, CMP-M2, RPT-2, RPT-4,
+  RPT-5, RPT-7, RPT-8, WA-2 to WA-5) follows in the next releases.
+
+
+### 2026-10-22 — The client pages' review findings (release 2 of 3)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/client/report.txt).
+Built: CP-1, CP-3 to CP-12 (CP-2 shipped with BE-3 in release 1). Left for
+the next release: CP-13 to CP-17.
+- CP-1: the creator's page named a client on its access code cover; the
+  For line is hidden until a code is proved and again on Forget.
+- CP-3: Request change kept one key across edits, so a note changed after a
+  lost reply filed the first words; the key now follows the kind, line and
+  note.
+- CP-4: what a client types is held to the database's lengths on the page
+  (`maxlength` 80 a name, 2,000 a note, 5,000 a caption) and `too-long` is
+  said in the client's words (`W.tooLong`), never Not sent.
+- CP-5: `.then(ok, bad)` left on the creator's page and the portal; now
+  `.then(ok).catch(bad)`.
+- CP-6: the review page read a locked link as Not sent; it reads Link
+  temporarily locked with its minutes, as the selection page does.
+- CP-7: `sessionStorage` read bare threw in a private window; wrapped.
+- CP-8: an announcement drew any `http` link; https alone, as stated.
+- CP-9: eleven copies of `esc`; one, `ADspaceWords.esc`, escaping quotes.
+- CP-10: Chinese counts read "3 位"; a figure and its unit take no space.
+- CP-11: the supplier form's covers named an account manager a supplier
+  does not have; Please contact ADspace.
+- CP-12: the portal's Qty × rate cell ran past its header with the term on
+  the same line; the months take a line of their own under the rate.
+- Tests: `creator` reads the For line hidden on the cover and after Forget;
+  `words` fails a Chinese count with a space before its unit.
 ### 2026-10-22 — Menus: a client's record (release 2 of the menu review)
 The record head's ⋯ follows the standard: Take lead left the ⋯ for a
 button on the head where a lead nobody holds is seen (MENU-3); a lead's ⋯

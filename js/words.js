@@ -25,6 +25,8 @@
     // Covers: what a page says when it has nothing to show.
     notFound: 'Link not recognised',
     notFoundText: 'Please contact your ADspace account manager.',
+    contactAdspace: 'Please contact ADspace.',
+    failTextAdspace: 'Please refresh, or contact ADspace.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code.',
@@ -41,6 +43,7 @@
     failText: 'Please refresh, or contact your ADspace account manager.',
     // A client's act the database did not take, said without its words.
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
+    tooLong: 'Not sent. A name holds up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
     // A file sign-upload does not take (2026-10-17).
     uploadType: 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.',
     uploadSize: '{file} is over the {n} MB limit.',
@@ -116,6 +119,8 @@
   W.zh = {
     notFound: '链接无效',
     notFoundText: '请联系您的 ADspace 客户经理。',
+    contactAdspace: '请联系 ADspace。',
+    failTextAdspace: '请刷新页面，或联系 ADspace。',
     passTitle: '访问码',
     passText: '请输入访问码。',
     passWrong: '访问码不正确。',
@@ -131,6 +136,7 @@
     failTitle: '无法加载',
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
+    tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
     uploadType: '此类文件无法上传，请使用视频、图片或 PDF。',
     uploadSize: '{file}超过{n}MB的上限。',
     uploadTooLarge: '有文件超过{n}MB的上限。',
@@ -243,5 +249,12 @@
     return out;
   };
 
+  /* The one escape of every client page (CP-9, 2026-10-22): `&`, `<`, `>`
+     and both quotes, a missing value read as nothing. */
+  W.esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
   window.ADspaceWords = W;
 })();

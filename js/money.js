@@ -51,7 +51,9 @@
     var rows = ROWS.filter(function (r) { return r.key === key; })
       .sort(function (a, b) { return a.from < b.from ? -1 : 1; });
     var on = rows.filter(function (r) { return r.from <= day; });
-    var r = on.length ? on[on.length - 1] : rows[0];
+    /* No row in force on the day: the seed's figure, else unset (a figure
+       planned for a later day is not read before it; 2026-10-22, BE-5). */
+    var r = on[on.length - 1];
     return r ? Number(r.value) : FIRST[key];
   }
   /* The next change of a figure set from a later day, if any:
