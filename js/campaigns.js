@@ -103,6 +103,22 @@
   }
   function money(n)  { return MON.money(n, mkt()); }
   function money2(n) { return MON.money2(n, mkt()); }
+  /* A creator's client rate on the Creators List is in RM. A campaign for a
+     client billed in S$ is typed and charged in S$, its rate turned from
+     the list's RM at the rate set in Tax and terms, to the cent; with no
+     rate set the field is left for the team to type (2026-10-22, CMP-1, as
+     SL-1 does for service lines). */
+  function campFx() {
+    if (mkt() !== 'SG') return null;
+    return Number(MON.setting('fx_sgd')) || 0;
+  }
+  function rateFromList(rm) {
+    if (rm == null || rm === '') return null;
+    var fx = campFx();
+    if (fx === null) return Number(rm);
+    return fx ? Math.round(Number(rm) / fx * 100) / 100 : null;
+  }
+  var FX_UNSET = 'Set the Singapore dollar rate in Tax and terms.';
   /* SST at the rate in force on the client's last confirmation, the one the
      selection page reads (`get_campaign`'s `confirmed`), so a confirmed
      campaign's total never moves with a later rate (the third audit, item
@@ -251,9 +267,10 @@
      `campaign_options` has linked the two since the day it existed. */
   function loadRecord(then) {
     state.record = {};
-    db.from('campaign_options')
-      .select('creator_id, state, visit_date, added_at, campaign_id, campaigns(title, state)')
-      .then(function (r) {
+    window.ADspaceAPI.readPages(function () {
+      return db.from('campaign_options')
+        .select('id, creator_id, state, visit_date, added_at, campaign_id, campaigns(title, state)').order('id');
+    }).then(function (r) {
         /* A refused read leaves the record empty rather than drawing every
            creator as somebody who has never worked. */
         if (r.error) { state.recordFailed = true; then(); return; }
@@ -277,7 +294,7 @@
           state.record[k].on.sort(function (a, b) { return a.when < b.when ? 1 : -1; });
         });
         then();
-      });
+      }).catch(function () { state.recordFailed = true; then(); });
   }
 
   /* How many, and when they last shot. The cell named the latest campaign
@@ -989,11 +1006,22 @@
         state.campaigns = r.data || [];
         // The amount on a card is what the client is charged: the rates of
         // everyone selected or booked, plus tax, in the client's currency.
+        /* Every booking, a thousand at a time (2026-10-22, CMP-6): past a
+           thousand a single read went short without a word. A refused or
+           dropped read is said, never drawn as amounts left blank. */
         Promise.all([
-          db.from('campaign_options').select('campaign_id, rate, state'),
-          db.from('campaign_confirmations').select('campaign_id, created_at, kind').eq('kind', 'client')
+          window.ADspaceAPI.readPages(function () {
+            return db.from('campaign_options').select('id, campaign_id, rate, state').order('id');
+          }),
+          window.ADspaceAPI.readPages(function () {
+            return db.from('campaign_confirmations').select('id, campaign_id, created_at, kind').eq('kind', 'client').order('id');
+          })
         ]).then(function (a) {
           var q = a[0], k = a[1];
+          if (q.error || k.error) {
+            UI.failLine(box, 'Campaign amounts', (q.error || k.error).message, loadCampaigns);
+            return;
+          }
           campSums = {};
           (q.data || []).forEach(function (o) {
             if (CHARGED.indexOf(o.state) < 0) return;
@@ -1004,7 +1032,7 @@
           campConf = {};
           Object.keys(byCamp).forEach(function (id) { campConf[id] = lastClientConfirm(byCamp[id]); });
           paintCampaigns();
-        });
+        }).catch(function (e) { UI.failLine(box, 'Campaign amounts', (e && e.message) || String(e), loadCampaigns); });
       });
   }
 
@@ -2892,7 +2920,7 @@
     var current = String(o.platforms || '').split(',').map(function (x) { return x.trim(); });
     ed.innerHTML =
       platformBoxes(current) +
-      '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
+      '<span class="slugfield"><span class="slugfield-pre">' + esc(MON.sign(mkt())) + '</span>' +
       '<input class="input" type="number" inputmode="decimal" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
       '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>' +
       '<button class="btn btn-sm btn-primary" type="button">Save</button>';
@@ -2931,35 +2959,40 @@
     db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
-      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', name, '');
+      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', logSubject(), name);
       msg('campWorkMsg', '');
       loadOptions();
     });
   }
 
+  /* Remove takes an offered creator off the options the client chooses
+     from (a row of this campaign alone), asks nothing, and offers Undo where
+     it happened, which puts the same row back (2026-10-22, CMP-4). */
   function dropOption(o) {
-    var name = (o.creators && o.creators.name) || 'this creator';
-    if (o.state !== 'option' && o.state !== 'backup') {
-      window.ADspaceConfirm.ask({
-        title: 'Already selected',
-        body: name + ' has been chosen by the client. Manage them under Production.',
-        go: 'Close',
-        cancel: false
-      });
-      return;
-    }
-    window.ADspaceConfirm.ask({
-      title: 'Withdraw',
-      body: name + ' leaves the options the client is choosing from.',
-      go: 'Withdraw',
-      tone: 'warn'
-    }, function () {
-      db.from('campaign_options').delete().eq('id', o.id).select('id').then(function (r) {
-        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        if (!(r.data || []).length) { msg('campWorkMsg', 'Not withdrawn. The database refused the request.', 'err'); return; }
+    var name = (o.creators && o.creators.name) || 'Creator';
+    var key = 'card:' + o.id;
+    db.from('campaign_options').delete().eq('id', o.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) {
+        say(key, r.error ? r.error.message : 'Not removed. The database refused the request.', 'err');
         loadOptions();
-      }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
-    });
+        return;
+      }
+      log('campaign.unoffered', logSubject(), name + ' · removed');
+      loadOptions();
+      undoBar(name + ' removed.', function () {
+        db.from('campaign_options').insert({
+          id: o.id, campaign_id: o.campaign_id, creator_id: o.creator_id, rate: o.rate,
+          platforms: o.platforms, state: o.state, position: o.position
+        }).select('id').then(function (u) {
+          if (u.error || !(u.data || []).length) {
+            msg('campWorkMsg', 'Not restored. The database refused the request.', 'err');
+            return;
+          }
+          log('campaign.offered', logSubject(), name + ' · restored');
+          loadOptions();
+        }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
+      }, $('showAddOption') ? $('showAddOption').closest('.viewhead') : null);
+    }).catch(function (e) { say(key, (e && e.message) || String(e), 'err'); loadOptions(); });
   }
 
   /* ---- Add creators --------------------------------------------------------
@@ -3130,13 +3163,16 @@
       '<input type="checkbox" class="ac-tick" data-nodraft' + (p ? ' checked' : '') + '>' +
       '<span class="ac-who"><span class="ac-name">' + esc(c.name) + '</span>' +
         (meta.length ? '<span class="ac-meta">' + esc(meta.join(' · ')) + '</span>' : '') + '</span>' +
-      '<span class="ac-rate">' + (c.client_rate ? esc(money(c.client_rate)) : '<span class="muted">On quote</span>') + '</span>' +
+      '<span class="ac-rate">' + (c.client_rate ? esc(rateFromList(c.client_rate) != null ? money(rateFromList(c.client_rate))
+                                                                              : MON.money(c.client_rate, 'MY'))
+                                               : '<span class="muted">On quote</span>') + '</span>' +
       '</label>';
     if (p) row.appendChild(pickMore(c, p));
     row.querySelector('.ac-tick').addEventListener('change', function () {
-      if (this.checked) addPick[c.id] = { rate: c.client_rate ? String(c.client_rate) : '', plats: platsOfCreator(c), links: {} };
+      var r = rateFromList(c.client_rate);
+      if (this.checked) addPick[c.id] = { rate: r != null ? String(r) : '', plats: platsOfCreator(c), links: {} };
       else delete addPick[c.id];
-      msg('optionMsg', '');
+      msg('optionMsg', this.checked && c.client_rate && r == null ? FX_UNSET : '', this.checked && c.client_rate && r == null ? 'warn' : '');
       var fresh = pickRow(c, o);
       row.parentNode.replaceChild(fresh, row);
       fresh.querySelector('.ac-tick').focus({ preventScroll: true });
@@ -3153,7 +3189,7 @@
     more.className = 'ac-more';
     more.innerHTML =
       '<div class="ac-ratefield"><span class="field-label">Client rate</span>' +
-        '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
+        '<span class="slugfield"><span class="slugfield-pre">' + esc(MON.sign(mkt())) + '</span>' +
         '<input class="input input-sm pickrate" type="number" inputmode="decimal" min="0" step="10" data-nodraft ' +
         'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" placeholder="360" value="' + esc(p.rate) + '"></span></div>' +
       '<div class="ac-platfield"><span class="field-label">Posts on</span>' + platformBoxes(p.plats, true) + '</div>';
@@ -3259,6 +3295,11 @@
         return;
       }
       var added = r.data || [];
+      if (added.length) {
+        log('campaign.offered', logSubject(), fresh.filter(function (x) {
+          return added.some(function (a) { return a.creator_id === x.c.id; });
+        }).map(function (x) { return x.c.name; }).join(', '));
+      }
       var was = [];
       return Promise.all(again.map(function (x) {
         return db.from('campaign_options')
@@ -3295,7 +3336,7 @@
               was.some(function (w) { return x.o && w.id === x.o.id; });
           }).map(function (x) { return x.c.name; });
           undoBar((n === 1 ? names[0] + ' added.' : n + ' creators added.'), function () {
-            undoOffer(added.map(function (a) { return a.id; }), was);
+            undoOffer(added.map(function (a) { return a.id; }), was, names);
           }, $('showAddOption').closest('.viewhead'));
         });
       });
@@ -3307,13 +3348,15 @@
 
   /* Undo takes away the offers just made and puts a creator offered again
      back where they were. */
-  function undoOffer(ids, was) {
+  function undoOffer(ids, was, names) {
     var go = ids.length
       ? db.from('campaign_options').delete().in('id', ids).select('id')
       : Promise.resolve({ data: [] });
     go.then(function (r) {
       if (r.error || (r.data || []).length !== ids.length) {
         msg('campWorkMsg', 'Not undone. The database refused the request.', 'err');
+      } else {
+        log('campaign.unoffered', logSubject(), (names || []).join(', ') + ' · undone');
       }
       return Promise.all(was.map(function (w) {
         return db.from('campaign_options').update({ state: w.state, drop_reason: w.drop_reason, rate: w.rate, platforms: w.platforms })
@@ -3326,6 +3369,8 @@
   // ---- A new creator, made from inside the campaign ----------------------
   function resetNc() {
     $('ncName').value = ''; $('ncRate').value = '';
+    var rl = document.querySelector('label[for="ncRate"]');
+    if (rl) rl.textContent = 'Client rate for this campaign (' + MON.sign(mkt()) + ')';
     $('ncProfRows').innerHTML = '';
     $('ncProfRows').appendChild(profRow(null, NC_CTX));
     $('ncPlatforms').innerHTML = platformBoxes([]);
@@ -3364,7 +3409,11 @@
     // number known for her yet. The offer carries it independently.
     var saveBtn = this;
     saveBtn.disabled = true;
-    db.from('creators').insert({ name: name, client_rate: rate, created_by: who() || null })
+    /* The Creators List keeps its rate in RM: an S$ figure is turned back
+       at the rate in Tax and terms, else the list's rate is left unset. */
+    var fx = campFx();
+    var listRate = fx === null ? rate : fx ? Math.round(rate * fx * 100) / 100 : null;
+    db.from('creators').insert({ name: name, client_rate: listRate, created_by: who() || null })
       .select().single().then(function (r) {
         if (r.error) { saveBtn.disabled = false; msg('ncMsg', r.error.message, 'err'); return; }
         var created = r.data;
@@ -3378,7 +3427,7 @@
             return;
           }
           log('creator.added', name, 'from a campaign');
-          created.client_rate = rate;
+          created.client_rate = listRate;
           /* Offered through the one path every tick takes, so the sheet
              shuts and Undo is drawn the same way. */
           offerCreators([{ c: created, o: null, rate: rate, plats: plats, links: [] }], 'ncMsg', function () {
@@ -4782,14 +4831,20 @@
   }
 
   function seedPosts(o, then) {
+    /* A refused read or write is said on the card (2026-10-22, CMP-5); the
+       results then read what is there. */
     db.from('option_posts').select('platform').eq('option_id', o.id).then(function (r) {
+      if (r.error) { say('card:' + o.id, 'Results could not be prepared. ' + r.error.message, 'err'); then(); return; }
       var have = {};
       (r.data || []).forEach(function (p) { have[p.platform] = true; });
       var rows = platformsOf(o).filter(function (p) { return !have[p]; })
         .map(function (p) { return { option_id: o.id, platform: p, window_days: 7 }; });
       if (!rows.length) { then(); return; }
-      db.from('option_posts').insert(rows).then(function () { then(); });
-    });
+      db.from('option_posts').insert(rows).then(function (w) {
+        if (w.error) say('card:' + o.id, 'Results could not be prepared. ' + w.error.message, 'err');
+        then();
+      }).catch(function () { then(); });
+    }).catch(function () { then(); });
   }
 
   function paintPosts(box, o) {
@@ -4798,6 +4853,12 @@
     box.className = 'kstep kstep-results';
     box.innerHTML = head + '<div class="empty">Loading…</div>';
     db.from('option_posts').select('*').eq('option_id', o.id).then(function (r) {
+      /* A refused read is never drawn as no placements (2026-10-22, CMP-5). */
+      if (r.error) {
+        box.innerHTML = head + '<div></div>';
+        UI.failLine(box.lastChild, 'Results', r.error.message, function () { paintPosts(box, o); });
+        return;
+      }
       var rows = r.data || [];
       if (!rows.length) {
         box.innerHTML = head + '<div class="empty">No placements.</div>';

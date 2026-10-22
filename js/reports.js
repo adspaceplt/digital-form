@@ -607,6 +607,10 @@
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
         paintEditor();
       });
+    }).catch(function (e) {
+      /* A dropped connection is said, never an endless skeleton
+         (2026-10-22, RPT-3). */
+      UI.failLine(host.querySelector('.rp-editbox'), 'the report', said(e), function () { openReport(id, true); });
     });
   }
 
@@ -2804,7 +2808,11 @@
       paintPosts();
       undoBar(postName(p) + ' removed.', st.host.querySelector('.rp-posts'), function () {
         db.from('sm_report_posts').insert(p).select('*').then(function (x) {
-          if (!x.error) { st.posts.push(x.data[0]); sortPosts(); paintPosts(); }
+          if (!x.error && (x.data || []).length) { st.posts.push(x.data[0]); sortPosts(); paintPosts(); return; }
+          /* A refused Undo is said, never silent (2026-10-22, RPT-6). */
+          say(st.host.querySelector('[data-m="head"]'), 'Not restored. The database refused the request.', 'err');
+        }).catch(function () {
+          say(st.host.querySelector('[data-m="head"]'), 'Not restored. The connection was lost.', 'err');
         });
       });
     });
@@ -3709,12 +3717,9 @@
   function adName(x) { var AN = window.ADspaceSmReport && window.ADspaceSmReport.adName; return AN ? AN(x) : (x || ''); }
   function resultWord(x) { var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord; return RW ? RW(x) : (x || ''); }
   /* The row reads the short word the PDF prints: Leads, never Leads (form). */
-  function adCpr(a) {
-    if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
-    var reach = /reach/i.test(String(a.result_label || ''));
-    if (a.spend == null || !Number(a.results)) return null;
-    return Number(a.spend) / Number(a.results) * (reach ? 1000 : 1);
-  }
+  /* The PDF's own rule (ADspaceSmReport.cprOf), so the two never differ. */
+  function adCpr(a) { return window.ADspaceSmReport.cprOf(a); }
+  function adPer1000(a) { return window.ADspaceSmReport.perThousand(a); }
   /* Each objective's ads in the order the PDF ranks them (the user,
      2026-10-01): cheapest cost per result first, then those with no result
      by what they spent, most first; the paste order only breaks a tie. */
@@ -3941,7 +3946,7 @@
             '<span class="rp-name"><span class="rp-line"><b>' + esc(adName(a.name)) + '</b>' + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + unit(Number(a.results) === 1 ? 'result' : 'results') + '</span>' +
-            '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + (c == null ? '' : unit('/ result')) + '</span>' +
+            '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + (c == null ? '' : adPer1000(a) ? ' / 1,000' : unit('/ result')) + '</span>' +
             (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate', adErr(a) ? 'Clear ad error' : 'Mark ad error'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join(''); }).join('');
