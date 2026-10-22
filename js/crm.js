@@ -6583,6 +6583,7 @@
     billingMissing: billingMissing,
     // How long a stage may run before it reads Overdue (the Overview asks).
     staleH: staleH,
+    isStale: isStale,
     // The rate card lives in this module because it is what a client's lines
     // are made of.
     enterServices: enterServices,
