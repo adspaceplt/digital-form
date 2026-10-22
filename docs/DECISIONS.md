@@ -6223,3 +6223,20 @@ letter reads Issue Letter of Offer, and the void sheet's act Void
 longer label is never broken. The task card's ⋯ carries its groups.
 Skipped: nothing in these areas. `tests/take.js` "and says so under it"
 fails on main before this release (logged in STANDARD.md).
+
+### 2026-10-22 — Menus: Content Review, Creator Campaigns, Video Scripts and every static ⋯ (release 4 of the menu review)
+`js/menu.js` gains `groupOf(label)`, the one table of the standard's
+words, and `item(a, label, need)`, so a page that writes items one at a
+time (the campaigns' `menuItem`) stamps each from it; `tidy` now also puts
+a menu's items in group order, the page's order kept within a group.
+Every ⋯ written in admin/index.html and in the Content Review, Short Links,
+campaign and script builders carries its group. Remove from Content Review
+is red and last as every Remove (MENU-10). Words (MENU-14): Reset access
+link → Reset link (the Content Review client, a campaign, a script month),
+Content month → Change content month, Undo selection → Revert selection;
+`tests/words.js` refuses the retired words. My Work's bar ⋯ reads Select
+tasks first (MENU-18). Revert confirmation is a Mark (group 4), never read
+as a Revert to. The account menu is not an action menu and keeps its own
+shape. Left for the next releases: Team (MENU-5), Reports (MENU-17), tax
+codes (MENU-13), the client portal (MENU-19), and the builders in
+reports, team, perf, quotes, suppliers, handbook, announce, notice.

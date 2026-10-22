@@ -2009,7 +2009,7 @@
             '<span class="filepin-name">' + esc(f.name) + '</span></a>' +
           (mayWork() ? '<button class="btn btn-sm" type="button" data-a="showfile">Restore</button>' : '') +
           (del ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="hidmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delfile">Delete</button></div></span>' : '') +
+            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delfile">Delete</button></div></span>' : '') +
           '</span>';
       }).join('') + '</div></details>';
   }
@@ -3614,10 +3614,10 @@
   /* The exceptional actions. They used to be buttons in the row, at the same
      weight as Save, which is the wrong weight for something that happens a few
      times a year. A menu says "there is more here" without shouting it. */
+  /* Each item carries its group from the standard's one table
+     (`ADspaceMenu.groupOf`); `tidy` orders, separates and reds them. */
   function menuItem(action, label, cls, need) {
-    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '"' +
-      (need ? ' data-need="' + need + '"' : '') + ' type="button">' +
-      '<b>' + esc(label) + '</b></button>';
+    return window.ADspaceMenu.item(action, label, need);
   }
 
   function cardMenu(o) {
@@ -3628,7 +3628,7 @@
       items += menuItem('del', 'Remove', 'is-danger');
     }
     if (w && o.state === 'shortlisted') {
-      items += menuItem('unpick', 'Undo selection');
+      items += menuItem('unpick', 'Revert selection');
     }
     if (isLive(o)) {
       /* Send on WhatsApp (2026-10-09; the composer from 2026-10-10): the

@@ -1511,9 +1511,9 @@
           <div class="kmenu-wrap" id="wsMenuWrap">
             <button class="kmenu-btn" id="wsMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
             <div class="kmenu" id="wsMenu" hidden role="menu">
-              <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-need="review.settings:view">Client settings</button>
-              <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-need="review.settings:work">Reset access link</button>
-              <button class="kmenu-item" id="deleteClient" type="button" role="menuitem" data-need="review.settings:work">Remove from Content Review</button>
+              <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Client settings</button>
+              <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-g="5" data-need="review.settings:work">Reset link</button>
+              <button class="kmenu-item" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove from Content Review</button>
             </div>
           </div>
         </div>
@@ -1566,9 +1566,9 @@
               <div class="kmenu-wrap" id="setMenuWrap">
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
-                  <button class="kmenu-item" id="selectPosts" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
-                  <button class="kmenu-item" id="setMonth" data-need="review.sets:work" type="button" role="menuitem">Content month</button>
-                  <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
+                  <button class="kmenu-item" id="selectPosts" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
+                  <button class="kmenu-item" id="setMonth" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Change content month</button>
+                  <button class="kmenu-item is-danger" id="deleteSet" data-g="6" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
                 </div>
               </div>
           </div>
@@ -1938,10 +1938,10 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
-                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
-                  <button class="kmenu-item" id="campLifeItem" type="button" role="menuitem" data-need="campaigns.campaigns:work" hidden></button>
-                  <button class="kmenu-item" id="campResetLink" type="button" role="menuitem" data-need="campaigns.campaigns:work">Reset access link</button>
-                  <button class="kmenu-item is-danger" id="campDelete" type="button" role="menuitem" data-need="campaigns.campaigns:manage">Delete</button>
+                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-g="2" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
+                  <button class="kmenu-item" id="campLifeItem" type="button" role="menuitem" data-g="5" data-need="campaigns.campaigns:work" hidden></button>
+                  <button class="kmenu-item" id="campResetLink" type="button" role="menuitem" data-g="5" data-need="campaigns.campaigns:work">Reset link</button>
+                  <button class="kmenu-item is-danger" id="campDelete" type="button" role="menuitem" data-g="6" data-need="campaigns.campaigns:manage">Delete</button>
                 </div>
               </div>
             </div>
@@ -2419,10 +2419,10 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="workMore" hidden role="menu">
-                  <button class="kmenu-item" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
-                  <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
-                  <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
-                  <button class="kmenu-item" data-a="reportdue" type="button" role="menuitem" hidden>Due dates</button>
+                  <button class="kmenu-item" data-g="2" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
+                  <button class="kmenu-item" data-g="2" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
+                  <button class="kmenu-item" data-g="2" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
+                  <button class="kmenu-item" data-g="2" data-a="reportdue" type="button" role="menuitem" hidden>Due dates</button>
                 </div>
               </span>
               <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
@@ -3480,7 +3480,7 @@
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
               </button>
               <div class="kmenu" id="teamMore" hidden role="menu">
-                <button class="kmenu-item" data-a="expiry" type="button" role="menuitem">Set access expiry</button>
+                <button class="kmenu-item" data-g="5" data-a="expiry" type="button" role="menuitem">Set access expiry</button>
               </div>
             </span>
             <button class="btn btn-sm btn-primary" id="teamAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
@@ -4621,10 +4621,10 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="pvMenu" hidden role="menu">
-                  <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download</button>
-                  <button class="kmenu-item" data-a="return" type="button" role="menuitem">Revert to draft</button>
-                  <button class="kmenu-item" data-a="reopen" type="button" role="menuitem">Reopen</button>
-                  <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem">Delete</button>
+                  <button class="kmenu-item" data-g="1" data-a="print" type="button" role="menuitem">Download</button>
+                  <button class="kmenu-item" data-g="5" data-a="return" type="button" role="menuitem">Revert to draft</button>
+                  <button class="kmenu-item" data-g="5" data-a="reopen" type="button" role="menuitem">Reopen</button>
+                  <button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>
                 </div>
               </span>
               <button class="iconbtn" id="pvClose" type="button" aria-label="Close">
@@ -4839,7 +4839,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="rhMore" hidden role="menu">
-                  <button class="kmenu-item" data-a="select" type="button" role="menuitem">Select reports</button>
+                  <button class="kmenu-item" data-g="2" data-a="select" type="button" role="menuitem">Select reports</button>
                 </div>
               </span>
               <button class="btn btn-sm btn-primary" id="rhNew" type="button" data-need="reports:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New report</span></button>
