@@ -259,6 +259,7 @@
       return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
         : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
     }
+    if (err === 'exists') return (d && d.period ? monthWord(d.period) : 'That month') + ' already has a month. Open it with Edit.';
     if (err === 'dates-required' && d && d.piece) return 'Post ' + d.piece + ' needs its Draft due, Due date and Post date.';
     if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
@@ -327,6 +328,11 @@
   function isLate(t) {
     var dl = t && deadlineOf(t);
     if (dl && dl.over) return true;
+    return dueLate(t);
+  }
+  /* The due date's own lateness, without a priority's deadline: a date is
+     drawn red only once it has passed (2026-10-22, WRK-7). */
+  function dueLate(t) {
     if (!t || !t.current_final_due_at) return false;
     /* A task that is finished was not late for being finished: whether it
        arrived on time is the record's question, not the queue's. */
@@ -452,7 +458,9 @@
        late rule reads it. */
     var dueEnd = t.current_final_due_at ? CK.start(CK.addDays(dateValue(t.current_final_due_at), 1)) : null;
     var span = Math.abs(ms), n = Math.floor(span / 36e5);
-    var amount = n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
+    /* Days past a day, as the Dashboard counts them (2026-10-22, WRK-6). */
+    var dd = Math.floor(n / 24);
+    var amount = dd >= 1 ? dd + (dd === 1 ? ' day' : ' days') : n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
     return { key: key, word: PRIORITY_WORD[Number(t.priority_level)], hours: hours, set: made, by: by, over: ms < 0,
              first: !dueEnd || by.getTime() < dueEnd.getTime(),
              words: PRIORITY_WORD[Number(t.priority_level)] + ' · ' + amount + (ms < 0 ? ' over' : ' left') };
@@ -555,9 +563,14 @@
     if (!box) return;
     if (!box.querySelector('.crm-table')) UI.skeleton(box, 5);
     state.err = null;
-    loadCatalogue(function () {
+    /* The catalogue is read once a visit and Waiting for you on entering and
+       after a decision: a press or a key typed reads only what it changed
+       (2026-10-22, WRK-3). */
+    var cat = state.catAt ? function (then) { then(); } : loadCatalogue;
+    cat(function () {
+      state.catAt = Date.now();
       /* The band names who asked, so it waits for the colleagues read. */
-      loadWaiting();
+      if (state.waitDue) { state.waitDue = false; loadWaiting(); }
       /* The client's name comes off the join the policy already allows, and
          the owner off the live assignee rows. Neither is a second store: a
          task holds an id and the name is read where it lives.
@@ -597,8 +610,17 @@
           });
           return x;
         }),
-        base().gte('completed_at', since).limit(500),
-        base().gte('cancelled_at', since).limit(500),
+        /* Finished work from the period on, read whole a thousand at a time:
+           a limit of 500 dropped the newest of This year without a word
+           (2026-10-22, WRK-4). */
+        readPages(function () {
+          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+            .gte('completed_at', since).order('id');
+        }),
+        readPages(function () {
+          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+            .gte('cancelled_at', since).order('id');
+        }),
         /* SEARCHING COMPLETED WORK asks the database, across every month:
            history is too long to hold in the browser, and a search that
            looked only at what happened to be loaded would say "no matches"
@@ -649,6 +671,58 @@
 
   // Every row of a read, a thousand at a time (`ADspaceAPI.readPages`).
   function readPages(make) { return window.ADspaceAPI.readPages(make, 20000); }
+
+  /* After a press on one task, that task alone is read again with who holds
+     it, and the list repainted from it (2026-10-22, WRK-3). A refused read
+     reads the list whole, as before. */
+  function refreshOne(id) {
+    if (!id || !state.tasks) { load(); return; }
+    db.from('ops_tasks').select('*, clients(name, stage)').eq('id', id).maybeSingle().then(function (r) {
+      if (r.error) { load(); return; }
+      var t = r.data, i = -1;
+      state.tasks.forEach(function (x, k) { if (x.id === id) i = k; });
+      if (!t || t.archived_at) {
+        if (i > -1) state.tasks.splice(i, 1);
+        paint();
+        return;
+      }
+      return Promise.all([readOwners([t]), nameClients([t])]).then(function (q) {
+        if (q[0].error) { load(); return; }
+        delete state.owners[id]; delete state.ownerIds[id];
+        q[0].data.forEach(function (a) {
+          if (a.responsibility !== 'owner') return;
+          state.owners[id] = (a.team_members && a.team_members.name) || '';
+          state.ownerIds[id] = a.team_member_id;
+        });
+        if (i > -1) state.tasks[i] = t; else state.tasks.push(t);
+        paint();
+      });
+    }).catch(function () { load(); });
+  }
+  /* A search asks the database alone and adds what it found to the tasks
+     held, with who holds them; nothing else is read again (WRK-3). */
+  var findSeq = 0;
+  function searchOnly() {
+    var q = state.find, seq = ++findSeq;
+    if (!q || !state.tasks) { if (!state.tasks) load(); return; }
+    findAny(db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null), q).then(function (r) {
+      if (seq !== findSeq || r.error) return;
+      var have = {};
+      state.tasks.forEach(function (t) { have[t.id] = 1; });
+      var fresh = (r.data || []).filter(function (t) { return !have[t.id]; });
+      if (!fresh.length) { paint(); return; }
+      return Promise.all([readOwners(fresh), nameClients(fresh)]).then(function (o) {
+        if (seq !== findSeq || o[0].error) return;
+        o[0].data.forEach(function (a) {
+          if (a.responsibility !== 'owner') return;
+          state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
+          state.ownerIds[a.task_id] = a.team_member_id;
+        });
+        state.tasks = state.tasks.concat(fresh);
+        paint();
+      });
+    }).catch(function () {});
+  }
 
   /* Who is on the tasks read, and in what capacity: the live assignee rows of
      those tasks alone, in parts small enough for an address. Read for every
@@ -715,7 +789,7 @@
       .then(function (r) {
         state.session = (!r.error && r.data && r.data[0]) || null;
         if (then) then();
-      }, function () { state.session = null; if (then) then(); });
+      }).catch(function () { state.session = null; if (then) then(); });
   }
 
   // ---- Everyday tasks, and the plain status every task is read by -------------
@@ -1087,6 +1161,12 @@
     if (!me || !me.id) { state.waiting = []; paintWaiting(); return; }
     var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
     var jobs = [];
+    /* A refused or failed read is said, never drawn as nothing waiting
+       (2026-10-22, WRK-5). */
+    var failed = [];
+    var got = function (p, label) {
+      return settled(p).then(function (r) { if (r === null && failed.indexOf(label) < 0) failed.push(label); return r; });
+    };
     /* What has waited on a client's approval past the Business setting
        (2026-10-10) is offered Remind on WhatsApp, where the approval
        reminder's template is on and this colleague may send it. */
@@ -1096,12 +1176,12 @@
     var remind = false;
     if (WA && WA.may && WA.may('approval')) jobs.push(WA.on('approval').then(function (yes) { remind = yes; }, function () {}));
     // An extension asked of you: you set the date it would move.
-    if (may('ops', 'view')) jobs.push(settled(db.from('ops_due_requests')
-      .select('id, task_id, kind, wants_at, reason, asked_by, asked_at').eq('decider_id', me.id).eq('state', 'asked'))
+    if (may('ops', 'view')) jobs.push(got(db.from('ops_due_requests')
+      .select('id, task_id, kind, wants_at, reason, asked_by, asked_at').eq('decider_id', me.id).eq('state', 'asked'), 'Extensions')
       .then(function (asks) {
         if (!asks || !asks.length) return;
         var ids = asks.map(function (q) { return q.task_id; });
-        return settled(db.from('ops_tasks').select('id, title, code, content_desc, client_id, clients(name)').in('id', ids)).then(function (tasks) {
+        return got(db.from('ops_tasks').select('id, title, code, content_desc, client_id, clients(name)').in('id', ids), 'Extensions').then(function (tasks) {
           var byId = {};
           (tasks || []).forEach(function (t) { byId[t.id] = t; });
           asks.forEach(function (q) {
@@ -1109,14 +1189,14 @@
             rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at, client: t.client_id,
               title: 'Extension · ' + (t.content_desc || t.title || t.code || 'Task'),
               meta: [nameOf(q.asked_by), 'to ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
-              open: function () { openDrawer(q.task_id); }, request: q.id });
+              open: function () { openDrawer(q.task_id); }, request: q.id, task: q.task_id });
           });
         });
       }));
     // A report submitted to you to confirm.
-    if (may('reports', 'view')) jobs.push(settled(db.from('sm_reports')
+    if (may('reports', 'view')) jobs.push(got(db.from('sm_reports')
       .select('id, kind, title, period_start, period_end, submitted_at, submitted_by, brand_name, client_id, clients(name)')
-      .eq('status', 'review').eq('reviewer_id', me.id)).then(function (list) {
+      .eq('status', 'review').eq('reviewer_id', me.id), 'Reports').then(function (list) {
         (list || []).forEach(function (r) {
           var SM = window.ADspaceSmReport, MON = window.ADspaceMoney;
           var days = Number(MON.setting('report_due_days', r.period_end));
@@ -1131,13 +1211,13 @@
       }));
     // A draft handed in on a campaign you run, and a client of yours waiting.
     if (name) {
-      if (may('campaigns.campaigns', 'view')) jobs.push(settled(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name))
+      if (may('campaigns.campaigns', 'view')) jobs.push(got(db.from('campaigns').select('id, title, client_id, access_token, clients(name)').eq('owner', name), 'Creator Campaigns')
         .then(function (camps) {
           if (!camps || !camps.length) return;
           var title = {}, campById = {};
           camps.forEach(function (c0) { title[c0.id] = c0.title; campById[c0.id] = c0; });
-          return settled(db.from('campaign_options').select('id, campaign_id, state, submitted_at, revision_round, creators(name)')
-            .in('campaign_id', camps.map(function (c0) { return c0.id; })).in('state', ['submitted', 'reviewing'])).then(function (opts) {
+          return got(db.from('campaign_options').select('id, campaign_id, state, submitted_at, revision_round, creators(name)')
+            .in('campaign_id', camps.map(function (c0) { return c0.id; })).in('state', ['submitted', 'reviewing']), 'Creator Campaigns').then(function (opts) {
               var urlOf = function (o) { return '/admin/?s=campaigns&campaign=' + encodeURIComponent(o.campaign_id) + '&pane=creators'; };
               (opts || []).forEach(function (o) {
                 if (o.state !== 'submitted') return;
@@ -1150,7 +1230,7 @@
                  quality check. */
               var asked = (opts || []).filter(function (o) { return o.state === 'reviewing'; });
               if (!asked.length) return;
-              return settled(db.from('option_qc').select('option_id, checked_at').in('option_id', asked.map(function (o) { return o.id; })))
+              return got(db.from('option_qc').select('option_id, checked_at').in('option_id', asked.map(function (o) { return o.id; })), 'Creator Campaigns')
                 .then(function (checks) {
                   var since = {};
                   (checks || []).forEach(function (q) { if (!since[q.option_id] || q.checked_at > since[q.option_id]) since[q.option_id] = q.checked_at; });
@@ -1167,31 +1247,31 @@
                 });
             });
         }));
-      if (may('clients', 'view')) jobs.push(settled(db.from('clients').select('id, name, slug, access_token').eq('owner', name))
+      if (may('clients', 'view')) jobs.push(got(db.from('clients').select('id, name, slug, access_token').eq('owner', name), 'Clients')
         .then(function (mine) {
           if (!mine || !mine.length) return;
           var byId = {}, ids = mine.map(function (c0) { byId[c0.id] = c0; return c0.id; });
           var keyOf = function (c0) { return encodeURIComponent((c0 && (c0.slug || c0.id)) || ''); };
           var sub = [];
-          if (may('clients.requests', 'view')) sub.push(settled(db.from('client_requests')
-            .select('id, client_id, kind, service_label, created_at').in('client_id', ids).eq('state', 'requested').is('withdrawn_at', null))
+          if (may('clients.requests', 'view')) sub.push(got(db.from('client_requests')
+            .select('id, client_id, kind, service_label, created_at').in('client_id', ids).eq('state', 'requested').is('withdrawn_at', null), 'Client requests')
             .then(function (reqs) {
               (reqs || []).forEach(function (q) {
                 var c0 = byId[q.client_id] || {};
                 rows.push({ key: 'req:' + q.id, section: 'clients', at: q.created_at, client: q.client_id,
                   title: 'Client request · ' + (c0.name || 'Client'),
                   meta: [((window.ADspaceWords || {}).en || {}).rqKind ? (window.ADspaceWords.en.rqKind[q.kind] || q.kind) : q.kind, q.service_label].filter(Boolean).join(' · '),
-                  url: '/admin/?client=' + keyOf(c0) + '&tab=requests' });
+                  url: '/admin/?client=' + keyOf(c0) + '&tab=services' });
               });
             }));
-          if (may('review.sets', 'view')) sub.push(settled(db.from('batches').select('id, title, client_id, published_at')
-            .in('client_id', ids).eq('published', true)).then(function (sets) {
+          if (may('review.sets', 'view')) sub.push(got(db.from('batches').select('id, title, client_id, published_at')
+            .in('client_id', ids).eq('published', true), 'Content Review').then(function (sets) {
               if (!sets || !sets.length) return;
               var setById = {};
               sets.forEach(function (b) { setById[b.id] = b; });
               /* Counted by the database in one request (`review_set_counts`):
                  a read of every post and decision stopped at a thousand rows. */
-              return settled(db.rpc('review_set_counts', { p_sets: sets.map(function (b) { return b.id; }) }))
+              return got(db.rpc('review_set_counts', { p_sets: sets.map(function (b) { return b.id; }) }), 'Content Review')
                 .then(function (counts) {
                   (counts || []).forEach(function (k) {
                     var b = setById[k.set_id];
@@ -1229,6 +1309,7 @@
       });
       if (!remind) rows.forEach(function (r) { delete r.remind; });
       state.waiting = rows;
+      state.waitFail = failed;
       paintWaiting();
     });
   }
@@ -1240,9 +1321,11 @@
   function paintWaiting() {
     var box = $('workWaiting');
     if (!box) return;
-    var rows = state.waiting || [];
-    if (bridge.waiting) bridge.waiting(rows.length);
-    var on = state.view === 'list' && state.scope === 'mine' && state.filter === 'day' && !state.find && rows.length;
+    var rows = state.waiting || [], fail = state.waitFail || [];
+    /* A failed read keeps the tab bar's dot at its last count. */
+    if (!fail.length || rows.length >= (state.waitShown || 0)) state.waitShown = rows.length;
+    if (bridge.waiting) bridge.waiting(state.waitShown);
+    var on = state.view === 'list' && state.scope === 'mine' && state.filter === 'day' && !state.find && (rows.length || fail.length);
     box.hidden = !on;
     if (!on) { box.innerHTML = ''; return; }
     box.innerHTML = '';
@@ -1265,6 +1348,14 @@
             '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
           '</div>';
         }).join('');
+        if (fail.length) {
+          var fl = document.createElement('div');
+          fl.className = 'wfy-fail';
+          fl.innerHTML = '<div class="errline"><b>Could not load: ' + esc(fail.join(', ')) + '.</b>' +
+            '<button class="btn btn-sm" type="button" data-a="retry">Try again</button></div>';
+          fl.querySelector('[data-a="retry"]').addEventListener('click', function (e) { e.stopPropagation(); loadWaiting(); });
+          t.insertBefore(fl, t.firstChild);
+        }
         t.addEventListener('click', function (e) {
           var b = e.target.closest('[data-a]'), row = e.target.closest('.wfy-row');
           if (!b || !row) return;
@@ -1292,7 +1383,8 @@
             msg('workMsg', a === 'yes' ? 'Extension approved.' : 'Extension declined.', 'ok');
             state.waiting = (state.waiting || []).filter(function (x) { return x !== r; });
             paintWaiting();
-            load();
+            loadWaiting();
+            refreshOne(r.task);
           }, function () {
             Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = false; });
           });
@@ -1468,7 +1560,7 @@
         state.picked = {};
         msg('workMsg', gone + (gone === 1 ? ' task deleted.' : ' tasks deleted.'), 'ok');
         load();
-      }, function (e) { msg('workMsg', (e && e.message) || String(e), 'err'); });
+      }).catch(function (e) { msg('workMsg', (e && e.message) || String(e), 'err'); });
     });
   }
   function bulkOwner() {
@@ -1497,7 +1589,7 @@
           if (r.error || (d && d.error)) { bad = bad || (r.error ? r.error.message : said(d.error, t)); }
           else done++;
           next();
-        }, function (e) { bad = bad || ((e && e.message) || String(e)); next(); });
+        }).catch(function (e) { bad = bad || ((e && e.message) || String(e)); next(); });
       };
       next();
     });
@@ -2297,7 +2389,7 @@
     el.querySelector('.task-open').addEventListener('click', function () {
       if (elsewhere) openDrawer(t.id, { from: 'client' }); else openDrawer(t.id);
     });
-    var done = function () { if (elsewhere) readClientWork(); else load(); };
+    var done = function () { if (elsewhere) readClientWork(); else refreshOne(t.id); };
     var pk = el.querySelector('[data-a="pick"]');
     if (pk) pk.addEventListener('change', function () { pickRow(t.id, pk.checked); });
     var ck = el.querySelector('[data-a="check"]');
@@ -2586,7 +2678,7 @@
         } else state.undone = null;
         if (state.session && state.session.task_id === t.id && next === 'complete') { state.session = null; }
         done();
-      }, function (e) { if (ck) ck.disabled = false; rowNote(el, (e && e.message) || String(e)); });
+      }).catch(function (e) { if (ck) ck.disabled = false; rowNote(el, (e && e.message) || String(e)); });
   }
   /* The way back from a completion, drawn above the list once it repaints. */
   function paintUndone() {
@@ -2599,7 +2691,7 @@
         .then(function (r) {
           var d = r.data;
           if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error, t), 'err'); return; }
-          load();
+          refreshOne(u.id);
         }).catch(function (e) { msg('workMsg', (e && e.message) || String(e), 'err'); });
     }, $('workMsg'));
   }
@@ -2629,7 +2721,7 @@
         state.owners[t.id] = nameOf(pick); state.ownerIds[t.id] = pick;
         state.rowSaid = { id: t.id, word: 'Reassigned to ' + nameOf(pick) + '.' };
         done();
-      }, function (e) { sel.disabled = false; put(); rowNote(el, (e && e.message) || String(e)); });
+      }).catch(function (e) { sel.disabled = false; put(); rowNote(el, (e && e.message) || String(e)); });
     });
   }
 
@@ -2760,8 +2852,8 @@
                         y: window.scrollY };
         /* The band a row belongs to can change with its stage, so the queue is
            repainted rather than the cell patched. */
-        if (after) after(); else load();
-      }, function (e) { back(); rowNote(el, (e && e.message) || String(e)); });
+        if (after) after(); else refreshOne(t.id);
+      }).catch(function (e) { back(); rowNote(el, (e && e.message) || String(e)); });
   }
   /* The note the last move left, drawn on the row the repaint has just made. */
   function paintMoved() {
@@ -3774,7 +3866,7 @@
         if (r.error) { fail(r.error.message); return; }
         if (d && d.error) { fail(said(d.error, t)); return; }
         then(d);
-      }, function (e) { fail((e && e.message) || String(e)); });
+      }).catch(function (e) { fail((e && e.message) || String(e)); });
     };
     if (key === 'scheduled') {
       var day = $('stepDate').value;
@@ -3819,7 +3911,7 @@
       return;
     }
     state.moved = { id: t.id, word: labelOfStage(t, c.key) };
-    if (c.o.after) c.o.after(); else load();
+    if (c.o.after) c.o.after(); else refreshOne(t.id);
   }
 
   // ---- Add task ------------------------------------------------------------
@@ -3909,7 +4001,7 @@
       qkMade = 0;
       sheet('quickSheet', false);
       state.rowSaid = { id: t.id, word: 'Added.' };
-      load();
+      refreshOne(t.id);
     }, function () { btn.disabled = false; });
   }
   function closeQuick() {
@@ -4059,6 +4151,7 @@
       delete row.variants;
       tplRows = tplRows.filter(function (x) { return x.id !== row.id; }).concat([row])
         .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+      state.catAt = 0;
       paintTplList();
       sheet('tplSheet', true);
       msg('tplMsg', 'Template saved.', 'ok');
@@ -5106,7 +5199,7 @@
       { k: 'publish', label: 'Post date', v: t.publish_at }
     ].filter(function (r) { return !isEveryday(t) || r.k === 'final'; });
     var html = rows.map(function (r) {
-      var over = r.k === 'final' && isLate(t);
+      var over = r.k === 'final' && dueLate(t);
       var moved = r.from && r.v && r.from !== r.v;
       var word = r.v ? esc(niceDate(r.v)) : '<span class="mute">Not set</span>';
       var inner = work && !isFinished(t)
@@ -5521,7 +5614,7 @@
       /* A write made while the drawer is open changes a row the list drew. */
       if (state.drawer) state.drawerDirty = true;
       if (then) then(d);
-    }, function (e) {
+    }).catch(function (e) {
       msg(msgId, (e && e.message) || String(e), 'err');
       if (onFail) onFail();
     });
@@ -6141,11 +6234,25 @@
   // ---- Duplicate, generate, repeat ---------------------------------------
   /* The content months a select offers: the one before this, this one and
      the six after, so work keyed in late and work planned ahead both fit. */
-  function fillMonths(sel, chosen) {
+  function offeredMonths() {
     var now = CK.today(), months = [];
     for (var i = -1; i <= 6; i++) months.push(CK.addMonths(now, i));
+    return months;
+  }
+  /* New month leaves out the months the client already holds (`taken`) and
+     opens on this month where it is free, else the first free one: saved on
+     a month held, it had written over that month's plan (2026-10-22, WRK-1). */
+  function freeMonths(clientId) {
+    var held = (cw.engs || []).filter(function (x) { return x.client_id === clientId; })
+      .map(function (x) { return x.period; });
+    return offeredMonths().filter(function (k) { return held.indexOf(k) < 0; });
+  }
+  function fillMonths(sel, chosen, taken) {
+    var now = CK.today(), months = offeredMonths();
+    if (taken) months = months.filter(function (k) { return taken.indexOf(k) < 0; });
     if (chosen && months.indexOf(chosen) < 0) months.unshift(chosen);
     var pick = chosen || monthKey(now.slice(0, 7));
+    if (months.indexOf(pick) < 0) pick = months[0];
     sel.innerHTML = months.map(function (k) {
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
@@ -6723,7 +6830,10 @@
     var nb = $('cwNew');
     if (nb) nb.addEventListener('click', function () { openNew({ client: c }); });
     var eb = $('cwEng');
-    if (eb) eb.addEventListener('click', function () { openEng(null, c); });
+    if (eb) {
+      eb.hidden = !freeMonths(c.id).length;
+      eb.addEventListener('click', function () { openEng(null, c); });
+    }
     paintClientList();
   }
   function paintClientList() {
@@ -6975,7 +7085,7 @@
       var d = r.data;
       if (d && d.error) { say(said(d.error, null, d)); if (onFail) onFail(); return; }
       if (then) then(d);
-    }, function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
+    }).catch(function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
   }
 
   /* The engagement's own facts: made for a month that has none, edited for
@@ -6985,7 +7095,8 @@
     if (!may('ops', 'work')) return;
     engEditing = e || null;
     $('engTitle').textContent = e ? monthWord(e.period) + ' for ' + esc(client.name) : 'New month for ' + client.name;
-    fillMonths($('engPeriod'), e ? e.period : null);
+    fillMonths($('engPeriod'), e ? e.period : null,
+      e ? null : (cw.engs || []).filter(function (x) { return x.client_id === client.id; }).map(function (x) { return x.period; }));
     $('engPeriod').disabled = Boolean(e);
     var me = bridge.me && bridge.me();
     $('engManager').innerHTML = pickable().map(function (m) {
@@ -7047,6 +7158,7 @@
       reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
         .map(function (x) { return x[1]; })
     };
+    if (!engEditing) payload['new'] = true;
     if (payload.drive_url && !/^https:\/\/[^\s"'<>`\\]+$/i.test(payload.drive_url)) {
       msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
       return;
@@ -7310,7 +7422,7 @@
         /* Every task is searched in the database, after a pause, so a
            search across a year of history does not ask on every keystroke. */
         clearTimeout(findWait);
-        findWait = setTimeout(load, 350);
+        findWait = setTimeout(searchOnly, 350);
       });
     }
     var st = $('workStage');
@@ -7850,6 +7962,8 @@
   }
 
   function enter() {
+    state.catAt = 0;
+    state.waitDue = true;
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
     /* The bar's ⋯ holds the templates (Workflows at Work), Select tasks
