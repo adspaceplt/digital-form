@@ -1727,7 +1727,9 @@
     function adsReport() {
       var am = mdl.adsm, at = am.totals, first = am.first;
       var mk = String(rep.market || '').toUpperCase();
-      var CUR = mk === 'SG' ? 'S$' : 'RM';
+      /* The currency billed (bill_market); a version published before it was
+         sent reads its market, as it was drawn then. */
+      var CUR = String(rep.bill_market || mk).toUpperCase() === 'SG' ? 'S$' : 'RM';
       var money = function (v) {
         v = num(v);
         return v === null ? 'Not available' : CUR + ' ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

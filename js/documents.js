@@ -262,7 +262,7 @@
                                       quote_term: Math.max(1, Number(hit.totals.term || 1)) });
       });
     }
-    return priceOf(lines, client.market, client.sst_applies !== false);
+    return priceOf(lines, MON.curOf(client), client.sst_applies !== false);
   }
 
   /* client: the record. picked: the service rows the person chose. deal: the
@@ -845,6 +845,14 @@
       /* A quoted letter: the rows' subtotal, then the term's row, as the
          quotation's totals read (`12-Month Commitment (5%)`). */
       var signed = function (v) { return v < 0 ? '(' + MON.money2(-v, doc.market) + ')' : MON.money2(v, doc.market); };
+      /* A Singapore client billed in RM reads the figure in bold in S$
+         under it, at the rate kept when the letter was issued (2026-10-22). */
+      var nearRow = function (v) {
+        var fx = Number(b.fx_sgd);
+        if (String(b.market || '').toUpperCase() !== 'SG' || String(doc.market || '').toUpperCase() === 'SG' || !(fx > 0)) return;
+        right('Approx. ' + MON.money2(Math.round(Number(v) / fx * 100) / 100, 'SG'), R, y + 2, 9, font, mute);
+        y -= 13;
+      };
       var termRow = function () {
         if (!qadj) return;
         var pc = Math.round(Math.abs(qd.pct) * 100) / 100, tn = price.term || price.plan;
@@ -858,6 +866,7 @@
         trow(taxWord, MON.money2(Math.round((Number(price.eachTax) + Number(price.onceTax)) * 100) / 100, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow('First month due', MON.money2(firstDue, doc.market), 'strong');
+        nearRow(firstDue);
         trow('Monthly' + incl, MON.money2(price.eachTotal, doc.market));
       } else {
         trow('Subtotal', MON.money2(qd ? qd.base + (price.term ? 0 : qd.rest) : price.each, doc.market));
@@ -865,6 +874,7 @@
         trow(taxWord, MON.money2(price.eachTax, doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow(price.term ? 'Monthly' + incl : 'Total' + incl, MON.money2(price.eachTotal, doc.market), 'strong');
+        nearRow(price.eachTotal);
         /* Lines running months of their own: the figure is the first
            month's, every monthly line running in it (the user, 2026-10-18),
            as the quotation names it. */

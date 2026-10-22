@@ -188,7 +188,7 @@
     var sum = function (list) {
       var out = {};
       list.forEach(function (c) {
-        var k = String(c.market || 'MY').toUpperCase();
+        var k = window.ADspaceMoney ? window.ADspaceMoney.curOf(c) : String(c.market || 'MY').toUpperCase();
         out[k] = (out[k] || 0) + (byClient[c.id] || 0);
       });
       return out;

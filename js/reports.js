@@ -601,7 +601,7 @@
       sortPosts();
       st.openVersions = got[3].data || [];
       st.ads = [];
-      var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
+      var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
       return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
@@ -3680,7 +3680,7 @@
                       'Engagement', 'ThruPlays', 'Ad recall lift', 'Reach', 'Impressions', 'App installs'];
   var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
   var RET = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];
-  function money2(v) { return v == null || v === '' || isNaN(Number(v)) ? '—' : (String(st.client && st.client.market || '').toUpperCase() === 'SG' ? 'S$ ' : 'RM ') + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function money2(v) { return v == null || v === '' || isNaN(Number(v)) ? '—' : (window.ADspaceMoney.curOf(st.client) === 'SG' ? 'S$ ' : 'RM ') + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function numIn(v) {
     var x = String(v == null ? '' : v).replace(/RM|MYR|SGD|S\$|%|,|\s/gi, '');
     return x === '' || x === '-' || isNaN(Number(x)) ? null : Number(x);

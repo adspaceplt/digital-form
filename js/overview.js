@@ -187,7 +187,7 @@
     clients: function () {
       return once('clients', function () {
         return API.readPages(function () {
-          return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, ' +
+          return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, bill_sgd, ' +
             'restricted_platform, restricted_since, restricted_note').order('id');
         }).then(rows).then(function (l) { return l || []; });
       });

@@ -1121,7 +1121,7 @@
 
     paintIdentity(c);
 
-    var mk = MON.market(c.market);
+    var mk = MON.market(MON.curOf(c));
     /* Person in charge has moved to the identity line and Added to Key dates,
        so neither is stated twice: a rail that repeats the head is a rail
        nobody reads. */
@@ -1132,7 +1132,7 @@
       ['Source',   c.source ? sourceWord(c.source) : null],
       ['Industry', c.industry || null],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
-      ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : null],
+      ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],
       ['To commence', c.commence ? commenceWord(c.commence) : null]
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
@@ -1590,7 +1590,7 @@
         return '<div class="ovrow ovrow-svc">' +
           '<span class="ovname">' + esc(l.label || '') + '</span>' +
           '<span class="ovdim">' + esc(termWord(l) || '') + '</span>' +
-          '<span class="ovamt">' + esc(MON.money2(amountOf(l), c.market)) + '</span>' +
+          '<span class="ovamt">' + esc(MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
           '<span><span class="tone ' + esc(st[1] || '') + '">' + esc(st[0] || l.state) + '</span></span>' +
         '</div>';
       }).join('') +
@@ -2523,7 +2523,7 @@
         ['TIN', t('tin')],
         ['SST registration no.', t('sst_no')],
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
-      ]) +
+      ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
         ['Billing contact', pick ? esc((pick.salutation ? pick.salutation + ' ' : '') + pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
         ['Finance email', t('finance_email')],
@@ -2538,6 +2538,11 @@
   function fillBilling(c) {
     BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = c[f[1]] || ''; });
     $('crmSstApplies').checked = c.sst_applies !== false;
+    /* A Singapore client is billed in RM unless set to S$ (2026-10-22). */
+    var sg = String(c.market || '').toUpperCase() === 'SG';
+    $('crmBillInRow').hidden = !sg;
+    $('crmBillIn').value = sg && c.bill_sgd ? 'SG' : 'MY';
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('crmBillIn'));
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
   }
   function openBilling(opener) {
@@ -3346,7 +3351,9 @@
     if (mainContact() && was.bill_contact_id === mainContact().id) was.bill_contact_id = null;
     /* No setting is SST applying, as `money.js` reads it. */
     was.sst_applies = state.client.sst_applies !== false;
+    was.bill_sgd = !!state.client.bill_sgd;
     var patch = { sst_applies: $('crmSstApplies').checked };
+    if (!$('crmBillInRow').hidden) patch.bill_sgd = $('crmBillIn').value === 'SG';
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
     db.from('clients').update(patch).eq('id', state.client.id).select('id').then(function (r) {
@@ -3358,6 +3365,10 @@
          the values: somebody reading Clients activity may not read Billing. */
       var what = changed(was, patch, BILLING.map(function (f) { return [f[1], f[2]]; })
         .concat([['sst_applies', 'SST applies']]), { names: true });
+      /* The currency is no secret: it is filed from and to. */
+      if ('bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd) {
+        what = [what, 'Bill in: ' + (was.bill_sgd ? 'S$' : 'RM') + ' → ' + (patch.bill_sgd ? 'S$' : 'RM')].filter(Boolean).join(' · ');
+      }
       log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
         .filter(Boolean).join(' · '));
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
@@ -4423,8 +4434,9 @@
       var tot = document.createElement('div');
       tot.className = 'csv-total';
       tot.innerHTML =
-        (quoted ? '<span>To quote<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
-        '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, c.market)) + '</b></span>';
+        (quoted ? '<span>To quote<b>' + esc(MON.money2(quoted, MON.curOf(c))) + '</b></span>' : '') +
+        '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, MON.curOf(c))) + '</b>' +
+        (MON.approx(confirmed, c) ? '<small class="muted">' + esc(MON.approx(confirmed, c).trim().replace(/^\(|\)$/g, '')) + '</small>' : '') + '</span>';
       table.appendChild(tot);
       box.appendChild(table);
     }
@@ -4447,9 +4459,9 @@
       row.innerHTML =
         '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
           (l.note || l.unit ? '<small>' + esc([l.unit, l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
-        '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
+        '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), MON.curOf(c)) +
           (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
-        '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
+        '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), MON.curOf(c))) + '</b></span>' +
         '<span class="svc-state"><span class="tone is-off">Removed</span></span>' +
         '<span class="team-act">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -4470,9 +4482,9 @@
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
         (l.note || l.unit || termWord(l) || adjWord(l) || l.tax_code
           ? '<small>' + esc([l.unit, adjWord(l), termWord(l), l.tax_code ? 'Tax ' + l.tax_code : '', l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
-      '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
+      '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), MON.curOf(c)) +
         (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
-      '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
+      '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), MON.curOf(c))) + '</b></span>' +
       /* Confirmed is not in this list. A service becomes Confirmed when a
          signed letter is verified and at no other moment: a select on the row
          let anybody confirm a line nobody had signed for, and it was the only
@@ -4820,8 +4832,8 @@
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
         (sub ? '<small>' + esc(sub) + '</small>' : '') +
         (q.reply ? '<small>' + esc('Reply: ' + q.reply) + '</small>' : '') + '</span>' +
-      '<span class="svc-rate svc-amt">' + (q.fee != null && q.fee !== '' ? '<b>' + esc(MON.money2(q.fee, c.market)) + '</b>'
-        : '<span class="muted">' + esc(MON.sign(c.market)) + '</span>') + '</span>' +
+      '<span class="svc-rate svc-amt">' + (q.fee != null && q.fee !== '' ? '<b>' + esc(MON.money2(q.fee, MON.curOf(c))) + '</b>'
+        : '<span class="muted">' + esc(MON.sign(MON.curOf(c))) + '</span>') + '</span>' +
       '<span class="svc-state">' + (gone ? '<span class="chip-state">Withdrawn</span>'
         : '<select class="select select-sm state-select ' + w[1] + '" data-f="state" aria-label="State">' +
           Object.keys(RQ_STATE).map(function (k) {
@@ -4881,7 +4893,7 @@
         return;
       }
       log(action, state.client.name, (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '') +
-        (patch.state ? ' · ' + RQ_STATE[patch.state][0] : '') + (patch.fee != null ? ' · ' + MON.money2(patch.fee, state.client.market) : ''));
+        (patch.state ? ' · ' + RQ_STATE[patch.state][0] : '') + (patch.fee != null ? ' · ' + MON.money2(patch.fee, MON.curOf(state.client)) : ''));
       shutReply();
       loadRequests();
     });
@@ -5206,7 +5218,7 @@
             (tick === false && !r.on ? '' : '') + '>' +
           '<span class="lpickname"><b>' + esc(l.label) + '</b>' +
             '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
-          '<span class="lpickamt">' + esc(MON.money2(amountOf(l), c.market)) + '</span>' +
+          '<span class="lpickamt">' + esc(MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
         '</label>';
       }).join('') +
       (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
@@ -5297,7 +5309,7 @@
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
     var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes, renewal) : null;
     $('pickSum').textContent = rows.length
-      ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, c.market)
+      ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, MON.curOf(c))
       : 'Nothing chosen';
     $('pickGo').disabled = !rows.length;
   }

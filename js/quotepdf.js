@@ -206,6 +206,11 @@
       right(r[1], R - 6, y - th / 2 - 3.2, BODY, r[2] ? reg : book, dark);
       y -= th;
     });
+    /* A Singapore client billed in RM reads the figure in S$ beside it, at
+       the rate in force on the day of issue (2026-10-22). */
+    var MONY = window.ADspaceMoney, last = tot.filter(function (r) { return r[2]; }).pop();
+    var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx && last ? MONY.approx(Number(String(last[1]).replace(/[^0-9.\-]/g, '')), opts.client, dayOf(q.issued_at)) : '';
+    if (near) { y -= 4; right(near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx'), R - 6, y - 9, BODY - 1, book, mute); y -= 14; }
     y -= 18;
 
     // Remarks / Terms.
