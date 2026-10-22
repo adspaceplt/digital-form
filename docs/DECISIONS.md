@@ -6122,6 +6122,65 @@ WRK-14 (`shortDay` reads the clock; `#taskMenu` dropped). Not built in time
 for the 2026-10-23 gate: OVW-3, OVW-4, OVW-5, OVW-M1, WRK-13, WRK-15,
 WRK-M1, and OVW-7's shared cold-lead rule.
 
+## 2026-10-22: internal review, release 1 (Activity, search, Suppliers, Handbook, Documents)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
+- ACT-1 the Activity record read the newest 200 rows of every section and
+  filtered in the page, so a quiet section (Handbook) read Nothing recorded
+  while its rows stood older; each section is now read by its own tags, 200
+  a page, with Show older. ACT-2 a failed read showed Access denied or
+  stayed on Loading; it is failLine with Try again.
+- SHELL-1 search finds Suppliers and Handbook files; SHELL-2 a colleague
+  opens their record (team.js `fromUrl` waits for the colleagues' read,
+  else it let the record go); SHELL-3 `_` escaped; SHELL-4 the bell's count
+  is the ink fill, never the action blue.
+- SUP-1 an answer for a supplier already left painted over the one open
+  (tests/suppliers.js holds it with a slow read); SUP-2 the link-client
+  picker reads clients a thousand at a time and says refusals in words.
+- HBK-1 Add file made a new id each press, leaving a file-less doc and
+  orphan objects; the id is made once a sheet and a stored file whose
+  version failed is removed. HBK-2 the button keeps its word and its ring.
+- DOC-1 Issue / Add existing document said nothing when the clients read
+  failed; it reads every client in pages and says the failure with Try
+  again. DOC-2 `.then(ok, bad)` replaced. DOC-3 a long reference is one
+  line with an ellipsis. DOC-4 no date reads the em dash. DOC-5 a
+  colleague's Documents pane reads the colleagues alone.
+- The stand-in: `.lt()`/`.gt()`, several `.order()` keys read as PostgREST
+  reads them (the first sorts first; it had let the last win), and LIKE
+  escapes inside `or()`'s quotes.
+- Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
+  TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
+
+### 2026-10-22 — The client pages' review findings (release 2b)
+The rest of the client review: CP-13 to CP-17.
+- CP-13: a line of parts broke inside a part ("4 / contents", "RM /
+  8,000"); the portal's service and request names go through `parts()`,
+  and the quotation website holds RM or S$ to its figure.
+- CP-14: contact chips on a phone stood at unequal widths; two or more
+  share equal tracks, an address on its own row.
+- CP-15: the selection page drew a shoot's time as typed ("2pm") beside
+  the creator's page's "10:00 am"; `ampm()` was defined and never called.
+  Both now read the same (10:00 am, 下午2:00), and the creator's page says
+  Post date, never Publish on.
+- CP-16: a creator with no profile left a blank cell; a mute em dash.
+- CP-17: in Waiting for your approval at a desk the pair ran 575px each and
+  Open the draft the card's width; the pair now stand 220px at the right
+  edge, Approve last, Open the draft at its own width. This reopens the
+  2026-10-20 equal halves at desk width on this card alone.
+### 2026-10-22 — Menus: a client's record (release 2 of the menu review)
+The record head's ⋯ follows the standard: Take lead left the ⋯ for a
+button on the head where a lead nobody holds is seen (MENU-3); a lead's ⋯
+offers neither Request feedback on WhatsApp nor Mark account restricted
+(MENU-1), and `wa_compose_prepare` refuses feedback for a lead too
+(`not-client`, `2026-10-22-feedback-asked-of-clients-alone.sql`). Contacts,
+Calls and visits and the service lines draw their ⋯ through
+`ADspaceMenu.items`: Main contact reads Make main contact, Update status
+reads Confirm without letter and is offered only on a line not yet
+confirmed (MENU-14). Built: MENU-1, MENU-3, MENU-14 (these words), MENU-15
+for these menus. Left for the next release (the gate at 22:00Z): MENU-6
+(a request's Reply on its row), MENU-9 (a client letter's ⋯), MENU-12
+(bulk bars hidden at zero), the rest of the areas. `tests/crm.js` now
+restricts an Active client, and `tests/menus.js` measures a menu's
+layout width, not its opening scale.
 ### 2026-10-22 — The Dashboard lists a piece of work once (release 3 of the work review)
 The user, 2026-10-22: "Fix all". Built: OVW-3 (Needs attention listed the
 month's late report task beside its owed report, and a paused client's late

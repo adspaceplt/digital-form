@@ -304,6 +304,11 @@
 
   function openSheet(d, opener) {
     st.editing = d || null;
+    /* A new file's id is made once, for the sheet, not a press: Add pressed
+       again after a failure is the same file (handbook_save takes the same
+       id again), never a second one (HBK-1, 2026-10-22). Kept until the
+       file is added. */
+    if (!d && !st.newId) st.newId = uuid();
     say($('hbMsg'), '');
     $('hbSheetTitle').textContent = d ? 'Edit file' : 'Add file';
     $('hbSave').textContent = d ? 'Save' : 'Add';
@@ -337,12 +342,14 @@
     if (isLink && !/^https:\/\//i.test(link)) { say(m, SAID['bad-link']); $('hbLink').focus(); return; }
     var f = (!d && !isLink) ? $('hbFile').files[0] : null;
     if (!d && !isLink && !fileOk(f, m)) { $('hbFile').focus(); return; }
-    var id = d ? d.id : uuid();
-    var was = btn.textContent;
-    btn.disabled = true; btn.textContent = f ? 'Uploading' : 'Saving';
+    var id = d ? d.id : (st.newId || (st.newId = uuid()));
+    /* The button keeps its word and turns its ring while the file goes
+       (ADspaceActs; HBK-2). */
+    btn.disabled = true;
     say(m, '');
-    var stored = f ? upload(id, f) : Promise.resolve(null);
+    var stored = f ? upload(id, f) : Promise.resolve(null), kept = null;
     stored.then(function (path) {
+      kept = path;
       return rpc('handbook_save', { p_id: id, p_title: title, p_category: cat, p_summary: summary || null,
                                     p_link: isLink ? link : (d ? d.link_url : null) })
         .then(function () {
@@ -351,13 +358,18 @@
                                                p_mime: f.type || null, p_note: null });
         });
     }).then(function () {
-      btn.disabled = false; btn.textContent = was;
+      kept = null;
+      btn.disabled = false;
+      if (!d) st.newId = null;
       window.ADspaceSheet.clean();
       shutSheet();
       say($('hbListMsg'), d ? 'Saved.' : 'Added.', 'ok');
       return load();
     }).catch(function (e) {
-      btn.disabled = false; btn.textContent = was;
+      btn.disabled = false;
+      /* A file stored for a version that was never written is taken away,
+         so a try leaves no object behind. */
+      if (kept) db.storage.from(BUCKET).remove([kept]).catch(function () {});
       say(m, said(e));
     });
   });
@@ -378,20 +390,24 @@
     if (!d) return;
     var f = $('hbVerFile').files[0];
     if (!fileOk(f, m)) { $('hbVerFile').focus(); return; }
-    btn.disabled = true; btn.textContent = 'Uploading';
+    btn.disabled = true;
     say(m, '');
+    var kept = null;
     upload(d.id, f).then(function (path) {
+      kept = path;
       return rpc('handbook_add_version', { p_doc: d.id, p_path: path, p_name: f.name, p_size: f.size,
                                            p_mime: f.type || null, p_note: $('hbVerNote').value.trim() || null });
     }).then(function (r) {
-      btn.disabled = false; btn.textContent = 'Save';
+      kept = null;
+      btn.disabled = false;
       window.ADspaceSheet.clean();
       window.ADspaceSheet.close();
       st.verFor = null;
       say($('hbListMsg'), 'Version ' + r.version + ' saved.', 'ok');
       return load();
     }).catch(function (e) {
-      btn.disabled = false; btn.textContent = 'Save';
+      btn.disabled = false;
+      if (kept) db.storage.from(BUCKET).remove([kept]).catch(function () {});
       say(m, said(e));
     });
   });

@@ -512,7 +512,7 @@
       : '<span class="chip-state is-ok">' + esc(f(t().valid, { d: day(q.valid_until) })) + '</span>';
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];
-      return '<div class="qs-row"><span class="qs-what">' + esc(l.label) + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
+      return '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
         (d ? '<small>' + esc(d) + '</small>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {
