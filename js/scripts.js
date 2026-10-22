@@ -70,11 +70,12 @@
     if (!iso) return '';
     return window.ADspaceClock.date(iso);
   }
+  /* A time of day as every console page writes it, Malaysia's clock's one
+     copy: 10:00am, no space (2026-10-22, VS-2). */
   function timeWord(t) {
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');
     if (!m) return '';
-    var h = Number(m[1]), ap = h >= 12 ? 'pm' : 'am';
-    return ((h % 12) || 12) + ':' + m[2] + ' ' + ap;
+    return window.ADspaceClock.clock('2000-01-01T' + (m[1].length < 2 ? '0' : '') + m[1] + ':' + m[2]);
   }
   function durWord(n) {
     n = Number(n) || 0;
@@ -154,9 +155,14 @@
   function load() {
     var box = $('vsList');
     if (!st.loaded) UI.skeleton(box, 4);
-    return db.from('video_scripts')
-      .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
-      .order('period', { ascending: false }).order('seq')
+    /* Read a thousand at a time: thirty to fifty scripts a client a year
+       pass PostgREST's 1,000 inside a year (2026-10-22, VS-1). Ordered to
+       the id, so a page boundary never repeats or drops a row. */
+    return API.readPages(function () {
+      return db.from('video_scripts')
+        .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
+        .order('period', { ascending: false }).order('seq').order('id');
+    })
       .then(function (r) {
         if (r.error) throw r.error;
         st.list = r.data || [];
@@ -543,13 +549,14 @@
 
   /* A script's number within the month (VS01). */
   function tabWord(x) { var c = codeOf(x); return /VS\d+$/.test(c) ? c.replace(/^\d{4}/, '') : c; }
-  /* The month's scripts as rows: the number and title over the type, the
-     shoot, the state, each opening its script. */
+  /* The month's scripts as rows: the code and title over the type, the
+     shoot, the state, each opening its script. The code is written whole,
+     as the script's own head writes it (2026-10-22, VS-4). */
   function paintMonth() {
     $('vsNextVideo').hidden = !may('work');
     var rows = st.series.map(function (x) {
       return '<button class="crm-row vs-row vs-mrow" type="button" data-v="' + esc(x.id) + '">' +
-        '<span class="vs-c-name"><b>' + esc(tabWord(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
+        '<span class="vs-c-name"><b>' + esc(codeOf(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
         '<span class="vs-c-shoot">' + (x.shoot_on ? esc(dayWord(x.shoot_on)) : '<span class="mute">Not set</span>') + '</span>' +
         '<span class="vs-c-state">' + chip(stateOf(x)) + '</span></button>';
     }).join('');

@@ -130,7 +130,6 @@
      wrong design"): a tick is pressed where it is read, every other answer
      reads as a fact, and the section's Edit opens its fields in a sheet. */
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var XMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   function tickHtml(d, s, it, can) {
     var key = s.key + '.' + it.key, a = d.answers[key] || {}, hint = (d.hints || {})[key];
@@ -200,8 +199,7 @@
       (V.kind === 'pre_ads' && can ? '<button class="btn btn-sm" type="button" data-a="ai" id="ckAi">' + AI() + 'Write with AI</button>' : '') +
       '<button class="btn btn-sm" type="button" data-a="preview" aria-label="Preview PDF"><span class="ck-pdf-long">Preview PDF</span><span class="ck-pdf-short">PDF</span> ' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>' +
-      '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-      '<div class="kmenu" data-menu hidden><button class="kmenu-item" type="button" data-a="pdf"><b>Download</b></button></div></span></div>' +
+      '<button class="btn btn-sm" type="button" data-a="pdf">Download</button></div>' +
       '<dl class="ovfacts ck-facts"><div><dt>Client / Brand</dt><dd>' + esc(cl.name) + '</dd></div>' +
         '<div><dt>Project Manager</dt><dd>' + (cl.owner ? esc(cl.owner) : '<span class="muted">Not set</span>') + '</dd></div>' +
         '<div><dt>Progress</dt><dd>' + c.done + ' of ' + c.n + ' done</dd></div></dl></section>' +
@@ -225,8 +223,8 @@
     }
     if (d.status === 'signed' && d.can_manage) acts = '<button class="btn" type="button" data-a="reopen">Reopen</button>';
     html += '<section class="ovcard ck-sec ck-sign"><h4 class="fsec-h">Sign-off</h4><dl class="ovfacts ck-facts">' +
-      '<div><dt>Prepared by</dt><dd>' + (prep ? esc(prep.name + ', ' + day(prep.at)) : '<span class="muted">Not yet</span>') + '</dd></div>' +
-      '<div><dt>Reviewed by</dt><dd>' + (d.reviewed ? esc(d.reviewed.name + ', ' + day(d.reviewed.at)) : '<span class="muted">Not yet</span>') + '</dd></div></dl>' +
+      '<div><dt>Prepared by</dt><dd>' + (prep ? esc(prep.name + ', ' + day(prep.at)) : '<span class="muted">Not prepared</span>') + '</dd></div>' +
+      '<div><dt>Reviewed by</dt><dd>' + (d.reviewed ? esc(d.reviewed.name + ', ' + day(d.reviewed.at)) : '<span class="muted">Not signed off</span>') + '</dd></div></dl>' +
       (d.status === 'prepared' && prep && (prep.id === me || d.filled_by_me) ? '<p class="ck-sec-note">Somebody other than you signs it off.</p>' : '') +
       (acts ? '<div class="row acts ck-acts">' + acts + '</div>' : '') + '</section>';
     V.host.innerHTML = html;
@@ -247,15 +245,9 @@
   function wire() {
     var host = V.host, ctx = V.ctx;
     host.querySelector('[data-a="back"]').addEventListener('click', function () { setAddr(null); mount(host, ctx); });
-    var menuBtn = host.querySelector('.ck-head [data-a="menu"]'), menu = host.querySelector('.ck-head [data-menu]');
-    menuBtn.addEventListener('click', function () {
-      var open = menu.hidden;
-      Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-      menu.hidden = !open;
-      menuBtn.setAttribute('aria-expanded', String(open));
-      if (open && window.ADspaceMenu) window.ADspaceMenu.place(menuBtn, menu);
-    });
-    host.querySelector('[data-a="pdf"]').addEventListener('click', function () { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); download(menuBtn); });
+    /* Download stands beside Preview PDF: a ⋯ of one item hid it (CLI-7). */
+    var dlB = host.querySelector('.ck-head [data-a="pdf"]');
+    dlB.addEventListener('click', function () { download(dlB); });
     var pvB = host.querySelector('.ck-head [data-a="preview"]');
     pvB.addEventListener('click', function () { preview(pvB); });
     var aiB = host.querySelector('[data-a="ai"]');
@@ -695,7 +687,7 @@
   }
 
   /* Preview PDF opens a tab at the press and puts the drawn file in it
-     (a blocked tab downloads it); Download (the ⋯) saves it under its name. */
+     (a blocked tab downloads it); Download beside it saves it under its name. */
   function preview(btn) {
     var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client, tab = null;
     if (!docs) return;

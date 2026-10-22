@@ -1600,7 +1600,7 @@
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
-      { at: '#setList .stg-nav, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
+      { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
       { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
       { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
     'whatsapp.templates': { name: 'Templates', steps: [
@@ -2263,7 +2263,7 @@
     var box = $('clientCards');
     var all = state.reviewClients || [];
     var rows = !crFind ? all : all.filter(function (c) {
-      return String(c.name || '').toLowerCase().indexOf(crFind) >= 0;
+      return (String(c.name || '') + ' ' + String(c.client_code || '')).toLowerCase().indexOf(crFind) >= 0;
     });
     var count = $('crCount');
     if (count) {
@@ -3823,6 +3823,9 @@
 
   // ---- Uploading ----------------------------------------------------------
   var drop = $('drop'), fileInput = $('fileInput');
+  /* The picker offers only what sign-upload signs (2026-10-22, REV-2): an
+     SVG or a TIFF was taken, then refused at Add to set. */
+  if (API && API.uploadAccept) fileInput.setAttribute('accept', API.uploadAccept(['image', 'video']));
   drop.addEventListener('click', function () { fileInput.click(); });
   drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('is-over'); });
   drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
@@ -3941,16 +3944,13 @@
     if (!state.batch) { msg('setMsg', 'Select a content set first.', 'err'); return; }
     if (state.uploading) return;
 
-    // The size limit belongs to Supabase storage. S3 has no such ceiling.
-    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var cap = capMB() * 1024 * 1024;
     var all = Array.prototype.slice.call(files);
     var queue = all.filter(function (f) { return f.size <= cap; });
     var toobig = all.filter(function (f) { return f.size > cap; });
 
     if (toobig.length) {
-      msg('setMsg',
-        toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
-        ' exceeds the ' + (cfg.maxUploadMB || 50) + ' MB limit. Export a smaller review copy or paste a link.', 'err');
+      msg('setMsg', toobig.map(function (f) { return overCap(f.name); }).join(' '), 'err');
       if (!queue.length) return;
     } else {
       msg('setMsg', '');
@@ -4134,8 +4134,7 @@
       }
       var text = (firstError && firstError.message) || 'Upload failed.';
       if (/payload|too large|exceeded/i.test(text)) {
-        text = 'File exceeds the ' + (cfg.maxUploadMB || 50) +
-          ' MB limit. Export a smaller review copy or paste a link.';
+        text = window.ADspaceWords.en.uploadTooLarge.replace('{n}', capMB().toLocaleString('en-GB'));
       }
       throw new Error(text + ' ' + left + ' of ' + items.length +
         ' not uploaded. Select Add to set to send the rest.');
@@ -4160,6 +4159,13 @@
   }
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+  /* The size a file may be, where it goes: S3's own cap (sign-upload holds
+     the same) or Supabase storage's. Refused at the pick, the file named
+     (2026-10-22, REV-1), never after an upload began. */
+  function capMB() { return usingS3() ? ((cfg.s3 && cfg.s3.maxUploadMB) || 1024) : (cfg.maxUploadMB || 50); }
+  function overCap(name) {
+    return window.ADspaceWords.en.uploadSize.replace('{file}', name).replace('{n}', capMB().toLocaleString('en-GB'));
+  }
 
   /* "MP4 · 1080 x 1920", so it is obvious what was actually imported. */
   /* Carousel order decides which slide Instagram shows first and sizes the
@@ -4286,6 +4292,7 @@
     if (!r.error && r.data && r.data.uploadUrl) return r;
     return API.fnRefusal(r).then(function (code) {
       if (code === 'bad_extension') throw new Error(window.ADspaceWords.en.uploadType);
+      if (code === 'too_large') throw new Error(window.ADspaceWords.en.uploadTooLarge.replace('{n}', capMB().toLocaleString('en-GB')));
       if (code) throw new Error('Upload was refused: ' + code);
       var fn = (window.ADSPACE_CONFIG.s3 || {}).functionName || 'sign-upload';
       var m = (r.error && r.error.message) || 'unknown reason';
@@ -4558,10 +4565,8 @@
         msg('setMsg', f.name + ' is not an image or a video.', 'err');
         return;
       }
-      var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
-      if (f.size > cap) {
-        msg('setMsg', f.name + ' is ' + mb(f.size) + ' MB, over the ' +
-          (cfg.maxUploadMB || 50) + ' MB limit. Turning on S3 storage removes this limit.', 'err');
+      if (f.size > capMB() * 1024 * 1024) {
+        msg('setMsg', overCap(f.name), 'err');
         return;
       }
       msg('setMsg', 'Reading ' + f.name + ' from Drive…');
@@ -4853,15 +4858,12 @@
     var picked = driveFiles.filter(function (f) { return f.pick && !f.done; });
     if (!picked.length) { msg('driveMsg', 'No assets selected.', 'err'); return; }
 
-    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var cap = capMB() * 1024 * 1024;
     var toobig = picked.filter(function (f) { return f.size > cap; });
     var queue = picked.filter(function (f) { return f.size <= cap; });
 
     if (toobig.length) {
-      msg('driveMsg', toobig.length + ' file' + (toobig.length === 1 ? ' is' : 's are') +
-        ' over the ' + (cfg.maxUploadMB || 50) + ' MB limit and were skipped: ' +
-        toobig.map(function (f) { return f.name; }).join(', ') +
-        '. Turning on S3 storage removes this limit.', 'err');
+      msg('driveMsg', toobig.map(function (f) { return overCap(f.name); }).join(' '), 'err');
       if (!queue.length) return;
     }
 
@@ -5831,10 +5833,27 @@
      <video> draws nothing on iPhone Safari until it plays, which left every
      reel an empty box (the user, 2026-10-01). */
   function thumbOf(m) {
-    if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="">';
-    if (m.poster) return '<img src="' + esc(m.poster) + '" alt="">';
-    return ADspaceMedia.still(m.url);
+    if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="" data-thumb="image">';
+    if (m.poster) return '<img src="' + esc(m.poster) + '" alt="" data-thumb="video">';
+    return ADspaceMedia.still(m.url).replace('<video ', '<video data-thumb="video" ');
   }
+  /* A thumbnail whose file fails, after the media pass's one retry (which
+     holds the event until its answer), is a shaded tile with its kind's
+     glyph, never the browser's broken picture (2026-10-22, REV-5). */
+  var MISS = {
+    image: '<path d="M4 5h16v14H4z"/><path d="m4 16 5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="8.5" r="1.5"/>',
+    video: '<path d="M4 6h11v12H4z"/><path d="m15 10 5-3v10l-5-3"/>'
+  };
+  document.addEventListener('error', function (e) {
+    var t = e.target, box = t && t.nodeType === 1 ? (t.tagName === 'SOURCE' ? t.parentNode : t) : null;
+    if (!box || !box.getAttribute || !box.getAttribute('data-thumb')) return;
+    if (t.tagName === 'SOURCE' && t !== box.lastElementChild) return;
+    var tile = document.createElement('span');
+    tile.className = 'thumb-miss';
+    tile.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (MISS[box.getAttribute('data-thumb')] || MISS.image) + '</svg>';
+    if (box.parentNode) box.parentNode.replaceChild(tile, box);
+  }, true);
 
   function coverWord(p, videos) {
     var v = (videos || []).filter(function (x) { return x.id === p.cover_for; })[0];
