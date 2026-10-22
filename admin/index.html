@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261022v">
-<link rel="stylesheet" href="/css/console.css?v=20261022v">
+<link rel="stylesheet" href="/css/portal.css?v=20261022z">
+<link rel="stylesheet" href="/css/console.css?v=20261022y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -79,14 +79,14 @@
 <script src="/js/records.js?v=20261012a"></script>
 <script src="/js/chart.js?v=20261022t"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261022d"></script>
+<script src="/js/api.js?v=20261022zr"></script>
 <script src="/js/maintenance.js?v=20261022s"></script>
 <script src="/js/announce.js?v=20261022s"></script>
 <script src="/js/notice.js?v=20261022e"></script>
-<script src="/js/whatsapp.js?v=20261022b"></script>
+<script src="/js/whatsapp.js?v=20261022w"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261022q"></script>
-<script src="/js/media.js?v=20261018pl"></script>
+<script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261022s"></script>
 </head>
 <body>
@@ -646,7 +646,7 @@
         <div class="bulkbar" id="crmBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="crmBulkAll"> <span id="crmBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" disabled>Change person in charge</button>
+            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" hidden>Change person in charge</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="crmBulkDone" type="button">Done</button>
         </div>
@@ -688,6 +688,9 @@
                  once and cannot be undone, so it sits last and behind the
                  section's manage level. -->
             <div class="rec-ctl">
+              <!-- A lead nobody holds is taken on the head, where it is seen
+                   (the menu review, MENU-3, 2026-10-22). -->
+              <button class="btn btn-sm" id="crmTake" type="button" hidden>Take lead</button>
               <!-- A call or a visit logged from wherever the record is open
                    (2026-10-11); the glyph alone on a narrow pane. -->
               <button class="btn btn-sm crm-logcall" id="crmLogCall" data-need="clients.calls:work" type="button" aria-label="Log call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span class="crm-logcall-word">Log call</span></button>
@@ -697,13 +700,12 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="crmClientMenu" hidden role="menu">
-                  <button class="kmenu-item" id="crmTake" type="button" role="menuitem" data-a="take" hidden>Take lead</button>
-                  <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-a="edit">Edit</button>
-                  <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-a="feedback" hidden>Request feedback on WhatsApp</button>
-                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-a="restrict" hidden>Mark account restricted</button>
-                  <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
-                  <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
-                  <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient" data-need="clients:manage">Delete</button>
+                  <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-g="2" data-a="edit">Edit</button>
+                  <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-g="3" data-a="feedback" hidden>Request feedback on WhatsApp</button>
+                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-g="4" data-a="restrict" hidden>Mark account restricted</button>
+                  <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-g="4" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
+                  <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-g="4" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
+                  <button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
               </div>
             </div>
@@ -1181,7 +1183,7 @@
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
           <button class="btn" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
-          <button class="btn" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
+          <button class="btn" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue Letter of Offer</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
@@ -1284,7 +1286,7 @@
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">
-              <h3 id="pickTitle">Issue letter</h3>
+              <h3 id="pickTitle">Issue Letter of Offer</h3>
               <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
               </button>
@@ -1292,7 +1294,7 @@
             <div class="sheet-body" id="pickBody"></div>
             <div class="sheet-foot">
               <span class="lpicksum" id="pickSum"></span>
-              <button class="btn btn-primary" id="pickGo" type="button">Issue letter</button>
+              <button class="btn btn-primary" id="pickGo" type="button">Issue Letter of Offer</button>
               <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="pickMsg"></div>
@@ -1601,7 +1603,7 @@
           <span class="bulkbar-acts">
             <button class="btn btn-sm" id="postBulkConfirm" type="button" data-need="review.sets:work" hidden>Confirm internally</button>
             <button class="btn btn-sm" id="postBulkReask" type="button" data-need="review.sets:work" hidden>Request re-approval</button>
-            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" disabled>Delete</button>
+            <button class="btn btn-sm btn-danger" id="postBulkDelete" type="button" data-need="review.sets:manage" hidden>Delete</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="postBulkDone" type="button">Done</button>
         </div>
@@ -1937,6 +1939,7 @@
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
                   <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
+                  <button class="kmenu-item" id="campLifeItem" type="button" role="menuitem" data-need="campaigns.campaigns:work" hidden></button>
                   <button class="kmenu-item" id="campResetLink" type="button" role="menuitem" data-need="campaigns.campaigns:work">Reset access link</button>
                   <button class="kmenu-item is-danger" id="campDelete" type="button" role="menuitem" data-need="campaigns.campaigns:manage">Delete</button>
                 </div>
@@ -1960,7 +1963,7 @@
                Overview, Schedule and Finance too: three prominent actions on a
                pane whose own primary is Save. It is on that pane now, under
                the list it confirms. -->
-          <div class="row" style="margin-top:12px">
+          <div class="row camp-move">
             <button class="btn btn-go" id="campPublish" data-need="campaigns.campaigns:work" type="button">Publish</button>
           </div>
         </section>
@@ -2124,7 +2127,7 @@
              leaves again if the confirmation is reverted. -->
         <section class="panel panel-collapse" id="invoicePanel" hidden>
           <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <svg class="disclosure-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
             <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
             <span>Invoice</span>
             <span class="muted" id="invoiceSummary">Not issued</span>
@@ -2142,9 +2145,9 @@
             <!-- What is attached now belongs with the field that changes it,
                  above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row acts" id="invActs" data-need="campaigns.finance:work" style="margin-top:12px">
+            <div class="row acts invacts" id="invActs" data-need="campaigns.finance:work">
               <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
-              <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
+              <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="invMsg"></div>
           </div>
@@ -2434,8 +2437,8 @@
         <div class="bulkbar" id="workBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="workBulkAll"> <span id="workBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Reassign</button>
-            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" disabled>Delete</button>
+            <button class="btn btn-sm" id="workBulkOwner" type="button" hidden>Reassign</button>
+            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" hidden>Delete</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="workBulkDone" type="button">Done</button>
         </div>
@@ -3016,14 +3019,13 @@
                   <!-- The rare acts, Delete last; every stage move is the
                        stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
-                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
-                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
-                    <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
-                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
-                    <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                    <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
-                    <hr class="kmenu-sep" data-need="ops:manage">
-                    <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem" data-g="2">Make a copy</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem" data-g="2">Repeat on a schedule</button>
+                    <button class="kmenu-item" data-a="take" type="button" role="menuitem" data-g="2" hidden>Take</button>
+                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" data-g="2" hidden>Offer to the team</button>
+                    <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" data-g="2" hidden>Withdraw offer</button>
+                    <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-g="5" data-need="ops:manage" hidden>Restore</button>
+                    <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-g="6" data-need="ops:manage">Delete</button>
                   </div>
                 </span>
                 <button class="iconbtn" id="dwClose" type="button" aria-label="Close">
@@ -5685,7 +5687,7 @@ raya-2026        https://example.com/raya"></textarea>
       <textarea class="input" id="rvoidReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-warn" id="rvoidGo" type="button">Void document</button>
+      <button class="btn btn-warn" id="rvoidGo" type="button">Void</button>
       <button class="btn btn-quiet" id="rvoidCancel" type="button">Cancel</button>
     </div>
     <div class="msg" id="rvoidMsg"></div>
@@ -5714,19 +5716,19 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261022v"></script>
+<script src="/js/admin.js?v=20261022z"></script>
 <script src="/js/documents.js?v=20261022v"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261022s"></script>
 <script src="/js/reports.js?v=20261022s"></script>
-<script src="/js/register.js?v=20261022v"></script>
+<script src="/js/register.js?v=20261022z"></script>
 <script src="/js/suppliers.js?v=20261022v"></script>
 <script src="/js/bukku.js?v=20261022q"></script>
 <script src="/js/engage.js?v=20261022i"></script>
 <script src="/js/quotes.js?v=20261022q"></script>
 <script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261022p"></script>
-<script src="/js/crm.js?v=20261022k"></script>
+<script src="/js/crm.js?v=20261022z"></script>
 <script src="/js/sales.js?v=20261022t"></script>
 <script src="/js/team.js?v=20261022v"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
@@ -5734,12 +5736,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261022p"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261022s"></script>
-<script src="/js/ops.js?v=20261022t"></script>
+<script src="/js/campaigns.js?v=20261022y"></script>
+<script src="/js/ops.js?v=20261022zr"></script>
 <script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261022v"></script>
-<script src="/js/overview.js?v=20261022t"></script>
+<script src="/js/overview.js?v=20261022x"></script>
 <script src="/js/settings.js?v=20261022h"></script>
 </body>
 </html>

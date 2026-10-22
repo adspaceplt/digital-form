@@ -10,7 +10,7 @@
  */
 (function () {
   'use strict';
-  var CDN = /^https:\/\/mycdn\.adspace\.me\/content\/.+\.(mov|mp4|m4v|qt)$/i;
+  var CDN = /^https:\/\/mycdn\.adspace\.me\/content\/.+\.(mov|mp4|m4v|qt|mkv|webm|mpg|mpeg)$/i;
 
   /* The converted copy of a video on the CDN, else null. A copy is never
      asked for a copy. */

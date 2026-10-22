@@ -61,15 +61,12 @@
     if (payload.captionZh != null) args.p_caption_zh = payload.captionZh;
     /* The decision is on the version on show (audit F2, 2026-10-10): a post
        changed after the page opened is refused `changed`, and what was
-       decided on is kept with the decision. A database without the function
-       is asked the older way. */
+       decided on is kept with the decision. Any refusal is the refusal: it
+       is never sent again without the version (2026-10-22, BE-13). */
     if (payload.version != null) {
       const seen = await client.rpc('submit_review_seen', Object.assign({ p_version: payload.version }, args));
-      const missing = seen.error && (seen.error.code === 'PGRST202' || /submit_review_seen/.test(seen.error.message || ''));
-      if (!missing) {
-        if (seen.error) throw seen.error;
-        return seen.data;
-      }
+      if (seen.error) throw seen.error;
+      return seen.data;
     }
     const { data, error } = await client.rpc('submit_review', args);
     if (error) throw error;
@@ -123,9 +120,8 @@
     'bill_contact', 'bill_contact_email', 'bill_contact_phone', 'finance_email', 'billing_address'];
   /* Billing by client id: { id: row }. A row carries `missing`, the
      required fields left blank, even where the values are withheld, so the
-     Active gate still names them. Before the migration has run the function
-     is missing and the columns are still readable, so they are read
-     straight; after it, a refusal answers {}. Never throws. */
+     Active gate still names them. A refusal answers {}, never a second
+     read of the withheld columns (2026-10-22, BE-13). Never throws. */
   function clientBilling(ids) {
     if (!client) return Promise.resolve({});
     const keyed = (rows) => {
@@ -133,13 +129,8 @@
       (rows || []).forEach((r) => { out[r.id] = r; });
       return out;
     };
-    const direct = () => {
-      let q = client.from('clients').select('id, ' + BILL_COLS.join(', '));
-      if (ids) q = q.in('id', ids);
-      return q.then((r) => keyed(r.error ? [] : r.data), () => ({}));
-    };
     return client.rpc('client_billing', { p_ids: ids || null })
-      .then((r) => (r.error ? direct() : keyed(r.data)), direct);
+      .then((r) => (r.error ? {} : keyed(r.data))).catch(() => ({}));
   }
   /* Lays billing onto client rows in place. Only the keys the answer holds
      are written, so a person Billing refuses keeps none. */
@@ -244,7 +235,10 @@
         if (r.error) return r;
         const got = r.data || [];
         out = out.concat(got);
-        if (got.length < 1000 || from >= last) return { data: out };
+        if (got.length < 1000) return { data: out };
+        /* Past the cap the list is cut, and said so: never rows dropped
+           without a word (2026-10-22, BE-14). */
+        if (from >= last) return { data: out, error: { message: 'too-many', code: 'too-many' } };
         return page(from + 1000);
       });
     }

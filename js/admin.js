@@ -5909,7 +5909,7 @@
     var picked = pickedPosts();
     $('postBulkConfirm').hidden = !(state.batch && state.batch.published) || !picked.some(postConfirmable);
     $('postBulkReask').hidden = !picked.some(postReaskable);
-    $('postBulkDelete').disabled = !n;
+    $('postBulkDelete').hidden = !n;
   }
   /* One post after another, so a refusal is named against its post. */
   function eachPost(list, act) {

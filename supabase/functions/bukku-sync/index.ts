@@ -315,9 +315,11 @@ Deno.serve(async (req) => {
 
     /* The tax codes Bukku bills with (2026-10-22), read for the Settings
        page's Tax codes: read only, nothing written in Bukku. The page keeps
-       them through tax_codes_save. */
+       them through tax_codes_save. Asked of bukku_config, as 'fields' is, so
+       a colleague at View alone never has the company's token used for them
+       (2026-10-22, BE-12). */
     if (action === 'taxes') {
-      const me = await db.rpc('tax_codes_list');
+      const me = await db.rpc('bukku_config');
       if (me.error) return json({ error: 'needs-update' }, 200, origin);
       if (me.data && me.data.error) return json({ error: me.data.error }, 200, origin);
       const r = await bukku('POST', '/v2/lists', { lists: ['tax_codes'], params: {} });

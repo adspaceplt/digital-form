@@ -65,7 +65,7 @@
       none: 'No bookings',
       noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
-      shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Publish on',
+      shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Post date',
       draftDue: 'Draft due', dueToday: 'Due today', overdue: 'Overdue by {n}', dueIn: 'Due in {n}',
       whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
       platformsLabel: 'Posting on', tbc: 'To be confirmed',

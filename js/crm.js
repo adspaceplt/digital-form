@@ -697,7 +697,7 @@
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
     all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every client shown');
-    $('crmBulkOwner').disabled = !n;
+    $('crmBulkOwner').hidden = !n;
   }
   /* Each client in turn, so a refusal is named against its client. */
   function setOwners(list, nameOf, then) {
@@ -1127,12 +1127,14 @@
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
     $('crmBrandEdit').hidden = !(canWork && mayPart('clients.brand', 'work'));
-    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
+    $('crmClientMenuWrap').hidden = !canWork && !mayPart('clients', 'manage');
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
        WhatsApp Manage and its Feedback request part, the client read. */
     $('crmFeedback').hidden = true;
-    if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
+    /* Feedback is asked of a client, never a lead (MENU-1, 2026-10-22);
+       wa_compose_prepare refuses it there too (`not-client`). */
+    if (bandKey(c.stage) !== 'clients.leads' && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
       var fbFor = c.id;
       window.ADspaceWhatsApp.on('feedback').then(function (yes) {
         if (!state.client || state.client.id !== fbFor || !yes) return;
@@ -1740,7 +1742,8 @@
     var on = Boolean(c && c.restricted_since);
     var canWork = bandMay((c && c.stage) || 'lead', 'work');
     box.hidden = !on;
-    $('crmRestrictSet').hidden = on || !canWork;
+    // A lead holds no account of ours to restrict (MENU-1).
+    $('crmRestrictSet').hidden = on || !canWork || bandKey((c && c.stage) || 'lead') === 'clients.leads';
     if (!on) return;
     $('crmRestrictWord').textContent = restrictWord(c.restricted_platform) + ' restricted';
     $('crmRestrictText').textContent = ['Since ' + niceDate(c.restricted_since), c.restricted_note].filter(Boolean).join(' · ');
@@ -2273,6 +2276,8 @@
   }
 
   (function wireClientMenu() {
+    var take = $('crmTake');
+    if (take) take.addEventListener('click', function () { takeLead(state.client); });
     var btn = $('crmClientMenuBtn'), menu = $('crmClientMenu');
     if (btn && menu) {
       btn.addEventListener('click', function (e) {
@@ -2289,7 +2294,6 @@
         btn.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a');
         if (a === 'delclient') { openClientDelete(); return; }
-        if (a === 'take') { takeLead(state.client); return; }
         if (a === 'feedback') { askFeedback(state.client); return; }
         if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'vic') { askVic(state.client); return; }
@@ -3648,18 +3652,17 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           (removed
-            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
-              /* The hard delete, once the soft one has been made. Drawn only
-                 where the Contacts part is managed. */
-              '<button class="kmenu-item is-danger" data-a="del" data-need="clients.contacts:manage" type="button"><b>Delete</b></button>'
-            : '<button class="kmenu-item" data-a="edit" data-need="clients.contacts:work" type="button"><b>Edit</b></button>' +
-              (ct.is_primary ? '' :
-                '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
-              (ct.portal_access
-                ? '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
-                  '<button class="kmenu-item" data-a="unportal" type="button"><b>Revoke portal access</b></button>'
-                : '<button class="kmenu-item" data-a="portal" type="button"><b>Enable portal access</b></button>') +
-              '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.contacts:work" type="button"><b>Remove</b></button>') +
+            /* The hard delete, once the soft one has been made, drawn only
+               where the Contacts part is managed. */
+            ? ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore' }],
+                [{ a: 'del', label: 'Delete', need: 'clients.contacts:manage' }]])
+            : ADspaceMenu.items([[],
+                [{ a: 'edit', label: 'Edit', need: 'clients.contacts:work' },
+                 !ct.is_primary && { a: 'primary', label: 'Make main contact' }],
+                [ct.portal_access && { a: 'invite', label: 'Send invitation' }],
+                [],
+                [ct.portal_access ? { a: 'unportal', label: 'Revoke portal access' } : { a: 'portal', label: 'Enable portal access' }],
+                [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -4017,10 +4020,10 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             (removed
-              ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
-                '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.calls:manage" type="button"><b>Delete</b></button>'
-              : '<button class="kmenu-item" data-a="edit" data-need="clients.calls:work" type="button"><b>Edit</b></button>' +
-                '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.calls:work" type="button"><b>Remove</b></button>') +
+              ? ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore' }],
+                  [{ a: 'purge', label: 'Delete', need: 'clients.calls:manage' }]])
+              : ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit', need: 'clients.calls:work' }], [], [], [],
+                  [{ a: 'del', label: 'Remove', need: 'clients.calls:work', attrs: 'data-soft' }]])) +
           '</div>' +
         '</span>' +
       '</div>';
@@ -4556,9 +4559,8 @@
         '<span class="team-act">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="restore" data-need="clients.services:work" type="button"><b>Restore</b></button>' +
-            (state.servicesQuoted && state.servicesQuoted[l.id] ? ''
-              : '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.services:manage" type="button"><b>Delete</b></button>') +
+            ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore', need: 'clients.services:work' }],
+              [!(state.servicesQuoted && state.servicesQuoted[l.id]) && { a: 'purge', label: 'Delete', need: 'clients.services:manage' }]]) +
           '</div>' +
         '</span>';
       wireMenu(row);
@@ -4589,12 +4591,12 @@
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="edit" data-need="clients.services:work" type="button"><b>Edit</b></button>' +
-          /* This overrides a client's service line, not the rate card, so it
-             is Clients at manage and not Services. */
-          (bridge.may && bridge.may('clients', 'manage')
-            ? '<button class="kmenu-item" data-a="force" type="button"><b>Update status</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.services:work" type="button"><b>Remove</b></button>' +
+          /* Confirm without letter overrides a client's service line, not the
+             rate card, so it is Clients at manage and not Services; it is
+             offered only while the line is not yet confirmed (MENU-14). */
+          ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit', need: 'clients.services:work' },
+            bridge.may && bridge.may('clients', 'manage') && l.state !== 'confirmed' && { a: 'force', label: 'Confirm without letter' }],
+            [], [], [], [{ a: 'del', label: 'Remove', need: 'clients.services:work', attrs: 'data-soft' }]]) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -4614,13 +4616,13 @@
          state as a select over the states a line can hold, and the reason
          beside it, because the reason is what the activity record keeps. */
       window.ADspaceConfirm.ask({
-        title: 'Update status',
+        title: 'Confirm without letter',
         body: 'The state of ' + l.label + ' is set by hand, past the checks the '
             + 'letter normally makes. The reason goes on the activity record.',
-        go: 'Update',
+        go: 'Set state',
         tone: 'warn',
         fields: [
-          { name: 'state', label: 'State', value: l.state,
+          { name: 'state', label: 'State', value: 'confirmed',
             choices: Object.keys(SV_STATE).map(function (k) { return [k, SV_STATE[k][0]]; }) },
           { name: 'why', label: 'Why it is being set by hand', rows: 3,
             placeholder: 'What the checks cannot see.',
@@ -4956,7 +4958,7 @@
         if (!state.requests.length) { box.innerHTML = '<div class="empty">No requests.</div>'; return; }
         var table = document.createElement('div');
         table.className = 'crm-table';
-        table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
+        table.innerHTML = '<div class="crm-head svc-row doc-row rq-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
         state.requests.forEach(function (q) { table.appendChild(requestRow(q)); });
         box.appendChild(table);
       });
@@ -4968,7 +4970,7 @@
     var gone = Boolean(q.withdrawn_at);
     var w = RQ_STATE[q.state] || RQ_STATE.requested;
     var row = document.createElement('div');
-    row.className = 'svc-row doc-row' + (gone ? ' is-off' : '');
+    row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
     var sub = [q.contact_name, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
@@ -4981,15 +4983,11 @@
           Object.keys(RQ_STATE).map(function (k) {
             return '<option value="' + k + '"' + (k === q.state ? ' selected' : '') + '>' + esc(RQ_STATE[k][0]) + '</option>';
           }).join('') + '</select>') + '</span>' +
+      /* The row's one act is on the row (MENU-6, 2026-10-22). */
       '<span class="team-act">' +
-        (gone ? '' :
-        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-        '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="reply" type="button"><b>Reply</b></button>' +
-        '</div>') +
+        (gone ? '' : '<button class="btn btn-sm" data-a="reply" type="button">Reply</button>') +
       '</span>';
     if (!gone) {
-      wireMenu(row);
       row.querySelector('[data-a="reply"]').addEventListener('click', function () { openReply(q); });
       row.querySelector('[data-f="state"]').addEventListener('change', function () { saveRequest(q, { state: this.value }, 'request.changed'); });
     }
@@ -5085,7 +5083,7 @@
         else {
           var table = document.createElement('div');
           table.className = 'crm-table';
-          table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
+          table.innerHTML = '<div class="crm-head svc-row doc-row ltr-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
           rows.forEach(function (d) { table.appendChild(documentRow(d)); });
           box.appendChild(table);
         }
@@ -5116,7 +5114,7 @@
        it carried. A legacy letter is history and is left as history. */
     var canVerify = st === 'signed' && mapped.length && mapped.length === (d.lines || []).length;
     var row = document.createElement('div');
-    row.className = 'svc-row doc-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    row.className = 'svc-row doc-row ltr-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
     var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
     var lines = docLines(d);
     row.innerHTML =
@@ -5130,25 +5128,26 @@
           (d.verified_by ? ' · ' + d.verified_by : '')) + '</small>' : '') + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
+      /* A signed letter's next step, Verify, stands on the row (MENU-9,
+         2026-10-22); the rest is the ⋯ in the standard's order. */
       '<span class="team-act">' +
+        (canVerify ? '<button class="btn btn-sm" data-a="verify" type="button">Verify</button>' : '') +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
-          /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
-             drawn once the template is on; never a voided or replaced one. */
-          (waOffer && !d.voided_at && !d.superseded_by
-            ? '<button class="kmenu-item" data-a="wa" hidden type="button"><b>Send on WhatsApp</b></button>' : '') +
-          (st === 'issued' ? '<button class="kmenu-item" data-a="sign" type="button"><b>Mark signed</b></button>' : '') +
-          (st === 'signed' ? '<button class="kmenu-item" data-a="unsign" type="button"><b>Not signed after all</b></button>' : '') +
-          (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
-          /* Void reverses a confirmation, so it is offered on a verified
-             letter and nowhere else: an issued or signed letter has confirmed
-             nothing and there is nothing to put back. Both acts are the
-             section's Manage level, so both carry the same `data-need` and
-             the database decides again when the button is pressed. */
-          (st === 'verified'
-            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete</b></button>' +
+          ADspaceMenu.items([
+            [{ a: 'download', label: 'Download' }],
+            [],
+            /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
+               drawn once the template is on; never a voided or replaced one. */
+            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true }],
+            [st === 'issued' && { a: 'sign', label: 'Mark signed' },
+             st === 'signed' && { a: 'unsign', label: 'Mark not signed' }],
+            [],
+            /* Void reverses a confirmation, so it is offered on a verified
+               letter and nowhere else. Both acts are the section's Manage
+               level; the database decides again at the press. */
+            [st === 'verified' && { a: 'void', label: 'Void', need: 'clients.documents:manage' },
+             { a: 'del', label: 'Delete', need: 'clients.documents:manage' }]]) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -5469,7 +5468,7 @@
   function pickClosed() {
     picking = null;
     $('pickGo').disabled = false;
-    $('pickGo').textContent = 'Issue letter';
+    $('pickGo').textContent = 'Issue Letter of Offer';
   }
   function shutPick() {
     if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
@@ -5520,7 +5519,7 @@
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;
-        go.textContent = 'Issue letter';
+        go.textContent = 'Issue Letter of Offer';
         /* The services or the quotation they came from changed while the
            sheet was open (or the quotations failed to load, so the page
            priced them without their rate): both are read again and the sheet

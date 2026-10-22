@@ -6181,3 +6181,122 @@ The user, 2026-10-22: "Fix all", the approved mockups.
   same; it is one card, a row a month, Due on the newest still to rate.
 - Skipped: none. All 29 findings of the internal report are built.
 
+
+### 2026-10-22 — The client pages' review findings (release 2b)
+The rest of the client review: CP-13 to CP-17.
+- CP-13: a line of parts broke inside a part ("4 / contents", "RM /
+  8,000"); the portal's service and request names go through `parts()`,
+  and the quotation website holds RM or S$ to its figure.
+- CP-14: contact chips on a phone stood at unequal widths; two or more
+  share equal tracks, an address on its own row.
+- CP-15: the selection page drew a shoot's time as typed ("2pm") beside
+  the creator's page's "10:00 am"; `ampm()` was defined and never called.
+  Both now read the same (10:00 am, 下午2:00), and the creator's page says
+  Post date, never Publish on.
+- CP-16: a creator with no profile left a blank cell; a mute em dash.
+- CP-17: in Waiting for your approval at a desk the pair ran 575px each and
+  Open the draft the card's width; the pair now stand 220px at the right
+  edge, Approve last, Open the draft at its own width. This reopens the
+  2026-10-20 equal halves at desk width on this card alone.
+### 2026-10-22 — Menus: a client's record (release 2 of the menu review)
+The record head's ⋯ follows the standard: Take lead left the ⋯ for a
+button on the head where a lead nobody holds is seen (MENU-3); a lead's ⋯
+offers neither Request feedback on WhatsApp nor Mark account restricted
+(MENU-1), and `wa_compose_prepare` refuses feedback for a lead too
+(`not-client`, `2026-10-22-feedback-asked-of-clients-alone.sql`). Contacts,
+Calls and visits and the service lines draw their ⋯ through
+`ADspaceMenu.items`: Main contact reads Make main contact, Update status
+reads Confirm without letter and is offered only on a line not yet
+confirmed (MENU-14). Built: MENU-1, MENU-3, MENU-14 (these words), MENU-15
+for these menus. Left for the next release (the gate at 22:00Z): MENU-6
+(a request's Reply on its row), MENU-9 (a client letter's ⋯), MENU-12
+(bulk bars hidden at zero), the rest of the areas. `tests/crm.js` now
+restricts an Active client, and `tests/menus.js` measures a menu's
+layout width, not its opening scale.
+### 2026-10-22 — The Dashboard lists a piece of work once (release 3 of the work review)
+The user, 2026-10-22: "Fix all". Built: OVW-3 (Needs attention listed the
+month's late report task beside its owed report, and a paused client's late
+task under both Late tasks and Urgent delivery; one row each now, carried
+by the task's id) and OVW-4 (the signal counted reports owed without those
+in review while the tile counted them: 6 beside 7; both count every report
+not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
+reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
+WRK-M1, and OVW-7's shared cold-lead rule.
+
+### 2026-10-22 — Creator Campaigns: release 2 of the second audit (the booking card and the record)
+The user, 2026-10-22: "Fix all". Built: CMP-7 (a step taken on a booking's
+card was answered in the head card a screen above it; `cardSay` answers
+on the card, unfolding it, and the head only where the card is gone),
+CMP-8 (the list's Creators column showed the slots; Booked n of N),
+CMP-9 and CMP-M2 (Save stood above the Results it saves; the card's
+actions are its foot), CMP-10 (the step forward was second of four; Revert,
+Request changes, Save, then the step forward at the right edge, its own
+row on a phone), CMP-11 (Publish date beside the track's Post date; post
+everywhere on the record), CMP-12 (9.30am; 9:30am), CMP-13 (Bookings and
+the Schedule listed a shortlisted creator; booked alone, Not set where no
+date), CMP-14 (Review draft hid on Selection; only the confirm line's way
+hides there), CMP-15 (no PDF said twice, a triangle caret; the head alone,
+the chevron), CMP-16 (an empty Notes box on every card; Add note, and
+result figures with separators) and CMP-17's inline styles. CMP-M1:
+reopens the 2026-10-09 line (a video script's client link) that put a campaign's Unpublish beside Copy link and
+Preview; at a desk it stays, on a phone it is the head ⋯'s lifecycle item
+(`#campLifeItem`), as the approved mockup draws it.
+
+### 2026-10-22 — Menus: a client's requests and letters, the Register, the bulk bars (release 3 of the menu review)
+A request's Reply stands on its row as a small button (MENU-6). A client
+letter's ⋯ reads Download | Send on WhatsApp | Mark signed or Mark not
+signed | Void, Delete through `ADspaceMenu.items`, and a signed letter's
+Verify stands on its row before the ⋯ (MENU-9; "Not signed after all"
+retired). On the Register a Letter of Offer and a performance record open
+on a press of the row, a chevron its way there and no ⋯ (MENU-7); every
+other row's ⋯ runs through the helper. The Clients, posts and My Work bulk
+bars hide their acts at zero ticked, never grey them (MENU-12). Issue
+letter reads Issue Letter of Offer, and the void sheet's act Void
+(MENU-14); on a phone the Documents head's two acts take a row each so the
+longer label is never broken. The task card's ⋯ carries its groups.
+Skipped: nothing in these areas. `tests/take.js` "and says so under it"
+fails on main before this release (logged in STANDARD.md).
+
+### 2026-10-22 · `revise` fed a picture to a video
+`tests/revise.js` "and one without asks for its first frame, inline" failed
+on main once REV-5 (#712) put a shaded `.thumb-miss` tile in place of a
+thumbnail whose file fails. The page was right: the suite answered every
+`mycdn.adspace.me` address with a PNG, so the reel's `.mov` did not decode,
+fired `error`, and REV-5 replaced the `<video>` the check looks for. The
+suite now answers a video address (`.mov`, `.mp4`, `.webm`) with a 16px
+WebM the browser plays, keeps the PNG for pictures and a 404 for a `gone.`
+file, and seeds Picture gone to assert the missing tile, never a broken
+image. The assertion is unchanged. Rule: a suite that answers the CDN
+answers a video with a video (CLAUDE.md §1, harness facts).
+
+
+### 2026-10-22 — The backend review's remaining findings (release 3 of 3)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/backend/report.txt).
+Built: SEC-2, BE-1, BE-7 to BE-14, LEAN-1, LEAN-2.
+- SEC-2: the backup workflow, which holds the database owner's connection,
+  ran `actions/checkout@v4` and `supabase/setup-cli@v1` by movable tags; both
+  are pinned to their commits (v4.4.0, v1.7.3) and `dbbackup` holds every
+  `uses:` to a 40-hex commit.
+- BE-10: the backup's guard read the clients table's COPY header, which an
+  empty table also writes; it now needs a row before the closing `\.`.
+- BE-1: pickers took mkv, webm, mpg and mpeg since 2026-10-17, but the
+  conversion and the page's copy lookup knew mov, mp4, m4v and qt alone, so
+  those uploads never played on an iPhone. The Lambda is redeployed by the
+  user from `workers/video-convert/`.
+- BE-7, LEAN-2: a creative's picture followed redirects blind and read the
+  whole body before the 4 MB check; one reader now serves both paths.
+- BE-8: Delete Google Meet answered deleted even where the month kept the
+  link.
+- BE-9: the two issue-day defaults the review named were already set to
+  Malaysia's day on 2026-10-17 (the review read the create table alone);
+  `tests/sql.js` now holds every column's last default to it.
+- BE-11: anyone holding a selection link could register twenty endpoints and
+  push the client's own phones out; new devices are capped and nobody is
+  pushed out.
+- BE-12: `bukku-sync` `taxes` let a colleague at View alone use the company's
+  Bukku token; it asks `bukku_config` as `fields` does.
+- BE-13: two fallbacks for databases before 2026-09-28 and 2026-10-10 could
+  resend a decision without its version check; removed.
+- BE-14: `readPages` past its cap returned a cut list as whole.
+- LEAN-1: the PDF reference reading was copied byte for byte in wa-send and
+  supplier-mail; one `_shared/pdfref.ts`.

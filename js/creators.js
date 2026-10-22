@@ -767,7 +767,7 @@
         facts.push([t().postedOn, fmtDate(wentOut)]);
       } else if (!live) {
         facts.push([seeding ? t().deliveryOn : t().shootOn,
-          o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '') : t().tbc]);
+          o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? (lang === 'zh' ? ' ' : ', ') + ampm(o.visit_time) : '') : t().tbc]);
       }
       /* Once its post is out, each post's row names its platform. */
       var plats = posts.length ? [] : platsOf(o);
@@ -1052,11 +1052,15 @@
      as the scripts page writes it), never 24-hour beside a shoot's 2pm
      (SELECTION-10). */
   function ampm(hm) {
-    var m = /^(\d{1,2}):(\d{2})$/.exec(hm || '');
-    if (!m) return hm || '';
-    var h = Number(m[1]), x = h >= 12 ? 'pm' : 'am';
+    var s = String(hm || '').trim();
+    var m = /^(\d{1,2}):(\d{2})/.exec(s) || /^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)$/i.exec(s);
+    if (!m) return s;
+    var h = Number(m[1]);
+    if (m[3]) h = (h % 12) + (/pm/i.test(m[3]) ? 12 : 0);
+    if (h > 23) return s;
+    var x = h >= 12 ? 'pm' : 'am', zh = h < 12 ? '上午' : '下午';
     h = h % 12 || 12;
-    return h + ':' + m[2] + ' ' + x;
+    return lang === 'zh' ? zh + h + ':' + (m[2] || '00') : h + ':' + (m[2] || '00') + ' ' + x;
   }
   function fmtDate(d) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */
@@ -1213,7 +1217,7 @@
             ? '<span>' + esc(t().platformsLabel) + '</span>' + esc(plats.join(' · '))
             : '') +
         '</div>' +
-        '<div class="crow-links">' + links + '</div>' +
+        '<div class="crow-links">' + (links || '<span class="mute">\u2014</span>') + '</div>' +
         '<div class="crow-rate">' + money(o.rate) + '</div>' +
         (backupsOpen()
           ? '<button class="crow-backup' + (pick === 'backup' ? ' is-on' : '') + '" type="button">' +

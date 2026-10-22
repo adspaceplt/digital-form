@@ -3642,6 +3642,9 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn {
     flex: 0 0 auto; margin-left: auto;
   }
+  /* Issue Letter of Offer does not fit half a phone's row: the Documents
+     head's two acts take a row each, never a label broken (MENU-14). */
+  .viewhead:has(#crmCover:not([hidden])) > .btn:not([hidden]) { flex-basis: 100%; }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
   /* Action rows: a button keeps a readable width and wraps to the next line
@@ -3926,6 +3929,17 @@ body > .shell { width: 100%; }
    加入 with the leaving mark at a desk (2026-10-21: an `auto` track sized each
    row to its own Join and the head to nothing, so no column lined up). */
 .doc-row.meet-row { grid-template-columns: minmax(0, 1fr) 296px var(--state-w) 128px; }
+/* A request's Reply stands on its row (MENU-6). */
+.doc-row.rq-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 92px; }
+.doc-row.rq-row > .team-act { justify-self: end; }
+/* A Letter of Offer or a performance record on the Register opens on a
+   press of its row (MENU-7). */
+.reg-row.is-go { cursor: pointer; }
+.reg-go svg { width: 15px; height: 15px; color: var(--ink-mute); }
+@media (hover: hover) { .reg-row.is-go:hover { background: var(--sunk); } }
+/* A signed letter's Verify stands before its ⋯ (MENU-9). */
+.doc-row.ltr-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) 140px; }
+.doc-row.ltr-row > .team-act { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
 .meet-row .svc-amt { white-space: nowrap; }
 /* The client record's pane has no Brand column: every row there is that
    client's. */
@@ -4465,6 +4479,12 @@ body > .shell { width: 100%; }
    head in this portal has refused for months. */
 .is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
 .is-narrow .ct-row .crm-reach .plink:only-child { flex: 0 0 auto; justify-content: center; }
+/* Two chips or more share equal tracks (DESIGN §4: equal widths on a phone
+   unless alone): the phone and WhatsApp as halves, an address on a row of
+   its own, so no chip is left a width of its own beside the rest (CP-14). */
+.is-narrow .ct-row .crm-reach:has(> .plink + .plink) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-narrow .ct-row .crm-reach:has(> .plink + .plink) > [href^="mailto:"],
+.is-narrow .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; }
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: transparent; background: var(--sunk); margin: 12px 0 0; }
@@ -8280,6 +8300,15 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    than Approve (2026-10-20, RVP-2). */
 .approve-row > .namebox, .approve-row > .btn-approve, .approve-row > .btn-changes { flex: 1 1 50%; min-width: 0; }
 .approve-row.is-asking > .namebox { flex: 1 1 100%; }
+/* The draft waiting on the client (#needBox) at a desk: the pair at its
+   own width at the card's right edge, Approve last, as an action row
+   reads; Open the draft at its own width on every screen (CP-17). */
+.cx-needs .client-draft-preview > a.btn { justify-self: start; }
+@media (min-width: 641px) {
+  .cx-needs .approve-row { flex-direction: row-reverse; justify-content: flex-start; }
+  .cx-needs .approve-row > .namebox, .cx-needs .approve-row > .btn-approve, .cx-needs .approve-row > .btn-changes { flex: 0 0 220px; }
+  .cx-needs .approve-row.is-asking > .namebox { flex: 0 1 460px; }
+}
 .changebox-actions > .btn { flex: 1 1 0; min-width: 0; }
 /* While a request is open the decision pair steps away, so Cancel and Send
    request are the card's only acts, and the request starts the block. */

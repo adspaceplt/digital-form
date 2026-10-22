@@ -185,23 +185,57 @@ async function metrics(ids: string[], names: Record<string, string>, token?: str
   return got;
 }
 
-/* A picture read from one of Meta's own hosts alone (a redirect followed
-   only onto them), as base64; 4 MB at most. */
+/* A picture read from one of Meta's own hosts alone, as base64, 4 MB at
+   most: the one reader for a creative and for `pictures` (2026-10-22, BE-7,
+   LEAN-2). Redirects are followed by hand, three at most, each address held
+   to Meta's hosts before it is asked (a creative's facebook.com address is
+   let in as the first hop alone, where Meta unwraps its own links), and the
+   body is streamed and cut at the cap, never read whole first. */
 const META_HOST = /(^|\.)(fbcdn\.net|cdninstagram\.com)$/;
-async function readPicture(u: string): Promise<{ type: string; b64: string } | null> {
-  try {
-    const h = new URL(u);
-    if (h.protocol !== 'https:' || !(META_HOST.test(h.hostname) || /(^|\.)facebook\.com$/.test(h.hostname))) return null;
+type Pic = { type: string; b64: string } | { error: string };
+async function readMeta(u: string, allowFb: boolean): Promise<Pic> {
+  const MAX = 4 * 1024 * 1024;
+  let url = u;
+  for (let hop = 0; hop < 4; hop++) {
+    let h;
+    try { h = new URL(url); } catch { return { error: 'not-read' }; }
+    const fb = allowFb && hop === 0 && /(^|\.)facebook\.com$/.test(h.hostname);
+    if (h.protocol !== 'https:' || !(META_HOST.test(h.hostname) || fb)) return { error: 'not-read' };
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
-    const res = await fetch(u, { signal: ctl.signal }); clearTimeout(t);
-    const type = (res.headers.get('content-type') || '').split(';')[0];
-    if (!res.ok || !/^image\//.test(type) || !META_HOST.test(new URL(res.url || u).hostname)) return null;
-    const buf = new Uint8Array(await res.arrayBuffer());
-    if (!buf.length || buf.length > 4 * 1024 * 1024) return null;
-    let bin = '';
-    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-    return { type, b64: btoa(bin) };
-  } catch { return null; }
+    try {
+      const res = await fetch(url, { signal: ctl.signal, redirect: 'manual' });
+      if (res.status >= 300 && res.status < 400) {
+        const to = res.headers.get('location');
+        ctl.abort();
+        if (!to) return { error: 'not-read' };
+        url = new URL(to, url).href;
+        continue;
+      }
+      const type = (res.headers.get('content-type') || '').split(';')[0];
+      if (!res.ok || !/^image\//.test(type) || !META_HOST.test(h.hostname) || !res.body) { ctl.abort(); return { error: 'not-read' }; }
+      if (Number(res.headers.get('content-length') || 0) > MAX) { ctl.abort(); return { error: 'too-large' }; }
+      const parts = []; let size = 0;
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > MAX) { ctl.abort(); return { error: 'too-large' }; }
+        parts.push(value);
+      }
+      if (!size) return { error: 'not-read' };
+      const buf = new Uint8Array(size); let at = 0;
+      for (const part of parts) { buf.set(part, at); at += part.length; }
+      let bin = '';
+      for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      return { type, b64: btoa(bin) };
+    } catch { return { error: 'not-read' }; } finally { clearTimeout(t); }
+  }
+  return { error: 'not-read' };
+}
+async function readPicture(u: string): Promise<{ type: string; b64: string } | null> {
+  const p = await readMeta(u, true);
+  return 'b64' in p ? p : null;
 }
 /* An ad's creative as the team made it, never a preview of the ad: the
    image itself, a link's or a carousel's first picture, a video's cover as
@@ -313,31 +347,8 @@ Deno.serve(async (req) => {
         .filter((u) => metaHost(u))
         .slice(0, 6);
       const pictures = await Promise.all(urls.map(async (u) => {
-        try {
-          const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 10000);
-          const res = await fetch(u, { signal: ctl.signal });
-          const type = res.headers.get('content-type') || '';
-          /* A redirect must land on Meta's own hosts too, and a picture is
-             read only up to its 4 MB (audit S12, 2026-10-15). */
-          if (!res.ok || !/^image\//.test(type) || !metaHost(res.url || u)) { clearTimeout(t); ctl.abort(); return { url: u, error: 'not-read' }; }
-          const MAX = 4 * 1024 * 1024;
-          if (Number(res.headers.get('content-length') || 0) > MAX) { clearTimeout(t); ctl.abort(); return { url: u, error: 'too-large' }; }
-          const parts: Uint8Array[] = []; let size = 0;
-          const reader = res.body!.getReader();
-          for (;;) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            size += value.length;
-            if (size > MAX) { clearTimeout(t); ctl.abort(); return { url: u, error: 'too-large' }; }
-            parts.push(value);
-          }
-          clearTimeout(t);
-          const buf = new Uint8Array(size); let at = 0;
-          for (const part of parts) { buf.set(part, at); at += part.length; }
-          let bin = '';
-          for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-          return { url: u, type: type.split(';')[0], b64: btoa(bin) };
-        } catch { return { url: u, error: 'not-read' }; }
+        const p = await readMeta(u, false);
+        return 'b64' in p ? { url: u, type: p.type, b64: p.b64 } : { url: u, error: p.error };
       }));
       return json({ pictures }, 200, origin);
     }

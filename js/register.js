@@ -76,10 +76,6 @@
   }
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  function menuItem(action, label, cls, need) {
-    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button"' +
-      (need ? ' data-need="' + need + '"' : '') + '><b>' + esc(label) + '</b></button>';
-  }
   function shutMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('.reg-row .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('.reg-row .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -347,28 +343,38 @@
       '<span class="reg-who">' + esc(recipientOf(d)) + '</span>' +
       /* No date reads the mute em dash, as Brand does (DOC-4). */
       '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
-      '<span class="team-act">' +
-        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-        '<div class="kmenu" data-menu hidden>' +
-          (d.source === 'portal' ? menuItem('download', 'Download') : '') +
-          (d.file_url ? menuItem('open', 'Open file') : '') +
-          (offer ? menuItem('record', 'Open client record') : '') +
-          (perf ? menuItem('review', 'Open review') : '') +
-          (offer || perf ? '' :
-            (d.source === 'manual' ? menuItem('edit', 'Edit', '', need + ':work') : '') +
-            /* A portal document is corrected by reissuing it: the same serial,
-               the earlier version kept and voided as Reissued. */
-            (d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') ? menuItem('reissue', 'Reissue', '', need + ':work') : '') +
-            /* An HR letter is the colleague's to read once shared (My
-               performance, Letters); shared later, or taken back. */
-            (d.family === 'hr' && d.member_id && !d.voided_at
-              ? menuItem('share', d.shared_at ? 'Stop sharing' : 'Share with ' + shareName(d), '', 'register.hr:work') : '') +
-            (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need + ':manage')) +
-            /* Delete, not "Delete permanently": the menu has named what this
-               is and the sheet states that there is no restore. */
-            menuItem('del', 'Delete', 'is-danger', need + ':manage')) +
-        '</div>' +
+      /* A Letter of Offer and a performance record open where they are
+         acted on, on a press of the row, so the row carries the way there
+         and no ⋯ (MENU-7, 2026-10-22). */
+      '<span class="team-act">' + (offer || perf
+        ? '<button class="kmenu-btn reg-go" data-a="' + (offer ? 'record' : 'review') + '" type="button" aria-label="' +
+            (offer ? 'Open client record' : 'Open review') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>'
+        : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            window.ADspaceMenu.items([
+              [d.source === 'portal' && { a: 'download', label: 'Download' },
+               d.file_url && { a: 'open', label: 'Open file' }],
+              [d.source === 'manual' && { a: 'edit', label: 'Edit', need: need + ':work' },
+               /* A portal document is corrected by reissuing it: the same
+                  serial, the earlier version kept and voided as Reissued. */
+               d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') && { a: 'reissue', label: 'Reissue', need: need + ':work' }],
+              /* An HR letter is the colleague's to read once shared (My
+                 records, Letters); shared later, or taken back. */
+              [d.family === 'hr' && d.member_id && !d.voided_at &&
+                { a: 'share', label: d.shared_at ? 'Stop sharing' : 'Share with ' + shareName(d), need: 'register.hr:work' }],
+              [], [],
+              [!d.voided_at && { a: 'void', label: 'Void', need: need + ':manage' },
+               { a: 'del', label: 'Delete', need: need + ':manage' }]]) +
+          '</div>') +
       '</span>';
+    if (offer || perf) {
+      el.classList.add('is-go');
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-a="copy"], .reg-go')) return;
+        el.querySelector('.reg-go').click();
+      });
+    }
     /* A ⋯ whose every item is withheld is not drawn (ux-audit DOC-1): an
        entry added by hand with no file, or a voided one, read at View. */
     var acts = el.querySelectorAll('.team-act .kmenu-item');
@@ -378,7 +384,7 @@
       var at = need.lastIndexOf(':');
       return may(need.slice(0, at), need.slice(at + 1));
     });
-    if (!any) el.querySelector('.team-act').innerHTML = '';
+    if (!any && !offer && !perf) el.querySelector('.team-act').innerHTML = '';
     wireMenu(el);
     var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(); }); };
     var cp = el.querySelector('[data-a="copy"]');
