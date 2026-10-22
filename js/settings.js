@@ -137,6 +137,13 @@
   }
   var READ = {
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
+    taxcodes: function () {
+      var M = window.ADspaceMoney;
+      return biz() && M && M.taxCodes && M.taxCodes(true).then(function (list) {
+        var on = list.filter(function (t) { return t.active; });
+        return on.length ? parts(on.map(function (t) { return t.code + ' ' + (Math.round(Number(t.rate) * 100) / 100) + '%'; })) : 'None set';
+      });
+    },
     announce: function () {
       return window.ADspaceAnnounce && window.ADspaceAnnounce.live && window.ADspaceAnnounce.live().then(function (n) {
         return n.team || n.clients ? parts(['Team ' + n.team + ' live', 'Clients ' + n.clients + ' live']) : 'None live';
@@ -240,6 +247,9 @@
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
         meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])
           .concat(num('fx_sgd') == null ? [] : ['S$1 = RM ' + num('fx_sgd')])) },
+      /* Tax codes (2026-10-22): the codes a service line or a quotation
+         line may carry, read from Bukku or added by hand. */
+      biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes') },
       /* Bukku (2026-10-18): the contact fields that hold our IDs. */
       biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') }]);
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
@@ -438,6 +448,7 @@
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
+    if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
@@ -541,6 +552,100 @@
         }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
       });
   }
+  /* ---- Tax codes (2026-10-22) --------------------------------------------
+     The codes a service line or a quotation line may carry: read from
+     Bukku, so the letter and the Bukku invoice name the same code, or added
+     by hand. A code is never removed: one no longer offered stays on the
+     lines and letters that hold it. */
+  var tax = { rows: null, err: null };
+  function taxMsg(text, tone) { var m = $('taxMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  var TAX_SAID = {
+    denied: 'Business settings are needed to change the tax codes.',
+    'bad-row': 'A code is up to 30 letters, digits, spaces, dots or dashes, its rate 0 to 100.'
+  };
+  function readTax(then) {
+    window.ADspaceMoney.taxCodes(true).then(function (list) { tax.rows = list; tax.err = null; then(); })
+      .catch(function (e) { tax.err = e; then(); });
+  }
+  function paintTax() {
+    var box = $('taxList');
+    if (!box) return;
+    if (!tax.rows) { window.ADspaceState.skeleton(box, 3); return; }
+    if (!tax.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No tax codes.'); return; }
+    box.innerHTML = tax.rows.map(function (t) {
+      return '<div class="dtrow tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' +
+        '<span class="dtrow-name"><b>' + esc(t.code) + ' · ' + esc(String(Math.round(Number(t.rate) * 100) / 100)) + '%</b>' +
+          '<small>' + esc([t.name, t.active ? '' : 'No longer offered'].filter(Boolean).join(' · ') || 'No name') + '</small></span>' +
+        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-t="edit">' + PEN + 'Edit</button></span></div>';
+    }).join('');
+  }
+  function taxSave(rows, replace, done) {
+    return db.rpc('tax_codes_save', { p_rows: rows, p_replace: Boolean(replace) }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : (r.error.message || 'Not saved.');
+      if (d.error) return TAX_SAID[d.error] || d.error;
+      tax.rows = d.codes || [];
+      paintTax(); readLine('taxcodes');
+      if (done) done();
+      return '';
+    }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+  }
+  function taxAsk(t) {
+    window.ADspaceConfirm.ask({
+      title: t ? 'Edit ' + t.code : 'Add tax code', go: 'Save', wait: true,
+      fields: [t ? null : { name: 'code', label: 'Code', placeholder: 'SV8', required: true },
+        { name: 'rate', label: 'Rate (%)', value: t ? String(t.rate) : '', placeholder: '8', required: true },
+        { name: 'name', label: 'Name', value: t ? t.name : '', placeholder: 'Service tax 8%' },
+        { name: 'active', label: 'Offered on new lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
+      check: function (v) {
+        if (!t && !/^[A-Za-z0-9._ -]{1,30}$/.test(String(v.code || '').trim())) return TAX_SAID['bad-row'];
+        return /^[0-9]{1,3}(\.[0-9]{1,2})?$/.test(String(v.rate || '').trim()) && Number(v.rate) <= 100 ? '' : 'A rate is 0 to 100, to two decimals.';
+      }
+    }, function (v) {
+      return taxSave([{ code: t ? t.code : String(v.code || '').trim(), name: String(v.name || '').trim(), rate: String(v.rate).trim(), active: v.active === 'on' }], false,
+        function () { taxMsg('Saved.', 'ok'); });
+    });
+  }
+  function taxBukku(btn) {
+    if (!window.ADspaceBukku || !window.ADspaceBukku.taxes) return;
+    taxMsg('');
+    btn.disabled = true;
+    window.ADspaceBukku.taxes().then(function (d) {
+      if (d.error) { btn.disabled = false; taxMsg(d.error); return; }
+      if (!(d.codes || []).length) { btn.disabled = false; taxMsg('Bukku holds no tax codes the portal can read.'); return; }
+      taxSave(d.codes, true).then(function (err) {
+        btn.disabled = false;
+        taxMsg(err || (d.codes.length + (d.codes.length === 1 ? ' code' : ' codes') + ' read from Bukku.'), err ? 'err' : 'ok');
+      });
+    });
+  }
+  function openTax(opener) {
+    if (!biz() || !$('taxSheet')) return;
+    taxMsg('');
+    tax.rows = null;
+    paintTax();
+    $('taxBukku').hidden = !window.ADspaceBukku;
+    window.ADspaceSheet.show($('taxSheet'), { opener: opener });
+    readTax(paintTax);
+  }
+  var taxWired = false;
+  function wireTax() {
+    if (taxWired || !$('taxSheet')) return;
+    taxWired = true;
+    $('taxCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('taxClose').addEventListener('click', function () { $('taxCancel').click(); });
+    $('taxAdd').addEventListener('click', function () { taxMsg(''); taxAsk(null); });
+    $('taxBukku').addEventListener('click', function () { taxBukku(this); });
+    $('taxList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-t="edit"]');
+      if (!b) return;
+      var code = b.closest('.tax-row').getAttribute('data-code');
+      var t = (tax.rows || []).filter(function (x) { return x.code === code; })[0];
+      if (t) { taxMsg(''); taxAsk(t); }
+    });
+  }
+  wireTax();
+
   function openHol(opener) {
     if (!biz()) return;
     holMsg('');

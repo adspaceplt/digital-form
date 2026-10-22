@@ -253,5 +253,8 @@
     });
   }
 
-  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine };
+  /* Bukku's tax codes (2026-10-22), for the Settings page's Tax codes. */
+  function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
+
+  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes };
 })();

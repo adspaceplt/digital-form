@@ -3125,6 +3125,8 @@ button.vs-row { cursor: pointer; }
 .qb-table { margin-bottom: 0; }
 .qb-row > .svc-rate { text-align: right; font-variant-numeric: tabular-nums; }
 .qb-name { font-size: 13.5px; }
+/* A line's tax code, chosen under its name (2026-10-22). */
+.qb-name .qb-tax { display: block; width: auto; max-width: 100%; margin-top: 6px; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's quantity, rate and months are typed where they are read

@@ -4453,8 +4453,8 @@
     }
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
-        (l.note || l.unit || termWord(l) || adjWord(l)
-          ? '<small>' + esc([l.unit, adjWord(l), termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+        (l.note || l.unit || termWord(l) || adjWord(l) || l.tax_code
+          ? '<small>' + esc([l.unit, adjWord(l), termWord(l), l.tax_code ? 'Tax ' + l.tax_code : '', l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
       '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
         (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
@@ -4647,11 +4647,30 @@
         $('svPct').value = '';
       }
       syncPick(!l);
+      fillTax(l);
       msg('svMsg', '');
       openSheet('crmServiceBox');
     }); });
   }
   function shutService() { shutSheet('crmServiceBox'); editingService = null; }
+  /* The line's tax (2026-10-22): the client's SST, or one of the codes the
+     team bills with (Settings, Money: Tax codes). A code no longer offered
+     stays shown on the line that holds it. */
+  function fillTax(l) {
+    var sel = $('svTax'), c = state.client || {};
+    var mine = l && l.tax_code ? l.tax_code : '';
+    var paint = function (list) {
+      var shown = list.filter(function (t) { return t.active || t.code === mine; });
+      if (mine && !shown.some(function (t) { return t.code === mine; })) shown.push({ code: mine, rate: '', name: '' });
+      sel.innerHTML = '<option value="">' + esc(c.sst_applies === false ? 'Client default · No SST' : 'Client default · ' + MON.taxLabel()) + '</option>' +
+        shown.map(function (t) {
+          return '<option value="' + esc(t.code) + '">' + esc(t.rate === '' ? t.code : MON.taxCodeWord(t)) + (t.active === false ? ' (no longer offered)' : '') + '</option>';
+        }).join('');
+      sel.value = mine;
+    };
+    paint([]);
+    MON.taxCodes().then(function (list) { if (editingService === (l || null)) paint(list); });
+  }
   $('svPick').addEventListener('change', function () {
     syncPick(true);
     if ($('svPick').value === 'custom') $('svLabel').focus();
@@ -4685,7 +4704,9 @@
       /* The percentage the tick applies, stored with the line whether or not
          the tick is on, so the figure the letter and the client's page work
          out is the one the person saw. */
-      term_pct: !$('svAdjRow').hidden ? svPctValue() : null
+      term_pct: !$('svAdjRow').hidden ? svPctValue() : null,
+      /* The line's tax code, none for the client's SST (2026-10-22). */
+      tax_code: $('svTax').value || null
     };
     if (!(editingService && editingService.state === 'confirmed')) row.state = $('svState').value;
     if (editingService) { saveService(editingService, row); return; }

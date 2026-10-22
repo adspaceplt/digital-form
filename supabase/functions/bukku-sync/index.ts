@@ -4,6 +4,8 @@
  *
  *   POST { action: 'fields' }                 Bukku's custom contact fields,
  *                                             for Settings' Bukku sheet.
+ *   POST { action: 'taxes' }                  Bukku's tax codes, for Settings'
+ *                                             Tax codes (2026-10-22); read only.
  *   POST { action: 'find', kind, id }         the linked contact, else the
  *                                             contacts that may be it (the
  *                                             same BRN, else the same name),
@@ -309,6 +311,29 @@ Deno.serve(async (req) => {
       const list = (Array.isArray(items) ? items : (items.items || [])).map((f: any) => ({ id: f.id, name: f.name, type: f.data_type || f.type }))
         .filter((f: any) => f.id && f.name);
       return json({ ok: true, fields: list }, 200, origin);
+    }
+
+    /* The tax codes Bukku bills with (2026-10-22), read for the Settings
+       page's Tax codes: read only, nothing written in Bukku. The page keeps
+       them through tax_codes_save. */
+    if (action === 'taxes') {
+      const me = await db.rpc('tax_codes_list');
+      if (me.error) return json({ error: 'needs-update' }, 200, origin);
+      if (me.data && me.data.error) return json({ error: me.data.error }, 200, origin);
+      const r = await bukku('POST', '/v2/lists', { lists: ['tax_codes'], params: {} });
+      const raw = (r && r.tax_codes) || [];
+      const items = Array.isArray(raw) ? raw : (raw.items || raw.data || []);
+      const list = items.map((t: any) => {
+        const rate = Number(t.rate ?? t.tax_rate ?? t.percentage ?? t.value);
+        return {
+          code: String(t.code ?? t.name ?? '').trim().slice(0, 30),
+          name: String(t.description ?? t.name ?? '').trim().slice(0, 80),
+          rate: isFinite(rate) ? Math.round(rate * 100) / 100 : null,
+          active: !(t.is_archived || t.archived || t.is_active === false || t.active === false),
+          bukku_id: t.id != null ? String(t.id) : null
+        };
+      }).filter((t: any) => t.code && /^[A-Za-z0-9._ -]{1,30}$/.test(t.code) && t.rate != null && t.rate >= 0 && t.rate <= 100);
+      return json({ ok: true, codes: list }, 200, origin);
     }
 
     const kind = String(body.kind || ''), id = String(body.id || '');
