@@ -3287,7 +3287,7 @@ button.vs-row { cursor: pointer; }
 .ck-chev svg { width: 16px; height: 16px; }
 .ck-back { margin-bottom: 12px; }
 .ck-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 16px; padding: 18px 20px; margin-bottom: 12px; }
-.ck-ctl { display: flex; align-items: center; gap: 8px; }
+.ck-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ck-head .ck-facts { grid-column: 1 / -1; }
 .is-narrow .ck-head { padding: 14px; grid-template-columns: minmax(0, 1fr); }
 .is-narrow .ck-ctl .chip-state { margin-right: auto; }

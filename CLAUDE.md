@@ -1748,7 +1748,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Back line and head brought under the bar, never below the fold), read
   first (the user, 2026-10-15: "the checklist is coming back in the wrong
   design"): a head card (title, version, state, Write with AI, Preview PDF
-  (a tab opened at the press; PDF on a tight pane), a ⋯ holding Download,
+  (a tab opened at the press; PDF on a tight pane), Download beside it (no ⋯; 2026-10-22, CLI-7),
   the facts), then a card a section where a tick is pressed in
   place (its note and who and when under it) and every other answer reads
   as a fact (Not set where empty), a table as a table; no field stands open
