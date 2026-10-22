@@ -2453,6 +2453,8 @@
     'campaign.locked':       ['Selection accepted', 'is-ok', 'campaigns'],
     'campaign.keyed':        ['Picked for client', '', 'campaigns'],
     'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
+    'campaign.offered':      ['Creators offered', '', 'campaigns'],
+    'campaign.unoffered':    ['Creators taken off', 'is-warn', 'campaigns'],
     'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
     'campaign.stage':        ['Stage changed', '', 'campaigns'],
     'campaign.task_linked':  ['Task linked', '', 'campaigns'],

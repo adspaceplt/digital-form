@@ -420,6 +420,21 @@
   /* Accounts reported together (Facebook and Instagram, as Meta reports
      cross-posted content) are one group with both accounts' follower figures
      and one set of posts; an account on its own is a group of one. */
+  /* An ad's cost per result, one rule for the PDF and the console
+     (2026-10-22, RPT-1): a reach result, or a cost Ads Manager gave per
+     1,000, is priced per 1,000 people. */
+  function perThousand(a) {
+    return a.cpr_basis === 'thousand' || (a.cpr_basis !== 'result' && /reach/i.test(words(a.result_label)));
+  }
+  function cprOf(a) {
+    var sp = num(a.spend), rs = num(a.results), rc = num(a.reach);
+    if (num(a.cpr) !== null) return num(a.cpr);
+    if (perThousand(a)) {
+      var per = /reach/i.test(words(a.result_label)) ? rs : rc;
+      return sp !== null && per ? sp / per * 1000 : null;
+    }
+    return sp !== null && rs ? sp / rs : null;
+  }
   function model(snap) {
     var rep = snap.report || {};
     var accs = (snap.platforms || []).slice().sort(function (a, b) { return (Number(a.position) || 0) - (Number(b.position) || 0); });
@@ -545,10 +560,8 @@
       /* The cost per result as Ads Manager prints it, where it was typed;
          worked out otherwise. A reach result is priced per 1,000 people, as
          Ads Manager prices it, or every awareness ad reads RM 0.00. */
-      a._per1000 = a.cpr_basis === 'thousand' || (a.cpr_basis !== 'result' && /reach/i.test(words(a.result_label)));
-      a._cpr = num(a.cpr) !== null ? num(a.cpr)
-        : a._per1000 ? (sp !== null && (/reach/i.test(words(a.result_label)) ? rs : rc) ? sp / (/reach/i.test(words(a.result_label)) ? rs : rc) * 1000 : null)
-        : (sp !== null && rs ? sp / rs : null);
+      a._per1000 = perThousand(a);
+      a._cpr = cprOf(a);
       a._freq = rc && im !== null ? im / rc : null;
       a._label = resultWord(words(a.result_label)) || (OBJECTIVES[a.objective] || {}).result || 'Results';
       var ret = a.retention || {};
@@ -2238,7 +2251,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, shortResult: shortResult, adName: adName,
+    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, perThousand: perThousand, cprOf: cprOf, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, platWord: platWord, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
     AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord
   };

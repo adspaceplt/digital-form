@@ -2994,6 +2994,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `nameKey()` trims, collapses whitespace and ignores case. The name is
     stored that way, and the duplicate is refused before any link is typed.
   - The word is Creators List, never "roster".
+- A campaign's rates are in the client's currency (`mkt()`): for a client
+  billed in S$ the Creators List's RM is turned at `fx_sgd` to the cent and
+  the field reads S$, left empty while no rate is set; a creator made from
+  such a campaign keeps the list's rate in RM (2026-10-22, CMP-1).
+- Adding creators, its Undo and Remove are filed under the campaign
+  (`campaign.offered`, `campaign.unoffered`); Remove asks nothing and
+  offers Undo, which puts the same row back (2026-10-22, CMP-3, CMP-4).
 - Add creators is a sheet (`#addOptionBox`, 2026-10-10; the user: "messy …
   no proper grouping"): the strip Creators List / New creator; a search by
   name or handle and a platform; the Creators List's fee bands (stood down
@@ -3788,6 +3795,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     meeting, link and message are `.eng-row`s (label, value, controls at the
     right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
     and the value runs full width beneath.
+- New month never edits a month held: it offers only the months the client
+  does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
+  `exists` (2026-10-22, WRK-1).
+- A press on one task reads that task alone; the catalogue is read once a
+  visit and Waiting for you on entering and after a decision; a failed
+  Waiting read is said in the card with Try again (2026-10-22, WRK-3, WRK-5).
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
   `month-closed`, `month-not-confirmed`). This holds for the New sheet,
@@ -4470,7 +4483,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     client's true first month.
   - One row per ad and objective.
   - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
-    under Cost per result in every table, never Per 1,000 reached.
+    under Cost per result in every table, never Per 1,000 reached; the
+    console's row and the PDF read one rule (`ADspaceSmReport.cprOf`,
+    `perThousand`; 2026-10-22, RPT-1).
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
@@ -5825,7 +5840,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   status recorded by `wa_status_record` (the service role's alone) against
   `wa_outbox.wa_id`: `delivered_at`, `read_at`, `failed_at` with
   `fail_code` / `fail_title`, Meta's pricing category; a delivered or read
-  message never turns failed. Messages sent in and coexistence echoes are
+  message never turns failed; a status the database could not take is
+  answered 500 after the rest are recorded, so Meta sends it again
+  (2026-10-22, WA-1). Messages sent in and coexistence echoes are
   not read.
 - A number is `wa_number`'s international form, read as the team types it
   (`2026-10-09-whatsapp-numbers-resend.sql`): a leading 0 is Malaysia (60

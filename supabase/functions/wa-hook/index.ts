@@ -88,7 +88,11 @@ Deno.serve(async (req) => {
   if (!statuses.length) return text('ok', 200);
 
   const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  let kept = 0;
+  /* A status the database could not take (busy, a dropped connection) is
+     answered 500 after the rest are recorded, so Meta sends the event again;
+     wa_status_record never steps a status back, so a second delivery of the
+     ones already kept changes nothing (2026-10-22, WA-1). */
+  let kept = 0, failed = 0;
   for (const s of statuses) {
     const err = (s.errors && s.errors[0]) || {};
     const at = Number(s.timestamp) ? new Date(Number(s.timestamp) * 1000).toISOString() : new Date().toISOString();
@@ -97,8 +101,9 @@ Deno.serve(async (req) => {
       p_code: err.code == null ? null : String(err.code), p_title: err.title || err.message || null,
       p_category: (s.pricing && s.pricing.category) || null
     });
-    if (got.error) console.error('wa-hook: not recorded', s.status, got.error.message);
+    if (got.error) { failed++; console.error('wa-hook: not recorded', s.status, got.error.message); }
     else if (got.data) kept++;
   }
+  if (failed) return text('not recorded ' + failed, 500);
   return text('ok ' + kept, 200);
 });
