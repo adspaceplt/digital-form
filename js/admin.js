@@ -2912,7 +2912,7 @@
     saveHandles(one); saveProfile(one);
   });
 
-  /* The head's ⋯: Client settings, Reset access link, Remove. */
+  /* The head's ⋯: Client settings, Reset link, Remove. */
   function shutWsMenu() {
     $('wsMenu').hidden = true;
     $('wsMenuBtn').setAttribute('aria-expanded', 'false');
@@ -6113,21 +6113,21 @@
           : '<div class="saved-actions">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(postName(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
-            '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
+            '<button class="kmenu-item" data-g="2" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
             (p.platform === 'cover' && (extra.videos || []).length
-              ? '<button class="kmenu-item" data-a="pair" data-need="review.sets:work" type="button" role="menuitem">Pair with video</button>' : '') +
+              ? '<button class="kmenu-item" data-g="2" data-a="pair" data-need="review.sets:work" type="button" role="menuitem">Pair with video</button>' : '') +
             /* The client said yes by word of mouth: the team approves the
                round on show for them (the user, 2026-10-01). Its way back is
                Revert confirmation; a client's own approval is asked again. */
             /* Only on a set the client can see: an unpublished one has
                nothing for them to have agreed to. */
             ((!review || review.decision !== 'approved') && state.batch && state.batch.published
-              ? '<button class="kmenu-item" data-a="confirm" data-need="review.sets:work" type="button" role="menuitem">Confirm internally</button>' : '') +
+              ? '<button class="kmenu-item" data-g="4" data-a="confirm" data-need="review.sets:work" type="button" role="menuitem">Confirm internally</button>' : '') +
             (review && review.decision === 'approved' && review.source === 'team'
-              ? '<button class="kmenu-item" data-a="unconfirm" data-need="review.sets:work" type="button" role="menuitem">Revert confirmation</button>' : '') +
+              ? '<button class="kmenu-item" data-g="4" data-a="unconfirm" data-need="review.sets:work" type="button" role="menuitem">Revert confirmation</button>' : '') +
             (review && review.decision === 'approved' && review.source !== 'team'
-              ? '<button class="kmenu-item" data-a="reask" data-need="review.sets:work" type="button" role="menuitem">Request re-approval</button>' : '') +
-            '<button class="kmenu-item is-danger" data-a="del" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>' +
+              ? '<button class="kmenu-item" data-g="3" data-a="reask" data-need="review.sets:work" type="button" role="menuitem">Request re-approval</button>' : '') +
+            '<button class="kmenu-item is-danger" data-g="6" data-a="del" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>' +
           '</div>' +
         '</div>');
 
@@ -6760,7 +6760,7 @@
   }
 
   /* An address the links host answers by itself: copied and opened here,
-     changed where its record is (Reset access link), so no ⋯. */
+     changed where its record is (Reset link), so no ⋯. */
   function sysRow(x) {
     var row = document.createElement('div');
     row.className = 'link-row is-card is-sys' + (x.off ? ' is-off' : '');
@@ -6801,16 +6801,16 @@
              each item is (a View group was offered Edit, audit 2026-10-03). */
           '<button class="kmenu-btn" data-a="menu" data-need="links:work" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="edit" data-need="links:work" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item" data-g="2" data-a="edit" data-need="links:work" type="button" role="menuitem">Edit</button>' +
             /* Live is a lifecycle flag flipped once in the life of a row, so
                it is a chip on the row and an item here, never a field in the
                form and never a select on every line — the shape a rate card
                line and a colleague already take. It was neither for months:
                the register banded Live and Paused and the delete sheet said
                "pause it instead", with nothing anywhere that could. */
-            '<button class="kmenu-item" data-a="live" data-need="links:work" type="button"><b>' +
-              (off ? 'Resume' : 'Pause') + '</b></button>' +
-            '<button class="kmenu-item is-danger" data-a="del" data-need="links:manage" type="button"><b>Delete</b></button>' +
+            '<button class="kmenu-item" data-g="5" data-a="live" data-need="links:work" type="button" role="menuitem">' +
+              (off ? 'Resume' : 'Pause') + '</button>' +
+            '<button class="kmenu-item is-danger" data-g="6" data-a="del" data-need="links:manage" type="button" role="menuitem">Delete</button>' +
           '</div>' +
         '</span>';
 

@@ -6300,3 +6300,32 @@ Built: SEC-2, BE-1, BE-7 to BE-14, LEAN-1, LEAN-2.
 - BE-14: `readPages` past its cap returned a cut list as whole.
 - LEAN-1: the PDF reference reading was copied byte for byte in wa-send and
   supplier-mail; one `_shared/pdfref.ts`.
+### 2026-10-22 — Menus: Content Review, Creator Campaigns, Video Scripts and every static ⋯ (release 4 of the menu review)
+`js/menu.js` gains `groupOf(label)`, the one table of the standard's
+words, and `item(a, label, need)`, so a page that writes items one at a
+time (the campaigns' `menuItem`) stamps each from it; `tidy` now also puts
+a menu's items in group order, the page's order kept within a group.
+Every ⋯ written in admin/index.html and in the Content Review, Short Links,
+campaign and script builders carries its group. Remove from Content Review
+is red and last as every Remove (MENU-10). Words (MENU-14): Reset access
+link → Reset link (the Content Review client, a campaign, a script month),
+Content month → Change content month, Undo selection → Revert selection;
+`tests/words.js` refuses the retired words. My Work's bar ⋯ reads Select
+tasks first (MENU-18). Revert confirmation is a Mark (group 4), never read
+as a Revert to. The account menu is not an action menu and keeps its own
+shape. Left for the next releases: Team (MENU-5), Reports (MENU-17), tax
+codes (MENU-13), the client portal (MENU-19), and the builders in
+reports, team, perf, quotes, suppliers, handbook, announce, notice.
+### 2026-10-22 — Reports and WhatsApp: release 3 of the second audit (campaigns area)
+The user, 2026-10-22: "Fix all". Built: RPT-2 (White label in a report's
+⋯ for a client that is not white label led to a line saying so; drawn only
+where the client is white label and holds a brand), RPT-4 (an ad's ⋯ in the
+menu standard's order and words, Make a copy for Duplicate, and its name
+opening Edit; written as plain markup with `data-g` for the MENU session to
+convert), RPT-5 (an empty picture track and a date cut mid-value on a
+phone), RPT-7 (Reports' way out read Reports and two feet read Save and
+continue; Back and Next: {step}), RPT-8 (1 of 2 written wore the done
+tick), WA-2 (the messages added eight hours by hand and read 22:41; Malaysia's
+clock, 10:41pm), WA-3 (a month card under the month's own select, a
+template's category cut), WA-4 (the phone row left out what was sent) and
+WA-5 (a contact with no number offered first with no way to add one).
