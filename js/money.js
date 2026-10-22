@@ -74,6 +74,25 @@
     return p;
   }
 
+  /* The tax codes a line may carry (2026-10-22, tax_codes_list): the team's
+     alone, read once a page and again after a change. Each is { code, name,
+     rate, active }; a line with none takes the client's SST. */
+  var codes = null;
+  function taxCodes(force) {
+    if (codes && !force) return codes;
+    var api = window.ADspaceAPI, db = api && api.client;
+    if (!db) return Promise.resolve([]);
+    var p = codes = db.rpc('tax_codes_list').then(function (r) {
+      if (r.error || !r.data || r.data.error) { if (codes === p) codes = null; return []; }
+      return r.data.codes || [];
+    }).catch(function () { if (codes === p) codes = null; return []; });
+    return p;
+  }
+  /* A code as a select names it: SV8 · 8% · Service tax. */
+  function taxCodeWord(t) {
+    return t.code + ' · ' + (Math.round(Number(t.rate) * 100) / 100) + '%' + (t.name && t.name !== t.code ? ' · ' + t.name : '');
+  }
+
   // Malaysian service tax. One rate, because we are one entity.
   var TAX = { label: 'SST ' + FIRST.sst_pct + '%', rate: FIRST.sst_pct / 100 };
 
@@ -229,14 +248,40 @@
      before SST is left out, since it is the total. */
   function sstApplies(pct) { return Number(pct) > 0; }
   var SST_NONE = 'SST not applicable';
+  /* The SST of a set of lines, each at its own tax code's rate where it
+     carries one (a quotation line's `sst`, a letter line's `tax_pct`), else
+     `dflt` (2026-10-22): whether any is charged, the row's words (one rate
+     names it, two say SST), and what a line on another rate says under
+     its name where the rates differ (Not subject to SST, SST 6%). */
+  function sstOf(lines, dflt) {
+    var rateOf = function (l) {
+      var v = l.sst != null && l.sst !== '' ? l.sst : l.tax_pct;
+      return v != null && v !== '' ? Number(v) : Number(dflt || 0);
+    };
+    var all = (lines || []).map(rateOf).filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var on = all.filter(function (v) { return v > 0; });
+    var word = function (v) { return 'SST ' + (Math.round(v * 100) / 100) + '%'; };
+    return {
+      on: on.length > 0,
+      word: !on.length ? SST_NONE : on.length === 1 ? word(on[0]) : 'SST',
+      note: function (l) {
+        if (all.length < 2) return '';
+        var v = rateOf(l);
+        return v === Number(dflt || 0) ? '' : v > 0 ? word(v) : 'Not subject to SST';
+      }
+    };
+  }
 
   window.ADspaceMoney = {
     money: money,
     money2: money2,
     taxOf: taxOf,
     taxLabel: taxLabel,
+    taxCodes: taxCodes,
+    taxCodeWord: taxCodeWord,
     sstApplies: sstApplies,
     SST_NONE: SST_NONE,
+    sstOf: sstOf,
     termFactor: termFactor,
     termWord: termWord,
     termAdj: termAdj,

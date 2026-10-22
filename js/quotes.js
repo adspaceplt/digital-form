@@ -32,6 +32,7 @@
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
+    'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Make a copy to quote again.',
     'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
   };
@@ -78,7 +79,7 @@
   function firstIncl(t) { return sum2(t.month.incl, t.once && t.once.incl); }
   function headline(q) {
     var m = monthly(q);
-    var incl = MON.sstApplies((q.totals || {}).sst_pct) ? ' incl. SST' : '';
+    var incl = MON.sstOf(q.lines, (q.totals || {}).sst_pct).on ? ' incl. SST' : '';
     if (m != null) return ownMonths(q.lines, q.totals) ? [curOf(q) + ' ' + rm(firstIncl(q.totals)), 'First month' + incl]
       : [curOf(q) + ' ' + rm(m), 'Monthly' + incl];
     var o = q.totals && q.totals.once;
@@ -296,6 +297,12 @@
        line's key (2026-10-15, the user: "fully customised for the rates qty
        and months"); priced and kept by the database as typed. */
     B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})) };
+    /* The tax codes a line may take (2026-10-22), drawn once read. */
+    MON.taxCodes().then(function (list) {
+      if (!B) return;
+      B.codes = list;
+      if (B.priced && list.some(function (c) { return c.active; })) $('qbLines').innerHTML = table(B.priced);
+    });
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
     $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
@@ -522,7 +529,7 @@
     var own = t.month && ownMonths(d && d.lines, t);
     if (t.month) out.push(CUR + ' ' + acct(own ? firstIncl(t) : t.month.incl) + (own ? ' first month' : ' monthly'));
     if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
-    return out.length ? out.join(' · ') + (MON.sstApplies(t.sst_pct) ? ' incl. SST' : '') : '';
+    return out.length ? out.join(' · ') + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') : '';
   }
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {
@@ -534,11 +541,19 @@
            quoted off the card names the card's rate under it. */
         var sub = [];
         if (l.list_rate != null) sub.push('Rate card ' + CUR + ' ' + rm(l.list_rate));
+        /* The line's tax code (2026-10-22): the client's SST, or one the team
+           bills with, chosen where it is read; drawn while any is offered. */
+        var codes = (B && B.codes || []).filter(function (c) { return c.active; });
+        var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
+        var tax = codes.length ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+          '<option value="">' + esc(MON.sstApplies(t.sst_pct) ? 'Client default · SST ' + t.sst_pct + '%' : 'Client default · No SST') + '</option>' +
+          codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
+          '</select>' : '';
         var box = function (what, v, cls, mode, label) {
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
-        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + '</span>' +
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + tax + '</span>' +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
@@ -547,7 +562,7 @@
       }).join('') + '</div>';
     var tot = [], own = t.month && ownMonths(rows, t), o = t.once || {};
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
-    var sstOn = MON.sstApplies(t.sst_pct), incl = sstOn ? ' incl. SST' : '', sstRow = sstOn ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE;
+    var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '', sstRow = taxed.word;
     var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', acct(v)]); };
     if (t.month) {
       tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
@@ -615,6 +630,14 @@
       if (e.key === 'Enter' && !e.isComposing && e.target.closest('.qb-val')) { e.preventDefault(); e.target.blur(); }
     });
     $('qbLines').addEventListener('change', function (e) {
+      var tx = e.target.closest('.qb-tax');
+      if (tx && B) {
+        var k0 = tx.getAttribute('data-key'), e0 = B.edits[k0] || {};
+        if (tx.value) e0.tax = tx.value; else delete e0.tax;
+        if (Object.keys(e0).length) B.edits[k0] = e0; else delete B.edits[k0];
+        preview();
+        return;
+      }
       var i = e.target.closest('.qb-val');
       if (!i || !B) return;
       var k = i.getAttribute('data-key'), what = i.getAttribute('data-what');

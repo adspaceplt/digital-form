@@ -139,6 +139,7 @@
       y -= hh;
     };
     headRow();
+    var taxed = window.ADspaceMoney.sstOf(q.lines, t.sst_pct);
     (q.lines || []).forEach(function (l) {
       var rows = wrap(l.label, cw[0] - 12, BODY, book).map(function (s) { return { s: s, c: dark }; });
       (l.detail || []).forEach(function (d) {
@@ -147,6 +148,8 @@
       if (l.basis === 'once') rows.push({ s: 'One-off', c: mute });
       /* A line quoted for months of its own says so (2026-10-15). */
       if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) rows.push({ s: l.months + (Number(l.months) === 1 ? ' month' : ' months'), c: mute });
+      /* A line on another tax rate says so (2026-10-22). */
+      if (taxed.note(l)) rows.push({ s: taxed.note(l), c: mute });
       var h = rows.length * 12.4 + 12;
       if (room(h)) headRow();
       for (var i = 0; i < 4; i++) rect(cx[i], y - h, cw[i], h, null);
@@ -172,8 +175,9 @@
     var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
     var tot = [], sum = function (a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; };
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
-    var MON = window.ADspaceMoney, sstOn = MON.sstApplies(t.sst_pct), incl = sstOn ? ' incl. SST' : '';
-    var sstRow = sstOn ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE;
+    /* Each line at its own tax code's rate where it carries one (2026-10-22). */
+    var sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
+    var sstRow = taxed.word;
     var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', amt(v)]); };
     if (t.month) {
       tot.push(['Monthly subtotal', amt(t.month.subtotal)]);

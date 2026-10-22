@@ -237,6 +237,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE section | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -520,7 +521,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details form), My
   Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
-  Money (Tax and terms, Bukku), AI (AI usage and limits, AI prices), WhatsApp
+  Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
   (Templates, Sent again), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
   no row drawn is left out. One page at every width, each group a card under
@@ -2375,6 +2376,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   Access). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
+
+- Tax codes per line (`2026-10-22-tax-codes-per-line.sql`; the user,
+  2026-10-22: "make the 8% SST inside settings … choose to apply each under
+  per item basis", Bukku's own codes): `tax_codes` (code, name, rate,
+  active, `bukku_id`; RLS on, no policy, no grant), read by
+  `tax_codes_list()` (the team), kept by `tax_codes_save(p_rows,
+  p_replace)` (`team.settings`; `bad-row`; filed `team.changed` under Tax
+  codes); Settings, Money: Tax codes (`#taxSheet`: active first, highest
+  rate first, one no longer offered last; Edit, Add code, Read from Bukku,
+  which reads `bukku-sync` `taxes` and stands down an active code Bukku no
+  longer holds; never deleted). A service line's Tax (`#svTax`,
+  `client_services.tax_code`) and a Build quote line's (`.qb-tax`, the
+  edit's `tax`; its rate set by `quote_tax_edits` from the table, never the
+  page's; `bad-tax`) default to the client's SST (none where exempt) and
+  else name an active code. Every total groups the lines by rate and rounds
+  each group's SST once (`quote_totals`, `issue_letter`, `priceOf`,
+  `quotePrice`; one rate reads as before, to the sen); `issue_letter`
+  keeps `tax_code` and `tax_pct` on each snapshot line and refuses a code
+  no longer offered (`bad-tax`); `verify_letter` refuses a line whose code
+  moved since (`changed-terms`). A letter and a quotation PDF name SST by
+  its rate (`ADspaceMoney.sstOf`) and mark a line on another rate under it
+  (SST 6%, Not subject to SST). The quotation website keeps the client's
+  SST; an issued letter keeps its snapshot. Account, classification code,
+  tax inclusive and a line discount are not taken from Bukku.
 
 ### Bukku (`js/bukku.js`, `bukku-sync`, `2026-10-18-bukku-contacts.sql`, `docs/BUKKU-SETUP.md`)
 - Phase 1 (the user, 2026-10-18: quotations, invoices and purchase orders

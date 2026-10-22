@@ -94,16 +94,24 @@
      with the percentage and SST taken once on it; one-off lines apart. */
   function quotePrice(lines, qm, taxOn) {
     var sst = taxOn === false ? 0 : qm.sst;
-    var msub = 0, span = 0, once = 0, month = false, even = true;
+    /* Each line at its own tax code's rate where it carries one (2026-10-22),
+       else the quotation's; the SST worked a rate at a time, rounded once
+       each, as quote_totals works it. */
+    var msub = 0, span = 0, once = 0, month = false, even = true, g = {};
     lines.forEach(function (l) {
       var n = Math.max(1, Number(l.tenure || 1)), v = Number(l.qty || 0) * Number(l.rate || 0);
-      if (l.term_adjust === true) { month = true; msub += v; span += cents(v) * n; if (n !== qm.term) even = false; }
-      else once += v;
+      var r = l.tax_pct == null || l.tax_pct === '' ? sst : Number(l.tax_pct);
+      var b = g[r] || (g[r] = { r: r, msub: 0, span: 0, once: 0 });
+      if (l.term_adjust === true) { month = true; msub += v; span += cents(v) * n; b.msub += v; b.span += cents(v) * n; if (n !== qm.term) even = false; }
+      else { once += v; b.once += v; }
     });
-    var otax = cents(once * sst / 100), r2 = function (v) { return Math.round(v * 100) / 100; };
+    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    var by = function (f) { return r2(Object.keys(g).reduce(function (a, k) { return a + f(g[k]); }, 0)); };
+    var otax = by(function (b) { return cents(b.once * b.r / 100); });
+    var mtaxOf = function (b) { return cents((b.msub + cents(b.msub * qm.pct / 100)) * b.r / 100); };
     var out = { sstPct: qm.sst, term: 0, each: 0, eachTax: 0, eachTotal: 0, once: once, onceTax: otax, onceTotal: r2(once + otax) };
     if (month && even) {
-      var adj = cents(msub * qm.pct / 100), each = msub + adj, etax = cents(each * sst / 100);
+      var adj = cents(msub * qm.pct / 100), each = msub + adj, etax = by(mtaxOf);
       out.term = qm.term; out.each = each; out.eachTax = etax; out.eachTotal = r2(each + etax);
       out.quote = { pct: qm.pct, base: r2(msub), adj: adj, rest: once };
       out.subtotal = r2(r2(each * qm.term) + once); out.tax = r2(r2(etax * qm.term) + otax);
@@ -120,10 +128,10 @@
       var pex = msub + cents(msub * qm.pct / 100);
       /* The first month holds the one-off items too (the user, 2026-10-18),
          as the quotation's First month incl. SST does. */
-      out.plan = qm.term; out.planMonth = r2(pex + cents(pex * sst / 100) + once + otax); out.planOnce = once > 0;
+      out.plan = qm.term; out.planMonth = r2(pex + by(mtaxOf) + once + otax); out.planOnce = once > 0;
     }
     var mex = month ? cents(span * (1 + qm.pct / 100)) : 0;
-    var mtot = month ? cents(span * (1 + qm.pct / 100) * (1 + sst / 100)) : 0;
+    var mtot = month ? by(function (b) { return cents(b.span * (1 + qm.pct / 100) * (1 + b.r / 100)); }) : 0;
     out.quote = month ? { pct: qm.pct, base: r2(span), adj: r2(mex - span), rest: once } : null;
     out.each = r2(mex + once); out.eachTotal = r2(mtot + once + otax); out.eachTax = r2(out.eachTotal - out.each);
     out.once = 0; out.onceTax = 0; out.onceTotal = 0;
@@ -138,7 +146,7 @@
   function priceOf(lines, market, taxOn, at) {
     var long = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); }).filter(function (x) { return x > 1; });
     var term = (long.length && long.every(function (x) { return x === long[0]; })) ? long[0] : 0;
-    var each = 0, once = 0, quote = null;
+    var each = 0, once = 0, quote = null, g = null;
     var qm = quoteMode(lines);
     if (qm && qm.term != null) return quotePrice(lines, qm, taxOn);
     if (qm) {
@@ -154,16 +162,30 @@
          prints it, so the rows add up to the subtotal (2026-10-17). */
       quote = { pct: qm.pct, base: base, adj: cents(base * qm.pct / 100), rest: rest };
     } else {
+      /* Each line at its own tax code's rate where it carries one
+         (`tax_pct`, 2026-10-22), else the client's: the SST worked a rate
+         at a time, rounded once each, as issue_letter works it. */
+      g = {};
       lines.forEach(function (l) {
         var v = Number(l.qty || 0) * rateOf(l);
-        if (isMonthly(l, term)) each += v; else once += v * Math.max(1, Number(l.tenure || 1));
+        var r = l.tax_pct == null || l.tax_pct === '' ? '' : Number(l.tax_pct);
+        var b = g[r] || (g[r] = { r: r, each: 0, once: 0 });
+        if (isMonthly(l, term)) { each += v; b.each += v; }
+        else { var w = v * Math.max(1, Number(l.tenure || 1)); once += w; b.once += w; }
       });
-      if (!term) { each = once; once = 0; }
+      if (!term) { each = once; once = 0; Object.keys(g).forEach(function (k) { g[k].each = g[k].once; g[k].once = 0; }); }
     }
-    var taxOn2 = function (v) { return qm ? (taxOn === false ? 0 : cents(v * qm.sst / 100)) : MON.taxOf(v, market, taxOn, at); };
-    var eachTax = taxOn2(each);
+    var taxOn1 = function (v) { return qm ? (taxOn === false ? 0 : cents(v * qm.sst / 100)) : MON.taxOf(v, market, taxOn, at); };
+    var taxOn2 = function (v, part) {
+      if (!g) return taxOn1(v);
+      return Math.round(Object.keys(g).reduce(function (a, k) {
+        var b = g[k];
+        return a + (b.r === '' ? taxOn1(b[part]) : cents(b[part] * b.r / 100));
+      }, 0) * 100) / 100;
+    };
+    var eachTax = taxOn2(each, 'each');
     var eachTotal = Math.round((each + eachTax) * 100) / 100;
-    var onceTax = taxOn2(once);
+    var onceTax = taxOn2(once, 'once');
     var onceTotal = Math.round((once + onceTax) * 100) / 100;
     var n = term || 1;
     var r2 = function (v) { return Math.round(v * 100) / 100; };
@@ -214,7 +236,18 @@
      works the same price from the stored lines and keeps these figures only
      where they agree to the sen (audit S4, 2026-10-10), so a line changed
      since the sheet opened is refused rather than printed at the old price. */
+  /* The rate of each tax code a service line may carry (2026-10-22), read
+     once a page: a line holding a code is priced at its rate, as
+     issue_letter prices it. */
+  var TAXR = {};
+  function taxRates(list) { TAXR = {}; (list || []).forEach(function (t) { TAXR[t.code] = Number(t.rate); }); return TAXR; }
+  var taxAsked = false;
   function quoteOf(client, lines, quotes, renewal) {
+    if (!taxAsked && MON.taxCodes) { taxAsked = true; MON.taxCodes().then(taxRates); }
+    lines = lines.map(function (l) {
+      return l.tax_code && (l.tax_pct == null || l.tax_pct === '') && TAXR[l.tax_code] != null
+        ? Object.assign({}, l, { tax_pct: TAXR[l.tax_code] }) : l;
+    });
     /* Lines a quotation made carry its SST rate, read from the quotation
        the page holds, as the database reads it: only while it stands
        (unexpired, not removed) and never on a renewal (2026-10-17). */
@@ -248,8 +281,12 @@
       then({ error: 'Add a Client ID to this client before issuing a letter.' });
       return;
     }
-    var price = quoteOf(client, use, opts.quotes, opts.renewal);
     deal = deal || {};
+    /* Priced once the tax codes are read, so a line's own code is priced
+       at its rate (2026-10-22). */
+    (MON.taxCodes ? MON.taxCodes() : Promise.resolve([])).then(function (list) {
+    if (list && list.length) taxRates(list);
+    var price = quoteOf(client, use, opts.quotes, opts.renewal);
     db.rpc('issue_letter', {
       p_client: client.id,
       p_services: use.map(function (l) { return l.id; }),
@@ -274,6 +311,7 @@
         });
       });
     }, function (e) { then({ error: missingWord(e && e.message) }); });
+    });
   }
 
   function readBack(id, then) {
@@ -288,6 +326,7 @@
     'no-client': 'That client could not be found.',
     'no-lines': 'Choose at least one service.',
     'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',
+    'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
     'already-quoted': 'One of those services is already on a letter that is still live. Void that letter, or use Replace.',
     'no-replaces': 'The letter being replaced could not be found.',
     'replaces-verified': 'A verified letter cannot be replaced.',
@@ -674,6 +713,11 @@
       var lineTax = (doc.lines && doc.lines.length && 'tax' in doc.lines[0])
         ? Boolean(doc.lines[0].tax) : Number(doc.tax) > 0;
       var price = priceOf(doc.lines || [], doc.market, lineTax, doc.issued_at);
+      /* Each line at its own tax code's rate where it carries one
+         (2026-10-22): the SST row names the rate, and a line on another
+         rate says so under its name. */
+      var taxed = MON.sstOf(doc.lines || [], lineTax === false ? 0 :
+        price.sstPct != null ? price.sstPct : MON.setting('sst_pct', dayOf(doc.issued_at)));
       text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
 
       // Our Ref / Date / To / Attn, the colons in one column. The contact is
@@ -743,7 +787,7 @@
         var qd = price.quote;
         var shownRate = qd ? Number(l.rate || 0) : rateOf(l);
         var shownAmt = qd ? q * shownRate * (isMonthly(l, price.term) ? 1 : n) : lineAmount(l, price.term);
-        var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
+        var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), taxed.note(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
@@ -787,8 +831,7 @@
         right(value, R, y, size, f, ink);
         y -= 15;
       };
-      var taxWord = !(Number(price.eachTax) || Number(price.onceTax)) ? MON.SST_NONE
-        : price.sstPct != null ? 'SST ' + (Math.round(price.sstPct * 100) / 100) + '%' : MON.taxLabel(doc.market, doc.issued_at);
+      var taxWord = !(Number(price.eachTax) || Number(price.onceTax)) ? MON.SST_NONE : taxed.word;
       var oneOff = price.term && price.once > 0;
       /* One summary, one figure to pay first (the user, 2026-10-15: "just
          provide first month due total at the summary table part instead of
