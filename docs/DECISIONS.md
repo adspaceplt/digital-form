@@ -6284,3 +6284,16 @@ as a Revert to. The account menu is not an action menu and keeps its own
 shape. Left for the next releases: Team (MENU-5), Reports (MENU-17), tax
 codes (MENU-13), the client portal (MENU-19), and the builders in
 reports, team, perf, quotes, suppliers, handbook, announce, notice.
+### 2026-10-22 — Reports and WhatsApp: release 3 of the second audit (campaigns area)
+The user, 2026-10-22: "Fix all". Built: RPT-2 (White label in a report's
+⋯ for a client that is not white label led to a line saying so; drawn only
+where the client is white label and holds a brand), RPT-4 (an ad's ⋯ in the
+menu standard's order and words, Make a copy for Duplicate, and its name
+opening Edit; written as plain markup with `data-g` for the MENU session to
+convert), RPT-5 (an empty picture track and a date cut mid-value on a
+phone), RPT-7 (Reports' way out read Reports and two feet read Save and
+continue; Back and Next: {step}), RPT-8 (1 of 2 written wore the done
+tick), WA-2 (the messages added eight hours by hand and read 22:41; Malaysia's
+clock, 10:41pm), WA-3 (a month card under the month's own select, a
+template's category cut), WA-4 (the phone row left out what was sent) and
+WA-5 (a contact with no number offered first with no way to add one).
