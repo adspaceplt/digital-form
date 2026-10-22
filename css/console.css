@@ -3595,3 +3595,25 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    with its kind's glyph, where the picture would be. */
 .thumb-miss { display: grid; place-items: center; width: 100%; height: 100%; min-height: 40px; background: var(--sunk); color: var(--ink-mute); }
 .thumb-miss svg { width: 18px; height: 18px; }
+
+/* Creator Campaigns, the second audit (2026-10-22). The invoice fold's
+   chevron is every fold's, turned as it opens (CMP-15); its actions take a
+   class, never a style (CMP-17), equal halves on a phone. */
+.disclosure svg.disclosure-caret { width: 14px; height: 14px; flex: 0 0 auto; }
+.invcurrent:empty { display: none; }
+.invacts, .camp-move { margin-top: 12px; }
+.invacts > .btn-quiet { flex: 0 0 auto; }
+/* A booking card's actions end at its right edge, the step forward last
+   (CMP-10); on a phone the step forward takes its own row under the rest,
+   nearest the thumb. */
+.kcard-acts { justify-content: flex-end; }
+.knote-add { grid-column: 1 / -1; justify-self: start; }
+.knote-add svg { width: 14px; height: 14px; }
+@media (max-width: 560px) {
+  .invacts > .btn, .invacts > .btn-quiet:last-child { flex: 1 1 50%; }
+  .kcard-acts > .kact-go { flex: 1 1 100%; }
+  /* Four acts: Request changes and Save the halves, the step forward under
+     them, Revert last as a quiet line, never Save alone on a row. */
+  .kcard-acts:has(> [data-a="sendback"]) > .kact-go { order: 2; }
+  .kcard-acts:has(> [data-a="sendback"]) > .btn-quiet { order: 3; flex: 1 1 100%; }
+}
