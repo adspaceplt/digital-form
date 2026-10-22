@@ -2103,6 +2103,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   blocked window) an iPhone's save takes the share sheet with a named File,
   asking File ready · Save (`ADspaceConfirm`; the client portal loads it)
   only when Safari refuses a stale press (`tests/savename.js`).
+- In the installed app on a touch screen (`ADspaceDocs.installed()`:
+  display-mode standalone or `navigator.standalone`, on iOS or Android) no
+  window is opened for a PDF: a window on the app's own address opens inside
+  it with no Share, Done or Back (the user, 2026-10-22). `tabFor()` and
+  `previewTab()` (every Preview's one opener, Drawing the PDF…) answer null
+  there, the file goes to the share sheet as a named File (a stale press asks
+  File ready · Share), and with no share sheet for files it is shown in a
+  sheet with Close and Download (`#pdfViewSheet`); a window on another origin
+  (the Handbook's signed link, an invoice) is left as it is (`tests/pwapdf.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
   loads them in its head (1.1 MB, about 600 ms of a phone's load). A
