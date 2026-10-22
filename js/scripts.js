@@ -1210,12 +1210,7 @@
   /* Preview PDF opens a tab at the press and puts the drawn file in it;
      Download (the ⋯) saves it under its own name, as a report's do. With
      two scripts or more in the month, either asks which. */
-  function openTab() {
-    var tab = null;
-    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
-    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
-    return tab;
-  }
+  function openTab() { return window.ADspaceDocs.previewTab(); }
   function drawPdf(btn, save) {
     /* From the month the whole month is drawn; on a script's own page, with
        others in its month, the question is that script or the month (VS-2). */

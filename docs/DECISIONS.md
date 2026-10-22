@@ -5964,6 +5964,34 @@ removes nothing.
   both read the whole code.
 - Skipped: none.
 
+### 2026-10-22 — A PDF in the installed app has a way out
+- Reported by the user: "when pdf generated from PWA there is no button to
+  share to close the windows whatsoever".
+- Cause: every Preview, and every save on an iPhone or iPad, opened a
+  window at the press (`ADspaceDocs.tabFor()` and four copies of `openTab()`
+  in reports, scripts, checklists and register) and pointed it at the
+  worker's `/admin/file/…` (or `/client/file/…`) or a blob:. In the
+  installed app that address is inside the app's own scope, so the PDF
+  opened inside the standalone app with no browser bar: no Share, no Done,
+  no Back, the person stuck until the app was closed. In Safari the same
+  flow worked, its own bar giving the way out.
+- Fix: `ADspaceDocs.installed()` (display-mode standalone or
+  `navigator.standalone`, on iOS or an Android touch screen) is the one
+  test. There `tabFor()` and `previewTab()` (the one Preview opener, which
+  replaced the four copies) open nothing; `save()` hands the share sheet the
+  named File (the PDF with its name, Save to Files, Print, WhatsApp, a
+  close), asking File ready · Share (分享) when the press has gone stale; and
+  where the app has no share sheet for files the PDF is shown in a sheet
+  (`#pdfViewSheet`) with Close and Download. The windows opened for a
+  signed Handbook file and a campaign invoice go to another origin, which
+  the installed app opens in Safari's own viewer with Done; left alone.
+- Proof: `tests/pwapdf.js` (new) on an iPhone and Android in the installed
+  app: no window opened, the named File shared, File ready · Share after a
+  stale press, the viewer with Close, Escape and Download where share is
+  missing, a browser tab still opening its tab at the press, and a scan of
+  every script for a blank window opened outside ADspaceDocs. Only an
+  iPhone can confirm the share sheet itself: the user checks it on the
+  installed app.
 ### 2026-10-22 — The backend review's security and data findings (release 1 of 3)
 - The user, 2026-10-22, on the review of the client pages and the backend:
   "Fix all". `2026-10-22-backend-review-holds.sql`.

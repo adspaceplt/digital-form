@@ -689,10 +689,9 @@
   /* Preview PDF opens a tab at the press and puts the drawn file in it
      (a blocked tab downloads it); Download beside it saves it under its name. */
   function preview(btn) {
-    var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client, tab = null;
+    var docs = window.ADspaceDocs, d = V.data, cl = V.ctx.client;
     if (!docs) return;
-    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
-    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    var tab = docs.previewTab();
     btn.disabled = true;
     draw(d, cl).then(function (blob) {
       btn.disabled = false;
