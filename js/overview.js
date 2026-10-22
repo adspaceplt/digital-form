@@ -846,7 +846,7 @@
             { label: 'Not started', value: n('none'), tone: lateNone ? 'err' : 'off' }] };
         });
       } },
-      { key: 'bookings', title: 'Creator bookings', can: canCamps, all: ['Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
+      { key: 'bookings', title: 'Creator bookings', can: canCamps, all: ['Creator Campaigns', '/admin/?s=campaigns', 'campaigns'], load: function () {
         return R.bookings().then(function (list) {
           var n = function (sts) { return list.filter(function (o) { return sts.indexOf(o.state) > -1; }).length; };
           if (!list.length) return { empty: 'No open bookings.' };

@@ -109,10 +109,16 @@
       if (m && card.contains(m)) { if (shown === m) hide(); else show(m); }
       else hide();
     });
-    document.addEventListener('pointerdown', function (e) {
-      if (shown && !card.contains(e.target)) hide();
-    });
+    card.__hideTip = hide;
   }
+  /* One listener for every card: a press outside the card whose tip shows
+     hides it. A listener a card stood every repaint left detached cards
+     held (2026-10-22, OVW-6). */
+  document.addEventListener('pointerdown', function (e) {
+    Array.prototype.forEach.call(document.querySelectorAll('.chartcard'), function (card) {
+      if (card.__hideTip && !card.contains(e.target)) card.__hideTip();
+    });
+  });
 
   // ---- Bars -------------------------------------------------------------------
   function bars(spec, fmt) {
@@ -357,7 +363,6 @@
 
   /* The last n months, oldest first, as `{ key: 'YYYY-MM', label: 'Sept',
      long: 'Sept 2026' }`, so every monthly chart names its months alike. */
-  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   /* Malaysia's months (js/clock.js): each starts at Malaysia's midnight on
      its 1st, whatever the device's clock. */
   function months(n, end) {
@@ -366,7 +371,7 @@
     var out = [];
     for (var i = n - 1; i >= 0; i--) {
       var key = CK.addMonths(last, -i), mo = Number(key.slice(5, 7)) - 1;
-      out.push({ key: key, label: MON[mo], long: MON[mo] + ' ' + key.slice(0, 4),
+      out.push({ key: key, label: CK.MON[mo], long: CK.MON[mo] + ' ' + key.slice(0, 4),
                  start: CK.start(key + '-01'), end: CK.start(CK.addMonths(key, 1) + '-01') });
     }
     return out;
