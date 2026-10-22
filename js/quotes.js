@@ -121,7 +121,9 @@
     var live = ctx.live || {};
     var shown = rows.filter(function (q) { return !q.removed_at; });
     var gone = rows.filter(function (q) { return q.removed_at; });
-    var maySet = ctx.may('clients.services', 'work');
+    var maySet = ctx.may('clients.quotes', 'work');
+    /* Issue Letter of Offer makes service lines and a letter (2026-10-22). */
+    var mayOffer = maySet && ctx.may('clients.services', 'work') && ctx.may('clients.documents', 'work');
     var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
       (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
@@ -140,7 +142,7 @@
             items.push('<button class="kmenu-item" data-a="wa" data-wa hidden type="button"><b>Send on WhatsApp</b></button>');
           }
           if (maySet && !q.removed_at) {
-            if (st[0] !== 'Not proceeding' && st[0] !== 'Expired' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
+            if (mayOffer && st[0] !== 'Not proceeding' && st[0] !== 'Expired' && st[1] !== 'is-ok') items.push('<button class="kmenu-item" data-a="offer" type="button"><b>Issue Letter of Offer</b></button>');
             if (q.requested_at && ctx.billing && ctx.may('clients.billing', 'work')) items.push('<button class="kmenu-item" data-a="billing" type="button"><b>Use billing details</b></button>');
             items.push('<button class="kmenu-item" data-a="copy" type="button"><b>Make a copy</b></button>');
             items.push(q.status === 'not_proceeding'

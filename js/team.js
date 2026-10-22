@@ -124,8 +124,12 @@
      that one part and nothing else. Billing was a switch beside the ladder
      until 2026-09-22; it is a part now, with the same four levels. */
   var PARTS = {
-    clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['services', 'Services'],
-                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
+    /* Each tab of a client's record is a part (2026-10-22, the user: "AMV
+       quote, AMV Service Lines, AMV Issue documents"): Quotations, Brand and
+       Checklists apart from the lines, the letters and the record itself. */
+    clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['quotes', 'Quotations'], ['services', 'Service lines'],
+                ['documents', 'Letters'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
+                ['brand', 'Brand'], ['checklists', 'Checklists'],
                 /* The lead stages and Past (2026-10-03): No Access, View or
                    Manage on those records, and on everything filed under
                    them in every section (`client_row_seen`). */
@@ -1184,10 +1188,42 @@
   function ownParts(sec) {
     return (PARTS[sec] || []).filter(function (p) { var k = sec + '.' + p[0]; return !TOOL[k] && !UNDRAWN[k]; });
   }
+  /* What each part covers, one line under its name (2026-10-22): a part's
+     name alone left a group unsure that Service lines held no quotations. */
+  var PART_DESC = {
+    'clients.contacts': 'The client\'s people and their portal access.',
+    'clients.billing': 'Registered name, BRN, billing contact and address.',
+    'clients.quotes': 'Build quote and the client\'s quotations.',
+    'clients.services': 'The client\'s service lines and their rates.',
+    'clients.documents': 'Letters of Offer and client letters: issue, sign and void.',
+    'clients.requests': 'Changes the client asks for in the portal.',
+    'clients.calls': 'Calls, visits and meetings logged.',
+    'clients.brand': 'Brand profile, content brief, Meta accounts and Brand analysis.',
+    'clients.checklists': 'The onboarding and pre-advertising checklists.',
+    'clients.leads': 'Leads, Contacted and Proposal sent.',
+    'clients.past': 'Past clients.',
+    'whatsapp.report': 'A published report sent to the client.',
+    'whatsapp.feedback': 'A feedback request to the client.',
+    'whatsapp.booking': 'A creator\'s booking message.',
+    'whatsapp.approval': 'A reminder of what waits on the client\'s approval.',
+    'whatsapp.documents': 'A quotation or Letter of Offer sent to the client.',
+    'review.sets': 'Content sets, posts and their decisions.',
+    'review.settings': 'The review link, access code, handles and logo.',
+    'campaigns.campaigns': 'Campaigns, bookings and drafts.',
+    'campaigns.creators': 'The Creators List.',
+    'campaigns.finance': 'The invoice number and its PDF.',
+    'register.documents': 'Client letters and other documents.',
+    'register.hr': 'HR letters and downloaded performance records.',
+    'suppliers.pay': 'A supplier\'s NRIC and bank details.',
+    'ops.all': 'Every colleague\'s tasks, not only one\'s own.',
+    'ops.time': 'Correct another colleague\'s time records.',
+    'team.performance': 'Monthly performance reviews, behind the master code.'
+  };
   var SEG_ICON = '<span class="disclosure-caret" aria-hidden="true">&#9656;</span>';
   function partRow(sec, p) {
     var key = sec[0] + '.' + p[0], granted = isGranted(key);
-    return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) + '</span>' +
+    return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) +
+      (PART_DESC[key] ? '<small>' + esc(PART_DESC[key]) + '</small>' : '') + '</span>' +
       '<select class="select select-sm" data-part="' + key + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
       /* A granted part is not inherited, so its unset state is No Access,
          said once; an inherited part starts at Same as section and may

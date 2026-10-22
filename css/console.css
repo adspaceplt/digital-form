@@ -944,6 +944,8 @@ button.appver {
   margin-top: 4px; padding-left: 16px; border-left: 2px solid var(--line-soft);
 }
 .permpart { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.permpart-name small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--ink-mute); }
+.permpart:has(.permpart-name small) { padding-block: 6px; }
 /* Compare groups: sections down, groups across, read only. A narrow sheet
    reads each section as its own block, each group beside its level. */
 .permcmp { display: flex; flex-direction: column; }

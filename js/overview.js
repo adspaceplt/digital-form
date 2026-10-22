@@ -463,7 +463,7 @@
         });
       });
     } },
-    { key: 'checklists', title: 'Client checklists not signed off', can: canClients, load: function () {
+    { key: 'checklists', title: 'Client checklists not signed off', can: function () { return may('clients.checklists', 'manage'); }, load: function () {
       return db.rpc('client_checklists_due').then(rows).then(function (list) {
         return (list || []).map(function (c) {
           var what = c.kind === 'pre_ads' ? 'Pre-Advertising Checklist' : 'New Client Onboarding Checklist';
