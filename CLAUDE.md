@@ -3116,7 +3116,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     campaign's one live post keeps its figures in the results card alone.
     The card's Posted and Posting on facts leave once a post row says them;
     the approval line leaves once the post is out.
-  - A draft is decided on the card (`draftPreview`).
+  - A draft is decided on the card (`draftPreview`); in `#needBox` at a
+    desk the pair stand 220px each at the card's right edge, Approve last,
+    and Open the draft at its own width (2026-10-22, CP-17); a phone keeps
+    equal halves.
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.
 - Client-side decisions write an activity row under the typed name:

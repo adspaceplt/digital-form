@@ -6149,3 +6149,20 @@ The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
   escapes inside `or()`'s quotes.
 - Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
   TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
+
+### 2026-10-22 — The client pages' review findings (release 2b)
+The rest of the client review: CP-13 to CP-17.
+- CP-13: a line of parts broke inside a part ("4 / contents", "RM /
+  8,000"); the portal's service and request names go through `parts()`,
+  and the quotation website holds RM or S$ to its figure.
+- CP-14: contact chips on a phone stood at unequal widths; two or more
+  share equal tracks, an address on its own row.
+- CP-15: the selection page drew a shoot's time as typed ("2pm") beside
+  the creator's page's "10:00 am"; `ampm()` was defined and never called.
+  Both now read the same (10:00 am, 下午2:00), and the creator's page says
+  Post date, never Publish on.
+- CP-16: a creator with no profile left a blank cell; a mute em dash.
+- CP-17: in Waiting for your approval at a desk the pair ran 575px each and
+  Open the draft the card's width; the pair now stand 220px at the right
+  edge, Approve last, Open the draft at its own width. This reopens the
+  2026-10-20 equal halves at desk width on this card alone.
