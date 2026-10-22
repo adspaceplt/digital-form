@@ -28,11 +28,7 @@
   var cfg = window.ADSPACE_CONFIG || {};
   var KEEP = 'adspace-quote', LANG_KEY = 'adspace.quote.lang';
   function $(id) { return document.getElementById(id); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   var WORDS = {
     en: {
@@ -109,7 +105,7 @@
         Automotive: 'Automotive', Tech: 'Technology', Education: 'Education', Other: 'Other' }
     },
     zh: {
-      lang: 'EN', step: '第 {n} 步，共 {m} 步', cont: '继续', back: '返回',
+      lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可即时获得报价。',
       introH: '流程说明',
@@ -126,9 +122,9 @@
       },
       needNone: '请至少选择一项服务。',
       planT: '平台与方案', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
-      plan: '方案 {p}', platOne: '1 个平台', platUpTo: '最多 {n} 个平台',
-      contents: '每月 {n} 条内容', mixOr: '，或 ', mixAnd: '、',
-      kindN: { graphic: ['{n} 条图文', '{n} 条图文'], reel: ['{n} 条短视频（60 秒内）', '{n} 条短视频（60 秒内）'] },
+      plan: '方案 {p}', platOne: '1个平台', platUpTo: '最多{n}个平台',
+      contents: '每月{n}条内容', mixOr: '，或 ', mixAnd: '、',
+      kindN: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频（60秒内）', '{n}条短视频（60秒内）'] },
       budgetUpTo: '代为管理每月最高 RM\u00a0{b} 的广告预算',
       ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
       planNone: '请选择平台与方案。',
@@ -137,9 +133,9 @@
       langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
       translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
-      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n} 个月',
+      budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n}个月',
       once: '内容制作', onceNote: '一次性，按件收费',
-      koc: 'KOC 达人', kocNone: '不需要', kocN: '{n} 位达人', kocCustom: '自定名单（另行报价）',
+      koc: 'KOC 达人', kocNone: '不需要', kocN: '{n}位达人', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
@@ -154,13 +150,13 @@
       billSep: '广告预算另行收费。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
-      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12 位数字', brnSg: 'UEN 编号', brnHintSg: '9 或 10 位', addr: '账单地址',
+      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12位数字', brnSg: 'UEN 编号', brnHintSg: '9或10位', addr: '账单地址',
       ask: '申请服务确认函', asking: '提交中…',
       askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
-      billBad: { reg: '请填写公司注册名称。', brn: '请填写 12 位注册编号。', brnSg: '请填写 UEN 编号。', addr: '请填写账单地址。' },
+      billBad: { reg: '请填写公司注册名称。', brn: '请填写12位注册编号。', brnSg: '请填写 UEN 编号。', addr: '请填写账单地址。' },
       doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送服务确认函。',
       doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
-      monthSub: '每月小计', commit: '{n} 个月合约优惠（{p}%）', termAdj: '{n} 个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
+      monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       ref: '编号', monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请服务确认函',
@@ -183,8 +179,8 @@
   };
   // A graphic is named by its kind (the user, 2026-10-14: a plan's graphic is a static post, a carousel or a GIF).
   var EN_KIND = { graphic: 'Graphic (Static)', carousel: 'Graphic (Carousel)', gif: 'Graphic (GIF)' };
-  var ZH_KIND = { graphic: '图文（静态）', carousel: '图文（轮播）', gif: '图文（GIF 动图）', reel30: '短视频（30 秒内）',
-    reel: '短视频（60 秒内）', video120: '短视频（120 秒内）' };
+  var ZH_KIND = { graphic: '图文（静态）', carousel: '图文（轮播）', gif: '图文（GIF 动图）', reel30: '短视频（30秒内）',
+    reel: '短视频（60秒内）', video120: '短视频（120秒内）' };
   // The graphics together, cheapest first, then the reels, then the longer video.
   var KIND_ORDER = ['graphic', 'gif', 'carousel', 'reel30', 'reel', 'video120'];
   var GRAPHICS = ['graphic', 'gif', 'carousel'];

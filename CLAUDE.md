@@ -1125,7 +1125,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A public form's typed name is never an actor: it is filed under the form
   (Details form, Supplier form, Quotation website), the name in the detail
   (2026-10-22, BE-3).
-- Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
+- Every page's `esc` (a client page's is `ADspaceWords.esc`; `js/chrome.js`
+  keeps its own, loaded before it) escapes `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
 - A value is never drawn raw because of what it starts with: a fact not set
@@ -2993,6 +2994,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `nameKey()` trims, collapses whitespace and ignores case. The name is
     stored that way, and the duplicate is refused before any link is typed.
   - The word is Creators List, never "roster".
+- A campaign's rates are in the client's currency (`mkt()`): for a client
+  billed in S$ the Creators List's RM is turned at `fx_sgd` to the cent and
+  the field reads S$, left empty while no rate is set; a creator made from
+  such a campaign keeps the list's rate in RM (2026-10-22, CMP-1).
+- Adding creators, its Undo and Remove are filed under the campaign
+  (`campaign.offered`, `campaign.unoffered`); Remove asks nothing and
+  offers Undo, which puts the same row back (2026-10-22, CMP-3, CMP-4).
 - Add creators is a sheet (`#addOptionBox`, 2026-10-10; the user: "messy …
   no proper grouping"): the strip Creators List / New creator; a search by
   name or handle and a platform; the Creators List's fee bands (stood down
@@ -4475,7 +4483,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     client's true first month.
   - One row per ad and objective.
   - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
-    under Cost per result in every table, never Per 1,000 reached.
+    under Cost per result in every table, never Per 1,000 reached; the
+    console's row and the PDF read one rule (`ADspaceSmReport.cprOf`,
+    `perThousand`; 2026-10-22, RPT-1).
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
@@ -5829,7 +5839,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   status recorded by `wa_status_record` (the service role's alone) against
   `wa_outbox.wa_id`: `delivered_at`, `read_at`, `failed_at` with
   `fail_code` / `fail_title`, Meta's pricing category; a delivered or read
-  message never turns failed. Messages sent in and coexistence echoes are
+  message never turns failed; a status the database could not take is
+  answered 500 after the rest are recorded, so Meta sends it again
+  (2026-10-22, WA-1). Messages sent in and coexistence echoes are
   not read.
 - A number is `wa_number`'s international form, read as the team types it
   (`2026-10-09-whatsapp-numbers-resend.sql`): a leading 0 is Malaysia (60
