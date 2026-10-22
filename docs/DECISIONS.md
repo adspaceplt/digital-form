@@ -6048,3 +6048,31 @@ releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
   with Try again and the tab bar's dot keeps its count. WRK-6 a deadline
   over a day reads in days. WRK-7 a due date still ahead is never red.
   OVW-10 `.then(ok).catch(bad)` in My Work's `call()` and the other sites.
+### 2026-10-22 — Creator Campaigns, Reports, WhatsApp: release 1 of the second audit (P1 and P2 first)
+- Built from tests/audits/2026-10-22/campaigns/report.txt (the user, 2026-10-22: "Fix all"):
+  - CMP-1 (P1): a campaign for a client billed in S$ took the Creators
+    List's RM rate as S$ (RM 500 charged as S$ 500). The rate fields now
+    carry the campaign's sign, the list's RM is turned at `fx_sgd` to the
+    cent as SL-1 does for service lines, left empty with "Set the Singapore
+    dollar rate in Tax and terms." while unset, and a creator made from a
+    campaign keeps the list's rate in RM. `tests/sgd.js`.
+  - CMP-2: Confirm for client and its undo filed under the creator, so the
+    campaign's Activity never showed them; filed under the campaign now.
+  - CMP-3: adding creators, its Undo and Remove wrote no row:
+    `campaign.offered` / `campaign.unoffered` (ACTION_LABEL and
+    `activity_section()`, `2026-10-22-creators-offered-are-filed.sql`).
+  - CMP-4: Remove asked a Withdraw question and could not be undone; it now
+    removes, says so, and Undo puts the same row back.
+  - CMP-5: a refused results read drew No placements.; it reads as failed.
+  - CMP-6: the list's amounts and the Creators List's record read one
+    request of every booking, short past PostgREST's 1,000; read by the
+    thousand, a refused or dropped read said.
+  - CMP-17: `option_posts_figures_check` (no figure below zero).
+  - RPT-1: a reach ad's cost read per result in the console while the PDF
+    read per 1,000; both read `ADspaceSmReport.cprOf` / `perThousand`.
+  - RPT-3, RPT-6: a dropped report read no longer spins forever; a refused
+    Undo of a removed post is said.
+  - WA-1: `wa-hook` answered 200 when a status was not recorded, so Meta
+    never sent it again; it answers 500 after recording the rest.
+- The rest of the report (CMP-7 to CMP-16, CMP-M1, CMP-M2, RPT-2, RPT-4,
+  RPT-5, RPT-7, RPT-8, WA-2 to WA-5) follows in the next releases.
