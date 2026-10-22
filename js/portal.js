@@ -37,9 +37,7 @@
     }
   } catch (e) { /* no worker: the share sheet stands in */ }
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   // The one extra control in the header, moved into the chrome's slot.
   (function () {
@@ -106,14 +104,14 @@
       signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
-      addCal: '加入日历', monthOf: function (a, b) { return '第 ' + a + ' 个月，共 ' + b + ' 个月'; }, endsOn: function (d) { return d + ' 结束'; },
+      addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + ' 结束'; },
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
       contact: '联系人', reach: '联系方式', contacts: '联系人',
       mainContact: '主要联系人', portal: '平台', noContacts: '暂无联系人。',
       service: '服务', qtyRate: '数量 × 单价', amount: '金额', state: '状态', noServices: '暂无服务。',
-      months: function (n) { return n + ' 个月'; }, from: function (d) { return d + '起'; }, fromAlone: function (d) { return d + '起'; }, mo: '个月',
+      months: function (n) { return n + '个月'; }, from: function (d) { return d + '起'; }, fromAlone: function (d) { return d + '起'; }, mo: '个月',
       quotedTotal: '待报价', confirmedTotal: '已确认',
       upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更',
       request: '申请', fee: '费用', noRequests: '暂无申请。', withdraw: '撤回', undo: '撤销',
@@ -131,7 +129,7 @@
       send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
       tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
-      lines: function (n) { return n + ' 项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
+      lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
     }
   });
   var lang = 'en';
@@ -490,7 +488,7 @@
       feed = d;
       shownState = null;
       build();
-    }, function (e) { showState('fail', (e && e.message) || String(e)); });
+    }).catch(function (e) { showState('fail', (e && e.message) || String(e)); });
   }
 
   var session = null;
@@ -882,7 +880,10 @@
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel, true]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
-          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l)) + (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' ' + w.mo : '')) + '</span>' +
+          /* The months on a line of their own: "1 × RM 2,830.00 × 6 months"
+             ran past its column at a desk (CP-12). */
+          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l))) +
+            (Number(l.tenure || 1) > 1 ? '<small>' + esc('× ' + w.months(Number(l.tenure))) + '</small>' : '') + '</span>' +
           '<span class="svc-rate svc-amt"><b>' + esc(money2(amountOf(l))) + '</b></span>' +
           '<span class="svc-state">' + chip(w.svState[l.state] || l.state, l.state === 'confirmed' ? 'is-ok' : 'is-warn') + '</span>' +
           menuCell(items);
@@ -1073,7 +1074,7 @@
     } else { $('reqSheet').hidden = false; }
   }
   var reqDraft = '';
-  var reqKey = null;
+  var reqKey = null, reqFor = null;
   function keyOf() {
     var a = new Uint8Array(16);
     (window.crypto || window.msCrypto).getRandomValues(a);
@@ -1115,8 +1116,11 @@
        until it is sent, so a reply lost on the way and a second press file
        it once. A database without `portal_request_once` is asked the older
        way. */
-    if (!reqKey) reqKey = keyOf();
     var args = { p_client: feed.client.id, p_kind: req.kind, p_service: req.line ? req.line.id : null, p_note: note || null };
+    /* The key is the request's: another kind, line or note is another
+       request, never the answer to the one before (CP-3, 2026-10-22). */
+    var fp = [args.p_kind, args.p_service || '', args.p_note || ''].join('|');
+    if (!reqKey || reqFor !== fp) { reqKey = keyOf(); reqFor = fp; }
     db.rpc('portal_request_once', { p_client: args.p_client, p_kind: args.p_kind, p_service: args.p_service, p_note: args.p_note, p_idem: reqKey })
       .then(function (r) {
         var missing = r.error && (r.error.code === 'PGRST202' || /portal_request_once/.test(r.error.message || ''));
@@ -1125,8 +1129,8 @@
       .then(function (r) {
         $('reqGo').disabled = false;
         var d = r.data || {};
-        if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : t().notSent, 'err'); return; }
-        reqKey = null;
+        if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : d.error === 'too-long' ? t().tooLong : t().notSent, 'err'); return; }
+        reqKey = null; reqFor = null;
         $('reqNote').value = ''; reqDraft = '';
         shutRequest();
         showPane('services', true);

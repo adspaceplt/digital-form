@@ -16,7 +16,7 @@
 (function () {
   var API = window.ADspaceAPI, db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+  var esc = window.ADspaceWords.esc;
   var W = window.ADspaceWords.of({ en: {} }).en;
 
   /* What supplier_values_check accepts, in its order. */
@@ -123,9 +123,10 @@
   }
   function paint() {
     if (state === 'loading') return;
-    if (state === 'bad') { cover(W.notFound, W.notFoundText); return; }
-    if (state === 'fail') { cover(W.failTitle, W.failText); return; }
-    if (state === 'expired') { cover('Link expired', W.notFoundText); return; }
+    /* A supplier has no account manager (CP-11). */
+    if (state === 'bad') { cover(W.notFound, W.contactAdspace); return; }
+    if (state === 'fail') { cover(W.failTitle, W.failTextAdspace); return; }
+    if (state === 'expired') { cover('Link expired', W.contactAdspace); return; }
     if (state === 'submitted') { cover('Details received', 'This form has already been submitted.'); return; }
     if (state === 'done') { paintDone(); return; }
     root().innerHTML = paintForm();

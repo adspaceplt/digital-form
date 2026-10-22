@@ -36,11 +36,7 @@
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>';
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function db() { return API && API.client; }
   function key(a) { return 'adspace-ann-hide:' + a.id + ':' + (a.updated_at || ''); }
   function hiddenHere(a) { try { return localStorage.getItem(key(a)) === '1'; } catch (e) { return false; } }
@@ -137,7 +133,8 @@
     var n = bar.querySelector('.annbar-n');
     if (n) n.textContent = (at + 1) + '/' + list.length;
     var go = bar.querySelector('.annbar-open');
-    if (a.link) { go.href = a.link; go.hidden = false; } else { go.hidden = true; go.removeAttribute('href'); }
+    /* Held to the web on the page too, as the column holds it (CP-8). */
+    if (a.link && /^https:\/\/[^\s"'<>`\\]+$/.test(a.link)) { go.href = a.link; go.hidden = false; } else { go.hidden = true; go.removeAttribute('href'); }
   }
 
   function refresh() {
