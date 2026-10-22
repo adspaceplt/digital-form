@@ -5940,6 +5940,30 @@ removes nothing.
 - Next: each area's menus onto the helper, with MENU-1 to MENU-3, MENU-5 to
   MENU-10, MENU-12 to MENU-14, MENU-17 to MENU-19.
 
+### 2026-10-22 — Clients, Content Review, Video Scripts: release 2 of the second audit
+- The user, on the audit of 2026-10-22: "Fix all".
+- Built: CLI-9 Edit client read the whole Clients list again, billing
+  included, to reopen one record: it reads the one row; a record opened
+  from the list repaints only when `updated_at` moved, never on a column
+  read in another form. CLI-10 a checklist's long labels wrapped into three
+  lines on a narrow pane: the 150px label track holds there, 104 only when
+  tight. CLI-11 (major) the Brand pane ran 3,359px, the analysis ~1,300 of
+  it, six sections read at once: the head (State, Version, Read from) stays
+  open and every section is a fold, its title over the line it is read for
+  (SWOT: 2 strengths · 2 weaknesses · …), shut, opened ones remembered per
+  client, Brand positioning opening by itself on a draft so Confirm is read
+  against it; Sources and Other versions folds too. REV-2 the asset picker
+  offered SVG and TIFF, refused only at Add to set: it offers what
+  sign-upload signs. REV-3 Add assets named itself twice and held a card in
+  its card: the drop zone sits in the sheet. REV-4 the Content Review list
+  found a client by name alone: a Client ID finds it too. REV-5 a thumbnail
+  whose file failed drew the broken picture: a shaded tile with its kind's
+  glyph. VS-2 a shoot read "10:00 am", a meeting "2:00pm": both are
+  Malaysia's clock's one form. VS-3 Script type, three choices, is a
+  segment. VS-4 the month's rows read VS01 and the script's head 2611VS01:
+  both read the whole code.
+- Skipped: none.
+
 ### 2026-10-22 — A PDF in the installed app has a way out
 - Reported by the user: "when pdf generated from PWA there is no button to
   share to close the windows whatsoever".
