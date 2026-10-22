@@ -5579,7 +5579,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
   takes one; a link button's variable refused only for the team reminders, which the portal sends by itself (`NO_BUTTON`);
-  only templates the purpose can take are offered, 2026-10-20, WA-2), each row's
+  only templates the purpose can take are offered, 2026-10-20, WA-2; one
+  whose link button's fixed part holds a variable typed by hand, `%7B%7B1%7D%7D`,
+  is never offered, its row and the composer name it and Send rests,
+  2026-10-22), each row's
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record

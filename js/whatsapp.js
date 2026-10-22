@@ -82,6 +82,7 @@
     'wa-params-missing': 'Fill in every variable.',
     'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
     'wa-no-link': 'This template\'s link button has no page for this recipient. Choose another template.',
+    'wa-button-address': 'This template\'s link button address holds {{1}} typed as text. Correct it in WhatsApp Manager, then choose it again here.',
     'wa-not-set-up': 'WhatsApp needs its Phone number ID, Business Account ID and token in Supabase.',
     'wa-token': 'The WhatsApp token was refused. Check it in Supabase.',
     'wa-template': 'Meta does not hold this template as approved.',
@@ -217,6 +218,13 @@
     return meta;
   }
   function tplKey(t) { return t.name + '|' + t.language; }
+  /* A link button whose fixed part holds a variable typed by hand: Meta
+     stores the typed {{1}} as text (`/%7B%7B1%7D%7D{{1}}`), so no page
+     address starts with it and the button can never be filled
+     (2026-10-22, the approval reminder). */
+  function badButton(x) {
+    return Boolean(x && x.button_var && /%7B|%7D|[{}]/i.test(String(x.button_var.url || '').split('{{')[0]));
+  }
   function tplWord(t) {
     return t.name + ' · ' + t.language + (CATEGORY[t.category] ? ' · ' + CATEGORY[t.category] : '');
   }
@@ -459,7 +467,9 @@
   function tplRow(t, m) {
     var w = PURPOSE[t.purpose] || [t.purpose, ''];
     var live = t.active && t.name;
-    var held = !t.name || m.error || (m.list || []).some(function (x) { return x.name === t.name && x.language === t.lang; });
+    var mine = t.name && (m.list || []).filter(function (x) { return x.name === t.name && x.language === t.lang; })[0];
+    var held = !t.name || m.error || Boolean(mine);
+    var why = !held ? 'Not among Meta\'s approved templates.' : badButton(mine) ? SAID['wa-button-address'] : '';
     var row = document.createElement('div');
     row.className = 'wat-row' + (live ? '' : ' is-off');
     row.setAttribute('data-p', t.purpose);
@@ -469,7 +479,7 @@
            (ux-audit WA-2, 2026-10-14). */
         '<small>' + (t.name ? [t.name, t.lang, CATEGORY[t.category], plural(t.params, 'variable')].filter(Boolean)
           .map(function (x) { return '<span class="wat-part">' + esc(x) + '</span>'; }).join(' · ') : 'No template') + '</small>' +
-        (held ? '' : '<small class="wam-why">Not among Meta\'s approved templates.</small>') + '</span>' +
+        (why ? '<small class="wam-why">' + esc(why) + '</small>' : '') + '</span>' +
       '<span class="wat-on"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(w[0]) + '" data-a="on"></button></span>' +
       /* On a phone the pen alone, beside the switch on the name's line
@@ -507,7 +517,7 @@
          WA-2): the refusals below stay for a template that changed at Meta. */
       var fit = (m.list || []).filter(function (x) {
         return x.supported && (DOC[t.purpose] ? x.header === 'DOCUMENT' : x.header !== 'DOCUMENT') &&
-          !x.header_var && x.body_vars.length <= 5 && !(x.button_var && NO_BUTTON[t.purpose]);
+          !x.header_var && x.body_vars.length <= 5 && !(x.button_var && NO_BUTTON[t.purpose]) && !badButton(x);
       });
       if (!fit.length) { say($('waTplMsg'), 'Meta holds no approved template to choose.', 'err'); return; }
       var byKey = {};
@@ -525,6 +535,7 @@
           if (x.header_var) return 'The portal cannot fill this template\'s header.';
           if (x.body_vars.length > 5) return SAID['bad-params'];
           if (x.button_var && NO_BUTTON[t.purpose]) return NO_BUTTON[t.purpose];
+          if (badButton(x)) return SAID['wa-button-address'];
           return '';
         }
       }, function (v) {
@@ -678,6 +689,12 @@
       if (f.getAttribute('data-typed') === '1') typed[f.getAttribute('data-var')] = f.value;
     });
     $('waPreviewSec').hidden = !t;
+    /* A template whose button can never be filled says so as it is chosen,
+       and Send rests (2026-10-22). */
+    var note = $('waTplNote');
+    if (badButton(t)) { say(note, SAID['wa-button-address'], 'warn'); note.hidden = false; note.setAttribute('data-btn', '1'); }
+    else if (note.getAttribute('data-btn')) { say(note, ''); note.hidden = true; note.removeAttribute('data-btn'); }
+    if (!cx.sending) $('waSend').disabled = badButton(t) || Boolean(r && !r.number);
     if (!t) { box.innerHTML = ''; $('waFillSec').hidden = true; $('waReportRow').hidden = true; return; }
     var isDoc = t.header === 'DOCUMENT';
     $('waReportRow').hidden = !isDoc || !r || r.kind !== 'contact';
@@ -873,6 +890,7 @@
     /* A document the composer was not opened on is a report; one it was
        opened on is that quotation or letter, sent under its own purpose. */
     var docOf = isDoc && rep.doc ? o.purpose : isDoc ? 'report' : null;
+    if (badButton(t)) { say(m, SAID['wa-button-address'], 'err'); return; }
     var link = $('waFields').querySelector('[data-var^="u:"]');
     if (link && !String(link.value || '').trim()) { say(m, SAID['wa-no-link'], 'err'); return; }
     var empty = Array.prototype.filter.call($('waFields').querySelectorAll('[data-var]'), function (f) { return !String(f.value || '').trim(); })[0];
