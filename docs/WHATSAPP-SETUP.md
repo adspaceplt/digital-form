@@ -17,8 +17,8 @@ console's **WhatsApp** section (the last of Work in the rail):
 | Report to client | Send on WhatsApp, on a published report; or New message with a report attached | 1 the contact's greeting, 2 the client (or the white-label brand), 3 the report and its period. The PDF is the template's **document header** |
 | Feedback request | Request feedback on WhatsApp, in a client's ⋯ | 1 the contact's greeting, 2 the client |
 | Team reminders | Each reminder in a colleague's bell (no open task, the outstation record, self-rating, reflection, health check-in) | 1 the colleague's first name, 2 the notice's title, 3 its message |
-| Creator updates | A creator's booking confirmed, and Send on WhatsApp in a booked creator's ⋯ | 1 the creator's first name, 2 the campaign. A **Visit website** button with a dynamic URL, `https://digital.adspace.me/creator/?k={{1}}`, opens the creator's own page |
-| Approval reminder | Remind, in My Work's Waiting for you, once a published content set or a creator's draft at Reviewing has waited on the client for the Business setting's days (Settings → Due dates, 3 by default) | 1 the contact's greeting, 2 the client, 3 what waits ("2 posts in October posts", "Jane's draft for Raya creators"). A **Visit website** button with a dynamic URL, `https://digital.adspace.me/{{1}}`, opens the page to approve it (the client's review page or the campaign's selection page). Category **Utility**, no header |
+| Creator updates | A creator's booking confirmed, and Send on WhatsApp in a booked creator's ⋯ | 1 the creator's first name, 2 the campaign. A **Visit website** button, URL type **Dynamic**, URL typed `https://digital.adspace.me/creator/?k=` (Meta adds `{{1}}` itself), opens the creator's own page |
+| Approval reminder | Remind, in My Work's Waiting for you, once a published content set or a creator's draft at Reviewing has waited on the client for the Business setting's days (Settings → Due dates, 3 by default) | 1 the contact's greeting, 2 the client, 3 what waits ("2 posts in October posts", "Jane's draft for Raya creators"). A **Visit website** button, URL type **Dynamic**, URL typed `https://digital.adspace.me/` (Meta adds `{{1}}` itself), opens the page to approve it (the client's review page or the campaign's selection page). Category **Utility**, no header |
 
 The composer can send any other approved template too; it fills the
 greeting first, then the client (or a creator's campaign), and a named
@@ -116,8 +116,10 @@ draft. Nothing is typed when sending.
    Doe · `{{2}}` ADspace Advertising · `{{3}}` 2 posts in October posts.
 5. Footer optional (`ADspace`).
 6. **Buttons** → **Visit website**: text `Review now`, URL type **Dynamic**,
-   URL `https://digital.adspace.me/{{1}}`, sample
-   `https://digital.adspace.me/review/?k=abcd2345`. Submit.
+   URL `https://digital.adspace.me/` and nothing after it: Meta adds `{{1}}`
+   itself once the type is Dynamic. Never type `{{1}}` into the address:
+   Meta keeps a typed one as text (`/%7B%7B1%7D%7D{{1}}`), and no page can
+   fill the button (2026-10-22). Sample `review/?k=abcd2345`. Submit.
 7. Once Meta shows it **Active**: the console's **WhatsApp** → **Templates**
    → Approval reminder → **Edit** → choose `approval_reminder` → turn its
    switch on. **Remind** then shows in My Work's Waiting for you on a set or
