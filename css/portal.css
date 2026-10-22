@@ -7433,11 +7433,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 64px 110px 20px; cursor: pointer; }
 .rh-row.is-picked { background: var(--line-soft); }
 .is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd"; }
-/* My Work, Clients: one client's content months, meetings and tasks, picked
-   from the select above them. The select is as wide as a client's name reads
-   and no wider; on a phone it takes the row. The step to the months under
-   it is the block step. */
-.wclient-row { margin: 0 0 12px; }
 /* =========================================================================
    THE PHONE'S OWN EDGES (2026-09-26)
    =========================================================================
