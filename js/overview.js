@@ -506,7 +506,7 @@
   function attention() {
     var live = SOURCES.filter(function (s) { return s.can(); });
     return Promise.all(live.map(function (s) {
-      return s.load().then(function (rs) { return { rows: rs }; }, function (e) {
+      return s.load().then(function (rs) { return { rows: rs }; }).catch(function (e) {
         return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || 'The read failed.' };
       });
     })).then(function (all) {
