@@ -222,8 +222,14 @@
   }
   function configLine() {
     return config().then(function (d) {
-      if (d.error) return '';
-      return d.field_client || d.field_supplier ? 'Client ID and Supplier ID fields chosen' : 'Fields not chosen';
+      /* A refused read reads Could not load. on the row, never nothing;
+         each field is said for itself (2026-10-22, SET2-3). */
+      if (d.error) throw new Error(d.error);
+      if (d.field_client && d.field_supplier) return 'Client ID and Supplier ID fields';
+      var nb = function (a, b) { return [a, b].map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · '); };
+      if (d.field_client) return nb('Client ID field', 'Supplier ID not chosen');
+      if (d.field_supplier) return nb('Supplier ID field', 'Client ID not chosen');
+      return 'Not chosen';
     });
   }
   function openConfig(btn, sayRow) {

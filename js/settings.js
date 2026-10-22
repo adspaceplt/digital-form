@@ -23,10 +23,11 @@
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
   /* Every part a row of this page answers to. The route is offered to a
-     colleague holding any of them (`ADspaceSettings.allowed`). */
+     colleague holding any of them, or Suppliers or WhatsApp at Full Access
+     (Supplier emails, Templates) (`ADspaceSettings.allowed`). */
   var KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering'];
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
-  function allowed() { return KEYS.some(may) || Boolean(bridge.may && bridge.may('suppliers', 'manage')); }
+  function allowed() { return KEYS.some(may) || Boolean(bridge.may && (bridge.may('suppliers', 'manage') || bridge.may('whatsapp', 'manage'))); }
   function say(text, tone) {
     var m = $('settingsMsg');
     if (!m) return;
@@ -35,73 +36,18 @@
   }
   function num(k) { var M = window.ADspaceMoney; return M && M.setting ? M.setting(k) : null; }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-  function pct(n) { return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n) + '%'; }
   /* A line of parts wraps between its parts, never inside one. */
   function parts(list) { return list.map(function (x) { return String(x).replace(/ /g, '\u00a0'); }).join(' · '); }
-  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  /* A moment in Malaysia's day and time, from its clock (js/clock.js). */
   function when(iso) {
     if (!iso) return '';
-    var d = new Date(new Date(iso).getTime() + 8 * 3600000);
-    var h = d.getUTCHours(), mi = d.getUTCMinutes();
-    return d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ', ' +
-      ((h % 12) || 12) + ':' + (mi < 10 ? '0' : '') + mi + (h < 12 ? ' am' : ' pm');
+    var C = window.ADspaceClock;
+    return C.date(iso) + ', ' + C.clock(iso, { space: true });
   }
 
-  /* The figures each Edit row's sheet asks: [key, label, bound, section,
-     its value in a line]. More than five read as sections (audit SET-4,
-     2026-10-14). A figure changed from a later day is said on its row in
-     these words (audit SET-1). */
-  function per(u) { return function (v) { return plural(v, u, u + 's'); }; }
-  function pctOf(v) { return v + '%'; }
-  var TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')],
-    term_1_3: ['1 to 3 months', pct], term_4_5: ['4 and 5 months', pct], term_6_11: ['6 to 11 months', pct],
-    term_12_23: ['12 to 17 months', pct], term_18_23: ['18 to 23 months', pct], term_24: ['24 months', pct],
-    fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
-  var SPECS = {
-    details: { title: 'Details form', keys: [['details_form_days', 'Open for (days)', 'quote', '', 'Open', per('day')]] },
-    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', 'Every client', 'Lead', per('hour')],
-      ['proposal_followup_days', 'A proposal waits (days)', 'days', 'Every client', 'Proposal', per('day')],
-      /* A VIC's own, shorter (2026-10-15). */
-      ['vic_lead_followup_hours', 'A VIC lead waits (hours)', 'hours', 'VIC clients', 'VIC lead', per('hour')],
-      ['vic_proposal_followup_days', 'A VIC proposal waits (days)', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
-    /* The list is js/admin.js's (the Services bar asks the same sheet). */
-    tax: { title: 'Tax and terms', keys: (bridge.TAX_KEYS || []).map(function (k) { return k.concat(TAX_WORD[k[0]]); }) },
-    due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
-      ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due', '', 'Revision', per('working day')],
-      ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due', '', 'Approval reminder', per('day')]] },
-    priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours', '', 'Urgent', per('hour')],
-      ['priority_high_hours', 'High: hours from creation', 'hours', '', 'High', per('hour')],
-      ['priority_medium_hours', 'Medium: hours from creation', 'hours', '', 'Medium', per('hour')]] },
-    nudge: { title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every', '', 'Every', per('hour')],
-      ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead', '', 'Not started', per('day')]] },
-    prices: { title: 'AI prices, US$', keys: [['ai_price_in', 'Input, a million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
-      ['ai_price_out', 'Output, a million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
-      ['ai_price_search', 'Web searches, a thousand', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
-    reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow', '', 'Reach within', pctOf]] },
-    /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
-       against (2026-10-15, the client analysis playbook). */
-    bench: { title: 'Ad benchmarks', keys: [
-      ['bench_cpr_low', 'Tier 1 from', 'rm', 'Property cost per result (RM)', 'Property from RM', String],
-      ['bench_cpr_mid', 'Tier 2 from', 'rm', 'Property cost per result (RM)', 'Tier 2 from RM', String],
-      ['bench_cpr_high', 'Tier 3 from', 'rm', 'Property cost per result (RM)', 'Tier 3 from RM', String],
-      ['bench_cpr_top', 'Tier 3 up to', 'rm', 'Property cost per result (RM)', 'Up to RM', String],
-      ['bench_msg_min', 'Low', 'rm', 'Messaging cost per result (RM)', 'Messaging low RM', String],
-      ['bench_msg_target', 'Target', 'rm', 'Messaging cost per result (RM)', 'Messaging target RM', String],
-      ['bench_msg_max', 'High', 'rm', 'Messaging cost per result (RM)', 'Messaging high RM', String],
-      ['bench_form_min', 'Low', 'rm', 'Lead form cost per result (RM)', 'Lead form low RM', String],
-      ['bench_form_target', 'Target', 'rm', 'Lead form cost per result (RM)', 'Lead form target RM', String],
-      ['bench_form_max', 'High', 'rm', 'Lead form cost per result (RM)', 'Lead form high RM', String],
-      ['bench_cpm_min', '1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
-      ['bench_cpm_max', '1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
-      ['bench_cpl_rise', 'Cost per lead rise a year (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
-      ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
-      ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
-      ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
-    /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
-    healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
-      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
-    resend: { title: 'WhatsApp sent again', keys: [['wa_repeat_hours', 'Ask again within: hours (0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
-  };
+  /* The figures each Edit row's sheet asks: js/admin.js's one list, which
+     My Work's ⋯, the Services bar and AI usage open alike (2026-10-22). */
+  var SPECS = bridge.SETTING_SHEETS || {};
   /* The earliest change set from a later day, in the row's words: "From
      14 Nov 2026: SST 6%". Meta checks is its one switch with a figure. */
   function nextLine(id) {
@@ -218,8 +164,9 @@
           num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
       /* The client's details form (2026-10-14, ux-audit SET-9: it sat in
          Tax and terms). */
-      biz && { id: 'details', name: 'Details form', kind: 'edit',
-        meta: num('details_form_days') == null ? '' : 'Open ' + plural(num('details_form_days'), 'day', 'days') }]);
+      /* Its days open a supplier's link too (2026-10-22, SET2-2). */
+      biz && { id: 'details', name: 'Details forms', kind: 'edit',
+        meta: num('details_form_days') == null ? '' : 'Client and supplier links open ' + plural(num('details_form_days'), 'day', 'days').replace(' ', '\u00a0') }]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
@@ -240,13 +187,11 @@
       biz && { id: 'reach', name: 'Reach allowance', kind: 'edit',
         meta: num('reach_allowance_pct') == null ? '' : 'Within ' + num('reach_allowance_pct') + '% of Meta' },
       biz && { id: 'bench', name: 'Ad benchmarks', kind: 'edit',
-        meta: num('bench_msg_target') == null ? '' : parts(['Messaging RM ' + num('bench_msg_target'), 'Lead form RM ' + num('bench_form_target'),
-          'Ad spend ' + num('bench_ad_spend_pct') + '%', 'Ad set RM ' + num('bench_adset_daily') + ' a day']) }]);
+        meta: num('bench_msg_target') == null ? '' : parts(['Messaging RM ' + num('bench_msg_target'), 'Lead form RM ' + num('bench_form_target')]) }]);
     var pin = num('ai_price_in'), pout = num('ai_price_out');
     add('money', 'Money', [
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
-        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%', '1 to 3 months ' + pct(num('term_1_3')), '24 months ' + pct(num('term_24'))].concat(num('quote_valid_days') == null ? [] : ['Quotation valid ' + num('quote_valid_days') + ' days'])
-          .concat(num('fx_sgd') == null ? [] : ['S$1 = RM ' + num('fx_sgd')])) },
+        meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%'].concat(num('quote_valid_days') == null ? [] : ['Quotation ' + plural(num('quote_valid_days'), 'day', 'days')])) },
       /* Tax codes (2026-10-22): the codes a service line or a quotation
          line may carry, read from Bukku or added by hand. */
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes') },
@@ -255,17 +200,16 @@
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
-        meta: pin == null ? '' : parts(['US$ ' + pin + ' input', 'US$ ' + pout + ' output']) + ', a million tokens' +
-          (num('ai_price_search') == null ? '' : ' · US$ ' + num('ai_price_search') + ' a thousand web searches') }]);
+        meta: pin == null ? '' : parts(['US$ ' + pin + ' in', 'US$ ' + pout + ' out a million tokens']) }]);
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
        at Full Access; this row opens them there. */
     var rep2 = num('wa_repeat_hours');
     add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
       { id: 'whatsapp', name: 'Templates', kind: 'open', meta: line('whatsapp') },
       /* Sent again (2026-10-14): the same message sent within the window
-         asks again before it goes. */
+         asks again before it goes, a supplier's email too (SET2-1). */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : 'Within ' + plural(rep2, 'hour', 'hours') }]);
+        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and supplier emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]);
     add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
       bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') }]);
     return out;
@@ -344,8 +288,8 @@
     var secs = box.querySelectorAll('.stg-sec');
     if (!key) {
       key = secs[0] ? secs[0].getAttribute('data-sec') : '';
-      var line = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) + 24;
-      Array.prototype.forEach.call(secs, function (x) { if (x.getBoundingClientRect().top <= line) key = x.getAttribute('data-sec'); });
+      var edge = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) + 24;
+      Array.prototype.forEach.call(secs, function (x) { if (x.getBoundingClientRect().top <= edge) key = x.getAttribute('data-sec'); });
       if (secs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
         var last = secs[secs.length - 1];
         if (last.getBoundingClientRect().top < window.innerHeight) key = last.getAttribute('data-sec');
@@ -405,7 +349,7 @@
      Reports follows at once. */
   function flipMeta(sw) {
     var to = sw.getAttribute('aria-checked') !== 'true';
-    var day = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    var day = window.ADspaceClock.today();
     sw.setAttribute('aria-checked', to ? 'true' : 'false');
     sw.disabled = true;
     db.rpc('app_settings_set', { p_from: day, p_values: { meta_checks: to ? 1 : 0 } }).then(function (r) {
@@ -457,7 +401,6 @@
      The days the office is closed: the front door draws them Closed and My
      Work marks them. Read for this year and the next in one request; the
      row says the next one, the sheet lists a year at a time. */
-  var DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var hol = { rows: null, err: null, year: null };
   var HOL_SAID = {
     taken: 'That date already holds a holiday.', 'bad-name': 'Enter a name of 2 to 80 characters.',
@@ -470,17 +413,14 @@
     if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
     return e === 'taken' && r.data.name ? 'That date already holds ' + r.data.name + '.' : HOL_SAID[e] || 'Not saved.';
   }
-  function holToday() { return window.ADspaceClock ? window.ADspaceClock.today() : new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); }
-  function holDay(d, withDow) {
-    var x = new Date(d + 'T00:00:00Z');
-    return (withDow ? DOW[x.getUTCDay()] + ', ' : '') + x.getUTCDate() + ' ' + MON[x.getUTCMonth()] + ' ' + x.getUTCFullYear();
-  }
+  function holToday() { return window.ADspaceClock.today(); }
+  function holDay(d, withDow) { return window.ADspaceClock.date(d, { weekday: Boolean(withDow) }); }
   function holMeta() {
     /* Its line's room is kept while the read is out, so nothing below moves
        when it arrives. */
     if (!hol.rows) return hol.err ? 'Could not load.' : '\u00a0';
     var t = holToday(), next = hol.rows.filter(function (h) { return h.day >= t; })[0];
-    return next ? 'Next: ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
+    return next ? 'Next ' + next.name + ', ' + holDay(next.day) : 'No holidays listed ahead';
   }
   function holLine() { var meta = holMeta(); if (meta) fillLine('holidays', meta); }
   function readHol(done) {
@@ -516,16 +456,23 @@
     box.innerHTML = rows.map(function (h) {
       return '<div class="dtrow hol-row' + (h.day < t ? ' is-past' : '') + '" data-day="' + esc(h.day) + '">' +
         '<span class="dtrow-name"><b>' + esc(h.name) + '</b><small>' + esc(holDay(h.day, true)) + '</small></span>' +
-        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-h="edit">' + PEN + 'Edit</button>' +
-        '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for ' + esc(h.name) + '" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-h="delete">Delete</button></div></span></span></div>';
+        rowActs('h', h.name) + '</div>';
     }).join('');
   }
-  function holShut() {
-    Array.prototype.forEach.call(document.querySelectorAll('#holList .kmenu'), function (m) { m.hidden = true; });
-    Array.prototype.forEach.call(document.querySelectorAll('#holList [data-h="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  /* A list row's acts, the holidays' and the tax codes' alike: Edit, then
+     a ⋯ holding Delete. `k` is the row's data attribute (data-h, data-t). */
+  function rowActs(k, name) {
+    return '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-' + k + '="edit">' + PEN + 'Edit</button>' +
+      '<span class="team-act"><button class="kmenu-btn" type="button" data-' + k + '="menu" aria-label="More actions for ' + esc(name) + '" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+      '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-' + k + '="delete">Delete</button></div></span></span>';
   }
+  /* Shuts a list's ⋯ menus (`#holList`, `#taxList`). */
+  function shutMenus(list, k) {
+    Array.prototype.forEach.call(document.querySelectorAll(list + ' .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll(list + ' [data-' + k + '="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function holShut() { shutMenus('#holList', 'h'); }
   function holAsk(h, opener) {
     var t = holToday();
     window.ADspaceConfirm.ask({
@@ -621,16 +568,10 @@
           '<input type="checkbox" value="' + esc(t.code) + '"' + (tax.picked[t.code] ? ' checked' : '') + ' aria-label="Select ' + esc(t.code) + '">' + name + '</label>';
       }
       return '<div class="dtrow tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + name +
-        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-t="edit">' + PEN + 'Edit</button>' +
-        '<span class="team-act"><button class="kmenu-btn" type="button" data-t="menu" aria-label="More actions for ' + esc(t.code) + '" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-t="delete">Delete</button></div></span></span></div>';
+        rowActs('t', t.code) + '</div>';
     }).join('');
   }
-  function taxShut() {
-    Array.prototype.forEach.call(document.querySelectorAll('#taxList .kmenu'), function (m) { m.hidden = true; });
-    Array.prototype.forEach.call(document.querySelectorAll('#taxList [data-t="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
-  }
+  function taxShut() { shutMenus('#taxList', 't'); }
   function taxSet(mode) { tax.mode = mode; tax.picked = {}; paintTax(); }
   function taxSave(rows, replace, done) {
     return db.rpc('tax_codes_save', { p_rows: rows, p_replace: Boolean(replace) }).then(function (r) {
@@ -762,7 +703,6 @@
       if (k === 'edit') taxAsk(t);
       if (k === 'delete') taxDelete([t.code]);
     });
-    document.addEventListener('click', function (e) { if (!e.target.closest('#taxList .team-act')) taxShut(); });
   }
   wireTax();
 
@@ -801,9 +741,13 @@
       if (k === 'edit') holAsk(h, b);
       if (k === 'delete') holDelete(h);
     });
-    document.addEventListener('click', function (e) { if (!e.target.closest('#holList .team-act')) holShut(); });
   }
   wireHol();
+  /* A press outside a list's ⋯ shuts it: one listener for both lists. */
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#holList .team-act')) holShut();
+    if (!e.target.closest('#taxList .team-act')) taxShut();
+  });
 
   function enter() {
     say('');

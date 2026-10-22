@@ -5384,6 +5384,65 @@
     ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM to S$1', 'fx', 'Singapore']];
+  /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
+     Settings page's rows and every other door to the same figures (My
+     Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a
+     sheet asks and says the same from wherever it is opened. A key is
+     [key, label, bound, section, its name in a line, its value in a line].
+     More than five read as sections (audit SET-4, 2026-10-14). A figure
+     changed from a later day is said on its row in these words (SET-1). */
+  function setPlural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  function setSigned(n) { return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n) + '%'; }
+  function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
+  function pctOf(v) { return v + '%'; }
+  var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')],
+    term_1_3: ['1 to 3 months', setSigned], term_4_5: ['4 and 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
+    term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
+    fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
+  var SETTING_SHEETS = {
+    details: { title: 'Details forms', keys: [['details_form_days', 'Open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
+    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', 'Every client', 'Lead', per('hour')],
+      ['proposal_followup_days', 'A proposal waits (days)', 'days', 'Every client', 'Proposal', per('day')],
+      /* A VIC's own, shorter (2026-10-15). */
+      ['vic_lead_followup_hours', 'A VIC lead waits (hours)', 'hours', 'VIC clients', 'VIC lead', per('hour')],
+      ['vic_proposal_followup_days', 'A VIC proposal waits (days)', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
+    tax: { title: 'Tax and terms', keys: TAX_KEYS.map(function (k) { return k.concat(SET_TAX_WORD[k[0]]); }) },
+    due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
+      ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due', '', 'Revision', per('working day')],
+      ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due', '', 'Approval reminder', per('day')]] },
+    priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours', '', 'Urgent', per('hour')],
+      ['priority_high_hours', 'High: hours from creation', 'hours', '', 'High', per('hour')],
+      ['priority_medium_hours', 'Medium: hours from creation', 'hours', '', 'Medium', per('hour')]] },
+    nudge: { title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every', '', 'Every', per('hour')],
+      ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead', '', 'Not started', per('day')]] },
+    prices: { title: 'AI prices', keys: [['ai_price_in', 'Input, a million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
+      ['ai_price_out', 'Output, a million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
+      ['ai_price_search', 'Web searches, a thousand', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
+    reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow', '', 'Reach within', pctOf]] },
+    /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
+       against (2026-10-15, the client analysis playbook). */
+    bench: { title: 'Ad benchmarks', keys: [
+      ['bench_cpr_low', 'Tier 1 from', 'rm', 'Property cost per result (RM)', 'Property from RM', String],
+      ['bench_cpr_mid', 'Tier 2 from', 'rm', 'Property cost per result (RM)', 'Tier 2 from RM', String],
+      ['bench_cpr_high', 'Tier 3 from', 'rm', 'Property cost per result (RM)', 'Tier 3 from RM', String],
+      ['bench_cpr_top', 'Tier 3 up to', 'rm', 'Property cost per result (RM)', 'Up to RM', String],
+      ['bench_msg_min', 'Low', 'rm', 'Messaging cost per result (RM)', 'Messaging low RM', String],
+      ['bench_msg_target', 'Target', 'rm', 'Messaging cost per result (RM)', 'Messaging target RM', String],
+      ['bench_msg_max', 'High', 'rm', 'Messaging cost per result (RM)', 'Messaging high RM', String],
+      ['bench_form_min', 'Low', 'rm', 'Lead form cost per result (RM)', 'Lead form low RM', String],
+      ['bench_form_target', 'Target', 'rm', 'Lead form cost per result (RM)', 'Lead form target RM', String],
+      ['bench_form_max', 'High', 'rm', 'Lead form cost per result (RM)', 'Lead form high RM', String],
+      ['bench_cpm_min', '1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
+      ['bench_cpm_max', '1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
+      ['bench_cpl_rise', 'Cost per lead rise a year (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
+      ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
+      ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
+      ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
+    /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
+    healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
+      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
+    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
+  };
   /* A figure in words, as the Settings row says it ("SST 6%"): the key's
      own short name and format where the Settings page gives them (k[4],
      k[5]), else its label and its kind's unit (2026-10-20, SET-5). */
@@ -5435,7 +5494,7 @@
       return f;
     }));
     window.ADspaceConfirm.ask({
-      title: spec.title, go: 'Save', fields: fields,
+      title: spec.title, go: 'Save', fields: fields, focus: spec.keys[0] && spec.keys[0][0],
       /* Each figure the person has not touched shows the value in force on
          the From day, so a day with a planned change opens on that change
          (2026-10-20, SET-1). */
@@ -5546,6 +5605,7 @@
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,
     TAX_KEYS: TAX_KEYS,
+    SETTING_SHEETS: SETTING_SHEETS,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
     letterOf: letterOf,

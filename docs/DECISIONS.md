@@ -5784,3 +5784,30 @@ removes nothing.
   lines drew the error in place of the quotation; and the one-time S$ seed
   read `sm_reports` directly, which a cut-down database lacks (now each
   table read only where it exists).
+
+### 2026-10-22 — Settings: the minor fixes of the second audit (SET2)
+- The user, on the audit of 2026-10-22: "minor improvements you could just
+  proceed without changing the original structure."
+- Built: SET2-1 Sent again names what it governs (WhatsApp and supplier
+  emails: `supplier_email_begin` reads `wa_repeat_hours` too), its sheet
+  titled as its row; SET2-2 Details forms names the supplier link its days
+  also open; SET2-3 the Bukku row says which field is chosen and reads Could
+  not load. on a refused read (it had read "both chosen" with one, and
+  nothing on a refusal); SET2-4 one list of the settings sheets
+  (`ADspaceAdmin.SETTING_SHEETS`): My Work's ⋯ Due dates had its own copy,
+  so a planned change read "Report: days after the month ends 10 days" there
+  and "Report 10 days" in Settings; SET2-5 Edit prices left the AI usage
+  sheet (offered twice); SET2-6 a sheet of figures opens on its first figure
+  at a desk and on its card under a finger (it focused From, a date box that
+  raised the picker); SET2-7 sheet titles as their rows; SET2-8 Add type (words alone in the
+  sheet's foot, as Add holiday: a foot's commit takes no glyph, js/acts.js),
+  No announcements., a quiet Close in the Announcements and Notices feet;
+  SET2-9 shorter value lines (Ad benchmarks, AI prices, Tax and terms) so a
+  phone reads them in two lines at most; SET2-10 Next Deepavali, as Next
+  #WT…; SET2-11 Settings offered at WhatsApp Full Access, whose Templates
+  row it holds; SET2-12 one row-acts helper and one outside-press listener
+  for the holidays and tax codes lists; SET2-13 the page's times and today
+  from `ADspaceClock`; SET2-14 the console-only Settings rules moved to
+  console.css; SET2-15 the suite opens every Edit row; SET2-16 CLAUDE.md
+  lists Task reminders.
+- Skipped: none.

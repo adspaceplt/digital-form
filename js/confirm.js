@@ -72,6 +72,7 @@
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
     card.setAttribute('aria-labelledby', 'askSheetTitle');
+    card.setAttribute('tabindex', '-1');
 
     var head = el('div', 'sheet-head');
     elTitle = el('h3');
@@ -385,7 +386,13 @@
     var typed = rows.filter(function (x) { return x.spec.match != null && !x.spec.choices; })[0] ||
                 rows.filter(function (x) { return !x.spec.tick && !x.spec.seg; })[0];
     var land = (typed && typed.input) || (o.tone === 'danger' ? elCancel : elGo);
-    setTimeout(function () { try { land.focus(); } catch (e) {} }, 0);
+    /* `focus` names the field a sheet opens on (a sheet of figures opens on
+       its first figure, never its From day); under a finger the card takes
+       focus instead, so no keyboard or date picker rises unasked (a sheet
+       focuses its card, never a field; 2026-10-22, SET2-6). */
+    var named = o.focus ? fieldOf(o.focus) : null;
+    if (named) land = window.matchMedia && matchMedia('(pointer: coarse)').matches ? card : named;
+    setTimeout(function () { try { land.focus({ preventScroll: land === card }); } catch (e) {} }, 0);
   }
 
   /* Content written with AI (the user, 2026-10-10: "a warning dialog for

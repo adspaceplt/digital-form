@@ -5003,8 +5003,6 @@
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
   var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Scripts', analysis: 'Brand analyses', checklist: 'Checklists' };
-  var AI_PRICE_KEYS = [['ai_price_in', 'Input, a million tokens', 'usd'], ['ai_price_out', 'Output, a million tokens', 'usd'],
-    ['ai_price_search', 'Web searches, a thousand', 'usd']];
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
@@ -5036,7 +5034,7 @@
     '</' + tag + '>';
   }
   function aiUseSheet(opener) {
-    var box = sheetShell('rpAiUseSheet', 'AI usage',
+    var box = sheetShell('rpAiUseSheet', 'AI usage and limits',
       '<div data-m="aiuse"></div>',
       '<button class="btn btn-primary" type="button" data-a="save" hidden>Save</button>' +
       '<button class="btn" type="button" data-a="limits">' + PEN_MARK + 'Edit limits</button>' +
@@ -5086,7 +5084,6 @@
           .sort(function (x, y) { return y.analyses - x.analyses || String(x.name).localeCompare(String(y.name)); });
         var cost = d.cost || null;
         var by = (cost && cost.by) || {};
-        var mayPrice = !!(window.ADspaceAdmin && window.ADspaceAdmin.may && window.ADspaceAdmin.may('team.settings', 'work'));
         host.innerHTML =
           (d.resets_at ? '<p class="aiu-reset">Resets at ' + esc(aiClock(d.resets_at)) + '</p>' : '') +
           '<div class="aiu-list">' + aiUseRow({ name: 'Whole team', used: all.used, cap: all.cap, sum: true }) + '</div>' +
@@ -5129,7 +5126,6 @@
               (cost.price_search != null ? aiUseRow({ name: 'Price a thousand web searches', text: aiUsd(cost.price_search) }) : '') +
             '</div>' +
             (cost.untracked ? '<p class="aiu-reset">' + fmt(cost.untracked) + (cost.untracked === 1 ? ' use' : ' uses') + ' from before tokens were kept are not priced.</p>' : '') +
-            (mayPrice ? '<div class="aiu-acts"><button class="btn btn-sm" type="button" data-a="prices">' + PEN_MARK + 'Edit prices</button></div>' : '') +
             '</section>';
         }
         if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
@@ -5234,11 +5230,6 @@
     edit.onclick = function () { if (d) setEditing(true); };
     /* A colleague's own limit, from their row: one value, empty for the standard. */
     host.addEventListener('click', function (e) {
-      if (e.target.closest('[data-a="prices"]')) {
-        window.ADspaceAdmin.editSettings({ title: 'AI prices, US$', msg: 'rpAiUseMsg', done: paint,
-          keys: AI_PRICE_KEYS }, e.target.closest('[data-a="prices"]'));
-        return;
-      }
       var row = e.target.closest('.aiu-row[data-scope]');
       if (!row || !d) return;
       var p = people.filter(function (x) { return x.id === row.getAttribute('data-scope'); })[0];

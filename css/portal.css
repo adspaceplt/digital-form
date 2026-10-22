@@ -8529,7 +8529,6 @@ body.is-maint { overflow: hidden; }
 .pairtile-pic img, .pairtile-pic video { display: block; width: 100%; height: 100%; object-fit: cover; background: #000; }
 .pairlink svg { width: 15px; height: 15px; }
 .sheet-card.is-narrow .paircard, .is-narrow .paircard { grid-template-columns: minmax(0, 1fr); }
-.aiu-acts > .btn { flex: 0 0 auto; }
 .aiu-row:first-child { border-top: 0; padding-top: 0; }
 .aiu-name b { font-weight: 600; }
 .aiu-cap.is-sum { margin-right: 0; font-weight: 600; color: var(--ink); }
@@ -8997,19 +8996,6 @@ body.is-maint { overflow: hidden; }
 .wa-preview .wa-head { font-weight: 600; }
 .wa-btns li { display: grid; gap: 2px; text-align: center; font-size: 13.5px; color: var(--ink-soft); }
 .wa-btns small { font-size: 12px; color: var(--ink-mute); overflow-wrap: anywhere; }
-/* Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11). One page:
-   every group a card under its heading, 24 apart as the sections of a list.
-   At a desk the groups also run down the left in a card, sticky, the group
-   in view the `--line-soft` fill; a press there scrolls to the group, never
-   stands between the person and a row. A row: the name over its value as it
-   stands, the control at the right edge (a switch, Edit or Open), one row's
-   height whatever the control. Its own names (`stg-`): `.set-row` is
-   Content Review's set. */
-.stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
-.stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
-/* What was pressed answers on its row (2026-10-14, audit SET-2). */
-.stg-what > .msg.stg-said { margin: 4px 0 0; }
-.stg-ctl .btn { flex: 0 0 auto; }
 .ro-row:first-child { border-top: 0; }
 .ro-row.is-drag { background: var(--sunk); border-radius: var(--radius-sm); }
 .qt-amt small, .qt-state small { font-size: 12px; color: var(--ink-mute); font-weight: 400; }

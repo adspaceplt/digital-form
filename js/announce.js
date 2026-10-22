@@ -221,9 +221,11 @@
     box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="annTitle" data-narrow="560">' +
       '<div class="sheet-head"><h3 id="annTitle">Announcements</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
-      '<div class="sheet-body"><div id="annList"></div><div class="msg" id="annMsg" role="status"></div></div></div>';
+      '<div class="sheet-body"><div id="annList"></div><div class="msg" id="annMsg" role="status"></div></div>' +
+      '<div class="sheet-foot"><button class="btn btn-quiet" type="button" data-a="close">Close</button></div></div>';
     document.body.appendChild(box);
     box.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    box.querySelector('[data-a="close"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     return box;
   }
   function msg(text, tone) {
@@ -278,7 +280,7 @@
         return '<section class="fsec ann-sec" data-aud="' + aud + '">' +
           '<div class="ann-head"><h4 class="fsec-h">' + NAME[aud] + '</h4>' +
           '<button class="btn btn-sm" type="button" data-a="new">' + PLUS + 'New</button></div>' +
-          (rows.length ? '<div class="ann-rows">' + rows.map(row).join('') + '</div>' : '<p class="ann-none">No announcement.</p>') +
+          (rows.length ? '<div class="ann-rows">' + rows.map(row).join('') + '</div>' : '<p class="ann-none">No announcements.</p>') +
           '</section>';
       }).join('');
       var byId = {};
