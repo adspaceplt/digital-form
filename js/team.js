@@ -306,8 +306,8 @@
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   function menuItem(action, label, cls, disabled) {
-    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button"' +
-      (disabled ? ' disabled' : '') + '><b>' + esc(label) + '</b></button>';
+    // Its group from the standard's one table (js/menu.js); never greyed.
+    return window.ADspaceMenu.item(action, label, '', '', disabled ? 'disabled' : '');
   }
   function menuBtn(items) {
     return '<span class="team-act">' +
@@ -1035,7 +1035,10 @@
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       '<span class="group-grants">' + esc(grantWord(r)) + '</span>' +
       (locked || !may('team', 'manage') ? '<span class="team-act"></span>'
-        : menuBtn(menuItem('rename', 'Edit') + (used ? '' : menuItem('del', 'Delete', 'is-danger'))));
+        /* A group in use has one act, Edit, on its row; a ⋯ only where
+           Delete joins it (MENU standard 8, 2026-10-22). */
+        : used ? '<span class="team-act"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button></span>'
+        : menuBtn(menuItem('rename', 'Edit') + menuItem('del', 'Delete', 'is-danger')));
 
     wireMenu(el);
     var ren = el.querySelector('[data-a="rename"]');

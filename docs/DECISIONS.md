@@ -6376,3 +6376,20 @@ Active clients tile keep it). One source draws no strip and the head
 counts it. The 1280 layout keeps the rings full width (the review's second
 option). `tests/overview.js` measures the order and the strip;
 `tests/uxaudit.js` holds the strip to the card's width.
+
+### 2026-10-22 — Menus: Reports, the client portal, Team groups and every other ⋯ (release 5 of the menu review)
+Every remaining builder writes its items through `ADspaceMenu.item` or
+stamps each with its group: the report head (MENU-17: Download, Versions |
+Change reviewer, Transfer client, White label | Mark as not sent |
+Unpublish | Delete, laid by `tidy`), a report step's ⋯ and its account
+rows, quotations (MENU-8: built by #707, now grouped: Download | Make a
+copy | Send on WhatsApp | Not proceeding or Restore | Remove), the
+Handbook, Suppliers, Performance, Announcements, Notices, Settings,
+passkeys, the command bar's ⋯, My Work's rows and items, a client's brands
+and rate lines, and Team. On the client portal a request still Requested
+is withdrawn from a tonal button on its row, never a red item in a ⋯ of
+one (MENU-19), and a line's Upgrade, Downgrade and Cancel are requests,
+never red. A Team group in use offers Edit on its row; one that can go
+keeps a ⋯ of Edit and Delete. Left for the next release: Team's colleague
+⋯ (MENU-5: Edit is the pens, Hand over work the Work pane's), tax codes
+(MENU-13), and the full CONVERTED list.

@@ -926,9 +926,12 @@ button.appver {
    the table wider than the console and grew with every switch added. */
 .group-head, .group-row {
   display: grid; align-items: center; gap: 0 16px;
-  grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) var(--ctl-h);
+  grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) 92px;
   padding: 0 15px;
 }
+/* A group in use offers Edit on its row; one that can go keeps a ⋯
+   (MENU standard 8): both end on the row's right edge. */
+.group-row > .team-act { justify-self: end; }
 .group-grants { font-size: 13px; color: var(--ink-soft); }
 /* Every label starts where its column's content starts, as a rate card
    heading does; centring left "STATE" floating over the left edge of a select. */
@@ -990,8 +993,10 @@ button.appver {
 .is-narrow .permcmp-cell small { grid-column: 2; text-align: right; }
 @media (max-width: 640px) {.team-table { padding: 0; }
   .team-head, .group-head { display: none; }
+  .team-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
+  .group-row { grid-template-columns: minmax(0, 1fr) 92px; }
   .team-row, .group-row {
-    grid-template-columns: minmax(0, 1fr) var(--ctl-h); gap: 8px 12px;
+    gap: 8px 12px;
     padding: 12px 15px; align-items: stretch;
   }
   .group-row > .group-grants { grid-column: 1 / -1; }

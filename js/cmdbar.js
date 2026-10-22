@@ -316,6 +316,9 @@
       item.className = 'kmenu-item' + (isRare ? '' : ' cmd-phone-only');
       item.setAttribute('role', 'menuitem');
       item.textContent = (b.textContent || '').trim();
+      // Its group, from the standard's one table (js/menu.js).
+      var g = window.ADspaceMenu && window.ADspaceMenu.groupOf ? window.ADspaceMenu.groupOf(item.textContent) : 0;
+      if (g) item.setAttribute('data-g', String(g));
       if (b.getAttribute('data-need')) item.setAttribute('data-need', b.getAttribute('data-need'));
       if (b.getAttribute('data-g')) item.setAttribute('data-g', b.getAttribute('data-g'));
       /* Focus is the ⋯'s first, so a sheet the item opens hands it back

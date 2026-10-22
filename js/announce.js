@@ -269,8 +269,8 @@
                 : (over ? '' : '<button class="btn btn-sm" type="button" data-a="restore">Restore</button>')) +
               '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
                 '<div class="kmenu" data-menu hidden role="menu">' +
-                  (up(a) ? '<button class="kmenu-item" type="button" role="menuitem" data-a="stop">Stop</button>'
-                         : '<button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delete">Delete</button>') +
+                  (up(a) ? '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-a="stop">Stop</button>'
+                         : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button>') +
                 '</div></span>' +
             '</div></div>';
         };

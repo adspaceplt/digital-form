@@ -2634,7 +2634,7 @@
     } else if (f.state === 'open') {
       var url = f.key ? dfUrl(f.key) : '';
       box.innerHTML = head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" type="button" data-df="reset"><b>Reset link</b></button></div></span>' : '') +
+          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="reset" role="menuitem">Reset link</button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="crmDfLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
@@ -2837,10 +2837,10 @@
           (can || canMeta ? '<span class="team-act">' +
             '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
-              (can ? '<button class="kmenu-item" data-a="rename" type="button"><b>Rename</b></button>' : '') +
-              (canMeta ? '<button class="kmenu-item" data-a="meta" type="button"><b>Meta accounts</b></button>' : '') +
-              (can ? '<button class="kmenu-item" data-a="logo" type="button"><b>' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</b></button>' +
-              '<button class="kmenu-item" data-a="state" type="button"><b>' + (b.active ? 'Set inactive' : 'Set active') + '</b></button>' : '') +
+              (can ? '<button class="kmenu-item" data-g="2" data-a="rename" type="button" role="menuitem">Rename</button>' : '') +
+              (canMeta ? '<button class="kmenu-item" data-g="2" data-a="meta" type="button" role="menuitem">Meta accounts</button>' : '') +
+              (can ? '<button class="kmenu-item" data-g="2" data-a="logo" type="button" role="menuitem">' + (own ? 'Use ' + esc(c.name) + ' logo' : 'Use ADspace logo') + '</button>' +
+              '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' + (b.active ? 'Set inactive' : 'Set active') + '</button>' : '') +
             '</div></span>' : '');
         list.appendChild(row);
         if (!can && !canMeta) return;
@@ -3046,7 +3046,7 @@
       '<button class="btn btn-sm" type="button" data-a="ba-run" id="crmAnalysisRun"' + (busy ? ' disabled aria-busy="true"' : '') + '>' + AI +
         (busy ? 'Running' : list.length ? 'Run again' : 'Run analysis') + '</button>' +
       (v && v.confirmed_at ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="ba-withdraw" type="button"><b>Withdraw confirmation</b></button></div></span>' : '');
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="5" data-a="ba-withdraw" type="button" role="menuitem">Withdraw confirmation</button></div></span>' : '');
     if (acts.querySelector('[data-a="menu"]')) wireMenu(acts);
     if (ba.failed) { body.innerHTML = '<p class="msg err">The brand analysis could not be read.</p>'; return; }
     if (!ba.versions) { body.innerHTML = '<p class="ba-none">Loading.</p>'; return; }
@@ -6315,14 +6315,14 @@
       '<span class="team-act">' + (maySvc()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>' +
             // Taking a line off the card is a decision of the year, not a select.
-            '<button class="kmenu-item" data-a="state" type="button"><b>' +
-              (off ? 'Set active' : 'Set inactive') + '</b></button>' +
+            '<button class="kmenu-item" data-g="5" data-a="state" type="button" role="menuitem">' +
+              (off ? 'Set active' : 'Set inactive') + '</button>' +
             /* Inactive first, then gone, as it is for a letter and a contact:
                a line is taken off the card before it can be taken out of it.
                Drawn only where Services is managed. */
-            (off ? '<button class="kmenu-item is-danger" data-a="del" data-need="services:manage" type="button"><b>Delete</b></button>' : '') +
+            (off ? '<button class="kmenu-item is-danger" data-g="6" data-a="del" data-need="services:manage" type="button" role="menuitem">Delete</button>' : '') +
           '</div>'
         : '') + '</span>';
     row.classList.add('cat-row');

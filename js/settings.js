@@ -488,7 +488,7 @@
     return '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-' + k + '="edit">' + PEN + 'Edit</button>' +
       '<span class="team-act"><button class="kmenu-btn" type="button" data-' + k + '="menu" aria-label="More actions for ' + esc(name) + '" aria-expanded="false">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
-      '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-' + k + '="delete">Delete</button></div></span></span>';
+      '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-' + k + '="delete">Delete</button></div></span></span>';
   }
   /* Shuts a list's ⋯ menus (`#holList`, `#taxList`). */
   function shutMenus(list, k) {

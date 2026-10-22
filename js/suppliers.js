@@ -308,7 +308,7 @@
        read as "confusing"): what it is, until when, the link itself. */
     if (f && f.state === 'open' && (update || s.status === 'pending')) {
       var url = f.key ? linkOf(f.key) : '';
-      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" type="button" data-s="reset"><b>Reset link</b></button><button class="kmenu-item" type="button" data-s="close"><b>Close link</b></button>') : '') +
+      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" data-g="5" type="button" data-s="reset" role="menuitem">Reset link</button><button class="kmenu-item" data-g="5" type="button" data-s="close" role="menuitem">Close link</button>') : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Details form link') + '" value="' + esc(url) + '">' +
@@ -375,10 +375,10 @@
        SUP-1): the chip says Details received, the meta its day. */
     var got = !!(state.form && state.form.state === 'submitted' && state.form.submitted_at);
     var fb = formBlock(), quiet = s.status !== 'pending' && !(state.form && state.form.state === 'submitted');
-    var menu = (work ? '<button class="kmenu-item" type="button" data-s="edit"><b>Edit</b></button>' +
-        (s.status === 'active' ? '<button class="kmenu-item" type="button" data-s="off"><b>Set inactive</b></button>' : '') +
-        (s.status === 'inactive' ? '<button class="kmenu-item" type="button" data-s="on"><b>Set active</b></button>' : '') : '') +
-      (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" type="button" data-s="del"><b>Delete</b></button>' : '');
+    var menu = (work ? '<button class="kmenu-item" data-g="2" type="button" data-s="edit" role="menuitem">Edit</button>' +
+        (s.status === 'active' ? '<button class="kmenu-item" data-g="5" type="button" data-s="off" role="menuitem">Set inactive</button>' : '') +
+        (s.status === 'inactive' ? '<button class="kmenu-item" data-g="5" type="button" data-s="on" role="menuitem">Set active</button>' : '') : '') +
+      (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" data-g="6" type="button" data-s="del" role="menuitem">Delete</button>' : '');
     var noDetails = !GROUPS.some(function (g) { return g[1].some(function (it) { return it[0] !== 'currency' && valueOf(s, it[0]); }); });
     var group = function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; };
     /* The record in panes (SUP-4, 2026-10-22; nine sections stood 2,180px
