@@ -31,7 +31,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Fields, buttons, the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
-| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress. Never a button, never the Undo bar |
+| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button, never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
 | `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
 | `--action-hover` / `--action-pressed` | `#0068d1` / `#005bb8` | the same | Its steps, each darker so the label keeps AA (Apple's lighter hover is 4.32:1). `#007AFF` (4.02:1) is refused |

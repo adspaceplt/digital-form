@@ -5992,3 +5992,31 @@ removes nothing.
   every script for a blank window opened outside ADspaceDocs. Only an
   iPhone can confirm the share sheet itself: the user checks it on the
   installed app.
+
+## 2026-10-22: internal review, release 1 (Activity, search, Suppliers, Handbook, Documents)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
+- ACT-1 the Activity record read the newest 200 rows of every section and
+  filtered in the page, so a quiet section (Handbook) read Nothing recorded
+  while its rows stood older; each section is now read by its own tags, 200
+  a page, with Show older. ACT-2 a failed read showed Access denied or
+  stayed on Loading; it is failLine with Try again.
+- SHELL-1 search finds Suppliers and Handbook files; SHELL-2 a colleague
+  opens their record (team.js `fromUrl` waits for the colleagues' read,
+  else it let the record go); SHELL-3 `_` escaped; SHELL-4 the bell's count
+  is the ink fill, never the action blue.
+- SUP-1 an answer for a supplier already left painted over the one open
+  (tests/suppliers.js holds it with a slow read); SUP-2 the link-client
+  picker reads clients a thousand at a time and says refusals in words.
+- HBK-1 Add file made a new id each press, leaving a file-less doc and
+  orphan objects; the id is made once a sheet and a stored file whose
+  version failed is removed. HBK-2 the button keeps its word and its ring.
+- DOC-1 Issue / Add existing document said nothing when the clients read
+  failed; it reads every client in pages and says the failure with Try
+  again. DOC-2 `.then(ok, bad)` replaced. DOC-3 a long reference is one
+  line with an ellipsis. DOC-4 no date reads the em dash. DOC-5 a
+  colleague's Documents pane reads the colleagues alone.
+- The stand-in: `.lt()`/`.gt()`, several `.order()` keys read as PostgREST
+  reads them (the first sorts first; it had let the last win), and LIKE
+  escapes inside `or()`'s quotes.
+- Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
+  TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
