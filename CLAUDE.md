@@ -2399,7 +2399,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   heads Emails (2026-10-20, the user: six items read as too many). A new payee, bank or account
   on an Active supplier, by link or by hand, puts it back to Pending until
   approved again (`repending`), and an approval names who approved, never
-  a system account.
+  a system account. The record is its head card over a strip (`#supTabs`,
+  `tab=` pushed, Overview left out; SUP-4, 2026-10-22): Overview (a form
+  waiting to be taken in first, then Client, Billing details, Person in
+  charge), Payment (Payment details, the Details update form, Bukku),
+  Documents, Emails; a pane with nothing in it is not drawn.
 - Approve (`supplier_set_status`, a name, the details and the bank account
   whole, `incomplete`) makes it Active; Set inactive / Set active in the
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
@@ -4002,8 +4006,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
-  themselves on the six scorecard categories in My records, Reviews (Rate
-  yourself, {Month}), for each month from June 2026 to last month while its
+  themselves on the six scorecard categories in My records, Reviews (one
+  Rate yourself card, a row a month newest first, the newest still to rate
+  tagged Due and its button the one blue, a rated month its total and Edit;
+  MINE-1, 2026-10-22), for each month from June 2026 to last month while its
   review is not shared (`perf_self_open`: `bad-month`, `shared`,
   `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
   score (`incomplete`) or one outside its category's maximum or off a step

@@ -1622,26 +1622,24 @@
     if (err) { box.hidden = false; UI.failLine(box, 'Rate yourself', said(err), loadSelf); return; }
     var list = st.self || [];
     box.hidden = !list.length;
-    /* One blue a view (ux-audit MINE-1, 2026-10-14): the first month still
-       to rate is the primary; any other open month is the tonal button. */
-    var first = true;
-    var lead = function (g) { if (g || !first) return false; first = false; return true; };
-    box.innerHTML = list.map(function (m) {
-      var g = m.rating, sc = (g && g.scores) || {};
-      return '<div class="ovcard self-card" data-period="' + esc(m.period) + '">' +
-        '<div class="ovsec"><div class="ovsec-head refl-head"><h3>Rate yourself, ' + esc(m.month) + '</h3>' +
-          '<span class="refl-ctl">' + (g ? '<button class="btn btn-sm" data-a="self" type="button">' + PEN_MARK + 'Edit</button>' : '') + '</span></div>' +
-        (g ? '<dl class="ovfacts self-facts">' + CATS.map(function (c) {
-               return '<div><dt>' + esc(c[1]) + '</dt><dd>' + esc(num(sc[c[0]])) + '<small> / ' + c[2] + '</small></dd></div>';
-             }).join('') + '<div><dt>Total</dt><dd><b>' + esc(num(g.total)) + '</b><small> / 100</small></dd></div></dl>'
-           : (function () {
-               /* Said once, on the month to rate first (ux-audit MINE-3). */
-               var l = lead(g);
-               return (l ? '<p class="perf-quiet">Each month stays open until its review is shared.</p>' : '') +
-                 '<div class="row acts refl-acts"><button class="btn' + (l ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button></div>';
-             })()) +
-        '</div></div>';
-    }).join('');
+    /* One card, a row a month, newest first (MINE-1, 2026-10-22; four
+       identical cards each over a button saying the same read as noise):
+       the month, a grey Due tag on the newest still to rate, then its act
+       at the right edge, the newest to rate the one blue; a month rated
+       reads its total, its Edit opening the scores. */
+    var due = (list.filter(function (m) { return !m.rating; })[0] || {}).period;
+    box.innerHTML = '<div class="ovcard self-card"><div class="ovsec">' +
+      '<div class="ovsec-head refl-head"><h3>Rate yourself</h3></div>' +
+      list.map(function (m) {
+        var g = m.rating, lead = m.period === due;
+        return '<div class="self-row" data-period="' + esc(m.period) + '">' +
+          '<span class="self-month">' + esc(m.month) + (lead ? ' <span class="chip">Due</span>' : '') + '</span>' +
+          (g ? '<span class="self-total">Total <b>' + esc(num(g.total)) + '</b><small> / 100</small></span>' : '') +
+          (g ? '<button class="btn btn-sm" data-a="self" type="button" aria-label="Edit ' + esc(m.month) + '">' + PEN_MARK + 'Edit</button>'
+             : '<button class="btn btn-sm' + (lead ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button>') +
+        '</div>';
+      }).join('') +
+      '</div></div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="self"]'), function (b) {
       b.addEventListener('click', function () { openSelf(b.closest('[data-period]').getAttribute('data-period'), b); });
     });
@@ -1681,7 +1679,7 @@
       st.self = d.months || [];
       paintSelf();
       /* Said on the card rated, in sight (2026-10-20, MINE-2). */
-      var card = document.querySelector('#mineSelf .self-card[data-period="' + m.period + '"] .refl-head');
+      var card = document.querySelector('#mineSelf .self-row[data-period="' + m.period + '"]');
       if (card) { var said = document.createElement('p'); said.className = 'msg ok self-said'; said.setAttribute('role', 'status'); said.textContent = 'Saved.'; card.insertAdjacentElement('afterend', said); }
       else msg('mineSelfMsg', 'Saved.', 'ok');
     });

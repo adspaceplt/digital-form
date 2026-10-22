@@ -6169,3 +6169,15 @@ The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
   390 the two buttons ran past the screen's edge (Approve's question then
   sat half off the screen); a narrow pane wraps them, each on its line.
 
+## 2026-10-22: internal review, release 3 (the two majors)
+The user, 2026-10-22: "Fix all", the approved mockups.
+- SUP-4 the supplier record was one card of nine sections, Documents and
+  Emails four screens down on a phone; it is now the head card over a strip
+  of Overview, Payment, Documents and Emails, as a colleague's record.
+  Every pane is drawn and the others hidden, so the reads that fill
+  Documents, Emails and Bukku land wherever the person is. tests/bukku.js
+  opens the supplier on `tab=payment`; uxaudit walks each pane.
+- MINE-1 Rate yourself was a card a month each over a button saying the
+  same; it is one card, a row a month, Due on the newest still to rate.
+- Skipped: none. All 29 findings of the internal report are built.
+
