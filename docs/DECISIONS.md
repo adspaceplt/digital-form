@@ -6222,6 +6222,24 @@ in review while the tile counted them: 6 beside 7; both count every report
 not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
 reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
 WRK-M1, and OVW-7's shared cold-lead rule.
+### 2026-10-22 — The Dashboard says how long the oldest task is late (release 4 of the work review)
+The user, 2026-10-22: "Fix all". Built: OVW-5 (the Late tile read a count
+the signal beside it already gave; it is Oldest late now, the days the
+oldest late task has run, red, None when nothing is late), OVW-7 (Leads
+going cold counted by its own copy of the follow-up rule; it asks
+`ADspaceCRM.isStale`, the Clients list's own, a lead never moved read from
+its creation), WRK-13 (a row in the Months view named the client the view
+is already about; it names the content month), WRK-15 (Select's Reassign
+offered no way back; Undo where it happened puts each task back with the
+colleague who held it), and WRK-6 refined: a priority over by a day reads
+in days ("Urgent · 19 days over"), a countdown stays in hours (the first
+cut turned countdowns into days and broke `tests/priority.js`). The sales
+defect logged by release 2 is closed: the code was right after #704 (a
+Singapore client billed in RM counts in RM); `tests/sales.js` seeds its
+S$ client with `bill_sgd` and checks the RM case apart. The take.js entry
+logged by the menu review passes on main with the tests' main (its words moved
+to "Assigned to you." in release 2); cleared. Left for their own
+releases: WRK-M1, OVW-M1.
 
 ### 2026-10-22 — Creator Campaigns: release 2 of the second audit (the booking card and the record)
 The user, 2026-10-22: "Fix all". Built: CMP-7 (a step taken on a booking's
