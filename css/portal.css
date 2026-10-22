@@ -4145,6 +4145,11 @@ body > .shell { width: 100%; }
 }
 
 .serial-copy.is-done { color: var(--ok); background: var(--ok-bg); }
+/* A long reference in a register row is one line ending in an ellipsis,
+   left aligned under the row's edge; the whole of it is the label, the
+   hover and what Copy copies (DOC-3, 2026-10-22). */
+.reg-row .serial-copy { max-width: 100%; text-align: left; justify-content: flex-start; }
+.reg-row .serial-copy > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-row > .svc-unit {
   color: var(--ink-mute); font-size: 13px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -6609,9 +6614,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .notif-btn svg { width: 15px; height: 15px; stroke-width: 1.7; }
 @media (hover: hover) { .notif-btn:hover { color: var(--ink); background: var(--line-soft); } }
 .notif-btn[aria-expanded="true"] { color: var(--ink); background: var(--line-soft); }
+/* A count of what is unread is a fact, never the action blue: the ink
+   surface and its own ink (SHELL-4, 2026-10-22). */
 .notif-count {
   position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
-  border-radius: 8px; background: var(--action); color: var(--on-action);
+  border-radius: 8px; background: var(--fill); color: var(--on-fill);
   font-size: 11px; font-weight: 600; line-height: 16px; text-align: center;
 }
 .kmenu.notif-menu { width: 340px; max-width: calc(100vw - 32px); padding: 8px; right: 0; }

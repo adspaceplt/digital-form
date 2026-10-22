@@ -2623,6 +2623,15 @@
     }
     /* One line an entry, a heading a day, runs folded (js/records.js). */
     window.ADspaceRecords.paint(box, rows.map(recordOf));
+    /* A section's page ends where its read did: Show older reads the next
+       page of the same section (ACT-1, 2026-10-22). */
+    if (actMore) {
+      var more = document.createElement('div');
+      more.className = 'act-more';
+      more.innerHTML = '<button class="btn btn-sm" type="button" id="activityOlder">Show older</button>';
+      box.appendChild(more);
+      more.firstChild.addEventListener('click', readOlder);
+    }
   }
   /* A tag that is read on its own is never folded into the entry beside it:
      Performance, an HR document, a void or a delete, billing, money and
@@ -2698,42 +2707,81 @@
       var v = $('activitySection').value;
       if (!v || v === actFilter) return;
       actFilter = v;
-      paintActivity();
+      readActivity();
     });
   });
 
+  /* Each section is read on its own (its tags, `actionsOf`), newest first,
+     a page at a time: the newest 200 of every section filtered in the page
+     left a quiet section (Handbook, Documents) reading Nothing recorded
+     while its rows stood older than the 200th of the busy ones (ACT-1,
+     2026-10-22). */
+  var ACT_PAGE = 200, actMore = false, actSeq = 0;
+  function actionsOf(k) {
+    return Object.keys(ACTION_LABEL).filter(function (a) { return ACTION_LABEL[a][2] === k; });
+  }
+  function actRead(before) {
+    if (actFilter === 'performance') return Promise.resolve({ data: [] });
+    var q = db.from('activity_log').select('*');
+    if (actFilter !== 'all') q = q.in('action', actionsOf(actFilter));
+    if (before) q = q.lt('created_at', before);
+    return q.order('created_at', { ascending: false }).limit(ACT_PAGE);
+  }
+  /* Performance's steps come from their own function, read only where the
+     part is held and the view takes them, and join the rest by time. A
+     refused or missing read of them leaves the other sections as they are. */
+  function perfRead() {
+    if (!(actFilter === 'all' || actFilter === 'performance') || !may('team.performance', 'view')) return Promise.resolve([]);
+    return db.rpc('perf_activity', { p_limit: 200 }).then(function (r) {
+      var d = (r && r.data) || {};
+      return (r && r.error) || d.error ? [] : (d.rows || []).map(function (x) {
+        return { created_at: x.at, kind: x.kind, _section: 'performance',
+                 _who: x.actor_name || x.actor || (x.auto ? 'Automatic' : ''),
+                 subject: [x.member, x.period ? monthLong(x.period) : ''].filter(Boolean).join(' · '), detail: '' };
+      });
+    }).catch(function () { return []; });
+  }
+  function byTime(x, y) { return String(y.created_at).localeCompare(String(x.created_at)); }
+  /* A read that fails is said with Try again, never Access denied in an
+     empty line, never a page left on Loading (ACT-2, 2026-10-22). */
+  function actFailed(why) {
+    actMore = false;
+    window.ADspaceState.failLine($('activityList'), 'The Activity record', why, readActivity);
+  }
+  function readActivity() {
+    var seq = ++actSeq;
+    window.ADspaceState.skeleton($('activityList'), 6);
+    Promise.all([actRead(), perfRead()]).then(function (both) {
+      if (seq !== actSeq) return;
+      var r = both[0] || {};
+      if (r.error) { actFailed(r.error.message); return; }
+      actMore = (r.data || []).length >= ACT_PAGE;
+      actRows = (r.data || []).concat(both[1] || []).sort(byTime);
+      paintActivity();
+    }).catch(function (e) {
+      if (seq === actSeq) actFailed(e && e.message);
+    });
+  }
+  function readOlder() {
+    var btn = this, seq = actSeq;
+    var logged = actRows.filter(function (a) { return a._section !== 'performance'; });
+    var last = logged.length ? logged[logged.length - 1].created_at : null;
+    if (!last) return;
+    btn.disabled = true;
+    actRead(last).then(function (r) {
+      if (seq !== actSeq) return;
+      if (r.error) { btn.disabled = false; actFailed(r.error.message); return; }
+      actMore = (r.data || []).length >= ACT_PAGE;
+      actRows = actRows.concat(r.data || []).sort(byTime);
+      paintActivity();
+    }).catch(function (e) { if (seq === actSeq) actFailed(e && e.message); });
+  }
   function loadActivity() {
-    var box = $('activityList');
-    box.innerHTML = '<div class="empty">Loading…</div>';
     // Opening it from a section starts on that section, since that is almost
     // always what the question was about.
     actFilter = ACT_SECTION[section] && actOffered(section) ? section : 'all';
     fillActSections();
-    /* Performance's steps come from their own function, read only where the
-       part is held, and join the rest by time. A refused or missing read of
-       them leaves the other sections as they are. */
-    var perf = may('team.performance', 'view')
-      ? db.rpc('perf_activity', { p_limit: 200 }).then(function (r) {
-          var d = (r && r.data) || {};
-          return (r && r.error) || d.error ? [] : (d.rows || []).map(function (x) {
-            return { created_at: x.at, kind: x.kind, _section: 'performance',
-                     _who: x.actor_name || x.actor || (x.auto ? 'Automatic' : ''),
-                     subject: [x.member, x.period ? monthLong(x.period) : ''].filter(Boolean).join(' · '), detail: '' };
-          });
-        }, function () { return []; })
-      : Promise.resolve([]);
-    Promise.all([db.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200), perf])
-      .then(function (both) {
-        var r = both[0], pr = both[1] || [];
-        if (r.error && !pr.length) {
-          box.innerHTML = '<div class="empty">Access denied.</div>';
-          return;
-        }
-        actRows = ((r.error ? [] : r.data) || []).concat(pr).sort(function (x, y) {
-          return String(y.created_at).localeCompare(String(x.created_at));
-        });
-        paintActivity();
-      });
+    readActivity();
   }
 
   /* Creating a client used to happen here, and separately inside Creator

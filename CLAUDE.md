@@ -216,6 +216,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
 | Any ⋯ menu, a bulk bar, `ADspaceMenu.items` | menus, deletes, then `ui` |
 | `handbook.js` | handbook |
+| The Activity record (`loadActivity`, `ACTION_LABEL`) | activity, run, crm |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
 | `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections | whatsapp, wafn, waapprove, smsql, crm, perms, sql, then `ui` |
@@ -1502,7 +1503,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sequence number throws away a late answer to an older query.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
-- Groups run in the rail's order (Creators List after Creator Campaigns);
+- Groups run in the rail's order (Creators List after Creator Campaigns; Suppliers by name or Supplier ID from `suppliers_list`, opening `supplier=`; the Handbook's live files by title, opening it filtered; a colleague opens their record, `member=`; `_` is escaped, never a wildcard; 2026-10-22);
   Video Scripts by code or title, opening its record (`script=`); Reports
   by title or white-label brand, opening the report (`report=`). Content
   Review, Video Scripts, Creator Campaigns and Reports also find a record
@@ -5662,6 +5663,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sections; ten or more open the finder. The sheet holds no swipe region.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
+- The Activity record reads its chosen section alone (`.in('action', actionsOf(k))`), newest first, 200 a page, Show older reading the next; a failed read is `failLine` with Try again (ACT-1, ACT-2, 2026-10-22).
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity, and every Performance history) is
   drawn by `js/records.js`

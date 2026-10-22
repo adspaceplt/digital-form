@@ -45,8 +45,13 @@
      backslash cannot be escaped reliably, and `%` and `*` are wildcards, so
      all four are dropped from what is typed. */
   function clean(q) { return String(q || '').replace(/["\\%*]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  /* `_` is ilike's one-character wildcard, so "a_b" found "axb": it is
+     escaped as `\_`, and inside `or()`'s double quotes the backslash itself
+     is escaped for PostgREST (SHELL-3, 2026-10-22). */
+  function like(q) { return '%' + String(q).replace(/_/g, '\\_') + '%'; }
   function any(cols, q) {
-    return cols.map(function (c) { return c + '.ilike."%' + q + '%"'; }).join(',');
+    var v = String(q).replace(/_/g, '\\\\_');
+    return cols.map(function (c) { return c + '.ilike."%' + v + '%"'; }).join(',');
   }
   /* `#WT01008`, `WT1008` or `1008` is a task's number. */
   function taskNo(q) {
@@ -63,6 +68,8 @@
     return (from ? '…' : '') + t.slice(from, to) + (to < t.length ? '…' : '');
   }
   function has(text, q) { return String(text || '').toLowerCase().indexOf(String(q).toLowerCase()) > -1; }
+  var SUP_STATE = { pending: 'Pending', active: 'Active', inactive: 'Inactive' };
+  var HB_CAT = { handbook: 'Employee Handbook', sop: 'SOPs', policy: 'Policies', template: 'Templates and forms', other: 'Other' };
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var TOUCH_WORD = { call: 'Call', visit: 'Visit', meeting: 'Meeting', whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
   /* A section's records are found by their client too (2026-10-14; the
@@ -95,7 +102,7 @@
   var REMARK = ['commented', 'comment_edited', 'comment_removed', 'comment_restored'];
   function remarks(q) {
     return read(db.from('ops_task_events').select('id, task_id')
-      .in('event_type', ['commented', 'comment_edited']).or('detail->>note.ilike."%' + q + '%"')
+      .in('event_type', ['commented', 'comment_edited']).or(any(['detail->>note'], q))
       .order('created_at', { ascending: false }).limit(20)).then(function (r) {
       if (r.error || !r.rows.length) return r;
       var ids = [];
@@ -308,7 +315,7 @@
     { key: 'creators', head: 'Creators List', can: function () { return may('campaigns.creators'); },
       read: function (q) {
         return read(db.from('creators').select('id, name, active, creator_profiles(platform)')
-          .ilike('name', '%' + q + '%').order('name').limit(LIMIT));
+          .ilike('name', like(q)).order('name').limit(LIMIT));
       },
       row: function (k) {
         var plats = [];
@@ -378,10 +385,28 @@
           open: function () { go('/admin/?s=register', 'register', ['regFind', d.serial]); }
         };
       } },
+    /* Suppliers (SHELL-1, 2026-10-22): the table answers no browser, so the
+       list is its function's, read once a query and matched on the page by
+       name or Supplier ID. */
+    { key: 'suppliers', head: 'Suppliers', can: function () { return may('suppliers'); },
+      read: function (q) {
+        return db.rpc('suppliers_list', {}).then(function (r) {
+          var d = (r && r.data) || {};
+          if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
+          return { rows: (d.rows || []).filter(function (x) { return has(x.name, q) || has(x.code, q); }).slice(0, LIMIT) };
+        }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
+      },
+      row: function (x) {
+        return {
+          id: 'supplier-' + x.id, name: x.name || x.code, code: x.name ? x.code : '',
+          meta: [SUP_STATE[x.status] || ''],
+          open: function () { go('/admin/?s=suppliers&supplier=' + encodeURIComponent(x.id), 'suppliers'); }
+        };
+      } },
     { key: 'links', head: 'Short Links', can: function () { return may('links'); },
       read: function (q) {
         return read(db.from('links').select('slug, title, target_url, active')
-          .ilike('slug', '%' + q + '%').order('slug').limit(LIMIT));
+          .ilike('slug', like(q)).order('slug').limit(LIMIT));
       },
       row: function (l) {
         return {
@@ -411,12 +436,29 @@
         return {
           id: 'member-' + m.id, name: m.name, code: m.staff_code,
           meta: [m.active === false ? 'Inactive' : '', m.designation],
+          /* A colleague is a record of their own (SHELL-2, 2026-10-22). */
           open: function () {
-            go('/admin/?s=team', 'team', ['teamFind', m.name]);
+            history.replaceState(null, '', '/admin/?s=team&member=' + encodeURIComponent(m.id));
+            if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
+            go('/admin/?s=team&member=' + encodeURIComponent(m.id), 'team');
             /* Team opens on the tab last used; a colleague is on Members. */
             var tab = document.querySelector('#teamTabs .tab[data-tab="members"]');
             if (tab && !tab.classList.contains('is-on') && !tab.closest('[hidden]')) tab.click();
           }
+        };
+      } },
+    /* The Handbook (SHELL-1): a file by its title, every colleague reads
+       it; an archived one is an admin's and stays out of search. */
+    { key: 'handbook', head: 'Handbook', can: function () { return true; },
+      read: function (q) {
+        return read(db.from('handbook_docs').select('id, title, category')
+          .is('archived_at', null).ilike('title', like(q)).order('title').limit(LIMIT));
+      },
+      row: function (h) {
+        return {
+          id: 'handbook-' + h.id, name: h.title, code: '',
+          meta: [HB_CAT[h.category] || ''],
+          open: function () { go('/admin/?s=handbook', 'handbook', ['hbFind', h.title]); }
         };
       } }
   ];

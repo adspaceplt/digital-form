@@ -6105,6 +6105,51 @@ the next release: CP-13 to CP-17.
 - Tests: `creator` reads the For line hidden on the cover and after Forget;
   `words` fails a Chinese count with a space before its unit.
 
+### 2026-10-22 — My Work and the Dashboard: release 2 of the work review
+The user, 2026-10-22: "Fix all". Built: OVW-6 (one document listener hides
+every chart's tip; a card no longer adds its own each repaint), OVW-7 (the
+Sales view's dead `STALE`, `pipeline.cold` and `attention` gone; the chart
+reads `ADspaceClock.MON`; the cold-lead boundary itself left as it is),
+OVW-8 (Creator bookings' way out reads Creator Campaigns; DESIGN.md spells
+Pre-Advertising Checklist as the checklists do), OVW-9 (DESIGN.md: five
+rows), WRK-8 (the board counts its workflow), WRK-9 (Months counts Open
+whole), WRK-10 (All people, Open, Assigned to you., Add template, Add task
+as the sheet's title, "days late" on the due cell; a priority's deadline
+keeps "over", WRK-6), WRK-11 (the task card's ⋯: Make a copy, Repeat on a
+schedule or Edit repeat, Take, the offer, Restore, a rule, Delete; the MENU
+session converts it), WRK-12 (DESIGN.md: Decline and Approve both tonal),
+WRK-14 (`shortDay` reads the clock; `#taskMenu` dropped). Not built in time
+for the 2026-10-23 gate: OVW-3, OVW-4, OVW-5, OVW-M1, WRK-13, WRK-15,
+WRK-M1, and OVW-7's shared cold-lead rule.
+
+## 2026-10-22: internal review, release 1 (Activity, search, Suppliers, Handbook, Documents)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
+- ACT-1 the Activity record read the newest 200 rows of every section and
+  filtered in the page, so a quiet section (Handbook) read Nothing recorded
+  while its rows stood older; each section is now read by its own tags, 200
+  a page, with Show older. ACT-2 a failed read showed Access denied or
+  stayed on Loading; it is failLine with Try again.
+- SHELL-1 search finds Suppliers and Handbook files; SHELL-2 a colleague
+  opens their record (team.js `fromUrl` waits for the colleagues' read,
+  else it let the record go); SHELL-3 `_` escaped; SHELL-4 the bell's count
+  is the ink fill, never the action blue.
+- SUP-1 an answer for a supplier already left painted over the one open
+  (tests/suppliers.js holds it with a slow read); SUP-2 the link-client
+  picker reads clients a thousand at a time and says refusals in words.
+- HBK-1 Add file made a new id each press, leaving a file-less doc and
+  orphan objects; the id is made once a sheet and a stored file whose
+  version failed is removed. HBK-2 the button keeps its word and its ring.
+- DOC-1 Issue / Add existing document said nothing when the clients read
+  failed; it reads every client in pages and says the failure with Try
+  again. DOC-2 `.then(ok, bad)` replaced. DOC-3 a long reference is one
+  line with an ellipsis. DOC-4 no date reads the em dash. DOC-5 a
+  colleague's Documents pane reads the colleagues alone.
+- The stand-in: `.lt()`/`.gt()`, several `.order()` keys read as PostgREST
+  reads them (the first sorts first; it had let the last win), and LIKE
+  escapes inside `or()`'s quotes.
+- Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
+  TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
+
 ### 2026-10-22 — The client pages' review findings (release 2b)
 The rest of the client review: CP-13 to CP-17.
 - CP-13: a line of parts broke inside a part ("4 / contents", "RM /
