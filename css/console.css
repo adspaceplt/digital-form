@@ -2458,6 +2458,8 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .hol-acts { display: flex; align-items: center; gap: 4px; }
 .tax-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .tax-count { font-size: 13px; color: var(--ink-mute); }
+.tax-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.is-narrow .tax-bar, .sheet-card .tax-bar { flex-wrap: wrap; }
 .tax-row.is-picking { cursor: pointer; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; }
 .tax-pick { display: grid; gap: 4px; }
 .tax-pick .tickline { min-height: var(--ctl-h); }

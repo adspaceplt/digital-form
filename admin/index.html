@@ -1513,7 +1513,7 @@
             <div class="kmenu" id="wsMenu" hidden role="menu">
               <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Client settings</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-g="5" data-need="review.settings:work">Reset link</button>
-              <button class="kmenu-item" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove from Content Review</button>
+              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove from Content Review</button>
             </div>
           </div>
         </div>
@@ -5334,14 +5334,19 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="sheet-body">
       <p class="msg" id="taxMsg" role="status"></p>
-      <div class="tax-bar" id="taxBar" hidden><span class="tax-count" id="taxCount"></span><button class="btn btn-sm" id="taxSelect" type="button">Select</button></div>
+      <!-- The list's own bar holds what manages it, and Delete only while
+           codes are ticked; the foot is the sheet's commit (MENU-13). -->
+      <div class="tax-bar" id="taxBar" hidden><span class="tax-count" id="taxCount"></span>
+        <span class="tax-acts">
+          <button class="btn btn-sm" id="taxBukku" type="button">Read from Bukku</button>
+          <button class="btn btn-sm" id="taxAdd" type="button">Add code</button>
+          <button class="btn btn-sm btn-danger" id="taxDel" type="button" hidden>Delete</button>
+          <button class="btn btn-sm" id="taxSelect" type="button">Select</button>
+        </span></div>
       <div id="taxList"></div>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-primary" id="taxBukku" type="button">Read from Bukku</button>
       <button class="btn btn-primary" id="taxKeep" type="button" hidden>Keep codes</button>
-      <button class="btn btn-danger" id="taxDel" type="button" hidden>Delete</button>
-      <button class="btn" id="taxAdd" type="button">Add code</button>
       <button class="btn btn-quiet" id="taxCancel" type="button">Close</button>
     </div>
   </div>

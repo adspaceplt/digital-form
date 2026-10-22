@@ -597,13 +597,11 @@
     var self = me() && me().id === m.id;
     var sysRow = Boolean(m.system) && !self;
     var manage = may('team', 'manage') && !sysRow;
-    return (manage ? menuItem('edit', 'Edit') : '') +
-              (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
+    /* No Edit: every value is changed where it is read on Overview; no Hand
+       over work: it is the Work pane's button (MENU-5, 2026-10-22). */
+    return (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
               (self || !manage || m.removed_at ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))) +
-              /* Work still held by somebody who no longer signs in is handed
-                 over from here (TEAM-3, 2026-10-14). */
-              (self || !manage || m.active ? '' : menuItem('handover', 'Hand over work')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
                  their data kept or their personal details deleted. */
               (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
@@ -2251,7 +2249,7 @@
         var opens = [], html = '';
         var self = me() && me().id === m.id;
         var anyHeld = own.clients.length || own.campaigns.length || HELD_KINDS.some(function (k) { return Number(held[k[0]] || 0) > 0; });
-        var act = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over</button>' : '';
+        var act = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>' : '';
         /* A long list shows its first rows and the rest behind Show all
            (the user, 2026-10-18: "imaging u need to fit in 100+ tasks"). */
         var FIRST = 10;

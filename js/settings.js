@@ -551,16 +551,17 @@
     var m = tax.mode, n = Object.keys(tax.picked).length;
     $('taxBukku').hidden = m !== 'list' || !window.ADspaceBukku;
     $('taxAdd').hidden = m !== 'list';
-    $('taxCancel').textContent = m === 'list' ? 'Close' : 'Cancel';
+    $('taxCancel').textContent = m === 'pick' ? 'Cancel' : 'Close';
     $('taxKeep').hidden = m !== 'pick';
     $('taxKeep').textContent = 'Keep ' + n + (n === 1 ? ' code' : ' codes');
     $('taxKeep').disabled = m === 'pick' && !n;
-    $('taxDel').hidden = m !== 'select';
-    $('taxDel').disabled = !n;
+    // Delete is drawn once a code is ticked, never greyed (MENU-12, MENU-13).
+    $('taxDel').hidden = m !== 'select' || !n;
     $('taxHead').textContent = m === 'pick' ? 'Choose from Bukku' : 'Tax codes';
     var bar = $('taxBar');
     if (bar) {
-      bar.hidden = m === 'pick' || !(tax.rows && tax.rows.length);
+      $('taxSelect').hidden = !(tax.rows && tax.rows.length);
+      bar.hidden = m === 'pick';
       $('taxCount').textContent = m === 'select' ? n + ' selected'
         : (tax.rows ? tax.rows.length + (tax.rows.length === 1 ? ' code' : ' codes') + ' · ' + tax.rows.filter(function (t) { return t.active; }).length + ' offered' : '');
       $('taxSelect').textContent = m === 'select' ? 'Done' : 'Select';
@@ -692,8 +693,9 @@
     if (taxWired || !$('taxSheet')) return;
     taxWired = true;
     $('taxCancel').addEventListener('click', function () {
-      if (tax.mode !== 'list') { taxMsg(''); taxSet('list'); return; }
-      window.ADspaceSheet.close();
+      // Cancel ends choosing from Bukku; Close shuts the sheet, ticks and all.
+      if (tax.mode === 'pick') { taxMsg(''); taxSet('list'); return; }
+      tax.mode = 'list'; window.ADspaceSheet.close();
     });
     $('taxClose').addEventListener('click', function () { tax.mode = 'list'; window.ADspaceSheet.close(); });
     $('taxAdd').addEventListener('click', function () { taxMsg(''); taxAsk(null); });
