@@ -3893,16 +3893,13 @@
     if (!state.batch) { msg('setMsg', 'Select a content set first.', 'err'); return; }
     if (state.uploading) return;
 
-    // The size limit belongs to Supabase storage. S3 has no such ceiling.
-    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var cap = capMB() * 1024 * 1024;
     var all = Array.prototype.slice.call(files);
     var queue = all.filter(function (f) { return f.size <= cap; });
     var toobig = all.filter(function (f) { return f.size > cap; });
 
     if (toobig.length) {
-      msg('setMsg',
-        toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
-        ' exceeds the ' + (cfg.maxUploadMB || 50) + ' MB limit. Export a smaller review copy or paste a link.', 'err');
+      msg('setMsg', toobig.map(function (f) { return overCap(f.name); }).join(' '), 'err');
       if (!queue.length) return;
     } else {
       msg('setMsg', '');
@@ -4086,8 +4083,7 @@
       }
       var text = (firstError && firstError.message) || 'Upload failed.';
       if (/payload|too large|exceeded/i.test(text)) {
-        text = 'File exceeds the ' + (cfg.maxUploadMB || 50) +
-          ' MB limit. Export a smaller review copy or paste a link.';
+        text = window.ADspaceWords.en.uploadTooLarge.replace('{n}', capMB().toLocaleString('en-GB'));
       }
       throw new Error(text + ' ' + left + ' of ' + items.length +
         ' not uploaded. Select Add to set to send the rest.');
@@ -4112,6 +4108,13 @@
   }
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+  /* The size a file may be, where it goes: S3's own cap (sign-upload holds
+     the same) or Supabase storage's. Refused at the pick, the file named
+     (2026-10-22, REV-1), never after an upload began. */
+  function capMB() { return usingS3() ? ((cfg.s3 && cfg.s3.maxUploadMB) || 1024) : (cfg.maxUploadMB || 50); }
+  function overCap(name) {
+    return window.ADspaceWords.en.uploadSize.replace('{file}', name).replace('{n}', capMB().toLocaleString('en-GB'));
+  }
 
   /* "MP4 · 1080 x 1920", so it is obvious what was actually imported. */
   /* Carousel order decides which slide Instagram shows first and sizes the
@@ -4238,6 +4241,7 @@
     if (!r.error && r.data && r.data.uploadUrl) return r;
     return API.fnRefusal(r).then(function (code) {
       if (code === 'bad_extension') throw new Error(window.ADspaceWords.en.uploadType);
+      if (code === 'too_large') throw new Error(window.ADspaceWords.en.uploadTooLarge.replace('{n}', capMB().toLocaleString('en-GB')));
       if (code) throw new Error('Upload was refused: ' + code);
       var fn = (window.ADSPACE_CONFIG.s3 || {}).functionName || 'sign-upload';
       var m = (r.error && r.error.message) || 'unknown reason';
@@ -4510,10 +4514,8 @@
         msg('setMsg', f.name + ' is not an image or a video.', 'err');
         return;
       }
-      var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
-      if (f.size > cap) {
-        msg('setMsg', f.name + ' is ' + mb(f.size) + ' MB, over the ' +
-          (cfg.maxUploadMB || 50) + ' MB limit. Turning on S3 storage removes this limit.', 'err');
+      if (f.size > capMB() * 1024 * 1024) {
+        msg('setMsg', overCap(f.name), 'err');
         return;
       }
       msg('setMsg', 'Reading ' + f.name + ' from Drive…');
@@ -4805,15 +4807,12 @@
     var picked = driveFiles.filter(function (f) { return f.pick && !f.done; });
     if (!picked.length) { msg('driveMsg', 'No assets selected.', 'err'); return; }
 
-    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var cap = capMB() * 1024 * 1024;
     var toobig = picked.filter(function (f) { return f.size > cap; });
     var queue = picked.filter(function (f) { return f.size <= cap; });
 
     if (toobig.length) {
-      msg('driveMsg', toobig.length + ' file' + (toobig.length === 1 ? ' is' : 's are') +
-        ' over the ' + (cfg.maxUploadMB || 50) + ' MB limit and were skipped: ' +
-        toobig.map(function (f) { return f.name; }).join(', ') +
-        '. Turning on S3 storage removes this limit.', 'err');
+      msg('driveMsg', toobig.map(function (f) { return overCap(f.name); }).join(' '), 'err');
       if (!queue.length) return;
     }
 

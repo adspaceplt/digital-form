@@ -5884,6 +5884,62 @@ removes nothing.
   down the left.
 - Not built: SET2-18, SET2-19 (not approved).
 
+### 2026-10-22 — Clients, Content Review, Video Scripts: release 1 of the second audit (P2 first)
+- The user, on the audit of 2026-10-22: "Fix all".
+- Built: CLI-1 a written next action opened the Activity record (a dead
+  end without it); it opens Calls and visits, where it is done. CLI-2 the
+  record counted a task late once its final date passed, from its own read
+  of the reader's tasks, while My Work counts it late only short of client
+  review or past a priority's deadline: `ops_engagement_counts` answers
+  `late` by one helper, `ops_task_late`, stating `ops_report`'s rule, and
+  the pane reads no task itself (one request fewer). CLI-3
+  `checklist-draft` sent the client's website to Claude, which names the
+  client however `{brand}` masks the name: it sends whether there is one.
+  CLI-4 the Timeline's Next follow up repeated Next action's date: gone.
+  CLI-5 Open Content Review drew the leaving mark and reloaded the console;
+  it, New campaign and Enable Content Review open the section in place, a
+  chevron after the words. CLI-6 the sign-off read "Not yet": Not prepared,
+  Not signed off. CLI-7 the checklist's ⋯ held Download alone: Download is
+  a button beside Preview PDF (this reopens 2026-10-15's "Download in the
+  head's ⋯"; the user's "Fix all" supersedes it). CLI-8 Delete client
+  named contacts, lines, letters and calls, then "any content sets and
+  campaigns": it counts the months, sets, scripts, campaigns and reports
+  Engagements read. REV-1 a file over S3's cap passed the picker and failed
+  at Add to set as "too_large", and the copy promised S3 had no limit: the
+  cap is S3's own (`s3.maxUploadMB`), refused at the pick by name, the
+  refusal in words. VS-1 the Video Scripts list read once, unpaged: past
+  1,000 the oldest months left silently; it reads a thousand at a time, and
+  the stand-in now answers a read 1,000 rows at most, as PostgREST does.
+- Skipped: none in this release; release 2 holds CLI-9 to CLI-11, REV-2 to
+  REV-5 and VS-2 to VS-4.
+
+### 2026-10-22 — Menus: one standard, one helper, one look (release 1 of the menu review)
+- What was wrong (tests/audits/2026-10-22/menus/report.txt): two rules
+  contradicted (Records: "a row's one act is on the row, never a ⋯ of one
+  item"; Forms: "Delete is the last item of the thing's own ⋯ … never a
+  button on a row"); nothing fixed the order inside a ⋯ beyond Delete last,
+  nor separators (the account menu's alone), nor that an item which cannot
+  apply is left out; menus came in two looks (13.5/600 at 320px in most,
+  400 at 200px on Team's rows); 88 of 135 items lacked `role="menuitem"`;
+  at 390 the client head's ⋯ hung over the record's name.
+- The user, 2026-10-22: "MENU standard: approve; MENU structural moves (3,
+  6, 7, 8, 9, 13, 16, 19): approve", then "Fix all".
+- Built here: the standard as DESIGN.md §5 Menus and action groups (the
+  two contradicting lines now point to it); `ADspaceMenu.items(groups)`
+  writes items with their group (`data-g`), and `ADspaceMenu.tidy` lays
+  roles, the red of group 6 alone and the hairlines (`hr.kmenu-sep`, the
+  account menu's `.acct-sep` the same rule) each time a menu shows, through
+  one MutationObserver on `hidden`, so a menu whose items the page shows or
+  hides keeps its separators true (MENU-11, MENU-15 for every converted
+  menu); every item 13.5/400 in ink, a `<b>` inside it carrying no weight,
+  Team's 200px width gone (MENU-4); a ⋯ in `.rec-ctl` (or marked
+  `data-dock`) docks at the foot inside the gutters under 640 (MENU-16).
+  `tests/menus.js` holds the helper and every menu converted (none listed
+  yet: the areas convert in the next releases), uxaudit's `menu` rule its
+  red, size, look and roles.
+- Next: each area's menus onto the helper, with MENU-1 to MENU-3, MENU-5 to
+  MENU-10, MENU-12 to MENU-14, MENU-17 to MENU-19.
+
 ### 2026-10-22 — A PDF in the installed app has a way out
 - Reported by the user: "when pdf generated from PWA there is no button to
   share to close the windows whatsoever".

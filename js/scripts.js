@@ -154,9 +154,14 @@
   function load() {
     var box = $('vsList');
     if (!st.loaded) UI.skeleton(box, 4);
-    return db.from('video_scripts')
-      .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
-      .order('period', { ascending: false }).order('seq')
+    /* Read a thousand at a time: thirty to fifty scripts a client a year
+       pass PostgREST's 1,000 inside a year (2026-10-22, VS-1). Ordered to
+       the id, so a page boundary never repeats or drops a row. */
+    return API.readPages(function () {
+      return db.from('video_scripts')
+        .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
+        .order('period', { ascending: false }).order('seq').order('id');
+    })
       .then(function (r) {
         if (r.error) throw r.error;
         st.list = r.data || [];

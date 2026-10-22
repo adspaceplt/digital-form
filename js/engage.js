@@ -93,22 +93,14 @@
           if (failed(r)) throw new Error(why(r));
           out.eng = r.data || [];
           var ids = out.eng.map(function (e) { return e.id; });
-          if (!ids.length) { out.counts = {}; out.late = {}; return null; }
-          return Promise.all([
-            db.rpc('ops_engagement_counts', { p_engagements: ids }),
-            db.from('ops_tasks').select('id, engagement_id, current_final_due_at').in('engagement_id', ids)
-              .is('archived_at', null).is('cancelled_at', null).is('completed_at', null)
-          ]).then(function (both) {
-            if (failed(both[0])) throw new Error(why(both[0]));
-            if (failed(both[1])) throw new Error(why(both[1]));
-            out.counts = {}; out.late = {};
-            (both[0].data || []).forEach(function (x) { out.counts[x.engagement_id] = x; });
-            var today = dayMy();
-            (both[1].data || []).forEach(function (t) {
-              if (t.current_final_due_at && dayMy(t.current_final_due_at) < today) {
-                out.late[t.engagement_id] = (out.late[t.engagement_id] || 0) + 1;
-              }
-            });
+          if (!ids.length) { out.counts = {}; return null; }
+          /* Late is My Work's own rule, answered with the counts
+             (`ops_task_late`): past its date short of client review, or
+             past a priority's deadline short of its review (CLI-2). */
+          return db.rpc('ops_engagement_counts', { p_engagements: ids }).then(function (r) {
+            if (failed(r)) throw new Error(why(r));
+            out.counts = {};
+            (r.data || []).forEach(function (x) { out.counts[x.engagement_id] = x; });
           });
         });
     },
@@ -204,7 +196,7 @@
     var MON = window.ADspaceMoney;
     var days = (e.reports || []).length && MON && MON.setting ? Number(MON.setting('report_due_days', sp.z)) : NaN;
     var due = isNaN(days) ? '' : addDays(sp.z, days);
-    return { held: held, done: Math.min(Number(counts.done) || 0, held), late: (d.late || {})[e.id] || 0,
+    return { held: held, done: Math.min(Number(counts.done) || 0, held), late: Number(counts.late) || 0,
              due: due, word: MONTHS[Number(e.period.slice(5, 7)) - 1], span: sp };
   }
   /* The month whose span holds today, for the line under the record's name. */
@@ -437,6 +429,16 @@
     holds: holds,
     monthNow: monthNow,
     loaded: function (clientId) { return kept.client === clientId && Boolean(kept.data); },
+    /* What the record holds, as read for the pane, for Delete's question to
+       count (CLI-8): each kind read and not refused, else left out. */
+    held: function (clientId) {
+      var d = kept.client === clientId ? kept.data : null, out = {};
+      if (!d) return out;
+      var has = function (k, list) { if (d.keys.indexOf(k) > -1 && !d.fail[k === 'finished' ? 'reports' : k] && list) out[k] = list.length; };
+      has('content', d.eng); has('sets', d.sets); has('camps', d.camps); has('scripts', d.scripts);
+      has('reports', d.reports); has('finished', d.finished);
+      return out;
+    },
     /* What the record asks after a block read again by Try again. */
     onData: function (fn) { kept.onData = fn; }
   };

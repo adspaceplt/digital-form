@@ -1841,7 +1841,7 @@
       .sort(function (a, b) { return String(a.next_at || '9999') < String(b.next_at || '9999') ? -1 : 1; })[0];
     if (open) {
       var late = open.next_at && open.next_at < today();
-      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' + ico('calendar') +
+      box.innerHTML = '<button class="railnext" type="button" data-go="calls">' + ico('calendar') +
         '<span class="railnext-text">' + esc(open.next_action) + '</span>' +
         (open.next_at ? '<span class="railnext-when' + (late ? ' is-late' : '') + '">' +
           esc((late ? 'Overdue · ' : 'Due ') + niceDate(open.next_at)) + '</span>' : '') +
@@ -1920,8 +1920,6 @@
     if (!block || !box) return;
     var live = (state.touches || []).filter(function (t) { return !t.archived_at; });
     var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
-    var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
-      .map(function (t) { return t.next_at; }).sort()[0];
 
     /* The stage it is in now is the one running, so its duration reads "so
        far" and carries the overdue mark where the stage has run past its
@@ -1957,16 +1955,15 @@
     var dates = [
       ['Client since', c.created_at, true],
       ['VIC since', vicNow && vicNow.since, 'vic'],
-      ['Last contact', last, false],
-      ['Next follow up', nextAt, false]
+      ['Last contact', last, false]
     ].filter(function (r) { return r[1]; }).map(function (r) {
-      var late = r[0] === 'Next follow up' && r[1] < today();
+      /* The next follow up is Next action's own date, said there once. */
       /* Client since is the one date here a person may correct, so the value
          itself is what opens: a field growing out of the thing it changes,
          never a second field and a Save button below the list. */
       return '<div class="tl-row tl-date">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
-          '<span class="tl-when' + (late ? ' is-late' : '') + '"' +
+          '<span class="tl-when"' +
             (r[2] === 'vic' ? ' id="crmVicSinceVal"' : r[2] ? ' id="crmSinceVal"' : '') + '>' +
             esc(niceDate(r[1])) + '</span></span>' +
         (r[2] === 'vic'
@@ -2224,7 +2221,16 @@
       delCount((state.services || []).length, 'service line'),
       delCount((state.documents || []).length, 'letter'),
       delCount((state.touches || []).length, 'call or visit', 'calls and visits')
-    ].filter(Boolean);
+    ];
+    /* What Engagements read on opening, counted where it was (CLI-8). */
+    var held = window.ADspaceEngage && window.ADspaceEngage.held ? window.ADspaceEngage.held(c.id) : {};
+    gone = gone.concat([
+      delCount(held.content, 'content month'),
+      delCount(held.sets, 'content set'),
+      delCount(held.scripts, 'video script'),
+      delCount(held.camps, 'campaign'),
+      delCount(held.reports != null ? held.reports : held.finished, 'report')
+    ]).filter(Boolean);
     /* The one question every Delete asks (2026-10-10): what goes, the name
        typed back, and the delete code where one is set, the question kept
        open on a refusal. Whether a code is set is not a secret; it is asked
@@ -2235,8 +2241,8 @@
       if (codeNeeded) fields.push({ name: 'code', label: 'Delete code', type: 'password', need: 'The delete code is required.' });
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'Deleting ' + c.name + ' removes the record and everything filed under it: ' +
-          gone.concat(['any content sets and campaigns on this client, with everything in them']).join(', ') +
+        body: 'Deleting ' + c.name + ' removes the record and everything filed under it' +
+          (gone.length ? ': ' + gone.join(', ') + ', and everything in them' : '') +
           '. This is immediate and cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
       }, function (v) {
@@ -4221,7 +4227,9 @@
     // Nothing is started for a client who is not Active, so the head waits.
     if (c.stage !== 'active') { act.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
-    var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    /* A way to another console page carries the chevron after its words,
+       never the leaving mark: it opens in this tab (2026-10-22, CLI-5). */
+    var CHEVR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
     /* Each way into the work is offered where it can be taken: Enable Content
        Review writes the client (Clients at Work, or Content Review settings
        at Work, as `clients_update` asks), New campaign makes one (Campaigns
@@ -4234,7 +4242,7 @@
       (!canReview ? ''
         : c.review_hidden
         ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
-        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + OUT + '</button>') +
+        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + CHEVR + '</button>') +
       (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '');
     var on = $('crmReviewOn');
     /* The way back from Remove from Content Review: never asks, and a
@@ -4249,17 +4257,25 @@
         }
         c.review_hidden = false;
         log('client.review_on', c.name, '');
-        location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
+        goTo('/admin/?s=review&client=' + encodeURIComponent(keyOf(c)), 'review');
       }).catch(function (e) { on.disabled = false; msg('crmEngageMsg', (e && e.message) || String(e), 'err'); });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
-      location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
+      goTo('/admin/?s=review&client=' + encodeURIComponent(keyOf(c)), 'review');
     });
     var nc = $('crmGoCampaign');
     if (nc) nc.addEventListener('click', function () {
-      location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
+      goTo('/admin/?s=campaigns&new=' + encodeURIComponent(c.id), 'campaigns');
     });
+  }
+  /* Into another section as an Engagements row opens one: the address,
+     then the section, never a reload of the console (CLI-5). */
+  function goTo(url, section) {
+    if (!bridge.show) { location.href = url; return; }
+    history.replaceState(null, '', url);
+    if (section === 'review' && bridge.restore) bridge.restore();
+    else bridge.show(section);
   }
   if (window.ADspaceEngage) {
     window.ADspaceEngage.onData(function (c) {

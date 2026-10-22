@@ -200,7 +200,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`): `.rec-id` identity, `.rectabs` panes, `.rec-rail` of `.railblock`s |
 | A record with no artwork (a task) | `.rec-id-plain`: the number as a token (copy control) heading the record, no mark |
 | One record with steps | `.kcard` > `.kcard-head` (name, then summary, then the state beside the ⋯) + `.kstep` |
-| Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (`is-danger` red on the item itself) |
+| Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` drawn by `ADspaceMenu.items([[open],[change],[send],[mark],[lifecycle],[destroy]])`: fixed order, `hr.kmenu-sep` between groups (always before destroy), Remove/Void/Delete red and last, 13.5/400, one width, role menu/menuitem; ≤7 items; one item only for lifecycle or destroy (§5 Menus and action groups) |
 | An act with a consequence | `ADspaceConfirm` sheet (`.askcard`, 440px); a field may be a tick (`.tickline`) or a segment (`seg`) |
 | A caption written by AI | `.capwrite`: Write with AI (the AI mark first), `.btn-sm` at its own width under the caption field, its question an `ADspaceConfirm` sheet, its answer or refusal one `.msg.capmsg` line under it, Undo where it happened |
 | An AI analysis read first (a client's Brand analysis) | `.readgroup.ba`: the head's acts at the right (`.ba-acts`: blue Confirm while a draft, then Run analysis / Run again with the AI mark, a ⋯ once confirmed), State, Version and Read from as `.ovfacts`, a section a question (`.ba-sec`, its `fsec-h`, points as `.ba-list`), sources as `.plink`s, other versions as `.linkbtn`s; a line of parts holds each part whole (`.ba-part`) |
@@ -246,7 +246,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A word to everyone (an announcement) | `.annbar` under the top bar (`js/announce.js`): the line, then an https link as `.btn-sm` Open with the leaving mark and a close ×; `--tonal` for Info, the same ground led by the amber dot for Important; several live share the one bar (`.annbar-track`, a slide each, `‹ 1/3 ›` in `.annbar-pager`), as tall as its longest line, never a second bar; on the console laid like `.upgradebar`, on a client page edge to edge with the words on the mark's 24px edge (16 on a phone); never a marquee |
 | A colleague's health check-in | `#mineHealthBox` (`js/health.js`): before agreeing one card, the company's words beside the shaded terms on 1.618 : 1 (stacked when narrow); after, the half month's card with the five answers across as `dl.facts.health-facts` (two across when narrow, the fifth taking the row), the history table, Talks, and the agreement as one quiet `.health-agree` line; a word of care is a shaded `.health-care` box; the grid's gap is the only step between blocks |
 | A message sent on WhatsApp (the WhatsApp section) | `#waList` (`js/whatsapp.js`): `.tally.wam-heads` (white cells, the month's templates sent by category) over one `ADspaceGroup` card of `.wam-row`s: who (name over client and number, a failure's reason in `--err` under it on a narrow pane), what (purpose over template and category), who sent it, the status over when (`.chip-state` with its dot); on a narrow pane who over meta at the left and status over when at the right. Templates: `.wat-row` a purpose over its template, its `button.switch`, Edit |
-| A client's checklist (`js/checklists.js`) | Read first: `.ovcard.ck-head` (title over version, `.ck-ctl` the state, Write with AI, Preview PDF and a ⋯ holding Download, then `.ovfacts`), a `.ck-sec` card a section (its `fsec-h`, Edit with the pen at the right, a platform's Not applicable beside it): ticks as `.ck-row.is-tick` pressed in place, answers as `dl.ovfacts`, a table read as `.ck-table.is-read`; Edit is `#ckEditSheet`, never a field open on the pane. A sheet's table stacks a row a `--sunk` card under `data-narrow="560"`, never cells splitting a word |
+| A client's checklist (`js/checklists.js`) | Read first: `.ovcard.ck-head` (title over version, `.ck-ctl` the state, Write with AI, Preview PDF and Download beside it (no ⋯), then `.ovfacts`), a `.ck-sec` card a section (its `fsec-h`, Edit with the pen at the right, a platform's Not applicable beside it): ticks as `.ck-row.is-tick` pressed in place, answers as `dl.ovfacts`, a table read as `.ck-table.is-read`; Edit is `#ckEditSheet`, never a field open on the pane. A sheet's table stacks a row a `--sunk` card under `data-narrow="560"`, never cells splitting a word |
 | A client's quotations and Build quote | `#crmQuotes` (`js/quotes.js`) above the Services pane's lines: `.svc-row.qt-row`s (the reference over what it is, the monthly figure over its label, the state as `.chip-state`, a ⋯), two columns on a narrow pane. `#qbBox`, a 780px `.formsheet`: the plans as cards (`.qb-plan`: a radio mark, the letter and fee over platforms and contents; `--sunk`, the chosen `--line-soft`) under a Without ads / With ads segment at the heading's right; content and platforms (what each adds, `.qb-rate`) side by side; extra contents as steppers, languages, budget and term in three columns (one on a phone); the lines as a table and the totals right aligned, Monthly incl. SST the one bold figure; on a phone a line is its name over qty × rate and its subtotal |
 | A prospect's own quotation (`/quote/`) | `.qs`, white to the edge: an opening page first (`.qs-intro`: the title, one line of what the page gives, What to expect as numbered steps `.qs-steps`, one mute line of time, validity and commitment, then Chat on WhatsApp and Start as equal halves; no step count), written to the client or lead using it, never to a colleague; then one 560px column a step (`.qs-progress`: Step n of m over a 4px track in `--fill`; the title; choices as `--sunk` cards, `.qs-pick` and `.qs-chip`, ringed in ink once chosen, never a browser tick box: a 22px mark at the card's right edge (`.qs-mark`), where several may be chosen a rounded square (6px) filled in ink with its tick, where one of a set a ring holding an ink dot; the consent tick the same square; a step's categories each under a 16/600 heading (`.qs-sec`), items 8 apart, the next category set off by a `--line-soft` hairline and a 24px step; steppers `.qs-stepper`; Back and Continue as equal halves); the quotation on the record's proportion at a desk (`.qs-quote`: the lines as rows with hairlines, the totals right aligned on `--sunk`, the billing details beside it in a `--sunk` card), on a phone the billing under it once Proceed is pressed; Request received is the green tick, the facts on `--sunk` |
 | Sending a template on WhatsApp from any record | `#waCompose` (`ADspaceWhatsApp.compose`): a `.formsheet` of Recipient (To as a select, the number as a `.readfield`, a warn line where it cannot be messaged), Template (Meta's approved ones; Report where it has a Document header), Variables (one `data-oneline` box each, prefilled) and Preview (`.wa-preview` on `--sunk`: header, body with each variable at 600, footer, buttons); Send asks first |
@@ -363,9 +363,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   just before it (the draft's language beside Write with AI).
 - An act is offered once on a screen: a value is changed where it is read
   (its pen, its row's control), never again from a ⋯ (the user, 2026-10-09:
-  Change sent date beside the Sent pen; Reassign beside Assigned to). The ⋯
-  holds only what nothing on the screen already does. A row's one act is on
-  the row (its pen), never a ⋯ of one item (2026-10-20, SVC-1).
+  Change sent date beside the Sent pen; Reassign beside Assigned to). What
+  goes in a ⋯ is §5 Menus and action groups.
 - A fact is stated once on a screen. A control that changes it answers
   (`Saved.`), and puts itself back on a refusal.
 - A mark holds real artwork (`logo_url`, falling back to initials only while
@@ -452,10 +451,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Equal halves grow from a half's basis (`flex: 1 1 50%`), never from 0: a
   basis of 0 leaves each its own padding on top of its share (Request
   changes stood 34px wider than Approve; 2026-10-20).
-- A destructive item is red on the item itself.
 - Delete has one place and one question (the user, 2026-10-10): the last
-  item of the thing's own ⋯, red, never inside an Edit form and never a
-  button on a row; it asks `ADspaceConfirm` (what goes, no restore), a
+  item of the thing's own ⋯ (§5 Menus and action groups), red, never inside
+  an Edit form and never a button on a row; it asks `ADspaceConfirm` (what goes, no restore), a
   record or anything holding other work with its name typed back, one item
   inside a record once, kept open on a refusal (`wait`). Remove is the soft
   way, asking nothing, with Undo where it happened. Several at once is the
@@ -485,6 +483,66 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The ⋯ is the lightest control. The account control, the bell and the
   search carry no outline, only a `--line-soft` fill on hover and while
   open.
+
+### Menus and action groups
+The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
+(`tests/menus.js`, uxaudit `menu`).
+1. Screen or ⋯. An act goes on the screen when it is the record's next
+   step, used on most visits, or its state is drawn beside it (a pen, a
+   switch, a step button); in the ⋯ when it is rare, administrative or
+   destructive. An item whose label matches a visible control on the same
+   screen is not in the ⋯.
+2. One ⋯ per thing: a record head's at its right edge after the state, a
+   row's as its last cell. A ⋯ whose every item is withheld is not drawn.
+3. Fixed order by group, a group with no item left out:
+   1. Open: Open, Open file, Versions, Download (here even beside Preview
+      PDF on screen).
+   2. Change: Edit, Rename, Make a copy, New version, Take, Offer to the
+      team, Reassign, Change reviewer, Transfer client, White label.
+   3. Send: anything reaching a person outside the screen (Send on
+      WhatsApp, Request feedback on WhatsApp, Resend booking, Send
+      invitation, Share with {name}).
+   4. Mark: a flag reading its current value (Mark as VIC / Remove VIC,
+      Mark account restricted, Mark signed / Mark not signed, Confirm
+      internally / Revert confirmation, Mark as not sent).
+   5. Lifecycle: Set inactive / Set active, Archive / Restore, Pause /
+      Resume, Not proceeding, Unpublish, Withdraw, Revert to …, Reopen,
+      Stop, Cancel month, Reset link, Close link, Revoke portal access.
+   6. Remove and destroy: Remove, Void, then Delete last.
+4. Separators (`hr.kmenu-sep`, `role="separator"`): always before group 6
+   when anything precedes it; between the other groups once the menu
+   shows four items or more.
+5. Red only for group 6 (Remove, Void, Delete). Withdraw and Revoke in ink.
+6. State gates the item: one that cannot apply in the record's stage or
+   state is not drawn, never greyed, and its function refuses it too.
+7. A toggle is one item naming its next state. Where the state and its way
+   back are drawn on screen (a restricted account's rail block and Clear),
+   the ⋯ offers only the way in.
+8. At most seven items; more are split by moving the commonest act onto the
+   screen, never by nesting. A ⋯ of one item only where that item is in
+   group 5 or 6, or the ⋯ sits in a command bar; otherwise the single act
+   is a `.btn-sm` on the row or head.
+9. Words: verb first, one to three words, no object the context gives; the
+   same act the same word everywhere (Reset link, Void, Issue Letter of
+   Offer, Make main contact); never a mood (Mark not signed).
+10. One look: every item 13.5px, weight 400, ink (a `<b>` inside carries no
+    weight); one width at a desk (320px) and one on a phone; `role="menu"`
+    and `role="menuitem"`; every item written by `ADspaceMenu.items(groups)`
+    (`js/menu.js`, each item's group as `data-g`), or as static markup
+    carrying `data-g`; `ADspaceMenu.tidy` lays the roles, the red and the
+    separators whenever a menu shows.
+11. On a phone a record head's ⋯ docks at the foot inside the gutters, as
+    the account menu does, and never covers the record's name; a row's
+    keeps hanging from its row.
+12. A bulk bar mirrors the row: only acts one row offers, in the same
+    words; drawn once something is ticked and hidden (never greyed) at
+    zero; Delete red and last.
+13. Action groups on screen (`.rec-ctl`, `.kactions`, `.viewhead`, row
+    acts): at most one blue; the state, the secondary, the primary at the
+    right edge, the ⋯ last; on a phone buttons in a row share one width.
+14. A sheet's foot is the form's commit: Cancel, an optional secondary, the
+    primary, nothing else; list management (Add, Read from …, Select,
+    Delete selected) goes in the sheet's own bar or its bulk bar.
 
 ### Colour, state, hover
 - One status vocabulary and one colour set, on console and client pages alike
