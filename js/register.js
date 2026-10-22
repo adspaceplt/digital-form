@@ -148,7 +148,7 @@
     Promise.all([
       /* The registered name and the billing address are Billing's columns,
          answered to Documents at Work by `client_billing()`. */
-      db.from('clients').select('id, name, client_code, market, stage, created_at').order('name')
+      db.from('clients').select('id, name, client_code, market, bill_sgd, stage, created_at').order('name')
         .then(function (r) { return r.error ? r : API.withBilling(r.data || []).then(function () { return r; }); }),
       db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
       LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([]),
@@ -775,7 +775,7 @@
   function scaClients() {
     return state.clients.slice().sort(F.byClient || function () { return 0; });
   }
-  function marketOf(id) { var c = clientOf(id); return c && c.market === 'SG' ? 'SG' : 'MY'; }
+  function marketOf(id) { return window.ADspaceMoney.curOf(clientOf(id)); }
   /* A row a card: Client and Ad account, then the spend a month, Start and
      End (empty is ongoing), the × at the head once there are two. */
   function scaPaint() {

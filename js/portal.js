@@ -188,7 +188,7 @@
     var from = count ? t().from : t().fromAlone;
     return (count ? count + ' ' : '') + from(day);
   }
-  function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
+  function mkt() { return MON.curOf(feed && feed.client); }
   /* A number as every page writes it (js/namecard.js: +60 19-888 7777). */
   function phoneWord(raw) { var C = window.ADspaceCard; return (C && C.phone && C.phone(raw)) || String(raw || ''); }
   function glyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
@@ -836,7 +836,7 @@
     $('ovFacts').innerHTML = [
       [w.regNo, c.company_no ? esc(c.company_no) : mute(w.notSet)],
       [w.address, c.billing_address ? esc(c.billing_address) : mute(w.notSet)],
-      [w.market, esc((c.market === 'SG' ? w.sg : w.my) + ' · ' + MON.sign(c.market))]
+      [w.market, esc((c.market === 'SG' ? w.sg : w.my) + ' · ' + MON.sign(MON.curOf(c)))]
     ].map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
 
     // Contacts, read only: who, how to reach them.

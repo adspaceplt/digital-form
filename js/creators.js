@@ -42,7 +42,7 @@
   /* Currency comes with the campaign, so a Singapore client sees S$ and never
      a ringgit sign on their own page. */
   var MON = window.ADspaceMoney;
-  function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
+  function mkt() { return MON.curOf(feed && feed.client); }
   function taxOn() {
     var v = feed && feed.client && feed.client.sst_applies;
     return v === undefined || v === null ? true : v;

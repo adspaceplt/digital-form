@@ -204,7 +204,7 @@
     if (a === 'pdf') {
       if (!window.ADspaceQuotePdf) return;
       var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
-      window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '' }).then(function (blob) {
+      window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client }).then(function (blob) {
         window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
       }).catch(function (e) {
         if (tab) try { tab.close(); } catch (x) {}
@@ -215,7 +215,7 @@
     if (a === 'wa') {
       WA().compose({ purpose: 'quotation', clientId: q.client_id || (ctx.client && ctx.client.id), opener: btn,
         doc: { id: q.id, title: q.ref, file: function () {
-          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '' })
+          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client })
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
         onSent: function (d, line) { ctx.msg('qtMsg', line, 'ok'); } });
@@ -308,7 +308,7 @@
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
     $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
-    FX = ctx.client.market === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
+    FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
     card(ctx, function (c, err) {
@@ -519,13 +519,18 @@
         var keys = (d.lines || []).map(function (l) { return l.key; });
         Object.keys(B.edits).forEach(function (k) { if (keys.indexOf(k) < 0) delete B.edits[k]; });
         $('qbLines').innerHTML = table(d);
-        $('qbSum').textContent = sumOf(d);
+        $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '');
         $('qbSave').disabled = false;
       }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
     }, 200);
   }
   /* The figure the person is choosing towards, kept in sight in the foot
      while the lines and totals sit at the sheet's end (2026-10-15). */
+  /* The figure the foot leads with, for its approx. S$ beside it. */
+  function mainOf(d) {
+    var t = (d && d.totals) || {}, own = t.month && ownMonths(d && d.lines, t);
+    return t.month ? (own ? firstIncl(t) : t.month.incl) : t.once ? t.once.incl : null;
+  }
   function sumOf(d) {
     var t = (d && d.totals) || {}, out = [];
     var own = t.month && ownMonths(d && d.lines, t);

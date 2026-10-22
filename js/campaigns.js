@@ -94,7 +94,7 @@
   var MON = window.ADspaceMoney;
   function mkt() {
     var c = state.campaign || {};
-    return (c.clients && c.clients.market) || c.market || 'MY';
+    return c.clients ? MON.curOf(c.clients) : MON.curOf(c);
   }
   function taxOn() {
     var c = state.campaign || {};
@@ -956,7 +956,7 @@
     // rather than leaving four call sites to remember the second one.
     var inner = then;
     then = function () { loadTeam(inner); };
-    db.from('clients').select('id, name, market, client_code').eq('stage', 'active').order('name')
+    db.from('clients').select('id, name, market, bill_sgd, client_code').eq('stage', 'active').order('name')
       .then(function (r) {
         state.clients = ((r.data) || []).sort(F.byClient);
         var sel = $('campClient');
@@ -964,7 +964,7 @@
         sel.innerHTML = '<option value="">Choose a client…</option>' +
           state.clients.map(function (c) {
             return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) +
-              (c.market === 'SG' ? ' · S$' : '') + '</option>';
+              (MON.curOf(c) === 'SG' ? ' · S$' : '') + '</option>';
           }).join('');
         if (keep) sel.value = keep;
         /* One Active client is the one chosen (2026-10-20, CMP-8). */
@@ -979,7 +979,7 @@
   function loadCampaigns() {
     var box = $('campCards');
     if (!state.campaigns) UI.skeleton(box, 3);
-    db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').order('created_at', { ascending: false })
+    db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').order('created_at', { ascending: false })
       .then(function (r) {
         if (r.error) {
           state.campaigns = null;
@@ -1110,7 +1110,7 @@
 
   function campRow(c, sums) {
     var cl = c.clients || {};
-    var mk = cl.market || 'MY';
+    var mk = MON.curOf(cl);
     var ap = cl.sst_applies == null ? true : cl.sst_applies;
     var sub = sums[c.id] || 0;
     var amount = sub ? MON.money2(sub + MON.taxOf(sub, mk, ap, campConf[c.id]), mk) : '';
@@ -1310,7 +1310,7 @@
       owner: ($('campOwner').value || '').trim() || null,
       backups_open: $('campBackups').checked
     };
-    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies, logo_url)').single().then(function (r) {
+    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').single().then(function (r) {
       if (r.error && /slots-booked/.test((r.error.hint || '') + (r.error.message || ''))) {
         msg('campMsg', 'Not saved. The count cannot go below the creators already booked.', 'err'); return;
       }
@@ -1336,7 +1336,7 @@
       // work with is the one we sent, so it has to be complete on its own.
       state: 'draft',
       created_by: who() || null
-    }).select('*, clients(name, market, sst_applies, logo_url)').single().then(function (r) {
+    }).select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.created', title, slots + ' creators');
       shutCampForm();
@@ -1354,7 +1354,7 @@
      leaving a press that did nothing. */
   function openCampaignById(id, onFail) {
     if (!id) return;
-    db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)')
+    db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)')
       .eq('id', id).single().then(function (r) {
         if (r.error || !r.data) {
           if (onFail) onFail(r.error && r.error.message);
@@ -5315,7 +5315,7 @@
          result) opens the list, even with a campaign open before. */
       if (!id && params.get('tab') === 'roster' && state.campaign) { state.campaign = null; $('campWork').hidden = true; }
       if (id && !(state.campaign && state.campaign.id === id)) {
-        db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').eq('id', id).single().then(function (r) {
+        db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
           state.tab = 'campaigns';
           Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {

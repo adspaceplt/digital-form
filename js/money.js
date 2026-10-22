@@ -3,7 +3,9 @@
  *
  * Every figure used to be printed with "RM" in front of it, which was wrong
  * the moment a Singapore client opened their page. Currency follows the
- * client's market and nothing else decides it.
+ * client's billing choice: a Singapore client is billed in RM unless its
+ * Billing sets S$ (`bill_sgd`, 2026-10-22), and `curOf(client)` is the one
+ * reading of it.
  *
  * Tax is a separate question with a separate answer. ADspace is a Malaysian
  * entity, so the tax is Malaysian service tax at 8% whoever is being billed:
@@ -241,6 +243,26 @@
     return 'SST ' + (Math.round(p * 100) / 100) + '%';
   }
   function signOf(m) { return market(m).sign; }
+  /* The market a client's figures are written in (2026-10-22): SG only for
+     a Singapore client billed in S$. A payload's `bill_market` is the
+     database's own answer; a client row carries `market` and `bill_sgd`. */
+  function curOf(c) {
+    if (!c) return 'MY';
+    if (c.bill_market) return String(c.bill_market).toUpperCase() === 'SG' ? 'SG' : 'MY';
+    return String(c.market || '').toUpperCase() === 'SG' && c.bill_sgd ? 'SG' : 'MY';
+  }
+  /* A Singapore client billed in RM reads the S$ it comes to beside a
+     total, at the rate set in Tax and terms (`fx_sgd`, RM to S$1):
+     " (approx. S$ 952.38)". Nothing where the rate is unset, or for any
+     other client. */
+  function approx(n, c, at) {
+    if (!c || String(c.market || '').toUpperCase() !== 'SG' || curOf(c) === 'SG') return '';
+    if (n == null || n === '') return '';
+    var fx = Number(setting('fx_sgd', at)) || 0;
+    var v = Number(n);
+    if (!(fx > 0) || !isFinite(v)) return '';
+    return ' (approx. ' + money2(Math.round(v / fx * 100) / 100, 'SG') + ')';
+  }
   /* SST said one way on every total (2026-10-18, review item 17): the
      Letter of Offer, the quotation's PDF, Build quote and /quote/ alike.
      Where it does not apply (a client exempt from it, 0%), its row reads
@@ -293,6 +315,8 @@
     TERMS: TERMS,
     TERM_PCT: TERM_PCT,
     sign: signOf,
+    curOf: curOf,
+    approx: approx,
     market: market,
     MARKETS: MARKETS,
     TAX: TAX,

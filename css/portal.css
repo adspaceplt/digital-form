@@ -4249,6 +4249,7 @@ body > .shell { width: 100%; }
 }
 .csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
 .csv-total .is-total b { font-size: 15px; }
+.csv-total small { margin-left: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
 /* ---- Rows, keyed on the width of the thing that holds them ----

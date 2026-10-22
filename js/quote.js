@@ -726,7 +726,7 @@
   function pdf(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '' }).then(function (blob) {
+    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market } }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
