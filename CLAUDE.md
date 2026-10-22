@@ -3234,6 +3234,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   The sales figures are `ADspaceSales.figures`. A refused read is `failLine` with Try again (in the list, that
   source alone; a tile reads Could not load with Try again; a signal Could
   not load), never nothing.
+- Needs attention lists a piece of work once: a late report task is its
+  owed report's row, and a late task of a paused or past client keeps its
+  late row with Urgent delivery in its meta; Reports owed counts every
+  report not published, as the tile does (2026-10-22, OVW-3, OVW-4).
 - Committed monthly value is its one money figure (the user, 2026-10-12):
   for whoever may open a client's Services (`clients.services` at View),
   a month of each confirmed monthly line started by today (never a one-off

@@ -344,7 +344,7 @@
       return R.report().then(function (d) {
         return (d.late || []).map(function (t) {
           return { name: taskName(t), meta: t.client || 'Internal', tag: 'Task', who: t.owner || 'Unassigned', client: t.client_id, clientName: t.client,
-                   late: true, days: Number(t.days_over) || 0, since: overWord(t),
+                   late: true, days: Number(t.days_over) || 0, since: overWord(t), taskId: t.task_id, src: 'late',
                    url: '/admin/?s=work&open=' + encodeURIComponent(t.task_id), section: 'work' };
         });
       });
@@ -356,7 +356,7 @@
           var n = t.current_final_due_at ? CK.between(CK.day(t.current_final_due_at), CK.today()) : null;
           return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '', client: t.client_id,
                    late: n > 0, days: n > 0 ? n : 0, since: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' late' : 'Due ' + dateWord(t.current_final_due_at),
-                   tone: n > 0 ? '' : 'warn', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
+                   tone: n > 0 ? '' : 'warn', taskId: t.id, src: 'urgent', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
         });
       });
     } },
@@ -369,6 +369,7 @@
                    meta: [x.brand || x.client, STAGE_WORD[x.status] || x.status].filter(Boolean).join(' · '), tag: 'Report', client: x.client_id,
                    who: x.assignee || '', late: Boolean(x.late), days: x.late ? reportLateDays(x) : 0,
                    since: x.late ? daysWord(reportLateDays(x)) + ' late' : 'Due ' + dateWord(x.due), tone: x.late ? '' : 'off',
+                   taskId: x.task_id || null, src: 'owed',
                    url: x.report_id ? '/admin/?s=reports&report=' + encodeURIComponent(x.report_id)
                      : x.task_id && may('ops') ? '/admin/?s=work&open=' + encodeURIComponent(x.task_id)
                      : may('clients') ? clientUrl(c, 'engagements') : '/admin/?s=reports',
@@ -512,6 +513,18 @@
     })).then(function (all) {
       var out = [], failed = [];
       all.forEach(function (a) { if (a.failed) failed.push(a); else out = out.concat(a.rows); });
+      /* One row a piece of work (2026-10-22, OVW-3): a late report task is
+         the owed report's row, and a late task of a paused or past client
+         keeps its late row, which names Urgent delivery. */
+      var owedTask = {}, lateRow = {};
+      out.forEach(function (r) { if (r.src === 'owed' && r.taskId) owedTask[r.taskId] = 1; });
+      out = out.filter(function (r) { return !(r.src === 'late' && owedTask[r.taskId]); });
+      out.forEach(function (r) { if (r.src === 'late' && r.taskId) lateRow[r.taskId] = r; });
+      out = out.filter(function (r) {
+        if (r.src !== 'urgent' || !lateRow[r.taskId]) return true;
+        lateRow[r.taskId].meta += ' · Urgent delivery';
+        return false;
+      });
       out.forEach(function (r) { var v = vicOfRow(r); r.vic = v ? v.client_id : ''; });
       /* VIC first among equals: late before waiting before not started, then VIC. */
       out.sort(function (a, b) { return rank(a) - rank(b) || (a.vic ? 0 : 1) - (b.vic ? 0 : 1) || b.days - a.days || String(a.name).localeCompare(String(b.name)); });
@@ -528,7 +541,9 @@
     } },
     { key: 'owed', title: function () { return 'Reports owed for ' + LONG[lastMonth().mo]; }, can: canReports, load: function () {
       return R.owed().then(function (items) {
-        var open = items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; });
+        /* Owed is not yet published, as the tile and the Reports chart
+           count it (2026-10-22, OVW-4). */
+        var open = items.filter(function (x) { return x.status !== 'published'; });
         var late = open.filter(function (x) { return x.late; }).length;
         return { n: open.length, word: late ? late + ' late' : open.length ? 'Waiting' : 'None', tone: late ? 'danger' : open.length ? 'warn' : 'off' };
       });

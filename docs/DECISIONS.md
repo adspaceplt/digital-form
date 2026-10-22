@@ -6121,3 +6121,13 @@ session converts it), WRK-12 (DESIGN.md: Decline and Approve both tonal),
 WRK-14 (`shortDay` reads the clock; `#taskMenu` dropped). Not built in time
 for the 2026-10-23 gate: OVW-3, OVW-4, OVW-5, OVW-M1, WRK-13, WRK-15,
 WRK-M1, and OVW-7's shared cold-lead rule.
+
+### 2026-10-22 — The Dashboard lists a piece of work once (release 3 of the work review)
+The user, 2026-10-22: "Fix all". Built: OVW-3 (Needs attention listed the
+month's late report task beside its owed report, and a paused client's late
+task under both Late tasks and Urgent delivery; one row each now, carried
+by the task's id) and OVW-4 (the signal counted reports owed without those
+in review while the tile counted them: 6 beside 7; both count every report
+not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
+reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
+WRK-M1, and OVW-7's shared cold-lead rule.
