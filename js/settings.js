@@ -555,40 +555,114 @@
   /* ---- Tax codes (2026-10-22) --------------------------------------------
      The codes a service line or a quotation line may carry: read from
      Bukku, so the letter and the Bukku invoice name the same code, or added
-     by hand. A code is never removed: one no longer offered stays on the
-     lines and letters that hold it. */
-  var tax = { rows: null, err: null };
+     by hand. Read from Bukku lists Bukku's codes to tick and keeps only the
+     ticked ones offered; a code no line, quotation or letter names may be
+     deleted, one that is named is set not offered. */
+  var tax = { rows: null, err: null, mode: 'list', bukku: null, picked: {} };
   function taxMsg(text, tone) { var m = $('taxMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   var TAX_SAID = {
     denied: 'Business settings are needed to change the tax codes.',
     'bad-row': 'A code is up to 30 letters, digits, spaces, dots or dashes, its rate 0 to 100.'
   };
+  function taxRefusal(d) {
+    if (d.error === 'in-use') {
+      var c = d.codes || [];
+      return c.join(', ') + (c.length === 1 ? ' is' : ' are') + ' on a service line, a quotation or a letter, so ' +
+        (c.length === 1 ? 'it stays. Untick Offered on new lines to stop offering it.' : 'they stay. Untick Offered on new lines to stop offering them.');
+    }
+    return TAX_SAID[d.error] || d.error;
+  }
+  function taxPct(r) { return String(Math.round(Number(r) * 100) / 100) + '%'; }
   function readTax(then) {
     window.ADspaceMoney.taxCodes(true).then(function (list) { tax.rows = list; tax.err = null; then(); })
       .catch(function (e) { tax.err = e; then(); });
   }
+  function taxFoot() {
+    var m = tax.mode, n = Object.keys(tax.picked).length;
+    $('taxBukku').hidden = m !== 'list' || !window.ADspaceBukku;
+    $('taxAdd').hidden = m !== 'list';
+    $('taxCancel').textContent = m === 'list' ? 'Close' : 'Cancel';
+    $('taxKeep').hidden = m !== 'pick';
+    $('taxKeep').textContent = 'Keep ' + n + (n === 1 ? ' code' : ' codes');
+    $('taxKeep').disabled = m === 'pick' && !n;
+    $('taxDel').hidden = m !== 'select';
+    $('taxDel').disabled = !n;
+    $('taxHead').textContent = m === 'pick' ? 'Choose from Bukku' : 'Tax codes';
+    var bar = $('taxBar');
+    if (bar) {
+      bar.hidden = m === 'pick' || !(tax.rows && tax.rows.length);
+      $('taxCount').textContent = m === 'select' ? n + ' selected'
+        : (tax.rows ? tax.rows.length + (tax.rows.length === 1 ? ' code' : ' codes') + ' · ' + tax.rows.filter(function (t) { return t.active; }).length + ' offered' : '');
+      $('taxSelect').textContent = m === 'select' ? 'Done' : 'Select';
+    }
+  }
   function paintTax() {
     var box = $('taxList');
     if (!box) return;
+    taxFoot();
+    if (tax.mode === 'pick') {
+      var held = {};
+      (tax.rows || []).forEach(function (t) { held[t.code] = t; });
+      box.innerHTML = '<div class="tax-pick" role="group" aria-label="Bukku tax codes">' + tax.bukku.map(function (t) {
+        var h = held[t.code];
+        return '<label class="tickline"><input type="checkbox" value="' + esc(t.code) + '"' + (tax.picked[t.code] ? ' checked' : '') + '> <span><b>' +
+          esc(t.code) + ' · ' + esc(taxPct(t.rate)) + '</b>' + (t.name || h ? '<small>' + esc([t.name, h ? (h.active ? 'Offered' : 'Not offered') : ''].filter(Boolean).join(' · ')) + '</small>' : '') + '</span></label>';
+      }).join('') + '</div>';
+      return;
+    }
     if (!tax.rows) { window.ADspaceState.skeleton(box, 3); return; }
     if (!tax.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No tax codes.'); return; }
+    var picking = tax.mode === 'select';
     box.innerHTML = tax.rows.map(function (t) {
-      return '<div class="dtrow tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' +
-        '<span class="dtrow-name"><b>' + esc(t.code) + ' · ' + esc(String(Math.round(Number(t.rate) * 100) / 100)) + '%</b>' +
-          '<small>' + esc([t.name, t.active ? '' : 'No longer offered'].filter(Boolean).join(' · ') || 'No name') + '</small></span>' +
-        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-t="edit">' + PEN + 'Edit</button></span></div>';
+      var name = '<span class="dtrow-name"><b>' + esc(t.code) + ' · ' + esc(taxPct(t.rate)) + '</b>' +
+          '<small>' + esc([t.name, t.active ? '' : 'Not offered'].filter(Boolean).join(' · ') || 'No name') + '</small></span>';
+      if (picking) {
+        return '<label class="dtrow tax-row is-picking' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' +
+          '<input type="checkbox" value="' + esc(t.code) + '"' + (tax.picked[t.code] ? ' checked' : '') + ' aria-label="Select ' + esc(t.code) + '">' + name + '</label>';
+      }
+      return '<div class="dtrow tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + name +
+        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-t="edit">' + PEN + 'Edit</button>' +
+        '<span class="team-act"><button class="kmenu-btn" type="button" data-t="menu" aria-label="More actions for ' + esc(t.code) + '" aria-expanded="false">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+        '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" type="button" role="menuitem" data-t="delete">Delete</button></div></span></span></div>';
     }).join('');
   }
+  function taxShut() {
+    Array.prototype.forEach.call(document.querySelectorAll('#taxList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#taxList [data-t="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function taxSet(mode) { tax.mode = mode; tax.picked = {}; paintTax(); }
   function taxSave(rows, replace, done) {
     return db.rpc('tax_codes_save', { p_rows: rows, p_replace: Boolean(replace) }).then(function (r) {
       var d = r.data || {};
       if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : (r.error.message || 'Not saved.');
-      if (d.error) return TAX_SAID[d.error] || d.error;
+      if (d.error) return taxRefusal(d);
       tax.rows = d.codes || [];
       paintTax(); readLine('taxcodes');
       if (done) done();
       return '';
     }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+  }
+  function taxDelete(codes) {
+    var one = codes.length === 1;
+    window.ADspaceConfirm.ask({
+      title: one ? 'Delete ' + codes[0] + '?' : 'Delete ' + codes.length + ' tax codes?',
+      body: (one ? codes[0] + ' is' : codes.join(', ') + ' are') + ' removed from the list. There is no restore.',
+      go: 'Delete', tone: 'danger', wait: true,
+      field: one ? null : { name: 'n', label: 'Type ' + codes.length + ' to confirm', match: String(codes.length),
+        need: 'Type ' + codes.length + ' to confirm.', mismatch: 'Type ' + codes.length + ' to confirm.' }
+    }, function () {
+      return db.rpc('tax_codes_delete', { p_codes: codes }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : (r.error.message || 'Not deleted.');
+        if (d.error) return taxRefusal(d);
+        tax.rows = d.codes || [];
+        tax.mode = 'list'; tax.picked = {};
+        paintTax(); readLine('taxcodes');
+        taxMsg('Deleted.', 'ok');
+        return '';
+      }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+    });
   }
   function taxAsk(t) {
     window.ADspaceConfirm.ask({
@@ -611,20 +685,41 @@
     taxMsg('');
     btn.disabled = true;
     window.ADspaceBukku.taxes().then(function (d) {
-      if (d.error) { btn.disabled = false; taxMsg(d.error); return; }
-      if (!(d.codes || []).length) { btn.disabled = false; taxMsg('Bukku holds no tax codes the portal can read.'); return; }
-      taxSave(d.codes, true).then(function (err) {
-        btn.disabled = false;
-        taxMsg(err || (d.codes.length + (d.codes.length === 1 ? ' code' : ' codes') + ' read from Bukku.'), err ? 'err' : 'ok');
-      });
+      btn.disabled = false;
+      if (d.error) { taxMsg(d.error); return; }
+      if (!(d.codes || []).length) { taxMsg('Bukku holds no tax codes the portal can read.'); return; }
+      tax.bukku = d.codes.slice().sort(function (a, b) { return (b.rate - a.rate) || (a.code < b.code ? -1 : 1); });
+      tax.mode = 'pick'; tax.picked = {};
+      (tax.rows || []).forEach(function (t) { if (t.active && tax.bukku.some(function (b) { return b.code === t.code; })) tax.picked[t.code] = true; });
+      paintTax();
+      $('taxSheet').querySelector('.sheet-body').scrollTop = 0;
+    });
+  }
+  /* Only the codes ticked are kept as offered: a code ticked is added or
+     updated from Bukku, one held and not ticked is set not offered, and
+     one not held and not ticked is left out. */
+  function taxKeep() {
+    var held = {}, rows = [];
+    (tax.rows || []).forEach(function (t) { held[t.code] = t; });
+    tax.bukku.forEach(function (b) {
+      if (tax.picked[b.code]) rows.push({ code: b.code, name: b.name || '', rate: String(b.rate), active: true, bukku_id: b.bukku_id });
+      else if (held[b.code] && held[b.code].active) rows.push({ code: b.code, name: held[b.code].name || '', rate: String(held[b.code].rate), active: false });
+    });
+    var n = Object.keys(tax.picked).length;
+    $('taxKeep').disabled = true;
+    taxSave(rows, false).then(function (err) {
+      $('taxKeep').disabled = false;
+      if (err) { taxMsg(err); return; }
+      tax.mode = 'list'; tax.picked = {};
+      paintTax();
+      taxMsg(n + (n === 1 ? ' code' : ' codes') + ' offered from Bukku.', 'ok');
     });
   }
   function openTax(opener) {
     if (!biz() || !$('taxSheet')) return;
     taxMsg('');
-    tax.rows = null;
+    tax.rows = null; tax.mode = 'list'; tax.picked = {};
     paintTax();
-    $('taxBukku').hidden = !window.ADspaceBukku;
     window.ADspaceSheet.show($('taxSheet'), { opener: opener });
     readTax(paintTax);
   }
@@ -632,17 +727,42 @@
   function wireTax() {
     if (taxWired || !$('taxSheet')) return;
     taxWired = true;
-    $('taxCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    $('taxClose').addEventListener('click', function () { $('taxCancel').click(); });
+    $('taxCancel').addEventListener('click', function () {
+      if (tax.mode !== 'list') { taxMsg(''); taxSet('list'); return; }
+      window.ADspaceSheet.close();
+    });
+    $('taxClose').addEventListener('click', function () { tax.mode = 'list'; window.ADspaceSheet.close(); });
     $('taxAdd').addEventListener('click', function () { taxMsg(''); taxAsk(null); });
     $('taxBukku').addEventListener('click', function () { taxBukku(this); });
-    $('taxList').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-t="edit"]');
-      if (!b) return;
-      var code = b.closest('.tax-row').getAttribute('data-code');
-      var t = (tax.rows || []).filter(function (x) { return x.code === code; })[0];
-      if (t) { taxMsg(''); taxAsk(t); }
+    $('taxKeep').addEventListener('click', taxKeep);
+    $('taxDel').addEventListener('click', function () { var c = Object.keys(tax.picked).sort(); if (c.length) taxDelete(c); });
+    $('taxSelect').addEventListener('click', function () { taxMsg(''); taxSet(tax.mode === 'select' ? 'list' : 'select'); });
+    $('taxList').addEventListener('change', function (e) {
+      var c = e.target.closest('input[type="checkbox"]');
+      if (!c) return;
+      if (c.checked) tax.picked[c.value] = true; else delete tax.picked[c.value];
+      taxFoot();
     });
+    $('taxList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-t]');
+      if (!b) return;
+      var row = b.closest('.tax-row'), code = row && row.getAttribute('data-code');
+      var t = (tax.rows || []).filter(function (x) { return x.code === code; })[0];
+      if (!t) return;
+      var k = b.getAttribute('data-t');
+      if (k === 'menu') {
+        e.stopPropagation();
+        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
+        taxShut();
+        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(b, mn);
+        return;
+      }
+      taxShut(); taxMsg('');
+      if (k === 'edit') taxAsk(t);
+      if (k === 'delete') taxDelete([t.code]);
+    });
+    document.addEventListener('click', function (e) { if (!e.target.closest('#taxList .team-act')) taxShut(); });
   }
   wireTax();
 

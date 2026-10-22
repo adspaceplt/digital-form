@@ -237,7 +237,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
-| Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE section | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
+| Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
@@ -1095,6 +1095,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     the screen under a press. A coarse pointer is left alone.
 
 ### Writes, refusals, reversibility
+- An import from another system (Bukku, Meta, a spreadsheet) lists what
+  it found and takes only what the person ticks, never all of it at once;
+  and whatever a person can add, they can delete (where nothing names it)
+  from its own ⋯ and several at once through Select (the user, 2026-10-22:
+  Read from Bukku took 32 tax codes and offered no Delete, "mentioned many
+  times").
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
 - Every page's `esc` escapes `"` and `'` as well as `&`, `<`, `>`: a stored
@@ -2401,8 +2407,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_replace)` (`team.settings`; `bad-row`; filed `team.changed` under Tax
   codes); Settings, Money: Tax codes (`#taxSheet`: active first, highest
   rate first, one no longer offered last; Edit, Add code, Read from Bukku,
-  which reads `bukku-sync` `taxes` and stands down an active code Bukku no
-  longer holds; never deleted). A service line's Tax (`#svTax`,
+  which lists Bukku's codes (`bukku-sync` `taxes`) to tick, those offered
+  ticked, and keeps only the ticked ones offered: one unticked is set not
+  offered, one never held is never added; each code's ⋯ Delete and Select
+  delete through `tax_codes_delete(p_codes)`, all or none, refused
+  `in-use` naming each code a service line, a quotation or a letter holds
+  (`tax_code_uses`), the count typed back for several;
+  `2026-10-22-tax-codes-chosen-and-deleted.sql`). A service line's Tax (`#svTax`,
   `client_services.tax_code`) and a Build quote line's (`.qb-tax`, the
   edit's `tax`; its rate set by `quote_tax_edits` from the table, never the
   page's; `bad-tax`) default to the client's SST (none where exempt) and
