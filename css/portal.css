@@ -748,6 +748,8 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 /* At the specificity of `.btn` alone, so every filled variant's own pressed
    step (and a red fill's colour) wins over the tonal one. */
 .btn:where(:active) { background: var(--tonal-press); }
+/* A tonal toggle held on reads one step deeper (Review n changes). */
+.btn:where([aria-pressed="true"]) { background: var(--tonal-press); color: var(--ink); }
 /* Approve is the action we want the client to take, so it carries the weight.
    Request changes stays available but visually quiet. Blue while it is still a
    decision to make; the settled state below is green, because by then it is no
@@ -2548,7 +2550,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .sheet-wide .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
 .sheet-card.askcard { width: min(440px, 100%); }
-.askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; white-space: pre-line; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
 .askentry + .askentry { margin-top: 12px; }
 /* A date beside its time: two halves on one row, every other field the

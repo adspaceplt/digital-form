@@ -480,6 +480,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `.tinline`, `.serial-copy`) keeps its whole target but never shows it: its
   hover fill hugs the line (26px, a `::before`), never a slab the height of
   the target.
+- A tonal toggle (`aria-pressed`, Review n changes) held on reads one step
+  deeper (`--tonal-press`), its words in ink; never blue.
 - The ⋯ is the lightest control. The account control, the bell and the
   search carry no outline, only a `--line-soft` fill on hover and while
   open.
