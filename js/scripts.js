@@ -494,7 +494,7 @@
     return out;
   }
 
-  /* The month's ⋯: Download, and Reset access link at Work (Preview PDF
+  /* The month's ⋯: Download, and Reset link at Work (Preview PDF
      sits in the head, as a report's). A script's ⋯: Delete at Full Access. */
   function menuOf(id, items) {
     if (!items) return '';
@@ -533,8 +533,8 @@
     });
     $('vsRecCtl').innerHTML =
       '<button class="btn btn-sm btn-icon" type="button" data-a="pdf" aria-label="Preview PDF"><span class="vs-pdf-long">Preview PDF</span><span class="vs-pdf-short">PDF</span> ' + ICON.out + '</button>' +
-      menuOf('vsRecMore', '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
-        (may('work') ? '<button class="kmenu-item" data-a="reset" type="button"><b>Reset access link</b></button>' : ''));
+      menuOf('vsRecMore', '<button class="kmenu-item" data-g="1" data-a="download" type="button" role="menuitem">Download</button>' +
+        (may('work') ? '<button class="kmenu-item" data-g="5" data-a="reset" type="button" role="menuitem">Reset link</button>' : ''));
     wireHead();
     paintLink();
     var inMonth = st.mode === 'month';
@@ -605,7 +605,7 @@
           '<p>' + esc(KIND_WORD[s.kind] || '') + '</p></div>' +
           '<span class="vs-cardstate">' + chip(key) + '</span>' +
           '<div class="vs-cardctl">' + acts +
-            menuOf('vsCardMore', may('manage') ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
+            menuOf('vsCardMore', may('manage') ? '<button class="kmenu-item is-danger" data-g="6" data-a="del" type="button" role="menuitem">Delete</button>' : '') +
           '</div></div>' +
         '<div class="msg" id="vsCardMsg" role="status"></div>' +
         facts(s) + '</section>' +
