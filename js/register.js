@@ -1102,8 +1102,7 @@
       issued_at: a.issued_at || today(), title: a.title, salutation: a.salutation,
       recipient: a.recipient, body: a.body, signatory: a.signatory, languages: a.languages
     };
-    var btn = $('docPreview'), tab = null;
-    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    var btn = $('docPreview'), tab = window.ADspaceDocs.previewTab();
     btn.disabled = true;
     LET.render(doc).then(function (bytes) {
       btn.disabled = false;

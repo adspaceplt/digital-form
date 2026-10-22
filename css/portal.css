@@ -1958,6 +1958,9 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
+/* The installed app's PDF viewer, where it has no share sheet for files
+   (js/documents.js `viewer`): the file at the sheet's height. */
+.pdfview { display: block; width: 100%; height: 70vh; height: 70dvh; border: 0; border-radius: var(--radius-sm); background: var(--sunk); }
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }

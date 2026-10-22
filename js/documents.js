@@ -1155,11 +1155,57 @@
       setTimeout(function () { end(null); }, 2000);
     });
   }
+  /* The installed app on a touch screen (the user, 2026-10-22: "when pdf
+     generated from PWA there is no button to share to close the windows
+     whatsoever"). A window it opens on its own address (the worker's file,
+     a blob:) opens inside the app with no browser bar, so there is no
+     Share, Done or Back; there a file goes to the share sheet instead, and
+     no window is opened at the press. */
+  var TOUCH = IOS || (/Android/i.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
+  function installed() {
+    var alone = navigator.standalone === true;
+    try { alone = alone || matchMedia('(display-mode: standalone)').matches; } catch (e) { /* no media queries */ }
+    return TOUCH && alone;
+  }
   /* A tab for a save, opened at the press: on an iPhone or iPad alone, where
-     the browser's own viewer is the way to Save to Files. */
+     the browser's own viewer is the way to Save to Files; never in the
+     installed app. */
   function tabFor() {
-    if (!IOS) return null;
+    if (!IOS || installed()) return null;
     try { return window.open('', '_blank'); } catch (e) { return null; }
+  }
+  /* A Preview's tab, opened at the press, saying what it waits on; none in
+     the installed app, where the file goes to the share sheet. */
+  function previewTab(zh) {
+    if (installed()) return null;
+    var tab = null;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
+    return tab;
+  }
+  /* Where the installed app has no share sheet for files: the PDF in a
+     sheet over the page, with Close and Download in its foot, so the
+     person always has a way back. */
+  function viewer(file, name, zh) {
+    var url = URL.createObjectURL(file);
+    var box = document.createElement('div');
+    box.className = 'sheet'; box.id = 'pdfViewSheet'; box.hidden = true;
+    var e = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+    box.innerHTML = '<div class="sheet-card sheet-wide pdfview-card" role="dialog" aria-modal="true" aria-labelledby="pdfViewTitle">' +
+      '<div class="sheet-head"><h3 id="pdfViewTitle">' + e(name) + '</h3>' +
+      '<button class="iconbtn" type="button" data-a="x" aria-label="' + (zh ? '关闭' : 'Close') + '">' +
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      '<div class="sheet-body"><iframe class="pdfview" title="' + e(name) + '" src="' + e(url) + '"></iframe></div>' +
+      '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="dl">' + (zh ? '下载' : 'Download') + '</button>' +
+      '<button class="btn btn-quiet" type="button" data-a="x">' + (zh ? '关闭' : 'Close') + '</button></div></div>';
+    var gone = function () { box.remove(); URL.revokeObjectURL(url); };
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="x"]'), function (b) {
+      b.addEventListener('click', function () { if (window.ADspaceSheet) window.ADspaceSheet.close(); else gone(); });
+    });
+    box.querySelector('[data-a="dl"]').addEventListener('click', function () { anchor(url, name); });
+    document.body.appendChild(box);
+    if (window.ADspaceSheet) window.ADspaceSheet.show(box, { opener: document.activeElement, onClose: gone });
+    else box.hidden = false;
   }
   function share(file, name, zh) {
     var go = function () {
@@ -1168,12 +1214,17 @@
         throw e;
       });
     };
+    /* In the installed app a link to the file would open it inside the app
+       with no way back, so what cannot be shared is shown in the viewer. */
+    var app = installed();
+    var fall = function () { if (app) viewer(file, name, zh); else anchor(blobUrl(file), name); };
     return go().catch(function (e) {
-      if (!(e && e.name === 'NotAllowedError')) { anchor(blobUrl(file), name); return; }
+      if (!(e && e.name === 'NotAllowedError')) { fall(); return; }
       if (window.ADspaceConfirm) {
         window.ADspaceConfirm.ask({ title: zh ? '文件已准备好' : 'File ready', body: name,
-          go: zh ? '保存' : 'Save', cancel: zh ? '取消' : 'Cancel' }, function () { go().catch(function () { anchor(blobUrl(file), name); }); });
-      } else anchor(blobUrl(file), name);
+          go: app ? (zh ? '分享' : 'Share') : (zh ? '保存' : 'Save'), cancel: zh ? '取消' : 'Cancel' },
+          function () { go().catch(fall); });
+      } else fall();
     });
   }
   function save(blob, name, tab, zh) {
@@ -1181,9 +1232,11 @@
     if (tab && !tab.closed) {
       return named(file, name).then(function (url) { tab.location.href = url || blobUrl(file); });
     }
-    var shareable = IOS && navigator.share && navigator.canShare && file !== blob &&
+    var app = installed();
+    var shareable = (IOS || app) && navigator.share && navigator.canShare && file !== blob &&
       (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
     if (shareable) return share(file, name, zh);
+    if (app) { viewer(file, name, zh); return Promise.resolve(); }
     anchor(blobUrl(file), name);
     return Promise.resolve();
   }
@@ -1206,7 +1259,7 @@
   }
 
   window.ADspaceDocs = {
-    save: save, tabFor: tabFor, shut: shut, ios: IOS, forgetFiles: forgetFiles,
+    save: save, tabFor: tabFor, previewTab: previewTab, installed: installed, shut: shut, ios: IOS, forgetFiles: forgetFiles,
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
