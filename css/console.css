@@ -599,6 +599,21 @@ button.appver {
    head and the month's tasks under them. The heading over the bar carries
    no actions: they are in the bar. */
 .cwbar { margin-bottom: 12px; }
+/* Months is one bar (2026-10-22, WRK-M1): the view strip, the client, the
+   search, Filters, then the count and the acts. The client is a view, so it
+   keeps the bar on a phone too, taking what the row leaves; there the strip
+   has its own row above, the count goes to the Filters sheet and New month
+   into the section's ⋯. */
+.cmdbar[hidden] + .msg { margin-top: 0; }   /* the list's bar away, the Months bar starts where it stood */
+.cw-client { display: inline-flex; flex: 0 0 auto; min-width: 0; }
+.cw-client > .select { width: 220px; }
+.cw-eng { display: contents; }
+@media (max-width: 640px) {
+  .cwbar .cmdbar-views { order: -1; flex: 1 1 100%; }
+  .cwbar .cw-client { flex: 1 1 0; }
+  .cwbar .cw-client > .select { width: 100%; max-width: none; }
+  .cwbar .cmdbar-quiet, .cwbar .cw-eng { display: none; }
+}
 .eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
 .eng-lab { color: var(--ink-mute); }
 .eng-ctl { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); }
@@ -1962,8 +1977,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rh-pick { display: flex; align-items: center; }
 .is-narrow .rh-row > .rh-pick { grid-area: pick; align-self: start; padding-top: 2px; }
 
-.wclient-row > .field { flex: 0 1 360px; max-width: 360px; }
-@media (max-width: 640px) { .wclient-row > .field { flex-basis: 100%; max-width: none; } }
 
 @media (max-width: 860px) {.console-head { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   }

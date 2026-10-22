@@ -6347,3 +6347,17 @@ tick), WA-2 (the messages added eight hours by hand and read 22:41; Malaysia's
 clock, 10:41pm), WA-3 (a month card under the month's own select, a
 template's category cut), WA-4 (the phone row left out what was sent) and
 WA-5 (a contact with no number offered first with no way to add one).
+### 2026-10-22 — My Work's Months view is one bar (release 5 of the work review)
+The user, 2026-10-22: "Fix all". WRK-M1: Months stacked the view strip, a
+Client label over a full-width select, a Months heading repeating the tab
+and a second command bar; on a phone two ⋯ and five rows before the first
+month. Built as the review proposed: one bar holding the views, the client
+select (220px, a view, so never moved into Filters), the search, Filters,
+the count, the section's ⋯, New month and Add task; the list's own bar
+steps away while Months shows and its strip and ⋯ come home on leaving. On
+a phone the strip takes its row, the client fills what the marks and the
+add leave, New month joins the section's ⋯ (one ⋯ a screen) and the count
+is said in the Filters sheet's head (`js/cmdbar.js`, any bar whose count
+steps away). The empty `.msg` under the hidden bar gives back its margin so
+the Months bar stands where the List bar does. `tests/work.js` and
+`tests/phone.js` measure the one line and the one ⋯.

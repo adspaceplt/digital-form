@@ -3406,10 +3406,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   with no code its name; never the whole description (the user,
   2026-10-09). Then `+N more`. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
-- Months view (`view=months&wc=`, the tab named Months; at a desk the
-  section's ⋯ stands in its bar beside Add task, 2026-10-20, WRK-1): a client select,
-  then that client's months, meetings and tasks (`clientWork()`), remembered
-  per browser. A month's ⋯ is Add tasks (the New sheet on that client and
+- Months view (`view=months&wc=`, the tab named Months) is one bar, as every
+  view (2026-10-22, WRK-M1): the view strip, the client (`#workClient`,
+  `data-nofilter`, kept in the bar on a phone), the search, Filters, the
+  count, the section's ⋯, New month and Add task, no label or heading; the
+  list's own bar steps away (`placeMore`); on a phone the strip takes its
+  own row, New month goes into the section's ⋯ and the count into the
+  Filters sheet's head. Then that client's months, meetings and tasks
+  (`clientWork()`), the client remembered per browser. A month's ⋯ is Add tasks (the New sheet on that client and
   month), Edit, Cancel month, Delete. A month whose tasks the filter hides
   says No matches (Show all), never No tasks this month.
 - The phase 1 model:
