@@ -310,13 +310,13 @@
           then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
       });
-    }, function (e) { then({ error: missingWord(e && e.message) }); });
+    }).catch(function (e) { then({ error: missingWord(e && e.message) }); });
     });
   }
 
   function readBack(id, then) {
     db.from('client_documents').select('*').eq('id', id).single()
-      .then(function (r) { then(r.data, r.error); }, function (e) { then(null, e); });
+      .then(function (r) { then(r.data, r.error); }).catch(function (e) { then(null, e); });
   }
 
   /* The database answers in one word; the console says what it means. */
@@ -367,7 +367,7 @@
       var out = r.data || {};
       if (out.error) { then(ISSUE_WORD[out.error] || out.error); return; }
       then(null, out);
-    }, function (e) { then(missingWord(e && e.message)); });
+    }).catch(function (e) { then(missingWord(e && e.message)); });
   }
 
   function setSigned(doc, on, then) { call('letter_set_signed', { p_doc: doc.id, p_on: Boolean(on) }, then); }
@@ -393,7 +393,7 @@
           (by[m.document_id] = by[m.document_id] || []).push(m.service_id);
         });
         then(by);
-      }, function () { then({}); });
+      }).catch(function () { then({}); });
   }
 
   /* A letter is live while it can still become something: not void, not
@@ -1061,7 +1061,7 @@
 
   function list(clientId, then) {
     db.from('client_documents').select('*').eq('client_id', clientId).order('created_at', { ascending: false })
-      .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
+      .then(function (r) { then(r.data || [], r.error); }).catch(function (e) { then([], e); });
   }
 
   /* Voiding went through PostgREST and could reach a verified letter, which is

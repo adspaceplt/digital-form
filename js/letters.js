@@ -67,17 +67,17 @@
       var out = r.data || {};
       if (out.error) { then(WORD[out.error] || out.error, out); return; }
       then(null, out);
-    }, function (e) { then(missingWord(e && e.message)); });
+    }).catch(function (e) { then(missingWord(e && e.message)); });
   }
 
   // ---- Reading ---------------------------------------------------------------
   function types(then) {
     db.from('doc_types').select('*').eq('active', true).order('position').order('name')
-      .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
+      .then(function (r) { then(r.data || [], r.error); }).catch(function (e) { then([], e); });
   }
   function list(clientId, then) {
     db.from('documents').select('*').eq('client_id', clientId).order('created_at', { ascending: false })
-      .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
+      .then(function (r) { then(r.data || [], r.error); }).catch(function (e) { then([], e); });
   }
   /* The Letter of Offer lives in its own table, because it is not a letter of
      words but a priced snapshot: the lines, the totals and the bill-to are
@@ -125,12 +125,12 @@
       var rows = (r[0] && r[0].data) || [];
       var offers = ((r[1] && r[1].data) || []).map(asOffer);
       then(rows.concat(offers), null);
-    }, function (e) { then([], e); });
+    }).catch(function (e) { then([], e); });
   }
   listAll.offers = true;
   function readBack(id, then) {
     db.from('documents').select('*').eq('id', id).single()
-      .then(function (r) { then(r.data, r.error); }, function (e) { then(null, e); });
+      .then(function (r) { then(r.data, r.error); }).catch(function (e) { then(null, e); });
   }
 
   // ---- Writing ---------------------------------------------------------------

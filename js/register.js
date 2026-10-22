@@ -144,25 +144,55 @@
     return rc.name || (c && (c.legal_name || c.name)) || '';
   }
 
+  /* Every client is read a thousand at a time (ADspaceAPI.readPages); a
+     read refused or failed is kept (`peopleErr`), so Issue document and Add
+     existing document say so with Try again in place of an empty picker
+     (DOC-1, 2026-10-22). */
   function loadPeople(then) {
+    var MEM = 'id, name, email, staff_code, designation, active';
     Promise.all([
       /* The registered name and the billing address are Billing's columns,
          answered to Documents at Work by `client_billing()`. */
-      db.from('clients').select('id, name, client_code, market, bill_sgd, stage, created_at').order('name')
+      API.readPages(function () { return db.from('clients').select('id, name, client_code, market, bill_sgd, stage, created_at').order('name').order('id'); })
         .then(function (r) { return r.error ? r : API.withBilling(r.data || []).then(function () { return r; }); }),
-      db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
+      db.from('team_members').select(MEM).order('name'),
       LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([]),
       /* Suppliers (2026-10-18), read only where Suppliers is held. */
-      may('suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }, function () { return []; }) : Promise.resolve([])
+      may('suppliers', 'view') ? db.rpc('suppliers_list').then(function (r) { return (r.data && r.data.rows) || []; }).catch(function () { return []; }) : Promise.resolve([])
     ]).then(function (r) {
-      state.clients = (r[0] && r[0].data) || [];
-      state.members = (r[1] && r[1].data) || [];
+      var bad = (r[0] && r[0].error) || (r[1] && r[1].error);
+      state.peopleErr = bad ? (bad.message || 'The request failed.') : null;
+      state.clients = (r[0] && !r[0].error && r[0].data) || [];
+      state.members = (r[1] && !r[1].error && r[1].data) || [];
       state.types = r[2] || [];
       state.suppliers = r[3] || [];
       var meMail = String(bridge.actor ? bridge.actor() : '').toLowerCase();
       state.me = state.members.filter(function (m) { return String(m.email || '').toLowerCase() === meMail; })[0] || null;
       then();
-    }, function () { then(); });
+    }).catch(function (e) {
+      state.peopleErr = (e && e.message) || 'The request failed.';
+      then();
+    });
+  }
+  /* A colleague's own letters need the colleagues alone (teamOf), never
+     every client and its billing (DOC-5, 2026-10-22). */
+  function loadMembers(then) {
+    if (state.members.length) { then(); return; }
+    db.from('team_members').select('id, name, email, staff_code, designation, active').order('name').then(function (r) {
+      if (!r.error) state.members = r.data || [];
+      then();
+    }).catch(function () { then(); });
+  }
+  /* In place of a picker whose list could not be read: what failed and Try
+     again, which reads it again and opens the sheet anew. */
+  function peopleFail(wrapId, selId, again) {
+    var wrap = $(wrapId), sel = $(selId);
+    if (!wrap || !sel) return;
+    var box = wrap.querySelector('.people-fail');
+    if (!state.peopleErr) { if (box) box.remove(); sel.hidden = false; return; }
+    if (!box) { box = document.createElement('div'); box.className = 'people-fail'; wrap.appendChild(box); }
+    sel.hidden = true;
+    UI.failLine(box, 'The clients', state.peopleErr, function () { loadPeople(again); });
   }
 
   function enter() {
@@ -209,7 +239,7 @@
                  source: 'perf', member_id: x.member_id, issued_at: x.released_at || x.downloaded_at,
                  recipient: { name: x.name }, period: x.period, created_at: x.downloaded_at };
       }));
-    }, function () { then([]); });
+    }).catch(function () { then([]); });
   }
 
   function matches(d) {
@@ -305,7 +335,7 @@
       /* The reference is what somebody came to copy, so the reference is
          the control: one press, and it says Copied the way every other copy
          in this portal does. */
-      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '">' + esc(d.serial) + '</button>' +
+      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button>' +
         /* The version a reissue replaced says so, because on this list the
            team can see both versions and the word tells them which is which;
            the verify page never says it. */
@@ -315,7 +345,8 @@
         '<small>' + esc(sub) + '</small></span>' +
       (own ? '' : '<span class="reg-brand">' + (brandOf(d) ? esc(brandOf(d)) : '<span class="muted">—</span>') + '</span>') +
       '<span class="reg-who">' + esc(recipientOf(d)) + '</span>' +
-      '<span class="reg-date">' + esc(niceDate(d.issued_at)) + '</span>' +
+      /* No date reads the mute em dash, as Brand does (DOC-4). */
+      '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
@@ -429,12 +460,12 @@
      records, in the register's own rows, newest first. */
   function paintForMember(m, box, then) {
     if (!box) return;
-    loadPeople(function () {
+    loadMembers(function () {
       var code = String(m.staff_code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       var q = db.from('documents').select('*').eq('family', 'hr');
       q = code ? q.or('member_id.eq.' + m.id + ',serial.ilike."%' + code + '%"') : q.eq('member_id', m.id);
       Promise.all([
-        q.then(function (r) { return r; }, function (e) { return { error: e }; }),
+        q.then(function (r) { return r; }).catch(function (e) { return { error: e }; }),
         new Promise(function (res) { perfRows(res); })
       ]).then(function (got) {
         var r = got[0];
@@ -924,10 +955,11 @@
          one's. */
       if (!re) ['docTo', 'docAddr', 'docAttn', 'docAttnRole', 'docRole', 'docIc'].forEach(function (id) { if ($(id)) $(id).value = ''; });
       if (re) prefill(re); else seed();
+      peopleFail('docClientWrap', 'docClient', go);
       $('docSheet').hidden = false;
       cardFocus('docSheet');
     };
-    if (state.types.length) go(); else loadPeople(go);
+    if (state.types.length && state.clients.length && !state.peopleErr) go(); else loadPeople(go);
   }
   /* The sheet filled from the version being replaced, field for field. */
   function prefill(d) {
@@ -1368,10 +1400,11 @@
       if (!d && forMem && tm && tm.name) { $('regAddWho').value = tm.name; addSeed = tm.name; }
       fillKindPick(d ? d.kind : '');
       regAddFit();
+      peopleFail('regAddClientWrap', 'regAddClient', go);
       $('regAddSheet').hidden = false;
       cardFocus('regAddSheet');
     };
-    if (state.clients.length) go(); else loadPeople(go);
+    if (state.clients.length && !state.peopleErr) go(); else loadPeople(go);
   }
   /* The document types a kind already carries: the seeded types and every
      name its documents were saved under, title-cased and said once, so a

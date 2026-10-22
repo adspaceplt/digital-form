@@ -235,6 +235,7 @@ button.appver {
    left and the select beside it at its own width; the row's width on a
    phone. */
 .actfilter { display: flex; align-items: center; gap: 8px; padding: 4px 0 12px; }
+.act-more { display: flex; justify-content: center; padding: 12px 0 4px; }
 .cmdbar-views.actviews.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 
 /* ---------- Short Links ---------- */
