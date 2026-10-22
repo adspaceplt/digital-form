@@ -6048,3 +6048,20 @@ releases: OVW-3 to OVW-9, OVW-M1, WRK-8 to WRK-15, WRK-M1.
   with Try again and the tab bar's dot keeps its count. WRK-6 a deadline
   over a day reads in days. WRK-7 a due date still ahead is never red.
   OVW-10 `.then(ok).catch(bad)` in My Work's `call()` and the other sites.
+
+### 2026-10-22 — My Work and the Dashboard: release 2 of the work review
+The user, 2026-10-22: "Fix all". Built: OVW-6 (one document listener hides
+every chart's tip; a card no longer adds its own each repaint), OVW-7 (the
+Sales view's dead `STALE`, `pipeline.cold` and `attention` gone; the chart
+reads `ADspaceClock.MON`; the cold-lead boundary itself left as it is),
+OVW-8 (Creator bookings' way out reads Creator Campaigns; DESIGN.md spells
+Pre-Advertising Checklist as the checklists do), OVW-9 (DESIGN.md: five
+rows), WRK-8 (the board counts its workflow), WRK-9 (Months counts Open
+whole), WRK-10 (All people, Open, Assigned to you., Add template, Add task
+as the sheet's title, "days late" on the due cell; a priority's deadline
+keeps "over", WRK-6), WRK-11 (the task card's ⋯: Make a copy, Repeat on a
+schedule or Edit repeat, Take, the offer, Restore, a rule, Delete; the MENU
+session converts it), WRK-12 (DESIGN.md: Decline and Approve both tonal),
+WRK-14 (`shortDay` reads the clock; `#taskMenu` dropped). Not built in time
+for the 2026-10-23 gate: OVW-3, OVW-4, OVW-5, OVW-M1, WRK-13, WRK-15,
+WRK-M1, and OVW-7's shared cold-lead rule.

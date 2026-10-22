@@ -117,8 +117,8 @@
   function dueWord(v) {
     var n = daysAway(v);
     if (n === null) return 'No date set';
-    if (n < -1) return shortDate(v) + ' · ' + (-n) + ' days over';
-    if (n === -1) return shortDate(v) + ' · 1 day over';
+    if (n < -1) return shortDate(v) + ' · ' + (-n) + ' days late';
+    if (n === -1) return shortDate(v) + ' · 1 day late';
     if (n === 0) return 'Today';
     if (n === 1) return 'Tomorrow';
     if (n <= 7) return shortDate(v) + ' · in ' + n + ' days';
@@ -1088,7 +1088,7 @@
       db.rpc('ops_take_task', { p_task: t.id, p_version: t.version }).then(function (r) {
         var d = r.data;
         if (r.error || (d && d.error)) { say(r.error ? r.error.message : said(d.error, t)); if (d && d.error) done(true); return; }
-        state.rowSaid = { id: t.id, word: 'Yours.' };
+        state.rowSaid = { id: t.id, word: 'Assigned to you.' };
         done();
       }).catch(function (e) { say((e && e.message) || String(e)); });
     });
@@ -1314,9 +1314,7 @@
     });
   }
   function shortDay(ts) {
-    if (!ts) return '';
-    var d = new Date(new Date(ts).getTime() + 8 * 3600000);
-    return d.getUTCDate() + ' ' + MON_SHORT[d.getUTCMonth()];
+    return ts ? CK.date(ts, { year: false }) : '';
   }
   function paintWaiting() {
     var box = $('workWaiting');
@@ -1416,9 +1414,11 @@
     if (state.view === 'board') boardWorkflow(all);
     var count = $('workCount');
     if (count) {
+      /* The board counts the workflow it lays out (2026-10-22, WRK-8). */
+      var shown = state.view === 'board' && state.wf ? all.filter(function (t) { return t.workflow_id === state.wf; }) : all;
       count.textContent = state.find ? (rows.length ? rows.length + ' found' : '')
-        : !all.length ? ''
-        : all.length + (all.length === 1 ? ' task' : ' tasks');
+        : !shown.length ? ''
+        : shown.length + (shown.length === 1 ? ' task' : ' tasks');
     }
     if (!all.length && !state.find) {
       /* An empty list says what it is holding back: finished work outside
@@ -3095,7 +3095,10 @@
     // The ⋯: the full record, the rare acts, Delete last. Every stage move
     // is the stage select.
     var menu = $('dwMenu');
-    menu.querySelector('[data-a="repeat"]').hidden = !work;
+    var rep = menu.querySelector('[data-a="repeat"]');
+    rep.hidden = !work;
+    /* A repeat already running reads as its edit (2026-10-22, WRK-11). */
+    rep.textContent = state.rule && state.rule.active !== false ? 'Edit repeat' : 'Repeat on a schedule';
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
 
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at || !may('ops', 'manage');
@@ -4110,7 +4113,7 @@
   function openTplEdit(row) {
     tplEditing = row || null;
     var x = row || {};
-    $('teHead').textContent = row ? 'Edit template' : 'New template';
+    $('teHead').textContent = row ? 'Edit template' : 'Add template';
     $('teName').value = x.name || '';
     $('teCheck').value = (x.checklist || []).join('\n');
     $('teActive').setAttribute('aria-checked', row && !x.active ? 'false' : 'true');
@@ -6793,14 +6796,14 @@
         '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
           '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
         '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
-          '<option value="open">Open work</option><option value="active">In progress</option>' +
+          '<option value="open">Open</option><option value="active">In progress</option>' +
           '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
           '<option value="late">Late</option><option value="done">Completed</option><option value="">All tasks</option>' +
         '</select>' +
         '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">All months</option>' +
           months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('') +
         '</select>' +
-        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">Anybody</option>' +
+        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">All people</option>' +
           ownerList.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>'; }).join('') +
         '</select>' +
         '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
@@ -6842,9 +6845,12 @@
     var rows = cw.tasks.filter(cwMatches);
     var count = $('cwCount');
     if (count) {
+      /* Open is the view's default, so it is counted whole: a fraction only
+         once somebody filters (2026-10-22, WRK-9). */
+      var base = cw.status === 'open' ? cw.tasks.filter(function (t) { return !isFinished(t); }) : cw.tasks;
       count.textContent = !cw.tasks.length ? ''
-        : rows.length === cw.tasks.length ? rows.length + (rows.length === 1 ? ' task' : ' tasks')
-        : rows.length + ' of ' + cw.tasks.length;
+        : rows.length === base.length ? rows.length + (rows.length === 1 ? ' task' : ' tasks')
+        : rows.length + ' of ' + base.length;
     }
     list.innerHTML = '';
     /* A month is a card: the engagement's own facts at its head where one
@@ -7890,7 +7896,7 @@
       /* So does an open ⋯: Escape shuts the menu and hands focus back to its
          button, and the sheet under it stays where it was. */
       var menus = Array.prototype.filter.call(document.querySelectorAll(
-        '#workMore, #dwMenu, #taskMenu, .qitem .kmenu, .tlink-row .kmenu, #workQueue .team-act .kmenu, #cwList .team-act .kmenu'),
+        '#workMore, #dwMenu, .qitem .kmenu, .tlink-row .kmenu, #workQueue .team-act .kmenu, #cwList .team-act .kmenu'),
         function (m) { return !m.hidden; });
       if (menus.length) {
         menus.forEach(function (m) {

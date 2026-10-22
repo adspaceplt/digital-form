@@ -77,7 +77,7 @@
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261014b"></script>
 <script src="/js/records.js?v=20261012a"></script>
-<script src="/js/chart.js?v=20261020c"></script>
+<script src="/js/chart.js?v=20261022s"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261022d"></script>
 <script src="/js/maintenance.js?v=20261009h"></script>
@@ -2616,7 +2616,7 @@
       <div class="sheet" id="taskSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle" data-narrow="520">
           <div class="sheet-head">
-            <h3 id="taskSheetTitle">New task</h3>
+            <h3 id="taskSheetTitle">Add task</h3>
             <button class="iconbtn" id="taskSheetClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -3016,12 +3016,13 @@
                   <!-- The rare acts, Delete last; every stage move is the
                        stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
                     <button class="kmenu-item" data-a="take" type="button" role="menuitem" hidden>Take</button>
                     <button class="kmenu-item" data-a="offer" type="button" role="menuitem" hidden>Offer to the team</button>
                     <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" hidden>Withdraw offer</button>
-                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
-                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
                     <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
+                    <hr class="kmenu-sep" data-need="ops:manage">
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                   </div>
                 </span>
@@ -3280,7 +3281,7 @@
             <div class="tpllist" id="tplList"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="tplNew" type="button">New template</button>
+            <button class="btn btn-primary" id="tplNew" type="button">Add template</button>
             <button class="btn btn-quiet" id="tplCancel" type="button">Close</button>
           </div>
           <div class="msg" id="tplMsg"></div>
@@ -5722,7 +5723,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261022p"></script>
 <script src="/js/crm.js?v=20261022k"></script>
-<script src="/js/sales.js?v=20261022d"></script>
+<script src="/js/sales.js?v=20261022s"></script>
 <script src="/js/team.js?v=20261022b"></script>
 <script src="/js/namecard.js?v=20261015a"></script>
 <script src="/js/handbook.js?v=20261021"></script>
@@ -5730,11 +5731,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261022d"></script>
-<script src="/js/ops.js?v=20261022r"></script>
+<script src="/js/ops.js?v=20261022s"></script>
 <script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261015zg"></script>
-<script src="/js/overview.js?v=20261022r"></script>
+<script src="/js/overview.js?v=20261022s"></script>
 <script src="/js/settings.js?v=20261022h"></script>
 </body>
 </html>

@@ -47,12 +47,10 @@
      histories of its own. */
   function figures(clients, lines, r) {
     var f = {
-      pipeline: { lead: [], contacted: [], proposal: [], cold: [] },
+      pipeline: { lead: [], contacted: [], proposal: [] },
       newLeads: [], won: [], lost: [], churned: [], paused: [], resumed: [], winback: [],
       pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: []
     };
-    var STALE = window.ADspaceCRM.staleH();
-    var now = Date.now();
     var person = function (c) {
       var k = c.owner || 'No person in charge';
       return f.byPerson[k] || (f.byPerson[k] = { name: k, newLeads: [], won: [], lost: [], churned: [] });
@@ -61,9 +59,6 @@
       var mv = movesOf(c), first = mv[0], everActive = false, lostIn = false, churnIn = false, lastIn = null;
       if (LEADS[c.stage]) {
         f.pipeline[c.stage].push(c);
-        var since = new Date(c.stage_since || c.created_at).getTime();
-        var lim = window.ADspaceCRM.staleH(c)[c.stage];
-        if (lim && (now - since) / 3600000 > lim) f.pipeline.cold.push(c);
       }
       if (c.stage === 'paused') f.pausedNow.push(c);
       if (c.stage === 'active') f.activeNow.push(c);
@@ -131,12 +126,6 @@
         return movesOf(c).some(function (m) { return RANK[m.to] != null && RANK[m.to] >= k; });
       });
     });
-    /* Who needs a call: leads over their time in stage and paused clients,
-       the longest waiting first. */
-    var waited = function (c) { return Math.max(0, Math.floor((now - new Date(c.stage_since || c.created_at).getTime()) / 86400000)); };
-    f.attention = f.pipeline.cold.map(function (c) { return { c: c, days: waited(c), kind: 'cold' }; })
-      .concat(f.pausedNow.map(function (c) { return { c: c, days: waited(c), kind: 'paused' }; }))
-      .sort(function (a, b) { return b.days - a.days || String(a.c.name).localeCompare(String(b.c.name)); });
     f.toWin.sort(function (a, b) { return a - b; });
     f.medianToWin = f.toWin.length ? f.toWin[Math.floor((f.toWin.length - 1) / 2)] : null;
     f.money = lines ? money(clients, lines, f) : null;
