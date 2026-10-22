@@ -1022,8 +1022,9 @@
             UI.failLine(box, 'Campaign amounts', (q.error || k.error).message, loadCampaigns);
             return;
           }
-          campSums = {};
+          campSums = {}; campBooked = {};
           (q.data || []).forEach(function (o) {
+            if (BOOKED.indexOf(o.state) > -1) campBooked[o.campaign_id] = (campBooked[o.campaign_id] || 0) + 1;
             if (CHARGED.indexOf(o.state) < 0) return;
             campSums[o.campaign_id] = (campSums[o.campaign_id] || 0) + Number(o.rate || 0);
           });
@@ -1103,7 +1104,7 @@
              own 13.5px and set the word AMOUNT three sizes above every other
              heading beside it. */
           var table = GRP.table('camp-row',
-            ['Campaign', 'Client', 'Creators', { text: 'Amount', cls: 'is-end' }, { text: 'Updated', cls: 'is-end' }, ''], 'crm-register');
+            ['Campaign', 'Client', 'Booked', { text: 'Amount', cls: 'is-end' }, { text: 'Updated', cls: 'is-end' }, ''], 'crm-register');
           GRP.more(table, inMonth, 30, 'campaigns', function (c) { return campRow(c, campSums); });
           return table;
         }
@@ -1136,7 +1137,11 @@
      what needs them. A state the vocabulary grows is added here. */
   var CAMP_GROUPS = ['draft', 'open', 'production', 'completed'];
 
+  /* Creators booked a campaign, from the same read as the amounts: the list
+     counts creators, never slots (2026-10-22, CMP-8). */
+  var campBooked = {};
   function campRow(c, sums) {
+    var booked = (campBooked[c.id] || 0) + ' of ' + (c.slots || 0);
     var cl = c.clients || {};
     var mk = MON.curOf(cl);
     var ap = cl.sst_applies == null ? true : cl.sst_applies;
@@ -1148,7 +1153,7 @@
     row.innerHTML =
       '<span class="crm-c crm-c-name">' + esc(campName(c)) + '</span>' +
       '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(c.client_id, true) : '') + '</span>' +
-      '<span class="crm-c camp-c-slots">' + esc(String(c.slots || 0)) + '</span>' +
+      '<span class="crm-c camp-c-slots">' + esc(booked) + '</span>' +
       /* A campaign nobody has been booked on yet has no amount, and the
          currency sign alone is a fragment that reads like a broken field:
          the cell's missing value is the mute dash. */
@@ -1163,7 +1168,7 @@
          in half (2026-09-28), so each part holds its own spaces. */
       '<span class="crm-c crm-c-meta">' +
         [cl.name ? esc(cl.name) : '',
-         esc(c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators')).replace(/ /g, '\u00a0'),
+         esc(booked + ' booked').replace(/ /g, '\u00a0'),
          amount ? esc(amount).replace(/ /g, '\u00a0') : '']
           .filter(Boolean).join('\u00a0\u00b7 ') + '</span>' +
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
@@ -1468,7 +1473,9 @@
     var tabOf = document.querySelector('#campTabs .tab[data-pane="' + key + '"]');
     if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
     campPane = key;
-    if ($('campNextGo')) $('campNextGo').hidden = key === 'client';
+    /* Only the confirm line's way leaves on Selection, where Confirm is; a
+       draft to review keeps its way there (2026-10-22, CMP-14). */
+    if ($('campNextGo')) $('campNextGo').hidden = key === 'client' && $('campNextGo').hasAttribute('data-confirm');
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
       b.classList.toggle('is-on', on);
@@ -1612,9 +1619,19 @@
     var none = state.optionsFor === c.id && !(state.options || []).length;
     if (none && c.state === 'draft') move = null;
     if ($('showAddOption')) $('showAddOption').className = 'btn' + (none ? ' btn-primary' : '');
-    $('campPublish').hidden = !move;
+    /* On a phone a move that is not the blue Publish (Unpublish, Reopen
+       selection, Resume) is the head ⋯'s lifecycle item, not a row of its
+       own above the tabs; at a desk it stays beside the link and its state
+       (2026-10-22, CMP-M1). */
+    var tuck = !!move && move.cls !== 'btn-go' && PHONE.matches;
+    var life = $('campLifeItem');
+    if (life) {
+      life.hidden = !tuck;
+      life.textContent = tuck ? move.label : '';
+    }
+    $('campPublish').hidden = !move || tuck;
     /* Its row leaves with it, so a View group's head ends on the link. */
-    if ($('campPublish').parentNode) $('campPublish').parentNode.hidden = !move;
+    if ($('campPublish').parentNode) $('campPublish').parentNode.hidden = !move || tuck;
     if (!move) return;
     $('campPublish').innerHTML = move.icon + esc(move.label);
     $('campPublish').className = 'btn ' + move.cls;
@@ -1702,6 +1719,13 @@
         body: 'Selection closes and the bookings go back into production.' } };
   }
 
+  var PHONE = window.matchMedia('(max-width: 640px)');
+  var onPhoneChange = function () { if (state.campaign && !$('campWork').hidden) paintCampState(state.campaign); };
+  if (PHONE.addEventListener) PHONE.addEventListener('change', onPhoneChange); else if (PHONE.addListener) PHONE.addListener(onPhoneChange);
+  if ($('campLifeItem')) $('campLifeItem').addEventListener('click', function () {
+    shutMenus();
+    $('campPublish').click();
+  });
   $('campPublish').addEventListener('click', function () {
     var c = state.campaign;
     var move = publishMove(c.state);
@@ -2117,6 +2141,23 @@
      seconds after the save. */
   var saidOn = {};
   function say(key, text, cls) { saidOn[key] = { text: text, cls: cls || 'ok', at: Date.now() }; }
+  /* A step taken on a booking's card is answered on that card, not in the
+     head card a screen above it (2026-10-22, CMP-7): kept for the repaint
+     that usually follows, written now for the refusal that does not. A card
+     no longer drawn (a booking removed) answers in the head. */
+  function cardSay(o, text, kind) {
+    if (text) say('card:' + o.id, text, kind || ''); else delete saidOn['card:' + o.id];
+    var card = document.querySelector('.kcard[data-option="' + o.id + '"]');
+    var m = card && card.querySelector('[data-msg]');
+    if (!m) { msg('campWorkMsg', text, kind); return; }
+    if (text && card.classList.contains('is-folded')) {
+      var f = card.querySelector('[data-a="fold"]');
+      if (f) f.click();
+    }
+    m.textContent = text || '';
+    m.className = 'msg' + (kind ? ' ' + kind : '');
+    if (text) m.setAttribute('role', 'status');
+  }
   function saidHtml(key, cls) {
     var x = saidOn[key];
     if (!x || Date.now() - x.at > 10000) return '<div class="msg ' + (cls || '') + '" data-said></div>';
@@ -2125,7 +2166,7 @@
   function paintSchedule(live) {
     var box = $('schedList');
     if (!box) return;
-    var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
+    var rows = live.filter(function (o) { return BOOKED.indexOf(o.state) > -1; });
     if (!rows.length) {
       box.className = '';
       UI.emptyLine(box, 'No creators booked.', 'Go to Creators', function () {
@@ -2137,7 +2178,7 @@
     var t = document.createElement('div');
     t.className = 'bookreg sched-reg';
     t.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span><span>' + when +
-      '</span><span>Publish</span><span></span></div>';
+      '</span><span>Post date</span><span></span></div>';
     function logField(label, key, value, type) {
       return '<label class="sched-f sched-edit" data-label="' + esc(label) + '">' +
         '<input class="input" data-schedule="' + key + '" type="' + type + '" value="' +
@@ -2179,7 +2220,7 @@
           /* Each date carries its head's word where the head is hidden
              (2026-10-20, CMP-3). */
           '<span class="kcard-sum sched-sum"><span class="sched-lab">' + when + ' </span>' + dayOr(o.visit_date, o.visit_time) + '</span>' +
-          '<span class="kcard-tags sched-pubday"><span class="sched-lab">Publish </span>' + dayOr(o.planned_publish) + '</span>' +
+          '<span class="kcard-tags sched-pubday"><span class="sched-lab">Post date </span>' + dayOr(o.planned_publish) + '</span>' +
           '<span class="kcard-act"></span>' +
         '</header>' +
         '<div class="kcard-body sched-body"' + (open ? '' : ' hidden') + '>' +
@@ -2193,9 +2234,9 @@
           '<span class="sched-when sched-edit sched-one sched-due" data-label="Draft due"><span class="sched-field">' +
             '<input class="input" data-schedule="submission_due" type="date" value="' +
             esc(o.submission_due || '') + '" aria-label="Draft due date"></span></span>' +
-          '<span class="sched-when sched-edit sched-one sched-pub" data-label="Publish"><span class="sched-field">' +
+          '<span class="sched-when sched-edit sched-one sched-pub" data-label="Post date"><span class="sched-field">' +
             '<input class="input" data-schedule="planned_publish" type="date" value="' +
-            esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>' +
+            esc(o.planned_publish || '') + '" aria-label="Post date"></span></span>' +
           /* Where, and whom to meet: the rest of the plan, so the Schedule is
              the one place a booking's plan is written (the user, 2026-09-27). */
           '<span class="sched-log' + (isDelivery() ? ' is-delivery' : '') + '">' +
@@ -2281,7 +2322,7 @@
   /* How a schedule change is named on the record. */
   var SCHED_WORD = {
     visit_date: 'Date', visit_time: 'Time', submission_due: 'Draft due',
-    planned_publish: 'Publish date', visit_location: 'Location', visit_pic: 'Contact',
+    planned_publish: 'Post date', visit_location: 'Location', visit_pic: 'Contact',
     visit_pic_phone: 'Contact phone', tracking_no: 'Tracking no.'
   };
 
@@ -2496,7 +2537,7 @@
       $('campNext').appendChild(goDraft);
     } else if (mayWork() && live.some(function (o) { return o.state === 'shortlisted'; }) && campPane !== 'client') {
       var go = document.createElement('button');
-      go.type = 'button'; go.className = 'btn btn-sm camp-next-go'; go.id = 'campNextGo';
+      go.type = 'button'; go.className = 'btn btn-sm camp-next-go'; go.id = 'campNextGo'; go.setAttribute('data-confirm', '');
       go.innerHTML = 'Review and confirm' + CHEV;
       go.addEventListener('click', function () {
         var tab = document.querySelector('#campTabs .tab[data-pane="client"]');
@@ -2661,8 +2702,11 @@
   /* The bookings, which is the campaign. Who, where they post, where the work
      has got to, and what it costs — the four things anybody asks — on one grid
      so a column starts at the same x on every row. */
-  function ovBookings(live) {
-    if (!live.length) return ovSec('Bookings', 'creators', 'Creators', ovNone('No creators offered.'));
+  function ovBookings(all) {
+    /* Booked creators alone: one shortlisted is still the client's pick, on
+       Selection (2026-10-22, CMP-13). */
+    var live = all.filter(function (o) { return BOOKED.indexOf(o.state) > -1; });
+    if (!live.length) return ovSec('Bookings', 'creators', 'Creators', ovNone('No creators booked.'));
     var rows = live.slice().sort(function (a, b) {
       return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
     }).slice(0, 8).map(function (o) {
@@ -2684,8 +2728,8 @@
   /* When the work happens. Only bookings the client is paying for have dates,
      so this is the same set the Schedule pane reads and never a second store. */
   function ovDates(live) {
-    var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
-    if (!rows.length) return ovSec('Schedule', 'schedule', 'Schedule', ovNone('No bookings.'));
+    var rows = live.filter(function (o) { return BOOKED.indexOf(o.state) > -1; });
+    if (!rows.length) return ovSec('Schedule', 'schedule', 'Schedule', ovNone('No creators booked.'));
     /* The column heading leaves with the header on a phone, so each date
        carries its own caption, shown only where the header is not. Two
        unlabelled dates stacked under each other are two dates nobody reads. */
@@ -2695,15 +2739,15 @@
         '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
         '<span class="ovamt"><span class="ovcap">' + esc(shootWord) + '</span>' + (o.visit_date
           ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + clockWord(o.visit_time) : ''))
-          : '<span class="muted">—</span>') + '</span>' +
-        '<span class="ovamt"><span class="ovcap">Publish</span>' + (o.planned_publish
-          ? esc(niceDate(o.planned_publish)) : '<span class="muted">—</span>') + '</span></div>';
+          : '<span class="muted">Not set</span>') + '</span>' +
+        '<span class="ovamt"><span class="ovcap">Post date</span>' + (o.planned_publish
+          ? esc(niceDate(o.planned_publish)) : '<span class="muted">Not set</span>') + '</span></div>';
     }).join('');
     var more = rows.length > 6 ? '<p class="ovmore">' + (rows.length - 6) + ' more on the Schedule pane.</p>' : '';
     return ovSec('Schedule', 'schedule', 'Schedule',
       '<div class="ovtable"><div class="ovhead ovrow-date"><span>Creator</span>' +
       '<span class="ovamt">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
-      '<span class="ovamt">Publish</span></div>' + body + '</div>' + more);
+      '<span class="ovamt">Post date</span></div>' + body + '</div>' + more);
   }
 
   /* What has come in. A draft waiting on us is the one thing on this page
@@ -2801,7 +2845,7 @@
       var pub = aheadOf(live.map(function (o) { return o.planned_publish; }));
       var what = isDelivery() ? 'delivery' : 'shoot';
       if (vis) dates.push([(vis.ahead ? 'Next ' : 'Last ') + what, niceDate(vis.on)]);
-      if (pub) dates.push([(pub.ahead ? 'Next' : 'Last') + ' publish', niceDate(pub.on)]);
+      if (pub) dates.push([(pub.ahead ? 'Next' : 'Last') + ' post date', niceDate(pub.on)]);
       db.hidden = !dates.length;
       $('campDateRail').innerHTML = dates.map(function (d) {
         return '<div><dt>' + esc(d[0]) + '</dt><dd>' + esc(d[1]) + '</dd></div>';
@@ -2932,15 +2976,15 @@
     ed.querySelectorAll('button')[1].addEventListener('click', function () {
       var rate = Number(input.value || 0);
       var plats = readBoxes(ed);
-      if (!rate || rate <= 0) { msg('campWorkMsg', 'Enter a rate above zero.', 'err'); input.focus(); return; }
-      if (!plats.length) { msg('campWorkMsg', 'Tick at least one platform.', 'err'); return; }
+      if (!rate || rate <= 0) { cardSay(o, 'Enter a rate above zero.', 'err'); input.focus(); return; }
+      if (!plats.length) { cardSay(o, 'Tick at least one platform.', 'err'); return; }
       db.from('campaign_options').update({ rate: rate, platforms: plats.join(', ') })
         .eq('id', o.id).select('id').then(function (r) {
-          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.rate', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' +
               money(o.rate) + ' → ' + money(rate) + ' · ' + plats.join(', '));
-          msg('campWorkMsg', '');
+          cardSay(o, '');
           loadOptions();
         });
     });
@@ -2953,14 +2997,14 @@
     var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
     var booked = state.options.filter(isLive).length;
     if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
-      msg('campWorkMsg', 'All creator places are filled.', 'err');
+      cardSay(o, 'All creator places are filled.', 'err');
       return;
     }
     db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
       log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', logSubject(), name);
-      msg('campWorkMsg', '');
+      cardSay(o, '');
       loadOptions();
     });
   }
@@ -2985,12 +3029,12 @@
           platforms: o.platforms, state: o.state, position: o.position
         }).select('id').then(function (u) {
           if (u.error || !(u.data || []).length) {
-            msg('campWorkMsg', 'Not restored. The database refused the request.', 'err');
+            cardSay(o, 'Not restored. The database refused the request.', 'err');
             return;
           }
           log('campaign.offered', logSubject(), name + ' · restored');
           loadOptions();
-        }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
+        }).catch(function (e) { cardSay(o, (e && e.message) || String(e), 'err'); });
       }, $('showAddOption') ? $('showAddOption').closest('.viewhead') : null);
     }).catch(function (e) { say(key, (e && e.message) || String(e), 'err'); loadOptions(); });
   }
@@ -3627,24 +3671,29 @@
       if (pic) rows.push(['Contact', pic]);
     }
     if (o.submission_due) rows.push(['Draft due', niceDate(o.submission_due)]);
-    if (o.planned_publish) rows.push(['Publish date', niceDate(o.planned_publish)]);
+    if (o.planned_publish) rows.push(['Post date', niceDate(o.planned_publish)]);
     if (!rows.length) return '<p class="kplan-none">Not scheduled.</p>';
     return '<dl class="ovfacts kplan">' + rows.map(function (r) {
       return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
     }).join('') + '</dl>';
   }
-  /* A stored time as it is read: 14:00 as 2pm, 09:30 as 9.30am; an older
-     friendly string as it was typed. */
+  /* A stored time as the console writes one: 14:00 as 2:00pm, 09:30 as
+     9:30am (2026-10-22, CMP-12); an older friendly string as it was typed. */
   function clockWord(v) {
     var c = clockValue(v);
     if (!c) return String(v || '');
     var h = Number(c.slice(0, 2)), m = c.slice(3);
-    return (h % 12 || 12) + (m === '00' ? '' : '.' + m) + (h < 12 ? 'am' : 'pm');
+    return (h % 12 || 12) + ':' + m + (h < 12 ? 'am' : 'pm');
   }
 
   /* One creator, one card. What is inside depends only on where they have got
      to: terms while they are an option, terms plus production once accepted,
      results once the post is live. */
+  var ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  function notesField(v) {
+    return '<label class="kfield kfield-wide"><span>Notes</span>' +
+      '<textarea class="input" data-f="notes" rows="2">' + esc(v || '') + '</textarea></label>';
+  }
   function creatorCard(o, no) {
     var cr = o.creators || {};
     var word = OPTION_WORD[o.state] || [o.state, ''];
@@ -3744,6 +3793,8 @@
         (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Edit</button>'
                  : agreed ? '<span class="kstep-note">Agreed</span>' : '') +
       '</div>' +
+      /* An option's own answer line; a booking's is under its actions. */
+      (live ? '' : saidHtml('card:' + o.id).replace('data-said', 'data-said data-msg')) +
 
       (live ?
       /* The plan is read here and written on the Schedule, the one place a
@@ -3754,9 +3805,10 @@
         '<div class="kstep-titlerow"><span class="kstep-title">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
           (w ? '<button class="btn btn-sm btn-quiet" data-a="schedule" type="button">Edit in Schedule</button>' : '') + '</div>' +
         planFacts(o) +
-        (w ? '<div class="kfields">' +
-          '<label class="kfield kfield-wide"><span>Notes</span>' +
-            '<textarea class="input" data-f="notes" rows="2">' + esc(o.notes || '') + '</textarea></label>' +
+        /* An empty note is a quiet Add note that grows into the box, not a
+           field on every booking (2026-10-22, CMP-16). */
+        (w ? '<div class="kfields" data-notes>' + (o.notes ? notesField(o.notes)
+            : '<button class="btn btn-sm btn-quiet knote-add" data-a="addnote" type="button">' + ADD_ICON + 'Add note</button>') +
         '</div>' : (o.notes ? '<div class="kfields">' + readKfield('Notes', o.notes) + '</div>' : '')) +
       '</div>' +
       /* At View the step is drawn only where it holds something to read;
@@ -3799,6 +3851,12 @@
               esc(o.draft_url) + '</a></div>' : '') +
         '</div>' +
       '</div>' : '') +
+      '' : '') +
+
+      '<div data-posts></div>' +
+      /* The card's actions at its foot, after the Results they save
+         (2026-10-22, CMP-M2, CMP-9: Save stood above the figures). */
+      (live ? (
       (w || qcHeld(o) ? '<div class="kstep kstep-work">' +
         /* A booking held for a second pair of eyes says so where the button
            that will not move it is, and names who has already checked, so
@@ -3808,39 +3866,33 @@
               esc('Checked by ' + qcNames(o) + '. Waiting on a second reviewer.') +
             '</p>'
           : '') +
-        (w ? '<div class="kactions">' +
+        (w ? '<div class="kactions kcard-acts">' +
+          /* Read left to right: the way back, the send-back, Save, then the
+             step forward at the right edge, nearest the hand; on a phone the
+             step forward takes the row under the others (2026-10-22,
+             CMP-10). Revert is quiet: reversible, and not the way out. */
+          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
+          /* Back to the creator without the client ever seeing the round. */
+          (o.state === 'submitted'
+            ? '<button class="btn btn-sm btn-warn" data-a="sendback" type="button">' +
+              'Request changes</button>' : '') +
           /* Tonal: Release to client is the one blue on a card (2026-10-14,
              audit CAMP-3: a blue Save sat beside it). */
           '<button class="btn btn-sm" data-a="save" type="button">Save</button>' +
           /* Blue moves work to somebody else, and exactly one step on this
-             card does: Release to client. The other five — pending visit,
-             pending draft, scheduled, posted, completed — are the team
-             recording its own progress, and drawing them blue put one filled
-             accent on every creator card, so a pane with five creators in it
-             carried five equally loud buttons and none of them said which
-             step mattered. It also broke the law this portal counts in the
-             audit: one prominent blue action per view, two at most. The rest
-             are the ordinary outline action, and what differentiates them is
-             the word on them, not the paint. */
+             card does: Release to client. The other steps are the team
+             recording its own progress, tonal, told apart by their words. */
           /* At Client review the step forward is the client's. Where they
              agreed by word of mouth, the team approves on their behalf, on
              the record under the colleague's name (the user, 2026-09-27). */
           (o.state === 'reviewing'
-            ? '<button class="btn btn-sm" data-a="proceed" type="button">Confirm internally</button>' : '') +
-          (advance && o.state !== 'reviewing' ? '<button class="btn btn-sm' + (advance === 'reviewing' ? ' btn-go' : '') +
+            ? '<button class="btn btn-sm kact-go" data-a="proceed" type="button">Confirm internally</button>' : '') +
+          (advance && o.state !== 'reviewing' ? '<button class="btn btn-sm kact-go' + (advance === 'reviewing' ? ' btn-go' : '') +
             '" data-a="advance" type="button">' +
             esc(ADVANCE_WORD[advance] || wordFor(advance)) + CHEV + '</button>' : '') +
-          /* Back to the creator without the client ever seeing the round.
-             Warn and outlined: it is reversible and it is not the way out. */
-          (o.state === 'submitted'
-            ? '<button class="btn btn-sm btn-warn" data-a="sendback" type="button">' +
-              'Request changes</button>' : '') +
-          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
         '</div>' : '') +
         saidHtml('card:' + o.id).replace('data-said', 'data-said data-msg') +
-      '</div>' : '') : '') +
-
-      '<div data-posts></div>' +
+      '</div>' : '')) : '') +
 
       (dead ?
       '<div class="kstep kstep-ended">' +
@@ -3904,8 +3956,8 @@
     var tooBig = big.length === 1
       ? big[0].name + ' is larger than ' + mb + ' MB.'
       : big.length > 1 ? big.length + ' files are larger than ' + mb + ' MB.' : '';
-    if (!queue.length) { if (tooBig) msg('campWorkMsg', tooBig, 'err'); return; }
-    if (!state.campaign || !state.campaign.client_id) { msg('campWorkMsg', 'The campaign has no client to file this under.', 'err'); return; }
+    if (!queue.length) { if (tooBig) cardSay(o, tooBig, 'err'); return; }
+    if (!state.campaign || !state.campaign.client_id) { cardSay(o, 'The campaign has no client to file this under.', 'err'); return; }
 
     function show(i, n, file, p, saving) {
       if (!box) return;
@@ -3964,7 +4016,7 @@
         (tooBig ? ' ' + tooBig : '');
       loadOptions();
       /* After the repaint, or the redraw throws the line away. */
-      setTimeout(function () { msg('campWorkMsg', text.trim(), failed.length || tooBig ? 'err' : 'ok'); }, 50);
+      setTimeout(function () { cardSay(o, text.trim(), failed.length || tooBig ? 'err' : 'ok'); }, 50);
     });
   }
 
@@ -3973,6 +4025,11 @@
       var el = card.querySelector('[data-a="' + sel + '"]');
       if (el) el.addEventListener('click', fn);
     };
+    on('addnote', function () {
+      var box = card.querySelector('[data-notes]');
+      box.innerHTML = notesField('');
+      box.querySelector('textarea').focus();
+    });
 
     /* Copied in place, and the button says so for a moment rather than
        opening a bar or a sheet over the card it belongs to. */
@@ -4086,7 +4143,7 @@
     function hideFile(id, hide, what) {
       return db.rpc('campaign_file_hide', { p_file: id, p_hide: hide }).then(function (r) {
         var bad = fileSaid(r, 'Not saved.');
-        if (bad) { msg('campWorkMsg', bad, 'err'); return false; }
+        if (bad) { cardSay(o, bad, 'err'); return false; }
         /* The card is drawn again from what it holds, so the way back lands
            under the files it is about. */
         (state.files[o.id] || []).forEach(function (f) {
@@ -4100,7 +4157,7 @@
           }, host);
         }
         return true;
-      }).catch(function () { msg('campWorkMsg', 'Not saved. Check the connection and try again.', 'err'); });
+      }).catch(function () { cardSay(o, 'Not saved. Check the connection and try again.', 'err'); });
     }
     Array.prototype.forEach.call(card.querySelectorAll('[data-a="hidefile"]'), function (button) {
       button.addEventListener('click', function () {
@@ -4139,7 +4196,7 @@
         var file = button.closest('[data-file]');
         var id = file && file.getAttribute('data-file');
         var what = ((file.querySelector('.filepin-name') || {}).textContent || 'This file').trim();
-        if (!mayPart('campaigns.files_delete', 'work')) { msg('campWorkMsg', 'Not deleted. ' + FILE_SAID.denied, 'err'); return; }
+        if (!mayPart('campaigns.files_delete', 'work')) { cardSay(o, 'Not deleted. ' + FILE_SAID.denied, 'err'); return; }
         window.ADspaceConfirm.ask({
           title: 'Delete this file?',
           body: what + ' leaves this booking. The client approved it. There is no restore.',
@@ -4163,21 +4220,21 @@
         var block = file.closest('.handedin') || file.parentNode;
         db.from('campaign_deliverables').update({ removed_at: new Date().toISOString() })
           .eq('id', id).select('id').then(function (r) {
-            if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+            if (r.error) { cardSay(o, r.error.message, 'err'); return; }
             /* A refused update comes back with no error and no rows, the way a
                refused delete does, so the card would have lost a file the
                database still holds. */
             if (!(r.data || []).length) {
-              msg('campWorkMsg', 'Not removed. The database refused the request.', 'err');
+              cardSay(o, 'Not removed. The database refused the request.', 'err');
               return;
             }
             file.remove();
             undoBar((what ? what.trim() + ' removed.' : 'Submission removed.'), function () {
               db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id).select('id')
                 .then(function (u) {
-                  if (u.error || !(u.data || []).length) msg('campWorkMsg', 'Not restored. The database refused the request.', 'err');
+                  if (u.error || !(u.data || []).length) cardSay(o, 'Not restored. The database refused the request.', 'err');
                   loadOptions();
-                }).catch(function () { msg('campWorkMsg', 'Not restored. Check the connection and try again.', 'err'); });
+                }).catch(function () { cardSay(o, 'Not restored. Check the connection and try again.', 'err'); });
             }, block);
           });
       }
@@ -4198,7 +4255,7 @@
       var mb = (cfg.s3 && cfg.s3.maxUploadMB) || 1024;
       var big = picked.filter(function (f) { return f.size > cap; });
       if (big.length) {
-        msg('campWorkMsg', big.length === 1 ? big[0].name + ' is larger than ' + mb + ' MB.'
+        cardSay(o, big.length === 1 ? big[0].name + ' is larger than ' + mb + ' MB.'
           : big.length + ' files are larger than ' + mb + ' MB.', 'err');
       }
       teamHeld[o.id] = (teamHeld[o.id] || []).concat(picked.filter(function (f) { return f.size <= cap; }));
@@ -4336,10 +4393,10 @@
     if ((to === 'submitted' || to === 'reviewing') && !p.draft_url && !files.length) {
       return 'Draft link or files required.';
     }
-    if (to === 'scheduled' && !p.planned_publish) return 'Publish date required. Set it on the Schedule.';
+    if (to === 'scheduled' && !p.planned_publish) return 'Post date required. Set it on the Schedule.';
     if (to === 'posted') {
-      if (!p.planned_publish) return 'Publish date required. Set it on the Schedule.';
-      if (p.planned_publish > today()) return 'Publish date is ' + niceDate(p.planned_publish) + '.';
+      if (!p.planned_publish) return 'Post date required. Set it on the Schedule.';
+      if (p.planned_publish > today()) return 'Post date is ' + niceDate(p.planned_publish) + '.';
     }
     return '';
   }
@@ -4404,20 +4461,20 @@
     }, function () {
       var done = function () {
         log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
-        msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
+        cardSay(o, name + ': ' + wordFor(to) + '.', 'ok');
         loadOptions();
       };
       if (undo || unapprove) {
         db.rpc(undo ? 'campaign_revert_changes' : 'campaign_revert_approval', { p_option: o.id }).then(function (r) {
           var d = (r && r.data) || {};
-          if (r.error || d.error) { msg('campWorkMsg', reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
+          if (r.error || d.error) { cardSay(o, reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
           done();
-        }).catch(function (e) { msg('campWorkMsg', reviewSaid((e && e.message) || String(e)), 'err'); });
+        }).catch(function (e) { cardSay(o, reviewSaid((e && e.message) || String(e)), 'err'); });
         return;
       }
       db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
-        if (r.error) { msg('campWorkMsg', reviewSaid(r.error.message), 'err'); return; }
-        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (r.error) { cardSay(o, reviewSaid(r.error.message), 'err'); return; }
+        if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
         done();
       });
     });
@@ -4435,11 +4492,11 @@
     }, function () {
       db.rpc('campaign_proceed', { p_option: o.id }).then(function (r) {
         var d = (r && r.data) || {};
-        if (r.error || d.error) { msg('campWorkMsg', reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
+        if (r.error || d.error) { cardSay(o, reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
         log('campaign.review', logSubject(), name + ' \u00b7 Approved internally');
-        msg('campWorkMsg', name + ': ' + wordFor('scheduled') + '.', 'ok');
+        cardSay(o, name + ': ' + wordFor('scheduled') + '.', 'ok');
         loadOptions();
-      }).catch(function (e) { msg('campWorkMsg', reviewSaid((e && e.message) || String(e)), 'err'); });
+      }).catch(function (e) { cardSay(o, reviewSaid((e && e.message) || String(e)), 'err'); });
     });
   }
 
@@ -4471,7 +4528,7 @@
   function sendBooking(o) {
     window.ADspaceWhatsApp.compose({ purpose: 'creator', creatorId: o.creator_id, optionId: o.id,
       campaign: logSubject() || 'Your campaign',
-      onSent: function (d, line) { msg('campWorkMsg', line, 'ok'); } });
+      onSent: function (d, line) { cardSay(o, line, 'ok'); } });
   }
 
   function unbook(o) {
@@ -4484,10 +4541,10 @@
       tone: 'warn'
     }, function () {
       db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).select('id').then(function (r) {
-        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
         log('campaign.unbooked', logSubject(), name);
-        msg('campWorkMsg', name + ' reverted to options.', 'ok');
+        cardSay(o, name + ' reverted to options.', 'ok');
         loadOptions();
       });
     });
@@ -4504,10 +4561,10 @@
       db.from('campaign_options')
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
-          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);
-          msg('campWorkMsg', name + ' reinstated.', 'ok');
+          cardSay(o, name + ' reinstated.', 'ok');
           loadOptions();
         });
     });
@@ -4811,8 +4868,8 @@
     // Leaving `changes` ends that round, so whose it was goes with it.
     if (o.state === 'changes') patch.changes_by = null;
     db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
       if (to !== 'posted') { loadOptions(); return; }
       seedPosts(o, function () { loadOptions(); });
@@ -4873,8 +4930,10 @@
            recessed step (reported 2026-09-27). The platform is read, not a
            field. */
         var num = function (label, key) {
+          /* A count reads with its separators, as a report's figures do
+             (2026-10-22, CMP-16); figIn reads it back. */
           return '<label class="kfield"><span>' + label + '</span><input class="input" data-p="' + key +
-            '" type="number" inputmode="numeric" min="0" value="' + (p[key] == null ? '' : p[key]) + '"></label>';
+            '" data-fig type="text" inputmode="numeric" autocomplete="off" value="' + (p[key] == null ? '' : figOut(p[key])) + '"></label>';
         };
         /* The count period is the team's alone: the creator fills in the
            link and the numbers on their own page, and cannot enter numbers
@@ -4888,7 +4947,7 @@
            never a field (2026-10-14, audit CAMP-1). */
         if (!mayWork()) {
           var facts = [];
-          if (p.published_at) facts.push(['Published', niceDate(p.published_at)]);
+          if (p.published_at) facts.push(['Posted on', niceDate(p.published_at)]);
           if (p.measure_from || p.measure_to) facts.push(['Counted', [p.measure_from, p.measure_to].filter(Boolean).map(niceDate).join(' to ')]);
           ['impressions', 'engagements', 'views'].forEach(function (k) {
             if (p[k] != null) facts.push([k.charAt(0).toUpperCase() + k.slice(1), Number(p[k]).toLocaleString()]);
@@ -4910,7 +4969,7 @@
           '<div class="kfields">' +
             '<label class="kfield kfield-wide"><span>Post link</span>' +
               '<textarea class="input" data-p="post_url" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://">' + esc(p.post_url || '') + '</textarea></label>' +
-            '<label class="kfield"><span>Published</span>' +
+            '<label class="kfield"><span>Posted on</span>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
             '<label class="kfield"><span>Count from</span>' +
               '<input class="input" data-p="measure_from" type="date" value="' + esc(from) + '"></label>' +
@@ -4922,7 +4981,7 @@
              CMP-5: a Posted card drew three); its refusal is said here. */
           saidHtml('post:' + p.id).replace('data-said', 'data-said data-p-msg');
         w.__save = function () {
-          var patch = {}, badLink = null;
+          var patch = {}, badLink = null, badFig = null;
           Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
             var k = i.getAttribute('data-p');
             var v = i.value.trim();
@@ -4931,13 +4990,20 @@
               if (v && !u) badLink = i;
               v = u;
             }
-            patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
+            if (i.hasAttribute('data-fig')) {
+              var n = figIn(v);
+              if (v !== '' && (n === null || n < 0) && !badFig) badFig = i;
+              patch[k] = n;
+              return;
+            }
+            patch[k] = v === '' ? null : v;
           });
           var m = w.querySelector('[data-p-msg]');
           var no = function (t) { m.textContent = t; m.className = 'msg err'; return Promise.resolve(false); };
           /* A post link that is not a web address is refused, never saved as
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
+          if (badFig) { badFig.focus(); return no('Enter a whole number of nought or more.'); }
           if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Count to comes after Count from.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
@@ -4955,9 +5021,17 @@
             return true;
           });
         };
+        Array.prototype.forEach.call(w.querySelectorAll('[data-fig]'), function (i) {
+          i.addEventListener('blur', function () { var n = figIn(i.value); if (n !== null && n >= 0) i.value = figOut(n); });
+        });
         box.appendChild(w);
       });
     });
+  }
+  function figOut(n) { return Number(n).toLocaleString('en-GB', { maximumFractionDigits: 0 }); }
+  function figIn(v) {
+    var x = String(v == null ? '' : v).replace(/[,\s]/g, '');
+    return x === '' || !/^-?\d+$/.test(x) ? null : Number(x);
   }
 
   /* Withdrawn and replaced both end a booking, and they are not the same
@@ -4997,10 +5071,10 @@
       db.from('campaign_options')
         .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
         .eq('id', o.id).select('id').then(function (r) {
-          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
-          msg('campWorkMsg', kind === 'withdrawn'
+          cardSay(o, kind === 'withdrawn'
             ? name + ' withdrawn. The place is open for a replacement.'
             : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
           loadOptions();
@@ -5091,7 +5165,8 @@
       if (cur.querySelector('#invRemove')) cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
       if (cur.querySelector('#invView')) cur.querySelector('#invView').addEventListener('click', function () { openPrivateInvoice(c); });
     } else {
-      cur.innerHTML = '<span class="muted">No PDF</span>';
+      /* The fold's head already says no PDF (2026-10-22, CMP-15). */
+      cur.innerHTML = '';
     }
     msg('invMsg', '');
   }

@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261022x">
-<link rel="stylesheet" href="/css/console.css?v=20261022v">
+<link rel="stylesheet" href="/css/portal.css?v=20261022z">
+<link rel="stylesheet" href="/css/console.css?v=20261022y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1939,6 +1939,7 @@
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
                   <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit</button>
+                  <button class="kmenu-item" id="campLifeItem" type="button" role="menuitem" data-need="campaigns.campaigns:work" hidden></button>
                   <button class="kmenu-item" id="campResetLink" type="button" role="menuitem" data-need="campaigns.campaigns:work">Reset access link</button>
                   <button class="kmenu-item is-danger" id="campDelete" type="button" role="menuitem" data-need="campaigns.campaigns:manage">Delete</button>
                 </div>
@@ -1962,7 +1963,7 @@
                Overview, Schedule and Finance too: three prominent actions on a
                pane whose own primary is Save. It is on that pane now, under
                the list it confirms. -->
-          <div class="row" style="margin-top:12px">
+          <div class="row camp-move">
             <button class="btn btn-go" id="campPublish" data-need="campaigns.campaigns:work" type="button">Publish</button>
           </div>
         </section>
@@ -2126,7 +2127,7 @@
              leaves again if the confirmation is reverted. -->
         <section class="panel panel-collapse" id="invoicePanel" hidden>
           <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <svg class="disclosure-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
             <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
             <span>Invoice</span>
             <span class="muted" id="invoiceSummary">Not issued</span>
@@ -2144,9 +2145,9 @@
             <!-- What is attached now belongs with the field that changes it,
                  above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row acts" id="invActs" data-need="campaigns.finance:work" style="margin-top:12px">
+            <div class="row acts invacts" id="invActs" data-need="campaigns.finance:work">
               <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
-              <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
+              <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="invMsg"></div>
           </div>
@@ -5711,19 +5712,19 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261017"></script>
-<script src="/js/admin.js?v=20261022x"></script>
+<script src="/js/admin.js?v=20261022z"></script>
 <script src="/js/documents.js?v=20261022v"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261022s"></script>
 <script src="/js/reports.js?v=20261022s"></script>
-<script src="/js/register.js?v=20261022x"></script>
+<script src="/js/register.js?v=20261022z"></script>
 <script src="/js/suppliers.js?v=20261022v"></script>
 <script src="/js/bukku.js?v=20261022q"></script>
 <script src="/js/engage.js?v=20261022i"></script>
 <script src="/js/quotes.js?v=20261022q"></script>
 <script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261022p"></script>
-<script src="/js/crm.js?v=20261022x"></script>
+<script src="/js/crm.js?v=20261022z"></script>
 <script src="/js/sales.js?v=20261022t"></script>
 <script src="/js/team.js?v=20261022v"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
@@ -5731,8 +5732,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261022p"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261022s"></script>
-<script src="/js/ops.js?v=20261022x"></script>
+<script src="/js/campaigns.js?v=20261022y"></script>
+<script src="/js/ops.js?v=20261022z"></script>
 <script src="/js/perf.js?v=20261021"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261022v"></script>
