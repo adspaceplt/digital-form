@@ -372,6 +372,14 @@ Deno.serve(async (req) => {
     const contact = body.contact == null || body.contact === '' ? null : Number(body.contact);
     if (contact !== null && !(contact > 0)) return json({ error: 'bad-request' }, 400, origin);
     if (contact === null && p.contact_id) return json({ error: 'linked' }, 200, origin);
+    /* A linked record is sent to its own contact alone, and a contact
+       another record holds is never written over (BE-2, 2026-10-22). */
+    if (contact !== null && p.contact_id && contact !== Number(p.contact_id)) return json({ error: 'linked' }, 200, origin);
+    if (contact !== null && (action === 'send' || action === 'link')) {
+      const free = await db.rpc('bukku_contact_check', { p_kind: kind, p_id: id, p_contact: contact });
+      if (free.error) return json({ error: 'needs-update' }, 200, origin);
+      if (free.data && free.data.error) return json({ error: free.data.error }, 200, origin);
+    }
     const cur = contact ? await bukku('GET', `/contacts/${contact}`).then((r) => r && r.contact)
       .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; }) : null;
     if (contact && !cur) return json({ error: 'bukku-gone' }, 200, origin);
