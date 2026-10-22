@@ -533,7 +533,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   at a desk the groups also run down the left, the one in view marked, a
   press scrolling to its card and naming it in the address (`tab=`, the
   first left out; replaced, never pushed), so a refresh lands on it; it
-  never stands between the person and a row. Each row drawn only for its
+  never stands between the person and a row. At 640 and under (the phone line)
+  the groups are the view strip (`#stgStrip`, `.actstrip.stg-strip`),
+  sticky under the head on the page's ground, scrolling sideways with
+  faded edges; a press scrolls as at a desk and the chosen tab follows the
+  scroll (the user, 2026-10-22, SET2-17: "approve"); never a drill-down. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
   opening the one sheet that already edits it; a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
