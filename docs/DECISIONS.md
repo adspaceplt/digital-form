@@ -5939,3 +5939,19 @@ removes nothing.
   red, size, look and roles.
 - Next: each area's menus onto the helper, with MENU-1 to MENU-3, MENU-5 to
   MENU-10, MENU-12 to MENU-14, MENU-17 to MENU-19.
+
+### 2026-10-22 — Menus: a client's record (release 2 of the menu review)
+The record head's ⋯ follows the standard: Take lead left the ⋯ for a
+button on the head where a lead nobody holds is seen (MENU-3); a lead's ⋯
+offers neither Request feedback on WhatsApp nor Mark account restricted
+(MENU-1), and `wa_compose_prepare` refuses feedback for a lead too
+(`not-client`, `2026-10-22-feedback-asked-of-clients-alone.sql`). Contacts,
+Calls and visits and the service lines draw their ⋯ through
+`ADspaceMenu.items`: Main contact reads Make main contact, Update status
+reads Confirm without letter and is offered only on a line not yet
+confirmed (MENU-14). Built: MENU-1, MENU-3, MENU-14 (these words), MENU-15
+for these menus. Left for the next release (the gate at 22:00Z): MENU-6
+(a request's Reply on its row), MENU-9 (a client letter's ⋯), MENU-12
+(bulk bars hidden at zero), the rest of the areas. `tests/crm.js` now
+restricts an Active client, and `tests/menus.js` measures a menu's
+layout width, not its opening scale.

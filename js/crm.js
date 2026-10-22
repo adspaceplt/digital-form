@@ -1120,12 +1120,14 @@
     var canWork = bandMay(c.stage || 'lead', 'work');
     $('crmEdit').hidden = !canWork;
     $('crmBrandEdit').hidden = !(canWork && mayPart('clients.brand', 'work'));
-    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
+    $('crmClientMenuWrap').hidden = !canWork && !mayPart('clients', 'manage');
     /* Request feedback on WhatsApp (2026-10-09; the composer from
        2026-10-10, js/whatsapp.js): where the feedback template is on, at
        WhatsApp Manage and its Feedback request part, the client read. */
     $('crmFeedback').hidden = true;
-    if (window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
+    /* Feedback is asked of a client, never a lead (MENU-1, 2026-10-22);
+       wa_compose_prepare refuses it there too (`not-client`). */
+    if (bandKey(c.stage) !== 'clients.leads' && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('feedback')) {
       var fbFor = c.id;
       window.ADspaceWhatsApp.on('feedback').then(function (yes) {
         if (!state.client || state.client.id !== fbFor || !yes) return;
@@ -1733,7 +1735,8 @@
     var on = Boolean(c && c.restricted_since);
     var canWork = bandMay((c && c.stage) || 'lead', 'work');
     box.hidden = !on;
-    $('crmRestrictSet').hidden = on || !canWork;
+    // A lead holds no account of ours to restrict (MENU-1).
+    $('crmRestrictSet').hidden = on || !canWork || bandKey((c && c.stage) || 'lead') === 'clients.leads';
     if (!on) return;
     $('crmRestrictWord').textContent = restrictWord(c.restricted_platform) + ' restricted';
     $('crmRestrictText').textContent = ['Since ' + niceDate(c.restricted_since), c.restricted_note].filter(Boolean).join(' · ');
@@ -2266,6 +2269,8 @@
   }
 
   (function wireClientMenu() {
+    var take = $('crmTake');
+    if (take) take.addEventListener('click', function () { takeLead(state.client); });
     var btn = $('crmClientMenuBtn'), menu = $('crmClientMenu');
     if (btn && menu) {
       btn.addEventListener('click', function (e) {
@@ -2282,7 +2287,6 @@
         btn.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a');
         if (a === 'delclient') { openClientDelete(); return; }
-        if (a === 'take') { takeLead(state.client); return; }
         if (a === 'feedback') { askFeedback(state.client); return; }
         if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'vic') { askVic(state.client); return; }
@@ -3604,18 +3608,17 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           (removed
-            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
-              /* The hard delete, once the soft one has been made. Drawn only
-                 where the Contacts part is managed. */
-              '<button class="kmenu-item is-danger" data-a="del" data-need="clients.contacts:manage" type="button"><b>Delete</b></button>'
-            : '<button class="kmenu-item" data-a="edit" data-need="clients.contacts:work" type="button"><b>Edit</b></button>' +
-              (ct.is_primary ? '' :
-                '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
-              (ct.portal_access
-                ? '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
-                  '<button class="kmenu-item" data-a="unportal" type="button"><b>Revoke portal access</b></button>'
-                : '<button class="kmenu-item" data-a="portal" type="button"><b>Enable portal access</b></button>') +
-              '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.contacts:work" type="button"><b>Remove</b></button>') +
+            /* The hard delete, once the soft one has been made, drawn only
+               where the Contacts part is managed. */
+            ? ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore' }],
+                [{ a: 'del', label: 'Delete', need: 'clients.contacts:manage' }]])
+            : ADspaceMenu.items([[],
+                [{ a: 'edit', label: 'Edit', need: 'clients.contacts:work' },
+                 !ct.is_primary && { a: 'primary', label: 'Make main contact' }],
+                [ct.portal_access && { a: 'invite', label: 'Send invitation' }],
+                [],
+                [ct.portal_access ? { a: 'unportal', label: 'Revoke portal access' } : { a: 'portal', label: 'Enable portal access' }],
+                [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -3973,10 +3976,10 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             (removed
-              ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
-                '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.calls:manage" type="button"><b>Delete</b></button>'
-              : '<button class="kmenu-item" data-a="edit" data-need="clients.calls:work" type="button"><b>Edit</b></button>' +
-                '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.calls:work" type="button"><b>Remove</b></button>') +
+              ? ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore' }],
+                  [{ a: 'purge', label: 'Delete', need: 'clients.calls:manage' }]])
+              : ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit', need: 'clients.calls:work' }], [], [], [],
+                  [{ a: 'del', label: 'Remove', need: 'clients.calls:work', attrs: 'data-soft' }]])) +
           '</div>' +
         '</span>' +
       '</div>';
@@ -4515,9 +4518,8 @@
         '<span class="team-act">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="restore" data-need="clients.services:work" type="button"><b>Restore</b></button>' +
-            (state.servicesQuoted && state.servicesQuoted[l.id] ? ''
-              : '<button class="kmenu-item is-danger" data-a="purge" data-need="clients.services:manage" type="button"><b>Delete</b></button>') +
+            ADspaceMenu.items([[], [], [], [], [{ a: 'restore', label: 'Restore', need: 'clients.services:work' }],
+              [!(state.servicesQuoted && state.servicesQuoted[l.id]) && { a: 'purge', label: 'Delete', need: 'clients.services:manage' }]]) +
           '</div>' +
         '</span>';
       wireMenu(row);
@@ -4548,12 +4550,12 @@
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="edit" data-need="clients.services:work" type="button"><b>Edit</b></button>' +
-          /* This overrides a client's service line, not the rate card, so it
-             is Clients at manage and not Services. */
-          (bridge.may && bridge.may('clients', 'manage')
-            ? '<button class="kmenu-item" data-a="force" type="button"><b>Update status</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.services:work" type="button"><b>Remove</b></button>' +
+          /* Confirm without letter overrides a client's service line, not the
+             rate card, so it is Clients at manage and not Services; it is
+             offered only while the line is not yet confirmed (MENU-14). */
+          ADspaceMenu.items([[], [{ a: 'edit', label: 'Edit', need: 'clients.services:work' },
+            bridge.may && bridge.may('clients', 'manage') && l.state !== 'confirmed' && { a: 'force', label: 'Confirm without letter' }],
+            [], [], [], [{ a: 'del', label: 'Remove', need: 'clients.services:work', attrs: 'data-soft' }]]) +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -4573,13 +4575,13 @@
          state as a select over the states a line can hold, and the reason
          beside it, because the reason is what the activity record keeps. */
       window.ADspaceConfirm.ask({
-        title: 'Update status',
+        title: 'Confirm without letter',
         body: 'The state of ' + l.label + ' is set by hand, past the checks the '
             + 'letter normally makes. The reason goes on the activity record.',
-        go: 'Update',
+        go: 'Set state',
         tone: 'warn',
         fields: [
-          { name: 'state', label: 'State', value: l.state,
+          { name: 'state', label: 'State', value: 'confirmed',
             choices: Object.keys(SV_STATE).map(function (k) { return [k, SV_STATE[k][0]]; }) },
           { name: 'why', label: 'Why it is being set by hand', rows: 3,
             placeholder: 'What the checks cannot see.',
