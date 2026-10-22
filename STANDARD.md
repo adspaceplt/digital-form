@@ -616,6 +616,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `tests/take.js` "and says so under it" fails on main as of #718: a task
   taken from Open to take no longer says Yours under its row. Found
   2026-10-22 by the menu review's release 3; My Work's area to settle.
+- `tests/suppliers.js` (Issue document), `tests/team.js` (the hand-over
+  and Delete messages) and `tests/perfui.js` (the review sheet's next
+  line) fail on main as of #723. Found 2026-10-22 by the menu review's
+  release 5; #723's areas to settle.
 
 ### Not built, or waiting on the user
 - Content months derived from a client's Confirmed service lines: declined
