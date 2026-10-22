@@ -7370,10 +7370,11 @@
         /* When a month's report is due, and how far a client's request for
            changes moves a task's due date: an admin's settings (2026-10-05,
            2026-10-06). */
-        if (a === 'reportdue') window.ADspaceAdmin.editSettings({ title: 'Due dates', msg: 'workMsg',
-          keys: [['report_due_days', 'Report: days after the month ends', 'due'],
-                 ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due'],
-                 ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due']] }, $('workMoreBtn'));
+        if (a === 'reportdue') {
+          /* The Settings page's own sheet (2026-10-22, SET2-4): one list. */
+          var dueSheet = window.ADspaceAdmin.SETTING_SHEETS.due;
+          window.ADspaceAdmin.editSettings({ title: dueSheet.title, msg: 'workMsg', keys: dueSheet.keys }, $('workMoreBtn'));
+        }
       });
     }
     // Several at once

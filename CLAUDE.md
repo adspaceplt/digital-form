@@ -516,13 +516,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`; its address falls back for anyone else. Eight groups
+  `ops.numbering`, or Suppliers or WhatsApp at Full Access (2026-10-22,
+  SET2-11); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details form), My
-  Work (Due dates, Priority deadlines, Task numbering), Reports (Meta
+  (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details forms: a
+  client's and a supplier's link alike), My
+  Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
-  (Templates, Sent again), Documents (Document types, Supplier emails at
+  (Templates at WhatsApp Full Access, Sent again: WhatsApp and supplier
+  emails), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
   no row drawn is left out. One page at every width, each group a card under
   its heading, so a setting is the account menu, Settings, then its sheet
@@ -769,7 +772,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     mute line under the field (`.asknote`, its `aria-describedby`).
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
     nothing, never required); a `choices` field marked `seg` is a segment.
-    Focus lands on the first typed field, never a segment or a tick.
+    Focus lands on the first typed field, never a segment or a tick;
+    `focus` names another, and under a finger it lands on the card.
   - A field asked for words (no `type`, no `rows`) is a one-line box
     (`data-oneline`); one whose `match` or seeded `value` is digits stays a
     field with the number keyboard. Enter answers from any field, never
@@ -1230,7 +1234,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   to the figure before a planned change withdraws it (2026-10-20, SET-1)):
   Follow-up limits (the Settings page alone), Tax and terms (the Services
   bar; `ADspaceAdmin.TAX_KEYS`, eight figures in three sections), Due dates
-  (My Work's ⋯: report and revision days), `team.settings`.
+  (My Work's ⋯: report and revision days), `team.settings`. Every sheet is
+  `ADspaceAdmin.SETTING_SHEETS`, read by the Settings rows and every other
+  door alike, so it asks and says the same from each (2026-10-22, SET2-4);
+  it opens on its first figure at a desk and on its card under a finger
+  (`ADspaceConfirm.ask` `focus`, SET2-6), and AI prices has its Settings
+  row alone, never a button in AI usage (SET2-5).
 - `expected_version` refuses a stale write with the current row, and the page
   repaints from it.
 - Row level security is stated one `alter table … enable row level security`

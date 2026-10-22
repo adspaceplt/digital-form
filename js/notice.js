@@ -58,9 +58,11 @@
         '<div class="ann-head"><h4 class="fsec-h">Sent</h4>' +
         '<button class="btn btn-sm" type="button" id="ntcNew">' + PLUS + 'New</button></div>' +
         '<div class="msg" id="ntcMsg" role="status"></div>' +
-        '<div id="ntcList"></div></section></div></div>';
+        '<div id="ntcList"></div></section></div>' +
+      '<div class="sheet-foot"><button class="btn btn-quiet" type="button" data-a="close">Close</button></div></div>';
     document.body.appendChild(list);
     list.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    list.querySelector('[data-a="close"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('ntcNew').addEventListener('click', function () { openNew(); });
     return list;
   }

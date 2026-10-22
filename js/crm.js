@@ -6191,8 +6191,8 @@
      from a day on (2026-10-05). Follow-up limits moved to the Settings
      page's Clients group (2026-10-11). */
   $('svcTax').addEventListener('click', function () {
-    window.ADspaceAdmin.editSettings({ title: 'Tax and terms', msg: 'svcListMsg',
-      keys: window.ADspaceAdmin.TAX_KEYS }, this);
+    var taxSheet = window.ADspaceAdmin.SETTING_SHEETS.tax;
+    window.ADspaceAdmin.editSettings({ title: taxSheet.title, msg: 'svcListMsg', keys: taxSheet.keys }, this);
   });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {
