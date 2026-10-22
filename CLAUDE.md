@@ -1974,6 +1974,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     2026-10-13); a line a letter quoted stays (`client_document_services`
     restricts it) and offers no Delete.
   - `detail` and `min_months` are seeded from the rate card and stay editable.
+  - A line is chosen, never preselected (Choose a service), opens on To
+    quote for a client at Proposal sent or Active, and takes no term where
+    its unit is not by the month; for a client billed in S$ the card's RM
+    is turned at `fx_sgd` to the cent and the rate reads Rate (S$), left
+    empty while no rate is set; its term percentage is the live version's,
+    as a quotation's (2026-10-22, SL-1, SL-3, SL-5 to SL-7).
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
   - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–17,
@@ -4910,6 +4916,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   price on a line is changed where it is read (`ADspaceAsk.rename`, empty is
   On quote), into the draft as the sheet's Save is.
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
+- A line's key is its slug, made from its name: a name already on the card
+  is refused as such ("A service with this name is already on the card."),
+  the SKU's own clash as the SKU's; Set inactive, Save and Delete repaint
+  the list from the row as written, a new line reading the card alone
+  (2026-10-22, SVC2-1, SVC2-7).
 - A line carries its Bukku item code (`services.sku`,
   `2026-10-15-service-sku.sql`; the user, 2026-10-15): typed in the line's
   sheet beside Category (letters, digits and . _ / -, 40 at most,
@@ -4972,7 +4983,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   KOL management fee's tiers, an add-on's group on the card.
 - Quotations (`js/quotes.js`, `js/quotepdf.js`,
   `2026-10-14-quotations.sql`; the user, 2026-10-13: a quotation sent is
-  honoured, and a client may hold several): one calculation,
+  honoured, and a client may hold several; the totals' rows on Build
+  quote, the PDF and `/quote/` are `ADspaceMoney.quoteRows`, one copy,
+  each page its own words, 2026-10-22, QT-4): one calculation,
   `quote_price(snapshot, selection)`, its totals worked by
   `quote_totals(lines, term, pct, sst)`, which `quote_adjust` and
   `issue_letter`'s quotation branch call too, never a copy of their own

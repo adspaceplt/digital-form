@@ -497,22 +497,15 @@
   function sstOn(tt) { return window.ADspaceMoney.sstApplies(tt.sst_pct); }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function totalsRows(tt) {
-    var r = [], own = tt.month && ownMonths(tt), w = t(), on = sstOn(tt);
+    /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
+    var w = t(), on = sstOn(tt);
     var sst = on ? f(w.sst, { p: tt.sst_pct }) : w.sstNone;
-    if (tt.month) {
-      var o = tt.once || {};
-      r.push([w.monthSub, n2(tt.month.subtotal)]);
-      if (Number(tt.term_pct)) r.push([f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }), n2(tt.month.term)]);
-      if (own) {
-        if (tt.once) r.push([w.onceSub, n2(o.subtotal)]);
-        if (on) r.push([w.firstExcl, n2(sum2(tt.month.excl, o.subtotal))]);
-        r.push([sst, n2(sum2(tt.month.sst, o.sst))], [word(tt, 'first'), qc() + ' ' + n2(firstIncl(tt)), 1]);
-      } else {
-        if (on) r.push([w.monthExcl, n2(tt.month.excl)]);
-        r.push([sst, n2(tt.month.sst)], [word(tt, 'monthly'), qc() + ' ' + n2(tt.month.incl), 1]);
-      }
-    }
-    if (tt.once && !own) r.push([w.onceSub, n2(tt.once.subtotal)], [sst, n2(tt.once.sst)], [word(tt, 'oneOff'), qc() + ' ' + n2(tt.once.incl), 1]);
+    var WORD = { monthSub: w.monthSub, onceSub: w.onceSub, firstExcl: w.firstExcl, monthExcl: w.monthExcl, sst: sst,
+      first: word(tt, 'first'), monthly: word(tt, 'monthly'), oneOff: word(tt, 'oneOff') };
+    var r = window.ADspaceMoney.quoteRows(tt, Q && Q.lines, on).map(function (x) {
+      var label = x[0] === 'term' ? f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }) : WORD[x[0]];
+      return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
+    });
     return r;
   }
   function paintQuote() {

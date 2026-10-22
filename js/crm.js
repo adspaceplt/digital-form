@@ -1034,6 +1034,27 @@
   });
 
   // ---- One client ---------------------------------------------------------
+  /* The record's Details: repainted alone when a service line moves the
+     value (2026-10-22, SL-4). */
+  function paintFacts(c) {
+    var mk = MON.market(MON.curOf(c));
+    /* Person in charge has moved to the identity line and Added to Key dates,
+       so neither is stated twice: a rail that repeats the head is a rail
+       nobody reads. */
+    $('crmFacts').innerHTML = [
+      /* Null is Not set; every value is typed text, so it is always escaped
+         (a stored Industry reading <span… once drew as markup). */
+      ['Client ID', c.client_code || null],
+      ['Source',   c.source ? sourceWord(c.source) : null],
+      ['Industry', c.industry || null],
+      ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
+      ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],
+      ['To commence', c.commence ? commenceWord(c.commence) : null]
+    ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
+      return '<div><dt>' + f[0] + '</dt><dd>' +
+        (f[1] == null ? '<span class="muted">Not set</span>' : esc(f[1])) + '</dd></div>';
+    }).join('');
+  }
   function openClient(c, restoring) {
     if ($('crmListMsg')) $('crmListMsg').textContent = '';
     /* Re-opening the same record is a repaint, not a navigation: logging a
@@ -1121,23 +1142,7 @@
 
     paintIdentity(c);
 
-    var mk = MON.market(MON.curOf(c));
-    /* Person in charge has moved to the identity line and Added to Key dates,
-       so neither is stated twice: a rail that repeats the head is a rail
-       nobody reads. */
-    $('crmFacts').innerHTML = [
-      /* Null is Not set; every value is typed text, so it is always escaped
-         (a stored Industry reading <span… once drew as markup). */
-      ['Client ID', c.client_code || null],
-      ['Source',   c.source ? sourceWord(c.source) : null],
-      ['Industry', c.industry || null],
-      ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
-      ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],
-      ['To commence', c.commence ? commenceWord(c.commence) : null]
-    ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
-      return '<div><dt>' + f[0] + '</dt><dd>' +
-        (f[1] == null ? '<span class="muted">Not set</span>' : esc(f[1])) + '</dd></div>';
-    }).join('');
+    paintFacts(c);
     paintSuppliers(c, !same || restoring);
 
     /* The journey is the Timeline's, stated once: it was a mute line here as
@@ -1581,7 +1586,7 @@
     if (!rows.length) {
       return ovSection('Services', 'services', 'Manage services',
         ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired.' : ' lines enquired.')
-                          : 'No services.'));
+                          : 'No service lines.'));
     }
     var body = '<div class="ovtable">' +
       '<div class="ovhead ovrow-svc"><span>Service</span><span>Details</span><span>Amount</span><span>State</span></div>' +
@@ -4346,7 +4351,7 @@
         return m ? ((m.salutation ? m.salutation + ' ' : '') + (m.name || '')).trim() : '';
       })(),
       reload: function (done) { loadQuotes(done); },
-      offer: function (ids) { loadServices(function () { openPick(ids); }); },
+      offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); },
       /* A website quotation's billing (2026-10-14) fills the Billing sheet
          where the record holds nothing yet; Save keeps it as any edit. */
       billing: function (b, opener) {
@@ -4419,7 +4424,9 @@
     box.innerHTML = '';
     if (!rows.length && !(showRemovedServices && gone.length)) {
       // The enquiry as typed at intake stands in until a line is added.
-      box.innerHTML = '<div class="empty">' + (c.deal_note ? esc(c.deal_note) : 'No services.') + '</div>';
+      /* Named as the list is (2026-10-22, SL-10); its way out is the head's
+         Add service, offered once on the screen. */
+      box.innerHTML = '<div class="empty">' + (c.deal_note ? esc(c.deal_note) : 'No service lines.') + '</div>';
     } else {
       var table = document.createElement('div');
       table.className = 'crm-table';
@@ -4574,6 +4581,20 @@
     return (live.snapshot.services || []).filter(function (s) { return have[s.slug]; });
   }
   function pickById(slug) { return pickList().filter(function (s) { return s.slug === slug; })[0]; }
+  /* A client billed in S$ is priced in S$ from the card's RM at the rate set
+     in Tax and terms, to the cent; with no rate set the rate is left for the
+     team to type (2026-10-22, SL-1). Null where the client is billed in RM;
+     0 where it is billed in S$ and no rate is set. */
+  function svFx() {
+    if (MON.curOf(state.client) !== 'SG') return null;
+    return Number(MON.setting('fx_sgd')) || 0;
+  }
+  function svRateOf(rate) {
+    var fx = svFx();
+    if (rate == null) return null;
+    if (fx === null) return Number(rate);
+    return fx ? Math.round(Number(rate) / fx * 100) / 100 : null;
+  }
   function fillServicePick() {
     var groups = {};
     pickList().filter(function (s) { return s.active !== false; }).forEach(function (s) {
@@ -4582,10 +4603,13 @@
     var cats = CATS.concat(Object.keys(groups).filter(function (k) { return CATS.indexOf(k) < 0; }));
     $('svPick').innerHTML = cats.filter(function (k) { return groups[k]; }).map(function (k) {
       return '<optgroup label="' + esc(k) + '">' + groups[k].map(function (s) {
+        var r = svRateOf(s.rate);
         return '<option value="' + esc(s.slug) + '">' + esc(s.name) +
-          (s.rate != null ? ' · ' + MON.money(s.rate, 'MY') : '') + '</option>';
+          (r != null ? ' · ' + MON.money(r, svFx() === null ? 'MY' : 'SG') : '') + '</option>';
       }).join('') + '</optgroup>';
     }).join('') + '<option value="custom">Custom</option>';
+    /* A service is chosen, never preselected (2026-10-22, SL-5). */
+    $('svPick').insertAdjacentHTML('afterbegin', '<option value="">Choose a service</option>');
   }
   function syncPick(fill) {
     var slug = $('svPick').value;
@@ -4594,7 +4618,9 @@
     /* Prefilled, not fixed: the catalogue seeds the price, the term and what
        the package includes, and the line keeps its own copy from there. */
     if (fill && s) {
-      $('svRate').value = s.rate != null ? Number(s.rate) : '';
+      var r = svRateOf(s.rate);
+      $('svRate').value = r != null ? r : '';
+      if (s.rate != null && svFx() === 0) msg('svMsg', 'Set the Singapore dollar rate in Tax and terms.', 'warn');
       $('svTenure').value = Math.max(1, Number(s.min_months || 1));
       $('svDetail').value = s.detail || '';
     }
@@ -4616,9 +4642,19 @@
   /* `typing` is the person editing the field itself: the word follows and
      the figure is left alone, or clearing it to type a new one would refill
      it under their cursor. */
+  /* The term's percentage as the live rate card version holds it, as a
+     quotation reads it (2026-10-22, SL-3): 18 months takes 12's on a version
+     published before it had its own; with no version, today's setting. */
+  function cardPct(months) {
+    var set = live && live.snapshot && live.snapshot.settings;
+    var key = MON.termKey(months);
+    if (!set || !key) return MON.termPct(months);
+    var v = set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : null;
+    return v == null ? MON.termPct(months) : Number(v);
+  }
   function syncAdjust(typing) {
     var months = Number(val('svTenure') || 1);
-    var card = MON.termPct(months);
+    var card = cardPct(months);
     var cur = svPctValue();
     /* The field follows the card while it still holds the card's own figure
        for the term it was filled for; a figure of the person's own stays. */
@@ -4627,7 +4663,13 @@
       svPctCard = card;
     }
     var adj = MON.termAdj(months, svPctValue());
-    $('svAdjRow').hidden = !adj && !card;
+    /* A term adjusts a monthly line alone: a line whose unit is not by the
+       month (One-off) takes none, as a quotation keeps it at 0% (2026-10-22,
+       SL-7). A custom line with no unit keeps the choice. */
+    var pk = pickById($('svPick').value);
+    var unit = pk ? pk.unit : ($('svPick').value === 'custom' && editingService ? editingService.unit : '');
+    var monthly = !unit || /month/i.test(unit);
+    $('svAdjRow').hidden = !monthly || (!adj && !card);
     /* The words name the kind alone; the figure is the field's (the user,
        2026-10-15: "just show the numbers changed"). */
     if (adj) $('svAdjustWord').textContent = 'Apply ' + adj.replace(/^[^A-Za-z]*%\s*/, '');
@@ -4641,9 +4683,10 @@
     liveRead = false;
     loadCatalog(function () { loadLive(function () {
       fillServicePick();
-      $('crmServiceTitle').textContent = l ? 'Edit service' : 'New service';
-      var first = $('svPick').options[0] ? $('svPick').options[0].value : 'custom';
-      $('svPick').value = l ? (l.service_slug && pickById(l.service_slug) ? l.service_slug : 'custom') : first;
+      $('crmServiceTitle').textContent = l ? 'Edit service line' : 'New service line';
+      $('svPick').value = l ? (l.service_slug && pickById(l.service_slug) ? l.service_slug : 'custom') : '';
+      /* The rate in the currency the client is billed in (SL-1). */
+      document.querySelector('label[for="svRate"]').textContent = 'Rate (' + (svFx() === null ? 'RM' : 'S$') + ')';
       $('svLabel').value = l ? (l.label || '') : '';
       $('svQty').value = l ? Number(l.qty || 1) : 1;
       $('svRate').value = l ? Number(l.rate || 0) : '';
@@ -4653,7 +4696,10 @@
       var fixed = Boolean(l && l.state === 'confirmed');
       $('svStateRow').hidden = fixed;
       $('svStateFixed').hidden = !fixed;
-      $('svState').value = l && !fixed ? (l.state || 'enquired') : 'enquired';
+      /* A new line opens on To quote once the client is past enquiring
+         (Proposal sent, Active; 2026-10-22, SL-6). */
+      var c0 = state.client || {};
+      $('svState').value = l && !fixed ? (l.state || 'enquired') : (c0.stage === 'proposal' || c0.stage === 'active' ? 'quoted' : 'enquired');
       $('svTenure').value = l ? Math.max(1, Number(l.tenure || 1)) : 1;
       $('svStart').value = l ? (l.start_on || '') : '';
       $('svDetail').value = l ? (l.detail || '') : '';
@@ -4665,7 +4711,7 @@
       /* A line already holding a percentage shows it; one from before the
          percentage existed shows the factor it was quoted at as a
          percentage, so the figure it prints is the figure on its letter. */
-      svPctCard = l ? MON.termPct(l.tenure) : null;
+      svPctCard = l ? cardPct(l.tenure) : null;
       if (l && l.term_pct !== null && l.term_pct !== undefined) {
         $('svPct').value = String(l.term_pct);
       } else if (l && l.term_adjust !== false && MON.termFactor(l.tenure) !== 1) {
@@ -4706,6 +4752,7 @@
   $('svCancel').addEventListener('click', shutService);
   $('svSave').addEventListener('click', function () {
     var slug = $('svPick').value;
+    if (!slug) { msg('svMsg', 'Choose a service.', 'err'); $('svPick').focus(); return; }
     var s = pickById(slug);
     var label = slug === 'custom' ? val('svLabel') : (s ? s.name : '');
     if (!label) { msg('svMsg', 'A name is required.', 'err'); $('svLabel').focus(); return; }
@@ -4738,12 +4785,18 @@
     if (!(editingService && editingService.state === 'confirmed')) row.state = $('svState').value;
     if (editingService) { saveService(editingService, row); return; }
     row.client_id = state.client.id;
-    db.from('client_services').insert(row).then(function (r) {
+    /* One press, one line: Save rests while the insert is out, and an
+       answer with no row is named (2026-10-22, SL-2). */
+    var go = $('svSave');
+    go.disabled = true;
+    db.from('client_services').insert(row).select('id').then(function (r) {
+      go.disabled = false;
       if (r.error) { msg('svMsg', svSaid(r.error), 'err'); return; }
+      if (!(r.data || []).length) { msg('svMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log('client.service', state.client.name, label + ' · ' + SV_STATE[row.state][0]);
       shutService();
       syncValue();
-    });
+    }).catch(function () { go.disabled = false; msg('svMsg', 'Not saved. Please try again.', 'err'); });
   });
   /* A line moved into Confirmed by hand is refused by the database
      (client_services_confirm_guard): said in the team's words. */
@@ -4768,23 +4821,29 @@
   }
   /* The confirmed total, else the quoted total, is the client's value. */
   function syncValue() {
-    db.from('client_services').select('*').eq('client_id', state.client.id).is('archived_at', null)
+    var cl = state.client;
+    db.from('client_services').select('*').eq('client_id', cl.id).is('archived_at', null)
       .then(function (r) {
+        if (r.error) throw r.error;
         var rows = r.data || [];
         var sum = function (st) {
           return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
         };
         var v = sum('confirmed') || sum('quoted') || null;
         var was = state.client.deal_value == null ? null : Number(state.client.deal_value);
+        /* The lines and the record's figures are read again in place, never
+           the whole record (2026-10-22, SL-4). */
         var done = function () {
-          state.client.deal_value = v;
-          var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
+          if (state.client !== cl) return;
+          cl.deal_value = v;
+          var mine = state.clients.filter(function (x) { return x.id === cl.id; })[0];
           if (mine) mine.deal_value = v;
-          openClient(state.client);
+          paintFacts(cl);
+          loadServices();
         };
         if (v === was) { done(); return; }
-        db.from('clients').update({ deal_value: v }).eq('id', state.client.id).then(done, done);
-      });
+        return db.from('clients').update({ deal_value: v }).eq('id', cl.id).then(done);
+      }).catch(function () { if (state.client === cl) loadServices(); });
   }
 
   // ---- Requests from the portal ---------------------------------------------
@@ -5272,9 +5331,12 @@
       i.addEventListener('change', pickSum);
     });
     pickSum();
-    $('pickSheet').hidden = false;
-    var first = $('pickBody').querySelector('input:not([disabled])');
-    if (first) first.focus();
+    /* Opened and shut through js/sheet.js (2026-10-22, QT-3): the focus held
+       in it and handed back, Escape, and a press outside that never throws
+       away a typed reference. Read again in place while it is open. */
+    if (!window.ADspaceSheet.isOpen($('pickSheet'))) {
+      window.ADspaceSheet.show($('pickSheet'), { opener: document.activeElement, onClose: pickClosed });
+    }
   }
 
   function pickAgain(ids, said) {
@@ -5308,25 +5370,30 @@
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
     var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes, renewal) : null;
-    $('pickSum').textContent = rows.length
-      ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, MON.curOf(c))
-      : 'Nothing chosen';
+    /* Lines all from one quotation read as the quotation reads, its own
+       figure and term, never the letter's whole total (2026-10-22, QT-1). */
+    var qid = rows.length && rows[0].quotation_id;
+    var q = qid && rows.every(function (l) { return l.quotation_id === qid; }) && window.ADspaceQuotes && window.ADspaceQuotes.headline
+      ? (state.quotes || []).filter(function (x) { return x.id === qid; })[0] : null;
+    var h = q ? window.ADspaceQuotes.headline(q) : null;
+    $('pickSum').textContent = !rows.length ? 'Nothing chosen'
+      : h && h[1] ? h[0] + ' ' + h[1].charAt(0).toLowerCase() + h[1].slice(1) + (q.totals && q.totals.month && q.totals.term ? ' · ' + q.totals.term + ' months' : '')
+      : rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, MON.curOf(c));
     $('pickGo').disabled = !rows.length;
   }
 
-  function shutPick() {
-    $('pickSheet').hidden = true;
+  function pickClosed() {
     picking = null;
     $('pickGo').disabled = false;
     $('pickGo').textContent = 'Issue letter';
   }
+  function shutPick() {
+    if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
+    else { $('pickSheet').hidden = true; pickClosed(); }
+  }
   wireLetterSheets();
   $('pickClose').addEventListener('click', shutPick);
   $('pickCancel').addEventListener('click', shutPick);
-  $('pickSheet').addEventListener('click', function (e) { if (e.target === this) shutPick(); });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !$('pickSheet').hidden) shutPick();
-  });
 
   $('crmCover').addEventListener('click', function () { if (DOCS) openPick(); });
   /* The quotation cover and the letters to a client are issued from the same
@@ -5564,12 +5631,14 @@
   function publishCard(btn, d) {
     var parts = [];
     var lines = Object.keys(d.lines).length, words = Object.keys(d.words).length;
-    if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's'));
+    /* "2 lines and 1 block of wording changed." (2026-10-22, SVC2-6). */
+    if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's') + ' changed');
     if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
-    if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording');
+    if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording changed');
+    var said = parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
     window.ADspaceConfirm.ask({
       title: 'Publish the rate card',
-      body: (parts.length ? parts.join(', ') + ' change. ' : '') +
+      body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '. ' : '') +
         'Quotes, client service lines and the export use this version from now on.',
       go: 'Publish', wait: true,
       fields: [
@@ -5605,7 +5674,9 @@
         route: 'services', key: key, name: pg, count: blocks.length,
         shut: GRP.shut('services', key, false),
         table: function () {
-          var table = GRP.table('svc-row cat-row rcw-row', ['Wording', { text: '', cls: 'svc-rate' }, { text: '', cls: 'svc-unit' }, '']);
+          /* Words have no price: the row is the block and its pen, the
+             Changed tag after its name (2026-10-22, SVC2-8). */
+          var table = GRP.table('svc-row cat-row rcw-row', ['Wording', '']);
           blocks.forEach(function (b) {
             var row = document.createElement('div');
             row.className = 'svc-row cat-row rcw-row';
@@ -5613,9 +5684,8 @@
                stores a table; the row reads them as words (ux-audit SVC-6). */
             var first = String(b.value || '').split('\n')[0].split(/\s*\|\s*/).join(' · ');
             var named = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
-            row.innerHTML = '<span class="svc-name"><b>' + esc(named) + '</b><small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
-              '<span class="svc-rate">' + (d.words[b.key] ? '<span class="chip">' + d.words[b.key] + '</span>' : '') + '</span>' +
-              '<span class="svc-unit"></span>' +
+            row.innerHTML = '<span class="svc-name"><b>' + esc(named) + (d.words[b.key] ? ' <span class="chip">' + d.words[b.key] + '</span>' : '') + '</b>' +
+              '<small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
               /* Edit is the row's one act, its pen on the row, never a ⋯ of
                  one item (2026-10-20, SVC-1). */
               '<span class="team-act">' + (maySvc()
@@ -6128,46 +6198,57 @@
 
     db.from('client_services').select('id').eq('service_slug', s.slug).is('archived_at', null).then(function (q) {
       if (q.error) { msg('svcListMsg', q.error.message, 'err'); return; }
-      var n = (q.data || []).length;
-      if (n) {
-        msg('svcListMsg', s.name + ' is on ' + n + ' client service line' + (n === 1 ? '' : 's') +
-            '. Remove those lines first.', 'warn');
-        return;
-      }
-      /* A line the live version still offers is quoted from until the next
-         version goes live without it. */
-      var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
-      if (liveRow && liveRow.active !== false) {
-        msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
-        return;
-      }
-      window.ADspaceConfirm.ask({
-        title: 'Delete',
-        body: s.name + ' leaves the rate card and cannot be quoted again. There is '
-            + 'no restore. Letters already issued keep the line as it was written.',
-        go: 'Delete',
-        tone: 'danger',
-        field: { label: 'Type the service name to confirm', placeholder: s.name, match: s.name, need: 'Type the service name to confirm.', mismatch: 'The service name does not match.' }
-      }, function () {
-        db.from('services').delete().eq('slug', s.slug).select('slug').then(function (r) {
-          if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) { msg('svcListMsg', 'Not deleted. The database refused the request.', 'err'); return; }
-          log('service.deleted', s.name, s.category || '');
-          enterServices();
-          msg('svcListMsg', 'Deleted.', 'ok');
-        });
-      });
+      purgeAsk(s, q);
+    }).catch(function () { msg('svcListMsg', 'Not deleted. Please try again.', 'err'); });
+  }
+  function purgeAsk(s, q) {
+    var n = (q.data || []).length;
+    if (n) {
+      msg('svcListMsg', s.name + ' is on ' + n + ' client service line' + (n === 1 ? '' : 's') +
+          '. Remove those lines first.', 'warn');
+      return;
+    }
+    /* A line the live version still offers is quoted from until the next
+       version goes live without it. */
+    var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
+    if (liveRow && liveRow.active !== false) {
+      msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
+      return;
+    }
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: s.name + ' leaves the rate card and cannot be quoted again. There is '
+          + 'no restore. Letters already issued keep the line as it was written.',
+      go: 'Delete',
+      tone: 'danger',
+      field: { label: 'Type the service name to confirm', placeholder: s.name, match: s.name, need: 'Type the service name to confirm.', mismatch: 'The service name does not match.' }
+    }, function () {
+      db.from('services').delete().eq('slug', s.slug).select('slug').then(function (r) {
+        if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('svcListMsg', 'Not deleted. The database refused the request.', 'err'); return; }
+        log('service.deleted', s.name, s.category || '');
+        /* Taken off the list as read, never the whole page read again
+           (2026-10-22, SVC2-7). */
+        catalog = (catalog || []).filter(function (x) { return x.slug !== s.slug; });
+        paintServicesPage();
+        msg('svcListMsg', 'Deleted.', 'ok');
+      }).catch(function () { msg('svcListMsg', 'Not deleted. Please try again.', 'err'); });
     });
   }
+  /* A line set inactive or active is changed where it stands, the list
+     repainted from the row as written (2026-10-22, SVC2-7). */
   function patchSvc(s, patch, action) {
     db.from('services').update(patch).eq('slug', s.slug).select('slug').then(function (r) {
       if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('svcListMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(action, s.name, '');
-      enterServices();
-    });
+      Object.keys(patch).forEach(function (k) { s[k] = patch[k]; });
+      paintServicesPage();
+    }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
   }
   function openSvc(s) {
+    /* The row's ⋯ shuts before the sheet opens over it (SVC2-2). */
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     editingSvc = s || null;
     $('svcCat').innerHTML = CATS.map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('');
     $('svcTitle').textContent = s ? 'Edit service' : 'New service';
@@ -6209,11 +6290,20 @@
     var row = { category: $('svcCat').value, name: name, sku: sku || null,
                 rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null,
                 min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null, spec: sp.spec };
+    /* One press, one write: Save rests while it is out (2026-10-22,
+       SVC2-1). A duplicate is named by what clashed: the SKU's own index,
+       else the name the line's key is made from. */
+    var go = $('svcSave');
+    go.disabled = true;
     var after = function (r) {
+      go.disabled = false;
       if (r.error) {
-        var dup = /services_sku_idx|duplicate key/i.test(r.error.message || '');
-        msg('svcMsg', dup ? 'That SKU is already on another line.' : r.error.message, 'err');
-        if (dup) $('svcSku').focus();
+        var m = r.error.message || '';
+        if (/services_sku_idx/i.test(m)) { msg('svcMsg', 'That SKU is already on another line.', 'err'); $('svcSku').focus(); return; }
+        if (/duplicate key|services_pkey|23505/i.test(m) || r.error.code === '23505') {
+          msg('svcMsg', 'A service with this name is already on the card.', 'err'); $('svcName').focus(); return;
+        }
+        msg('svcMsg', m || 'Not saved.', 'err');
         return;
       }
       if (!(r.data || []).length) { msg('svcMsg', 'Not saved. The database refused the request.', 'err'); return; }
@@ -6222,15 +6312,21 @@
             [['category', 'Category'], ['name', 'Name'], ['sku', 'SKU'], ['rate', 'Rate'], ['unit', 'Unit'],
             ['min_months', 'Minimum months'], ['detail', 'Inclusions'], ['spec', 'In quotes']])
         : row.category);
+      var was = editingSvc;
       shutSheet('svcBox'); editingSvc = null;
-      enterServices();
+      /* An edit is repainted from the row as written; a new line reads the
+         rate card again, nothing else (SVC2-7). */
+      if (was) { Object.keys(row).forEach(function (k) { was[k] = row[k]; }); paintServicesPage(); return; }
+      catalog = null;
+      loadCatalog(function () { paintServicesPage(); });
     };
-    if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).select('slug').then(after); return; }
+    var failed = function () { go.disabled = false; msg('svcMsg', 'Not saved. Please try again.', 'err'); };
+    if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).select('slug').then(after).catch(failed); return; }
     row.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('svc-' + Date.now());
     row.position = (catalog || []).length
       ? Math.max.apply(null, catalog.map(function (s) { return Number(s.position || 0); })) + 1 : 1;
     row.active = true;
-    db.from('services').insert(row).select('slug').then(after);
+    db.from('services').insert(row).select('slug').then(after).catch(failed);
   });
 
   // ---- Entry --------------------------------------------------------------
