@@ -3400,8 +3400,8 @@
             <span class="cmdbar-count" id="regCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm" id="regAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
-            <button class="btn btn-sm" id="regTypes" type="button" data-need="register.types:work" hidden>Document types</button>
+            <button class="btn btn-sm" id="regAdd" type="button" data-g="2" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
+            <button class="btn btn-sm" id="regTypes" type="button" data-need="register.types:work" data-rare data-g="2" hidden>Document types</button>
             <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           </span>
         </span>
@@ -3617,7 +3617,7 @@
           </span>
           <span class="cmdbar-acts">
             <!-- The primary at the bar's right edge (2026-10-20, TEAM-10). -->
-            <button class="btn btn-sm" id="groupCompare" type="button">Compare groups</button>
+            <button class="btn btn-sm" id="groupCompare" type="button" data-rare data-g="1">Compare groups</button>
             <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
           </span>
         </span>
@@ -4954,7 +4954,7 @@ raya-2026        https://example.com/raya"></textarea>
             <span class="cmdbar-count" id="linkCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-quiet" id="showImport" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+            <button class="btn btn-sm" id="showImport" data-need="links:work" data-rare data-g="2" type="button">Bulk import</button>
             <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </span>
         </span>
@@ -5282,10 +5282,14 @@ raya-2026        https://example.com/raya"></textarea>
           <input class="input" id="docSigRole" placeholder="Account Manager"></div>
       </div>
       </section>
+      <!-- Preview reads the letter as it stands; it is no commit, so it sits
+           under the letter's fields, never in the foot (DOC-6, 2026-10-22). -->
+      <div class="doc-preview-row">
+        <button class="btn btn-sm btn-icon" id="docPreview" type="button">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
+      </div>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-primary" id="docGo" type="button">Issue</button>
-      <button class="btn btn-icon" id="docPreview" type="button">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></button>
       <button class="btn btn-quiet" id="docCancel" type="button">Cancel</button>
     </div>
     <div class="msg" id="docMsg"></div>
