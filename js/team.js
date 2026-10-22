@@ -40,6 +40,9 @@
     /* An act pressed on a colleague's record answers on the record's own
        line, never the list's out of sight (TEAM-3, 2026-10-22). */
     if (id === 'teamMsg' && rec.id && $('mrecMsg') && !$('teamRec').hidden) id = 'mrecMsg';
+    /* The record repaints after the read an act starts, so what it said is
+       kept for its next paint (`rec.said`). */
+    if (id === 'mrecMsg') rec.said = text ? { id: rec.id, text: text, kind: kind } : null;
     var el = $(id); if (!el) return;
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
     clearTimeout(msgTimers[id]);
@@ -2017,6 +2020,11 @@
       }).join('') + '</nav>' : '') +
       '<div class="msg" id="mrecMsg"></div>' +
       '<div class="mrec-pane" id="mrecPane" data-narrow="640"></div>';
+    if (rec.said && rec.said.id === m.id) {
+      var said = rec.said;
+      msg('mrecMsg', said.text, said.kind);
+      rec.said = null;
+    }
     var head = box.querySelector('.rec-ctl');
     wireActs(head, m);
     box.querySelector('[data-r="back"]').addEventListener('click', closeRec);
