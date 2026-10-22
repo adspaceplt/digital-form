@@ -2623,6 +2623,7 @@ button.aiu-row:first-child::before { content: none; }
 .ba-fold-sum { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ba-fold-chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .ba-fold.is-open .ba-fold-chev { transform: rotate(90deg); }
+.ba-fold.is-open .ba-fold-sum { display: none; }
 .ba-fold-body { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease), visibility var(--t-slow); }
 .ba-fold.is-open .ba-fold-body { grid-template-rows: 1fr; opacity: 1; }
 .ba-fold-in { overflow: hidden; min-height: 0; }
