@@ -6181,6 +6181,15 @@ for these menus. Left for the next release (the gate at 22:00Z): MENU-6
 (bulk bars hidden at zero), the rest of the areas. `tests/crm.js` now
 restricts an Active client, and `tests/menus.js` measures a menu's
 layout width, not its opening scale.
+### 2026-10-22 — The Dashboard lists a piece of work once (release 3 of the work review)
+The user, 2026-10-22: "Fix all". Built: OVW-3 (Needs attention listed the
+month's late report task beside its owed report, and a paused client's late
+task under both Late tasks and Urgent delivery; one row each now, carried
+by the task's id) and OVW-4 (the signal counted reports owed without those
+in review while the tile counted them: 6 beside 7; both count every report
+not published). Not built before the 2026-10-23 gate: OVW-5, OVW-M1 (it
+reopens the 2026-10-12 order; "Fix all" supersedes it), WRK-13, WRK-15,
+WRK-M1, and OVW-7's shared cold-lead rule.
 
 ### 2026-10-22 — Menus: a client's requests and letters, the Register, the bulk bars (release 3 of the menu review)
 A request's Reply stands on its row as a small button (MENU-6). A client
