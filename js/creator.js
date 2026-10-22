@@ -28,11 +28,11 @@
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
   var KEY = 'adspace-creator';
+  /* The bar names the creator only once their code has opened the page;
+     until then it reads nothing, never "Prepared for …" (CP-1). */
+  (function () { var f = $('clientFor'); if (f) f.hidden = true; })();
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   /* A link with a scheme is drawn only on http or https: the team writes a
      post link from the console, and `javascript:` there ran on a press
@@ -134,7 +134,7 @@
       noneText: '合作确认后将显示在此处。',
       signOut: '退出此设备',
       shootOn: '拍摄', deliveryOn: '寄送', goLive: '发布日期',
-      draftDue: '作品截止', dueToday: '今天截止', overdue: '已逾期 {n}', dueIn: '{n} 后截止',
+      draftDue: '作品截止', dueToday: '今天截止', overdue: '已逾期{n}', dueIn: '{n}后截止',
       whereAt: '地点', contact: '当天联系人', tracking: '快递单号',
       platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
@@ -152,12 +152,12 @@
       filesHead: '已提交文件',
       uploaded: '已上传。',
       sizeOne: '{file} 超过 {mb} MB 上限。',
-      sizeMany: '{n} 个文件超过 {mb} MB 上限。',
+      sizeMany: '{n}个文件超过 {mb} MB 上限。',
       failOne: '{file} 上传失败，请重试。',
-      failMany: '{n} 个文件上传失败，请重试。',
+      failMany: '{n}个文件上传失败，请重试。',
 
       since: '{d} 起合作',
-      bookingsN: function (n) { return n + ' 个合作'; },
+      bookingsN: function (n) { return n + '个合作'; },
       linksEdit: '编辑链接', linksAdd: '添加链接', linksTitle: '主页链接',
       linksNone: '暂无主页链接。',
       save: '保存', cancel: '取消', close: '关闭', saved: '已保存。', noChange: '没有更改。',
@@ -170,7 +170,7 @@
       views: '浏览量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
       rateHead: '合作体验', foldHead: '合作详情',
-      rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
+      rateStar: function (n) { return '5星中的' + n + '星'; },
       rateThanks: '感谢您的评分。',
       payHead: '付款资料', payLine: '请填写您的付款资料。',
       payGo: '填写表单',
@@ -221,7 +221,7 @@
     var n = ADspaceClock.between(ADspaceClock.today(), String(day).slice(0, 10));
     if (n === null) return '';
     if (n === 0) return t().dueToday;
-    var span = Math.abs(n) + (lang === 'zh' ? ' 天' : (Math.abs(n) === 1 ? ' day' : ' days'));
+    var span = Math.abs(n) + (lang === 'zh' ? '天' : (Math.abs(n) === 1 ? ' day' : ' days'));
     return fill(n < 0 ? t().overdue : t().dueIn, { n: span });
   }
 
@@ -244,8 +244,11 @@
     $('stateTitle').textContent = title;
     $('stateText').textContent = text;
     $('codeRow').hidden = !(opts && opts.ask);
-    // No session behind a cover, so nothing to sign out of.
+    // No session behind a cover, so nothing to sign out of, and no name on
+    // the bar: a shared device never shows the creator before (CP-1).
     if ($('signOutBtn')) $('signOutBtn').hidden = true;
+    if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
+    else if ($('clientFor')) $('clientFor').hidden = true;
     $('stateMsg').textContent = '';
     $('stateMsg').className = 'msg';
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
@@ -291,7 +294,7 @@
         paint();
         follow();
       });
-    }, function () { cover(t().failTitle, t().failText); });
+    }).catch(function () { cover(t().failTitle, t().failText); });
   }
 
   /* Forgetting the device stops its notifications too: whoever uses it next
@@ -1028,7 +1031,7 @@
         '<div class="progress-head"><span data-uptext></span><span data-uppct></span></div>' +
         '<div class="progress-track"><div class="progress-fill" data-bar></div></div></div>' +
       '<label class="field-label" for="cap-' + esc(b.id) + '">' + esc(t().captionLabel) + '</label>' +
-      '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="2" data-cap ' +
+      '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="2" maxlength="5000" data-cap ' +
         'placeholder="' + esc(t().captionHint) + '">' + esc(capOf(b)) + '</textarea>' +
       '<div class="kactions"><button class="btn btn-go" type="button" data-a="submit">' +
         esc(b.state === 'submitted' ? t().update : t().submit) + '</button></div>' +
@@ -1356,11 +1359,12 @@
         return db.rpc('creator_submit', { p_code: code, p_option: b.id, p_caption: cap }).then(function (r) {
           var d = r.data || {};
           if (d.error === 'empty') { finish(t().needFiles, 'err'); return; }
+          if (d.error === 'too-long') { finish(t().tooLong, 'err'); return; }
           if (r.error || d.error) { finish(t().failText, 'err'); return; }
           delete drafts[b.id]; draftsKeep();
           finish();
           load(code);
-        }, function () { finish(t().failText, 'err'); });
+        }).catch(function () { finish(t().failText, 'err'); });
       });
     });
   }
